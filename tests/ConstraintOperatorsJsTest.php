@@ -12,10 +12,14 @@ use PHPUnit\Framework\TestCase;
  * clause where the server does: the first operator in
  * ResultSetManager::CONSTRAINT_OPERATORS found in it. It kept its own copy of
  * that list; the page now hands it the server's, through OWA.config.
+ *
+ * The filter pills of the report editor and the funnel builder read a stored
+ * string back into pills the same way, through OWA.dataGrid.operators().
  */
 final class ConstraintOperatorsJsTest extends TestCase
 {
     private const EXPLORER = 'modules/Base/src/reporting/v1/owa.resultSetExplorer.js';
+    private const PILLS    = 'modules/Base/src/reporting/v1/owa.filterpills.js';
 
     public function testEveryPageGivesTheGridTheServersOperatorsInOrder(): void
     {
@@ -53,14 +57,31 @@ final class ConstraintOperatorsJsTest extends TestCase
         $this->assertSame( array_keys( ResultSetManager::CONSTRAINT_OPERATORS ), $keys[1] );
     }
 
-    /** The Jest file stands in for config_dom.php, so its list is the server's. */
-    public function testTheGridTestsUseTheServersList(): void
+    /**
+     * The pills split a clause with the grid's reader of the page's list, not
+     * with the conditions their form offers.
+     */
+    public function testThePillsSplitWithTheServersOperators(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . 'tests/js/DataGrid.test.js' );
+        $src = (string) file_get_contents( OWA_DIR . self::PILLS );
 
-        $this->assertSame( 1, preg_match( '/const SERVER_OPERATORS = \[(.*?)\];/', $src, $list ) );
-        preg_match_all( "/'([^']+)'/", $list[1], $ops );
+        $this->assertSame( 1, preg_match( '/OWA\.filterPills\.split = function \( clause \) \{(.*?)\n\};/s', $src, $split ) );
+        $this->assertStringContainsString( 'OWA.dataGrid.operators()', $split[1] );
+        $this->assertStringNotContainsString( 'OWA.filterPills.OPERATORS', $split[1],
+            'the pills split with the operators their form offers again' );
+    }
 
-        $this->assertSame( array_keys( ResultSetManager::CONSTRAINT_OPERATORS ), $ops[1] );
+    /** The Jest files stand in for config_dom.php, so their list is the server's. */
+    public function testTheGridAndPillsTestsUseTheServersList(): void
+    {
+        foreach ( array( 'tests/js/DataGrid.test.js', 'tests/js/FilterPills.test.js' ) as $file ) {
+
+            $src = (string) file_get_contents( OWA_DIR . $file );
+
+            $this->assertSame( 1, preg_match( '/const SERVER_OPERATORS = \[(.*?)\];/', $src, $list ), $file );
+            preg_match_all( "/'([^']+)'/", $list[1], $ops );
+
+            $this->assertSame( array_keys( ResultSetManager::CONSTRAINT_OPERATORS ), $ops[1], $file );
+        }
     }
 }

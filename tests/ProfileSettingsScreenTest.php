@@ -130,6 +130,51 @@ final class ProfileSettingsScreenTest extends TestCase
     }
 
     /**
+     * The refusal redraws the Observation Settings screen, which is the one
+     * template that reads `posted`. It drew base.sitesProfile, the Profile's
+     * details form: the reported error appeared above a form without the
+     * fields it named.
+     */
+    public function testAValidationFailureRedrawsTheObservationSettingsScreen(): void
+    {
+        $this->requireDb();
+        $site_id = $this->aSiteId();
+
+        $screen = new \OWA\Module\Base\Controller\ProfileSettings( array( 'siteId' => $site_id ) );
+        $screen->action();
+
+        $refusal = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+            'siteId'   => $site_id,
+            'config'   => array( 'base.default_page' => 'home.html' ),
+            'override' => array( 'base.default_page' => '1' ),
+        ) );
+        $refusal->errorAction();
+
+        $shown   = $this->data( $screen );
+        $refused = $this->data( $refusal );
+
+        $this->assertSame( 'base.profileSettings', $refused['subview'] ?? null );
+        $this->assertSame( $shown['view'] ?? null, $refused['view'] ?? null );
+        $this->assertSame( $site_id, $refused['siteId'] ?? null );
+        $this->assertSame( $site_id, $refused['site']['site_id'] ?? null,
+            'the template reads the Profile it renders from here' );
+
+        foreach ( array( 'site_hierarchy', 'hierarchy_nav' ) as $key ) {
+            $this->assertArrayHasKey( $key, $refused, 'the wrapper reads this, and an unset view var throws in ViewScope' );
+        }
+    }
+
+    /** The view hands the refused post to the template, which passes it to each fieldset. */
+    public function testTheScreenPassesThePostToItsFields(): void
+    {
+        $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/ProfileSettings.php' );
+
+        $this->assertMatchesRegularExpression( '#body->set\(\s*\'posted\',\s*\$this->get\(\s*\'posted\'\s*\)\s*\)#', $view );
+        $this->assertStringContainsString( '$view->posted',
+            (string) file_get_contents( OWA_DIR . 'modules/Base/templates/profile_settings.php' ) );
+    }
+
+    /**
      * The wiring: the screen saves through the switch. On stores the value even
      * when it equals the inherited one; off removes it.
      *
@@ -137,6 +182,27 @@ final class ProfileSettingsScreenTest extends TestCase
      * campaignKeys is empty by default and the one setting on this screen a
      * Property may hold. So the Property is given a value first.
      */
+    /**
+     * A save goes back to Observation Settings, not to the Profile's Details.
+     *
+     * A Profile id nothing has, so the save it runs -- every override switched
+     * off -- clears no real Profile's values.
+     */
+    public function testASaveReturnsToTheObservationSettingsScreen(): void
+    {
+        $this->requireDb();
+
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array( 'siteId' => 'owa-no-such-profile-redirect' ) );
+        $c->action();
+
+        $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
+        $data->setAccessible( true );
+        $data = (array) $data->getValue( $c );
+
+        $this->assertSame( 'base.profileSettings', $data['do'] ?? null );
+        $this->assertSame( 'owa-no-such-profile-redirect', $data['siteId'] ?? null );
+    }
+
     public function testTheOverrideSwitchDecidesWhatIsStored(): void
     {
         $this->requireDb();

@@ -855,10 +855,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             $value = (string) $this->getParam( $name );
 
             /*
-             * Three of the detail reports lowercase before constraining --
-             * ad, adType and campaign -- because the dimension is stored
-             * lowercased. Dropping that would make "Google" and "google"
-             * different ads.
+             * For a dimension stored lowercased: a parameter that arrives as
+             * "Google" would otherwise match no row stored as "google". A
+             * definition asks for it with `lowercase`; no shipped report does.
              */
             if ( ! empty( $spec['lowercase'] ) ) {
 

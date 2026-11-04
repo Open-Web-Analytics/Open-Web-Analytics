@@ -113,6 +113,34 @@ final class SystemHealthTest extends TestCase
         $this->assertSame('green', SystemHealth::worst([]));
     }
 
+    /**
+     * A pending update is not a scheduler finding: while one is pending every
+     * admin screen shows the updater, so this one could never show it.
+     * cmd=schedule-status reports it.
+     */
+    public function testAPendingUpdateIsNotASchedulerFinding(): void
+    {
+        $service = \OWA\Core\CoreAPI::serviceSingleton();
+        $c       = \OWA\Core\CoreAPI::configSingleton();
+        $flag    = $service->update_required;
+        $schema  = $c->get('base', 'schema_version');
+
+        try {
+            $service->update_required = true;
+            $c->set('base', 'schema_version', 1);
+
+            $this->assertTrue(\OWA\Core\CoreAPI::isSchemaUpdateRequired(), 'the fixture makes a schema update pending');
+
+            $labels = array_keys(self::levels(SystemHealth::scheduler()));
+
+            $this->assertNotContains('Schema updates pending', $labels);
+            $this->assertNotContains('Update pending', $labels);
+        } finally {
+            $service->update_required = $flag;
+            $c->set('base', 'schema_version', $schema);
+        }
+    }
+
     /** The screen shows every section, the findings' commands, and the failed jobs; a template error would render nothing. */
     public function testTheScreenRendersWhatItFinds(): void
     {

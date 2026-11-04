@@ -2,35 +2,18 @@ import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 
 /**
- * Traffic attribution: campaign extraction + the direct / original models.
+ * Traffic attribution, and the tracker's part in it.
  *
- * When a visit lands with campaign params on the URL (owa_source, owa_medium,
- * owa_campaign, owa_search_terms, owa_ad, owa_ad_type by default), the tracker
- * attributes the session to that campaign. The moving parts:
+ * The tracker attributes nothing. It sends the page's URL and its referrer on
+ * every beacon, and the server decides source, medium and campaign: it reads
+ * the campaign tags out of the landing page's URL
+ * (TrackingEventHelpers::parseLandingTags(), the parameter names from the
+ * `campaignKeys` setting, tested in LandingUrlCampaignParseTest) and the
+ * referrer.
  *
- *   - getCampaignProperties() parses the current URL, pulls the configured
- *     campaign params, and REMAPS each public key (owa_source) to its short
- *     private key (sr). Seeing any campaign param flips isNewCampaign. The ad /
- *     ad_type pair is co-required: if one is present the other is backfilled to
- *     "(not set)".
- *   - The public->private key map is reconfigurable at runtime via
- *     setCampaign{Medium,Name,Source,SearchTerms,Ad,AdType}Key(), so a site can
- *     accept e.g. utm_source instead of owa_source.
- *   - directAttributionModel(): last-touch. Every new campaign touch is appended
- *     to the campaignState touch list (capped at maxPriorCampaigns, oldest
- *     dropped), the campaign cookie ('c') is rewritten, and the session store
- *     ('s') gets the touch's values.
- *   - originalAttributionModel(): first-touch. If a prior touch exists it wins and
- *     the new params are ignored; otherwise the new touch becomes the original.
- *   - setTrafficAttribution() ties it together: loads prior touches from the 'c'
- *     cookie, runs the configured model, promotes the resolved source/medium/etc.
- *     to global event properties (so they ride every event), serializes the touch
- *     list to `attribs`, and -- when NOTHING attributed and it's a new session --
- *     falls back to inferring from document.referrer via `session_referer`.
- *
- * These drive the model methods directly and exercise getCampaignProperties by
- * putting real params on the URL with history.replaceState (which updates
- * document.URL, the source getCampaignProperties parses).
+ * What is tested here is that the referrer reaches the server on every
+ * beacon, whether or not the landing URL carries campaign tags. The URL is set
+ * with history.replaceState, which updates document.URL.
  */
 
 function setDocumentDomain(domain) {

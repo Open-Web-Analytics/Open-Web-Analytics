@@ -12,10 +12,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * same office IPs from both, and announce new sessions to one address. That is
  * a storage limit that had leaked into the product.
  *
- * Two seams are covered here. First, the store: getSiteSetting()/
- * persistSiteSetting() had to stop reading owa_site.settings, or an edit made
- * on the Profile screen would be written to the new table and read back from
- * the old blob. Second, the READ SITES: each moved setting had to be given a
+ * Two seams are covered here. First, the store: getSiteSetting() had to stop
+ * reading owa_site.settings, or an edit made on the Profile screen would be
+ * written to the new table and read back from the old blob. Second, the READ SITES: each moved setting had to be given a
  * site to ask about, and two of them had none in scope where they were being
  * read.
  */
@@ -102,34 +101,21 @@ final class SettingTierMoveTest extends TestCase
             . 'are looking at two different stores.' );
     }
 
-    /** The write side of the same seam. */
-    public function testPersistSiteSettingWritesAScopedRow(): void
-    {
-        $this->skipUnlessParented();
-
-        \OWA\Core\CoreAPI::persistSiteSetting( $this->siteId, $this->key, 'written' );
-
-        $this->assertSame(
-            'written',
-            \OWA\Core\CoreAPI::getSetting( 'base', $this->key, 'profile', $this->siteId, false ),
-            'persistSiteSetting() did not leave a row on the Profile itself.' );
-    }
-
     /**
-     * A false written through the site API has to survive.
+     * A false written on a Profile has to survive.
      *
-     * This is why the write does not go through Settings::persistSetting():
+     * This is why a scoped write does not go through Settings::persistSetting():
      * that prunes a value equal to the code default, which at a scoped level
      * deletes the override and hands the Profile its parent's value back.
      */
-    public function testAFalseWrittenThroughTheSiteApiSurvives(): void
+    public function testAFalseWrittenOnAProfileSurvives(): void
     {
         $this->skipUnlessParented();
 
         \OWA\Core\CoreAPI::setScopedSetting(
             'property', $this->propertyId, 'base', $this->key, true );
 
-        \OWA\Core\CoreAPI::persistSiteSetting( $this->siteId, $this->key, false );
+        \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', $this->key, false );
 
         $this->assertFalse(
             \OWA\Core\CoreAPI::getSiteSetting( $this->siteId, $this->key ),

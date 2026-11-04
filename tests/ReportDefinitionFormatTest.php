@@ -108,9 +108,8 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /**
-     * Three reports store their dimension lowercased, so the value has to be
-     * lowercased before it is constrained on -- otherwise "Google" and "google"
-     * are different ads.
+     * A parameter for a dimension stored lowercased is lowercased before it is
+     * constrained on, or "SpringSALE" would match no row stored as "springsale".
      */
     public function testADeclaredParameterCanBeLowercased(): void
     {

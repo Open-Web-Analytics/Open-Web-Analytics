@@ -684,17 +684,19 @@ final class SettingsRegistryTest extends TestCase
     }
 
     /**
-     * The GeoIP and SQS screens are in the Instance section.
+     * The GeoIP, SQS and Hello sample screens are in the Instance section.
      *
-     * Both registered with `group` 'Modules', which became a section of that
-     * name. getHierarchyNav() drops a section it did not build, so neither
-     * screen had an entry in any menu.
+     * GeoIP and SQS registered with `group` 'Modules', and the Hello sample
+     * with `group` 'Test', each of which became a section of that name.
+     * getHierarchyNav() drops a section it did not build, so none of the
+     * screens had an entry in any menu.
      */
     public function testTheModuleSettingsPagesAreInTheInstanceSection(): void
     {
         foreach ( array(
             'maxmind_geoip.optionsGeoip' => \OWA\Module\MaxmindGeoip\Module::class,
             'sqs.optionsSqs'             => \OWA\Module\Sqs\Module::class,
+            'hello.exampleSettings'      => \OWA\Module\Hello\Module::class,
         ) as $do => $class ) {
 
             $module = new $class();
@@ -705,6 +707,62 @@ final class SettingsRegistryTest extends TestCase
 
             $this->assertSame( array( 'Instance' ), array_keys( $sections ), $do );
             $this->assertContains( $do, array_column( $sections['Instance'], 'do' ) );
+        }
+    }
+
+    /**
+     * Each module's pages are registered once a request, however often the
+     * panels are asked for. registerSettingsPage() appends, and a settings
+     * screen asks three times (its nav, its title, its fieldsets), so each
+     * call after the first listed every page once more.
+     */
+    public function testAskingForTheSettingsPanelsAgainListsEachPageOnce(): void
+    {
+        $first = \OWA\Core\CoreAPI::getAdminPanels();
+        $again = \OWA\Core\CoreAPI::getAdminPanels();
+
+        $actions = array();
+
+        foreach ( $again as $items ) {
+            foreach ( (array) $items as $item ) {
+                $actions[] = (string) ( $item['do'] ?? '' );
+            }
+        }
+
+        if ( ! $actions ) {
+            $this->markTestSkipped( 'no module registers a settings page on this installation' );
+        }
+
+        $this->assertSame( array_values( array_unique( $actions ) ), $actions, 'a page is listed more than once' );
+        $this->assertSame( $first, $again );
+    }
+
+    /**
+     * Asking for the panels registers the fieldsets the pages render, every
+     * time. A once-per-request guard left a reset fieldset registry empty, and
+     * the General page rendered only its group's fieldsets.
+     */
+    public function testAskingForTheSettingsPanelsAgainRegistersTheirFieldsetsAgain(): void
+    {
+        \OWA\Core\CoreAPI::getAdminPanels();
+
+        $config = \OWA\Core\CoreAPI::configSingleton();
+        $p      = new ReflectionProperty( \OWA\Module\Base\Classes\Settings::class, 'fieldsets' );
+        $p->setAccessible( true );
+        $before = $p->getValue( $config );
+
+        $this->assertArrayHasKey( 'base.tracking', (array) $before );
+
+        try {
+
+            $p->setValue( $config, array() );
+            \OWA\Core\CoreAPI::getAdminPanels();
+
+            $this->assertArrayHasKey( 'base.tracking', (array) $config->registeredFieldSets() );
+
+        } finally {
+
+            $p->setValue( $config, $before );
         }
     }
 }
