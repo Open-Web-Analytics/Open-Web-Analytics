@@ -351,8 +351,12 @@ final class GoalEventStorageTest extends TestCase
         $this->assertSame( '', $problem( 'newsletter_signup' ) );
         $this->assertTrue( $custom( 'newsletter_signup' ) );
 
-        foreach ( array( 'exception', 'domstream', 'owa_signup', 'Owa_signup', '9lives', 'two words',
-                \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM, str_repeat( 'a', 41 ) ) as $refused ) {
+        // A module's event is refused while the module is active, which this process may not have loaded.
+        $modules = array_values( array_diff( \OWA\Core\CoreAPI::trackingEventTypes(),
+            \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() ) );
+
+        foreach ( array_merge( array( 'exception', 'owa_signup', 'Owa_signup', '9lives', 'two words',
+                \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM, str_repeat( 'a', 41 ) ), $modules ) as $refused ) {
             $this->assertNotSame( '', $problem( $refused ), $refused );
             $this->assertFalse( $custom( $refused ), $refused );
         }
