@@ -1086,9 +1086,10 @@ test.describe('the report grid gives every widget a usable width', () => {
 });
 
 /**
- * Visitors is six cards, a third each: who (new or returning), on what device,
- * from where; then browser, operating system and loyalty. Each card that has a
- * fuller report links to it.
+ * Visitors' cards are in rows of like cardinality: new or returning, device
+ * type and loyalty each have a handful of values, so they share the first row;
+ * countries, browsers and operating systems each have many and share the
+ * second. Each card that has a fuller report links to it.
  */
 test.describe('the visitors overview', () => {
 
@@ -1098,35 +1099,70 @@ test.describe('the visitors overview', () => {
         await openConfiguredReport(page, { reportId: 'visitors' });
     });
 
-    test('draws every card, two rows of three, each linking to its report', async ({ page }) => {
+    test('puts the few-valued cards on one row and the many-valued on the next, each linking to its report', async ({ page }) => {
         await expect(page.locator('#visitor-types .owa_shareRow').first()).toBeVisible({ timeout: 20_000 });
 
         const cards = [
             ['device-types', 'devices'],
+            ['visitor-loyalty', 'visitors-loyalty'],
             ['visitor-countries', 'geolocation'],
             ['top-browsers', 'browsers'],
             ['top-operating-systems', 'os'],
-            ['visitor-loyalty', 'visitors-loyalty'],
         ];
 
-        for (const [container, reportId] of cards) {
-            await expect(page.locator(`#${container} tr.owa_gridRow`).first(), `${container} drew no rows`)
+        const item = id => page.locator(`#${id}`).locator('xpath=ancestor::*[contains(@class,"owa_reportGridItem")][1]');
+
+        for (const [id, reportId] of cards) {
+            await expect(page.locator(`#${id} tr.owa_gridRow`).first(), `${id} drew no rows`)
                 .toBeVisible({ timeout: 20_000 });
-
-            const more = page.locator(`#${container}`)
-                .locator('xpath=ancestor::*[contains(@class,"owa_widget-grid-card")][1]')
-                .locator('.owa_moreLinks a');
-
-            await expect(more).toHaveAttribute('href', new RegExp(`reportId=${reportId}(&|$)`));
+            await expect(item(id).locator('.owa_moreLinks a')).toHaveAttribute('href', new RegExp(`reportId=${reportId}(&|$)`));
         }
 
+        // 1440 leaves the grid over 940px, so a third is still a third.
         const tops = [];
         for (const id of ['visitor-types', ...cards.map(([c]) => c)]) {
-            tops.push(Math.round((await page.locator(`#${id}`).locator('xpath=ancestor::*[contains(@class,"owa_reportGridItem")][1]').boundingBox()).y));
+            tops.push(Math.round((await item(id).boundingBox()).y));
         }
-        expect(new Set(tops.slice(0, 3)).size, 'the first three share a row').toBe(1);
-        expect(new Set(tops.slice(3)).size, 'the last three share a row').toBe(1);
+
+        expect(new Set(tops.slice(0, 3)).size, 'visitor types, device types and loyalty share a row').toBe(1);
+        expect(new Set(tops.slice(3)).size, 'countries, browsers and operating systems share a row').toBe(1);
         expect(tops[3]).toBeGreaterThan(tops[0]);
+    });
+});
+
+/**
+ * Content is the trend across the top, then two rows of page lists: pages and
+ * the elements clicked on them, then where sessions started and ended.
+ */
+test.describe('the content overview', () => {
+
+    test('draws the trend full width and the lists in pairs', async ({ page }) => {
+        await login(page);
+        await page.setViewportSize({ width: 1440, height: 1000 });
+        await openConfiguredReport(page, { reportId: 'content' });
+
+        const lists = ['top-pages', 'clicked-elements', 'entry-pages', 'exit-pages'];
+
+        for (const id of lists) {
+            await expect(page.locator(`#${id} tr.owa_gridRow`).first(), `${id} drew no rows`)
+                .toBeVisible({ timeout: 20_000 });
+        }
+
+        await expect(page.locator('#top-pagetypes')).toHaveCount(0);
+
+        const box = async id => page.locator(`#${id}`).locator('xpath=ancestor::*[contains(@class,"owa_reportGridItem")][1]').boundingBox();
+        const grid = await page.locator('.owa_reportGrid').boundingBox();
+        const trend = await box('trend-chart');
+
+        expect(Math.round(trend.width)).toBe(Math.round(grid.width));
+
+        const b = await Promise.all(lists.map(box));
+        const y = b.map(r => Math.round(r.y));
+
+        expect(y[0]).toBeGreaterThan(Math.round(trend.y));
+        expect(y[1], 'pages and clicked elements share a row').toBe(y[0]);
+        expect(y[3], 'entry and exit pages share a row').toBe(y[2]);
+        expect(y[2]).toBeGreaterThan(y[0]);
     });
 });
 

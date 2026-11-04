@@ -45,6 +45,21 @@
         },
         {
             "type": "grid-card",
+            "id": "loyalty",
+            "container": "visitor-loyalty",
+            "title": "Visitor Loyalty",
+            "query": {
+                "metrics": "totalUsers",
+                "dimensions": "priorSessionCount",
+                "sort": "priorSessionCount"
+            },
+            "more": {
+                "reportId": "visitors-loyalty"
+            },
+            "colspan": 4
+        },
+        {
+            "type": "grid-card",
             "id": "countries",
             "container": "visitor-countries",
             "title": "Countries",
@@ -87,21 +102,6 @@
             "more": {
                 "reportId": "os"
             }
-        },
-        {
-            "type": "grid-card",
-            "id": "loyalty",
-            "container": "visitor-loyalty",
-            "title": "Visitor Loyalty",
-            "query": {
-                "metrics": "totalUsers",
-                "dimensions": "priorSessionCount",
-                "sort": "priorSessionCount"
-            },
-            "more": {
-                "reportId": "visitors-loyalty"
-            },
-            "colspan": 4
         }
     ]
 }

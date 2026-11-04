@@ -2499,11 +2499,11 @@ final class ReportDefinitionFormatTest extends TestCase
          * Two of the original four are gone with their reports:
          * action-tracking (its dimensions are params paths, which only a
          * registered custom dimension can reach) and ecommerce's productName
-         * widget (v2 carries no line items). The conversion they recorded is
-         * still recorded by the two that remain.
+         * widget (v2 carries no line items). Content's Page Types left its
+         * overview: a handful of values, short beside the page lists. The
+         * conversion they recorded is still recorded by the one that remains.
          */
         $expected = array(
-            'content.json'  => 'toppagetypes',
             'visitors.json' => 'browserTypes',
         );
 
