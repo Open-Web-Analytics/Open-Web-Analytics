@@ -178,8 +178,8 @@ final class SystemHealthTest extends TestCase
         }
     }
 
-    /** Every live Profile is listed; ones not published, and a new tracker waiting on an update, are attention. */
-    public function testUnpublishedBundlesAndANewTrackerAreReported(): void
+    /** Every live Profile is listed; ones not published are attention. */
+    public function testUnpublishedBundlesAreReported(): void
     {
         $live = \OWA\Module\Base\Classes\TrackerBundle::siteIds();
 
@@ -203,8 +203,10 @@ final class SystemHealthTest extends TestCase
             $c->set('base', 'tracker_build', \OWA\Module\Base\Module::requiredTrackerBuild());
             $this->assertSame('green', SystemHealth::bundles()['level'], 'all current');
 
+            // A newer build is an update pending, which this screen is never
+            // shown during; the section does not report it.
             $c->set('base', 'tracker_build', 'an-older-build');
-            $this->assertSame('yellow', self::levels(SystemHealth::bundles())['New tracker']);
+            $this->assertSame('green', SystemHealth::bundles()['level']);
         } finally {
             $c->set('base', 'tracker_build', $was);
             $this->dropBundleFixture($fixture);
