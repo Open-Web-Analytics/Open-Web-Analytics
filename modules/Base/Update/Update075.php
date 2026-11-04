@@ -56,8 +56,15 @@ class Update075 extends \OWA\Core\Update {
     }
 
     /**
-     * The exact inverse: each conversion row flags the event it was made from
+     * The inverse of up(): each conversion row flags the event it was made from
      * again, and goes; then the goal events get back the names they had.
+     *
+     * On an upgrade from 1.x that includes the conversion rows Update062
+     * stored, not only the ones up() made: raw has no marker that tells the two
+     * apart, so both become flagged trigger rows. up() converts them all again,
+     * so down() then up() ends where it started. Rewinding past Update062 as
+     * well does not: GoalMigrator::revertSite() deletes Update062's conversion
+     * rows by name, and they are no longer there to find.
      */
     function down() {
 
