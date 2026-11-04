@@ -182,6 +182,27 @@ final class ProfileSettingsScreenTest extends TestCase
      * campaignKeys is empty by default and the one setting on this screen a
      * Property may hold. So the Property is given a value first.
      */
+    /**
+     * A save goes back to Observation Settings, not to the Profile's Details.
+     *
+     * A Profile id nothing has, so the save it runs -- every override switched
+     * off -- clears no real Profile's values.
+     */
+    public function testASaveReturnsToTheObservationSettingsScreen(): void
+    {
+        $this->requireDb();
+
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array( 'siteId' => 'owa-no-such-profile-redirect' ) );
+        $c->action();
+
+        $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
+        $data->setAccessible( true );
+        $data = (array) $data->getValue( $c );
+
+        $this->assertSame( 'base.profileSettings', $data['do'] ?? null );
+        $this->assertSame( 'owa-no-such-profile-redirect', $data['siteId'] ?? null );
+    }
+
     public function testTheOverrideSwitchDecidesWhatIsStored(): void
     {
         $this->requireDb();

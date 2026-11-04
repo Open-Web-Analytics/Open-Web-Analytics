@@ -95,9 +95,9 @@ class SitesEditSettings extends \OWA\Core\AdminController {
             $this->setStatusCode( 3201 );
         }
 
+        // Back to the screen the form is on, not to the Profile's Details.
         $this->set('siteId', $site_id);
-        $this->set('edit', true);
-        $this->setRedirectAction( 'base.sitesProfile' );
+        $this->setRedirectAction( 'base.profileSettings' );
     }
 
     function errorAction() {
