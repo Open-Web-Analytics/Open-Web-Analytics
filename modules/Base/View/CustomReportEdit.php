@@ -41,7 +41,6 @@ class CustomReportEdit extends \OWA\Core\View {
         $this->body->set( 'chart_types', $this->get( 'chart_types' ) );
         $this->body->set( 'fixed_dimensions', $this->get( 'fixed_dimensions' ) );
         $this->body->set( 'fixed_dimension_extra', $this->get( 'fixed_dimension_extra' ) );
-        $this->body->set( 'time_dimensions', $this->get( 'time_dimensions' ) );
         $this->body->set( 'default_colspans', $this->get( 'default_colspans' ) );
         $this->body->set( 'grid_columns', $this->get( 'grid_columns' ) );
         $this->body->set( 'link_targets', $this->get( 'link_targets' ) );

@@ -194,7 +194,6 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         $this->set( 'chart_types',        \OWA\Module\Base\Classes\CustomReports::CHART_TYPES );
         $this->set( 'fixed_dimensions', \OWA\Module\Base\Classes\CustomReports::FIXED_DIMENSIONS );
         $this->set( 'fixed_dimension_extra', \OWA\Module\Base\Classes\CustomReports::FIXED_DIMENSION_EXTRA );
-        $this->set( 'time_dimensions', \OWA\Module\Base\Classes\CustomReports::TIME_DIMENSIONS );
         $this->set( 'default_colspans',   \OWA\Core\ReportGrid::DEFAULT_COLSPANS );
         $this->set( 'grid_columns',       \OWA\Core\ReportGrid::COLUMNS );
 

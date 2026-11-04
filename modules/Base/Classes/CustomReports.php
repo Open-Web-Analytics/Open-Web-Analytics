@@ -184,7 +184,7 @@ class CustomReports {
      *
      * It may carry ONE more dimension, and that one IS the author's: its values
      * become the lines, so `visits` by `medium` is a line per medium over the
-     * filled total. See TIME_DIMENSIONS for what may not be that second one.
+     * filled total. See timeDimensions() for what may not be that second one.
      *
      * metric-boxes is deliberately NOT here: its boxes are totals, so it needs
      * no grouping, but a hand-written one that has some is not wrong and is not
@@ -193,21 +193,6 @@ class CustomReports {
     const FIXED_DIMENSIONS = array(
         'trend'      => 'date',
         'trend-card' => 'date',
-    );
-
-    /**
-     * The dimensions that measure TIME.
-     *
-     * A trend's x axis is one of these, so none of them can also be the thing
-     * it is broken down by -- a trend of visits by month, over months, is not a
-     * chart anybody meant to ask for.
-     *
-     * Named rather than derived from the registry's `time` family, because the
-     * family is a grouping in the interface and this is a rule about what a
-     * chart can plot. They are the same list today and may diverge.
-     */
-    const TIME_DIMENSIONS = array(
-        'date', 'day', 'month', 'year', 'dayofweek', 'dayofyear', 'weekofyear',
     );
 
     /** How many dimensions a widget of this type may group by, in total. */
@@ -347,6 +332,36 @@ class CustomReports {
      * like the ones that came with the install.
      */
     const MORE_LABEL = 'View Full Report »';
+
+    /**
+     * The dimensions that measure TIME: every registered dimension in the
+     * `time` family.
+     *
+     * A trend's x axis is one of these, so none of them can also be the thing
+     * it is broken down by -- a trend of visits by month, over months, is not a
+     * chart anybody meant to ask for.
+     *
+     * Read from the registry rather than kept as a list here. The list was a
+     * copy and had drifted: it spelled dayOfWeek, dayOfYear and weekOfYear in
+     * lower case, so the strict match never refused them, and it had no
+     * yearMonth, hour, minute or dateHour.
+     *
+     * @return string[]
+     */
+    public static function timeDimensions() {
+
+        $names = array();
+
+        foreach ( (array) \OWA\Core\CoreAPI::getAllDimensions() as $name => $dimension ) {
+
+            if ( isset( $dimension['family'] ) && $dimension['family'] === 'time' ) {
+
+                $names[] = (string) $name;
+            }
+        }
+
+        return $names;
+    }
 
     /** How many metrics a widget of this type may ask for. */
     public static function maxMetricsFor( $type ) {
@@ -570,7 +585,7 @@ class CustomReports {
              */
             foreach ( $extra as $name ) {
 
-                if ( in_array( $name, self::TIME_DIMENSIONS, true ) ) {
+                if ( in_array( $name, self::timeDimensions(), true ) ) {
 
                     return sprintf(
                         \OWA\Core\CoreAPI::t( '%s cannot be broken out by "%s": time is already its axis.' ),

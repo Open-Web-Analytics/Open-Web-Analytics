@@ -422,9 +422,10 @@ $owa_max        = (int) $view->get('max_widgets');
 
     /*
      * The dimensions that measure time. A trend's axis is one of these, so none
-     * of them can also be what it is broken out BY.
+     * of them can also be what it is broken out BY. See
+     * CustomReports::timeDimensions().
      */
-    var TIME_DIMENSIONS = <?php echo json_encode( array_values( (array) $view->get('time_dimensions') ) ); ?>;
+    var TIME_DIMENSIONS = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::timeDimensions() ); ?>;
 
     var SINGLE_METRIC_TYPES = <?php echo json_encode( array_values( (array) $view->get('single_metric_types') ) ); ?>;
 
