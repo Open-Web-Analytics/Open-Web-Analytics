@@ -2,14 +2,14 @@
 <?php
 /*
  * One step of the funnel builder (visualization_edit.php): its handle and
- * number, Page is / Event is, the path or the goal event, and remove. The
+ * number, Page is / Event is, the path or the goal event definition, and remove. The
  * numbers and labels are written by the builder's script as the list changes.
  *
- *   $owa_step        the step: path, goal_event_id, name
+ *   $owa_step        the step: path, goal_event_definition_id, name
  *   $owa_stepNo      its number, 0 for the blank row Add a step copies
- *   $owa_stepGoal    its goal event id, or ''
+ *   $owa_stepGoal    its goal event definition id, or ''
  *   $owa_stepErrors  messages about it
- *   $owa_goals       the Property's goal events
+ *   $owa_goals       the Property's goal event definitions
  */
 $owa_step       = (array) ( $owa_step ?? array() );
 $owa_stepNo     = (int) ( $owa_stepNo ?? 0 );
@@ -28,8 +28,8 @@ $owa_goals      = (array) ( $owa_goals ?? array() );
     <input class="owa_funnelStepPath" type="text" placeholder="/path"
            name="<?php echo $view->getNs();?>stepPath[]"
            value="<?php $view->out( $owa_step['path'] ?? '' );?>">
-    <select class="owa_funnelStepGoal" name="<?php echo $view->getNs();?>stepGoalEventId[]">
-        <option value=""><?php echo $owa_goals ? 'Choose a goal event&hellip;' : 'No goal events yet';?></option>
+    <select class="owa_funnelStepGoal" name="<?php echo $view->getNs();?>stepGoalEventDefinitionId[]">
+        <option value=""><?php echo $owa_goals ? 'Choose a goal event definition&hellip;' : 'No goal event definitions yet';?></option>
         <?php foreach ( $owa_goals as $owa_ge ):?>
         <option value="<?php $view->out( $owa_ge['id'] );?>"
             <?php echo $owa_stepGoal === (string) $owa_ge['id'] ? 'selected' : '';?>><?php

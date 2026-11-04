@@ -17,7 +17,8 @@ namespace OWA\Module\Base\Update;
  *
  * up():
  *   - A goal event's name becomes the event name its conversion rows carry, so
- *     one that is not a custom event name is renamed (GoalEvent::nameFrom()).
+ *     one that is not a custom event name is renamed
+ *     (GoalEventDefinition::nameFrom()).
  *     One that another goal event of the Property already has, or that OWA
  *     collects, gets a number on the end. The names it had are kept in the
  *     goal_event_names_before_075 setting for down().
@@ -31,6 +32,9 @@ namespace OWA\Module\Base\Update;
  * by `cmd=cube-rebuild from=<the first one>`, which the notice names.
  *
  * NOT CLI-ONLY. It touches the rows that were flagged, in batches.
+ *
+ * The goal tables are read under the names they had before Update076
+ * (namedBefore076()), which is what an upgrade meets here.
  */
 class Update075 extends \OWA\Core\Update {
 
@@ -102,7 +106,7 @@ class Update075 extends \OWA\Core\Update {
             }
         }
 
-        $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName();
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076()->getTableName();
 
         foreach ( (array) \OWA\Core\CoreAPI::getSetting( 'base', self::BEFORE ) as $id => $names ) {
 
@@ -122,20 +126,20 @@ class Update075 extends \OWA\Core\Update {
 
     /**
      * Rename every goal event whose name is not a usable event name, unique
-     * within its Property (GoalEvent::eventNames()). On an upgrade from 1.x the
-     * conversion rows Update062 stored already carry these names.
+     * within its Property (GoalEventDefinition::eventNames()). On an upgrade
+     * from 1.x the conversion rows Update062 stored already carry these names.
      */
     private function renameGoalEvents() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName();
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076()->getTableName();
         $rows  = array_map( function ( $r ) { return (array) $r; }, (array) $db->get_results(
             sprintf( 'SELECT id, property_id, name FROM %s ORDER BY id', $table ) ) );
         $was   = array_column( $rows, 'name', 'id' );
 
         $before = (array) \OWA\Core\CoreAPI::getSetting( 'base', self::BEFORE );
 
-        foreach ( \OWA\Module\Base\Entity\GoalEvent::eventNames( $rows ) as $id => $name ) {
+        foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::eventNames( $rows ) as $id => $name ) {
 
             $before[ $id ] = array( 'was' => (string) $was[ $id ], 'now' => $name );
 
@@ -251,7 +255,7 @@ class Update075 extends \OWA\Core\Update {
         }, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() ) );
     }
 
-    /** @var array site_id => list of array( 'event' => GoalEvent, 'conditions' => array ) */
+    /** @var array site_id => list of array( 'event' => GoalEventDefinition, 'conditions' => array ) */
     private $goals = array();
 
     /**
@@ -267,7 +271,7 @@ class Update075 extends \OWA\Core\Update {
 
         $this->goals[ $site_id ] = array();
 
-        $property_id = \OWA\Module\Base\Entity\GoalEvent::propertyFor( $site_id );
+        $property_id = \OWA\Module\Base\Entity\GoalEventDefinition::propertyFor( $site_id );
 
         // No Property is no goal events; an empty where() would read them all.
         if ( ! $property_id ) {
@@ -275,12 +279,12 @@ class Update075 extends \OWA\Core\Update {
             return $this->goals[ $site_id ];
         }
 
-        $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName();
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076()->getTableName();
 
         foreach ( (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
                 'SELECT * FROM %s WHERE property_id = ? ORDER BY id', $table ), array( (string) $property_id ) ) as $row ) {
 
-            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
             $goal->setProperties( (array) $row );
 
             $conditions = $goal->loadConditions();

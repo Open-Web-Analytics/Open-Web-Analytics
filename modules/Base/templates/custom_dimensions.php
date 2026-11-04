@@ -6,7 +6,7 @@
  * point -- v1's numbered slots forced one namespace on an installation.
  *
  * REGISTERING IS ITS OWN SCREEN (base.customDimensionEdit), linked from the
- * legend like Goal Events' "Add New Goal Event".
+ * legend like Goal Event Definitions' "Add New Goal Event Definition".
  *
  * REGISTERING DOES NOT ADD THE COLUMN. It writes the registration and returns;
  * the column is added under the lock a cube build holds, within minutes. The

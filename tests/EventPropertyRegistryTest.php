@@ -269,7 +269,7 @@ final class EventPropertyRegistryTest extends TestCase
             array_values(array_diff(Helpers::eventNames(), Helpers::goalTriggerEventNames())),
             'every other first-class event is still a trigger');
 
-        foreach (['GoalEventEdit', 'GoalEventSave'] as $controller) {
+        foreach (['GoalEventDefinitionEdit', 'GoalEventDefinitionSave'] as $controller) {
             $source = (string) file_get_contents(OWA_DIR . "modules/Base/Controller/$controller.php");
 
             $this->assertStringNotContainsString('TrackingEventHelpers::eventNames()', $source,

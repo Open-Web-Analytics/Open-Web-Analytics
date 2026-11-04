@@ -311,7 +311,7 @@ final class TemplateLatentVarTest extends TestCase
                     // Property with none must still render the builder, and an
                     // empty picker is the case a foreach over an unset var
                     // would not distinguish from a missing one.
-                    'goalEvents' => [],
+                    'goalEventDefinitions' => [],
                     'propertyId' => '7000000000000001',
                     'validation_errors' => [],
                     // The step cap, read from VisualizationSave so the form
@@ -367,17 +367,17 @@ final class TemplateLatentVarTest extends TestCase
                 ],
                 ['name="real_name"', 'name="current_password"', 'name="new_password"'],
             ],
-            'goal_event_edit (add)' => [
-                'goal_event_edit.php',
+            'goal_event_definition_edit (add)' => [
+                'goal_event_definition_edit.php',
                 [
                     /*
-                     * Exactly what View\GoalEventEdit sets on the ADD path --
-                     * goalEvent is an empty array there, not absent, and this
+                     * Exactly what View\GoalEventDefinitionEdit sets on the ADD path --
+                     * goalEventDefinition is an empty array there, not absent, and this
                      * test exists because a template reading a var nobody set
                      * used to render blank rather than fail.
                      */
-                    'headline' => 'New Goal Event', 'propertyId' => '7000000000000001',
-                    'goalEvent' => [], 'goalEventId' => '',
+                    'headline' => 'New Goal Event Definition', 'propertyId' => '7000000000000001',
+                    'goalEventDefinition' => [], 'goalEventDefinitionId' => '',
                     'conditionProperties' => [ [ 'name' => 'page_path', 'label' => 'Page path',
                         'description' => 'The path of the page.', 'carried' => true ] ],
                     'conditionVocabulary' => [ 'page_view' => [ [ 'name' => 'page_path', 'label' => 'Page path',

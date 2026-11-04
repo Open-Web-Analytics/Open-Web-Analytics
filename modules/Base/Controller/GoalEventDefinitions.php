@@ -2,19 +2,20 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * The goal events of one Observation Profile.
+ * The goal event definitions of one Property.
  *
  * Replaces the goals screen, which listed twenty numbered slots whether or not
  * anyone had filled them in -- because the storage was a fixed-length array and
  * the screen showed the storage. This lists what exists.
  *
- * "Goal event" rather than "goal": these are events now, created when a
- * behaviour pattern matches, rather than twenty slots belonging to a site.
+ * "Goal event definition" rather than "goal": each one names the goal events,
+ * rows added when a behaviour pattern matches, rather than being one of twenty
+ * slots belonging to a site.
  *
  * PLAN.html calls the same idea a KEY event. Keeping "goal" is deliberate: it
  * is the word 1.x users already have, and it survives the change.
  */
-class GoalEvents extends \OWA\Core\AdminController {
+class GoalEventDefinitions extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 
@@ -28,20 +29,20 @@ class GoalEvents extends \OWA\Core\AdminController {
         $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
         $this->set( 'propertyId', $propertyId );
-        $this->set( 'goalEvents', self::listForProperty( $propertyId ) );
+        $this->set( 'goalEventDefinitions', self::listForProperty( $propertyId ) );
 
         $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $propertyId ) ) );
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->setView( 'base.optionsHierarchy' );
-        $this->setSubview( 'base.goalEvents' );
+        $this->setSubview( 'base.goalEventDefinitions' );
     }
 
     /**
-     * A Property's goal events.
+     * A Property's goal event definitions.
      *
      * Guarded, because Db::where() drops an empty value rather than matching
-     * nothing -- no Property would list every goal event on the installation.
+     * nothing -- no Property would list every definition on the installation.
      *
      * @param  string $propertyId
      * @return array
@@ -53,7 +54,7 @@ class GoalEvents extends \OWA\Core\AdminController {
             return array();
         }
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
@@ -76,17 +77,17 @@ class GoalEvents extends \OWA\Core\AdminController {
          */
         foreach ( $rows as $i => $row ) {
 
-            $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-            $goalEvent->setProperties( $row );
+            $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+            $definition->setProperties( $row );
 
             /*
              * The conditions, summarised for the list. Conditions are rows now,
-             * so the goal event row itself carries none -- reading one off it
-             * showed an empty cell for every goal event.
+             * so the definition row itself carries none -- reading one off it
+             * showed an empty cell for every definition.
              */
             $summary = array();
 
-            foreach ( $goalEvent->loadConditions() as $condition ) {
+            foreach ( $definition->loadConditions() as $condition ) {
 
                 $summary[] = array(
                     'property' => $condition->get( 'condition_property' ),
@@ -96,7 +97,7 @@ class GoalEvents extends \OWA\Core\AdminController {
             }
 
             $rows[ $i ]['conditions']       = $summary;
-            $rows[ $i ]['condition_match']  = $goalEvent->conditionMatch();
+            $rows[ $i ]['condition_match']  = $definition->conditionMatch();
         }
 
         return $rows;

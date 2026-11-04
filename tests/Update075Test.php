@@ -12,6 +12,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * runs against ends where it started. Both walk every flagged row in raw, which
  * on the suite's database is these fixtures and whatever the dev install has
  * converted since; up() after down() restores those too.
+ *
+ * On the goal tables under the names they had before Update076, which is what
+ * an upgrade meets here: Update076 is rolled back first and applied again last.
  */
 final class Update075Test extends TestCase
 {
@@ -24,6 +27,8 @@ final class Update075Test extends TestCase
     private array $goals = [];
 
     private \OWA\Module\Base\Update\Update075 $update;
+
+    private ?\OWA\Module\Base\Update\Update076 $renames = null;
 
     protected function setUp(): void
     {
@@ -45,6 +50,9 @@ final class Update075Test extends TestCase
             $this->markTestSkipped('Needs a Profile with a Property.');
         }
 
+        $this->renames = new \OWA\Module\Base\Update\Update076();
+        $this->assertTrue($this->renames->down(), 'the goal tables under their names before Update076');
+
         $this->update = new \OWA\Module\Base\Update\Update075();
         $this->assertTrue($this->update->up());
     }
@@ -60,10 +68,14 @@ final class Update075Test extends TestCase
         \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_event_raw WHERE visitor_id = ?', [self::VISITOR]);
 
         foreach ($this->goals as $id) {
-            \OWA\Core\CoreAPI::entityFactory('base.goal_event')->delete($id);
+            \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition')->namedBefore076()->delete($id);
         }
 
         \OWA\Module\Base\Classes\GoalMarking::forget();
+
+        if ($this->renames) {
+            $this->assertTrue($this->renames->up(), 'the goal tables renamed back');
+        }
     }
 
     public function testTheModuleAsksForIt(): void
@@ -73,7 +85,7 @@ final class Update075Test extends TestCase
             \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
     }
 
-    public function testAGoalEventIsRenamedToAUsableUniqueEventNameAndDownGivesItsNameBack(): void
+    public function testAGoalEventDefinitionIsRenamedToAUsableUniqueEventNameAndDownGivesItsNameBack(): void
     {
         $fine   = $this->goal('Already_fine_75', [['page_path', 'exact', '/z']]);
         $first  = $this->goal('Bookshop.com-Buy', [['page_path', 'exact', '/a']]);
@@ -88,7 +100,7 @@ final class Update075Test extends TestCase
         $names = [$this->goalName($first), $this->goalName($second), $this->goalName($click)];
 
         foreach ($names as $name) {
-            $this->assertSame('', \OWA\Module\Base\Entity\GoalEvent::nameProblem($name), $name);
+            $this->assertSame('', \OWA\Module\Base\Entity\GoalEventDefinition::nameProblem($name), $name);
         }
 
         // The two Bookshop ones are named in id order, which is not creation order.
@@ -179,7 +191,7 @@ final class Update075Test extends TestCase
 
     private function goal(string $name, array $conditions): string
     {
-        $entity = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition')->namedBefore076();
         $id     = $entity->generateId('goal_event:update075:' . uniqid('', true));
 
         $entity->setProperties(['id' => $id, 'property_id' => $this->propertyId, 'name' => $name,
@@ -190,7 +202,7 @@ final class Update075Test extends TestCase
         $this->goals[] = $id;
 
         foreach ($conditions as $n => $c) {
-            $row = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
+            $row = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition_condition')->namedBefore076();
             $row->setProperties(['id' => $row->generateId('goal_event_condition:' . $id . ':' . $n),
                 'goal_event_id' => $id, 'sort_order' => $n + 1, 'condition_property' => $c[0],
                 'condition_operator' => $c[1], 'condition_value' => $c[2],

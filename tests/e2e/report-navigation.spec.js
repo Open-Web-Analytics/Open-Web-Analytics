@@ -218,7 +218,7 @@ test.describe('the navigation on a settings screen', () => {
         await page.goto(`?owa_do=base.sitesInvocation&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
 
         // The Property this Profile is of, as its Property pages name it.
-        const details = await column(page).locator('.owa_navColumnItem', { hasText: 'Goal events' }).getAttribute('href');
+        const details = await column(page).locator('.owa_navColumnItem', { hasText: 'Goal event definitions' }).getAttribute('href');
         const propertyId = propertyOf(details, page.url());
 
         expect(propertyId).toBeTruthy();

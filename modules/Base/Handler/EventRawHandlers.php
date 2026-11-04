@@ -84,7 +84,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
         /*
          * The events this beacon will be saved as, the incoming one first. The
          * callbacks decide: materializers append session_start and first_visit,
-         * goal marking a row per goal event met. See Ingest.
+         * goal marking a goal event per definition met. See Ingest.
          */
         $events = \OWA\Module\Base\Classes\Ingest::at(
             \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, array( $event ) );
@@ -324,7 +324,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'engagement_msec' => $this->number( $event->get( 'engagement_msec' ) ),
 
             /*
-             * Whether this event met a goal event's conditions, set by
+             * Whether this event met a goal event definition's conditions, set by
              * Classes\GoalMarking on the tracking_events_pre_save filter. flag(),
              * because the column is NOT NULL: an event the marking never saw
              * stores 0.

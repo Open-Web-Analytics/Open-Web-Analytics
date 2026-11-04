@@ -2,14 +2,14 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Remove one goal event.
+ * Remove one goal event definition.
  *
- * A real delete, not an archive. Unlike a Profile, a goal event owns no
+ * A real delete, not an archive. Unlike a Profile, a definition owns no
  * collected data: the events it counted are ordinary rows that stay exactly as
  * they are, and what is removed is only the instruction to count them. There is
  * nothing to restore that deleting it destroys.
  */
-class GoalEventDelete extends \OWA\Core\AdminController {
+class GoalEventDefinitionDelete extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 
@@ -20,16 +20,16 @@ class GoalEventDelete extends \OWA\Core\AdminController {
 
     public function validate() {
 
-        $this->addValidation( 'goalEventId', $this->getParam( 'goalEventId' ), 'required' );
+        $this->addValidation( 'goalEventDefinitionId', $this->getParam( 'goalEventDefinitionId' ), 'required' );
     }
 
     function action() {
 
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $goalEvent->delete( $this->getParam( 'goalEventId' ) );
+        $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+        $definition->delete( $this->getParam( 'goalEventDefinitionId' ) );
 
         $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
-        $this->setRedirectAction( 'base.goalEvents' );
+        $this->setRedirectAction( 'base.goalEventDefinitions' );
         $this->set( 'status_code', 3220 );
     }
 }

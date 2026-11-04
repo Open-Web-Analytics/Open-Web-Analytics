@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Controller;
  * Register one custom dimension.
  *
  * Its own screen, reached from the list, like every other record in the admin:
- * a Goal Event, a User, a Site. A refused registration comes back here with the
+ * a Goal Event Definition, a User, a Site. A refused registration comes back here with the
  * reason and what was typed (CustomDimensionSave::errorAction()).
  *
  * CREATE-ONLY. A registered dimension has nothing to edit: its name is the key

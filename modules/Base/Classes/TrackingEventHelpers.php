@@ -551,7 +551,7 @@ class TrackingEventHelpers {
     }
 
     /**
-     * The first-class events a goal event may be triggered by.
+     * The first-class events a goal event definition may be triggered by.
      *
      * Every one, except those config/tracking_events.php declares
      * `goal_trigger` => false: an event that reports on the site rather than
@@ -698,7 +698,7 @@ class TrackingEventHelpers {
      * The properties a materialized event of this name copies from its carrier.
      *
      * propertiesForEvent() less any declared `"materialize": false`, whatever
-     * the name: a goal event's row (Classes\GoalMarking) has a name the site
+     * the name: a goal event (Classes\GoalMarking) has a name the site
      * chose, which isMaterialized() does not know, and copying the carrier's
      * engagement time to it would count that time twice in the session.
      *

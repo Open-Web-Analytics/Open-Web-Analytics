@@ -280,7 +280,7 @@ class Update061 extends \OWA\Core\Update {
             }
 
             // The destination: the goal event Update025 made of this goal.
-            $goal_event_id = \OWA\Module\Base\Classes\Migration\GoalMigrator::goalEventFor( $property, $goal_number );
+            $goal_event_id = \OWA\Module\Base\Classes\Migration\GoalMigrator::goalEventDefinitionFor( $property, $goal_number );
 
             if ( $goal_event_id === null ) {
 
@@ -289,6 +289,7 @@ class Update061 extends \OWA\Core\Update {
 
             } else {
 
+                // The step's key as funnels stored it then; Update076 renames it.
                 $steps[] = array(
                     'name'          => (string) $goal['goal_name'],
                     'goal_event_id' => $goal_event_id,

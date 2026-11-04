@@ -14,17 +14,18 @@
  * the last 30 days (base.visualizationPreview).
  *
  * The form posts the steps as parallel arrays -- stepKind[], stepPath[],
- * stepGoalEventId[], stepName[] -- in row order, so the order on the screen is
- * the order saved. A step is a page path or a goal event; its name is not
- * asked for. A stored name rides along in stepName[] while the step it names is
- * unchanged, and a step with none is named for its page or goal event.
+ * stepGoalEventDefinitionId[], stepName[] -- in row order, so the order on the
+ * screen is the order saved. A step is a page path or a goal event definition;
+ * its name is not asked for. A stored name rides along in stepName[] while the
+ * step it names is unchanged, and a step with none is named for its page or
+ * definition.
  */
 $owa_v      = (array) $view->visualization;
 $owa_type   = (string) ( $view->visualizationType ?: 'funnel' );
 $owa_id     = (string) ( $owa_v['id'] ?? '' );
 $owa_errors = (array) $view->validation_errors;
 $owa_steps  = (array) $view->steps ?: array( array() );
-$owa_goals  = (array) $view->goalEvents;
+$owa_goals  = (array) $view->goalEventDefinitions;
 
 // The errors each step row shows; the rest are shown under the steps.
 $owa_shownErrors = array( 'name' => true, 'constraints' => true );
@@ -93,17 +94,17 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
 
             <h2 id="owa_funnelStepsHeading">Steps <span class="owa_builderRequired">Required</span></h2>
             <p class="owa_builderHelp">In order, first to last. A page is matched on its path; an event is
-                one of this Property's goal events, counted wherever it would count a conversion.</p>
+                one of this Property's goal event definitions, counted wherever it would count a conversion.</p>
 
             <ol class="owa_funnelStepList" id="owa_goalEventFunnel">
             <?php foreach ( $owa_steps as $owa_stepIndex => $owa_step ):?>
             <?php
                 $owa_step     = (array) $owa_step;
                 $owa_stepNo   = (int) $owa_stepIndex + 1;
-                $owa_stepGoal = (string) ( $owa_step['goal_event_id'] ?? '' );
+                $owa_stepGoal = (string) ( $owa_step['goal_event_definition_id'] ?? '' );
                 $owa_stepErrors = array();
 
-                foreach ( array( 'stepName', 'stepPath', 'stepGoalEvent' ) as $owa_key ) {
+                foreach ( array( 'stepName', 'stepPath', 'stepGoalEventDefinition' ) as $owa_key ) {
                     $owa_field = $owa_key . $owa_stepNo;
                     $owa_shownErrors[ $owa_field ] = true;
                     if ( ! empty( $owa_errors[ $owa_field ] ) ) {
@@ -207,13 +208,13 @@ jQuery( function () {
         return {
             kind:          $row.find( '.owa_funnelStepKind' ).val() || 'path',
             path:          jQuery.trim( $row.find( '.owa_funnelStepPath' ).val() || '' ),
-            goal_event_id: $row.find( '.owa_funnelStepGoal' ).val() || '',
+            goal_event_definition_id: $row.find( '.owa_funnelStepGoal' ).val() || '',
             name:          $row.find( '.owa_funnelStepName' ).val() || ''
         };
     }
 
     function valueOf( step ) {
-        return step.kind === 'goal_event' ? step.goal_event_id : step.path;
+        return step.kind === 'goal_event' ? step.goal_event_definition_id : step.path;
     }
 
     /** Numbers, labels and the page/event field each row shows, after any change to the list. */
@@ -227,7 +228,7 @@ jQuery( function () {
 
             $row.find( '.owa_funnelStepNumber' ).text( n );
             $row.find( '.owa_funnelStepPath' ).toggle( ! goal ).attr( 'aria-label', 'Page path of step ' + n );
-            $row.find( '.owa_funnelStepGoal' ).toggle( goal ).attr( 'aria-label', 'Goal event of step ' + n );
+            $row.find( '.owa_funnelStepGoal' ).toggle( goal ).attr( 'aria-label', 'Goal event definition of step ' + n );
             $row.find( '.owa_funnelStepKind' ).attr( 'aria-label', 'What step ' + n + ' matches' );
             $row.find( '.owa_builderMove' ).attr( 'aria-label', 'Move step ' + n );
             $row.find( '.owa_funnelStepRemove' ).attr( 'aria-label', 'Remove step ' + n );

@@ -25,6 +25,9 @@ final class MigrateMoreSourcesTest extends TestCase
     private const SESSION = '1790000000000000421';
     private const PROPERTY = 92000004;
 
+    /** Set while a goal test has the goal tables under their names before Update076. */
+    private ?\OWA\Module\Base\Update\Update076 $renames = null;
+
     protected function setUp(): void
     {
         if (!owa_test_db_available()) {
@@ -53,6 +56,21 @@ final class MigrateMoreSourcesTest extends TestCase
             $this->clean();
             V1Schema::drop();
         }
+
+        if ($this->renames) {
+            $this->assertTrue($this->renames->up(), 'the goal tables renamed back');
+            $this->renames = null;
+        }
+    }
+
+    /**
+     * The goal tables under the names they had before Update076. The goal pass
+     * runs in Update062, which an upgrade reaches before Update076 renames them.
+     */
+    private function goalTablesBefore076(): void
+    {
+        $this->renames = new \OWA\Module\Base\Update\Update076();
+        $this->assertTrue($this->renames->down(), 'the goal tables under their names before Update076');
     }
 
     private function clean(): void
@@ -74,9 +92,13 @@ final class MigrateMoreSourcesTest extends TestCase
         $db->query('DELETE FROM owa_property WHERE id = ?', [self::PROPERTY]);
         \OWA\Core\CoreAPI::settingCacheFlush();
 
+        [$goals, $conditions, $column] = $this->renames
+            ? ['owa_goal_event', 'owa_goal_event_condition', 'goal_event_id']
+            : ['owa_goal_event_definition', 'owa_goal_event_definition_condition', 'goal_event_definition_id'];
+
         foreach ($this->goalIds() as $id) {
-            $db->query('DELETE FROM owa_goal_event_condition WHERE goal_event_id = ?', [$id]);
-            $db->query('DELETE FROM owa_goal_event WHERE id = ?', [$id]);
+            $db->query("DELETE FROM $conditions WHERE $column = ?", [$id]);
+            $db->query("DELETE FROM $goals WHERE id = ?", [$id]);
         }
     }
 
@@ -485,15 +507,17 @@ final class MigrateMoreSourcesTest extends TestCase
     /** v1's record decides which sessions converted; the definition finds the row. */
     public function testARecordedCompletionIsAConversionRowCopiedFromTheRowThatMetTheGoal(): void
     {
+        $this->goalTablesBefore076();
+
         $property = \OWA\Module\Base\Classes\Migration\GoalMigrator::propertyFor(self::SITE);
         [$thanks, $gone] = $this->goalIds();
 
-        $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
+        $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition')->namedBefore076();
         $goal->setProperties(['id' => $thanks, 'property_id' => $property, 'name' => 'Thanks', 'goal_number' => 1,
             'trigger_event_type' => 'page_view', 'condition_match' => 'all', 'is_active' => 1]);
         $goal->create();
 
-        $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
+        $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition_condition')->namedBefore076();
         $condition->setProperties(['id' => (string) ((int) $thanks + 1), 'goal_event_id' => $thanks,
             'condition_property' => 'page_path', 'condition_operator' => 'exact', 'condition_value' => '/thanks']);
         $condition->create();
@@ -545,24 +569,26 @@ final class MigrateMoreSourcesTest extends TestCase
     }
 
     /**
-     * This pass runs in Update062, before Update075 renames the goal events
-     * whose 1.x names are not event names. Stored under the 1.x name, the
-     * migrated conversions and every later one were two goal events in the
-     * Goals report.
+     * This pass runs in Update062, before Update075 renames the goal event
+     * definitions whose 1.x names are not event names. Stored under the 1.x
+     * name, the migrated conversions and every later one were two goal events in
+     * the Goals report.
      */
-    public function testAConversionCarriesTheNameUpdate075GivesItsGoalEvent(): void
+    public function testAConversionCarriesTheNameUpdate075GivesItsGoalEventDefinition(): void
     {
+        $this->goalTablesBefore076();
+
         $property = \OWA\Module\Base\Classes\Migration\GoalMigrator::propertyFor(self::SITE);
         [$form, $taken] = $this->goalIds();
 
         // Slot 2 already has the name slot 1's would become.
         foreach ([[$form, 'Thanks page', 1], [$taken, 'Thanks_page', 2]] as [$id, $name, $n]) {
-            $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
+            $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition')->namedBefore076();
             $goal->setProperties(['id' => $id, 'property_id' => $property, 'name' => $name, 'goal_number' => $n,
                 'trigger_event_type' => 'page_view', 'condition_match' => 'all', 'is_active' => 1]);
             $goal->create();
 
-            $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
+            $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition_condition')->namedBefore076();
             $condition->setProperties(['id' => (string) ((int) $id + 1), 'goal_event_id' => $id,
                 'condition_property' => 'page_path', 'condition_operator' => 'exact', 'condition_value' => '/thanks']);
             $condition->create();
@@ -581,7 +607,7 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertCount(1, $this->rows('Thanks_page_2'), 'the name Update075 gives it');
         $this->assertCount(1, $this->rows('Thanks_page'), 'slot 2 keeps its name');
 
-        // Update075 then gives the goal event that name: one goal event, one name.
+        // Update075 then gives the definition that name: one definition, one name.
         $setting = \OWA\Module\Base\Update\Update075::BEFORE;
 
         try {

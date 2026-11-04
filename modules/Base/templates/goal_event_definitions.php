@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
- * The goal events of one Property.
+ * The goal event definitions of one Property.
  *
  * The goals screen listed twenty numbered rows whether or not anyone had filled
  * them in, because the storage was a fixed-length array and the screen showed
@@ -10,7 +10,7 @@
 ?>
 <div class="panel_headline"><?php echo $view->headline;?></div>
 <div id="panel">
-<div class="owa_panelIntro">A goal event counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted, or every one of an event of your own. Goal events belong to the <strong>Property</strong>, so they count the same way in all of its Observation Profiles.</div>
+<div class="owa_panelIntro">A goal event definition counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted, or every one of an event of your own. Goal event definitions belong to the <strong>Property</strong>, so they count the same way in all of its Observation Profiles.</div>
 
 <?php
 /*
@@ -27,11 +27,11 @@
 <fieldset>
 
     <legend>
-        Goal Events <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
-            'do' => 'base.goalEventEdit', 'propertyId' => $view->propertyId ) );?>">Add New Goal Event</a>)</span>
+        Goal Event Definitions <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
+            'do' => 'base.goalEventDefinitionEdit', 'propertyId' => $view->propertyId ) );?>">Add New Goal Event Definition</a>)</span>
     </legend>
 
-<?php if ( empty( $view->goalEvents ) ):?>
+<?php if ( empty( $view->goalEventDefinitions ) ):?>
 
     <div class="owa_emptyState">
         <p>This Property counts nothing yet.</p>
@@ -50,7 +50,7 @@
             </tr>
         </thead>
         <tbody>
-        <?php foreach ( $view->goalEvents as $owa_ke ):?>
+        <?php foreach ( $view->goalEventDefinitions as $owa_ke ):?>
             <tr>
                 <td><?php $view->out( $owa_ke['name'] );?></td>
                 <td class="owa_goalEventCondition">
@@ -64,15 +64,15 @@
                         <?php endif;?>
                         <span class="owa_goalEventProperty"><?php $view->out( $owa_cond['property'] );?></span>
                         <span class="owa_goalEventOperator"><?php $view->out(
-                            \OWA\Module\Base\Entity\GoalEvent::operators()[ $owa_cond['operator'] ] ?? $owa_cond['operator'] );?></span>
+                            \OWA\Module\Base\Entity\GoalEventDefinition::operators()[ $owa_cond['operator'] ] ?? $owa_cond['operator'] );?></span>
                         <span class="owa_goalEventValue"><?php $view->out( $owa_cond['value'] );?></span>
                     <?php endforeach;?>
-                    <?php elseif ( \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $owa_trigger ) ):?>
+                    <?php elseif ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_trigger ) ):?>
                     every <span class="owa_goalEventTrigger"><?php $view->out( $owa_trigger );?></span>
                     <?php else:?>
                     <?php
                         /*
-                         * A goal event with no condition counts nothing. Said
+                         * A definition with no condition counts nothing. Said
                          * plainly rather than shown as an empty cell: this
                          * install had a goal in exactly this state -- a type
                          * the evaluator has no case for and no URL -- and
@@ -82,11 +82,11 @@
                     <span class="owa_goalEventIncomplete">no condition set &mdash; counts nothing</span>
                     <?php endif;?>
                 </td>
-                <td><?php $view->out( \OWA\Module\Base\Entity\GoalEvent::centsToDecimal( $owa_ke['value'] ) );?></td>
+                <td><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::centsToDecimal( $owa_ke['value'] ) );?></td>
                 <td><?php echo $owa_ke['is_active'] ? 'Active' : 'Inactive';?></td>
                 <td>
-                    <a href="<?php echo $view->makeLink( array( 'do' => 'base.goalEventEdit',
-                        'propertyId' => $view->propertyId, 'goalEventId' => $owa_ke['id'] ) );?>">Edit</a>
+                    <a href="<?php echo $view->makeLink( array( 'do' => 'base.goalEventDefinitionEdit',
+                        'propertyId' => $view->propertyId, 'goalEventDefinitionId' => $owa_ke['id'] ) );?>">Edit</a>
                 </td>
             </tr>
         <?php endforeach;?>

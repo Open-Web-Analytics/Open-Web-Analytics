@@ -1,19 +1,19 @@
 <?php
 namespace OWA\Module\Base\View;
 
-class GoalEventEdit extends \OWA\Core\View {
+class GoalEventDefinitionEdit extends \OWA\Core\View {
 
     function render( $data ) {
 
-        $this->body->set_template( 'goal_event_edit.php' );
+        $this->body->set_template( 'goal_event_definition_edit.php' );
 
-        $goalEvent = (array) $this->get( 'goalEvent' );
+        $definition = (array) $this->get( 'goalEventDefinition' );
 
         $this->body->set( 'headline',
-            ! empty( $goalEvent['id'] ) ? 'Goal Event' : 'New Goal Event' );
+            ! empty( $definition['id'] ) ? 'Goal Event Definition' : 'New Goal Event Definition' );
 
-        $this->body->set( 'goalEvent', $goalEvent );
-        $this->body->set( 'goalEventId', $this->get( 'goalEventId' ) );
+        $this->body->set( 'goalEventDefinition', $definition );
+        $this->body->set( 'goalEventDefinitionId', $this->get( 'goalEventDefinitionId' ) );
         $this->body->set( 'propertyId', $this->get( 'propertyId' ) );
         $this->body->set( 'conditionProperties', $this->get( 'conditionProperties' ) );
 
@@ -28,7 +28,7 @@ class GoalEventEdit extends \OWA\Core\View {
          * forgetting one of these is a blank screen rather than a blank field.
          */
         $this->body->set( 'triggerEvent',
-            $this->get( 'triggerEvent' ) ?: \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT );
+            $this->get( 'triggerEvent' ) ?: \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_DEFAULT );
         $this->body->set( 'triggerEvents', (array) $this->get( 'triggerEvents' ) );
         $this->body->set( 'customTriggerEvents', (array) $this->get( 'customTriggerEvents' ) );
         $this->body->set( 'customTriggerEvent', (string) $this->get( 'customTriggerEvent' ) );

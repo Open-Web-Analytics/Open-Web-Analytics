@@ -11,10 +11,10 @@ namespace OWA\Module\Base\Classes\Migration;
  * v1's recorded goal completions onto the migrated rows (PLAN.html 2.21).
  *
  * v1 recorded a completion per session in a numbered slot (owa_session.goal_N);
- * v2 counts a conversion row, named by the goal event -- by the name Update075
- * gives it, see eventName() -- and flagged is_goal_event = 1
+ * v2 counts a conversion row, named by the goal event definition -- by the
+ * name Update075 gives it, see eventName() -- and flagged is_goal_event = 1
  * (Classes\GoalMarking). For each session v1 says completed
- * goal N, the first migrated row of that session that meets the goal event
+ * goal N, the first migrated row of that session that meets the definition
  * Update025 made of slot N -- its condition compiled exactly as the funnel
  * compiles it -- gets one.
  *
@@ -25,6 +25,9 @@ namespace OWA\Module\Base\Classes\Migration;
  * reported rather than guessed.
  *
  * Runs after the page views: the conversion is copied from one of their rows.
+ *
+ * Runs in Update062, before Update076 renames the definitions' tables, so it
+ * reads them under the names 1.x left (namedBefore076()).
  */
 class GoalMigrator extends FactMigrator {
 
@@ -35,7 +38,7 @@ class GoalMigrator extends FactMigrator {
 
     const NOT_LOCATED = 'goal_not_located';
 
-    /** @var array goal event id => compiled predicate plus 'name', or false */
+    /** @var array definition id => compiled predicate plus 'name', or false */
     private $compiled = array();
 
     /** @var array site_id => property id */
@@ -143,7 +146,7 @@ class GoalMigrator extends FactMigrator {
      *
      * @param  array  $trigger  the stored row's id, yyyymmdd, site_id, visitor_id,
      *                          session_id and ts
-     * @param  string $name     the goal event's name
+     * @param  string $name     the definition's name
      * @return bool   false when the write failed
      */
     public static function storeConversion( array $trigger, $name ) {
@@ -188,7 +191,8 @@ class GoalMigrator extends FactMigrator {
     }
 
     /**
-     * The goal event 1.13's Update025 made of a Property's goal slot, or null.
+     * The goal event definition 1.13's Update025 made of a Property's goal
+     * slot, or null.
      *
      * Read by property and slot, NOT by re-deriving the id Update025 gave it.
      * An installation that ran it while still on 32-bit ids holds a 32-bit id
@@ -196,9 +200,9 @@ class GoalMigrator extends FactMigrator {
      *
      * @return string|null
      */
-    public static function goalEventFor( $property_id, $goal_number ) {
+    public static function goalEventDefinitionFor( $property_id, $goal_number ) {
 
-        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
 
         $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
             'SELECT id FROM %s WHERE property_id = ? AND goal_number = ? ORDER BY id LIMIT 1',
@@ -215,7 +219,7 @@ class GoalMigrator extends FactMigrator {
             $this->properties[ $site_id ] = self::propertyFor( $site_id );
         }
 
-        $id = self::goalEventFor( $this->properties[ $site_id ], $n );
+        $id = self::goalEventDefinitionFor( $this->properties[ $site_id ], $n );
 
         if ( $id === null ) {
 
@@ -224,12 +228,12 @@ class GoalMigrator extends FactMigrator {
 
         if ( ! array_key_exists( $id, $this->compiled ) ) {
 
-            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
 
             $goal->load( $id );
 
             $compiled = $goal->wasPersisted()
-                ? ( new \OWA\Module\Base\Classes\GoalEventPredicate() )->compile( $goal, 'e' )
+                ? ( new \OWA\Module\Base\Classes\GoalEventDefinitionPredicate() )->compile( $goal, 'e' )
                 : false;
 
             $this->compiled[ $id ] = $compiled ? $compiled + array( 'name' => $this->eventName( $goal ) ) : false;
@@ -238,21 +242,21 @@ class GoalMigrator extends FactMigrator {
         return $this->compiled[ $id ] ?: null;
     }
 
-    /** @var array property id => goal event id => its name once Update075 has run */
+    /** @var array property id => definition id => its name once Update075 has run */
     private $renamed = array();
 
     /**
-     * The name a goal event's conversion rows carry: the one Update075 gives
+     * The name a definition's conversion rows carry: the one Update075 gives
      * it, NOT the 1.x name it still has.
      *
-     * This pass runs in Update062, before Update075 renames the goal events
+     * This pass runs in Update062, before Update075 renames the definitions
      * whose 1.x names are not event names ("Contact form" becomes
      * Contact_form). A row stored under the 1.x name would stay under it, and
      * the Goals report would show the migrated conversions and every later one
      * as two goal events. After Update075 nothing is renamed and this is the
-     * name the goal event has, so revertSite() finds the same rows either way.
+     * name the definition has, so revertSite() finds the same rows either way.
      */
-    private function eventName( \OWA\Module\Base\Entity\GoalEvent $goal ) {
+    private function eventName( \OWA\Module\Base\Entity\GoalEventDefinition $goal ) {
 
         $property = (string) $goal->get( 'property_id' );
 
@@ -267,7 +271,7 @@ class GoalMigrator extends FactMigrator {
              * loaded through the entity cache, and Update075 renames with SQL,
              * so after it the cached entity can still carry the 1.x name.
              */
-            $this->renamed[ $property ] = \OWA\Module\Base\Entity\GoalEvent::eventNames( $rows )
+            $this->renamed[ $property ] = \OWA\Module\Base\Entity\GoalEventDefinition::eventNames( $rows )
                 + array_column( $rows, 'name', 'id' );
         }
 
@@ -279,7 +283,7 @@ class GoalMigrator extends FactMigrator {
      *
      * The passes revert in reverse, so this runs before the page views' and
      * reads the same v1 sessions again: each completion's conversion is the
-     * goal event's row in that session.
+     * definition's row in that session.
      *
      * @return int rows deleted
      */

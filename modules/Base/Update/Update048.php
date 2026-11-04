@@ -7,8 +7,8 @@ namespace OWA\Module\Base\Update;
  *
  * Entity::delete() removes one row from one table, and nothing overrode it for
  * a goal event -- so every goal event ever deleted left its conditions behind
- * with nothing able to reach them. Entity\GoalEvent::delete() cascades now; this
- * clears what accumulated before it did.
+ * with nothing able to reach them. Entity\GoalEventDefinition::delete() cascades
+ * now; this clears what accumulated before it did.
  *
  * MEASURED, not suspected. On the test install at the time of writing: 40
  * condition rows, of which 31 pointed at a goal event that no longer existed --
@@ -30,6 +30,9 @@ namespace OWA\Module\Base\Update;
  * IDEMPOTENT: after it runs there are no orphans, so a second run deletes
  * nothing. That also means it is safe on an install where the cascade has always
  * been in place.
+ *
+ * The goal tables are read under the names they had before Update076
+ * (namedBefore076()), which is what an upgrade meets here.
  */
 class Update048 extends \OWA\Core\Update {
 
@@ -39,8 +42,8 @@ class Update048 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
-        $goal      = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $goal      = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
+        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $goal->getTableName() );
@@ -75,7 +78,7 @@ class Update048 extends \OWA\Core\Update {
          */
         foreach ( $orphans as $id ) {
 
-            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
 
             if ( $entity->delete( $id ) === false ) {
 

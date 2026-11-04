@@ -80,7 +80,7 @@ final class FunnelBuilderTest extends TestCase
         $sent = array(
             array( 'kind' => 'path', 'path' => '/blog/', 'name' => '' ),
             array( 'kind' => 'path', 'path' => '', 'name' => 'Left blank' ),
-            array( 'kind' => 'path', 'path' => '/pricing', 'name' => 'Pricing', 'goal_event_id' => '9' ),
+            array( 'kind' => 'path', 'path' => '/pricing', 'name' => 'Pricing', 'goal_event_definition_id' => '9' ),
         );
 
         $preview = new \OWA\Module\Base\Controller\VisualizationPreview( array(

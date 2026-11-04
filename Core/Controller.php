@@ -1177,10 +1177,10 @@ class Controller extends \OWA\Core\Base {
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_sites' ),
                 /*
-                 * Goal events describe a behaviour on the WEBSITE, so they
-                 * belong here and every Profile of it inherits them.
+                 * Goal event definitions describe a behaviour on the WEBSITE,
+                 * so they belong here and every Profile of it inherits them.
                  */
-                array( 'do' => 'base.goalEvents', 'label' => 'Goal events',
+                array( 'do' => 'base.goalEventDefinitions', 'label' => 'Goal event definitions',
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_settings' ),
                 /*

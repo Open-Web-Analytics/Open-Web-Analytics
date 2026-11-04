@@ -75,8 +75,8 @@ final class EntityFactoryResolvesPsr4Test extends TestCase
     public function testAMultiWordEntityNameResolves(): void
     {
         $this->assertInstanceOf(
-            \OWA\Module\Base\Entity\GoalEventCondition::class,
-            \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition'));
+            \OWA\Module\Base\Entity\GoalEventDefinitionCondition::class,
+            \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition_condition'));
     }
 
     /**
@@ -97,7 +97,7 @@ final class EntityFactoryResolvesPsr4Test extends TestCase
         return array(
             'single word'      => array('base.user', 'OWA\\Module\\Base\\Entity\\User'),
             'two words'        => array('base.custom_report', 'OWA\\Module\\Base\\Entity\\CustomReport'),
-            'three words'      => array('base.goal_event_condition', 'OWA\\Module\\Base\\Entity\\GoalEventCondition'),
+            'three words'      => array('base.goal_event_definition_condition', 'OWA\\Module\\Base\\Entity\\GoalEventDefinitionCondition'),
             // Resolves only when the class is really there, so an unknown name
             // falls back instead of naming a class nobody wrote.
             'unknown entity'   => array('base.no_such_entity', null),

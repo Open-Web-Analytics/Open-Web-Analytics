@@ -8,7 +8,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * A funnel step that names a GOAL EVENT has no path, and must still render.
  *
  * VisualizationSave stores a step as ONE of two shapes -- {name, path} or
- * {name, goal_event_id} -- deliberately, so a step cannot carry a stale path
+ * {name, goal_event_definition_id} -- deliberately, so a step cannot carry a stale path
  * beside the goal event it actually counts. Both the result table and the
  * template then read $step['path'] unconditionally, so every render of a funnel
  * ending in a goal produced
@@ -45,21 +45,21 @@ final class FunnelGoalEventStepTest extends TestCase
             $this->markTestSkipped( 'needs a database: the label is read from the goal event row' );
         }
 
-        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
         $goal->set( 'id', $goal->generateId( 'funnel-goal-label-test' ) );
         $goal->set( 'name', 'Completed_Purchase' );
         $goal->set( 'is_active', 1 );
         $goal->create();
 
         try {
-            $label = $this->call( $this->controller(), 'goalEventLabel',
-                array( array( 'goal_event_id' => $goal->get( 'id' ) ) ) );
+            $label = $this->call( $this->controller(), 'goalEventDefinitionLabel',
+                array( array( 'goal_event_definition_id' => $goal->get( 'id' ) ) ) );
 
             $this->assertSame( 'Completed_Purchase', $label );
 
         } finally {
             $db = \OWA\Core\CoreAPI::dbSingleton();
-            $db->query( sprintf( "DELETE FROM owa_goal_event WHERE id = '%s'",
+            $db->query( sprintf( "DELETE FROM owa_goal_event_definition WHERE id = '%s'",
                 $db->prepare( (string) $goal->get( 'id' ) ) ) );
         }
     }
@@ -77,15 +77,15 @@ final class FunnelGoalEventStepTest extends TestCase
         }
 
         $this->assertSame( '',
-            $this->call( $this->controller(), 'goalEventLabel',
-                array( array( 'goal_event_id' => '9999999999999999' ) ) ) );
+            $this->call( $this->controller(), 'goalEventDefinitionLabel',
+                array( array( 'goal_event_definition_id' => '9999999999999999' ) ) ) );
     }
 
     /** A step with neither key is not a goal step, and asks for nothing. */
     public function testAPathStepIsNotTreatedAsAGoalStep(): void
     {
         $this->assertSame( '',
-            $this->call( $this->controller(), 'goalEventLabel',
+            $this->call( $this->controller(), 'goalEventDefinitionLabel',
                 array( array( 'path' => '/ecommerce.php' ) ) ) );
     }
 }

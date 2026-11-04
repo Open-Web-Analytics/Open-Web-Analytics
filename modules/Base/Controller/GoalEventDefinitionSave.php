@@ -2,9 +2,9 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Create or update one goal event.
+ * Create or update one goal event definition.
  */
-class GoalEventSave extends \OWA\Core\AdminController {
+class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 
@@ -15,7 +15,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
     public function validate() {
 
-        // A goal event belongs to a Property; without one it would count nowhere.
+        // A definition belongs to a Property; without one it would count nowhere.
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required', array(
             'stopOnError' => true,
             'errorMsg'    => $this->getMsg( 3218 ),
@@ -34,11 +34,11 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         if ( $name !== '' ) {
 
-            $problem = \OWA\Module\Base\Entity\GoalEvent::nameProblem( $name );
+            $problem = \OWA\Module\Base\Entity\GoalEventDefinition::nameProblem( $name );
 
             if ( $problem === '' && $this->nameTaken( $name ) ) {
 
-                $problem = sprintf( \OWA\Core\CoreAPI::t( 'Another goal event is called %s.' ), $name );
+                $problem = sprintf( \OWA\Core\CoreAPI::t( 'Another goal event definition is called %s.' ), $name );
             }
 
             if ( $problem !== '' ) {
@@ -56,7 +56,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
         /*
          * At least ONE condition with something to compare against.
          *
-         * A goal event with none deliberately matches nothing -- an empty rule
+         * A definition with none deliberately matches nothing -- an empty rule
          * is vacuously true, and counting every event on the site is the worse
          * direction to be wrong in -- so saving one is refused rather than
          * stored inert.
@@ -68,7 +68,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
                 return $value !== '';
             } );
 
-        if ( ! $values && ! \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $this->trigger() ) ) {
+        if ( ! $values && ! \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $this->trigger() ) ) {
 
             $this->addValidation( 'conditionValue', '', 'required', array(
                 'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a value to compare against.' ) ) );
@@ -87,9 +87,9 @@ class GoalEventSave extends \OWA\Core\AdminController {
          */
         $trigger = $this->trigger();
 
-        $problem = $trigger === '' && $this->getParam( 'triggerEvent' ) === \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM
+        $problem = $trigger === '' && $this->getParam( 'triggerEvent' ) === \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM
             ? \OWA\Core\CoreAPI::t( 'Enter the name of the custom event.' )
-            : ( $trigger !== '' ? \OWA\Module\Base\Entity\GoalEvent::triggerProblem( $trigger ) : '' );
+            : ( $trigger !== '' ? \OWA\Module\Base\Entity\GoalEventDefinition::triggerProblem( $trigger ) : '' );
 
         if ( $problem !== '' ) {
 
@@ -99,14 +99,14 @@ class GoalEventSave extends \OWA\Core\AdminController {
         }
 
         /*
-         * NOT THE TRIGGER'S OWN NAME. A conversion row is stored under the goal
-         * event's name, so a goal named newsletter_signup on newsletter_signup
+         * NOT THE TRIGGER'S OWN NAME. A conversion row is stored under the
+         * definition's name, so a goal named newsletter_signup on newsletter_signup
          * would add a second newsletter_signup row for every one the site sent.
          */
         if ( $trigger !== '' && $name !== '' && strcasecmp( $trigger, $name ) === 0 ) {
 
             $this->addValidation( 'name', '', 'required', array( 'errorMsg' => sprintf(
-                \OWA\Core\CoreAPI::t( 'A goal event cannot have the name of the event that triggers it, %s.' ), $trigger ) ) );
+                \OWA\Core\CoreAPI::t( 'A goal event definition cannot have the name of the event that triggers it, %s.' ), $trigger ) ) );
         }
 
         if ( $trigger !== '' ) {
@@ -144,14 +144,14 @@ class GoalEventSave extends \OWA\Core\AdminController {
          */
         foreach ( (array) $this->getParam( 'conditionOperator' ) as $i => $operator ) {
 
-            if ( $operator !== \OWA\Module\Base\Entity\GoalEvent::MATCH_REGEX ) {
+            if ( $operator !== \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_REGEX ) {
 
                 continue;
             }
 
             $pattern = trim( (string) ( ( (array) $this->getParam( 'conditionValue' ) )[ $i ] ?? '' ) );
 
-            if ( $pattern !== '' && @preg_match( \OWA\Module\Base\Entity\GoalEvent::regexPattern( $pattern ), '' ) === false ) {
+            if ( $pattern !== '' && @preg_match( \OWA\Module\Base\Entity\GoalEventDefinition::regexPattern( $pattern ), '' ) === false ) {
 
                 $this->addValidation( 'conditionValue', '', 'required', array(
                     'errorMsg' => \OWA\Core\CoreAPI::t( 'The regular expression is not valid.' ),
@@ -164,19 +164,19 @@ class GoalEventSave extends \OWA\Core\AdminController {
     function action() {
 
         $propertyId = (string) $this->getParam( 'propertyId' );
-        $id         = $this->getParam( 'goalEventId' );
+        $id         = $this->getParam( 'goalEventDefinitionId' );
 
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
 
         if ( $id ) {
 
-            $goalEvent->load( $id );
+            $definition->load( $id );
         }
 
-        $cents = \OWA\Module\Base\Entity\GoalEvent::decimalToCents( $this->getParam( 'value' ) );
+        $cents = \OWA\Module\Base\Entity\GoalEventDefinition::decimalToCents( $this->getParam( 'value' ) );
 
-        $goalEvent->set( 'property_id', $propertyId );
-        $goalEvent->set( 'name', $this->name() );
+        $definition->set( 'property_id', $propertyId );
+        $definition->set( 'name', $this->name() );
         /*
          * ALWAYS once per session, whatever was submitted.
          *
@@ -188,15 +188,15 @@ class GoalEventSave extends \OWA\Core\AdminController {
          *
          * Delete this clamp, not the column, when per-event recording lands.
          */
-        $goalEvent->set( 'count_mode',
-            \OWA\Module\Base\Entity\GoalEvent::COUNT_PER_SESSION );
+        $definition->set( 'count_mode',
+            \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION );
 
-        $goalEvent->set( 'condition_match',
-            $this->getParam( 'conditionMatch' ) === \OWA\Module\Base\Entity\GoalEvent::MATCH_ANY
-                ? \OWA\Module\Base\Entity\GoalEvent::MATCH_ANY
-                : \OWA\Module\Base\Entity\GoalEvent::MATCH_ALL );
-        $goalEvent->set( 'value', $cents === null ? 0 : $cents );
-        $goalEvent->set( 'is_active', $this->getParam( 'isActive' ) ? 1 : 0 );
+        $definition->set( 'condition_match',
+            $this->getParam( 'conditionMatch' ) === \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_ANY
+                ? \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_ANY
+                : \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_ALL );
+        $definition->set( 'value', $cents === null ? 0 : $cents );
+        $definition->set( 'is_active', $this->getParam( 'isActive' ) ? 1 : 0 );
 
         /*
          * The event type the conditions are evaluated against, as chosen.
@@ -214,26 +214,26 @@ class GoalEventSave extends \OWA\Core\AdminController {
          */
         $trigger = $this->trigger();
 
-        $goalEvent->set( 'trigger_event_type', $trigger !== '' ? $trigger
-            : ( $goalEvent->get( 'trigger_event_type' )
-                ?: \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT ) );
+        $definition->set( 'trigger_event_type', $trigger !== '' ? $trigger
+            : ( $definition->get( 'trigger_event_type' )
+                ?: \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_DEFAULT ) );
 
-        if ( $goalEvent->wasPersisted() ) {
+        if ( $definition->wasPersisted() ) {
 
-            $goalEvent->update();
+            $definition->update();
 
         } else {
 
-            $goalEvent->set( 'id', $goalEvent->generateId(
+            $definition->set( 'id', $definition->generateId(
                 'goal_event:' . $propertyId . ':' . uniqid( '', true ) ) );
-            $goalEvent->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
-            $goalEvent->create();
+            $definition->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
+            $definition->create();
         }
 
-        $this->saveConditions( $goalEvent->get( 'id' ) );
+        $this->saveConditions( $definition->get( 'id' ) );
 
         $this->set( 'propertyId', $propertyId );
-        $this->setRedirectAction( 'base.goalEvents' );
+        $this->setRedirectAction( 'base.goalEventDefinitions' );
         $this->set( 'status_code', 3219 );
     }
     /**
@@ -246,13 +246,13 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         $trigger = (string) $this->getParam( 'triggerEvent' );
 
-        return $trigger === \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM
+        return $trigger === \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM
             ? trim( (string) $this->getParam( 'customTriggerEvent' ) )
             : $trigger;
     }
 
     /**
-     * The goal event's name: what was typed for a new one, the stored one for a
+     * The definition's name: what was typed for a new one, the stored one for a
      * saved one. Its conversions are stored under it, so a later save cannot
      * change it.
      *
@@ -260,11 +260,11 @@ class GoalEventSave extends \OWA\Core\AdminController {
      */
     private function name() {
 
-        $id = $this->getParam( 'goalEventId' );
+        $id = $this->getParam( 'goalEventDefinitionId' );
 
         if ( $id ) {
 
-            $existing = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $existing = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
             $existing->load( $id );
 
             if ( $existing->wasPersisted() && (string) $existing->get( 'name' ) !== '' ) {
@@ -276,23 +276,23 @@ class GoalEventSave extends \OWA\Core\AdminController {
         return trim( (string) $this->getParam( 'name' ) );
     }
 
-    /** Whether another goal event of this Property has the name. */
+    /** Whether another definition of this Property has the name. */
     private function nameTaken( $name ) {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
 
         $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
             'SELECT id FROM %s WHERE property_id = ? AND name = ? AND id <> ? LIMIT 1',
             $entity->getTableName() ),
             array( (string) $this->getParam( 'propertyId' ), $name,
-                (string) ( $this->getParam( 'goalEventId' ) ?: '0' ) ) );
+                (string) ( $this->getParam( 'goalEventDefinitionId' ) ?: '0' ) ) );
 
         return ! empty( $row['id'] );
     }
 
-    private function saveConditions( $goalEventId ) {
+    private function saveConditions( $definitionId ) {
 
-        if ( ! $goalEventId ) {
+        if ( ! $definitionId ) {
 
             return;
         }
@@ -300,21 +300,22 @@ class GoalEventSave extends \OWA\Core\AdminController {
         /*
          * The old conditions go through the ENTITY, one at a time by id.
          *
-         * goal_event_condition is cachable and the cache is persisted to disk, so
-         * a raw DELETE by goal_event_id removes the rows and leaves every one of
-         * them still answering from cache under its own id key -- a save that
-         * appears to work and then keeps counting the conditions it replaced.
+         * goal_event_definition_condition is cachable and the cache is persisted
+         * to disk, so a raw DELETE by goal_event_definition_id removes the rows and
+         * leaves every one of them still answering from cache under its own id
+         * key -- a save that appears to work and then keeps counting the
+         * conditions it replaced.
          */
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
         $db->selectColumn( 'id' );
-        $db->where( 'goal_event_id', $goalEventId );
+        $db->where( 'goal_event_definition_id', $definitionId );
 
         foreach ( (array) $db->getAllRows() as $old ) {
 
-            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' )
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )
                 ->delete( $old['id'] );
         }
 
@@ -340,11 +341,11 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
             $number++;
 
-            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' );
 
             $condition->set( 'id', $condition->generateId(
-                'goal_event_condition:' . $goalEventId . ':' . $number ) );
-            $condition->set( 'goal_event_id', $goalEventId );
+                'goal_event_condition:' . $definitionId . ':' . $number ) );
+            $condition->set( 'goal_event_definition_id', $definitionId );
             $condition->set( 'sort_order', $number );
             $condition->set( 'condition_property', $properties[ $i ] ?? '' );
             $condition->set( 'condition_operator', $operators[ $i ] ?? '' );
@@ -358,12 +359,12 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
         /* Re-render the form with what was typed, rather than losing it. */
-        $this->set( 'goalEvent', array(
-            'id'              => $this->getParam( 'goalEventId' ),
+        $this->set( 'goalEventDefinition', array(
+            'id'              => $this->getParam( 'goalEventDefinitionId' ),
             'name'            => $this->name(),
             'condition_match' => $this->getParam( 'conditionMatch' ),
             'count_mode'      => $this->getParam( 'countMode' ),
-            'value'           => \OWA\Module\Base\Entity\GoalEvent::decimalToCents(
+            'value'           => \OWA\Module\Base\Entity\GoalEventDefinition::decimalToCents(
                                      $this->getParam( 'value' ) ) ?: 0,
             'is_active'       => $this->getParam( 'isActive' ) ? 1 : 0,
         ) );
@@ -390,7 +391,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
 
         $this->set( 'conditions', $conditions );
 
-        $this->set( 'goalEventId', $this->getParam( 'goalEventId' ) );
+        $this->set( 'goalEventDefinitionId', $this->getParam( 'goalEventDefinitionId' ) );
         $this->set( 'propertyId', $propertyId );
         /*
          * The SUBMITTED trigger, so the re-rendered form offers the vocabulary of
@@ -403,33 +404,33 @@ class GoalEventSave extends \OWA\Core\AdminController {
          * A custom name that was refused comes back in its field, with the
          * picker on "a custom event", rather than being swapped for the default.
          */
-        if ( $trigger === '' || \OWA\Module\Base\Entity\GoalEvent::triggerProblem( $trigger ) !== '' ) {
+        if ( $trigger === '' || \OWA\Module\Base\Entity\GoalEventDefinition::triggerProblem( $trigger ) !== '' ) {
 
-            $trigger = $this->getParam( 'triggerEvent' ) === \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM
-                ? \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM
-                : \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT;
+            $trigger = $this->getParam( 'triggerEvent' ) === \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM
+                ? \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM
+                : \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_DEFAULT;
         }
 
         $this->set( 'triggerEvent', $trigger );
         $this->set( 'customTriggerEvent', trim( (string) $this->getParam( 'customTriggerEvent' ) ) );
         $this->set( 'triggerEvents',
             \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames() );
-        $this->set( 'customTriggerEvents', GoalEventEdit::customEventNames( $propertyId ) );
+        $this->set( 'customTriggerEvents', GoalEventDefinitionEdit::customEventNames( $propertyId ) );
         $this->set( 'conditionProperties',
-            GoalEventEdit::conditionProperties( $trigger, $conditions ) );
-        $this->set( 'conditionVocabulary', GoalEventEdit::vocabulary() );
+            GoalEventDefinitionEdit::conditionProperties( $trigger, $conditions ) );
+        $this->set( 'conditionVocabulary', GoalEventDefinitionEdit::vocabulary() );
 
         /*
-         * SAVED means stored, not submitted: the properties the goal event's
-         * conditions name in the database. A refused NEW goal event has none, so
+         * SAVED means stored, not submitted: the properties the definition's
+         * conditions name in the database. A refused NEW definition has none, so
          * nothing on the redrawn form is treated as saved.
          */
         $saved = array();
 
-        if ( $this->getParam( 'goalEventId' ) ) {
+        if ( $this->getParam( 'goalEventDefinitionId' ) ) {
 
-            $stored = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-            $stored->load( $this->getParam( 'goalEventId' ) );
+            $stored = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+            $stored->load( $this->getParam( 'goalEventDefinitionId' ) );
 
             foreach ( $stored->get( 'id' ) ? $stored->loadConditions() : array() as $condition ) {
 
@@ -443,6 +444,6 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->set( 'error_code', 3002 );
         $this->setView( 'base.optionsHierarchy' );
-        $this->setSubview( 'base.goalEventEdit' );
+        $this->setSubview( 'base.goalEventDefinitionEdit' );
     }
 }

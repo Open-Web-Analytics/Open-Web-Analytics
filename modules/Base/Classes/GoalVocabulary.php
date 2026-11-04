@@ -15,8 +15,8 @@ namespace OWA\Module\Base\Classes;
  * condition may say, and what Classes\GoalMarking reads. Before this there were
  * three answers. The builder offered every client and server PROPERTY name;
  * marking matched against the tracking event, so it saw property names too; and
- * GoalEventPredicate kept a hand-written map of four v1 names to four v1
- * columns. None of the three agreed with the row that actually gets stored.
+ * GoalEventDefinitionPredicate kept a hand-written map of four v1 names to four
+ * v1 columns. None of the three agreed with the row that actually gets stored.
  *
  * SCOPED BY EVENT TYPE, from the property registry. A condition on element_id is
  * meaningless on a page view -- only a click carries one -- and offering it

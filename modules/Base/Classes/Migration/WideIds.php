@@ -18,7 +18,7 @@ namespace OWA\Module\Base\Classes\Migration;
  * arrives: a row is re-keyed when its id is the crc32 of its own content.
  *
  * ONLY WHERE THE ID IS DERIVED AGAIN TO FIND THE ROW. A 32-bit id that is only
- * ever read back as stored -- a property, a goal event, a favourite -- works as
+ * ever read back as stored -- a property, a goal event definition, a favourite -- works as
  * it is. Where the code derives the id to load the row, the old one is missed
  * and a duplicate written beside it:
  *
