@@ -120,7 +120,7 @@ final class Update076Test extends TestCase
         $this->assertTrue($this->hasColumn('owa_goal_event_condition', 'goal_event_id'));
         $this->assertFalse($this->hasColumn('owa_goal_event_condition', 'goal_event_definition_id'));
 
-        $this->assertSame('Renamed_76', $this->name('owa_goal_event', $id), 'the rows go with the table');
+        $this->assertSame('Renamed_76', $this->definitionNameIn('owa_goal_event', $id), 'the rows go with the table');
         $this->assertSame(1, $this->conditions('owa_goal_event_condition', 'goal_event_id', $id));
 
         $this->assertTrue($this->update->up());
@@ -133,7 +133,7 @@ final class Update076Test extends TestCase
         $this->assertTrue($db->indexExists('owa_goal_event_definition_condition', 'goal_event_definition_id'),
             'the column keeps its index');
 
-        $this->assertSame('Renamed_76', $this->name('owa_goal_event_definition', $id));
+        $this->assertSame('Renamed_76', $this->definitionNameIn('owa_goal_event_definition', $id));
         $this->assertSame(1, $this->conditions('owa_goal_event_definition_condition', 'goal_event_definition_id', $id));
 
         // And the entity reads the definition and its conditions again.
@@ -233,7 +233,7 @@ final class Update076Test extends TestCase
             'SELECT definition FROM owa_custom_report WHERE id = ?', [$id]))['definition'];
     }
 
-    private function name(string $table, string $id): string
+    private function definitionNameIn(string $table, string $id): string
     {
         return (string) ((array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
             "SELECT name FROM $table WHERE id = ?", [$id]))['name'];
