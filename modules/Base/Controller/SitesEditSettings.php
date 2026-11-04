@@ -112,7 +112,15 @@ class SitesEditSettings extends \OWA\Core\AdminController {
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
         $this->setView('base.optionsHierarchy');
-        $this->setSubview('base.sitesProfile');
+        /*
+         * The screen the form is on, as base.profileSettings renders it.
+         *
+         * Drawn here rather than redirected to, as PropertyEdit's refusal is:
+         * a redirect is a GET, and what the form sent would not reach it.
+         * base.sitesProfile is the Profile's details form, which reads none of
+         * these fields.
+         */
+        $this->setSubview('base.profileSettings');
         /*
          * 3002 -- "the form had errors" -- not 3311.
          *
