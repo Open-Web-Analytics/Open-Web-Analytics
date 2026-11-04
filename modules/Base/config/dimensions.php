@@ -77,7 +77,7 @@ return array(
             'description' => 'The month of the year, 1 to 12.' ),
         'yearMonth' => array( 'datePart' => 'yearMonth', 'label' => 'Year / Month',
             'family' => 'time', 'data_type' => 'yyyymm',
-            'description' => 'The year and month together, as 202609 -- one value that sorts chronologically.' ),
+            'description' => 'The year and month together, as 202609: one value that sorts chronologically.' ),
         'day' => array( 'datePart' => 'day', 'label' => 'Day of Month',
             'family' => 'time', 'data_type' => 'integer',
             'description' => 'The day of the month, 1 to 31.' ),
@@ -102,7 +102,7 @@ return array(
          */
         'hour' => array( 'datePart' => 'hour', 'column' => 'ts', 'label' => 'Hour',
             'family' => 'time', 'data_type' => 'integer',
-            'description' => 'The hour of the day, 0 to 23, in the configured timezone. 1.x stored no hour at all.' ),
+            'description' => 'The hour of the day, 0 to 23, in the configured timezone.' ),
         'minute' => array( 'datePart' => 'minute', 'column' => 'ts', 'label' => 'Minute',
             'family' => 'time', 'data_type' => 'integer',
             'description' => 'The minute of the hour, 0 to 59, in the configured timezone.' ),
@@ -110,7 +110,7 @@ return array(
         // grid does not print it as 2,026,092,518.
         'dateHour' => array( 'datePart' => 'dateHour', 'column' => 'ts', 'label' => 'Date + Hour',
             'family' => 'time', 'data_type' => 'yyyymmddhh',
-            'description' => 'The day and hour together, as 2026092518 -- one value that sorts chronologically.' ),
+            'description' => 'The day and hour together, as 2026092518: one value that sorts chronologically.' ),
         'siteId' => array( 'column' => 'site_id', 'label' => 'Profile ID',
             'family' => 'site', 'description' => 'The tracking id of the Observation Profile the event was collected for. Reports cover every Profile of a Property; this breaks them out.' ),
         'profileName' => array( 'column' => 'profile_name', 'label' => 'Profile Name',
@@ -141,7 +141,7 @@ return array(
                 'family' => 'content', 'description' => 'The path of the page with its query string, as it would be typed.' ),
             'fullPageUrl' => array( 'parts' => array( 'host', 'page_path', 'page_query' ),
                 'separator' => array( '', '?' ), 'label' => 'Full Page URL',
-                'family' => 'content', 'description' => "The page's URL without its scheme -- host, path and query string." ),
+                'family' => 'content', 'description' => "The page's URL without its scheme: host, path and query string." ),
 
             /*
              * The referring HOST, which the cube carried as a column and no
@@ -190,13 +190,13 @@ return array(
 
             // ---- traffic source, at session scope -------------------------
             'sessionSource' => array( 'column' => 'source', 'label' => 'Source',
-                'family' => 'traffic source', 'description' => 'Where this session came from -- the tag if there was one, otherwise the referring host without a leading www.' ),
+                'family' => 'traffic source', 'description' => 'Where this session came from: the tag if there was one, otherwise the referring host without a leading www.' ),
             'sessionMedium' => array( 'column' => 'medium', 'label' => 'Medium',
                 'family' => 'traffic source', 'description' => 'How this session arrived: the tagged medium, else organic, referral, ai-agent or (none) for a direct visit.' ),
             'sessionCampaign' => array( 'column' => 'campaign', 'label' => 'Campaign',
                 'family' => 'traffic source', 'description' => 'The campaign this session was tagged with. An untagged session is (direct), (organic), (referral) or (ai-agent), after its medium; a tagged one without a campaign is (not set).' ),
             'sessionChannel' => array( 'column' => 'channel', 'label' => 'Channel',
-                'family' => 'traffic source', 'description' => "What kind of traffic this session was -- Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest -- from the channel rules in conf/channels.php." ),
+                'family' => 'traffic source', 'description' => "What kind of traffic this session was, from the channel rules in conf/channels.php: Direct, Organic Search, Organic Social, Referral, Email, Paid Search, AI Agent and the rest." ),
             'sessionAd' => array( 'column' => 'ad', 'label' => 'Ad',
                 'family' => 'traffic source', 'description' => 'The ad this session was tagged with.' ),
             'sessionSearchTerms' => array( 'column' => 'search_terms', 'label' => 'Search Terms',
@@ -272,7 +272,7 @@ return array(
                 'description' => 'Whether the session was the user\'s first.' ),
             'isEngagedSession' => array( 'column' => 'is_engaged_session', 'label' => 'Engaged Session',
                 'family' => 'visit',
-                'description' => 'Whether the session was engaged: ten seconds, two page views, or a goal.',
+                'description' => 'Whether the session was engaged: ten seconds or more of engagement time, two or more page views, or a goal conversion.',
                 'data_type' => 'boolean' ),
             'sessionId' => array( 'column' => 'session_id', 'label' => 'Session ID',
                 'family' => 'visit', 'description' => 'The identifier of the session the event belongs to.' ),
@@ -316,7 +316,7 @@ return array(
 
             // ---- the event itself -------------------------------------------
             'eventName' => array( 'column' => 'event_type', 'label' => 'Event Name',
-                'family' => 'event', 'description' => 'The name of the event -- page_view, click, session_start.' ),
+                'family' => 'event', 'description' => 'The name of the event, such as page_view, click or session_start.' ),
             /*
              * A flag dimension on the event row, named for GOALS because that
              * is what OWA calls them everywhere else it speaks: is_goal_event,
@@ -375,7 +375,7 @@ return array(
                 'description' => 'The path of the downloaded file.' ),
             'fileExtension' => array( 'column' => 'file_extension', 'label' => 'File Extension',
                 'family' => 'event',
-                'description' => 'The extension of the downloaded file -- pdf, zip, csv.' ),
+                'description' => 'The extension of the downloaded file, such as pdf, zip or csv.' ),
 
             /*
              * SITE SEARCH.

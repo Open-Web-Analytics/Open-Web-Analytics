@@ -9,6 +9,10 @@
  *
  * "Absent" is what the entity layer writes when the event carries no value:
  * Entity::writeValue() asked directly, so the page cannot disagree with it.
+ *
+ *   raw-columns                  every column
+ *   raw-columns-ts-yyyymmdd      only those columns, in that order: the names
+ *                                joined by hyphens, which no column name has
  */
 return static function ( $arg = null ) {
 
@@ -44,7 +48,21 @@ return static function ( $arg = null ) {
     $out = "| Column | Description | Type | Absent | Filled from | In cube |\n"
          . "|---|---|---|---|---|---|\n";
 
-    foreach ( $raw->getColumns() as $name ) {
+    $names = $raw->getColumns();
+
+    if ( $arg !== null ) {
+
+        $only    = explode( '-', $arg );
+        $unknown = array_diff( $only, $names );
+
+        if ( $unknown ) {
+            throw new RuntimeException( 'raw-columns: owa_event_raw has no column ' . implode( ', ', $unknown ) . '.' );
+        }
+
+        $names = $only;
+    }
+
+    foreach ( $names as $name ) {
 
         $col = $raw->getColumn( $name );
 

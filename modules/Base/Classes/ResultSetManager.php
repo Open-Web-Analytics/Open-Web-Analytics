@@ -75,7 +75,26 @@ class ResultSetManager extends \OWA\Core\Base {
     var $limit;
     var $order;
     var $format;
-    var $constraint_operators = array('==','!=','>=', '<=', '>', '<', '=~', '!~', '=@','!@');
+    /**
+     * The constraint operators, in the order a clause is tested against them,
+     * and what each means. The first found in a clause is the one it means, so
+     * a value may contain any operator that comes later.
+     */
+    const CONSTRAINT_OPERATORS = array(
+        '==' => 'is',
+        '!=' => 'is not',
+        '>=' => 'is at least',
+        '<=' => 'is at most',
+        '>'  => 'is greater than',
+        '<'  => 'is less than',
+        '=~' => 'matches the regular expression',
+        '!~' => 'does not match the regular expression',
+        '=@' => 'contains',
+        '!@' => 'does not contain',
+    );
+
+    /** The keys of CONSTRAINT_OPERATORS, set by the constructor. */
+    var $constraint_operators = array();
     var $related_dimensions = array();
     var $related_metrics = array();
     var $resultSet;
@@ -110,6 +129,8 @@ class ResultSetManager extends \OWA\Core\Base {
     
 
     function __construct($db = '') {
+
+        $this->constraint_operators = array_keys( self::CONSTRAINT_OPERATORS );
 
         if ($db) {
             $this->db = $db;

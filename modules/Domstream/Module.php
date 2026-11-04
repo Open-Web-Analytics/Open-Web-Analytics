@@ -29,6 +29,14 @@ class Module extends \OWA\Core\Module {
     /** The event name the recorder sends: dispatched as tracking.domstream. */
     const EVENT_NAME = 'domstream';
 
+    /**
+     * The setting that turns on each feature this module adds to a Profile's
+     * tracking bundle, as TrackerBundle::FEATURE_SETTINGS does for Base's.
+     */
+    const FEATURE_SETTINGS = array(
+        'record' => 'trackDomStream',
+    );
+
     function __construct() {
 
         $this->name = 'domstream';
@@ -140,14 +148,24 @@ class Module extends \OWA\Core\Module {
             return \OWA\Core\CoreAPI::getSetting( 'domstream', $key, 'profile', (string) $site_id );
         };
 
-        if ( ! $setting( 'record' ) ) {
+        $on = array_filter( self::FEATURE_SETTINGS, function ( $command, $key ) use ( $setting ) {
+
+            return (bool) $setting( $key );
+        }, ARRAY_FILTER_USE_BOTH );
+
+        if ( ! $on ) {
 
             return $config;
         }
 
-        $config['options'][]  = array( 'setDomstreamSampleRate', (int) $setting( 'sample_rate' ) );
-        $config['features'][] = array( 'trackDomStream' );
-        $config['plugins'][]  = 'domstream';
+        $config['options'][] = array( 'setDomstreamSampleRate', (int) $setting( 'sample_rate' ) );
+
+        foreach ( $on as $command ) {
+
+            $config['features'][] = array( $command );
+        }
+
+        $config['plugins'][] = 'domstream';
 
         return $config;
     }
@@ -166,6 +184,7 @@ class Module extends \OWA\Core\Module {
 
         $actions['recordings'] = array(
             'label'    => 'Recordings',
+            'description' => "Recordings, filtered to the page's path.",
             'reportId' => 'domstreams',
             'params'   => array( 'pagePath' => 'pagePath' ),
         );

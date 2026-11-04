@@ -109,7 +109,7 @@ return array(
 
         'goalConversions' => array(
             'label'       => 'Goal Conversions',
-            'description' => 'The number of events that met a goal condition.',
+            'description' => 'The number of goal conversions. Each goal event an event meets is one conversion, so one event can convert on several goal events.',
             'group'       => 'Goals',
             'metric_type' => 'count',
             'data_type'   => 'integer',
@@ -405,7 +405,7 @@ return array(
          */
         'goalConversionRatePerSession' => array(
             'label'       => 'Goal Conversion Rate Per Session',
-            'description' => 'The share of sessions that included a goal conversion.',
+            'description' => 'Goal conversions divided by sessions. It counts conversions, not converting sessions, so it can exceed 100%.',
             'group'       => 'Goals',
             'metric_type' => 'ratio',
             'data_type'   => 'percentage',
@@ -471,7 +471,7 @@ return array(
 
         'goalConversionRatePerUser' => array(
             'label'       => 'Goal Conversion Rate Per User',
-            'description' => 'The share of users who triggered a goal conversion.',
+            'description' => 'Goal conversions divided by users. It counts conversions, not converting users, so it can exceed 100%.',
             'group'       => 'Goals',
             'metric_type' => 'ratio',
             'data_type'   => 'percentage',
@@ -511,7 +511,7 @@ return array(
          */
         'totalEngagementTime' => array(
             'label'       => 'Total Engagement Time',
-            'description' => 'Time accrued on pages, in milliseconds. Includes final-page dwell, which 1.x cannot measure.',
+            'description' => 'Time accrued on pages, in milliseconds, including time on the last page of a session.',
             'group'       => 'Site Usage',
             'metric_type' => 'sum',
             'data_type'   => 'milliseconds',
@@ -579,7 +579,7 @@ return array(
          */
         'engagedSessions' => array(
             'label'       => 'Engaged Sessions',
-            'description' => 'Sessions that lasted ten seconds or more, had two or more page views, or met a goal.',
+            'description' => 'Sessions with ten seconds or more of engagement time, two or more page views, or a goal conversion.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',

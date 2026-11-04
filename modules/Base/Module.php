@@ -653,7 +653,7 @@ class Module extends \OWA\Core\Module {
          * consumes the module's backend ingests instead.
          */
         $this->registerJob( 'drain-tracker-ingest', 'drain-tracker-ingest', '* * * * *', array( 'scheduled' => 1 ),
-            'Ingests the beacons waiting in the tracker-ingest queue -- every beacon when queueing is on, and '
+            'Ingests the beacons waiting in the tracker-ingest queue: every beacon when queueing is on, and '
           . 'any whose write failed and is waiting to be retried. A minute with nothing waiting costs a few '
           . 'file checks.' );
 
@@ -672,7 +672,8 @@ class Module extends \OWA\Core\Module {
         $this->registerJob(
             'prune-job-queue', 'jobs-prune',
             \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'prune-job-queue' ) ), array(),
-            'Deletes finished one-off jobs from the job queue: done ones after 7 days, failed ones after 30.' );
+            sprintf( 'Deletes finished one-off jobs from the job queue: done ones after %d days, failed ones after %d.',
+                \OWA\Module\Base\Classes\JobQueue::KEEP_DONE / 86400, \OWA\Module\Base\Classes\JobQueue::KEEP_FAILED / 86400 ) );
 
         /*
          * The reporting cube's build, EVERY FIVE MINUTES. Reports read the
@@ -727,8 +728,9 @@ class Module extends \OWA\Core\Module {
             'apply-custom-dimensions', 'custom-dimension-apply',
             \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'apply-custom-dimensions' ), 15 ),
             array(),
-            'Adds the columns for newly registered custom dimensions to the reporting cubes -- a table rebuild '
-          . 'too slow for the request that registered them. With nothing pending it is one quick read.' );
+            'Adds the columns for newly registered custom dimensions to the reporting cubes. Adding one '
+          . 'rebuilds the table, which is too slow for the request that registered it. With nothing pending '
+          . 'it is one quick read.' );
 
         /*
          * Daily is the right cadence for release announcements: they are not
@@ -983,7 +985,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'model-comparison', 'reports/model-comparison.json' );
         $this->registerReport( 'realtime', array(
             'controller'  => 'base.reportRealtime',
-            'description' => 'Activity on the site in the last thirty minutes, read from incoming events as they arrive and refreshed while the page is open.',
+            'description' => 'Activity on the Property in the last thirty minutes, read from incoming events as they arrive and refreshed while the page is open.',
         ) );
         $this->registerReport( 'document', 'reports/document.json' );
         /*

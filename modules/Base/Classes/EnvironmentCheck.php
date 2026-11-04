@@ -64,7 +64,8 @@ class EnvironmentCheck {
             phpversion(),
             version_compare( phpversion(), self::MIN_PHP_VERSION, '>=' ),
             sprintf( 'OWA needs PHP %s or newer. Ask your host to upgrade, or point '
-                   . 'this virtual host at a newer PHP.', self::MIN_PHP_VERSION ) );
+                   . 'this virtual host at a newer PHP.', self::MIN_PHP_VERSION ),
+            sprintf( 'PHP is %s or later.', self::MIN_PHP_VERSION ) );
 
         /*
          * A database driver: PDO with a MySQL driver, or mysqli. Either one is
@@ -86,7 +87,8 @@ class EnvironmentCheck {
             $drivers ? implode( ', ', $drivers ) : 'none found',
             (bool) $drivers,
             'OWA needs the pdo_mysql or mysqli PHP extension to reach a database. '
-          . 'Install one and restart PHP.' );
+          . 'Install one and restart PHP.',
+            '`pdo_mysql` or `mysqli` is loaded.' );
 
         foreach ( self::REQUIRED_EXTENSIONS as $extension => $what_for ) {
 
@@ -94,7 +96,8 @@ class EnvironmentCheck {
                 sprintf( 'PHP extension: %s', $extension ),
                 extension_loaded( $extension ) ? 'loaded' : 'missing',
                 extension_loaded( $extension ),
-                $what_for . ' Install the ' . $extension . ' extension and restart PHP.' );
+                $what_for . ' Install the ' . $extension . ' extension and restart PHP.',
+                sprintf( '`%s` is loaded.', $extension ) );
         }
 
         // Where OWA writes.
@@ -107,7 +110,8 @@ class EnvironmentCheck {
                 $label,
                 is_writable( $path ) ? 'writable' : 'not writable',
                 is_writable( $path ),
-                sprintf( 'Make %s writable by the user your web server runs as.', $path ) );
+                sprintf( 'Make %s writable by the user your web server runs as.', $path ),
+                sprintf( '`%s` is writable.', substr( $path, strlen( OWA_DIR ) ) ) );
         }
 
         /*
@@ -134,14 +138,16 @@ class EnvironmentCheck {
                 ? sprintf( 'Make %s readable by the user your web server runs as.', $config_file )
                 : sprintf( 'Make %s writable so the installer can create owa-config.php, or '
                          . 'copy owa-config-dist.php to owa-config.php yourself and fill it in.',
-                           $config_dir ) );
+                           $config_dir ),
+            '`owa-config.php` exists and is readable, or its directory is writable so the installer can create it.' );
 
         // The two directories a source checkout does not come with.
         $checks[] = self::check(
             'Dependencies',
             is_dir( OWA_VENDOR_DIR ) ? 'installed' : 'missing',
             is_dir( OWA_VENDOR_DIR ),
-            "Run 'composer install' in the top level OWA directory." );
+            "Run 'composer install' in the top level OWA directory.",
+            '`vendor/` exists.' );
 
         $built = \OWA\Core\Template::assetsAreBuilt();
 
@@ -149,7 +155,8 @@ class EnvironmentCheck {
             'Built assets',
             $built ? 'built' : 'missing',
             $built,
-            "Run 'npm run build' in the top level OWA directory." );
+            "Run 'npm run build' in the top level OWA directory.",
+            'The JavaScript and CSS have been built.' );
 
         return $checks;
     }
@@ -157,15 +164,18 @@ class EnvironmentCheck {
     /**
      * One check, in the shape both callers render.
      *
+     * @param string $requires  what passes, in a sentence, whatever this server
+     *                          has: the wiki's requirements table reads it
      * @return array
      */
-    public static function check( $name, $value, $passed, $msg ) {
+    public static function check( $name, $value, $passed, $msg, $requires = '' ) {
 
         return array(
-            'name'   => $name,
-            'value'  => $value,
-            'passed' => (bool) $passed,
-            'msg'    => $passed ? '' : $msg,
+            'name'     => $name,
+            'value'    => $value,
+            'passed'   => (bool) $passed,
+            'msg'      => $passed ? '' : $msg,
+            'requires' => (string) $requires,
         );
     }
 }

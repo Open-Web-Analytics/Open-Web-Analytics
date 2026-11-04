@@ -8,7 +8,8 @@ class JobsPruneCli extends JobsCli {
     public static function usage() {
 
         return array(
-            'description' => 'Deletes finished one-off jobs: done ones after 7 days, failed ones after 30. Runs on the scheduler as prune-job-queue.',
+            'description' => sprintf( 'Deletes finished one-off jobs: done ones after %d days, failed ones after %d. Runs on the scheduler as prune-job-queue.',
+                \OWA\Module\Base\Classes\JobQueue::KEEP_DONE / 86400, \OWA\Module\Base\Classes\JobQueue::KEEP_FAILED / 86400 ),
             'arguments'   => array(),
         );
     }

@@ -76,6 +76,19 @@ final class WikiDocsReportingRegistryTest extends TestCase
         self::assertExactlyCovers( $raw->getColumns(), self::generate( 'raw-columns' ), 'raw column' );
     }
 
+    /** raw-columns-<a>-<b> is those columns' rows of the full table, in that order. */
+    public function testRawColumnsTakesTheColumnsToShow(): void
+    {
+        $md   = self::generate( 'raw-columns-yyyymmdd-ts-created_at' );
+        $full = self::generate( 'raw-columns' );
+
+        self::assertSame( [ 'yyyymmdd', 'ts', 'created_at' ], self::rowNames( $md ) );
+
+        foreach ( explode( "\n", $md ) as $line ) {
+            self::assertStringContainsString( $line, $full );
+        }
+    }
+
     public function testRawColumnsNameTheTrackingPropertyThatFillsThem(): void
     {
         $md = self::generate( 'raw-columns' );

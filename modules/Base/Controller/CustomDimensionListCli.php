@@ -83,7 +83,8 @@ class CustomDimensionListCli extends CustomDimensionsCli {
      *
      * THE NUMBER IS MEASURED, NOT THE CONSTANT. Twenty is an outer cap; what
      * this server will actually take may be less, and on MySQL 8.0 it is --
-     * 19 on a cube of today's shape, against 25 on 8.4. Printing the cap when
+     * 19 on a cube of today's shape, against at least 20 on 8.4 (see
+     * Cube\Dimensions::MAX_PER_PROPERTY). Printing the cap when
      * the server allows fewer would promise room that a registration then
      * refuses.
      *

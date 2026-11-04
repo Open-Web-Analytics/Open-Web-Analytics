@@ -144,7 +144,7 @@ return function () {
             $code( $id ),
             $what,
             $by,
-            $metrics ? $list( $metrics ) : "The site's metric sets",
+            $metrics ? $list( $metrics ) : "The Property's metric sets",
             $constrained ? implode( '; ', $constrained ) : '—',
         );
     };

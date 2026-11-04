@@ -127,7 +127,7 @@ return array(
     // Whether the session was engaged, on every row of it; the thresholds are
     // in Classes\Cube\IsEngagedSessionStep.
     'is_engaged_session' => array( 'kind' => 'is_engaged_session',
-        'description' => '1 on every row of an engaged session -- at least 10 seconds of engagement, at least 2 page views, or a goal event -- otherwise 0.' ),
+        'description' => '1 on every row of an engaged session, otherwise 0. A session is engaged with at least 10 seconds of engagement, at least 2 page views, or a goal event.' ),
 
     // The session's first event, the mirror of is_exit off the same window.
     'is_entrance' => array( 'kind' => 'is_entrance',

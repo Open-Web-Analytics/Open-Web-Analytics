@@ -183,7 +183,15 @@ class TrackerBundle {
 
         // The page view is the hit, not a feature the tracker starts: a command,
         // and the preamble drops it when the page queues its own.
-        $features = $get( 'tracker_page_views' ) ? array( array( 'trackPageView' ) ) : array();
+        $features = array();
+
+        foreach ( self::HIT_SETTINGS as $setting => $command ) {
+
+            if ( $get( $setting ) ) {
+
+                $features[] = array( $command );
+            }
+        }
 
         $config = \OWA\Core\CoreAPI::filter( 'tracker_bundle_config',
             array( 'options' => $options, 'features' => $features, 'plugins' => array() ),
@@ -195,6 +203,14 @@ class TrackerBundle {
             'plugins'  => array_values( array_unique( (array) ( $config['plugins'] ?? array() ) ) ),
         );
     }
+
+    /**
+     * The Profile setting that queues each hit command: sent by the bundle,
+     * not started by the tracker from its features option.
+     */
+    const HIT_SETTINGS = array(
+        'tracker_page_views' => 'trackPageView',
+    );
 
     /** The Profile setting that turns each of the tracker's features on. */
     const FEATURE_SETTINGS = array(
@@ -636,8 +652,8 @@ class TrackerBundle {
 
     /**
      * Publish one Profile's bundle now, as a save of its settings does
-     * (PLAN 2.30.7); if that cannot be done, queue it rather than leave the
-     * Profile on its old settings until the daily check.
+     * (PLAN 2.30.7); if that cannot be done, queue it for the scheduler
+     * rather than leave the Profile on its old settings.
      *
      * @param  string $site_id
      * @return bool whether it was published now
@@ -662,7 +678,8 @@ class TrackerBundle {
      * only the bundles that are stale.
      *
      * Before the job queue exists -- an install mid-upgrade -- there is
-     * nothing to queue on, and the daily publish-trackers covers it.
+     * nothing to queue on. Nothing runs publish-trackers on a schedule, so
+     * the bundles wait for cmd=update or cmd=publish-trackers.
      *
      * @return string|false the job's id
      */

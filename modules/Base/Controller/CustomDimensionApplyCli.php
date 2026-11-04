@@ -40,9 +40,9 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
     public static function usage() {
 
         return array(
-            'description' => 'Adds the columns of newly registered custom dimensions to the reporting cubes, and drops those of deregistered ones. Runs on the scheduler as apply-custom-dimensions.',
+            'description' => 'Adds the columns of newly registered custom dimensions to the reporting cubes. Runs on the scheduler as apply-custom-dimensions.',
             'arguments'   => array(
-                'property=<id>' => 'Apply only this Property\'s. Defaults to every cube with something pending.',
+                'property=<id>' => 'Bring only this Property\'s cube into line with its registrations, dropping the columns of removed dimensions as well as adding new ones. Without it, only cubes with a registration pending or failed are changed, so a cube whose only change is a removal waits for its next build.',
             ),
         );
     }
