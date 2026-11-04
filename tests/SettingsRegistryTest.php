@@ -736,4 +736,33 @@ final class SettingsRegistryTest extends TestCase
         $this->assertSame( array_values( array_unique( $actions ) ), $actions, 'a page is listed more than once' );
         $this->assertSame( $first, $again );
     }
+
+    /**
+     * Asking for the panels registers the fieldsets the pages render, every
+     * time. A once-per-request guard left a reset fieldset registry empty, and
+     * the General page rendered only its group's fieldsets.
+     */
+    public function testAskingForTheSettingsPanelsAgainRegistersTheirFieldsetsAgain(): void
+    {
+        \OWA\Core\CoreAPI::getAdminPanels();
+
+        $config = \OWA\Core\CoreAPI::configSingleton();
+        $p      = new ReflectionProperty( \OWA\Module\Base\Classes\Settings::class, 'fieldsets' );
+        $p->setAccessible( true );
+        $before = $p->getValue( $config );
+
+        $this->assertArrayHasKey( 'base.tracking', (array) $before );
+
+        try {
+
+            $p->setValue( $config, array() );
+            \OWA\Core\CoreAPI::getAdminPanels();
+
+            $this->assertArrayHasKey( 'base.tracking', (array) $config->registeredFieldSets() );
+
+        } finally {
+
+            $p->setValue( $config, $before );
+        }
+    }
 }
