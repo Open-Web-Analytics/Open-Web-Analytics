@@ -1086,10 +1086,10 @@ test.describe('the report grid gives every widget a usable width', () => {
 });
 
 /**
- * Visitors' rows are grouped by how tall they draw: the two share charts --
- * new or returning, device type, each a few values -- side by side, then the
- * lists in pairs: countries and loyalty, browsers and operating systems. Each
- * widget that has a fuller report links to it.
+ * Visitors' cards are in rows of like cardinality: new or returning, device
+ * type and loyalty each have a handful of values, so they share the first row;
+ * countries, browsers and operating systems each have many and share the
+ * second. Each card that has a fuller report links to it.
  */
 test.describe('the visitors overview', () => {
 
@@ -1099,43 +1099,34 @@ test.describe('the visitors overview', () => {
         await openConfiguredReport(page, { reportId: 'visitors' });
     });
 
-    test('draws the share charts as one row and the lists in pairs, each linking to its report', async ({ page }) => {
-        for (const id of ['visitor-types', 'device-types']) {
-            await expect(page.locator(`#${id} .owa_shareRow`).first(), `${id} drew no shares`)
-                .toBeVisible({ timeout: 20_000 });
-        }
+    test('puts the few-valued cards on one row and the many-valued on the next, each linking to its report', async ({ page }) => {
+        await expect(page.locator('#visitor-types .owa_shareRow').first()).toBeVisible({ timeout: 20_000 });
 
-        const lists = ['visitor-countries', 'visitor-loyalty', 'top-browsers', 'top-operating-systems'];
-
-        for (const id of lists) {
-            await expect(page.locator(`#${id} tr.owa_gridRow`).first(), `${id} drew no rows`)
-                .toBeVisible({ timeout: 20_000 });
-        }
+        const cards = [
+            ['device-types', 'devices'],
+            ['visitor-loyalty', 'visitors-loyalty'],
+            ['visitor-countries', 'geolocation'],
+            ['top-browsers', 'browsers'],
+            ['top-operating-systems', 'os'],
+        ];
 
         const item = id => page.locator(`#${id}`).locator('xpath=ancestor::*[contains(@class,"owa_reportGridItem")][1]');
 
-        for (const [id, reportId] of [
-            ['device-types', 'devices'],
-            ['visitor-countries', 'geolocation'],
-            ['visitor-loyalty', 'visitors-loyalty'],
-            ['top-browsers', 'browsers'],
-            ['top-operating-systems', 'os'],
-        ]) {
+        for (const [id, reportId] of cards) {
+            await expect(page.locator(`#${id} tr.owa_gridRow`).first(), `${id} drew no rows`)
+                .toBeVisible({ timeout: 20_000 });
             await expect(item(id).locator('.owa_moreLinks a')).toHaveAttribute('href', new RegExp(`reportId=${reportId}(&|$)`));
         }
 
-        const top = async id => Math.round((await item(id).boundingBox()).y);
-        const rows = [['visitor-types', 'device-types'], lists.slice(0, 2), lists.slice(2)];
+        // 1440 leaves the grid over 940px, so a third is still a third.
         const tops = [];
-
-        for (const row of rows) {
-            const y = await Promise.all(row.map(top));
-            expect(new Set(y).size, `${row.join(' + ')} share a row`).toBe(1);
-            tops.push(y[0]);
+        for (const id of ['visitor-types', ...cards.map(([c]) => c)]) {
+            tops.push(Math.round((await item(id).boundingBox()).y));
         }
 
-        expect(tops[1]).toBeGreaterThan(tops[0]);
-        expect(tops[2]).toBeGreaterThan(tops[1]);
+        expect(new Set(tops.slice(0, 3)).size, 'visitor types, device types and loyalty share a row').toBe(1);
+        expect(new Set(tops.slice(3)).size, 'countries, browsers and operating systems share a row').toBe(1);
+        expect(tops[3]).toBeGreaterThan(tops[0]);
     });
 });
 

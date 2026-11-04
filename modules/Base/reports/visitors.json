@@ -20,7 +20,7 @@
             "id": "visitorTypes",
             "container": "visitor-types",
             "title": "Visitor Types",
-            "colspan": 6,
+            "colspan": 4,
             "chartMetric": "sessions",
             "query": {
                 "metrics": "sessions",
@@ -29,12 +29,11 @@
             }
         },
         {
-            "type": "pie",
+            "type": "grid-card",
             "id": "deviceTypes",
             "container": "device-types",
             "title": "Device Types",
-            "colspan": 6,
-            "chartMetric": "sessions",
+            "colspan": 4,
             "query": {
                 "metrics": "sessions",
                 "dimensions": "deviceType",
@@ -42,21 +41,6 @@
             },
             "more": {
                 "reportId": "devices"
-            }
-        },
-        {
-            "type": "grid-card",
-            "id": "countries",
-            "container": "visitor-countries",
-            "title": "Countries",
-            "colspan": 6,
-            "query": {
-                "metrics": "sessions",
-                "dimensions": "country",
-                "sort": "sessions-"
-            },
-            "more": {
-                "reportId": "geolocation"
             }
         },
         {
@@ -72,14 +56,29 @@
             "more": {
                 "reportId": "visitors-loyalty"
             },
-            "colspan": 6
+            "colspan": 4
+        },
+        {
+            "type": "grid-card",
+            "id": "countries",
+            "container": "visitor-countries",
+            "title": "Countries",
+            "colspan": 4,
+            "query": {
+                "metrics": "sessions",
+                "dimensions": "country",
+                "sort": "sessions-"
+            },
+            "more": {
+                "reportId": "geolocation"
+            }
         },
         {
             "type": "grid-card",
             "id": "browserTypes",
             "container": "top-browsers",
             "title": "Browser Types",
-            "colspan": 6,
+            "colspan": 4,
             "query": {
                 "metrics": "sessions",
                 "dimensions": "browserType",
@@ -94,7 +93,7 @@
             "id": "operatingSystems",
             "container": "top-operating-systems",
             "title": "Operating Systems",
-            "colspan": 6,
+            "colspan": 4,
             "query": {
                 "metrics": "sessions",
                 "dimensions": "osType",
