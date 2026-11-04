@@ -438,16 +438,16 @@ class SystemHealth {
         return $n . ' bytes';
     }
 
-    /**
-     * The installation itself: what is running, and the environment checks
-     * the installer runs (Classes\EnvironmentCheck, shared with cmd=instance-info).
-     */
     /** A build hash, short enough to read; 'none' for no build or none recorded. */
     private static function shortBuild( $hash ) {
 
         return $hash === '' ? 'none' : substr( $hash, 0, 12 );
     }
 
+    /**
+     * The installation itself: what is running, and the environment checks
+     * the installer runs (Classes\EnvironmentCheck, shared with cmd=instance-info).
+     */
     public static function installation() {
 
         $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule( 'base' );
