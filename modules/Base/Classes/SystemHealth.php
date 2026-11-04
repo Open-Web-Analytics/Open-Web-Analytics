@@ -107,17 +107,11 @@ class SystemHealth {
                 SchedulerHealth::cronLine() );
         }
 
-        if ( \OWA\Core\CoreAPI::isSchemaUpdateRequired() ) {
-
-            $findings[] = self::finding( 'red', 'Schema updates pending',
-                'Every job is refused until they are applied.', 'php cli.php cmd=update' );
-
-        } elseif ( \OWA\Core\CoreAPI::isUpdateRequired() ) {
-
-            $findings[] = self::finding( 'yellow', 'Update pending',
-                'An update that changes no schema -- a new tracker -- is waiting. Jobs still run.',
-                'php cli.php cmd=update' );
-        }
+        /*
+         * A pending update, schema or not, is not a finding here. While one is
+         * pending every admin screen, this one included, shows the updater
+         * instead. cmd=schedule-status reports it.
+         */
 
         if ( ! $findings ) {
 
