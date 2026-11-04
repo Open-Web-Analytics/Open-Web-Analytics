@@ -70,9 +70,8 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * In the Instance section, and only while the module is active. `group`
-     * 'Modules' named a section the nav never builds, so the page was dropped
-     * from it.
+     * In the Instance section, and only while the module is active: the nav
+     * drops a section it does not build.
      */
     function registerAdminPanels() {
 

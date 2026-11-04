@@ -114,9 +114,8 @@ class Module extends \OWA\Core\Module {
      * same reason: an installation not doing GeoIP lookups should not be shown
      * settings for it.
      *
-     * In the Instance section, after Base's pages. It said `group` 'Modules',
-     * which became a section the nav never builds, and the nav drops a section
-     * it did not build -- so the page had no entry anywhere.
+     * In the Instance section, after Base's pages: the nav drops a section it
+     * does not build.
      */
     function registerAdminPanels() {
 

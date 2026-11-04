@@ -341,10 +341,8 @@ class CustomReports {
      * it is broken down by -- a trend of visits by month, over months, is not a
      * chart anybody meant to ask for.
      *
-     * Read from the registry rather than kept as a list here. The list was a
-     * copy and had drifted: it spelled dayOfWeek, dayOfYear and weekOfYear in
-     * lower case, so the strict match never refused them, and it had no
-     * yearMonth, hour, minute or dateHour.
+     * Read from the registry rather than kept as a list here, so a time
+     * dimension added there is refused here too.
      *
      * @return string[]
      */
