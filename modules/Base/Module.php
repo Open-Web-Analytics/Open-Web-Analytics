@@ -291,18 +291,7 @@ class Module extends \OWA\Core\Module {
             array( '\OWA\Module\Base\Classes\GoalMarking', 'mark' ), 100 );
     }
 
-    
-    /**
-     * Register this module's actions against their controllers.
-     *
-     * Registration is the only way an action is reached: CoreAPI::performAction()
-     * resolves a request's 'do' param through this table alone, and answers any
-     * name not in it as a missing page.
-     *
-     * Class names are the PSR-4 names, so Composer autoloads them and
-     * simpleFactory() never touches the filesystem; the path is kept as a
-     * fallback for a broken autoloader.
-     */
+
     /**
      * Fieldsets rendered below the install, by SettingsForm::scopedFieldSet():
      * each field shows what it inherits until its Override switch is on.
@@ -401,6 +390,17 @@ class Module extends \OWA\Core\Module {
         }
     }
 
+    /**
+     * Register this module's actions against their controllers.
+     *
+     * Registration is the only way an action is reached: CoreAPI::performAction()
+     * resolves a request's 'do' param through this table alone, and answers any
+     * name not in it as a missing page.
+     *
+     * Class names are the PSR-4 names, so Composer autoloads them and
+     * simpleFactory() never touches the filesystem; the path is kept as a
+     * fallback for a broken autoloader.
+     */
     function registerActions() {
 
         $this->registerScopedSettingsFieldSets();
@@ -591,18 +591,6 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * Register Scheduled Jobs
-     *
-     * Run by cmd=schedule-run, which belongs in cron every minute:
-     *
-     *   * * * * * cd /path/to/owa && php cli.php cmd=schedule-run
-     *
-     * Each job below says why it ships; ScheduleCliTest names the list
-     * exactly, so adding one is a decision rather than a detail. An
-     * installation retunes or turns one off in OWA_SCHEDULED_JOBS -- see
-     * Settings::applyConfigConstants().
-     */
-    /**
      * A stable seed for spreading one daily job, per install and per job.
      *
      * The fallbacks matter: an install that has not been configured yet has no
@@ -627,6 +615,18 @@ class Module extends \OWA\Core\Module {
         return $seed . '|' . $job;
     }
 
+    /**
+     * Register Scheduled Jobs
+     *
+     * Run by cmd=schedule-run, which belongs in cron every minute:
+     *
+     *   * * * * * cd /path/to/owa && php cli.php cmd=schedule-run
+     *
+     * Each job below says why it ships; ScheduleCliTest names the list
+     * exactly, so adding one is a decision rather than a detail. An
+     * installation retunes or turns one off in OWA_SCHEDULED_JOBS -- see
+     * Settings::applyConfigConstants().
+     */
     function registerJobs() {
 
         // The NAME is deliberately not the command name. They are separate
@@ -954,24 +954,6 @@ class Module extends \OWA\Core\Module {
      */
     function registerDimensions() {}
 
-    /**
-     * The dimensions that read a Property's reporting cube.
-     *
-     * EVERY ONE IS DENORMALISED, and that is structural rather than a choice:
-     * the cube carries its values as columns on the event row, so there is no
-     * dimension table to join and no foreign key to name. Two things follow.
-     *
-     * The join disappears -- `denormalized` is what tells ResultSetManager to
-     * group by a column instead of joining a satellite -- and so does the
-     * name-collision problem, because `registerDimension()` keys a denormalised
-     * entry by ENTITY (`[$name][$entity]`) while a normalised one is keyed by
-     * name alone and the last write wins. A cube dimension sharing a name with
-     * a v1 one therefore sits beside it rather than replacing it.
-     *
-     * These are inert until something asks for them: an entity reaches a query
-     * only by being able to compute one of its metrics, and no v1 metric is
-     * registered against the cube.
-     */
     /**
      * Every report this module offers, under the id it is reached by.
      *
