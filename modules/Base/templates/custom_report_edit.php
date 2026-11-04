@@ -369,8 +369,8 @@ $owa_max        = (int) $view->get('max_widgets');
     var NEW_COLSPANS = <?php echo json_encode( (object) \OWA\Module\Base\Classes\CustomReports::NEW_WIDGET_COLSPANS ); ?>;
 
     // The widths and heights the panel offers, and how a card says them.
-    var WIDTHS       = [ [ 4, 'Third' ], [ 6, 'Half' ], [ 8, 'Two thirds' ], [ 12, 'Full' ] ];
-    var HEIGHTS      = [ [ 1, 'Short' ], [ 2, 'Tall' ] ];
+    var WIDTHS       = <?php echo json_encode( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::WIDTHS ), \OWA\Module\Base\Classes\CustomReports::WIDTHS ) ); ?>;
+    var HEIGHTS      = <?php echo json_encode( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::HEIGHTS ), \OWA\Module\Base\Classes\CustomReports::HEIGHTS ) ); ?>;
     var WIDTH_WORDS  = { 12: 'Full width', 8: 'Two thirds', 6: 'Half width', 4: 'One third', 3: 'One quarter' };
     var HEIGHT_WORDS = { 1: 'short', 2: 'tall' };
 
@@ -428,13 +428,8 @@ $owa_max        = (int) $view->get('max_widgets');
 
     var SINGLE_METRIC_TYPES = <?php echo json_encode( array_values( (array) $view->get('single_metric_types') ) ); ?>;
 
-    /*
-     * Types that show totals rather than a breakdown, so there is nothing to
-     * group by. Unlike FIXED_DIMENSIONS this is only about the FORM: a
-     * hand-written metric-boxes widget with dimensions is not refused, it is
-     * simply not something this screen asks for.
-     */
-    var UNGROUPED_TYPES = [ 'metric-boxes' ];
+    // Types that show totals, so the form asks for no dimensions; see CustomReports::UNGROUPED_TYPES.
+    var UNGROUPED_TYPES = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::UNGROUPED_TYPES ); ?>;
 
     function fixedDimension( type ) {
         return Object.prototype.hasOwnProperty.call( FIXED_DIMENSIONS, type )

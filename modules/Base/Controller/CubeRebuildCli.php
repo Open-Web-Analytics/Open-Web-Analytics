@@ -44,13 +44,12 @@ namespace OWA\Module\Base\Controller;
  * rather than two (2.5.1): at a quarter-hourly cadence on a monthly partition,
  * the last run of the month rewrites a month.
  *
- * REGISTERED AS `rebuild-cube`, daily and spread. One job, not the two cadences
- * 2.5.1 eventually wants: the default range is yesterday and today, so a daily
- * run keeps the cube a day fresh, and nothing reports over owa_event yet -- a
- * quarter-hourly run would buy freshness no reader can see while paying a swap
- * every fifteen minutes.
+ * REGISTERED AS `rebuild-cube`, every five minutes at a spread offset
+ * (Cron::minutelySpreadFor()). The default range is yesterday and today, and a
+ * routine run skips the partitions that have not changed, so most runs cost a
+ * scan per partition and no swap.
  *
- * TWO CADENCES ARE INTENDED EVENTUALLY, one job each, because they answer
+ * TWO CADENCES ARE POSSIBLE, one job each, because they answer
  * different questions. A frequent run over the current partition sets how stale
  * a report can be; an infrequent run over the trailing window is where a late
  * first_visit or a session that closed after the last rebuild is picked up. An
@@ -88,12 +87,12 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         return array(
             'description' => 'Rebuilds the reporting cubes from the raw event table, one partition at a time. With no property=, covers every existing cube and every Property with raw events in the range, creating a cube on a Property\'s first data. Dates select partitions, so a range is widened to the whole partitions it touches.',
             'arguments'   => array(
-                'from=<yyyymmdd>' => 'First date to rebuild. Defaults to yesterday.',
-                'to=<yyyymmdd>'   => 'Last date to rebuild. Defaults to today.',
-                'days=<n>'        => 'The last n days, today included. Instead of from= and to=.',
-                'property=<id>'   => 'Rebuild only this Property\'s cube.',
-                '--dry-run'       => 'Print the statements a build would run, and run nothing.',
-                'steps=1'         => 'Print per-step timings and counts.',
+                'from=<yyyymmdd>' => 'First date to rebuild. With no to=, the range runs through today. With no dates at all, the range is yesterday and today, and a cube that is behind is caught up from its oldest unsettled partition.',
+                'to=<yyyymmdd>'   => 'Last date to rebuild, inclusive. With no from=, the range starts today.',
+                'days=<n>'        => 'The last n days, today included. n must be 1 or more. Ignored when from= or to= is given.',
+                'property=<id>'   => 'Rebuild only this Property\'s cube, whether or not it has collected anything in the range.',
+                '--dry-run'       => 'Print each partition\'s build statement, and change nothing. Says whether a missing cube would be created.',
+                'steps=1'         => 'After each partition, print the time and row count of every build step.',
             ),
         );
     }

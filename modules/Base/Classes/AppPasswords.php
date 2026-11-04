@@ -32,8 +32,11 @@ class AppPasswords {
 
     const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-    /** GET only. */
+    /** The READ_METHODS only. */
     const SCOPE_READ = 'read';
+
+    /** The request methods a SCOPE_READ password is accepted on (Core\Auth). */
+    const READ_METHODS = array( 'GET', 'HEAD' );
 
     /** Whatever the user's role allows. */
     const SCOPE_FULL = 'full';

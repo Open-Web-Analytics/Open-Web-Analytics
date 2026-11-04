@@ -1,6 +1,6 @@
 {
     "title": "Forms",
-    "description": "Forms started and submitted, site-wide and by the page the form was on, with the share of starts that were submitted.",
+    "description": "Forms started and submitted, across the Property and by the page the form was on, with the share of starts that were submitted.",
     "metrics": "formStarts,formSubmits,formSubmitRate",
     "widgets": [
         {

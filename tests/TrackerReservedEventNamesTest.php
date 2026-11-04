@@ -17,7 +17,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  *
  * The reserved list IS the first-class list -- page_view, click, scroll,
  * file_download, form_start, form_submit, session_start, first_visit,
- * user_engagement, view_search_results. Reusing one puts a site's counts into a
+ * user_engagement, view_search_results, purchase, refund. Reusing one puts a site's counts into a
  * report measuring something else.
  *
  * THE TWO LISTS CANNOT BE DERIVED FROM EACH OTHER: one is PHP reading a JSON file

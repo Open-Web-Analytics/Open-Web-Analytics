@@ -257,14 +257,27 @@ class Service extends \OWA\Core\Base {
     }
 
     /**
-     * Commands that must never be scheduled, however they are named.
+     * Commands that must never be scheduled, however they are named, and why.
      *
-     * install and update re-run schema installation and mutate the schema out
-     * from under the running process; reset-secrets rewrites owa-config.php.
      * Checked against the COMMAND rather than the job name, so a friendly label
      * cannot smuggle one past.
      */
-    const NEVER_SCHEDULE = array( 'install', 'update', 'reset-secrets' );
+    const NEVER_SCHEDULE = array(
+        'install'       => 'Re-runs schema installation.',
+        'update'        => 'Changes the schema underneath the running process.',
+        'reset-secrets' => 'Rewrites owa-config.php.',
+    );
+
+    /**
+     * The keys an OWA_SCHEDULED_JOBS entry may give, and what each means.
+     * applyConfiguredJobs() copies exactly these onto the job.
+     */
+    const SCHEDULED_JOB_KEYS = array(
+        'command'     => 'The CLI command to run. Required for a job OWA does not register itself.',
+        'schedule'    => 'A cron expression, an `@` alias, or `off`. Required for a job OWA does not register itself.',
+        'params'      => 'Arguments passed to the command, as `name => value` pairs: `array( \'days\' => 3 )` runs the command with `days=3`.',
+        'description' => 'A sentence for the System Health screen and `schedule-status`.',
+    );
 
     /**
      * Build the job registry: what modules registered, overlaid with what
@@ -366,10 +379,12 @@ class Service extends \OWA\Core\Base {
 
             $job['source'] = $known ? 'config-override' : 'config';
 
-            if ( isset( $spec['command'] ) )  { $job['command']  = (string) $spec['command']; }
-            if ( isset( $spec['schedule'] ) ) { $job['schedule'] = (string) $spec['schedule']; }
-            if ( isset( $spec['params'] ) )   { $job['params']   = (array) $spec['params']; }
-            if ( isset( $spec['description'] ) ) { $job['description'] = (string) $spec['description']; }
+            foreach ( array_keys( self::SCHEDULED_JOB_KEYS ) as $key ) {
+
+                if ( isset( $spec[ $key ] ) ) {
+                    $job[ $key ] = $key === 'params' ? (array) $spec[ $key ] : (string) $spec[ $key ];
+                }
+            }
 
             // A command nothing answers to would otherwise be listed as a
             // healthy job with a next-due time, and only fail silently at
@@ -384,7 +399,7 @@ class Service extends \OWA\Core\Base {
                 continue;
             }
 
-            if ( in_array( $job['command'], self::NEVER_SCHEDULE, true ) ) {
+            if ( isset( self::NEVER_SCHEDULE[ $job['command'] ] ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
                     'OWA_SCHEDULED_JOBS: "%s" runs %s, which must never be scheduled. Skipping it.',

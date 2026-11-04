@@ -242,7 +242,7 @@ return array(
             'type'     => 'text',
             'label'    => 'Excluded IP Addresses',
             'description' =>
-                'Enter a comma seperated list of the IP addresses that you wish to '
+                'Enter a comma-separated list of the IP addresses that you wish to '
                 . 'exclude from tracking.',
         ),
         'feed_subscription_param' => array( 'default' => 'sid', 'description' => 'The name, after the ns prefix, of the URL parameter that carries a feed subscriber id. It is removed from page URLs before they are stored. Default sid (owa_sid).' ),
@@ -516,7 +516,7 @@ return array(
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
             'label'    => 'Track JavaScript Errors',
-            'description' => 'Sends an event for each uncaught JavaScript error on the page.',
+            'description' => 'Sends an exception event for each uncaught JavaScript error on the page, once per page view for each message, source file and line. The browser\'s ResizeObserver loop notice is not sent.',
         ),
         'tracker_route_changes' => array(
             'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackRouteChanges' ),

@@ -265,7 +265,8 @@ class TimePeriod {
     }
 
     /**
-     * Array of Reporting Periods
+     * The predefined periods, in the order the picker offers them: each one's
+     * label, and the days it covers.
      *
      * @return array
      */
@@ -273,22 +274,22 @@ class TimePeriod {
 
         return array(
 
-                    'today'                 => array('label' => 'Today'),
-                    'yesterday'             => array('label' => 'Yesterday'),
-                    'this_week'             => array('label' => 'This Week'),
-                    'this_month'             => array('label' => 'This Month'),
-                    'this_year'             => array('label' => 'This Year'),
-                    'last_week'              => array('label' => 'Last Week'),
-                    'last_month'             => array('label' => 'Last Month'),
-                    'last_year'             => array('label' => 'Last Year'),
+                    'today'                 => array('label' => 'Today', 'covers' => 'Today'),
+                    'yesterday'             => array('label' => 'Yesterday', 'covers' => 'Yesterday'),
+                    'this_week'             => array('label' => 'This Week', 'covers' => 'Sunday to Saturday of the current week'),
+                    'this_month'             => array('label' => 'This Month', 'covers' => 'The current calendar month'),
+                    'this_year'             => array('label' => 'This Year', 'covers' => 'The current calendar year'),
+                    'last_week'              => array('label' => 'Last Week', 'covers' => 'Sunday to Saturday of the previous week'),
+                    'last_month'             => array('label' => 'Last Month', 'covers' => 'The previous calendar month'),
+                    'last_year'             => array('label' => 'Last Year', 'covers' => 'The previous calendar year'),
                     //'last_half_hour'         => array('label' => 'The Last 30 Minutes'),
                     //'last_hour'             => array('label' => 'Last Hour'),
                     //'last_24_hours'         => array('label' => 'Last 24 Hours'),
-                    'last_seven_days'         => array('label' => 'Last Seven Days'),
-                    'last_thirty_days'         => array('label' => 'Last Thirty Days'),
-                    'same_day_last_week'     => array('label' => 'Same Day last Week'),
-                    'same_week_last_year'     => array('label' => 'Same Week Last Year'),
-                    'same_month_last_year'     => array('label' => 'Same Month Last Year'),
+                    'last_seven_days'         => array('label' => 'Last Seven Days', 'covers' => 'Today and the six days before it'),
+                    'last_thirty_days'         => array('label' => 'Last Thirty Days', 'covers' => 'Today and the 29 days before it'),
+                    'same_day_last_week'     => array('label' => 'Same Day Last Week', 'covers' => 'The day seven days ago'),
+                    'same_week_last_year'     => array('label' => 'Same Week Last Year', 'covers' => 'The dates of the current week, one year earlier'),
+                    'same_month_last_year'     => array('label' => 'Same Month Last Year', 'covers' => 'The current month, one year earlier'),
                     //'date_range'             => array('label' => 'Date Range')
                     //'time_range'            => array('label' => 'Time Range')
         );

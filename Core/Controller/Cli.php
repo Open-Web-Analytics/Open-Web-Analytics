@@ -38,6 +38,9 @@ class Cli extends \OWA\Core\AdminController {
 
     var $is_admin = true;
 
+    /** getJobLease() for a command that does not derive its own, in seconds. */
+    const DEFAULT_JOB_LEASE = 21600;   // 6 hours
+
     /**
      * Constructor
      *
@@ -183,7 +186,7 @@ class Cli extends \OWA\Core\AdminController {
      */
     public function getJobLease() {
 
-        return 21600;   // 6 hours
+        return self::DEFAULT_JOB_LEASE;
     }
 
     /**

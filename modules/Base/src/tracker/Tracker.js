@@ -363,8 +363,9 @@ class OWATracker  {
 	        /** @internal Not read by anything. */
 	        encodeProperties: false,
 	        /**
-	         * Whether the #fragment is part of a page's URL. It is not, by
-	         * default -- see getCurrentUrl(). setTrackUrlFragments() sets it.
+	         * Whether the #fragment is kept as part of the page's URL, both in
+	         * the URL sent and in the URL route changes are compared on. Set it
+	         * with setTrackUrlFragments().
 	         *
 	         * @option
 	         */
@@ -393,9 +394,11 @@ class OWATracker  {
 	         */
 	        scrollThresholds: DEFAULTS.scrollThresholds.slice(),
 	        /**
-	         * Extensions a click is treated as downloading. A list rather than
-	         * "anything with a dot", which reads every /v1.2/ path and every
-	         * .html as a download.
+	         * File extensions, in lower case, that make a clicked link a
+	         * download: the click also sends a file_download event.
+	         *
+	         * A list rather than "anything with a dot", which reads every /v1.2/
+	         * path and every .html as a download.
 	         *
 	         * @option
 	         */
@@ -1276,7 +1279,8 @@ class OWATracker  {
     }
 
     /**
-     * An author-assigned grouping of pages -- section, template, topic.
+     * Set the content group of the page's events: an author-assigned grouping
+     * such as a section, template or topic.
      *
      * PAGE-SCOPED, because that is what it describes: a value set on one page
      * must not leak onto the next, and an SPA route change is a new page. A
@@ -1607,7 +1611,8 @@ class OWATracker  {
     }
 
     /**
-     * Make the fragment part of the URL again.
+     * Keep the #fragment as part of the page's URL. Route changes are then
+     * compared with the fragment too.
      *
      * For a site that routes on the hash -- example.com/app#/settings -- where
      * the fragment IS the page. It moves the route comparison with it, so
@@ -4857,7 +4862,7 @@ class OWATracker  {
      *
      * The reserved list IS the first-class list -- page_view, click, scroll,
      * file_download, form_start, form_submit, session_start, first_visit,
-     * user_engagement, view_search_results. Reusing one of them would put a
+     * user_engagement, view_search_results, purchase, refund. Reusing one of them would put a
      * site's own counts into a report measuring
      * something else, and on the server it would claim a property vocabulary the
      * event does not have.
@@ -5596,7 +5601,9 @@ class OWATracker  {
      * Send a `click` event for each click on the page, and classify clicks on
      * links to other sites and on downloads.
      *
-     * @command
+     * Named, so the reference shows no arguments: `handler` is unused.
+     *
+     * @command trackClicks
      */
     trackClicks(handler) {
         // flag to tell handler to log clicks as they happen

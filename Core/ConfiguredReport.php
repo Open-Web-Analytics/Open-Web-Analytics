@@ -558,10 +558,12 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * a heatmap is of one page, and only a row of pagePathPlusQuery is one
      * page; a row of pagePath pools every query string's clicks onto one of
      * them. Modules add theirs through the report_row_actions filter.
+     * `description` says what the action opens, for the wiki.
      */
     const ROW_ACTIONS = array(
         'heatmap' => array(
             'label'     => 'Heatmap',
+            'description' => 'The page itself, in a new window, with its clicks drawn over it.',
             'action'    => 'base.overlayLauncher',
             'params'    => array( 'pagePathPlusQuery' => 'pagePathPlusQuery' ),
             'first'     => 'pagePathPlusQuery',
@@ -569,11 +571,13 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         ),
         'clicks' => array(
             'label'    => 'Element clicks',
+            'description' => "Dom Clicks for the page's path: clicks by element id and tag.",
             'reportId' => 'dom-clicks',
             'params'   => array( 'pagePath' => 'pagePath' ),
         ),
         'paths' => array(
             'label'    => 'Previous and next pages',
+            'description' => "Page Detail for the page's path: its page views and sessions, and the pages viewed before and after it.",
             'reportId' => 'document',
             'params'   => array( 'pagePath' => 'pagePath' ),
         ),

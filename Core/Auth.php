@@ -342,7 +342,7 @@ class Auth extends \OWA\Core\Base {
         $method = \OWA\Core\CoreAPI::serviceSingleton()->request->getRequestType();
 
         if ( $password['scope'] === \OWA\Module\Base\Classes\AppPasswords::SCOPE_READ
-             && ! in_array( $method, array( 'GET', 'HEAD' ), true ) ) {
+             && ! in_array( $method, \OWA\Module\Base\Classes\AppPasswords::READ_METHODS, true ) ) {
 
             \OWA\Core\CoreAPI::debug( "Read-only application password refused for a $method request." );
 

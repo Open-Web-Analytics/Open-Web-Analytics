@@ -1,13 +1,39 @@
 <?php
 /**
  * The CLI reference. See lib/cli.php for where each column comes from.
+ *
+ *   cli             every command: an index, then each command's section
+ *   cli-<command>   one command's arguments table, for a page about what the
+ *                   command does, e.g. cli-cube-rebuild
  */
 
 require_once __DIR__ . '/../lib/cli.php';
 
-return function () {
+return function ( $arg = null ) {
 
     $commands = owa_wiki_cli_commands();
+
+    $arguments = static function ( array $c ) {
+
+        $out = "| Argument | Description |\n|---|---|\n";
+
+        foreach ( $c['arguments'] as $name => $desc ) {
+            $out .= sprintf( "| `%s` | %s |\n", owa_wiki_cell( $name ), owa_wiki_cell( $desc ) );
+        }
+
+        return $out;
+    };
+
+    if ( $arg !== null ) {
+
+        if ( ! isset( $commands[ $arg ] ) ) {
+            throw new RuntimeException( "cli-$arg: no command by that name." );
+        }
+
+        return $commands[ $arg ]['arguments']
+            ? $arguments( $commands[ $arg ] )
+            : "`cmd=$arg` takes no arguments.\n";
+    }
 
     $out = "Run every command from the installation directory:\n\n"
          . "```bash\nphp cli.php cmd=<command> [argument=value ...] [--switch ...]\n```\n\n"
@@ -46,11 +72,7 @@ return function () {
             continue;
         }
 
-        $out .= "| Argument | Description |\n|---|---|\n";
-
-        foreach ( $c['arguments'] as $arg => $desc ) {
-            $out .= sprintf( "| `%s` | %s |\n", owa_wiki_cell( $arg ), owa_wiki_cell( $desc ) );
-        }
+        $out .= $arguments( $c );
     }
 
     return $out;

@@ -152,8 +152,8 @@ class CustomReports {
         'grid'          => 'A full-width table. Several metrics and dimensions, and the reader can regroup and filter it.',
         'grid-card'     => 'A narrow table of one metric by one dimension. No controls; its rows can link to the report that details them.',
         'pie'           => 'Each value of one dimension as its share of one metric, ranked, with the rest as Other.',
-        'trend'         => 'One metric over time, as a chart. Always by date.',
-        'trend-card'    => 'A half-width version: its totals sit above the chart, it cannot be broken out by a dimension, and it names its own metrics.',
+        'trend'         => 'One metric over time as a chart, with a box per metric under it. Always by date; a dimension added to it draws a line per value.',
+        'trend-card'    => 'A half-width trend chart: its totals sit above the chart, it cannot be broken out by a dimension, and it names its own metrics.',
         'metric-boxes'  => 'Totals for the period, one box per metric.',
     );
 
@@ -254,6 +254,19 @@ class CustomReports {
         'pie'        => 6,
         'trend-card' => 6,
     );
+
+    /** The widths the editor offers, out of ReportGrid::COLUMNS, and their names. */
+    const WIDTHS = array( 4 => 'Third', 6 => 'Half', 8 => 'Two thirds', 12 => 'Full' );
+
+    /** The heights the editor offers, in rows, and their names. */
+    const HEIGHTS = array( 1 => 'Short', 2 => 'Tall' );
+
+    /**
+     * Types that show totals rather than a breakdown, so the editor asks for no
+     * dimensions. Unlike FIXED_DIMENSIONS this is only about the form: a
+     * hand-written metric-boxes widget with dimensions is not refused.
+     */
+    const UNGROUPED_TYPES = array( 'metric-boxes' );
 
     /**
      * Widget types that take exactly one metric and exactly one dimension.

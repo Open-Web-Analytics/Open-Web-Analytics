@@ -27,7 +27,7 @@ class AppPasswordCreateCli extends AppPasswordsCli {
             'arguments'   => array(
                 'user=<user id>'   => 'Required. The user the password authenticates as.',
                 'name=<name>'      => 'Required. What will use it, so it can be told apart from the user\'s others.',
-                'scope=read|full'  => 'read allows GET requests only; full allows everything the user\'s role can do. Defaults to read.',
+                'scope=read|full'  => 'read allows GET and HEAD requests only; full allows everything the user\'s role can do. Defaults to read.',
             ),
         );
     }

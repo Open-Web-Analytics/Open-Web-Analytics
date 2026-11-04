@@ -101,7 +101,7 @@ installation. Yours are kept, but every request that uses one is refused.</div>
 
         <div class="setting">
             <div class="title"><label for="owa_appPasswordScope">Access</label></div>
-            <div class="description">Read only allows GET requests and nothing else.</div>
+            <div class="description">Read only allows GET and HEAD requests and nothing else.</div>
             <div class="field">
                 <select id="owa_appPasswordScope" name="scope">
                     <?php foreach ( $owa_scopes as $owa_scope => $owa_label ): ?>

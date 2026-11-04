@@ -52,6 +52,37 @@ class MetricSets {
     const DEFAULT_KEY = 'site_usage';
 
     /**
+     * Every metric set, in the order a report shows them. forProperty() says
+     * which of them a Property has; SHOWN_WHEN says it in words.
+     *
+     * Each is: label, metrics, chartMetric.
+     */
+    const SETS = array(
+        self::DEFAULT_KEY => array(
+            'label'       => 'Site Usage',
+            'metrics'     => 'sessions,engagementRate,pageViewsPerSession,averageEngagementTimePerSession,totalUsers',
+            'chartMetric' => 'sessions',
+        ),
+        'conversions' => array(
+            'label'       => 'Conversions',
+            'metrics'     => 'sessions,goalConversions,goalConversionRatePerSession',
+            'chartMetric' => 'goalConversions',
+        ),
+        'ecommerce' => array(
+            'label'       => 'e-commerce',
+            'metrics'     => 'sessions,transactions,transactionRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate',
+            'chartMetric' => 'transactions',
+        ),
+    );
+
+    /** When a Property has each set: the conditions forProperty() tests. */
+    const SHOWN_WHEN = array(
+        self::DEFAULT_KEY => 'Always',
+        'conversions'     => 'The Property has an active goal event',
+        'ecommerce'       => '`enableEcommerceReporting` is on for the Property',
+    );
+
+    /**
      * Every metric set available for a Property, keyed by name.
      *
      * Each is: label, metrics, chartMetric.
@@ -75,11 +106,7 @@ class MetricSets {
             return $sets;
         }
 
-        $sets[ self::DEFAULT_KEY ] = array(
-            'label'       => 'Site Usage',
-            'metrics'     => 'sessions,engagementRate,pageViewsPerSession,averageEngagementTimePerSession,totalUsers',
-            'chartMetric' => 'sessions',
-        );
+        $sets[ self::DEFAULT_KEY ] = self::SETS[ self::DEFAULT_KEY ];
 
         /*
          * Goal conversions, when the Property has an active goal event to
@@ -88,20 +115,12 @@ class MetricSets {
          */
         if ( self::hasActiveGoalEvent( $propertyId ) ) {
 
-            $sets['conversions'] = array(
-                'label'       => 'Conversions',
-                'metrics'     => 'sessions,goalConversions,goalConversionRatePerSession',
-                'chartMetric' => 'goalConversions',
-            );
+            $sets['conversions'] = self::SETS['conversions'];
         }
 
         if ( \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting', 'property', (string) $propertyId ) ) {
 
-            $sets['ecommerce'] = array(
-                'label'       => 'e-commerce',
-                'metrics'     => 'sessions,transactions,transactionRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate',
-                'chartMetric' => 'transactions',
-            );
+            $sets['ecommerce'] = self::SETS['ecommerce'];
         }
 
         return $sets;
