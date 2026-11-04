@@ -385,7 +385,9 @@ describe('page lifecycle', () => {
 
 describe('SPA route changes', () => {
 
-    beforeEach(() => { jest.useFakeTimers(); });
+    // The page store is shared by every tracker in the file; a title one test
+    // sets is not another test's.
+    beforeEach(() => { jest.useFakeTimers(); OWA.clearState('d'); });
     afterEach(() => { jest.useRealTimers(); });
 
     /** Let a route change settle, which is when its page view is sent. */
@@ -591,6 +593,183 @@ describe('SPA route changes', () => {
 
         expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
         expect(sent.find(e => e.event_type === 'newsletter_signup').content_group).toBe('Guides');
+    });
+
+    /*
+     * THE PAGE TITLE AND TYPE ARE PAGE-SCOPED too, and they live in the 'd'
+     * store, which nothing ended on a route change: a title set on one route
+     * overrode document.title on every route after it.
+     */
+    test('a page title and type set on one route are not on the next route\'s events', () => {
+        const t = newTracker();
+        document.title = 'From The Document';
+        window.history.pushState({}, '', '/title-a');
+
+        const sent = captureSends(t);
+        t.setPageTitle('Guides');
+        t.setPageType('article');
+        t.trackRouteChanges();
+        t.trackCustomEvent('newsletter_signup', {});
+
+        window.history.pushState({}, '', '/title-b');
+        settle();
+        t.trackCustomEvent('newsletter_signup', {});
+
+        const [before, after] = sent.filter(e => e.event_type === 'newsletter_signup');
+        expect(before.page_title).toBe('Guides');
+        expect(before.page_type).toBe('article');
+
+        const view = sent.find(e => e.event_type === 'page_view');
+        expect(view.page_location).toContain('/title-b');
+        expect(view.page_title).toBe('From The Document');
+        expect(view).not.toHaveProperty('page_type');
+        expect(after.page_title).toBe('From The Document');
+        expect(after).not.toHaveProperty('page_type');
+    });
+
+    test('the engagement of the route being left keeps that route\'s title and type', () => {
+        const t = newTracker();
+        document.title = 'From The Document';
+        window.history.pushState({}, '', '/title-c');
+
+        const sent = captureSends(t);
+        atTime(t, 0);
+        t.resetEngagement();
+        t.setPageTitle('Guides');
+        t.setPageType('article');
+        t.trackRouteChanges();
+
+        atTime(t, 4000);
+        window.history.pushState({}, '', '/title-d');
+
+        const engagement = sent.find(e => e.event_type === 'user_engagement');
+        expect(engagement.page_title).toBe('Guides');
+        expect(engagement.page_type).toBe('article');
+    });
+
+    test('a title and type the next route sets after the pushState ride its page view', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/title-e');
+
+        const sent = captureSends(t);
+        t.setPageTitle('Guides');
+        t.setPageType('article');
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/title-f');
+        jest.advanceTimersByTime(100);
+        t.setPageTitle('Pricing');
+        t.setPageType('landing');
+        settle();
+
+        const view = sent.find(e => e.event_type === 'page_view');
+        expect(view.page_title).toBe('Pricing');
+        expect(view.page_type).toBe('landing');
+    });
+
+    test('leaving and coming back inside the window keeps the page\'s title and type', () => {
+        const t = newTracker();
+        document.title = 'From The Document';
+        window.history.pushState({}, '', '/title-stay');
+
+        const sent = captureSends(t);
+        t.setPageTitle('Guides');
+        t.setPageType('article');
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/title-elsewhere');
+        window.history.replaceState({}, '', '/title-stay');
+        settle();
+        t.trackCustomEvent('newsletter_signup', {});
+
+        const custom = sent.find(e => e.event_type === 'newsletter_signup');
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
+        expect(custom.page_title).toBe('Guides');
+        expect(custom.page_type).toBe('article');
+    });
+
+    /*
+     * setUserName() writes the same 'd' store, but it names the person, and a
+     * route change does not change who is reading.
+     */
+    test('a user name set on one route is still on the next route\'s events', () => {
+        const t = newTracker();
+        document.title = 'From The Document';
+        window.history.pushState({}, '', '/user-a');
+
+        const sent = captureSends(t);
+        t.setUserName('someone');
+        t.setPageTitle('Guides');
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/user-b');
+        settle();
+        t.trackCustomEvent('newsletter_signup', {});
+
+        const view = sent.find(e => e.event_type === 'page_view');
+        const custom = sent.find(e => e.event_type === 'newsletter_signup');
+        expect(view.page_title).toBe('From The Document');
+        expect(view.vps_user_name).toBe('someone');
+        expect(custom.vps_user_name).toBe('someone');
+    });
+
+    /*
+     * TWO TRACKERS SHARE THE 'd' STORE, and one navigation runs both trackers'
+     * route handlers in turn. The first to run takes the title off the store
+     * before the second has sent its engagement for the route being left.
+     */
+    test('with two trackers, each leaves the route under its title and the next route has none', () => {
+        const first = newTracker();
+        const second = new OWATracker({ cookie_domain_set: true, cookie_domain: '.eng.example' });
+        second.setSiteId('engagement-site-two');
+        document.title = 'From The Document';
+        window.history.pushState({}, '', '/two-a');
+
+        const sentFirst = captureSends(first);
+        const sentSecond = captureSends(second);
+        atTime(first, 0);
+        atTime(second, 0);
+        first.resetEngagement();
+        second.resetEngagement();
+        first.setPageTitle('Guides');
+        first.trackRouteChanges();
+        second.trackRouteChanges();
+
+        atTime(first, 4000);
+        atTime(second, 4000);
+        window.history.pushState({}, '', '/two-b');
+
+        expect(sentFirst.find(e => e.event_type === 'user_engagement').page_title).toBe('Guides');
+        expect(sentSecond.find(e => e.event_type === 'user_engagement').page_title).toBe('Guides');
+
+        settle();
+
+        expect(sentFirst.find(e => e.event_type === 'page_view').page_title).toBe('From The Document');
+        expect(sentSecond.find(e => e.event_type === 'page_view').page_title).toBe('From The Document');
+        expect(OWA.getState('d', 'page_title')).toBeUndefined();
+    });
+
+    test('with two trackers, leaving and coming back keeps the title for both', () => {
+        const first = newTracker();
+        const second = new OWATracker({ cookie_domain_set: true, cookie_domain: '.eng.example' });
+        second.setSiteId('engagement-site-two');
+        document.title = 'From The Document';
+        window.history.pushState({}, '', '/two-stay');
+
+        const sentFirst = captureSends(first);
+        const sentSecond = captureSends(second);
+        first.setPageTitle('Guides');
+        first.trackRouteChanges();
+        second.trackRouteChanges();
+
+        window.history.pushState({}, '', '/two-elsewhere');
+        window.history.replaceState({}, '', '/two-stay');
+        settle();
+        first.trackCustomEvent('newsletter_signup', {});
+        second.trackCustomEvent('newsletter_signup', {});
+
+        expect(sentFirst.find(e => e.event_type === 'newsletter_signup').page_title).toBe('Guides');
+        expect(sentSecond.find(e => e.event_type === 'newsletter_signup').page_title).toBe('Guides');
     });
 
     /*

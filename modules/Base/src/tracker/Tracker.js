@@ -13,7 +13,15 @@ import { Uri } from './Uri.js';
 import { toWire } from './WireNames.js';
 import { ElementAnchor } from './ElementAnchor.js';
 import DEFAULTS from './defaults.json';
- 
+
+/*
+ * The shared page values (OWATracker.ROUTE_SCOPED_VALUES) the first tracker to
+ * leave a route took off the 'd' store, as { to: url, values }. Module scope
+ * because 'd' is shared by every tracker on the page; held until the route
+ * settles. See leaveRouteScope().
+ */
+var routeScopeTaken = null;
+
 class OWATracker  {
 	
 	constructor( options ) {
@@ -1172,6 +1180,13 @@ class OWATracker  {
      * one page, one reporting the title the site set and the other reporting
      * nothing at all.
      *
+     * PAGE-SCOPED, and an SPA route change is a new page. With
+     * trackRouteChanges() on, the title is dropped at the moment a route is
+     * left, after that route's engagement is sent, and the next route reports
+     * document.title until it sets one. So a route sets its title once the URL
+     * has changed; one set before the pushState belongs to the route being
+     * left and goes with it.
+     *
      * @command
      * @param {string} title
      */
@@ -1187,6 +1202,10 @@ class OWATracker  {
      * one -- unlike page_title, nothing derives a page type -- so the setter is
      * the only source and losing it to a tracker-private copy loses it
      * entirely.
+     *
+     * With trackRouteChanges() on, the type is dropped at the moment a route
+     * is left, as the title is, and the next route has none until it sets
+     * one.
      *
      * @command
      * @param {string} type
@@ -1236,6 +1255,10 @@ class OWATracker  {
          * key, the prefixed name arrives as vps_user_name -- admitted by prefix,
          * routed to the visitor store by writeUserProperties(), and stamped with
          * when it was set. No compat layer in the path.
+         *
+         * NOT ended by a route change, unlike the page title beside it in 'd':
+         * it names the person, not the page, so it is not in
+         * ROUTE_SCOPED_VALUES.
          */
         OWA.setState( 'd', OWATracker.USER_PROPERTY_PREFIX + 'user_name',
             String( value ).trim() );
@@ -2914,9 +2937,9 @@ class OWATracker  {
         var lastTracked = this.getCurrentUrl();
         var pending = null;
 
-        // The content group of the route being left, kept until the route
-        // settles in case it settles back on the same URL.
-        var leftGroup;
+        // The page-scoped values of the route being left, kept until the
+        // route settles in case it settles back on the same URL.
+        var left = null;
 
         /*
          * The page view goes once the URL has been still for ROUTE_SETTLE_MSEC,
@@ -2938,22 +2961,20 @@ class OWATracker  {
 
             var url = that.getCurrentUrl();
 
+            // Every tracker's changed() for this navigation has run by now.
+            routeScopeTaken = null;
+
             // Left and came back inside the window: no route change happened,
-            // so the page keeps its group unless one was set meanwhile.
+            // so the page keeps its values unless new ones were set meanwhile.
             if ( url === lastTracked ) {
 
-                if ( leftGroup !== undefined
-                     && that.getGlobalEventProperty( 'content_group' ) === undefined ) {
-
-                    that.setGlobalEventProperty( 'content_group', leftGroup );
-                }
-
-                leftGroup = undefined;
+                that.restoreRouteScope( left );
+                left = null;
 
                 return;
             }
 
-            leftGroup = undefined;
+            left = null;
 
             // The previous page is this page's referrer, for the page view and
             // every event after it on this route. document.referrer still
@@ -3002,22 +3023,21 @@ class OWATracker  {
             // leaving, so the time lands against the page it was spent on.
             if ( ! pending ) {
 
-                that.flushScrollDepth();
-                that.trackEngagement();
-                that.resetEngagement();
-
                 /*
-                 * THE CONTENT GROUP IS PAGE-SCOPED (setContentGroup()), and it
-                 * is a global event property on this tracker, so nothing else
-                 * ends it: without this, every route after the first carried
-                 * the group of whichever route last set one. Dropped HERE, not
-                 * in send(), because the next route sets its group after the
-                 * pushState, inside the settle window, and its page view must
-                 * carry it. The residue above is sent first, under the group of
-                 * the route it was spent on.
+                 * THE PAGE-SCOPED VALUES END HERE (ROUTE_SCOPED_VALUES), and
+                 * nothing else ends them: without this, every route after the
+                 * first carried the content group, title and type of whichever
+                 * route last set one. HERE, not in send(), because the next
+                 * route sets its values after the pushState, inside the settle
+                 * window, and its page view must carry them. The residue is
+                 * sent first, under the values of the route it was spent on.
                  */
-                leftGroup = that.getGlobalEventProperty( 'content_group' );
-                that.deleteGlobalEventProperty( 'content_group' );
+                left = that.leaveRouteScope( url, function () {
+
+                    that.flushScrollDepth();
+                    that.trackEngagement();
+                    that.resetEngagement();
+                } );
             }
 
             // No scroll event for a route before its page view: depth checks
@@ -3060,6 +3080,180 @@ class OWATracker  {
 
         window.addEventListener( 'popstate', changed, false );
         window.addEventListener( 'hashchange', changed, false );
+    }
+
+    /**
+     * The values that describe ONE PAGE, which trackRouteChanges() ends when a
+     * route is left.
+     *
+     * `shared` is where the value lives. The page title and type are in the
+     * 'd' store, which every tracker on the page reads (setPageTitle()); the
+     * content group is a global event property of one tracker
+     * (setContentGroup()).
+     *
+     * The rest of 'd' is not here and survives a route change. vps_user_name
+     * (setUserName()) names the person, and 'cdh' is the state manager's own
+     * bookkeeping.
+     */
+    static get ROUTE_SCOPED_VALUES() {
+
+        return [
+            { name: 'content_group', shared: false },
+            { name: 'page_title',    shared: true },
+            { name: 'page_type',     shared: true }
+        ];
+    }
+
+    /** @internal One of ROUTE_SCOPED_VALUES, or undefined when it is not set. */
+    getRouteScopedValue( entry ) {
+
+        if ( ! entry.shared ) {
+
+            return this.getGlobalEventProperty( entry.name );
+        }
+
+        var store = OWA.getState( 'd' );
+
+        if ( store && typeof store === 'object' && store.hasOwnProperty( entry.name ) ) {
+
+            return store[ entry.name ];
+        }
+    }
+
+    /** @internal */
+    setRouteScopedValue( entry, value ) {
+
+        if ( entry.shared ) {
+
+            OWA.setState( 'd', entry.name, value );
+
+        } else {
+
+            this.setGlobalEventProperty( entry.name, value );
+        }
+    }
+
+    /** @internal */
+    deleteRouteScopedValue( entry ) {
+
+        if ( entry.shared ) {
+
+            OWA.clearState( 'd', entry.name );
+
+        } else {
+
+            this.deleteGlobalEventProperty( entry.name );
+        }
+    }
+
+    /**
+     * End the page-scoped values of the route being left, once `sendResidue`
+     * has sent that route's scroll and engagement under them.
+     *
+     * The SHARED values are ended once for every tracker on the page. Each
+     * tracker that runs trackRouteChanges() patches the same history calls,
+     * so one navigation runs every tracker's changed() in turn, and the first
+     * takes the shared values off 'd' before the others have sent their
+     * residue. Each later one puts back what was taken for the length of its
+     * own residue, then takes off only what it put back: a value the new
+     * route set in between stays.
+     *
+     * @internal
+     * @param {string} to  the URL navigated to
+     * @param {Function} sendResidue
+     * @return {Object} the values ended, by name, for restoreRouteScope()
+     */
+    leaveRouteScope( to, sendResidue ) {
+
+        var that = this;
+        var entries = OWATracker.ROUTE_SCOPED_VALUES;
+        var taken = ( routeScopeTaken && routeScopeTaken.to === to ) ? routeScopeTaken.values : null;
+        var lent = {};
+        var left = {};
+        var shared = {};
+
+        if ( taken ) {
+
+            entries.forEach( function ( entry ) {
+
+                if ( entry.shared && taken.hasOwnProperty( entry.name )
+                     && that.getRouteScopedValue( entry ) === undefined ) {
+
+                    that.setRouteScopedValue( entry, taken[ entry.name ] );
+                    lent[ entry.name ] = true;
+                }
+            } );
+        }
+
+        sendResidue();
+
+        entries.forEach( function ( entry ) {
+
+            if ( entry.shared && taken ) {
+
+                if ( lent.hasOwnProperty( entry.name ) ) {
+
+                    that.deleteRouteScopedValue( entry );
+                }
+
+                if ( taken.hasOwnProperty( entry.name ) ) {
+
+                    left[ entry.name ] = taken[ entry.name ];
+                }
+
+                return;
+            }
+
+            var value = that.getRouteScopedValue( entry );
+
+            if ( value === undefined ) {
+
+                return;
+            }
+
+            left[ entry.name ] = value;
+
+            if ( entry.shared ) {
+
+                shared[ entry.name ] = value;
+            }
+
+            that.deleteRouteScopedValue( entry );
+        } );
+
+        if ( ! taken ) {
+
+            routeScopeTaken = { to: to, values: shared };
+        }
+
+        return left;
+    }
+
+    /**
+     * Put back the values leaveRouteScope() ended, for a route that settled
+     * back on the URL it left. A value set since is kept, and a shared one
+     * another tracker has already put back is left as it is.
+     *
+     * @internal
+     * @param {Object|null} left  what leaveRouteScope() returned
+     */
+    restoreRouteScope( left ) {
+
+        var that = this;
+
+        if ( ! left ) {
+
+            return;
+        }
+
+        OWATracker.ROUTE_SCOPED_VALUES.forEach( function ( entry ) {
+
+            if ( left.hasOwnProperty( entry.name )
+                 && that.getRouteScopedValue( entry ) === undefined ) {
+
+                that.setRouteScopedValue( entry, left[ entry.name ] );
+            }
+        } );
     }
 
     getScrollingPosition() {
