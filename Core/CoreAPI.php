@@ -991,26 +991,6 @@ class CoreAPI {
     }
 
     /**
-     * Store one setting on a Profile.
-     *
-     * Writes a scoped row rather than merging into owa_site.settings. The blob
-     * could not hold a false -- Settings::persistSetting prunes a value equal
-     * to the code default -- and could not be inherited from. A row can do
-     * both, so a Profile can now say "off" against a Property that says "on".
-     */
-    public static function persistSiteSetting($site_id, $name, $value) {
-
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->load( $site->generateId( $site_id ) );
-
-        if ( $site->wasPersisted() ) {
-
-            return \OWA\Core\CoreAPI::setScopedSetting(
-                'profile', $site_id, 'base', $name, $value );
-        }
-    }
-
-    /**
      * Every setting a scope answers with, most specific value winning.
      *
      * The settings FORMS need this: they render whatever key they render and
