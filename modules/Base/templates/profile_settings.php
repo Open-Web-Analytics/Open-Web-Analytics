@@ -16,12 +16,14 @@
         /*
          * From the registry, at Profile scope: each field shows what the Profile
          * inherits until its Override switch is turned on. See
-         * SettingsForm::scopedField().
+         * SettingsForm::scopedField(). The group is what SitesEditSettings saves.
          */
-        echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
-            \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.profileObservation' ),
-            'profile', (string) ( $view->site['site_id'] ?? '' ), $view->getNs(),
-            is_array( $view->posted ?? null ) ? $view->posted : null );
+        foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'profile_observation' ) as $owa_set ) {
+
+            echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
+                $owa_set, 'profile', (string) ( $view->site['site_id'] ?? '' ), $view->getNs(),
+                is_array( $view->posted ?? null ) ? $view->posted : null );
+        }
     ?>
 
     <fieldset name="owa-options" class="options">

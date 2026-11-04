@@ -1320,7 +1320,8 @@ namespace OWA\Module\Base\Classes;
       *
       * The declaration states the rule. `integer` takes a whole number, inside
       * `min` and `max` where it declares them; `text` matches its `pattern`,
-      * when it declares one, and says `pattern_problem` when it does not.
+      * when it declares one, and says `pattern_problem` when it does not; `map`
+      * typed as text is name=value pairs naming only its `keys` (mapPairs()).
       * Other types and undeclared settings check nothing.
       *
       * Read at both write chokepoints, persistSetting() and
@@ -1349,6 +1350,26 @@ namespace OWA\Module\Base\Classes;
                  ? null
                  : (string) ( $args['pattern_problem'] ?? sprintf( \OWA\Core\CoreAPI::t( '%s is not in the expected form.' ),
                        $args['label'] ?? $key ) );
+         }
+
+         /*
+          * A map arriving as a list is not checked: normalizedValue() keeps its
+          * declared keys. One arriving as text is what a person typed, and a
+          * key that is not declared is more likely a typo than a wish.
+          */
+         if ( ( $args['type'] ?? '' ) === 'map' ) {
+
+             if ( is_array( $value ) || self::mapPairs( $args, $value ) !== null ) {
+
+                 return null;
+             }
+
+             $label = isset( $args['label'] ) && $args['label'] !== '' ? $args['label'] : $key;
+
+             return empty( $args['keys'] )
+                 ? sprintf( \OWA\Core\CoreAPI::t( '%s is a comma-separated list of name=value pairs.' ), $label )
+                 : sprintf( \OWA\Core\CoreAPI::t( '%1$s is a comma-separated list of name=value pairs, each name one of %2$s.' ),
+                       $label, implode( ', ', (array) $args['keys'] ) );
          }
 
          if ( ( $args['type'] ?? '' ) !== 'integer' ) {
@@ -1396,8 +1417,8 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * A value as it is stored: an `integer` setting as an int, whatever the
-      * form posted.
+      * A value as it is stored: an `integer` setting as an int, a `map` as
+      * name => value with only its declared keys, whatever the form posted.
       *
       * @param  string $module
       * @param  string $key
@@ -1407,6 +1428,11 @@ namespace OWA\Module\Base\Classes;
      public function normalizedValue( $module, $key, $value ) {
 
          $args = $this->registeredField( $module, $key );
+
+         if ( $args && ( $args['type'] ?? '' ) === 'map' ) {
+
+             return self::mapValue( $args, is_array( $value ) ? $value : (array) self::mapPairs( $args, $value ) );
+         }
 
          if ( ! $args || ( $args['type'] ?? '' ) !== 'integer' ) {
 
@@ -1420,6 +1446,106 @@ namespace OWA\Module\Base\Classes;
          }
 
          return (int) trim( (string) $value );
+     }
+
+     /**
+      * A `map` setting typed as text: name=value pairs separated by commas,
+      * such as `source=src, medium=channel`. Each name is one of the
+      * declaration's `keys` when it declares them; a later pair for a name
+      * replaces an earlier one.
+      *
+      * @param  array $args  the declaration
+      * @param  mixed $text
+      * @return array|null   name => value, or null when the text is not in that form
+      */
+     public static function mapPairs( array $args, $text ) {
+
+         if ( ! is_string( $text ) ) {
+
+             return null;
+         }
+
+         $keys  = isset( $args['keys'] ) ? array_map( 'strval', (array) $args['keys'] ) : null;
+         $pairs = array();
+
+         foreach ( explode( ',', $text ) as $entry ) {
+
+             $entry = trim( $entry );
+
+             if ( $entry === '' ) {
+
+                 continue;
+             }
+
+             $parts = explode( '=', $entry, 2 );
+
+             if ( count( $parts ) !== 2 ) {
+
+                 return null;
+             }
+
+             $name  = trim( $parts[0] );
+             $value = trim( $parts[1] );
+
+             if ( $name === '' || $value === '' || preg_match( '/[\s=]/', $name . $value )
+                  || ( $keys !== null && ! in_array( $name, $keys, true ) ) ) {
+
+                 return null;
+             }
+
+             $pairs[ $name ] = $value;
+         }
+
+         return $pairs;
+     }
+
+     /**
+      * A `map` value with only its declared keys, in their order, each a
+      * non-empty string. A stored value naming a key the declaration has
+      * since dropped loses that key here rather than failing.
+      *
+      * @param  array $args
+      * @param  array $map
+      * @return array
+      */
+     public static function mapValue( array $args, array $map ) {
+
+         $keys = isset( $args['keys'] ) ? array_map( 'strval', (array) $args['keys'] ) : array_map( 'strval', array_keys( $map ) );
+         $out  = array();
+
+         foreach ( $keys as $name ) {
+
+             if ( isset( $map[ $name ] ) && is_string( $map[ $name ] ) && trim( $map[ $name ] ) !== '' ) {
+
+                 $out[ $name ] = trim( $map[ $name ] );
+             }
+         }
+
+         return $out;
+     }
+
+     /**
+      * A `map` value as a person types it, for a text control: see mapPairs().
+      *
+      * @param  array $args
+      * @param  mixed $value
+      * @return string
+      */
+     public static function mapText( array $args, $value ) {
+
+         if ( ! is_array( $value ) ) {
+
+             return (string) $value;
+         }
+
+         $out = array();
+
+         foreach ( self::mapValue( $args, $value ) as $name => $v ) {
+
+             $out[] = $name . '=' . $v;
+         }
+
+         return implode( ', ', $out );
      }
 
      public function persistSetting($module, $key, $value) {

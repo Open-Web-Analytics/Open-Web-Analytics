@@ -313,18 +313,34 @@ class Module extends \OWA\Core\Module {
      */
     function registerScopedSettingsFieldSets() {
 
-        $this->registerSettingsFieldSet( array(
-            'id'       => 'base.profileObservation',
-            'settings' => array(
-                'domain_aliases',
-                'query_string_filters',
-                'default_page',
-            ),
-        ) );
+        /*
+         * The Profile's Observation Settings screen, in the `profile_observation`
+         * group so its save controller (SitesEditSettings) and its template read
+         * the same list.
+         */
+        foreach ( array(
+            array( 'base.profileObservation', 'Pages and domains',
+                array( 'domain_aliases', 'query_string_filters', 'default_page' ) ),
+            array( 'base.profileCampaigns', 'Campaign parameters',
+                array( 'campaignKeys' ) ),
+            array( 'base.profilePrivacy', 'Privacy and exclusions',
+                array( 'anonymize_ips', 'excluded_ips', 'log_named_users' ) ),
+            array( 'base.profileAnnouncements', 'Visitor announcements',
+                array( 'announce_visitors', 'notice_email' ) ),
+        ) as $order => list( $id, $legend, $settings ) ) {
+
+            $this->registerSettingsFieldSet( array(
+                'id'       => $id,
+                'group'    => 'profile_observation',
+                'order'    => $order,
+                'legend'   => $legend,
+                'settings' => $settings,
+            ) );
+        }
 
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.propertyAttribution',
-            'settings' => array( 'attribution_lookback_days', 'campaignUtmParams' ),
+            'settings' => array( 'attribution_lookback_days', 'campaignUtmParams', 'campaignKeys' ),
         ) );
 
         /*
@@ -333,7 +349,7 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.propertyReporting',
-            'settings' => array( 'enableEcommerceReporting' ),
+            'settings' => array( 'enableEcommerceReporting', 'currencyISO3' ),
         ) );
 
         // The Property's Data Retention screen (Classes\Retention).

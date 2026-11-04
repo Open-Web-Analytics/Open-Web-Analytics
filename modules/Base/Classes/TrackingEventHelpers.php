@@ -2143,8 +2143,8 @@ class TrackingEventHelpers {
      * names without either being named here.
      *
      * Read at PROFILE scope so the chain walks Profile -> Property -> Install:
-     * the install default covers one convention everywhere, and a Property
-     * overrides it.
+     * the install default covers one convention everywhere, and a Property or
+     * a Profile overrides it on its own screen.
      *
      * Only the roles CAMPAIGN_KEYS names are read, so a setting cannot invent a
      * tag the pipeline has nowhere to put. A role the setting omits keeps its
