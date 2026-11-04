@@ -71,6 +71,84 @@ final class ShippedReportLayoutTest extends TestCase
     }
 
     /**
+     * A share chart sits in a row of share charts. It draws one bar per value
+     * of a dimension with a handful of values -- new or returning, device type
+     * -- so it is a few rows tall, while a card or a trend fills its height on
+     * any real data. Beside each other the short one leaves a hole, as
+     * Visitors' Visitor Types (three rows) did beside Countries (five).
+     *
+     * Reports where a mixed row is the layout that was asked for, each with
+     * why; a new one does not belong here without one.
+     */
+    public function testAShareChartSharesItsRowOnlyWithShareCharts(): void
+    {
+        $asked = array(
+            // Events, Visitor Types and Channels as one row of thirds.
+            'dashboard' => true,
+        );
+
+        $mixed = array();
+        $pies  = 0;
+
+        foreach ( self::definitions() as $id => $definition ) {
+
+            if ( isset( $asked[ $id ] ) ) {
+                continue;
+            }
+
+            foreach ( self::rows( $definition ) as $row ) {
+
+                $types = array_map( static function ( $w ) { return $w['type'] ?? ''; }, $row );
+                $share = count( array_keys( $types, 'pie', true ) );
+                $pies += $share;
+
+                if ( $share > 0 && $share < count( $row ) ) {
+
+                    $mixed[] = "$id: " . implode( ' + ', array_map( static function ( $w ) {
+                        return ( $w['title'] ?? $w['id'] ?? '?' ) . ' (' . ( $w['type'] ?? '?' ) . ')';
+                    }, $row ) );
+                }
+            }
+        }
+
+        $this->assertGreaterThan( 2, $pies, 'too few share charts checked for this to prove anything' );
+        $this->assertSame( array(), $mixed, 'rows that mix share charts with cards: ' . implode( '; ', $mixed ) );
+    }
+
+    /**
+     * A definition's widgets in the rows they lay out in at twelve columns.
+     *
+     * @return array<int, array<int, array>>
+     */
+    private static function rows( array $definition ): array
+    {
+        $rows = array();
+        $row  = array();
+        $used = 0;
+
+        foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+            $span = ReportGrid::colspan( $widget );
+
+            if ( $row && $used + $span > ReportGrid::COLUMNS ) {
+
+                $rows[] = $row;
+                $row = array();
+                $used = 0;
+            }
+
+            $row[] = $widget;
+            $used += $span;
+        }
+
+        if ( $row ) {
+            $rows[] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
      * A grid is an explorer and draws its whole control bar, so narrowed it
      * clips its own columns: Model Comparison's half-width tables hid Revenue
      * at every width. The custom report editor refuses one; a shipped

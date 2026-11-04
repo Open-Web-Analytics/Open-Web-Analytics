@@ -1,6 +1,6 @@
 {
     "title": "Content Overview",
-    "description": "What was viewed: top pages, page titles, content groups, landing pages and clicked elements.",
+    "description": "What was viewed: top pages, the elements clicked on them, and the pages sessions started and ended on.",
     "metrics": "sessions,pageViews",
     "widgets": [
         {
@@ -12,7 +12,8 @@
                 "sort": "date",
                 "metrics": "pageViews,pageViewsPerSession"
             },
-            "chartMetric": "pageViews"
+            "chartMetric": "pageViews",
+            "colspan": 12
         },
         {
             "type": "grid-card",
@@ -37,18 +38,24 @@
         },
         {
             "type": "grid-card",
-            "id": "toppagetypes",
-            "container": "top-pagetypes",
-            "title": "Page Types",
-            "colspan": 6,
+            "id": "clickedelements",
+            "container": "clicked-elements",
+            "title": "Most Clicked Elements",
             "query": {
-                "metrics": "sessions",
-                "dimensions": "contentGroup",
-                "sort": "sessions-"
+                "metrics": "eventCount",
+                "dimensions": "domElementId",
+                "sort": "eventCount-"
             },
+            "constraints": [
+                {
+                    "dimension": "eventName",
+                    "value": "click"
+                }
+            ],
             "more": {
-                "reportId": "page-types"
-            }
+                "reportId": "clicks"
+            },
+            "colspan": 6
         },
         {
             "type": "grid-card",
@@ -77,27 +84,6 @@
             },
             "more": {
                 "reportId": "exit-pages"
-            },
-            "colspan": 6
-        },
-        {
-            "type": "grid-card",
-            "id": "clickedelements",
-            "container": "clicked-elements",
-            "title": "Most Clicked Elements",
-            "query": {
-                "metrics": "eventCount",
-                "dimensions": "domElementId",
-                "sort": "eventCount-"
-            },
-            "constraints": [
-                {
-                    "dimension": "eventName",
-                    "value": "click"
-                }
-            ],
-            "more": {
-                "reportId": "clicks"
             },
             "colspan": 6
         }
