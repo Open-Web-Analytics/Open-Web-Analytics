@@ -56,7 +56,7 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
         $this->set( 'triggerEvent', $trigger );
         $this->set( 'triggerEvents',
-            \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
+            \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames() );
         $this->set( 'conditionProperties', self::conditionProperties( $trigger, $conditions ) );
 
         $this->set( 'conditionVocabulary', self::vocabulary() );
@@ -80,7 +80,7 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
         $vocabulary = array();
 
-        foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() as $event ) {
+        foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames() as $event ) {
 
             $vocabulary[ $event ] = self::conditionProperties( $event );
         }

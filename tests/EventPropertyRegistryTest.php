@@ -254,4 +254,27 @@ final class EventPropertyRegistryTest extends TestCase
             'a declared event must be admitted as first-class, not merely tolerated '
             . 'because it happens to match the custom-name pattern');
     }
+
+    /**
+     * A goal is about what a visitor did, so an event that reports on the
+     * site's own code is first-class without being a goal trigger. The goal
+     * screens offer and accept only goalTriggerEventNames().
+     */
+    public function testAnExceptionIsFirstClassButNotAGoalTrigger(): void
+    {
+        $this->assertContains('exception', Helpers::eventNames());
+        $this->assertNotContains('exception', Helpers::goalTriggerEventNames());
+
+        $this->assertSame(['exception'],
+            array_values(array_diff(Helpers::eventNames(), Helpers::goalTriggerEventNames())),
+            'every other first-class event is still a trigger');
+
+        foreach (['GoalEventEdit', 'GoalEventSave'] as $controller) {
+            $source = (string) file_get_contents(OWA_DIR . "modules/Base/Controller/$controller.php");
+
+            $this->assertStringNotContainsString('TrackingEventHelpers::eventNames()', $source,
+                "$controller offers or accepts a trigger from the full event list");
+            $this->assertStringContainsString('TrackingEventHelpers::goalTriggerEventNames()', $source);
+        }
+    }
 }

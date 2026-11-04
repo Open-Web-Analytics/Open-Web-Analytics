@@ -88,7 +88,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $trigger = (string) $this->getParam( 'triggerEvent' );
 
         if ( $trigger !== '' && ! in_array( $trigger,
-                \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
+                \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames(), true ) ) {
 
             $this->addValidation( 'triggerEvent', '', 'required', array(
                 'errorMsg' => \OWA\Core\CoreAPI::t( 'OWA does not collect that event.' ) ) );
@@ -372,14 +372,14 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $trigger = (string) $this->getParam( 'triggerEvent' );
 
         if ( ! in_array( $trigger,
-                \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
+                \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames(), true ) ) {
 
             $trigger = \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT;
         }
 
         $this->set( 'triggerEvent', $trigger );
         $this->set( 'triggerEvents',
-            \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
+            \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames() );
         $this->set( 'conditionProperties',
             GoalEventEdit::conditionProperties( $trigger, $conditions ) );
         $this->set( 'conditionVocabulary', GoalEventEdit::vocabulary() );

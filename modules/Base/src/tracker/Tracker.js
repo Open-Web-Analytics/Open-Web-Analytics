@@ -1288,6 +1288,11 @@ class OWATracker  {
      * that section, which is also what makes it correct when someone lands
      * mid-section.
      *
+     * With trackRouteChanges() on, the group is dropped at the moment a route
+     * is left, after that route's engagement is sent. So a route sets its own
+     * group once the URL has changed, as it sets its title; one set before the
+     * pushState belongs to the route being left and goes with it.
+     *
      * @command
      * @param {string} value
      */
@@ -2909,6 +2914,10 @@ class OWATracker  {
         var lastTracked = this.getCurrentUrl();
         var pending = null;
 
+        // The content group of the route being left, kept until the route
+        // settles in case it settles back on the same URL.
+        var leftGroup;
+
         /*
          * The page view goes once the URL has been still for ROUTE_SETTLE_MSEC,
          * and reads the URL and title then. Frameworks set document.title
@@ -2929,11 +2938,22 @@ class OWATracker  {
 
             var url = that.getCurrentUrl();
 
-            // Left and came back inside the window: no route change happened.
+            // Left and came back inside the window: no route change happened,
+            // so the page keeps its group unless one was set meanwhile.
             if ( url === lastTracked ) {
+
+                if ( leftGroup !== undefined
+                     && that.getGlobalEventProperty( 'content_group' ) === undefined ) {
+
+                    that.setGlobalEventProperty( 'content_group', leftGroup );
+                }
+
+                leftGroup = undefined;
 
                 return;
             }
+
+            leftGroup = undefined;
 
             // The previous page is this page's referrer, for the page view and
             // every event after it on this route. document.referrer still
@@ -2985,6 +3005,19 @@ class OWATracker  {
                 that.flushScrollDepth();
                 that.trackEngagement();
                 that.resetEngagement();
+
+                /*
+                 * THE CONTENT GROUP IS PAGE-SCOPED (setContentGroup()), and it
+                 * is a global event property on this tracker, so nothing else
+                 * ends it: without this, every route after the first carried
+                 * the group of whichever route last set one. Dropped HERE, not
+                 * in send(), because the next route sets its group after the
+                 * pushState, inside the settle window, and its page view must
+                 * carry it. The residue above is sent first, under the group of
+                 * the route it was spent on.
+                 */
+                leftGroup = that.getGlobalEventProperty( 'content_group' );
+                that.deleteGlobalEventProperty( 'content_group' );
             }
 
             // No scroll event for a route before its page view: depth checks
@@ -4862,14 +4895,14 @@ class OWATracker  {
      *
      * The reserved list IS the first-class list -- page_view, click, scroll,
      * file_download, form_start, form_submit, session_start, first_visit,
-     * user_engagement, view_search_results, purchase, refund. Reusing one of them would put a
-     * site's own counts into a report measuring
+     * user_engagement, view_search_results, exception, purchase, refund. Reusing
+     * one of them would put a site's own counts into a report measuring
      * something else, and on the server it would claim a property vocabulary the
      * event does not have.
      *
-     * KEPT IN STEP BY A TEST, not by hand: the server derives the same set from
-     * the property registry -- an event is first-class exactly when some property
-     * declares it -- and TrackerReservedEventNamesTest asserts the two agree. So
+     * KEPT IN STEP BY A TEST, not by hand: the server declares the same set in
+     * config/tracking_events.php, and TrackerReservedEventNamesTest asserts the
+     * two agree and that every event this file sends is on the list. So
      * adding a first-class event on the server fails here until this is updated,
      * which is the only direction that can go wrong silently.
      *
@@ -4883,7 +4916,7 @@ class OWATracker  {
             'page_view', 'click', 'purchase', 'refund',
             'user_engagement', 'scroll', 'file_download',
             'form_start', 'form_submit', 'view_search_results',
-            'session_start', 'first_visit'
+            'exception', 'session_start', 'first_visit'
         ];
 
         // And whatever a compiled-in or lazy plugin sends.

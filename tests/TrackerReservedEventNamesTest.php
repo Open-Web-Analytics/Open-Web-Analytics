@@ -8,19 +8,18 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 /**
  * The tracker's reserved event names are the server's first-class ones.
  *
- * WHAT MAKES A NAME FIRST-CLASS is that some property in the registry declares
- * it -- CoreAPI::trackingEventTypes() derives the set rather than listing it, so
- * the vocabulary and the gate cannot drift. The TRACKER has to know the same set
+ * WHAT MAKES A NAME FIRST-CLASS is its declaration in config/tracking_events.php,
+ * which TrackingEventHelpers::eventNames() reads. The TRACKER has to know the same set
  * for a different reason: trackCustomEvent() must refuse a site's event that
  * would collide with one of OWA's own, because once a beacon arrives the server
  * cannot tell a site's `click` from its own.
  *
  * The reserved list IS the first-class list -- page_view, click, scroll,
  * file_download, form_start, form_submit, session_start, first_visit,
- * user_engagement, view_search_results, purchase, refund. Reusing one puts a site's counts into a
- * report measuring something else.
+ * user_engagement, view_search_results, exception, purchase, refund. Reusing
+ * one puts a site's counts into a report measuring something else.
  *
- * THE TWO LISTS CANNOT BE DERIVED FROM EACH OTHER: one is PHP reading a JSON file
+ * THE TWO LISTS CANNOT BE DERIVED FROM EACH OTHER: one is PHP reading a config file
  * at runtime, the other is a constant compiled into a bundle served from a CDN.
  * So they are kept in step by this test, which fails the moment a first-class
  * event is added on the server and not in the tracker -- the only direction that
@@ -57,7 +56,7 @@ final class TrackerReservedEventNamesTest extends TestCase
         return $names;
     }
 
-    /** @return string[] every event name the property registry declares */
+    /** @return string[] every event name config/tracking_events.php declares */
     private function serverFirstClass(): array
     {
         $names = Helpers::eventNames();
@@ -96,6 +95,30 @@ final class TrackerReservedEventNamesTest extends TestCase
             $this->assertContains( $marker, $reserved,
                 $marker . ' is a stored event type and must be reserved' );
         }
+    }
+
+    /**
+     * Every event the tracker sends under a literal name is reserved.
+     *
+     * The case that slipped: trackExceptions() raised `exception`, the name was
+     * on neither list, and a site's own trackCustomEvent('exception') was sent
+     * and stored beside the tracker's with nothing to tell the two apart. The
+     * lists agreeing could not catch it, because both lacked it.
+     */
+    public function testEveryEventTheTrackerSendsIsReserved(): void
+    {
+        $source = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/src/tracker/Tracker.js' );
+
+        preg_match_all( "/(?:setEventType|raiseEvent)\\(\\s*'([A-Za-z_]+)'/", $source, $found );
+
+        $sent = array_values( array_unique( (array) $found[1] ) );
+
+        $this->assertContains( 'exception', $sent,
+            'the pattern no longer finds the names Tracker.js sends; this test is stale' );
+
+        $this->assertSame( array(), array_values( array_diff( $sent, $this->trackerReserved() ) ),
+            'Tracker.js sends these events under names a site can also take' );
     }
 
     /**
