@@ -306,6 +306,62 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
+     * The event name Update075 gives each goal event whose name is not a
+     * usable event name unique within its Property.
+     *
+     * One that another goal event of the Property already has, or that OWA
+     * collects, gets a number on the end. Read by Update075, which renames
+     * them, AND by the v1 migration (Classes\Migration\GoalMigrator), which
+     * runs first, in Update062: the conversion rows it stores must carry the
+     * name the goal event will have, or they group apart from every later one.
+     * Pure, so both give the same answer from the same rows; once Update075
+     * has run it has nothing to rename.
+     *
+     * @param  array $rows  goal events' id, property_id and name, in id order:
+     *                      a Property's alone gives what all of them would
+     * @return array id => the new name, for each one that is renamed
+     */
+    public static function eventNames( array $rows ) {
+
+        // Case-blind, like the column's collation: Contact and contact would group as one event.
+        $taken = array();
+
+        foreach ( $rows as $row ) {
+
+            if ( self::nameProblem( $row['name'] ) === '' ) {
+
+                $taken[ (string) $row['property_id'] ][ strtolower( $row['name'] ) ] = (string) $row['id'];
+            }
+        }
+
+        $renamed = array();
+
+        foreach ( $rows as $row ) {
+
+            $id       = (string) $row['id'];
+            $property = (string) $row['property_id'];
+
+            if ( ( $taken[ $property ][ strtolower( $row['name'] ) ] ?? null ) === $id ) {
+
+                continue;
+            }
+
+            $base = self::nameFrom( $row['name'] );
+            $name = $base;
+
+            for ( $n = 2; self::nameProblem( $name ) !== '' || isset( $taken[ $property ][ strtolower( $name ) ] ); $n++ ) {
+
+                $name = substr( $base, 0, 40 - strlen( '_' . $n ) ) . '_' . $n;
+            }
+
+            $taken[ $property ][ strtolower( $name ) ] = $id;
+            $renamed[ $id ] = $name;
+        }
+
+        return $renamed;
+    }
+
+    /**
      * Why a name cannot be a goal event's, or '' when it can.
      *
      * A name OWA collects itself is refused: a goal row called click would be

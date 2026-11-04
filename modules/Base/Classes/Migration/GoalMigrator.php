@@ -11,8 +11,9 @@ namespace OWA\Module\Base\Classes\Migration;
  * v1's recorded goal completions onto the migrated rows (PLAN.html 2.21).
  *
  * v1 recorded a completion per session in a numbered slot (owa_session.goal_N);
- * v2 counts a conversion row, named by the goal event and flagged
- * is_goal_event = 1 (Classes\GoalMarking). For each session v1 says completed
+ * v2 counts a conversion row, named by the goal event -- by the name Update075
+ * gives it, see eventName() -- and flagged is_goal_event = 1
+ * (Classes\GoalMarking). For each session v1 says completed
  * goal N, the first migrated row of that session that meets the goal event
  * Update025 made of slot N -- its condition compiled exactly as the funnel
  * compiles it -- gets one.
@@ -231,10 +232,46 @@ class GoalMigrator extends FactMigrator {
                 ? ( new \OWA\Module\Base\Classes\GoalEventPredicate() )->compile( $goal, 'e' )
                 : false;
 
-            $this->compiled[ $id ] = $compiled ? $compiled + array( 'name' => (string) $goal->get( 'name' ) ) : false;
+            $this->compiled[ $id ] = $compiled ? $compiled + array( 'name' => $this->eventName( $goal ) ) : false;
         }
 
         return $this->compiled[ $id ] ?: null;
+    }
+
+    /** @var array property id => goal event id => its name once Update075 has run */
+    private $renamed = array();
+
+    /**
+     * The name a goal event's conversion rows carry: the one Update075 gives
+     * it, NOT the 1.x name it still has.
+     *
+     * This pass runs in Update062, before Update075 renames the goal events
+     * whose 1.x names are not event names ("Contact form" becomes
+     * Contact_form). A row stored under the 1.x name would stay under it, and
+     * the Goals report would show the migrated conversions and every later one
+     * as two goal events. After Update075 nothing is renamed and this is the
+     * name the goal event has, so revertSite() finds the same rows either way.
+     */
+    private function eventName( \OWA\Module\Base\Entity\GoalEvent $goal ) {
+
+        $property = (string) $goal->get( 'property_id' );
+
+        if ( ! array_key_exists( $property, $this->renamed ) ) {
+
+            $rows = array_map( function ( $r ) { return (array) $r; }, (array) $this->db()->get_results( sprintf(
+                'SELECT id, property_id, name FROM %s WHERE property_id = ? ORDER BY id', $goal->getTableName() ),
+                array( $property ) ) );
+
+            /*
+             * The names as STORED, under the renames. Not the entity's: it is
+             * loaded through the entity cache, and Update075 renames with SQL,
+             * so after it the cached entity can still carry the 1.x name.
+             */
+            $this->renamed[ $property ] = \OWA\Module\Base\Entity\GoalEvent::eventNames( $rows )
+                + array_column( $rows, 'name', 'id' );
+        }
+
+        return (string) ( $this->renamed[ $property ][ (string) $goal->get( 'id' ) ] ?? $goal->get( 'name' ) );
     }
 
     /**

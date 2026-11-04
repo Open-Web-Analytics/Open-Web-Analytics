@@ -543,4 +543,64 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertSame([], $this->rows('Thanks'));
         $this->assertCount(3, $this->rows('page_view'));
     }
+
+    /**
+     * This pass runs in Update062, before Update075 renames the goal events
+     * whose 1.x names are not event names. Stored under the 1.x name, the
+     * migrated conversions and every later one were two goal events in the
+     * Goals report.
+     */
+    public function testAConversionCarriesTheNameUpdate075GivesItsGoalEvent(): void
+    {
+        $property = \OWA\Module\Base\Classes\Migration\GoalMigrator::propertyFor(self::SITE);
+        [$form, $taken] = $this->goalIds();
+
+        // Slot 2 already has the name slot 1's would become.
+        foreach ([[$form, 'Thanks page', 1], [$taken, 'Thanks_page', 2]] as [$id, $name, $n]) {
+            $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
+            $goal->setProperties(['id' => $id, 'property_id' => $property, 'name' => $name, 'goal_number' => $n,
+                'trigger_event_type' => 'page_view', 'condition_match' => 'all', 'is_active' => 1]);
+            $goal->create();
+
+            $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
+            $condition->setProperties(['id' => (string) ((int) $id + 1), 'goal_event_id' => $id,
+                'condition_property' => 'page_path', 'condition_operator' => 'exact', 'condition_value' => '/thanks']);
+            $condition->create();
+        }
+
+        $this->insert('session', ['id' => self::SESSION, 'site_id' => self::SITE, 'visitor_id' => self::VISITOR,
+            'timestamp' => self::T, 'yyyymmdd' => self::DAY, 'goal_1' => 1, 'goal_2' => 1]);
+        $this->fact('request', '1790000000000000801', ['document_id' => '101', 'is_entry_page' => 1]);
+        $this->fact('request', '1790000000000000802', ['document_id' => '102', 'timestamp' => self::T + 60]);
+
+        (new RequestMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+        $progress = (new GoalMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+
+        $this->assertSame(2, $progress['rows_written']);
+        $this->assertSame([], $this->rows('Thanks page'), 'not the 1.x name');
+        $this->assertCount(1, $this->rows('Thanks_page_2'), 'the name Update075 gives it');
+        $this->assertCount(1, $this->rows('Thanks_page'), 'slot 2 keeps its name');
+
+        // Update075 then gives the goal event that name: one goal event, one name.
+        $setting = \OWA\Module\Base\Update\Update075::BEFORE;
+
+        try {
+            $this->assertTrue((new \OWA\Module\Base\Update\Update075())->up());
+
+            $names = array_map(fn ($id) => (string) ((array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+                'SELECT name FROM owa_goal_event WHERE id = ?', [$id]))['name'], [$form, $taken]);
+
+            $this->assertSame(['Thanks_page_2', 'Thanks_page'], $names);
+        } finally {
+            // Only this test's entry: the suite's database may hold others for down().
+            $before = (array) \OWA\Core\CoreAPI::getSetting('base', $setting);
+            unset($before[$form]);
+            \OWA\Core\CoreAPI::persistSetting('base', $setting, $before);
+        }
+
+        // Reverting finds the rows under that name, before Update075 or after it.
+        $this->assertSame(2, (new GoalMigrator(V1Schema::PREFIX))->revertSite(self::SITE));
+        $this->assertSame([], $this->rows('Thanks_page_2'));
+        $this->assertSame([], $this->rows('Thanks_page'));
+    }
 }

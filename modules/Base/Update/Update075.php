@@ -113,46 +113,24 @@ class Update075 extends \OWA\Core\Update {
         return true;
     }
 
-    /** Rename every goal event whose name is not a usable event name, unique within its Property. */
+    /**
+     * Rename every goal event whose name is not a usable event name, unique
+     * within its Property (GoalEvent::eventNames()). On an upgrade from 1.x the
+     * conversion rows Update062 stored already carry these names.
+     */
     private function renameGoalEvents() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName();
-        $rows  = (array) $db->get_results( sprintf( 'SELECT id, property_id, name FROM %s ORDER BY id', $table ) );
-
-        // Case-blind, like the column's collation: Contact and contact would group as one event.
-        $taken = array();
-
-        foreach ( $rows as $row ) {
-
-            if ( \OWA\Module\Base\Entity\GoalEvent::nameProblem( $row['name'] ) === '' ) {
-
-                $taken[ (string) $row['property_id'] ][ strtolower( $row['name'] ) ] = (string) $row['id'];
-            }
-        }
+        $rows  = array_map( function ( $r ) { return (array) $r; }, (array) $db->get_results(
+            sprintf( 'SELECT id, property_id, name FROM %s ORDER BY id', $table ) ) );
+        $was   = array_column( $rows, 'name', 'id' );
 
         $before = (array) \OWA\Core\CoreAPI::getSetting( 'base', self::BEFORE );
 
-        foreach ( $rows as $row ) {
+        foreach ( \OWA\Module\Base\Entity\GoalEvent::eventNames( $rows ) as $id => $name ) {
 
-            $id       = (string) $row['id'];
-            $property = (string) $row['property_id'];
-
-            if ( ( $taken[ $property ][ strtolower( $row['name'] ) ] ?? null ) === $id ) {
-
-                continue;
-            }
-
-            $base = \OWA\Module\Base\Entity\GoalEvent::nameFrom( $row['name'] );
-            $name = $base;
-
-            for ( $n = 2; \OWA\Module\Base\Entity\GoalEvent::nameProblem( $name ) !== '' || isset( $taken[ $property ][ strtolower( $name ) ] ); $n++ ) {
-
-                $name = substr( $base, 0, 40 - strlen( '_' . $n ) ) . '_' . $n;
-            }
-
-            $taken[ $property ][ strtolower( $name ) ] = $id;
-            $before[ $id ] = array( 'was' => (string) $row['name'], 'now' => $name );
+            $before[ $id ] = array( 'was' => (string) $was[ $id ], 'now' => $name );
 
             // Kept before the rename, so a run that stops between the two can still be undone.
             \OWA\Core\CoreAPI::persistSetting( 'base', self::BEFORE, $before );
@@ -164,7 +142,7 @@ class Update075 extends \OWA\Core\Update {
                 return false;
             }
 
-            $this->e->notice( sprintf( 'Goal event "%s" is now %s.', $row['name'], $name ) );
+            $this->e->notice( sprintf( 'Goal event "%s" is now %s.', $was[ $id ], $name ) );
         }
 
         // The goal events were read through the entity cache before this.
