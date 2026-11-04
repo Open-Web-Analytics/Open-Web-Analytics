@@ -242,6 +242,39 @@ final class GoalEventStorageTest extends TestCase
         $this->assertSame( 40, strlen( $from( str_repeat( 'a', 60 ) ) ) );
     }
 
+    /**
+     * The names Update075 renames to, which the v1 migration also stores
+     * conversions under: unique within a Property, case-blind, in id order,
+     * and a Property's goal events alone give what all of them do.
+     */
+    public function testTheNamesGoalEventsAreGivenAreUniqueWithinTheirProperty(): void
+    {
+        $rows = array(
+            array( 'id' => '11', 'property_id' => '1', 'name' => 'Contact form' ),
+            array( 'id' => '12', 'property_id' => '1', 'name' => 'contact_form' ),
+            array( 'id' => '13', 'property_id' => '1', 'name' => 'Contact-form' ),
+            array( 'id' => '14', 'property_id' => '1', 'name' => 'click' ),
+            array( 'id' => '15', 'property_id' => '1', 'name' => 'Fine_name' ),
+            array( 'id' => '21', 'property_id' => '2', 'name' => 'Contact form' ),
+        );
+
+        $names = \OWA\Module\Base\Entity\GoalEvent::eventNames( $rows );
+
+        $this->assertSame( array( 11 => 'Contact_form_2', 13 => 'Contact_form_3', 14 => 'click_2', 21 => 'Contact_form' ), $names,
+            'a usable name keeps it; another Property is not a collision' );
+
+        $this->assertSame( array( 21 => 'Contact_form' ),
+            \OWA\Module\Base\Entity\GoalEvent::eventNames( array( $rows[5] ) ) );
+        $this->assertSame( array_intersect_key( $names, array( 11 => 1, 13 => 1, 14 => 1 ) ),
+            \OWA\Module\Base\Entity\GoalEvent::eventNames( array_slice( $rows, 0, 5 ) ) );
+
+        foreach ( $rows as $i => $row ) {
+            $rows[ $i ]['name'] = $names[ $row['id'] ] ?? $row['name'];
+        }
+
+        $this->assertSame( array(), \OWA\Module\Base\Entity\GoalEvent::eventNames( $rows ), 'once renamed, nothing is' );
+    }
+
     public function testANameOWACollectsOrThatIsNotAnEventNameIsRefused(): void
     {
         $problem = array( \OWA\Module\Base\Entity\GoalEvent::class, 'nameProblem' );
