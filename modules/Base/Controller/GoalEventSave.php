@@ -68,7 +68,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
                 return $value !== '';
             } );
 
-        if ( ! $values ) {
+        if ( ! $values && ! \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $this->trigger() ) ) {
 
             $this->addValidation( 'conditionValue', '', 'required', array(
                 'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a value to compare against.' ) ) );
@@ -85,15 +85,28 @@ class GoalEventSave extends \OWA\Core\AdminController {
          * this install was already in, and the reason to refuse it at the one
          * point where someone is looking at the screen.
          */
-        $trigger = (string) $this->getParam( 'triggerEvent' );
+        $trigger = $this->trigger();
 
-        if ( $trigger !== '' && ! in_array( $trigger,
-                \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames(), true ) ) {
+        $problem = $trigger === '' && $this->getParam( 'triggerEvent' ) === \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM
+            ? \OWA\Core\CoreAPI::t( 'Enter the name of the custom event.' )
+            : ( $trigger !== '' ? \OWA\Module\Base\Entity\GoalEvent::triggerProblem( $trigger ) : '' );
 
-            $this->addValidation( 'triggerEvent', '', 'required', array(
-                'errorMsg' => \OWA\Core\CoreAPI::t( 'OWA does not collect that event.' ) ) );
+        if ( $problem !== '' ) {
+
+            $this->addValidation( 'triggerEvent', '', 'required', array( 'errorMsg' => $problem ) );
 
             $trigger = '';
+        }
+
+        /*
+         * NOT THE TRIGGER'S OWN NAME. A conversion row is stored under the goal
+         * event's name, so a goal named newsletter_signup on newsletter_signup
+         * would add a second newsletter_signup row for every one the site sent.
+         */
+        if ( $trigger !== '' && $name !== '' && strcasecmp( $trigger, $name ) === 0 ) {
+
+            $this->addValidation( 'name', '', 'required', array( 'errorMsg' => sprintf(
+                \OWA\Core\CoreAPI::t( 'A goal event cannot have the name of the event that triggers it, %s.' ), $trigger ) ) );
         }
 
         if ( $trigger !== '' ) {
@@ -199,7 +212,7 @@ class GoalEventSave extends \OWA\Core\AdminController {
          * than the submitted value keeps a form with no field at all (an API
          * caller) working.
          */
-        $trigger = (string) $this->getParam( 'triggerEvent' );
+        $trigger = $this->trigger();
 
         $goalEvent->set( 'trigger_event_type', $trigger !== '' ? $trigger
             : ( $goalEvent->get( 'trigger_event_type' )
@@ -223,6 +236,21 @@ class GoalEventSave extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.goalEvents' );
         $this->set( 'status_code', 3219 );
     }
+    /**
+     * The trigger as submitted: the picker's event, or for "a custom event"
+     * the name typed beside it.
+     *
+     * @return string
+     */
+    private function trigger() {
+
+        $trigger = (string) $this->getParam( 'triggerEvent' );
+
+        return $trigger === \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM
+            ? trim( (string) $this->getParam( 'customTriggerEvent' ) )
+            : $trigger;
+    }
+
     /**
      * The goal event's name: what was typed for a new one, the stored one for a
      * saved one. Its conversions are stored under it, so a later save cannot
@@ -369,17 +397,24 @@ class GoalEventSave extends \OWA\Core\AdminController {
          * the event the author had chosen -- not of the default. Falling back to
          * the default only when nothing was submitted.
          */
-        $trigger = (string) $this->getParam( 'triggerEvent' );
+        $trigger = $this->trigger();
 
-        if ( ! in_array( $trigger,
-                \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames(), true ) ) {
+        /*
+         * A custom name that was refused comes back in its field, with the
+         * picker on "a custom event", rather than being swapped for the default.
+         */
+        if ( $trigger === '' || \OWA\Module\Base\Entity\GoalEvent::triggerProblem( $trigger ) !== '' ) {
 
-            $trigger = \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT;
+            $trigger = $this->getParam( 'triggerEvent' ) === \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM
+                ? \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM
+                : \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT;
         }
 
         $this->set( 'triggerEvent', $trigger );
+        $this->set( 'customTriggerEvent', trim( (string) $this->getParam( 'customTriggerEvent' ) ) );
         $this->set( 'triggerEvents',
             \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames() );
+        $this->set( 'customTriggerEvents', GoalEventEdit::customEventNames( $propertyId ) );
         $this->set( 'conditionProperties',
             GoalEventEdit::conditionProperties( $trigger, $conditions ) );
         $this->set( 'conditionVocabulary', GoalEventEdit::vocabulary() );

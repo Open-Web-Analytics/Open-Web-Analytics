@@ -191,9 +191,11 @@ class GoalMarking {
              * A goal event with no conditions is dropped here rather than
              * carried and refused per row. matchesRow() answers false for it
              * anyway -- an empty rule is not a universal one -- so this only
-             * saves the walk.
+             * saves the walk. Not on a custom event, whose name is its
+             * condition.
              */
-            if ( ! $conditions ) {
+            if ( ! $conditions
+                 && ! \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $goalEvent->get( 'trigger_event_type' ) ) ) {
 
                 continue;
             }

@@ -1,4 +1,4 @@
-import { optionsFor, optionText, helpText, fill, formatResult, setText, SEPARATOR } from '../../modules/Base/src/reporting/v1/owa.goalbuilder.js';
+import { optionsFor, optionText, helpText, fill, formatResult, setText, triggerName, SEPARATOR, CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/v1/owa.goalbuilder.js';
 
 /**
  * The goal event builder's picker (owa.goalbuilder.js): what it offers for an
@@ -27,6 +27,25 @@ test('a property in use the event does not carry is kept, flagged, still describ
     expect(kept.carried).toBe(false);
     expect(kept.label).toBe('Source (from the URL) -- not carried by click');
     expect(kept.description).toBe('The tagged source.');
+});
+
+/*
+ * A site's own event: every one carries the common properties, listed once
+ * under the picker's custom value, which any name the vocabulary does not have
+ * falls back to.
+ */
+test('an event of the site\'s own offers the custom list', () => {
+    const vocab = { ...VOCAB, [CUSTOM_TRIGGER]: [ { name: 'page_path', label: 'Page path', description: '', carried: true } ] };
+
+    expect(optionsFor(vocab, 'newsletter_signup', '').map((p) => p.name)).toEqual(['page_path']);
+    expect(optionsFor(vocab, CUSTOM_TRIGGER, '').map((p) => p.name)).toEqual(['page_path']);
+    expect(optionsFor(vocab, 'click', '').map((p) => p.name)).toEqual(['page_path', 'is_outbound']);
+});
+
+test('the trigger is named by the field beside "another event of yours"', () => {
+    expect(triggerName('click', 'ignored')).toBe('click');
+    expect(triggerName(CUSTOM_TRIGGER, '  newsletter_signup ')).toBe('newsletter_signup');
+    expect(triggerName(CUSTOM_TRIGGER, '')).toBe('custom');
 });
 
 test('a carried property in use is not duplicated', () => {

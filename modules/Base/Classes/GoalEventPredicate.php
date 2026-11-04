@@ -82,21 +82,6 @@ class GoalEventPredicate {
         $conditions = $goalEvent->loadConditions();
 
         /*
-         * NO conditions matches NOTHING, which is what matchesRow() answers
-         * for the same case and for the same reason: an empty rule is
-         * vacuously true, and a half-written goal event that counted every
-         * event on the site would be loudly wrong only after the fact.
-         *
-         * `0 = 1` rather than a refusal, because this is not an error -- it is
-         * a goal event that genuinely counts nothing, and the funnel should say
-         * zero rather than fail to draw.
-         */
-        if ( ! $conditions ) {
-
-            return array( 'sql' => '( 0 = 1 )', 'params' => array() );
-        }
-
-        /*
          * THE TRIGGER GATES, as it does in matchesRow(): a goal event on
          * page_view is not met by a click on the same page. No trigger matches
          * nothing, there as here.
@@ -106,6 +91,26 @@ class GoalEventPredicate {
         if ( $trigger === '' ) {
 
             return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+        }
+
+        /*
+         * NO conditions matches NOTHING, which is what matchesRow() answers
+         * for the same case and for the same reason: an empty rule is
+         * vacuously true, and a half-written goal event that counted every
+         * event on the site would be loudly wrong only after the fact.
+         *
+         * `0 = 1` rather than a refusal, because this is not an error -- it is
+         * a goal event that genuinely counts nothing, and the funnel should say
+         * zero rather than fail to draw.
+         *
+         * Except on a custom event, whose name is its own condition, as in
+         * matchesRow().
+         */
+        if ( ! $conditions ) {
+
+            return \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $trigger )
+                ? array( 'sql' => '( ' . $alias . '.event_type = ? )', 'params' => array( $trigger ) )
+                : array( 'sql' => '( 0 = 1 )', 'params' => array() );
         }
 
         $any = $goalEvent->conditionMatch()

@@ -178,6 +178,13 @@ class GoalEvent extends \OWA\Core\Entity {
      */
     const TRIGGER_DEFAULT = 'page_view';
 
+    /**
+     * The trigger picker's value for "a custom event, named in the field
+     * beside it". Not an event name: the parentheses fail the name pattern, so
+     * it can never be stored as a trigger.
+     */
+    const TRIGGER_CUSTOM = '(custom)';
+
     function __construct() {
 
         $this->setTableName( 'goal_event' );
@@ -382,6 +389,65 @@ class GoalEvent extends \OWA\Core\Entity {
         if ( in_array( $name, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
 
             return sprintf( \OWA\Core\CoreAPI::t( '%s is an event OWA collects.' ), $name );
+        }
+
+        return '';
+    }
+
+    /**
+     * Whether a trigger is a site's own event rather than one of OWA's.
+     *
+     * A custom event's name already says what happened -- newsletter_signup --
+     * so a goal on one needs no condition to mean something, where a goal on
+     * every page_view would count every page view.
+     *
+     * @param  string $trigger
+     * @return bool
+     */
+    public static function isCustomTrigger( $trigger ) {
+
+        $trigger = (string) $trigger;
+
+        return $trigger !== ''
+            && self::triggerProblem( $trigger ) === ''
+            && ! in_array( $trigger,
+                \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames(), true );
+    }
+
+    /**
+     * Why an event cannot trigger a goal event, or '' when it can.
+     *
+     * One of OWA's goal triggers, or a name a site can send as its own event:
+     * the tracker's custom name pattern, not an event OWA or a module sends,
+     * and not under the owa_ prefix the tracker refuses for a site's events.
+     *
+     * @param  string $trigger
+     * @return string
+     */
+    public static function triggerProblem( $trigger ) {
+
+        $trigger = (string) $trigger;
+
+        if ( in_array( $trigger,
+                \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames(), true ) ) {
+
+            return '';
+        }
+
+        if ( in_array( $trigger, \OWA\Core\CoreAPI::trackingEventTypes(), true )
+             || in_array( $trigger, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
+
+            return sprintf( \OWA\Core\CoreAPI::t( 'A goal event cannot be triggered by %s.' ), $trigger );
+        }
+
+        if ( ! preg_match( \OWA\Module\Base\Classes\TrackingEventHelpers::CUSTOM_NAME_PATTERN, $trigger ) ) {
+
+            return \OWA\Core\CoreAPI::t( 'An event name starts with a letter and has up to 40 letters, digits and underscores.' );
+        }
+
+        if ( stripos( $trigger, 'owa_' ) === 0 ) {
+
+            return \OWA\Core\CoreAPI::t( 'The tracker does not send a site\'s own event under a name starting owa_.' );
         }
 
         return '';
@@ -653,10 +719,13 @@ class GoalEvent extends \OWA\Core\Entity {
          * loudly wrong, and only after it had already happened. This install
          * already had a goal that could never fire; one that fires for
          * everything is the worse direction to be wrong in.
+         *
+         * EXCEPT ON A CUSTOM EVENT, whose name is the condition: every
+         * newsletter_signup is one.
          */
         if ( ! $conditions ) {
 
-            return false;
+            return self::isCustomTrigger( $trigger );
         }
 
         $any = $this->conditionMatch() === self::MATCH_ANY;

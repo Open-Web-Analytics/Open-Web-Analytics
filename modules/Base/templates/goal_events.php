@@ -10,7 +10,7 @@
 ?>
 <div class="panel_headline"><?php echo $view->headline;?></div>
 <div id="panel">
-<div class="owa_panelIntro">A goal event counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted. Goal events belong to the <strong>Property</strong>, so they count the same way in all of its Observation Profiles.</div>
+<div class="owa_panelIntro">A goal event counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted, or every one of an event of your own. Goal events belong to the <strong>Property</strong>, so they count the same way in all of its Observation Profiles.</div>
 
 <?php
 /*
@@ -54,7 +54,10 @@
             <tr>
                 <td><?php $view->out( $owa_ke['name'] );?></td>
                 <td class="owa_goalEventCondition">
+                    <?php $owa_trigger = (string) ( $owa_ke['trigger_event_type'] ?? '' );?>
                     <?php if ( ! empty( $owa_ke['conditions'] ) ):?>
+                    <span class="owa_goalEventTrigger"><?php $view->out( $owa_trigger );?></span>
+                    <span class="owa_goalEventJoin">where</span>
                     <?php foreach ( $owa_ke['conditions'] as $owa_i => $owa_cond ):?>
                         <?php if ( $owa_i ):?>
                         <span class="owa_goalEventJoin"><?php $view->out( $owa_ke['condition_match'] === 'any' ? 'or' : 'and' );?></span>
@@ -64,6 +67,8 @@
                             \OWA\Module\Base\Entity\GoalEvent::operators()[ $owa_cond['operator'] ] ?? $owa_cond['operator'] );?></span>
                         <span class="owa_goalEventValue"><?php $view->out( $owa_cond['value'] );?></span>
                     <?php endforeach;?>
+                    <?php elseif ( \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $owa_trigger ) ):?>
+                    every <span class="owa_goalEventTrigger"><?php $view->out( $owa_trigger );?></span>
                     <?php else:?>
                     <?php
                         /*

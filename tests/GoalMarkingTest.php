@@ -297,6 +297,22 @@ final class GoalMarkingTest extends TestCase
     /* ---------------- helpers ---------------- */
 
     /** event name => is_goal_event, in the order the set holds them. */
+    /** A goal on a site's own event, with no condition, converts on every one of them. */
+    public function testACustomEventGoalWithNoConditionMarksEveryOne(): void
+    {
+        $this->makeGoal( array(), array( 'trigger_event_type' => 'newsletter_signup', 'name' => 'Signed_up_probe' ) );
+
+        $signup = $this->event( array( 'page_path' => '/anything' ) );
+        $signup->setEventType( 'newsletter_signup' );
+
+        $this->assertSame( array( 'newsletter_signup' => 0, 'Signed_up_probe' => 1 ),
+            $this->flags( $this->filter( $signup ) ) );
+
+        $this->assertSame( array( 'page_view' => 0 ),
+            $this->flags( $this->filter( $this->event( array( 'page_path' => '/anything' ) ) ) ),
+            'the trigger gates' );
+    }
+
     private function flags( array $events ): array
     {
         $out = array();

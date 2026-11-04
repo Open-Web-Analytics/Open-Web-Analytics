@@ -27,6 +27,13 @@ import $ from 'jquery';
 export const SEPARATOR = ' — ';
 
 /**
+ * The trigger picker's value for "another event of yours", named in the field
+ * beside it: GoalEvent::TRIGGER_CUSTOM. Its vocabulary is the one every custom
+ * event shares, and an event the vocabulary has no list for is a custom one.
+ */
+export const CUSTOM_TRIGGER = '(custom)';
+
+/**
  * The words this script writes, as printf patterns. The page passes them
  * translated (data-not-carried-label / -help on .owa_goalBuilder, from
  * CoreAPI::t()); these English ones are the fallback.
@@ -83,7 +90,7 @@ function plainLabel( vocabulary, name ) {
  */
 export function optionsFor( vocabulary, event, saved ) {
 
-    const list = ( vocabulary[ event ] || [] ).filter( ( p ) => p.carried !== false );
+    const list = ( vocabulary[ event ] || vocabulary[ CUSTOM_TRIGGER ] || [] ).filter( ( p ) => p.carried !== false );
 
     if ( saved && ! list.some( ( p ) => p.name === saved ) ) {
 
@@ -326,6 +333,15 @@ function buildRow( row, vocabulary, event, onLoad = false ) {
     syncRow( row, event );
 }
 
+/**
+ * The event a goal is triggered by, as the help text names it: the picked
+ * event, or the name typed for "another event of yours".
+ */
+export function triggerName( picked, typed ) {
+
+    return picked === CUSTOM_TRIGGER ? ( String( typed || '' ).trim() || 'custom' ) : picked;
+}
+
 function bind() {
 
     const builder = document.querySelector( '.owa_goalBuilder' );
@@ -339,10 +355,21 @@ function bind() {
     setText( { notCarriedLabel: builder.dataset.notCarriedLabel, notCarriedHelp: builder.dataset.notCarriedHelp } );
 
     const trigger = builder.querySelector( 'select.owa_goalTrigger' );
-    const event = () => ( trigger ? trigger.value : '' );
+    const custom = builder.querySelector( 'input.owa_goalCustomTrigger' );
+    const event = () => triggerName( trigger ? trigger.value : '', custom ? custom.value : '' );
     const rows = () => builder.querySelectorAll( '.owa_goalCondition' );
 
+    // The name field is for "another event of yours" only.
+    const showCustom = () => {
+
+        if ( custom ) {
+
+            custom.hidden = ! trigger || trigger.value !== CUSTOM_TRIGGER;
+        }
+    };
+
     rows().forEach( ( row ) => buildRow( row, vocabulary, event(), true ) );
+    showCustom();
 
     if ( trigger ) {
 
@@ -350,6 +377,7 @@ function bind() {
 
         $( trigger ).on( 'change', () => {
 
+            showCustom();
             rows().forEach( ( row ) => buildRow( row, vocabulary, event() ) );
         } );
     }

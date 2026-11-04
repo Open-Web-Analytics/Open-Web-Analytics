@@ -25,8 +25,8 @@ $owa_operators = array(
 <div class="panel_headline"><?php echo $view->headline;?></div>
 <div id="panel">
 <div class="owa_panelIntro">Goal events are custom events that are created when OWA observes
-a behavior pattern you specify. Give it a name, then say which events count: pick a property of
-the event, how to compare it, and what to compare it to.</div>
+a behavior pattern you specify. Give it a name, then say which events count: choose the event,
+then pick a property of it, how to compare it, and what to compare it to.</div>
 
 <form method="post" name="owa_goalEvent">
 
@@ -72,15 +72,50 @@ the event, how to compare it, and what to compare it to.</div>
                  data-not-carried-help="<?php $view->out( \OWA\Core\CoreAPI::t( 'A %s event does not carry this property.' ) );?>">
                 <div class="owa_goalSentence">
                     A
+                    <?php
+                    /*
+                     * OWA's events, then the site's own: the ones its Profiles
+                     * sent lately, and this goal event's trigger if it is one of
+                     * them and has not been sent lately. The last choice names
+                     * any other in the field beside the picker.
+                     */
+                    $owa_custom = (array) $view->customTriggerEvents;
+
+                    if ( \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $view->triggerEvent )
+                         && ! in_array( $view->triggerEvent, $owa_custom, true ) ) {
+
+                        array_unshift( $owa_custom, $view->triggerEvent );
+                    }
+
+                    $owa_other = \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM;
+                    ?>
                     <select class="owa_goalTrigger" name="<?php echo $view->getNs();?>triggerEvent"
                             aria-label="The event this goal counts">
-                    <?php foreach ( (array) $view->triggerEvents as $owa_event ):?>
-                        <option value="<?php $view->out( $owa_event );?>"
-                            <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
-                            <?php $view->out( $owa_event );?>
-                        </option>
-                    <?php endforeach;?>
+                        <optgroup label="OWA events">
+                        <?php foreach ( (array) $view->triggerEvents as $owa_event ):?>
+                            <option value="<?php $view->out( $owa_event );?>"
+                                <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
+                                <?php $view->out( $owa_event );?>
+                            </option>
+                        <?php endforeach;?>
+                        </optgroup>
+                        <optgroup label="Your events">
+                        <?php foreach ( $owa_custom as $owa_event ):?>
+                            <option value="<?php $view->out( $owa_event );?>"
+                                <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
+                                <?php $view->out( $owa_event );?>
+                            </option>
+                        <?php endforeach;?>
+                            <option value="<?php $view->out( $owa_other );?>"
+                                <?php echo ( $view->triggerEvent === $owa_other ) ? 'selected' : '';?>>
+                                Another event of yours&hellip;
+                            </option>
+                        </optgroup>
                     </select>
+                    <input class="owa_goalCustomTrigger" type="text" maxlength="40"
+                           name="<?php echo $view->getNs();?>customTriggerEvent"
+                           value="<?php $view->out( (string) $view->customTriggerEvent );?>"
+                           placeholder="newsletter_signup" aria-label="The name of your event">
                     event where
                     <select class="owa_goalMatch" name="<?php echo $view->getNs();?>conditionMatch"
                             aria-label="How many conditions must match">
@@ -89,6 +124,7 @@ the event, how to compare it, and what to compare it to.</div>
                     </select>
                     of these match:
                 </div>
+                <div class="owa_goalTriggerHelp">An event of your own, sent with trackCustomEvent, needs no conditions: leave them empty to count every one.</div>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['triggerEvent'] ?? '' );?></span>
 
                 <ul class="constraintList owa_goalEventCondition" data-owa-repeatable>
