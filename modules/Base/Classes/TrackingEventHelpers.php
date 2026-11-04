@@ -2146,12 +2146,6 @@ class TrackingEventHelpers {
     }
 
     /**
-     * Pull the campaign parameters out of one landing URL.
-     *
-     * @param string $landing
-     * @return array wire property name => value
-     */
-    /**
      * The URL parameter each campaign role arrives under, for this site.
      *
      * EMPTY SETTING MEANS ns-PREFIXED, which is what OWA has always done and
@@ -2210,6 +2204,13 @@ class TrackingEventHelpers {
         return self::$campaignKeys[ $site_id ] = $map;
     }
 
+    /**
+     * Pull the campaign parameters out of one landing URL.
+     *
+     * @param  string $landing
+     * @param  array  $keys  public parameter name => tagged_* property, from campaignKeysFor()
+     * @return array  wire property name => value
+     */
     private static function parseLandingTags( $landing, array $keys ) {
 
         $uri = self::parse_url( $landing );
