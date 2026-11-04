@@ -70,15 +70,15 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * Registers Admin panels with the core API
-     *
+     * Puts the settings page in the options navigation, in the Instance
+     * section after Base's pages: the nav drops a section it does not build.
      */
     function registerAdminPanels() {
 
-        $this->registerSettingsPage(array( 'do'    => 'hello.exampleSettings',
-                                          'title' => 'Hello World!',
-                                          'group' => 'Test',
-                                          'order' => 1));
+        $this->registerSettingsPage(array( 'do'      => 'hello.exampleSettings',
+                                          'title'   => 'Hello World!',
+                                          'section' => 'Instance',
+                                          'order'   => 30));
 
 
         return;

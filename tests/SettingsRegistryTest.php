@@ -684,17 +684,19 @@ final class SettingsRegistryTest extends TestCase
     }
 
     /**
-     * The GeoIP and SQS screens are in the Instance section.
+     * The GeoIP, SQS and Hello sample screens are in the Instance section.
      *
-     * Both registered with `group` 'Modules', which became a section of that
-     * name. getHierarchyNav() drops a section it did not build, so neither
-     * screen had an entry in any menu.
+     * GeoIP and SQS registered with `group` 'Modules', and the Hello sample
+     * with `group` 'Test', each of which became a section of that name.
+     * getHierarchyNav() drops a section it did not build, so none of the
+     * screens had an entry in any menu.
      */
     public function testTheModuleSettingsPagesAreInTheInstanceSection(): void
     {
         foreach ( array(
             'maxmind_geoip.optionsGeoip' => \OWA\Module\MaxmindGeoip\Module::class,
             'sqs.optionsSqs'             => \OWA\Module\Sqs\Module::class,
+            'hello.exampleSettings'      => \OWA\Module\Hello\Module::class,
         ) as $do => $class ) {
 
             $module = new $class();
