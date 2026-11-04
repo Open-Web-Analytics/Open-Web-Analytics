@@ -101,9 +101,13 @@ return array(
      * carries no registered property of its own -- message, file and line ride
      * as the custom properties description, source and line -- so declaring it
      * changes nothing at ingest.
+     *
+     * Not a goal trigger: it reports on the site's code, not on what a visitor
+     * did (TrackingEventHelpers::goalTriggerEventNames()).
      */
     'exception'           => array(
-        'description' => 'An uncaught JavaScript error, with its message, source file and line as the custom properties description, source and line. Sent once per page view for each message, source and line when trackExceptions is on; the browser\'s ResizeObserver loop notice is not sent.',
+        'description'  => 'An uncaught JavaScript error, with its message, source file and line as the custom properties description, source and line. Sent once per page view for each message, source and line when trackExceptions is on; the browser\'s ResizeObserver loop notice is not sent.',
+        'goal_trigger' => false,
     ),
 
     // Commerce.

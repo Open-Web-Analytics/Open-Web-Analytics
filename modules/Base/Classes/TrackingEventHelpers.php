@@ -551,6 +551,32 @@ class TrackingEventHelpers {
     }
 
     /**
+     * The first-class events a goal event may be triggered by.
+     *
+     * Every one, except those config/tracking_events.php declares
+     * `goal_trigger` => false: an event that reports on the site rather than
+     * on what a visitor did, such as `exception`.
+     *
+     * @return string[]  sorted
+     */
+    public static function goalTriggerEventNames() {
+
+        $out = array();
+
+        foreach ( self::eventConfig() as $name => $declaration ) {
+
+            if ( ( $declaration['goal_trigger'] ?? true ) !== false ) {
+
+                $out[] = (string) $name;
+            }
+        }
+
+        sort( $out );
+
+        return $out;
+    }
+
+    /**
      * The first-class events that are MATERIALIZED at ingest rather than sent.
      *
      * @return string[]  sorted
