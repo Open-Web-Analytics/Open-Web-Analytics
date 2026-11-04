@@ -519,6 +519,81 @@ describe('SPA route changes', () => {
     });
 
     /*
+     * THE CONTENT GROUP IS PAGE-SCOPED, and a route is a page. It is a global
+     * event property on the tracker, so it rode every route after the one that
+     * set it until something ended it.
+     */
+    test('a content group set on one route is not on the next route\'s events', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/group-a');
+
+        const sent = captureSends(t);
+        t.setContentGroup('Guides');
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/group-b');
+        settle();
+        t.trackCustomEvent('newsletter_signup', {});
+
+        const view = sent.find(e => e.event_type === 'page_view');
+        const custom = sent.find(e => e.event_type === 'newsletter_signup');
+        expect(view.page_location).toContain('/group-b');
+        expect(view).not.toHaveProperty('content_group');
+        expect(custom).not.toHaveProperty('content_group');
+    });
+
+    test('the engagement of the route being left keeps that route\'s group', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/group-c');
+
+        const sent = captureSends(t);
+        atTime(t, 0);
+        t.resetEngagement();
+        t.setContentGroup('Guides');
+        t.trackRouteChanges();
+
+        atTime(t, 4000);
+        window.history.pushState({}, '', '/group-d');
+
+        const engagement = sent.find(e => e.event_type === 'user_engagement');
+        expect(engagement.content_group).toBe('Guides');
+    });
+
+    test('a group the next route sets after the pushState rides its page view', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/group-e');
+
+        const sent = captureSends(t);
+        t.setContentGroup('Guides');
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/group-f');
+        jest.advanceTimersByTime(100);
+        t.setContentGroup('Pricing');
+        settle();
+
+        const view = sent.find(e => e.event_type === 'page_view');
+        expect(view.content_group).toBe('Pricing');
+    });
+
+    test('leaving and coming back inside the window keeps the page\'s group', () => {
+        const t = newTracker();
+        window.history.pushState({}, '', '/group-stay');
+
+        const sent = captureSends(t);
+        t.setContentGroup('Guides');
+        t.trackRouteChanges();
+
+        window.history.pushState({}, '', '/group-elsewhere');
+        window.history.replaceState({}, '', '/group-stay');
+        settle();
+        t.trackCustomEvent('newsletter_signup', {});
+
+        expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
+        expect(sent.find(e => e.event_type === 'newsletter_signup').content_group).toBe('Guides');
+    });
+
+    /*
      * The referrer of a route is the route before it. document.referrer names
      * the page the DOCUMENT loaded from, and repeating it on every route said
      * each screen had been reached from the external site.
