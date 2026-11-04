@@ -4900,13 +4900,9 @@ class OWATracker  {
      * something else, and on the server it would claim a property vocabulary the
      * event does not have.
      *
-     * `exception` was missing, though trackExceptions() sends it: a site's own
-     * trackCustomEvent('exception') was sent, and its rows could not be told
-     * from the tracker's.
-     *
-     * KEPT IN STEP BY A TEST, not by hand: the server derives the same set from
-     * the property registry -- an event is first-class exactly when some property
-     * declares it -- and TrackerReservedEventNamesTest asserts the two agree. So
+     * KEPT IN STEP BY A TEST, not by hand: the server declares the same set in
+     * config/tracking_events.php, and TrackerReservedEventNamesTest asserts the
+     * two agree and that every event this file sends is on the list. So
      * adding a first-class event on the server fails here until this is updated,
      * which is the only direction that can go wrong silently.
      *
