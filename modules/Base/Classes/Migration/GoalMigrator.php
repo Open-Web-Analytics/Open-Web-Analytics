@@ -238,7 +238,7 @@ class GoalMigrator extends FactMigrator {
         return $this->compiled[ $id ] ?: null;
     }
 
-    /** @var array property id => goal event id => the name Update075 gives it */
+    /** @var array property id => goal event id => its name once Update075 has run */
     private $renamed = array();
 
     /**
@@ -262,7 +262,13 @@ class GoalMigrator extends FactMigrator {
                 'SELECT id, property_id, name FROM %s WHERE property_id = ? ORDER BY id', $goal->getTableName() ),
                 array( $property ) ) );
 
-            $this->renamed[ $property ] = \OWA\Module\Base\Entity\GoalEvent::eventNames( $rows );
+            /*
+             * The names as STORED, under the renames. Not the entity's: it is
+             * loaded through the entity cache, and Update075 renames with SQL,
+             * so after it the cached entity can still carry the 1.x name.
+             */
+            $this->renamed[ $property ] = \OWA\Module\Base\Entity\GoalEvent::eventNames( $rows )
+                + array_column( $rows, 'name', 'id' );
         }
 
         return (string) ( $this->renamed[ $property ][ (string) $goal->get( 'id' ) ] ?? $goal->get( 'name' ) );
