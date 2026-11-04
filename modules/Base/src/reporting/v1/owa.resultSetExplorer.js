@@ -1256,11 +1256,18 @@ OWA.dataGrid.MAX_DIMENSIONS = 2;
 OWA.dataGrid.SHARE_TYPES = [ 'count', 'distinct_count', 'sum' ];
 
 /*
- * The filter conditions, as the server parses them (ResultSetManager's
- * constraint_operators): the first operator in this order found in a clause is
- * the one it means, so a value may contain any operator that comes later.
+ * The filter conditions, as the server parses them: the keys of
+ * ResultSetManager::CONSTRAINT_OPERATORS, which config_dom.php puts in
+ * OWA.config. The first operator in this order found in a clause is the one it
+ * means, so a value may contain any operator that comes later.
+ *
+ * Read when a clause is parsed, not when this file loads: the bundle is on the
+ * page before OWA.config is filled in.
  */
-OWA.dataGrid.OPERATORS = [ '==', '!=', '>=', '<=', '>', '<', '=~', '!~', '=@', '!@' ];
+OWA.dataGrid.operators = function () {
+
+    return OWA.getSetting( 'constraint_operators' ) || [];
+};
 
 /*
  * "(not set)" is the label for an empty value, and the server reads
@@ -1269,7 +1276,11 @@ OWA.dataGrid.OPERATORS = [ '==', '!=', '>=', '<=', '>', '<', '=~', '!~', '=@', '
  */
 OWA.dataGrid.EMPTY_TESTS = { '!=(not set)': 'has a value', '==(not set)': 'is not set' };
 
-/** How a filter reads on its chip. */
+/*
+ * How a filter reads on its chip: shorter than the server's meanings ("at
+ * least", not "is at least"), so kept here. One per server operator; a chip for
+ * an operator with none shows the operator itself.
+ */
 OWA.dataGrid.OPERATOR_PHRASES = {
     '==': 'is',
     '!=': 'is not',
@@ -1310,7 +1321,8 @@ OWA.dataGrid.CONDITIONS = {
  */
 OWA.dataGrid.parseConstraints = function ( str ) {
 
-    var list = [];
+    var list      = [];
+    var operators = OWA.dataGrid.operators();
 
     String( str || '' ).split( ',' ).forEach( function ( clause ) {
 
@@ -1318,9 +1330,9 @@ OWA.dataGrid.parseConstraints = function ( str ) {
             return;
         }
 
-        for ( var i = 0; i < OWA.dataGrid.OPERATORS.length; i++ ) {
+        for ( var i = 0; i < operators.length; i++ ) {
 
-            var op  = OWA.dataGrid.OPERATORS[ i ];
+            var op  = operators[ i ];
             var at  = clause.indexOf( op );
 
             if ( at > 0 ) {

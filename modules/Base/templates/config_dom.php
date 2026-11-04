@@ -15,6 +15,8 @@ OWA.config.api_endpoint = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'res
 OWA.config.ns = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'ns');?>";
 OWA.config.app_ns = "<?php echo \OWA\Core\CoreAPI::appNs();?>";
 OWA.config.link_template = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'link_template');?>";
+// The operators a constraints string is parsed with, in the server's order (OWA.dataGrid.operators()).
+OWA.config.constraint_operators = <?php echo json_encode( array_keys( \OWA\Module\Base\Classes\ResultSetManager::CONSTRAINT_OPERATORS ) ); ?>;
 <?php if ( \OWA\Core\Lib::inDebug() ) { ?>
 OWA.config.debug = true;
 <?php } ?>
