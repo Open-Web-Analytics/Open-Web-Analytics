@@ -341,6 +341,108 @@ final class SettingsDeclarationContractTest extends TestCase
     }
 
     /**
+     * The fieldsets each screen below the install saves, by level, read from
+     * the controllers that save them.
+     *
+     * @return array<string, array<string, array>> level => screen => fieldsets
+     */
+    private function screensBelowTheInstall(): array
+    {
+        $call = function ( string $class, string $method ): array {
+            $m = new ReflectionMethod( $class, $method );
+            $m->setAccessible( true );
+
+            return (array) $m->invoke( null );
+        };
+
+        $this->assertMatchesRegularExpression( "#groupFieldSets\(\s*'tracking_tag'\s*\)#",
+            (string) file_get_contents( OWA_DIR . 'modules/Base/Controller/SitesEditTagSettings.php' ),
+            'the Profile\'s Tracking Tag screen saves the tracking_tag group' );
+
+        return array(
+            'profile' => array(
+                'Observation settings' => $call( \OWA\Module\Base\Controller\SitesEditSettings::class, 'scopedFieldSets' ),
+                'Tracking tag'         => \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ),
+            ),
+            'property' => array(
+                'Details'        => $call( \OWA\Module\Base\Controller\PropertyEdit::class, 'scopedFieldSets' ),
+                'Data retention' => array( $call( \OWA\Module\Base\Controller\PropertyRetentionUpdate::class, 'fieldSet' ) ),
+            ),
+        );
+    }
+
+    /**
+     * Every level below the install that a setting declares, a screen offers.
+     *
+     * A level nothing offers is one nobody can set: no screen, CLI or REST call
+     * writes a scoped row but these screens. Settings of modules that are not
+     * active are skipped, since their fieldsets register only when they are.
+     * `internal` ones are skipped too: nobody configures them, and goals keeps
+     * its Profile scope for the 1.x rows Update061 reads.
+     */
+    public function testEveryLevelASettingDeclaresIsOfferedByAScreen(): void
+    {
+        $offered = array();
+
+        foreach ( $this->screensBelowTheInstall() as $level => $screens ) {
+            foreach ( $screens as $sets ) {
+                foreach ( $sets as $set ) {
+                    foreach ( (array) ( $set['settings'] ?? array() ) as $key ) {
+                        $offered[ $level ][ $set['module'] . '|' . $key ] = true;
+                    }
+                }
+            }
+        }
+
+        $this->assertNotEmpty( $offered['profile'] ?? array(), 'the Profile screens offer something' );
+        $this->assertNotEmpty( $offered['property'] ?? array(), 'the Property screens offer something' );
+
+        $active  = array_unique( array_merge( array( 'base' ), (array) \OWA\Core\CoreAPI::getActiveModules() ) );
+        $missing = array();
+
+        foreach ( $this->settings()->registeredFields() as $id => $args ) {
+
+            list( $module ) = explode( '|', $id, 2 );
+
+            if ( ! in_array( $module, $active, true ) || ! empty( $args['internal'] )
+                 || ! \OWA\Module\Base\Classes\Settings::isStorable( (array) $args ) ) {
+                continue;
+            }
+
+            foreach ( (array) ( $args['scopes'] ?? array() ) as $level ) {
+
+                if ( $level !== 'install' && empty( $offered[ $level ][ $id ] ) ) {
+                    $missing[] = str_replace( '|', '.', $id ) . ' at ' . $level;
+                }
+            }
+        }
+
+        $this->assertSame( array(), $missing, sprintf(
+            "declared for a level no screen offers: %s\n"
+          . 'Offer it on that level\'s screen, or remove the level from its scopes.',
+            implode( ', ', $missing ) ) );
+    }
+
+    /**
+     * Read only at the install, so declared only there: logEvent() reads the
+     * install's log_robots, and an event's date parts are filed in the
+     * install's timezone. goals keeps the Profile scope its 1.x rows are at.
+     */
+    public function testInstallOnlySettingsDeclareNoLevelBelowIt(): void
+    {
+        $c = $this->settings();
+
+        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'timezone' ) );
+        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'log_robots' ) );
+        $this->assertSame( array( 'install', 'profile' ), $c->scopesFor( 'base', 'goals' ) );
+
+        foreach ( array( 'announce_visitors', 'notice_email', 'anonymize_ips', 'excluded_ips', 'log_named_users' ) as $key ) {
+            $this->assertSame( array( 'install', 'profile' ), $c->scopesFor( 'base', $key ),
+                "base.$key is offered on the Profile only" );
+        }
+    }
+
+    /**
      * And nothing stored is orphaned by a declaration.
      *
      * Needs a database, because it compares the declaration against what is

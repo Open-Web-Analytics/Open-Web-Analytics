@@ -134,15 +134,14 @@ final class ProfileSettingsScreenTest extends TestCase
      * when it equals the inherited one; off removes it.
      *
      * A field has a switch only when something above it holds a value, and
-     * nothing on this screen does by default -- the boolean it used,
-     * enableEcommerceReporting, is a Property setting now. So the Property is
-     * given a value first.
+     * campaignKeys is empty by default and the one setting on this screen a
+     * Property may hold. So the Property is given a value first.
      */
     public function testTheOverrideSwitchDecidesWhatIsStored(): void
     {
         $this->requireDb();
         $site_id = $this->aSiteId();
-        $key     = 'domain_aliases';
+        $key     = 'campaignKeys';
 
         $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id );
 
@@ -150,14 +149,17 @@ final class ProfileSettingsScreenTest extends TestCase
             $this->markTestSkipped( 'needs a Profile with a Property' );
         }
 
-        $held = \OWA\Core\CoreAPI::getScopedSettingRow( 'property', $property_id, 'base', $key );
+        $held = array(
+            'property' => \OWA\Core\CoreAPI::getScopedSettingRow( 'property', $property_id, 'base', $key ),
+            'profile'  => \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
+        );
 
         \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
-        \OWA\Core\CoreAPI::setScopedSetting( 'property', $property_id, 'base', $key, 'alias.example.test' );
+        \OWA\Core\CoreAPI::setScopedSetting( 'property', $property_id, 'base', $key, array( 'source' => 'src' ) );
 
         $inherited = \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', $key, 'profile', $site_id )['inherited'];
 
-        $this->assertSame( 'alias.example.test', $inherited, 'the Property\'s value is what the Profile inherits' );
+        $this->assertSame( array( 'source' => 'src' ), $inherited, 'the Property\'s value is what the Profile inherits' );
 
         $save = function ( array $params ) use ( $site_id ) {
 
@@ -167,8 +169,8 @@ final class ProfileSettingsScreenTest extends TestCase
 
         try {
             $save( array(
-                'config'   => array( 'base.domain_aliases' => $inherited ),
-                'override' => array( 'base.domain_aliases' => '1' ),
+                'config'   => array( 'base.campaignKeys' => 'source=src' ),
+                'override' => array( 'base.campaignKeys' => '1' ),
             ) );
 
             $this->assertSame( $inherited,
@@ -183,12 +185,13 @@ final class ProfileSettingsScreenTest extends TestCase
                 'switched off, the Profile goes back to inheriting' );
 
         } finally {
-            \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
+            foreach ( array( 'profile' => $site_id, 'property' => $property_id ) as $type => $id ) {
 
-            if ( $held === null ) {
-                \OWA\Core\CoreAPI::clearScopedSetting( 'property', $property_id, 'base', $key );
-            } else {
-                \OWA\Core\CoreAPI::setScopedSetting( 'property', $property_id, 'base', $key, $held );
+                \OWA\Core\CoreAPI::clearScopedSetting( $type, $id, 'base', $key );
+
+                if ( $held[ $type ] !== null ) {
+                    \OWA\Core\CoreAPI::setScopedSetting( $type, $id, 'base', $key, $held[ $type ] );
+                }
             }
         }
     }
@@ -226,21 +229,175 @@ final class ProfileSettingsScreenTest extends TestCase
         }
     }
 
-    /** A setting the screen does not show cannot be written through it. */
+    /**
+     * A setting the screen does not show cannot be written through it.
+     * tracker_page_views is a Profile setting, but the Tracking Tag screen's.
+     */
     public function testAPostCannotReachASettingTheScreenDoesNotShow(): void
     {
         $this->requireDb();
         $site_id = $this->aSiteId();
 
-        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', 'excluded_ips' );
+        $held = \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'tracker_page_views' );
 
-        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-            'siteId'   => $site_id,
-            'config'   => array( 'base.excluded_ips' => '203.0.113.9' ),
-            'override' => array( 'base.excluded_ips' => '1' ),
-        ) );
-        $c->action();
+        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', 'tracker_page_views' );
 
-        $this->assertNull( \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'excluded_ips' ) );
+        try {
+            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+                'siteId'   => $site_id,
+                'config'   => array( 'base.tracker_page_views' => '0' ),
+                'override' => array( 'base.tracker_page_views' => '1' ),
+            ) );
+            $c->action();
+
+            $this->assertNull( \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'tracker_page_views' ) );
+
+        } finally {
+            if ( $held !== null ) {
+                \OWA\Core\CoreAPI::setScopedSetting( 'profile', $site_id, 'base', 'tracker_page_views', $held );
+            }
+        }
+    }
+
+    /**
+     * The Profile settings the tracking path and the visitor announcement read
+     * at Profile scope, each with the control its declared type takes.
+     */
+    private const OFFERED = array(
+        'anonymize_ips'     => '<select name="owa_config[base.anonymize_ips]"',
+        'excluded_ips'      => '<input type="text" size="50" name="owa_config[base.excluded_ips]"',
+        'log_named_users'   => '<select name="owa_config[base.log_named_users]"',
+        'campaignKeys'      => '<input type="text" size="50" name="owa_config[base.campaignKeys]"',
+        'announce_visitors' => '<select name="owa_config[base.announce_visitors]"',
+        'notice_email'      => '<input type="text" size="50" name="owa_config[base.notice_email]"',
+    );
+
+    private function screenHtml( string $site_id = '' ): string
+    {
+        $html = '';
+
+        foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'profile_observation' ) as $set ) {
+            $html .= \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet( $set, 'profile', $site_id, 'owa_' );
+        }
+
+        return $html;
+    }
+
+    /** For a Profile not yet saved each field shows the install's value, so no database is needed. */
+    public function testTheScreenOffersEachProfileSettingWithItsControl(): void
+    {
+        $html = $this->screenHtml();
+
+        foreach ( self::OFFERED as $key => $control ) {
+            $this->assertStringContainsString( $control, $html, "base.$key is not offered on the Profile" );
+        }
+
+        foreach ( array( 'domain_aliases', 'query_string_filters', 'default_page' ) as $key ) {
+            $this->assertStringContainsString( 'name="owa_config[base.' . $key . ']"', $html, "base.$key is still offered" );
+        }
+
+        foreach ( array( 'Pages and domains', 'Campaign parameters', 'Privacy and exclusions', 'Visitor announcements' ) as $legend ) {
+            $this->assertStringContainsString( '<legend>' . $legend . '</legend>', $html );
+        }
+    }
+
+    /** The template and the save controller read one list. */
+    public function testTheTemplateRendersTheGroupItsControllerSaves(): void
+    {
+        foreach ( array( 'modules/Base/templates/profile_settings.php',
+                         'modules/Base/Controller/SitesEditSettings.php' ) as $file ) {
+
+            $code = (string) file_get_contents( OWA_DIR . $file );
+
+            $this->assertMatchesRegularExpression( "#groupFieldSets\(\s*'profile_observation'\s*\)#", $code, $file );
+            $this->assertStringNotContainsString( "registeredFieldSet( 'base.profileObservation' )", $code,
+                "$file names one fieldset of the group" );
+        }
+    }
+
+    /**
+     * Each saves at the Profile through the screen, and is removed when
+     * switched off or emptied. Override is posted for every field: a plain one
+     * (nothing set above it) is saved by its value and ignores the switch.
+     */
+    public function testEachOfferedSettingIsSavedAtTheProfile(): void
+    {
+        $this->requireDb();
+        $site_id = $this->aSiteId();
+
+        $posted = array(
+            'anonymize_ips'     => array( '1', true ),
+            'excluded_ips'      => array( '203.0.113.9, 198.51.100.7', '203.0.113.9, 198.51.100.7' ),
+            'log_named_users'   => array( '0', false ),
+            'campaignKeys'      => array( 'source=src, medium=channel', array( 'source' => 'src', 'medium' => 'channel' ) ),
+            'announce_visitors' => array( '1', true ),
+            'notice_email'      => array( 'owner@example.test', 'owner@example.test' ),
+        );
+
+        $held     = array();
+        $config   = array();
+        $override = array();
+
+        foreach ( $posted as $key => list( $value ) ) {
+            $held[ $key ] = \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key );
+            \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
+
+            $config[ 'base.' . $key ]   = $value;
+            $override[ 'base.' . $key ] = '1';
+        }
+
+        try {
+            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+                'siteId' => $site_id, 'config' => $config, 'override' => $override ) );
+            $c->action();
+
+            foreach ( $posted as $key => list( , $stored ) ) {
+                $this->assertSame( $stored,
+                    \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
+                    "base.$key was not stored at the Profile" );
+            }
+
+            $this->assertSame( array( 'source' => 'src', 'medium' => 'channel' ),
+                \OWA\Core\CoreAPI::getSetting( 'base', 'campaignKeys', 'profile', $site_id ),
+                'the reader resolves the Profile\'s value' );
+
+            // Every switch off, and the text fields emptied as a person would.
+            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+                'siteId' => $site_id,
+                'config' => array( 'base.excluded_ips' => '', 'base.campaignKeys' => '', 'base.notice_email' => '' ) ) );
+            $c->action();
+
+            foreach ( array_keys( $posted ) as $key ) {
+                $this->assertNull( \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
+                    "base.$key stayed at the Profile" );
+            }
+
+        } finally {
+            foreach ( $held as $key => $value ) {
+                \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
+
+                if ( $value !== null ) {
+                    \OWA\Core\CoreAPI::setScopedSetting( 'profile', $site_id, 'base', $key, $value );
+                }
+            }
+        }
+    }
+
+    /** A campaign parameter list not in role=parameter form is reported on the form. */
+    public function testAMalformedCampaignParameterListIsReported(): void
+    {
+        $this->requireDb();
+        $site_id = $this->aSiteId();
+
+        $problems = array();
+
+        foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'profile_observation' ) as $set ) {
+            $problems += \OWA\Module\Base\Classes\SettingsForm::scopedProblems( $set, 'profile', $site_id,
+                array( 'base.campaignKeys' => 'sorce=src' ), array( 'base.campaignKeys' => '1' ) );
+        }
+
+        $this->assertArrayHasKey( 'base.campaignKeys', $problems );
+        $this->assertStringStartsWith( 'Campaign Parameter Names is a comma-separated list of name=value pairs',
+            $problems['base.campaignKeys'] );
     }
 }

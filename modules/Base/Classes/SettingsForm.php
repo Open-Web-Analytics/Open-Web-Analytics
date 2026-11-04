@@ -404,9 +404,18 @@ class SettingsForm {
 
         $type = isset( $args['type'] ) ? (string) $args['type'] : 'text';
 
-        $inherited = $type === 'boolean'
-            ? ( $state['inherited'] ? '1' : '0' )
-            : ( is_array( $state['inherited'] ) ? implode( ', ', $state['inherited'] ) : (string) $state['inherited'] );
+        if ( $type === 'boolean' ) {
+
+            $inherited = $state['inherited'] ? '1' : '0';
+
+        } elseif ( $type === 'map' ) {
+
+            $inherited = \OWA\Module\Base\Classes\Settings::mapText( $args, $state['inherited'] );
+
+        } else {
+
+            $inherited = is_array( $state['inherited'] ) ? implode( ', ', $state['inherited'] ) : (string) $state['inherited'];
+        }
 
         if ( $type === 'boolean' ) {
 
@@ -698,6 +707,11 @@ class SettingsForm {
             }
         }
 
+        if ( $type === 'map' ) {
+
+            return \OWA\Module\Base\Classes\Settings::mapText( $args, $value );
+        }
+
         if ( is_array( $value ) ) {
 
             $value = implode( ', ', $value );
@@ -759,6 +773,12 @@ class SettingsForm {
 
                 return sprintf( '<input type="text" size="50" name="%s" value="%s"%s>',
                     self::esc( $name ), self::esc( (string) $value ), $off );
+
+            // name=value pairs in one text box (Settings::mapPairs()), so the Override switch has one control to hold.
+            case 'map':
+
+                return sprintf( '<input type="text" size="50" name="%s" value="%s"%s>',
+                    self::esc( $name ), self::esc( \OWA\Module\Base\Classes\Settings::mapText( $args, $value ) ), $off );
 
             case 'integer':
 

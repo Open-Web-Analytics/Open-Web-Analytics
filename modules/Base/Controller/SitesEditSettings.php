@@ -55,13 +55,21 @@ class SitesEditSettings extends \OWA\Core\AdminController {
         $this->addValidation('siteId', $this->getParam('siteId'), 'entityExists', $siteEntityConf);
 
         // Each setting the screen would store, checked against its declaration.
-        foreach ( \OWA\Module\Base\Classes\SettingsForm::scopedProblems(
-                      \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.profileObservation' ),
-                      'profile', (string) $this->getParam( 'siteId' ),
-                      $this->getParam( 'config' ), $this->getParam( 'override' ) ) as $name => $problem ) {
+        foreach ( self::scopedFieldSets() as $set ) {
 
-            $this->addValidation( $name, '', 'required', array( 'errorMsg' => $problem ) );
+            foreach ( \OWA\Module\Base\Classes\SettingsForm::scopedProblems(
+                          $set, 'profile', (string) $this->getParam( 'siteId' ),
+                          $this->getParam( 'config' ), $this->getParam( 'override' ) ) as $name => $problem ) {
+
+                $this->addValidation( $name, '', 'required', array( 'errorMsg' => $problem ) );
+            }
         }
+    }
+
+    /** The fieldsets the Observation Settings screen shows (templates/profile_settings.php). */
+    private static function scopedFieldSets() {
+
+        return \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'profile_observation' );
     }
 
     function action() {
@@ -73,10 +81,14 @@ class SitesEditSettings extends \OWA\Core\AdminController {
          * Override switch: on stores the value at this Profile, off removes any
          * value it holds. See SettingsForm::saveScoped().
          */
-        $saved = \OWA\Module\Base\Classes\SettingsForm::saveScoped(
-            \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.profileObservation' ),
-            'profile', (string) $site_id,
-            (array) $this->getParam( 'config' ), (array) $this->getParam( 'override' ) );
+        $saved = true;
+
+        foreach ( self::scopedFieldSets() as $set ) {
+
+            $saved = \OWA\Module\Base\Classes\SettingsForm::saveScoped(
+                $set, 'profile', (string) $site_id,
+                (array) $this->getParam( 'config' ), (array) $this->getParam( 'override' ) ) && $saved;
+        }
 
         if ( $saved ) {
 

@@ -114,21 +114,37 @@ final class ScopedSettingsTest extends TestCase
     {
         $this->skipUnlessParented();
 
-        /* log_robots defaults to false in code. */
-        \OWA\Core\CoreAPI::setScopedSetting( 'property', $this->propertyId, 'base', 'log_robots', true );
-        \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'log_robots', false );
+        /*
+         * tracker_url_fragments defaults to false in code and may be held at
+         * both levels. The writes are asserted: refused, they leave the default,
+         * false, and the assertion below would pass on it.
+         */
+        $key  = 'tracker_url_fragments';
+        $held = array(
+            'property' => \OWA\Core\CoreAPI::getScopedSettingRow( 'property', $this->propertyId, 'base', $key ),
+            'profile'  => \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $this->siteId, 'base', $key ),
+        );
 
         try {
 
+            $this->assertTrue( (bool) \OWA\Core\CoreAPI::setScopedSetting( 'property', $this->propertyId, 'base', $key, true ) );
+            $this->assertTrue( (bool) \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', $key, false ) );
+
             $this->assertFalse(
-                \OWA\Core\CoreAPI::getSetting( 'base', 'log_robots', 'profile', $this->siteId ),
+                \OWA\Core\CoreAPI::getSetting( 'base', $key, 'profile', $this->siteId ),
                 'A scoped false equal to the code default was pruned, so the Profile fell '
                 . 'back to its Property and the override did not take.' );
 
         } finally {
 
-            \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $this->siteId, 'base', 'log_robots' );
-            \OWA\Core\CoreAPI::clearScopedSetting( 'property', $this->propertyId, 'base', 'log_robots' );
+            foreach ( array( 'profile' => $this->siteId, 'property' => $this->propertyId ) as $type => $id ) {
+
+                \OWA\Core\CoreAPI::clearScopedSetting( $type, $id, 'base', $key );
+
+                if ( $held[ $type ] !== null ) {
+                    \OWA\Core\CoreAPI::setScopedSetting( $type, $id, 'base', $key, $held[ $type ] );
+                }
+            }
         }
     }
 

@@ -63,7 +63,8 @@ return array(
             'default'  => false,
             'storable' => true,
             'autoload' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Per Profile, on its Observation Settings screen.
+            'scopes'   => array( 'install', 'profile' ),
             'type'     => 'boolean',
             'label'    => 'Announce New Visitors Via E-mail',
             'description' =>
@@ -75,7 +76,8 @@ return array(
             'default'  => false,
             'storable' => true,
             'autoload' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Per Profile, on its Observation Settings screen.
+            'scopes'   => array( 'install', 'profile' ),
             'type'     => 'boolean',
             'label'    => 'Anonymize IP Addresses',
             'description' =>
@@ -143,6 +145,8 @@ return array(
             // two currencies in it would add unlike amounts.
             'scopes'   => array( 'install', 'property' ),
             'type'     => 'text',
+            'pattern'  => '/^[A-Za-z]{3}$/',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Currency is a three-letter ISO 4217 code, such as USD.' ),
             'label'    => 'Currency',
             'description' =>
                 'The ISO 4217 code revenue is recorded and reported in, such as USD or EUR. '
@@ -205,7 +209,8 @@ return array(
         'default_page' => array(
             'default'  => '',
             'storable' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Per Profile, on its Observation Settings screen.
+            'scopes'   => array( 'install', 'profile' ),
             'type'     => 'text',
             'label'    => 'Default Page',
             'description' =>
@@ -217,7 +222,8 @@ return array(
         'disabledEndpoints' => array( 'default' => array(), 'description' => 'Entry-point file names to turn off, such as install.php. Empty by default.' ),
         'domain_aliases' => array(
             'storable' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Per Profile, on its Observation Settings screen.
+            'scopes'   => array( 'install', 'profile' ),
             'type'     => 'text',
             'label'    => 'Domain Aliases',
             'description' =>
@@ -238,7 +244,8 @@ return array(
             'default'  => '',
             'storable' => true,
             'autoload' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Per Profile, on its Observation Settings screen.
+            'scopes'   => array( 'install', 'profile' ),
             'type'     => 'text',
             'label'    => 'Excluded IP Addresses',
             'description' =>
@@ -251,7 +258,14 @@ return array(
         // Set by Update075 when it renamed goal events to event names, so its
         // down() can give them back the names they had.
         'goal_event_names_before_075' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
-        'goals' => array( 'storable' => true, 'scopes' => array( 'install', 'property', 'profile' ), 'internal' => true ),
+        /*
+         * 1.x's goals, one map per Profile. Nothing in v2 reads or writes it:
+         * Update025 made the goals goal events, and Update061 reads the Profile
+         * rows by SQL, in up() and in down(), for the funnels inside them. The
+         * Profile scope stays because those rows do (see
+         * SettingsRegistryTest::testNothingStoredAtAScopeBecomesUnwritableThere).
+         */
+        'goals' => array( 'storable' => true, 'scopes' => array( 'install', 'profile' ), 'internal' => true ),
         'images_url' => array( 'default' => '', 'internal' => true ),
         'install_complete' => array( 'storable' => true, 'autoload' => true, 'internal' => true ),
         'is_embedded_admin_user_password_reset' => array( 'storable' => true, 'internal' => true ),
@@ -260,7 +274,8 @@ return array(
             'default'  => true,
             'storable' => true,
             'autoload' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Per Profile, on its Observation Settings screen.
+            'scopes'   => array( 'install', 'profile' ),
             'type'     => 'boolean',
             'label'    => 'Log Requests From Named Users',
             'description' =>
@@ -270,7 +285,7 @@ return array(
             'default'  => false,
             'storable' => true,
             'autoload' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Install only: CoreAPI::logEvent() reads the install's value.
             'type'     => 'boolean',
             'label'    => 'Log Requests From Known Robots',
             'description' =>
@@ -302,7 +317,8 @@ return array(
             'default'  => '',
             'storable' => true,
             'autoload' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Per Profile, on its Observation Settings screen.
+            'scopes'   => array( 'install', 'profile' ),
             'type'     => 'text',
             'label'    => 'Notice E-mail Address',
             'description' =>
@@ -343,14 +359,22 @@ return array(
                 . 'landing URL as well as OWA&rsquo;s own owa_ parameters. When a URL carries '
                 . 'both, the owa_ value is used. Applies to visits recorded after the change.',
         ),
+        /*
+         * On the Property screen beside campaignUtmParams, and on the Profile's
+         * Observation Settings. A `map`: typed as role=parameter pairs, and
+         * only the roles TrackingEventHelpers reads are accepted.
+         */
         'campaignKeys' => array(
             'default'  => array(),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'map',
+            'keys'     => array_keys( \OWA\Module\Base\Classes\TrackingEventHelpers::CAMPAIGN_KEYS ),
+            'label'    => 'Campaign Parameter Names',
             'description' =>
-                'Renames the URL parameters campaign tags are read from, as role => parameter name. '
-                . 'The roles are source, medium, campaign, search_terms, ad and ad_type; a role not named '
-                . 'keeps its ns-prefixed name, such as owa_source.',
+                'Renames the URL parameters campaign tags are read from, as role=parameter pairs separated '
+                . 'by commas, such as source=src, medium=channel. The roles are source, medium, campaign, '
+                . 'search_terms, ad and ad_type; a role not named keeps its ns-prefixed name, such as owa_source.',
         ),
         'numGoals' => array( 'default' => 15, 'description' => 'How many goal slots the funnel visualization offers. Default 15.' ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5', 'description' => 'The URL fetch-notifications reads OWA release notifications from.' ),
@@ -365,7 +389,8 @@ return array(
             'default'  => '',
             'storable' => true,
             'autoload' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            // Per Profile, on its Observation Settings screen.
+            'scopes'   => array( 'install', 'profile' ),
             'type'     => 'text',
             'label'    => 'URL Parameters',
             'description' =>
@@ -442,12 +467,16 @@ return array(
          * declaration. The list is the IANA zones grouped by country, built from
          * conf/country2Timezones.php at render time -- a declaration is a data
          * file and has no business carrying that.
+         *
+         * Install only. Each event's date parts are filed in this zone when it
+         * is recorded, so Profiles in different zones would put rows of
+         * different meanings in one cube (see the settings nav in
+         * Module::registerAdminPanels()).
          */
         'timezone' => array(
             'default'  => 'America/Los_Angeles',
             'storable' => true,
             'autoload' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'timezone',
             'label'    => 'Reporting Timezone',
             'description' =>
