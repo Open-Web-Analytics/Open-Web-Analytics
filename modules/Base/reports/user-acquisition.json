@@ -19,7 +19,6 @@
             "id": "firstChannel",
             "container": "first-channel",
             "title": "First Channel",
-            "colspan": 6,
             "query": {
                 "metrics": "newUsers,totalUsers,sessions",
                 "dimensions": "firstChannel",
@@ -32,7 +31,6 @@
             "id": "firstSourceMedium",
             "container": "first-source-medium",
             "title": "First Source / Medium",
-            "colspan": 6,
             "query": {
                 "metrics": "newUsers,totalUsers,sessions",
                 "dimensions": "firstSourceMedium",

@@ -1,6 +1,6 @@
 {
     "title": "Referring Search Terms",
-    "description": "Sessions from organic search by the search terms that brought them.",
+    "description": "Sessions from organic search by the search terms that brought them and the search engine.",
     "widgets": [
         {
             "type": "trend",
@@ -16,7 +16,7 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "sessionSearchTerms",
+                "dimensions": "sessionSearchTerms,sessionSource",
                 "sort": "sessions-",
                 "resultsPerPage": 30
             }

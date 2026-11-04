@@ -1,6 +1,6 @@
 {
     "title": "Ecommerce",
-    "description": "Transactions, revenue and e-commerce conversion rate, by attributed source.",
+    "description": "Transactions, revenue and e-commerce conversion rate, with revenue by channel, the top orders and revenue by attributed source.",
     "metrics": "sessions,transactions,transactionRevenue,ecommerceConversionRate,revenuePerSession,revenuePerTransaction",
     "widgets": [
         {
@@ -14,11 +14,46 @@
             "chartMetric": "transactions"
         },
         {
+            "type": "grid-card",
+            "id": "revenueByChannel",
+            "container": "revenue-by-channel",
+            "title": "Revenue by Channel",
+            "colspan": 6,
+            "query": {
+                "metrics": "transactionRevenue",
+                "dimensions": "attributedChannel",
+                "sort": "transactionRevenue-"
+            },
+            "more": {
+                "reportId": "channels"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "topOrders",
+            "container": "top-orders",
+            "title": "Top Orders",
+            "colspan": 6,
+            "query": {
+                "metrics": "transactionRevenue",
+                "dimensions": "transactionId",
+                "sort": "transactionRevenue-"
+            },
+            "constraints": [
+                {
+                    "dimension": "eventName",
+                    "value": "purchase"
+                }
+            ],
+            "more": {
+                "reportId": "transactions"
+            }
+        },
+        {
             "type": "grid",
             "id": "attributedSource",
             "container": "sourceExplorer",
             "title": "Revenue by Source",
-            "colspan": 6,
             "query": {
                 "metrics": "transactions,transactionRevenue",
                 "dimensions": "attributedSource",

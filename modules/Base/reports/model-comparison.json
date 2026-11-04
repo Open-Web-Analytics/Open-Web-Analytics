@@ -8,7 +8,6 @@
             "id": "firstChannel",
             "container": "first-visit-model",
             "title": "First Visit",
-            "colspan": 6,
             "query": {
                 "metrics": "goalConversions,transactions,transactionRevenue",
                 "dimensions": "firstChannel",
@@ -21,7 +20,6 @@
             "id": "attributedChannel",
             "container": "last-touch-model",
             "title": "Last Touch in Window",
-            "colspan": 6,
             "query": {
                 "metrics": "goalConversions,transactions,transactionRevenue",
                 "dimensions": "attributedChannel",

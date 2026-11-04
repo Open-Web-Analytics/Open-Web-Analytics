@@ -26,8 +26,7 @@
                 "sort": "sessions-"
             },
             "more": {
-                "reportId": "pages",
-                "label": "View Full Report »"
+                "reportId": "pages"
             },
             "rowActions": [
                 "heatmap",
@@ -41,15 +40,14 @@
             "id": "toppagetypes",
             "container": "top-pagetypes",
             "title": "Page Types",
-            "colspan": 3,
+            "colspan": 6,
             "query": {
                 "metrics": "sessions",
                 "dimensions": "contentGroup",
                 "sort": "sessions-"
             },
             "more": {
-                "reportId": "page-types",
-                "label": "View Full Report »"
+                "reportId": "page-types"
             }
         },
         {
@@ -63,9 +61,9 @@
                 "sort": "sessions-"
             },
             "more": {
-                "reportId": "entry-pages",
-                "label": "View Full Report »"
-            }
+                "reportId": "entry-pages"
+            },
+            "colspan": 6
         },
         {
             "type": "grid-card",
@@ -78,9 +76,9 @@
                 "sort": "exits-"
             },
             "more": {
-                "reportId": "exit-pages",
-                "label": "View Full Report »"
-            }
+                "reportId": "exit-pages"
+            },
+            "colspan": 6
         },
         {
             "type": "grid-card",
@@ -99,27 +97,9 @@
                 }
             ],
             "more": {
-                "reportId": "clicks",
-                "label": "View Full Report »"
-            }
-        },
-        {
-            "type": "report-links",
-            "id": "related",
-            "title": "Content Reports",
-            "colspan": 3,
-            "links": [
-                {
-                    "reportId": "entry-pages",
-                    "label": "Entry Pages",
-                    "description": "See which web pages users entered on."
-                },
-                {
-                    "reportId": "exit-pages",
-                    "label": "Exit Pages",
-                    "description": "See which web pages users exited on."
-                }
-            ]
+                "reportId": "clicks"
+            },
+            "colspan": 6
         }
     ]
 }

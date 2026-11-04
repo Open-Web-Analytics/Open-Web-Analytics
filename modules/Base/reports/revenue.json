@@ -1,6 +1,6 @@
 {
     "title": "Total Revenue",
-    "description": "Transaction revenue by day.",
+    "description": "Transaction revenue by day, and by attributed channel.",
     "metrics": "transactionRevenue",
     "widgets": [
         {
@@ -18,8 +18,8 @@
             "id": "dim",
             "container": "dimension-grid",
             "query": {
-                "dimensions": "date",
-                "sort": "date-",
+                "dimensions": "attributedChannel",
+                "sort": "transactionRevenue-",
                 "resultsPerPage": 30
             }
         }

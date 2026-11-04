@@ -121,7 +121,6 @@ class Module extends \OWA\Core\Module {
 
         $this->registerFilter( 'tracker_bundle_config', $this, 'addToBundle', 99 );
         $this->registerFilter( 'tracker_feature_labels', $this, 'labelFeatures', 10 );
-        $this->registerFilter( 'report_links', $this, 'addReportLinks', 10 );
         $this->registerFilter( 'report_row_actions', $this, 'addRowActions', 10 );
     }
 
@@ -160,20 +159,6 @@ class Module extends \OWA\Core\Module {
         $labels['trackDomStream'] = 'Page interaction recording';
 
         return $labels;
-    }
-
-    /**
-     * Recordings among Content's related reports. A page's own recordings are
-     * a row action on Pages (addRowActions).
-     */
-    function addReportLinks( $links, $reportId = '', $widgetId = '' ) {
-
-        if ( $reportId === 'content' && $widgetId === 'related' ) {
-
-            array_unshift( $links, array( 'reportId' => 'domstreams', 'label' => 'Recordings' ) );
-        }
-
-        return $links;
     }
 
     /** A page row's recordings: the Recordings report filtered to its path. */

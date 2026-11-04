@@ -1,6 +1,6 @@
 {
     "title": "Visitors",
-    "description": "Users, new users and sessions, by browser and number of prior sessions.",
+    "description": "Users, new users and sessions, by new or returning, device, country, browser, operating system and number of prior sessions.",
     "metrics": "totalUsers,newUsers,sessions",
     "widgets": [
         {
@@ -16,15 +16,76 @@
             }
         },
         {
+            "type": "pie",
+            "id": "visitorTypes",
+            "container": "visitor-types",
+            "title": "Visitor Types",
+            "colspan": 4,
+            "chartMetric": "sessions",
+            "query": {
+                "metrics": "sessions",
+                "dimensions": "newVsReturning",
+                "sort": "sessions-"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "deviceTypes",
+            "container": "device-types",
+            "title": "Device Types",
+            "colspan": 4,
+            "query": {
+                "metrics": "sessions",
+                "dimensions": "deviceType",
+                "sort": "sessions-"
+            },
+            "more": {
+                "reportId": "devices"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "countries",
+            "container": "visitor-countries",
+            "title": "Countries",
+            "colspan": 4,
+            "query": {
+                "metrics": "sessions",
+                "dimensions": "country",
+                "sort": "sessions-"
+            },
+            "more": {
+                "reportId": "geolocation"
+            }
+        },
+        {
             "type": "grid-card",
             "id": "browserTypes",
             "container": "top-browsers",
             "title": "Browser Types",
-            "colspan": 6,
+            "colspan": 4,
             "query": {
                 "metrics": "sessions",
                 "dimensions": "browserType",
                 "sort": "sessions-"
+            },
+            "more": {
+                "reportId": "browsers"
+            }
+        },
+        {
+            "type": "grid-card",
+            "id": "operatingSystems",
+            "container": "top-operating-systems",
+            "title": "Operating Systems",
+            "colspan": 4,
+            "query": {
+                "metrics": "sessions",
+                "dimensions": "osType",
+                "sort": "sessions-"
+            },
+            "more": {
+                "reportId": "os"
             }
         },
         {
@@ -38,9 +99,9 @@
                 "sort": "priorSessionCount"
             },
             "more": {
-                "reportId": "visitors-loyalty",
-                "label": "View Full Report \u00bb"
-            }
+                "reportId": "visitors-loyalty"
+            },
+            "colspan": 4
         }
     ]
 }

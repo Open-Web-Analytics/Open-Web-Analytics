@@ -104,8 +104,7 @@
                 "resultsPerPage": 10
             },
             "more": {
-                "reportId": "referring-sites",
-                "label": "View Full Report »"
+                "reportId": "referring-sites"
             }
         },
         {
