@@ -172,11 +172,21 @@ OWA.filterPills.stringify = function ( filters ) {
     } ).join( ',' );
 };
 
+/**
+ * How an operator reads on a pill. A stored clause may use one the form does
+ * not offer (`>=`, `=~`), which reads as the report grid's chips say it.
+ */
+OWA.filterPills.phrase = function ( op ) {
+
+    return OWA.filterPills.OPERATORS[ op ] || OWA.filterPills.EMPTY_TESTS[ op ]
+        || OWA.dataGrid.OPERATOR_PHRASES[ op ] || op;
+};
+
 /** "Page Path contains /blog/", with labelOf() naming the dimension. */
 OWA.filterPills.words = function ( f, labelOf ) {
 
     var empty = OWA.filterPills.EMPTY_TESTS.hasOwnProperty( f.op );
-    var words = OWA.filterPills.OPERATORS[ f.op ] || OWA.filterPills.EMPTY_TESTS[ f.op ] || f.op;
+    var words = OWA.filterPills.phrase( f.op );
 
     return ( labelOf ? labelOf( f.name ) : f.name ) + ' ' + words + ( empty ? '' : ' ' + f.value );
 };
@@ -223,7 +233,7 @@ OWA.filterPills.prototype = {
 
             var $pill = jQuery( '<span class="owa_filterPill">' ).attr( 'data-index', i )
                 .append( jQuery( '<span>' ).text( that.labelOf( f.name ) + ' '
-                    + ( OWA.filterPills.OPERATORS[ f.op ] || OWA.filterPills.EMPTY_TESTS[ f.op ] || f.op ) + ' ' ) );
+                    + OWA.filterPills.phrase( f.op ) + ' ' ) );
 
             if ( ! empty ) {
                 $pill.append( jQuery( '<strong>' ).text( f.value ) );

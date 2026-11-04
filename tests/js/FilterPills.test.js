@@ -90,3 +90,14 @@ describe('the operators', () => {
         expect(OWA.filterPills.split('sessions>=5')).toEqual({ name: 'sessions', op: '>', value: '=5' });
     });
 });
+
+/*
+ * A stored clause may use an operator the form does not offer. Its pill reads
+ * as the grid's chip says it, not as the raw operator.
+ */
+test('a pill for an operator the form does not offer reads in words', () => {
+    expect(OWA.filterPills.words({ name: 'sessions', op: '>=', value: '5' })).toBe('sessions at least 5');
+    expect(OWA.filterPills.words({ name: 'pagePath', op: '=~', value: '^/blog' })).toBe('pagePath matches ^/blog');
+    expect(OWA.filterPills.words({ name: 'pagePath', op: '=@', value: 'blog' })).toBe('pagePath contains blog');
+    expect(OWA.filterPills.words({ name: 'medium', op: '==(not set)', value: '' })).toBe('medium is not set');
+});
