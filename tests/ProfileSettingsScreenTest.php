@@ -169,7 +169,7 @@ final class ProfileSettingsScreenTest extends TestCase
     {
         $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/ProfileSettings.php' );
 
-        $this->assertMatchesRegularExpression( "#body->set\(\s*'posted',\s*\\$this->get\(\s*'posted'\s*\)\s*\)#", $view );
+        $this->assertMatchesRegularExpression( '#body->set\(\s*\'posted\',\s*\$this->get\(\s*\'posted\'\s*\)\s*\)#', $view );
         $this->assertStringContainsString( '$view->posted',
             (string) file_get_contents( OWA_DIR . 'modules/Base/templates/profile_settings.php' ) );
     }
