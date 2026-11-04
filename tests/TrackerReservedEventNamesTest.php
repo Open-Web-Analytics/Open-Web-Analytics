@@ -17,8 +17,8 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  *
  * The reserved list IS the first-class list -- page_view, click, scroll,
  * file_download, form_start, form_submit, session_start, first_visit,
- * user_engagement, view_search_results, purchase, refund. Reusing one puts a site's counts into a
- * report measuring something else.
+ * user_engagement, view_search_results, exception, purchase, refund. Reusing
+ * one puts a site's counts into a report measuring something else.
  *
  * THE TWO LISTS CANNOT BE DERIVED FROM EACH OTHER: one is PHP reading a JSON file
  * at runtime, the other is a constant compiled into a bundle served from a CDN.
@@ -96,6 +96,30 @@ final class TrackerReservedEventNamesTest extends TestCase
             $this->assertContains( $marker, $reserved,
                 $marker . ' is a stored event type and must be reserved' );
         }
+    }
+
+    /**
+     * Every event the tracker sends under a literal name is reserved.
+     *
+     * The case that slipped: trackExceptions() raised `exception`, the name was
+     * on neither list, and a site's own trackCustomEvent('exception') was sent
+     * and stored beside the tracker's with nothing to tell the two apart. The
+     * lists agreeing could not catch it, because both lacked it.
+     */
+    public function testEveryEventTheTrackerSendsIsReserved(): void
+    {
+        $source = (string) file_get_contents(
+            OWA_DIR . 'modules/Base/src/tracker/Tracker.js' );
+
+        preg_match_all( "/(?:setEventType|raiseEvent)\\(\\s*'([A-Za-z_]+)'/", $source, $found );
+
+        $sent = array_values( array_unique( (array) $found[1] ) );
+
+        $this->assertContains( 'exception', $sent,
+            'the pattern no longer finds the names Tracker.js sends; this test is stale' );
+
+        $this->assertSame( array(), array_values( array_diff( $sent, $this->trackerReserved() ) ),
+            'Tracker.js sends these events under names a site can also take' );
     }
 
     /**

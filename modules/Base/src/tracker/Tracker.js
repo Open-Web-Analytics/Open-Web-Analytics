@@ -4895,10 +4895,14 @@ class OWATracker  {
      *
      * The reserved list IS the first-class list -- page_view, click, scroll,
      * file_download, form_start, form_submit, session_start, first_visit,
-     * user_engagement, view_search_results, purchase, refund. Reusing one of them would put a
-     * site's own counts into a report measuring
+     * user_engagement, view_search_results, exception, purchase, refund. Reusing
+     * one of them would put a site's own counts into a report measuring
      * something else, and on the server it would claim a property vocabulary the
      * event does not have.
+     *
+     * `exception` was missing, though trackExceptions() sends it: a site's own
+     * trackCustomEvent('exception') was sent, and its rows could not be told
+     * from the tracker's.
      *
      * KEPT IN STEP BY A TEST, not by hand: the server derives the same set from
      * the property registry -- an event is first-class exactly when some property
@@ -4916,7 +4920,7 @@ class OWATracker  {
             'page_view', 'click', 'purchase', 'refund',
             'user_engagement', 'scroll', 'file_download',
             'form_start', 'form_submit', 'view_search_results',
-            'session_start', 'first_visit'
+            'exception', 'session_start', 'first_visit'
         ];
 
         // And whatever a compiled-in or lazy plugin sends.

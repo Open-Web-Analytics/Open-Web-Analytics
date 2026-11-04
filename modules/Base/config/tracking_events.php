@@ -95,6 +95,17 @@ return array(
         'description' => 'A site-search results page was viewed, recognised by a search term in one of the siteSearchParams query parameters (q, s, search, query and keyword by default). Sent by the trackSiteSearch command, and on each in-page route change when trackRouteChanges is on.',
     ),
 
+    /*
+     * Declared so the name is reserved: the tracker refuses it for a site's own
+     * event (TrackerReservedEventNamesTest holds the two lists equal). It
+     * carries no registered property of its own -- message, file and line ride
+     * as the custom properties description, source and line -- so declaring it
+     * changes nothing at ingest.
+     */
+    'exception'           => array(
+        'description' => 'An uncaught JavaScript error, with its message, source file and line as the custom properties description, source and line. Sent once per page view for each message, source and line when trackExceptions is on; the browser\'s ResizeObserver loop notice is not sent.',
+    ),
+
     // Commerce.
     'purchase' => array(
         'description' => 'An order was completed. Sent by the trackPurchase command, which requires a transaction id, or by the older addTransaction and trackTransaction pair.',

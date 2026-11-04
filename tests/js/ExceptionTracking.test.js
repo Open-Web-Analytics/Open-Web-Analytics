@@ -123,6 +123,25 @@ describe('trackExceptions', () => {
         expect(exceptions(sent)).toEqual([['Script error.', '', 0]]);
     });
 
+    /*
+     * THE NAME IS RESERVED, as every name the tracker sends is. Without it a
+     * site's own exception event was sent, and its rows could not be told from
+     * these.
+     */
+    test('a site\'s own exception event is refused; the tracker\'s is still sent', () => {
+        const t = newTracker();
+        const sent = captureSends(t);
+        t.trackExceptions();
+
+        expect(OWATracker.RESERVED_EVENT_NAMES).toContain('exception');
+        expect(OWATracker.isLegalCustomEventName('exception')).toBe(false);
+
+        t.trackCustomEvent('exception', { eps_description: 'from the site' });
+        window.onerror('Error A', 'https://ex.example/a.js', 12);
+
+        expect(exceptions(sent)).toEqual([['Error A', 'https://ex.example/a.js', 12]]);
+    });
+
     test('the page\'s own handler still runs, for every error including skipped ones', () => {
         const calls = [];
         window.onerror = (message) => { calls.push(message); return true; };
