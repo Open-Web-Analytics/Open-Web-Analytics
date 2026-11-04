@@ -709,4 +709,31 @@ final class SettingsRegistryTest extends TestCase
             $this->assertContains( $do, array_column( $sections['Instance'], 'do' ) );
         }
     }
+
+    /**
+     * Each module's pages are registered once a request, however often the
+     * panels are asked for. registerSettingsPage() appends, and a settings
+     * screen asks three times (its nav, its title, its fieldsets), so each
+     * call after the first listed every page once more.
+     */
+    public function testAskingForTheSettingsPanelsAgainListsEachPageOnce(): void
+    {
+        $first = \OWA\Core\CoreAPI::getAdminPanels();
+        $again = \OWA\Core\CoreAPI::getAdminPanels();
+
+        $actions = array();
+
+        foreach ( $again as $items ) {
+            foreach ( (array) $items as $item ) {
+                $actions[] = (string) ( $item['do'] ?? '' );
+            }
+        }
+
+        if ( ! $actions ) {
+            $this->markTestSkipped( 'no module registers a settings page on this installation' );
+        }
+
+        $this->assertSame( array_values( array_unique( $actions ) ), $actions, 'a page is listed more than once' );
+        $this->assertSame( $first, $again );
+    }
 }

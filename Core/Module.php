@@ -108,6 +108,15 @@ abstract class Module {
     public $reports_registered = false;
 
     /**
+     * Whether registerAdminPanels() has run for this module this request.
+     *
+     * registerSettingsPage() appends, so asking again would list every page
+     * again. A request asks more than once: a settings screen builds its nav,
+     * then its view looks up its title, then its fieldsets.
+     */
+    public $admin_panels_registered = false;
+
+    /**
      * Array of metric names that this module implements
      *
      * @var mixed

@@ -1586,7 +1586,14 @@ class CoreAPI {
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
         foreach ($service->modules as $k => $v) {
-            $v->registerAdminPanels();
+
+            // Once per module: see Module::$admin_panels_registered.
+            if ( empty( $v->admin_panels_registered ) ) {
+
+                $v->registerAdminPanels();
+                $v->admin_panels_registered = true;
+            }
+
             $module_panels = $v->getAdminPanels();
             if ($module_panels) {
                 foreach ($module_panels as $key => $value) {
