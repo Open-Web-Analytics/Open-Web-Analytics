@@ -113,13 +113,17 @@ class Module extends \OWA\Core\Module {
      * module is active -- the same gating the CLI command gets, and for the
      * same reason: an installation not doing GeoIP lookups should not be shown
      * settings for it.
+     *
+     * In the Instance section, after Base's pages. It said `group` 'Modules',
+     * which became a section the nav never builds, and the nav drops a section
+     * it did not build -- so the page had no entry anywhere.
      */
     function registerAdminPanels() {
 
         $this->registerSettingsPage( array(
             'do'        => 'maxmind_geoip.optionsGeoip',
             'title'     => 'GeoIP',
-            'group'     => 'Modules',
+            'section'   => 'Instance',
             'order'     => 10,
             'fieldsets' => array( 'maxmind_geoip.account' ),
         ) );
