@@ -374,7 +374,7 @@ return array(
             'description' =>
                 'Renames the URL parameters campaign tags are read from, as role=parameter pairs separated '
                 . 'by commas, such as source=src, medium=channel. The roles are source, medium, campaign, '
-                . 'search_terms, ad and ad_type; a role not named keeps its ns-prefixed name, such as owa_source.',
+                . 'search_terms and ad; a role not named keeps its ns-prefixed name, such as owa_source.',
         ),
         'numGoals' => array( 'default' => 15, 'description' => 'How many goal slots the funnel visualization offers. Default 15.' ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5', 'description' => 'The URL fetch-notifications reads OWA release notifications from.' ),

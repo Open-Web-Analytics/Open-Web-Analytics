@@ -72,7 +72,59 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         $this->assertSame('summer',      $H::taggedValue($event, 'tagged_campaign'));
         $this->assertSame('blue widgets', $H::taggedValue($event, 'tagged_terms'));
         $this->assertSame('banner-1',    $H::taggedValue($event, 'tagged_ad'));
-        $this->assertSame('display',     $H::taggedValue($event, 'tagged_ad_type'));
+        $this->assertNull($H::taggedValue($event, 'tagged_ad_type'), 'owa_ad_type is not read');
+    }
+
+    /** 1.x's ad type is not a campaign role: v2 has nowhere to keep it. */
+    public function testAdTypeIsNotACampaignRole(): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+
+        $this->assertArrayNotHasKey('ad_type', $H::CAMPAIGN_KEYS);
+        $this->assertNotContains('tagged_ad_type', $H::CAMPAIGN_KEYS);
+        $this->assertNotContains('tagged_ad_type', $H::UTM_KEYS);
+    }
+
+    /**
+     * A stored campaignKeys naming ad_type, from before the role went, is
+     * ignored: the roles it names still read, and the parse does not fail.
+     */
+    public function testAStoredOverrideNamingAdTypeIsIgnored(): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+        $c = \OWA\Core\CoreAPI::configSingleton();
+
+        $c->set('base', 'campaignKeys', ['ad_type' => 'adtype', 'source' => 'src', 'not_a_role' => 'x']);
+
+        try {
+            $event = $this->event([
+                'site_id'       => 'ad-type-override-site',
+                'page_location' => 'https://example.test/p?src=partner&adtype=display&x=1&'
+                    . $this->ns() . 'medium=email',
+            ]);
+
+            $this->assertSame('partner', $H::taggedValue($event, 'tagged_source'));
+            $this->assertSame('email', $H::taggedValue($event, 'tagged_medium'));
+            $this->assertNull($H::taggedValue($event, 'tagged_ad_type'));
+            $this->assertSame('adtype=display&x=1', $H::derivePageQuery(null, $event),
+                'a parameter named only by an ignored role is the site\'s own');
+
+        } finally {
+            $c->set('base', 'campaignKeys', []);
+        }
+    }
+
+    /** owa_ad_type still comes out of page_query, so a link carrying it stays one page. */
+    public function testPageQueryStillDropsOwaAdType(): void
+    {
+        $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
+
+        \OWA\Core\CoreAPI::configSingleton()->set('base', 'campaignKeys', []);
+
+        $event = $this->event(['site_id' => 'ad-type-query-site',
+            'page_location' => 'https://example.test/p?' . $this->ns() . 'ad_type=display&page_id=7']);
+
+        $this->assertSame('page_id=7', $H::derivePageQuery(null, $event));
     }
 
     /**

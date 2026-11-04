@@ -1875,6 +1875,11 @@ class TrackingEventHelpers {
      * Mirrors the tracker's `campaignKeys`. Note owa_search_terms becomes
      * tagged_TERMS, not tagged_search_terms -- the one place the two halves do
      * not share a stem.
+     *
+     * NO ad_type. 1.x read owa_ad_type, and v2 has no property, column or
+     * dimension to keep it in, so it is not a role: a campaignKeys value naming
+     * it is ignored, and droppedQueryParams() still takes owa_ad_type out of
+     * page_query.
      */
     const CAMPAIGN_KEYS = array(
         'source'       => 'tagged_source',
@@ -1882,8 +1887,13 @@ class TrackingEventHelpers {
         'campaign'     => 'tagged_campaign',
         'search_terms' => 'tagged_terms',
         'ad'           => 'tagged_ad',
-        'ad_type'      => 'tagged_ad_type',
     );
+
+    /**
+     * Campaign roles 1.x read that v2 does not, by suffix: still removed from
+     * page_query, so a link in the wild carrying one stays one page.
+     */
+    const RETIRED_CAMPAIGN_KEYS = array( 'ad_type' );
 
     /**
      * The utm_* parameters, read alongside OWA's own when the Property's
@@ -2717,8 +2727,9 @@ class TrackingEventHelpers {
      *
      * OWA's own control parameters, every parameter the site reads as a campaign
      * tag (campaignKeysFor(): the ns-prefixed names, a Property's campaignKeys,
-     * and utm_* while campaignUtmParams is on), plus the site's
-     * query_string_filters at both install and Profile scope.
+     * and utm_* while campaignUtmParams is on), the ns-prefixed
+     * RETIRED_CAMPAIGN_KEYS, plus the site's query_string_filters at both
+     * install and Profile scope.
      *
      * THE CAMPAIGN TAGS ARE ONE LIST. utm_* used to stay, as "the site's own
      * tagging", while owa_source went: so with campaignUtmParams on -- the default
@@ -2746,6 +2757,11 @@ class TrackingEventHelpers {
             $ns . 'state',
             $ns . (string) \OWA\Core\CoreAPI::getSetting( 'base', 'feed_subscription_param' ),
         ) );
+
+        foreach ( self::RETIRED_CAMPAIGN_KEYS as $suffix ) {
+
+            $drop[] = $ns . $suffix;
+        }
 
         foreach ( array(
             \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
