@@ -75,6 +75,17 @@ final class AppPasswordsTest extends TestCase
         $this->assertArrayNotHasKey('secret_hash', $row);
     }
 
+    /** Read only unless asked for more: the dialog's first choice and the CLI's default. */
+    public function testAPasswordIsReadOnlyWhenNoScopeIsGiven(): void
+    {
+        $made = AppPasswords::create(self::USER, 'Reporting script');
+
+        $this->assertSame(AppPasswords::SCOPE_READ, $made['scope']);
+        $this->assertSame(AppPasswords::SCOPE_READ, AppPasswords::verify($made['token'])['scope'] ?? null);
+        $this->assertSame(AppPasswords::SCOPE_READ, array_key_first(AppPasswords::scopes()),
+            'the dialog offers the scopes in this order, so its first choice is read');
+    }
+
     public function testAnAlteredTokenDoesNotVerify(): void
     {
         $made  = AppPasswords::create(self::USER, 'Reporting script');

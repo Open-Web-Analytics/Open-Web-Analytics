@@ -319,16 +319,12 @@ class SystemHealth {
             );
         }
 
-        $required = \OWA\Module\Base\Module::requiredTrackerBuild();
-        $recorded = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_build' );
-
-        if ( $recorded !== $required ) {
-
-            $findings[] = self::finding( 'yellow', 'New tracker', sprintf(
-                'The built tracker is %s; the installation was last updated with %s. The update republishes '
-                . 'every bundle.', self::shortBuild( $required ), self::shortBuild( $recorded ) ), 'php cli.php cmd=update' );
-        }
-
+        /*
+         * A built tracker newer than the recorded one is not a finding here.
+         * It makes an update pending, and while one is pending every admin
+         * screen, this one included, shows the updater instead.
+         * cmd=schedule-status reports it.
+         */
         if ( $stale ) {
 
             $queued = JobQueue::isQueued( 'publish-trackers' );

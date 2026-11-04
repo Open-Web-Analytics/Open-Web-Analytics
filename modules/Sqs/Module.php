@@ -69,12 +69,16 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'sqs.optionsSqsUpdate', 'OWA\\Module\\Sqs\\Controller\\OptionsSqsUpdate', '' );
     }
 
+    /**
+     * In the Instance section, and only while the module is active: the nav
+     * drops a section it does not build.
+     */
     function registerAdminPanels() {
 
         $this->registerSettingsPage( array(
             'do'        => 'sqs.optionsSqs',
             'title'     => 'AWS SQS',
-            'group'     => 'Modules',
+            'section'   => 'Instance',
             'order'     => 20,
             'fieldsets' => array( 'sqs.connection' ),
         ) );

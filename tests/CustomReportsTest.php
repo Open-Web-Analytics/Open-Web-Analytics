@@ -1337,6 +1337,54 @@ final class CustomReportsTest extends TestCase
     }
 
     /**
+     * A trend cannot be broken out by ANY time dimension, by its registered name.
+     *
+     * The list used to be a copy, with dayOfWeek, dayOfYear and weekOfYear in
+     * lower case and no yearMonth, hour, minute or dateHour -- so a strict match
+     * refused none of those seven, and the builder offered them.
+     */
+    public function testATrendCannotBeBrokenOutByAnyTimeDimension(): void
+    {
+        $time = CustomReports::timeDimensions();
+
+        foreach (array('date', 'year', 'month', 'yearMonth', 'day', 'dayOfWeek',
+                'dayOfYear', 'weekOfYear', 'hour', 'minute', 'dateHour') as $name) {
+
+            $this->assertContains($name, $time);
+            $this->assertTrue(CustomReports::isDimension($name), "$name is not a registered dimension");
+        }
+
+        $this->assertNotContains('sessionMedium', $time);
+
+        foreach ($time as $name) {
+
+            if ($name === 'date') {
+                continue;
+            }
+
+            $definition = $this->definition();
+            $definition['widgets'][1] = array(
+                'type' => 'trend', 'id' => 'c', 'container' => 'c',
+                'chartMetric' => 'sessions',
+                'query' => array('metrics' => 'sessions', 'dimensions' => 'date,' . $name),
+            );
+
+            $this->assertStringContainsString('time is already its axis',
+                CustomReports::validate($definition), "a trend broken out by $name was accepted");
+        }
+    }
+
+    /** The builder is handed the same list, not a copy of it. */
+    public function testTheBuilderReadsTheTimeDimensionsFromTheRegistry(): void
+    {
+        $template = file_get_contents(OWA_DIR . 'modules/Base/templates/custom_report_edit.php');
+
+        $this->assertStringContainsString(
+            'var TIME_DIMENSIONS = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::timeDimensions() ); ?>;',
+            $template);
+    }
+
+    /**
      * The chart-metric question is asked on exactly the types that plot one.
      *
      * The builder used to carry its own copy of this list in JavaScript, which

@@ -22,6 +22,16 @@ require('../../modules/Base/src/reporting/v1/owa.resultSetExplorer.js');
  * refetches, so these assert what is drawn and what is published.
  */
 
+/*
+ * What config_dom.php sets from ResultSetManager::CONSTRAINT_OPERATORS on every
+ * page; ConstraintOperatorsJsTest checks that it does, and in this order.
+ */
+const SERVER_OPERATORS = ['==', '!=', '>=', '<=', '>', '<', '=~', '!~', '=@', '!@'];
+
+beforeEach(() => {
+    OWA.setSetting('constraint_operators', SERVER_OPERATORS);
+});
+
 const API = 'https://owa.test/api/index.php?do=reports&module=base&version=v1';
 
 function url(params) {
@@ -119,6 +129,19 @@ describe('the filters a grid is given', () => {
     test('nothing is no filters', () => {
         expect(OWA.dataGrid.parseConstraints('')).toEqual([]);
         expect(OWA.dataGrid.parseConstraints(undefined)).toEqual([]);
+    });
+
+    /* The order is the page's, so a clause is read by the list the server sent. */
+    test('the operators are the ones the page was given', () => {
+        expect(OWA.dataGrid.parseConstraints('sessions>=5')).toEqual([
+            { name: 'sessions', operator: '>=', value: '5' },
+        ]);
+
+        OWA.setSetting('constraint_operators', ['>', '>=']);
+
+        expect(OWA.dataGrid.parseConstraints('sessions>=5')).toEqual([
+            { name: 'sessions', operator: '>', value: '=5' },
+        ]);
     });
 });
 

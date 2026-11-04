@@ -72,10 +72,11 @@ class AppPasswords {
      *
      * @param  string $user_id
      * @param  string $name
-     * @param  string $scope SCOPE_READ or SCOPE_FULL
+     * @param  string $scope SCOPE_READ or SCOPE_FULL. Read when not given, as
+     *                       the dialog's first choice and cmd=app-password-create are.
      * @return array|false token, lookup_id, name, scope, created_at
      */
-    public static function create( $user_id, $name, $scope = self::SCOPE_FULL ) {
+    public static function create( $user_id, $name, $scope = self::SCOPE_READ ) {
 
         $user_id = (string) $user_id;
         $name    = trim( (string) $name );

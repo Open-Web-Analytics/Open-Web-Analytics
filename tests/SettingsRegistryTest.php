@@ -682,4 +682,29 @@ final class SettingsRegistryTest extends TestCase
         $this->assertArrayNotHasKey( 'General', $sections,
             'existing registrations must not need editing to keep working' );
     }
+
+    /**
+     * The GeoIP and SQS screens are in the Instance section.
+     *
+     * Both registered with `group` 'Modules', which became a section of that
+     * name. getHierarchyNav() drops a section it did not build, so neither
+     * screen had an entry in any menu.
+     */
+    public function testTheModuleSettingsPagesAreInTheInstanceSection(): void
+    {
+        foreach ( array(
+            'maxmind_geoip.optionsGeoip' => \OWA\Module\MaxmindGeoip\Module::class,
+            'sqs.optionsSqs'             => \OWA\Module\Sqs\Module::class,
+        ) as $do => $class ) {
+
+            $module = new $class();
+            $module->registerAdminPanels();
+
+            $sections = \OWA\Core\Controller::settingsNavSections(
+                array( (array) $module->getAdminPanels() ) );
+
+            $this->assertSame( array( 'Instance' ), array_keys( $sections ), $do );
+            $this->assertContains( $do, array_column( $sections['Instance'], 'do' ) );
+        }
+    }
 }
