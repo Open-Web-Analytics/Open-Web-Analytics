@@ -699,4 +699,159 @@ final class CustomDimensionBuildTest extends TestCase
             }
         }
     }
+
+    // ---- reporting on it --------------------------------------------------
+
+    /** dimension value => pageViews for today, from a real query. */
+    private function report(string $dimension, string $constraints = '', bool $bySite = false)
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray('pageViews');
+        $rsm->setDimensions($rsm->dimensionsStringToArray($dimension));
+        $rsm->setTimePeriod('date_range', (string) $this->yyyymmdd, (string) $this->yyyymmdd);
+
+        if ($bySite) {
+            $rsm->setSiteId(self::SITE);
+        } else {
+            $rsm->setPropertyId((string) self::PROPERTY);
+        }
+
+        if ($constraints !== '') {
+            $rsm->setConstraints($rsm->constraintsStringToArray($constraints));
+        }
+
+        return $rsm->getResults();
+    }
+
+    /**
+     * A registered dimension is a dimension of its Property's reports.
+     *
+     * The column existed and a build filled it, but nothing named cd_ columns
+     * in the dimension registry, so the query a report runs was refused with
+     * "cd_tier is not a registered dimension" while the screen said
+     * Reportable.
+     */
+    public function testAnAppliedDimensionCanBeGroupedAndFilteredBy(): void
+    {
+        $this->register(['key' => 'tier', 'scope' => 'event']);
+        $this->seed(['tier' => 'gold']);
+        $this->rebuild();
+
+        $rs = $this->report('cd_tier', 'cd_tier==gold');
+
+        $this->assertSame([], (array) $rs->errors);
+
+        $rows = $rs->getResultsRows();
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('gold', (string) $rows[0]['cd_tier']['value']);
+        $this->assertSame(1, (int) $rows[0]['pageViews']['value']);
+
+        $this->assertSame([], (array) $this->report('cd_tier', 'cd_tier==silver')->getResultsRows(),
+            'a constraint on it is applied, not dropped');
+    }
+
+    /** The grid's picker reads related dimensions, and offers it under custom. */
+    public function testTheReportOffersItInThePicker(): void
+    {
+        $this->register(['key' => 'tier', 'scope' => 'event', 'label' => 'Tier']);
+        $this->seed(['tier' => 'gold']);
+        $this->rebuild();
+
+        $custom = (array) ($this->report('cd_tier')->relatedDimensions['custom'] ?? []);
+
+        $this->assertContains(['name' => 'cd_tier', 'label' => 'Tier'], $custom);
+    }
+
+    /** A query naming the Profile resolves its Property's dimensions too. */
+    public function testAQueryBySiteIdResolvesItsPropertysDimensions(): void
+    {
+        $this->register(['key' => 'tier', 'scope' => 'event']);
+        $this->seed(['tier' => 'gold']);
+        $this->rebuild();
+
+        $rs = $this->report('cd_tier', '', true);
+
+        $this->assertSame([], (array) $rs->errors);
+        $this->assertSame('gold', (string) $rs->getResultsRows()[0]['cd_tier']['value']);
+    }
+
+    /**
+     * Only the named Property's, and only applied ones.
+     *
+     * Another Property's cube has no cd_tier column, and MySQL's refusal of
+     * an unknown column is swallowed, so the name must not validate there. A
+     * pending registration has no column yet either.
+     */
+    public function testItIsADimensionOnlyOfItsPropertyAndOnlyOnceApplied(): void
+    {
+        $this->record(['key' => 'late', 'scope' => 'event']);
+        $this->register(['key' => 'tier', 'scope' => 'event']);
+        $this->record(['key' => 'later', 'scope' => 'event']);
+
+        Dimensions::registerFor(self::PROPERTY);
+
+        $dimensions = \OWA\Core\CoreAPI::getAllDimensions();
+
+        $this->assertArrayHasKey('cd_tier', $dimensions);
+        $this->assertArrayHasKey('cd_late', $dimensions, 'applied by the same reconcile');
+        $this->assertArrayNotHasKey('cd_later', $dimensions, 'pending');
+        $this->assertArrayNotHasKey('cd_tier_set_ts', $dimensions);
+
+        Dimensions::registerFor(self::PROPERTY + 1);
+
+        $this->assertArrayNotHasKey('cd_tier', \OWA\Core\CoreAPI::getAllDimensions(),
+            'naming another Property replaces them');
+    }
+
+    /**
+     * A request naming the Property has them before it is validated.
+     *
+     * Core\Controller registers them ahead of the validators, so a custom
+     * report or visualization saved with one, and the editors' pickers, see it.
+     */
+    public function testAControllerNamingThePropertyRegistersThemBeforeItsAction(): void
+    {
+        $this->register(['key' => 'tier', 'scope' => 'event']);
+
+        $controller = new class(['propertyId' => (string) CustomDimensionBuildTest::PROPERTY])
+            extends \OWA\Core\Controller {
+
+            /** @var bool */
+            public $seen = false;
+
+            function action() {
+                $this->seen = \OWA\Module\Base\Classes\CustomReports::isDimension('cd_tier');
+            }
+        };
+
+        $controller->doAction();
+
+        $this->assertTrue($controller->seen);
+    }
+
+    /** Its registry entry: what the query engine and the pickers read. */
+    public function testItsEntryIsAColumnReadOfTheCube(): void
+    {
+        $this->assertSame([
+            'family'           => 'custom',
+            'name'             => 'cd_plan',
+            'entity'           => 'base.event',
+            'column'           => 'cd_plan',
+            'label'            => 'plan',
+            'description'      => 'Custom dimension: the visitor property "plan".',
+            'foreign_key_name' => '',
+            'data_type'        => 'integer',
+            'denormalized'     => true,
+        ], Dimensions::asDimension([
+            'dimension_key' => 'plan', 'column_name' => 'cd_plan', 'label' => '',
+            'scope' => 'user', 'data_type' => 'integer',
+        ]));
+    }
+
+    protected function tearDown(): void
+    {
+        Dimensions::forgetRegistered();
+    }
 }

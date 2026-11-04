@@ -246,6 +246,12 @@ class ResultSetManager extends \OWA\Core\Base {
         //used for urls
         $this->query_params['siteId'] = $siteId;
         $this->setConstraint('siteId', $siteId);
+
+        if ( empty( $this->query_params['propertyId'] ) ) {
+
+            \OWA\Module\Base\Classes\Cube\Dimensions::registerFor(
+                \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( (string) $siteId ) );
+        }
     }
 
     /**
@@ -256,6 +262,9 @@ class ResultSetManager extends \OWA\Core\Base {
     function setPropertyId( $propertyId ) {
 
         $this->query_params['propertyId'] = (string) $propertyId;
+
+        // Its custom dimensions are dimensions of this query.
+        \OWA\Module\Base\Classes\Cube\Dimensions::registerFor( $propertyId );
     }
 
     function getSiteId() {

@@ -665,6 +665,30 @@ class Service extends \OWA\Core\Base {
         return end($byEntity) ?: null;
     }
 
+    /**
+     * Add one dimension to the registry after the modules have registered.
+     *
+     * For dimensions that exist only for one Property, registered when a
+     * request names it: see Cube\Dimensions::registerFor().
+     *
+     * @param array $dim a registry entry, carrying at least name and entity
+     */
+    function registerDenormalizedDimension( array $dim ) {
+
+        $this->denormalizedDimensions[ $dim['name'] ][ $dim['entity'] ] = $dim;
+    }
+
+    /** Remove what registerDenormalizedDimension() added. */
+    function unregisterDenormalizedDimension( $name, $entity ) {
+
+        unset( $this->denormalizedDimensions[ $name ][ $entity ] );
+
+        if ( empty( $this->denormalizedDimensions[ $name ] ) ) {
+
+            unset( $this->denormalizedDimensions[ $name ] );
+        }
+    }
+
     function getDenormalizedDimension($name, $entity) {
 
         //print_r($this->denormalizedDimensions);
