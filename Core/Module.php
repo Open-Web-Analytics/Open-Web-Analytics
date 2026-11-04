@@ -108,15 +108,6 @@ abstract class Module {
     public $reports_registered = false;
 
     /**
-     * Whether registerAdminPanels() has run for this module this request.
-     *
-     * registerSettingsPage() appends, so asking again would list every page
-     * again. A request asks more than once: a settings screen builds its nav,
-     * then its view looks up its title, then its fieldsets.
-     */
-    public $admin_panels_registered = false;
-
-    /**
      * Array of metric names that this module implements
      *
      * @var mixed
@@ -684,7 +675,18 @@ abstract class Module {
      */
     function registerSettingsPanel($panel) {
 
-        $this->admin_panels[] = $panel;
+        // Keyed by the page's action, so registering it again replaces it. A
+        // request asks for the panels more than once (a settings screen's nav,
+        // then its title, then its fieldsets), and registerAdminPanels() runs
+        // each time, because it also registers the fieldsets the pages render.
+        if ( isset( $panel['do'] ) ) {
+
+            $this->admin_panels[ (string) $panel['do'] ] = $panel;
+
+        } else {
+
+            $this->admin_panels[] = $panel;
+        }
 
         return true;
     }
