@@ -385,11 +385,13 @@ final class TemplateLatentVarTest extends TestCase
                     'savedProperties' => [],
                     'triggerEvent' => 'page_view',
                     'triggerEvents' => [ 'page_view', 'click' ],
+                    'customTriggerEvents' => [ 'newsletter_signup' ], 'customTriggerEvent' => '',
                     'funnelSteps' => [],
                     'conditions' => [], 'validation_errors' => [],
                 ],
                 ['name="name"', 'name="conditionValue[]"', 'id="owa_goalVocabulary"',
-                 'data-description="The path of the page."'],
+                 'data-description="The path of the page."', 'value="newsletter_signup"',
+                 'name="customTriggerEvent"'],
             ],
         ];
     }

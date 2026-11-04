@@ -57,6 +57,7 @@ class GoalEventEdit extends \OWA\Core\AdminController {
         $this->set( 'triggerEvent', $trigger );
         $this->set( 'triggerEvents',
             \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames() );
+        $this->set( 'customTriggerEvents', self::customEventNames( $propertyId ) );
         $this->set( 'conditionProperties', self::conditionProperties( $trigger, $conditions ) );
 
         $this->set( 'conditionVocabulary', self::vocabulary() );
@@ -85,7 +86,68 @@ class GoalEventEdit extends \OWA\Core\AdminController {
             $vocabulary[ $event ] = self::conditionProperties( $event );
         }
 
+        /*
+         * Every custom event carries the same properties, the ones common to
+         * all events, so one list serves them all under the picker's custom
+         * value; owa.goalbuilder.js falls back to it for any name not above.
+         */
+        $vocabulary[ \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM ] =
+            self::conditionProperties( \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM );
+
         return $vocabulary;
+    }
+
+    /** How far back customEventNames() looks, in days. */
+    const CUSTOM_EVENT_DAYS = 90;
+
+    /** How many custom event names the trigger picker offers. */
+    const CUSTOM_EVENT_LIMIT = 100;
+
+    /**
+     * The custom events a Property's sites have sent lately, most sent first:
+     * what the trigger picker offers beside OWA's own events.
+     *
+     * Read from the Property's cube over the last CUSTOM_EVENT_DAYS, which the
+     * date partitions bound. A name not sent in that window can still be typed
+     * in, and a goal event's own trigger is always offered (the template adds
+     * it).
+     *
+     * @param  string $propertyId
+     * @return string[]
+     */
+    public static function customEventNames( $propertyId ) {
+
+        if ( ! ctype_digit( (string) $propertyId )
+             || ! \OWA\Module\Base\Classes\Cube\Cubes::exists( $propertyId ) ) {
+
+            return array();
+        }
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+
+        $rsm->metrics = $rsm->metricsStringToArray( 'eventCount' );
+        $rsm->setDimensions( $rsm->dimensionsStringToArray( 'eventName' ) );
+        $rsm->setPropertyId( (string) $propertyId );
+        $rsm->setTimePeriod( 'date_range',
+            date( 'Ymd', strtotime( '-' . ( self::CUSTOM_EVENT_DAYS - 1 ) . ' days' ) ), date( 'Ymd' ) );
+        $rsm->setConstraints( $rsm->constraintsStringToArray( 'isGoalEvent==0' ) );
+        $rsm->setSorts( $rsm->sortStringToArray( 'eventCount-' ) );
+        // Room for OWA's own events, which come back too and are dropped below.
+        $rsm->setLimit( self::CUSTOM_EVENT_LIMIT + 50 );
+
+        $names = array();
+
+        foreach ( (array) $rsm->getResults()->getResultsRows() as $row ) {
+
+            $name = (string) ( $row['eventName']['value'] ?? '' );
+
+            if ( \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $name ) ) {
+
+                $names[] = $name;
+            }
+        }
+
+        return array_slice( $names, 0, self::CUSTOM_EVENT_LIMIT );
     }
 
     /**

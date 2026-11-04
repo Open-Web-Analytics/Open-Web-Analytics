@@ -199,6 +199,47 @@ test.describe('goal events', () => {
     });
 
     /**
+     * A SITE'S OWN EVENT is a trigger too: one its Profiles sent lately, or any
+     * other typed beside the picker. It needs no condition, because its name
+     * already says what happened.
+     */
+    test('a goal on an event of the site\'s own needs no condition', async ({ page }) => {
+        const stamp = Date.now();
+        const name  = 'E2E_Custom_' + stamp;
+        const event = 'e2e_signup_' + stamp;
+
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+
+        const custom = page.locator('input.owa_goalCustomTrigger');
+        await expect(custom).toBeHidden();
+
+        await choose(page, 'select.owa_goalTrigger', 'Another event');
+        await expect(custom).toBeVisible();
+        await custom.fill(event);
+        await page.fill('input[name="name"]', name);
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[value="Save Goal Event"]').click(),
+        ]);
+
+        const row = page.locator('table.management tbody tr', { hasText: name });
+        await expect(row).toContainText('every ' + event);
+
+        const editHref = await row.locator('a[href*="base.goalEventEdit"]').first().getAttribute('href');
+        const params = new URL(editHref, page.url()).searchParams;
+        const id = params.get('owa_goalEventId') || params.get('goalEventId');
+
+        // It comes back as a choice of its own, not as "another event".
+        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}&owa_goalEventId=${id}`);
+        await expect(page.locator('select.owa_goalTrigger')).toHaveValue(event);
+        await expect(custom).toBeHidden();
+
+        await confirmAndWait(page, page.locator('input[value="Delete Goal Event"]'));
+        await expect(page.locator('table.management tbody tr', { hasText: name })).toHaveCount(0);
+    });
+
+    /**
      * A property picked on this page and not saved gives way: switching the
      * event moves it to the new event's list, with no warning, because nothing
      * stored would be lost.

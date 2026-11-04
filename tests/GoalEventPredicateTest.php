@@ -222,6 +222,23 @@ final class GoalEventPredicateTest extends TestCase
         $this->assertSame( array(), $out['params'] );
     }
 
+    /**
+     * A custom event's name is its own condition, so a goal on one with none
+     * counts every one -- as matchesRow() does. OWA's own events still need one.
+     */
+    public function testACustomEventWithNoConditionsMatchesEveryOne(): void
+    {
+        list( $out ) = $this->compile( array(), GoalEvent::MATCH_ALL, 'newsletter_signup' );
+
+        $this->assertSame( '( ' . \OWA\Module\Base\Controller\VisualizationFunnel::ALIAS . '.event_type = ? )', $out['sql'] );
+        $this->assertSame( array( 'newsletter_signup' ), $out['params'] );
+
+        foreach ( array( 'page_view', 'exception', 'owa_custom' ) as $trigger ) {
+            list( $out ) = $this->compile( array(), GoalEvent::MATCH_ALL, $trigger );
+            $this->assertSame( '( 0 = 1 )', $out['sql'], $trigger );
+        }
+    }
+
     /** An operator nobody recognises matches nothing, exactly as compare() does. */
     public function testAnUnknownOperatorMatchesNothing(): void
     {

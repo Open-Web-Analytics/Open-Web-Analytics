@@ -561,6 +561,12 @@ class TrackingEventHelpers {
      */
     public static function goalTriggerEventNames() {
 
+        // Memoised for marking, which asks per beacon; the config is fixed once read.
+        if ( self::$goal_trigger_names !== null ) {
+
+            return self::$goal_trigger_names;
+        }
+
         $out = array();
 
         foreach ( self::eventConfig() as $name => $declaration ) {
@@ -573,8 +579,11 @@ class TrackingEventHelpers {
 
         sort( $out );
 
-        return $out;
+        return self::$goal_trigger_names = $out;
     }
+
+    /** @var string[]|null goalTriggerEventNames(), once computed */
+    private static $goal_trigger_names = null;
 
     /**
      * The first-class events that are MATERIALIZED at ingest rather than sent.

@@ -337,6 +337,124 @@ final class GoalEventStorageTest extends TestCase
         }
     }
 
+    /** What may trigger a goal event: OWA's goal triggers, or a site's own event. */
+    public function testATriggerIsAGoalTriggerOrAnEventOfTheSitesOwn(): void
+    {
+        $problem = array( \OWA\Module\Base\Entity\GoalEvent::class, 'triggerProblem' );
+        $custom  = array( \OWA\Module\Base\Entity\GoalEvent::class, 'isCustomTrigger' );
+
+        foreach ( array( 'page_view', 'click', 'first_visit' ) as $ok ) {
+            $this->assertSame( '', $problem( $ok ), $ok );
+            $this->assertFalse( $custom( $ok ), "$ok is OWA's" );
+        }
+
+        $this->assertSame( '', $problem( 'newsletter_signup' ) );
+        $this->assertTrue( $custom( 'newsletter_signup' ) );
+
+        // A module's event is refused while the module is active, which this process may not have loaded.
+        $modules = array_values( array_diff( \OWA\Core\CoreAPI::trackingEventTypes(),
+            \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() ) );
+
+        foreach ( array_merge( array( 'exception', 'owa_signup', 'Owa_signup', '9lives', 'two words',
+                \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM, str_repeat( 'a', 41 ) ), $modules ) as $refused ) {
+            $this->assertNotSame( '', $problem( $refused ), $refused );
+            $this->assertFalse( $custom( $refused ), $refused );
+        }
+
+        $this->assertFalse( $custom( '' ) );
+    }
+
+    /** The builder's script names the picker's custom value as the server does. */
+    public function testTheBuilderKnowsTheCustomTriggerValue(): void
+    {
+        $source = (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.goalbuilder.js' );
+
+        $this->assertMatchesRegularExpression( '/export const CUSTOM_TRIGGER = ' . preg_quote(
+            "'" . \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM . "';", '/' ) . '/', $source );
+    }
+
+    /** A goal on a site's own event with no condition counts every one; on OWA's, none. */
+    public function testWithNoConditionsOnlyACustomEventMatches(): void
+    {
+        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+
+        $goal->set( 'trigger_event_type', 'newsletter_signup' );
+        $this->assertTrue( $goal->matchesRow( array( 'event_type' => 'newsletter_signup' ), array() ) );
+        $this->assertFalse( $goal->matchesRow( array( 'event_type' => 'page_view' ), array() ), 'the trigger still gates' );
+
+        $goal->set( 'trigger_event_type', 'page_view' );
+        $this->assertFalse( $goal->matchesRow( array( 'event_type' => 'page_view' ), array() ),
+            'every page view is not a goal' );
+    }
+
+    /** The validation messages for a save with these params, over a valid base. */
+    private function triggerErrors( array $params ): array
+    {
+        $save = new \OWA\Module\Base\Controller\GoalEventSave( $params + array(
+            'propertyId' => $this->propertyId,
+            'name'       => 'Signed_up_75',
+        ) );
+        $save->validate();
+
+        $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
+        $v->setAccessible( true );
+        $validator = $v->getValue( $save );
+        $validator->doValidations();
+
+        return array_map( static function ( $msg ) {
+
+            return is_array( $msg ) ? (string) ( $msg['message'] ?? '' ) : (string) $msg;
+        }, array_values( (array) $validator->getErrorMsgs() ) );
+    }
+
+    /** A custom event is chosen in the picker or typed beside it, and needs no condition. */
+    public function testACustomEventTriggerIsSavedWithoutAConditionAndNothingElseIs(): void
+    {
+        $this->assertSame( array(), $this->triggerErrors( array( 'triggerEvent' => 'newsletter_signup' ) ) );
+        $this->assertSame( array(), $this->triggerErrors( array(
+            'triggerEvent' => \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM,
+            'customTriggerEvent' => ' newsletter_signup ' ) ) );
+
+        $this->assertContains( 'Enter a value to compare against.',
+            $this->triggerErrors( array( 'triggerEvent' => 'page_view' ) ), 'OWA\'s events still need one' );
+
+        $this->assertContains( 'Enter the name of the custom event.', $this->triggerErrors( array(
+            'triggerEvent' => \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM, 'customTriggerEvent' => '' ) ) );
+
+        $this->assertContains( 'A goal event cannot be triggered by exception.',
+            $this->triggerErrors( array( 'triggerEvent' => \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM,
+                'customTriggerEvent' => 'exception' ) ) );
+
+        $this->assertContains( 'A goal event cannot have the name of the event that triggers it, signed_up_75.',
+            $this->triggerErrors( array( 'triggerEvent' => 'signed_up_75' ) ) );
+    }
+
+    /** The save stores the typed name as the trigger, and no conditions. */
+    public function testATypedCustomEventIsStoredAsTheTrigger(): void
+    {
+        $save = new \OWA\Module\Base\Controller\GoalEventSave( array(
+            'propertyId' => $this->propertyId, 'name' => 'Signed_up_typed_75', 'value' => '0',
+            'triggerEvent' => \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM,
+            'customTriggerEvent' => 'newsletter_signup',
+            'conditionProperty' => array( 'page_path' ), 'conditionOperator' => array( 'exact' ),
+            'conditionValue' => array( '' ) ) );
+        $save->action();
+
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            'SELECT id, trigger_event_type FROM owa_goal_event WHERE property_id = ? AND name = ?',
+            array( $this->propertyId, 'Signed_up_typed_75' ) );
+
+        try {
+            $this->assertSame( 'newsletter_signup', $row['trigger_event_type'] );
+
+            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $goal->load( $row['id'] );
+            $this->assertSame( array(), (array) $goal->loadConditions(), 'the empty row is not a condition' );
+        } finally {
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $row['id'] );
+        }
+    }
+
     /** A goal event of the fixture Property, stored directly. */
     private function storedGoal( string $name ): string
     {
