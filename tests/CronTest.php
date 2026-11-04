@@ -418,7 +418,11 @@ final class CronTest extends TestCase
     public function testDescribesCommonSchedulesInWords()
     {
         foreach ([
+            '@yearly'       => 'yearly, on 1 January at 00:00',
+            '@annually'     => 'yearly, on 1 January at 00:00',
             '@monthly'      => 'monthly, on the 1st at 00:00',
+            '@weekly'       => 'weekly, on Sunday at 00:00',
+            '@midnight'     => 'daily at 00:00',
             '@daily'        => 'daily at 00:00',
             '@hourly'       => 'hourly, on the hour',
             '* * * * *'     => 'every minute',

@@ -495,8 +495,8 @@ class Cron {
         $expr = strtolower( trim( (string) $expr ) );
 
         $words = array(
-            '@yearly'   => 'yearly, on 1 January',
-            '@annually' => 'yearly, on 1 January',
+            '@yearly'   => 'yearly, on 1 January at 00:00',
+            '@annually' => 'yearly, on 1 January at 00:00',
             '@monthly'  => 'monthly, on the 1st at 00:00',
             '@weekly'   => 'weekly, on Sunday at 00:00',
             '@daily'    => 'daily at 00:00',
