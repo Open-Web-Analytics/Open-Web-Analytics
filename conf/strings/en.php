@@ -9,6 +9,7 @@
 return array(
     '"%s" cannot be queried here.' => '"%s" cannot be queried here.',
     '"%s" is not a database name OWA can use.' => '"%s" is not a database name OWA can use.',
+    '"%s" is not a dimension or a metric, so a segment cannot select on it.' => '"%s" is not a dimension or a metric, so a segment cannot select on it.',
     '"%s" is not a reporting period.' => '"%s" is not a reporting period.',
     '"%s" is not a valid property name. Use a letter, then letters, digits or underscores; at most 40 characters.' => '"%s" is not a valid property name. Use a letter, then letters, digits or underscores; at most 40 characters.',
     '"%s" is not an allowed value. Allowed: %s' => '"%s" is not an allowed value. Allowed: %s',

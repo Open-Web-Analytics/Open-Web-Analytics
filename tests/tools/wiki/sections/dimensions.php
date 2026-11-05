@@ -12,7 +12,9 @@ return static function ( $arg = null ) {
 
     $families = array();
 
-    foreach ( (array) \OWA\Core\CoreAPI::getAllDimensions() as $name => $d ) {
+    // No Property: the dimensions an installation ships with, which is what
+    // the page documents. Custom ones are a Property's own.
+    foreach ( \OWA\Module\Base\Classes\DimensionRegistry::forProperty( null )->all() as $name => $d ) {
 
         $family = (string) ( $d['family'] ?? '' );
 

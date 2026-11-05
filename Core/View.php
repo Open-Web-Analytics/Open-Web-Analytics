@@ -40,6 +40,13 @@ class View extends \OWA\Core\Base {
     const BANNER_SLOT = '<!-- owa:banners -->';
 
     /**
+     * The request params a report link carries forward (makeLink( ..., true )),
+     * besides any state keys the controller adds. A controller building a link
+     * on a Template of its own, which has no link state, reads them from here.
+     */
+    const LINK_STATE_KEYS = array( 'period', 'startDate', 'endDate', 'siteId', 'propertyId', 'startTime', 'endTime' );
+
+    /**
      * Main view template object
      *
      * @var object
@@ -526,16 +533,7 @@ class View extends \OWA\Core\Base {
         }
         
         // control array - will check for these params. If they exist it will return.
-        $sp = [
-	        
-            'period' => null,
-            'startDate' => null,
-            'endDate' => null,
-            'siteId' => null,
-            'propertyId' => null,
-            'startTime' => null,
-            'endTime' => null
-        ];
+        $sp = array_fill_keys( self::LINK_STATE_KEYS, null );
                 
         // merge in any stte keys passed from the controller.
         $state_keys = $this->get('state_keys') ?: [];

@@ -344,13 +344,16 @@ class CustomReports {
      * Read from the registry rather than kept as a list here, so a time
      * dimension added there is refused here too.
      *
+     * The modules' dimensions alone (no Property): a custom dimension is in
+     * the `custom` family, never `time`.
+     *
      * @return string[]
      */
     public static function timeDimensions() {
 
         $names = array();
 
-        foreach ( (array) \OWA\Core\CoreAPI::getAllDimensions() as $name => $dimension ) {
+        foreach ( DimensionRegistry::forProperty( null )->all() as $name => $dimension ) {
 
             if ( isset( $dimension['family'] ) && $dimension['family'] === 'time' ) {
 
@@ -418,10 +421,15 @@ class CustomReports {
      * put the reason next to the field that caused it and a test can ask the
      * same question without a request.
      *
-     * @param mixed $definition a decoded definition
+     * Against one Property's dimensions (Classes\DimensionRegistry): a report
+     * grouped by a custom dimension can be drawn only for a Property that has
+     * it applied. Without a Property, the modules' dimensions alone.
+     *
+     * @param mixed           $definition  a decoded definition
+     * @param string|null     $property_id the Property it is saved or drawn for
      * @return string
      */
-    public static function validate( $definition ) {
+    public static function validate( $definition, $property_id = null ) {
 
         // Everything the renderer already refuses: a missing title, an unknown
         // top-level key, a malformed widget list, an unknown formatter.
@@ -471,7 +479,7 @@ class CustomReports {
                     $where, $type, implode( ', ', array_keys( self::WIDGET_TYPES ) ) );
             }
 
-            $error = self::validateQuery( $widget, $where, $has_report_metrics );
+            $error = self::validateQuery( $widget, $where, $has_report_metrics, $property_id );
 
             if ( $error !== '' ) {
 
@@ -484,7 +492,7 @@ class CustomReports {
          * tab group, independent of any one widget. Same registry check -- an
          * unresolvable name here takes down every widget rather than one.
          */
-        $error = self::validateNames( $definition, 'metrics', 'metric', \OWA\Core\CoreAPI::t( 'The report metric set' ) );
+        $error = self::validateNames( $definition, 'metrics', 'metric', \OWA\Core\CoreAPI::t( 'The report metric set' ), $property_id );
 
         if ( $error !== '' ) {
 
@@ -502,7 +510,7 @@ class CustomReports {
 
         $error = self::validateCombination(
             isset( $definition['metrics'] ) ? $definition['metrics'] : '',
-            '', '', 'the report metric set' );
+            '', '', 'the report metric set', $property_id );
 
         if ( $error !== '' ) {
 
@@ -520,9 +528,10 @@ class CustomReports {
      * @param bool   $has_report_metrics whether the REPORT declares a metric
      *               set. Only a report that has one may carry a widget naming
      *               no metrics of its own; see the rule below.
+     * @param string|null $property_id whose dimensions; see validate()
      * @return string
      */
-    private static function validateQuery( array $widget, $where, $has_report_metrics = false ) {
+    private static function validateQuery( array $widget, $where, $has_report_metrics, $property_id ) {
 
         $query = isset( $widget['query'] ) ? (array) $widget['query'] : array();
 
@@ -535,7 +544,7 @@ class CustomReports {
 
             list( $key, $kind ) = $pair;
 
-            $error = self::validateNames( $query, $key, $kind, $where );
+            $error = self::validateNames( $query, $key, $kind, $where, $property_id );
 
             if ( $error !== '' ) {
 
@@ -692,7 +701,7 @@ class CustomReports {
          * the names that resolve, so a misspelled one reaches that check as
          * nothing at all and the combination looks fine.
          */
-        $error = self::validateConstraints( $widget, $where );
+        $error = self::validateConstraints( $widget, $where, $property_id );
 
         if ( $error !== '' ) {
 
@@ -712,7 +721,7 @@ class CustomReports {
             isset( $query['metrics'] ) ? $query['metrics'] : '',
             isset( $query['dimensions'] ) ? $query['dimensions'] : '',
             isset( $widget['constraints'] ) ? $widget['constraints'] : '',
-            $where );
+            $where, $property_id );
 
         if ( $error !== '' ) {
 
@@ -758,7 +767,7 @@ class CustomReports {
                     continue;
                 }
 
-                if ( ! self::isKnownName( $name ) ) {
+                if ( ! self::isKnownName( $name, $property_id ) ) {
 
                     return sprintf( \OWA\Core\CoreAPI::t( '%s sorts on "%s", which is not a metric or a dimension.' ), $where, $name );
                 }
@@ -775,9 +784,10 @@ class CustomReports {
      * @param string $key
      * @param string $kind metric|dimension
      * @param string $where
+     * @param string|null $property_id whose dimensions; see validate()
      * @return string
      */
-    private static function validateNames( array $bag, $key, $kind, $where ) {
+    private static function validateNames( array $bag, $key, $kind, $where, $property_id ) {
 
         if ( empty( $bag[ $key ] ) ) {
 
@@ -795,7 +805,7 @@ class CustomReports {
                 continue;
             }
 
-            $known = $kind === 'metric' ? self::isMetric( $name ) : self::isDimension( $name );
+            $known = $kind === 'metric' ? self::isMetric( $name ) : self::isDimension( $name, $property_id );
 
             if ( ! $known ) {
 
@@ -826,9 +836,10 @@ class CustomReports {
      * @param string|array $dimensions
      * @param string $constraints the widget's constraint string, if any
      * @param string $where human-readable position, for the message
+     * @param string|null $property_id whose dimensions; see validate()
      * @return string
      */
-    private static function validateCombination( $metrics, $dimensions = '', $constraints = '', $where = '' ) {
+    private static function validateCombination( $metrics, $dimensions, $constraints, $where, $property_id ) {
 
         $names = self::asNames( $metrics );
         $dims  = self::asNames( $dimensions );
@@ -839,7 +850,7 @@ class CustomReports {
          * constraint on a field the fact table does not carry breaks a query
          * exactly as a dimension does.
          */
-        foreach ( self::constraintDimensions( $constraints ) as $name ) {
+        foreach ( self::constraintDimensions( $constraints, $property_id ) as $name ) {
 
             $dims[] = $name;
         }
@@ -861,6 +872,7 @@ class CustomReports {
         }
 
         $rsm = new ResultSetManager;
+        $rsm->setPropertyId( (string) $property_id );
 
         $clash = $rsm->firstIncompatible( $names, $dims );
 
@@ -1144,7 +1156,7 @@ class CustomReports {
         }
 
         $error = self::validateNames(
-            array( 'metrics' => $charted ), 'metrics', 'metric', $where );
+            array( 'metrics' => $charted ), 'metrics', 'metric', $where, null );
 
         if ( $error !== '' ) {
 
@@ -1497,12 +1509,13 @@ class CustomReports {
      *
      * @param array  $widget
      * @param string $where human-readable position, for the message
+     * @param string|null $property_id whose dimensions; see validate()
      * @return string
      */
-    private static function validateConstraints( array $widget, $where ) {
+    private static function validateConstraints( array $widget, $where, $property_id ) {
 
         return self::constraintsProblem(
-            isset( $widget['constraints'] ) ? $widget['constraints'] : '', $where );
+            isset( $widget['constraints'] ) ? $widget['constraints'] : '', $where, $property_id );
     }
 
     /** How a filter's condition reads, by its operator. See owa.filterpills.js. */
@@ -1520,13 +1533,14 @@ class CustomReports {
      * A constraints string in words, a clause each: "Page Path contains /blog/".
      * A clause that does not parse is given as written.
      *
-     * @param  string $constraints
+     * @param  string      $constraints
+     * @param  string|null $property_id whose dimensions' labels, a custom one's among them
      * @return array
      */
-    public static function constraintsInWords( $constraints ) {
+    public static function constraintsInWords( $constraints, $property_id = null ) {
 
         $labels = array_column(
-            \OWA\Module\Base\Controller\CustomReportEdit::dimensionChoices(), 'label', 'name' );
+            \OWA\Module\Base\Controller\CustomReportEdit::dimensionChoices( $property_id ), 'label', 'name' );
 
         $out = array();
 
@@ -1569,9 +1583,10 @@ class CustomReports {
      *
      * @param mixed  $constraints
      * @param string $where human-readable position, for the message
+     * @param string|null $property_id whose dimensions it may name; see validate()
      * @return string
      */
-    public static function constraintsProblem( $constraints, $where ) {
+    public static function constraintsProblem( $constraints, $where, $property_id = null ) {
 
         if ( ! is_string( $constraints ) || trim( $constraints ) === '' ) {
 
@@ -1635,7 +1650,7 @@ class CustomReports {
                     $where, $clause, implode( ' ', $operators ) );
             }
 
-            if ( ! self::isKnownName( $name ) ) {
+            if ( ! self::isKnownName( $name, $property_id ) ) {
 
                 return sprintf(
                     \OWA\Core\CoreAPI::t( '%s constrains on "%s", which is not a dimension or a metric.' ),
@@ -1662,9 +1677,10 @@ class CustomReports {
      * having clause and does not decide the fact table.
      *
      * @param string $constraints
+     * @param string|null $property_id whose dimensions; see validate()
      * @return array
      */
-    private static function constraintDimensions( $constraints ) {
+    private static function constraintDimensions( $constraints, $property_id ) {
 
         $out = array();
 
@@ -1675,7 +1691,7 @@ class CustomReports {
             $name = preg_split( '/[=!<>~]/', $clause, 2 )[0];
             $name = trim( (string) $name );
 
-            if ( $name !== '' && self::isDimension( $name ) ) {
+            if ( $name !== '' && self::isDimension( $name, $property_id ) ) {
 
                 $out[] = $name;
             }
@@ -1685,9 +1701,9 @@ class CustomReports {
     }
 
     /** Whether the name resolves as either kind -- what a sort may be. */
-    private static function isKnownName( $name ) {
+    private static function isKnownName( $name, $property_id ) {
 
-        return self::isMetric( $name ) || self::isDimension( $name );
+        return self::isMetric( $name ) || self::isDimension( $name, $property_id );
     }
 
     public static function isMetric( $name ) {
@@ -1697,11 +1713,17 @@ class CustomReports {
         return array_key_exists( $name, $metrics );
     }
 
-    public static function isDimension( $name ) {
+    /**
+     * Whether the name is a dimension of this Property (Classes\DimensionRegistry),
+     * or with no Property one of the modules'.
+     *
+     * @param string      $name
+     * @param string|null $property_id
+     * @return bool
+     */
+    public static function isDimension( $name, $property_id = null ) {
 
-        $dimensions = (array) \OWA\Core\CoreAPI::getAllDimensions();
-
-        return array_key_exists( $name, $dimensions );
+        return DimensionRegistry::forProperty( $property_id )->has( $name );
     }
 
     /**
@@ -1926,9 +1948,10 @@ class CustomReports {
      *
      * @param array  $fields {id, name, definition}
      * @param string $user_id the author, for a new report
+     * @param string|null $property_id the Property it is built on, whose dimensions it may name
      * @return array {ok:bool, id:string, error:string}
      */
-    public static function save( array $fields, $user_id ) {
+    public static function save( array $fields, $user_id, $property_id = null ) {
 
         $name = trim( (string) ( $fields['name'] ?? '' ) );
 
@@ -1960,7 +1983,7 @@ class CustomReports {
 
         $definition = self::normalize( $definition );
 
-        $error = self::validate( $definition );
+        $error = self::validate( $definition, $property_id );
 
         if ( $error !== '' ) {
 

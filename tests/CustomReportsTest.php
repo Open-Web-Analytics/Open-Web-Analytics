@@ -1480,7 +1480,7 @@ final class CustomReportsTest extends TestCase
         $this->assertSame(array('base.event'), $metrics['sessions']);
         $this->assertSame(array('base.event'), $metrics['pageViews']);
 
-        $dimensions = \OWA\Module\Base\Controller\CustomReportEdit::dimensionEntities();
+        $dimensions = \OWA\Module\Base\Controller\CustomReportEdit::dimensionEntities(null);
 
         $this->assertNotEmpty($dimensions);
         // One vocabulary, so every dimension maps to the cube. The point of

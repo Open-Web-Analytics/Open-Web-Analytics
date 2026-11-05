@@ -16,7 +16,8 @@ use OWA\Module\Base\Classes\CustomReports as CR;
 return function () {
 
     $cell = fn ( $v ) => str_replace( array( '|', "\n" ), array( '\\|', ' ' ), trim( (string) $v ) );
-    $dims = (array) CoreAPI::getAllDimensions();
+    // No Property: the shipped dimensions, which is what the page documents.
+    $dims = \OWA\Module\Base\Classes\DimensionRegistry::forProperty( null )->all();
     $or   = function ( array $words ) {
 
         $last = array_pop( $words );

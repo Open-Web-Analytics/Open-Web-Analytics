@@ -92,7 +92,8 @@ class VisualizationSave extends \OWA\Core\AdminController {
          * here rather than every time the funnel is opened.
          */
         $problem = \OWA\Module\Base\Classes\CustomReports::constraintsProblem(
-            (string) $this->getParam( 'constraints' ), \OWA\Core\CoreAPI::t( 'The funnel' ) );
+            (string) $this->getParam( 'constraints' ), \OWA\Core\CoreAPI::t( 'The funnel' ),
+            (string) $this->getParam( 'propertyId' ) );
 
         if ( $problem !== '' ) {
 

@@ -101,8 +101,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 		 * that does not exist, and with the reason rather than empty rows -- a
 		 * client reading rows alone could not tell "not built yet" from zero.
 		 */
-		$propertyId = (string) ( $this->get( 'propertyId' )
-			?: \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( (string) $this->get( 'siteId' ) ) );
+		$propertyId = $this->propertyOfRequest();
 
 		$readiness = $this->get( 'propertyId' ) || $this->get( 'siteId' )
 			? \OWA\Module\Base\Classes\Cube\Status::readinessOfProperty( $propertyId ) : null;
@@ -174,12 +173,31 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 	}
 	
+	/** The Property the request names, or else the one its siteId belongs to; '' for neither. */
+	private function propertyOfRequest() {
+
+		return (string) ( $this->get( 'propertyId' )
+			?: \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( (string) $this->get( 'siteId' ) ) );
+	}
+
 	/**
      * Generates a data result set using metrics and dimension
      *
      * @return paginatedResultSet obj
      */
     function getResultSet() {
+
+        $rsm = $this->resultSetManager();
+
+        return $rsm ? $rsm->getResults() : false;
+    }
+
+    /**
+     * The query this request asks for, set up and not yet run.
+     *
+     * @return \OWA\Module\Base\Classes\ResultSetManager|false  false without metrics
+     */
+    public function resultSetManager() {
 
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
@@ -191,6 +209,15 @@ class ReportsRest extends \OWA\Core\ReportController {
 	        
             return false;
         }
+
+        /*
+         * Whose dimensions the request's names are, before the segment and the
+         * constraints are checked against them: a custom dimension is one
+         * Property's. For the vocabulary only (setVocabularyProperty()): the
+         * Property and the siteId filter are still set after the constraints,
+         * so the siteId param replaces a siteId constraint the request carried.
+         */
+        $rsm->setVocabularyProperty( $this->propertyOfRequest() );
 
         // set dimensions
         if ( $this->getParam('dimensions') ) {
@@ -257,7 +284,6 @@ class ReportsRest extends \OWA\Core\ReportController {
             $rsm->setOffset( $this->get('offset') );
         }
 
-        // get results
-        return  $rsm->getResults();
+        return $rsm;
     }
 }
