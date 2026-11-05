@@ -100,6 +100,9 @@ class GoalVocabulary {
         'is_goal_event' => 'the answer. A condition reading it would make marking '
                            . 'depend on marking',
 
+        'value' => 'set by marking, on goal events only. Every event a condition '
+                   . 'is tested against carries none',
+
         'event_type' => 'the trigger already says which event this is about, and '
                         . 'a condition on it could contradict the trigger',
 

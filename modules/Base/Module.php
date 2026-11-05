@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 76;
+        $this->required_schema_version = 78;
         return parent::__construct();
     }
 
@@ -1211,9 +1211,9 @@ class Module extends \OWA\Core\Module {
          * IngestAnnouncementsTest caught.
          *
          * WHAT GOES WITH IT, and is not replaced:
-         *   - v1's GOAL CONVERSIONS. conversionHandlers evaluated them into
-         *     owa_session's goal_N columns. v2 adds a row per conversion at
-         *     ingest instead (Classes\GoalMarking).
+         *   - v1's GOALS. conversionHandlers evaluated them into owa_session's
+         *     goal_N columns. v2 adds a goal event, a row of its own, at ingest
+         *     instead (Classes\GoalMarking).
          *   - v1's tables stop being WRITTEN. They are not dropped: the
          *     migrator reads them, and their history is the only copy of what
          *     was collected before v2 ingest existed.

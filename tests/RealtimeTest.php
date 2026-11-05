@@ -290,8 +290,8 @@ final class RealtimeTest extends TestCase
         $this->assertSame(2, $by['NULL']['users'], 'the property-only row and the visitor with none');
     }
 
-    /** Goal completions are the conversion rows, by goal event, including one since deleted. */
-    public function testGoalCompletionsAreTheConversionRowsByGoalEvent(): void
+    /** Goal completions are the goal events, by definition, including one since deleted. */
+    public function testGoalCompletionsAreTheGoalEventsByDefinition(): void
     {
         $this->goals[] = $this->goal('Pricing_visit', [['page_path', 'begins', '/pricing']]);
 

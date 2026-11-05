@@ -87,7 +87,7 @@ final class WikiDocsReportingTest extends TestCase
                 $md, "metric set $key is not on the page" );
         }
 
-        $this->assertStringContainsString( 'Goal Conversions', $md, 'metrics are shown by label' );
+        $this->assertStringContainsString( 'Goal Events', $md, 'metrics are shown by label' );
     }
 
     public function testEveryRowActionIsListedAndDescribed(): void

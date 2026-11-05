@@ -94,6 +94,9 @@ test.describe('goal event definitions', () => {
         // someone saves what they just described and it silently never fires.
         await expect(page.locator('select[name="isActive"]')).toHaveValue('1');
 
+        // A new definition counts once per event unless told otherwise.
+        await expect(page.locator('select[name="countMode"]')).toHaveValue('once_per_event');
+
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
             page.locator('input[value="Save Goal Event Definition"]').click(),
@@ -106,6 +109,7 @@ test.describe('goal event definitions', () => {
         await expect(row).toContainText('/thanks');
         await expect(row).toContainText('2.50');
         await expect(row).toContainText('Active');
+        await expect(row.locator('.owa_goalEventCountMode')).toHaveText('Once per event');
 
         // --- EDIT --------------------------------------------------------------
         const editHref = await row.locator('a[href*="base.goalEventDefinitionEdit"]').first()
@@ -119,12 +123,15 @@ test.describe('goal event definitions', () => {
             `&owa_siteId=${FIXTURE.siteId}&owa_goalEventDefinitionId=${id}`);
 
         // It came back carrying what was saved, not a blank form. The name is
-        // shown, not offered: its conversions are already stored under it.
+        // shown, not offered: its goal events are already stored under it.
         await expect(page.locator('input[name="name"]')).toHaveCount(0);
         await expect(page.locator('form[name="owa_goalEventDefinition"] code', { hasText: name })).toHaveCount(1);
         await expect(page.locator('input[name="conditionValue[]"]')).toHaveValue('/thanks');
 
+        await expect(page.locator('select[name="countMode"]')).toHaveValue('once_per_event');
+
         await page.fill('input[name="value"]', '3.75');
+        await page.selectOption('select[name="countMode"]', 'once_per_session');
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
@@ -134,6 +141,9 @@ test.describe('goal event definitions', () => {
         await expect(
             page.locator('table.management tbody tr', { hasText: name })
         ).toContainText('3.75');
+        await expect(
+            page.locator('table.management tbody tr', { hasText: name }).locator('.owa_goalEventCountMode')
+        ).toHaveText('Once per session');
 
         // Edited, not duplicated: the id is carried through the form, so saving
         // twice has to update one row rather than leave two behind.
@@ -156,7 +166,7 @@ test.describe('goal event definitions', () => {
         ).toHaveCount(0);
     });
 
-    /** A name is an event name, because each conversion is stored as an event under it. */
+    /** A name is an event name, because each goal event is stored as an event under it. */
     test('a name that is not an event name is refused', async ({ page }) => {
         await gotoAction(page, 'base.goalEventDefinitionEdit', `&owa_siteId=${FIXTURE.siteId}`);
 

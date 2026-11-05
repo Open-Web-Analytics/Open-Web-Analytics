@@ -9,7 +9,7 @@ use OWA\Module\Base\Classes\Cube\Cubes;
 /**
  * The custom events the goal builder offers as triggers: what a Property's
  * sites sent lately, read from its cube, most sent first, and nothing of OWA's
- * own -- not its events and not a goal event's conversions.
+ * own -- not its events and not its goal events.
  */
 final class GoalCustomEventNamesTest extends TestCase
 {
@@ -123,7 +123,7 @@ final class GoalCustomEventNamesTest extends TestCase
             $this->seed($type, ++$n);
         }
 
-        // A goal event's conversion is stored under its own name.
+        // A goal event is stored under its definition's name.
         $this->seed('Signed_up', ++$n, 1);
 
         $builder = new \OWA\Module\Base\Classes\Cube\Builder(self::PROPERTY);

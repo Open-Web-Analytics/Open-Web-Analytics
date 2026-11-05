@@ -11,20 +11,28 @@ namespace OWA\Module\Base\Classes\Migration;
  * v1's recorded goal completions onto the migrated rows (PLAN.html 2.21).
  *
  * v1 recorded a completion per session in a numbered slot (owa_session.goal_N);
- * v2 counts a conversion row, named by the goal event definition -- by the
+ * v2 counts a goal event, a row named by the goal event definition -- by the
  * name Update075 gives it, see eventName() -- and flagged is_goal_event = 1
  * (Classes\GoalMarking). For each session v1 says completed
  * goal N, the first migrated row of that session that meets the definition
  * Update025 made of slot N -- its condition compiled exactly as the funnel
  * compiles it -- gets one.
  *
- * v1's record decides WHICH sessions converted; the definition only finds the
- * row. So nothing is marked that v1 did not count, which is what keeps this
- * from being retroactive conversion. A completion the definition cannot
- * locate -- the goal was deleted, or its condition changed -- is counted and
- * reported rather than guessed.
+ * v1's record decides WHICH sessions completed a goal; the definition only
+ * finds the row. So nothing is marked that v1 did not count, which is what
+ * keeps this from marking history retroactively. A completion the definition
+ * cannot locate -- the goal was deleted, or its condition changed -- is
+ * counted and reported rather than guessed.
  *
- * Runs after the page views: the conversion is copied from one of their rows.
+ * THE VALUE GOES WITH IT. v1 kept what each completion was worth beside it,
+ * in owa_session.goal_N_value: the goal's value, or the order total of the
+ * transaction that completed it, as hundredths whatever the currency
+ * (Lib::prepareCurrencyValue). The goal event carries it in `value`, in minor
+ * units of the Property's currency, as a goal event marked at ingest does
+ * (GoalMarking::valueOf()). A completion v1 recorded no value for carries
+ * none.
+ *
+ * Runs after the page views: the goal event is copied from one of their rows.
  *
  * Runs in Update062, before Update076 renames the definitions' tables, so it
  * reads them under the names 1.x left (namedBefore076()).
@@ -110,7 +118,8 @@ class GoalMigrator extends FactMigrator {
                 }
 
                 // Derived id and ON DUPLICATE KEY: a second run stores nothing new.
-                if ( ! self::storeConversion( $trigger, $predicate['name'] ) ) {
+                if ( ! self::storeGoalEvent( $trigger, $predicate['name'],
+                        $this->valueOf( (string) $r['site_id'], $r[ 'goal_' . $n . '_value' ] ?? null ) ) ) {
 
                     return false;
                 }
@@ -132,24 +141,27 @@ class GoalMigrator extends FactMigrator {
     }
 
     /**
-     * Store the conversion row for a row already in raw, unless it is there.
+     * Store the goal event for a row already in raw, unless it is there.
      *
-     * The SQL form of GoalMarking::conversion(), for what is converted after
+     * The SQL form of GoalMarking::goalEvent(), for what is marked after
      * ingest: this migration, and Update075, which turned the events marked
-     * before conversion rows existed into them. It copies the columns
-     * conversion() would -- the ones materializedProperties() names -- under
-     * the id ingest would have derived for it. MySQL's upsert, like the rest of
-     * the migration: only an installation upgrading from 1.x, which is MySQL,
-     * runs either.
+     * before goal events were rows of their own into them. It copies the
+     * columns goalEvent() would -- the ones materializedProperties() names --
+     * under the id ingest would have derived for it. MySQL's upsert, like the
+     * rest of the migration: only an installation upgrading from 1.x, which is
+     * MySQL, runs either.
      *
      * created_at is now, so the cube rebuilds the day (Cube\Builder::isCurrent()).
      *
      * @param  array  $trigger  the stored row's id, yyyymmdd, site_id, visitor_id,
      *                          session_id and ts
      * @param  string $name     the definition's name
+     * @param  array|null $value  array( 'value' => minor units, 'currency' => code ),
+     *                          or null for none. Update075 passes none: it runs
+     *                          before Update077 gives raw the column.
      * @return bool   false when the write failed
      */
-    public static function storeConversion( array $trigger, $name ) {
+    public static function storeGoalEvent( array $trigger, $name, $value = null ) {
 
         $db  = \OWA\Core\CoreAPI::dbSingleton();
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
@@ -169,16 +181,86 @@ class GoalMigrator extends FactMigrator {
 
         $id = \OWA\Module\Base\Classes\V2Event::id( $trigger['site_id'], $trigger['visitor_id'], $trigger['session_id'], $trigger['ts'], $name );
 
+        $insert = array( 'id', 'event_type', 'is_goal_event', 'created_at' );
+        $select = array( '?', '?', '1', '?' );
+        $params = array( $id, (string) $name, (int) round( microtime( true ) * 1000000 ) );
+
+        if ( $value !== null ) {
+
+            unset( $columns['value'], $columns['currency'] );
+
+            $insert[] = 'value';
+            $insert[] = 'currency';
+            $select[] = '?';
+            $select[] = '?';
+            $params[] = (int) $value['value'];
+            $params[] = (string) $value['currency'];
+        }
+
         // Qualified throughout: the SELECT reads the table the INSERT writes, so a
         // bare `id` in the duplicate-key clause names both.
         return $db->query( sprintf(
-            'INSERT INTO %1$s (id, event_type, is_goal_event, created_at, %2$s)'
-          . ' SELECT ?, ?, 1, ?, %3$s FROM %1$s t WHERE t.id = ? AND t.yyyymmdd = ?'
+            'INSERT INTO %1$s (%2$s, %3$s)'
+          . ' SELECT %4$s, %5$s FROM %1$s t WHERE t.id = ? AND t.yyyymmdd = ?'
           . ' ON DUPLICATE KEY UPDATE %1$s.id = %1$s.id',
-            $raw->getTableName(), implode( ', ', $columns ),
+            $raw->getTableName(), implode( ', ', $insert ), implode( ', ', $columns ),
+            implode( ', ', $select ),
             implode( ', ', array_map( function ( $c ) { return 't.' . $c; }, $columns ) ) ),
-            array( $id, (string) $name, (int) round( microtime( true ) * 1000000 ),
-                $trigger['id'], (int) $trigger['yyyymmdd'] ) ) !== false;
+            array_merge( $params, array( $trigger['id'], (int) $trigger['yyyymmdd'] ) ) ) !== false;
+    }
+
+    /**
+     * What v1 recorded one completion as worth, as storeGoalEvent() takes it, or
+     * null for nothing.
+     *
+     * v1 stored hundredths whatever the currency, so the amount is divided by
+     * 100 and converted by the currency's own exponent, as PurchaseMigrator does
+     * with v1's order totals. The currency is the one the Property's reports use
+     * (Currency::ofProperty()), as for a definition's value at ingest.
+     *
+     * NOT WRITTEN where raw has no `value` column. Raw is created from the
+     * entity in Update034, so on an upgrade from 1.x it has the column by now.
+     * A raw created before the column existed gets it only in Update077, which
+     * runs after this.
+     *
+     * @param  string $site_id
+     * @param  mixed  $v1  owa_session.goal_N_value
+     * @return array|null
+     */
+    private function valueOf( $site_id, $v1 ) {
+
+        if ( ! is_numeric( $v1 ) || (float) $v1 <= 0 || ! $this->rawHasValue() ) {
+
+            return null;
+        }
+
+        if ( ! array_key_exists( $site_id, $this->properties ) ) {
+
+            $this->properties[ $site_id ] = self::propertyFor( $site_id );
+        }
+
+        $currency = \OWA\Module\Base\Classes\Currency::normalize(
+            \OWA\Module\Base\Classes\Currency::ofProperty( (string) $this->properties[ $site_id ] ) );
+        $currency = $currency !== '' ? $currency : 'USD';
+
+        return array(
+            'value'    => \OWA\Module\Base\Classes\Currency::toMinorUnits( $v1 / 100, $currency ),
+            'currency' => $currency,
+        );
+    }
+
+    /** @var bool|null whether raw has a `value` column, asked once */
+    private $raw_has_value = null;
+
+    private function rawHasValue() {
+
+        if ( $this->raw_has_value === null ) {
+
+            $this->raw_has_value = (bool) $this->db()->get_results( sprintf( "SHOW COLUMNS FROM %s LIKE 'value'",
+                \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ) );
+        }
+
+        return $this->raw_has_value;
     }
 
     /** The Property a site belongs to. */
@@ -246,14 +328,14 @@ class GoalMigrator extends FactMigrator {
     private $renamed = array();
 
     /**
-     * The name a definition's conversion rows carry: the one Update075 gives
-     * it, NOT the 1.x name it still has.
+     * The name a definition's goal events carry: the one Update075 gives it,
+     * NOT the 1.x name it still has.
      *
      * This pass runs in Update062, before Update075 renames the definitions
      * whose 1.x names are not event names ("Contact form" becomes
      * Contact_form). A row stored under the 1.x name would stay under it, and
-     * the Goals report would show the migrated conversions and every later one
-     * as two goal events. After Update075 nothing is renamed and this is the
+     * the Goals report would show the migrated goal events and every later one
+     * under two names. After Update075 nothing is renamed and this is the
      * name the definition has, so revertSite() finds the same rows either way.
      */
     private function eventName( \OWA\Module\Base\Entity\GoalEventDefinition $goal ) {
@@ -279,10 +361,10 @@ class GoalMigrator extends FactMigrator {
     }
 
     /**
-     * Delete the conversion rows this pass stored for a site.
+     * Delete the goal events this pass stored for a site.
      *
      * The passes revert in reverse, so this runs before the page views' and
-     * reads the same v1 sessions again: each completion's conversion is the
+     * reads the same v1 sessions again: each completion's goal event is the
      * definition's row in that session.
      *
      * @return int rows deleted

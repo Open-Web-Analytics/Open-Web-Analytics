@@ -197,7 +197,7 @@ class Update075 extends \OWA\Core\Update {
 
                 foreach ( array_keys( $names ) as $name ) {
 
-                    if ( ! \OWA\Module\Base\Classes\Migration\GoalMigrator::storeConversion( $row, $name ) ) {
+                    if ( ! \OWA\Module\Base\Classes\Migration\GoalMigrator::storeGoalEvent( $row, $name ) ) {
 
                         return false;
                     }

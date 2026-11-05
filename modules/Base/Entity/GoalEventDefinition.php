@@ -209,17 +209,17 @@ class GoalEventDefinition extends \OWA\Core\Entity {
          * of one website both want to count the same signup, and defining it
          * twice is how the two definitions drift.
          *
-         * COUNTING stays per Profile regardless, because in 1.x a conversion is
-         * a flag on the session row and a session belongs to a Profile. So the
-         * definition is inherited downward and the counting happens where it
-         * always did.
+         * COUNTING stays per Profile regardless: a goal event is a row of the
+         * session that met the definition, and a session belongs to a Profile.
+         * So the definition is inherited downward and the counting happens
+         * where the session is.
          */
         $property_id = new \OWA\Module\Base\Classes\DbColumn( 'property_id', OWA_DTD_BIGINT );
         $property_id->setIndex();
         $this->setProperty( $property_id );
 
         /*
-         * The event name of the row a conversion adds (Classes\GoalMarking), so
+         * The event name of the goal events it adds (Classes\GoalMarking), so
          * a custom event name (nameProblem()). Fixed once saved: the rows
          * already stored carry it, and a new one would split the goal's history
          * in two.
@@ -232,20 +232,14 @@ class GoalEventDefinition extends \OWA\Core\Entity {
         $this->setProperty( $trigger );
 
         /*
-         * How often a match counts: once per session, or once per event.
+         * How often a match adds a goal event: COUNT_PER_EVENT, one for every
+         * event that meets the definition, or COUNT_PER_SESSION, none when the
+         * session already has one of its name. Classes\GoalMarking honours it;
+         * GoalEventDefinitionSave stores one of the two.
          *
-         * RECORDED HERE, NOT HONOURED IN 1.x. A 1.x conversion is a TINYINT on
-         * the session row -- goal_N -- so "this session did or did not convert"
-         * is the only thing the storage can say. Once-per-event is not a
-         * handler choice there, it is not representable.
-         *
-         * It is stored anyway because v2 is the other way round: v2
-         * materialises a row per match, so once-per-event is the natural
-         * behaviour and once-per-session is the one needing suppression. The
-         * column carries the author's intent across, so the v2 migration reads
-         * it rather than guessing.
-         *
-         * Falsy reads as once per session, which is what every 1.x goal is.
+         * Falsy reads as once per session (countMode()), which is what every
+         * 1.x goal was: 1.x recorded a goal as a flag on the session row,
+         * goal_N, so a session either had it or did not.
          */
         $count_mode = new \OWA\Module\Base\Classes\DbColumn( 'count_mode', OWA_DTD_VARCHAR255 );
         $this->setProperty( $count_mode );
@@ -264,8 +258,12 @@ class GoalEventDefinition extends \OWA\Core\Entity {
         $this->setProperty( $condition_match );
 
         /*
-         * CENTS, matching v2's revenue column, so the value does not have to be
-         * converted twice. 1.x stored a free-form decimal string.
+         * What one goal event is worth, in HUNDREDTHS of the Property's
+         * currency, as decimalToCents() reads what an author typed. 1.x stored
+         * a free-form decimal string. Classes\GoalMarking converts it to minor
+         * units of the currency the Property's reports use, onto each goal
+         * event's `value`: the same number for the currencies with two
+         * decimal places.
          */
         $value = new \OWA\Module\Base\Classes\DbColumn( 'value', OWA_DTD_BIGINT );
         $this->setProperty( $value );
@@ -275,7 +273,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
          * one created since. Nothing writes it any more and nothing on v2 reads
          * it: the goal{N} metrics it numbered were removed with the v1 metric
          * vocabulary. It is the only link between a definition and the
-         * owa_session.goal_N columns that hold 1.x's conversion history.
+         * owa_session.goal_N columns that hold 1.x's goal history.
          *
          * PENDING REMOVAL. Kept only for the v1-to-v2 history migration; drop it
          * (an update, since Update025 shipped it in 1.13) once that migration
@@ -289,7 +287,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
          * Falsy is INACTIVE, and that is deliberate. 1.x's goal_status was a
          * string that had to equal 'active' to count, so anything unset simply
          * did not fire. Keeping "off unless it says otherwise" means a
-         * half-written row never starts counting conversions on its own.
+         * half-written row never starts adding goal events on its own.
          */
         $is_active = new \OWA\Module\Base\Classes\DbColumn( 'is_active', OWA_DTD_TINYINT );
         $this->setProperty( $is_active );
@@ -362,7 +360,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      * One that another definition of the Property already has, or that OWA
      * collects, gets a number on the end. Read by Update075, which renames
      * them, AND by the v1 migration (Classes\Migration\GoalMigrator), which
-     * runs first, in Update062: the conversion rows it stores must carry the
+     * runs first, in Update062: the goal events it stores must carry the
      * name the definition will have, or they group apart from every later one.
      * Pure, so both give the same answer from the same rows; once Update075
      * has run it has nothing to rename.
@@ -510,7 +508,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      * request carries and what a session belongs to, so the hop happens here
      * rather than at each of them.
      *
-     * Memoized: the conversion evaluator asks per event.
+     * Memoized: goal marking asks per event.
      *
      * @return string|null
      */
@@ -535,7 +533,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
              * Measured: the write and the read resolved two different
              * Properties in the same process.
              *
-             * A column read cannot be stale, and this is on the conversion
+             * A column read cannot be stale, and this is on the goal marking
              * path, where it is asked once per event.
              */
             $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
@@ -558,15 +556,33 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     const COUNT_PER_EVENT   = 'once_per_event';
 
     /**
-     * How often a match counts.
+     * How often a match adds a goal event.
      *
-     * Falsy reads as once per session: every 1.x goal is one, and the storage
-     * there cannot express the alternative.
+     * Falsy, or anything but the two constants, reads as once per session:
+     * every 1.x goal is one.
      */
     public function countMode() {
 
-        return $this->get( 'count_mode' ) === self::COUNT_PER_EVENT
-            ? self::COUNT_PER_EVENT : self::COUNT_PER_SESSION;
+        return self::countModeOf( $this->get( 'count_mode' ) );
+    }
+
+    /** countMode() of a stored count_mode, for a row read without the entity. */
+    public static function countModeOf( $stored ) {
+
+        return $stored === self::COUNT_PER_EVENT ? self::COUNT_PER_EVENT : self::COUNT_PER_SESSION;
+    }
+
+    /**
+     * The count modes an author can choose, in the order they are offered.
+     *
+     * @return array  mode => label
+     */
+    public static function countModes() {
+
+        return array(
+            self::COUNT_PER_EVENT   => \OWA\Core\CoreAPI::t( 'Once per event' ),
+            self::COUNT_PER_SESSION => \OWA\Core\CoreAPI::t( 'Once per session' ),
+        );
     }
 
     /** 'all' or 'any'; falsy reads as all. */
@@ -724,7 +740,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      * but Update025 gives every migrated definition a trigger and
      * GoalEventDefinitionSave defaults one, so no such row exists. Meaning
      * "every event" would have marked the page view AND the session_start and
-     * first_visit materialized beside it, three conversions for one visit to a
+     * first_visit materialized beside it, three goal events for one visit to a
      * goal page.
      *
      * AN ABSENT OR NULL COLUMN CANNOT ANSWER, so it does not match -- whatever

@@ -157,10 +157,10 @@ test.describe('every configured report renders in a browser', () => {
      * per-widget constraint path end to end.
      */
     /**
-     * The goals report measures goal conversions: the rows ingest adds, named
-     * by the goal event and flagged is_goal_event, for events that met an
-     * active goal. The seeded goal is declared before the seeded page views, so
-     * the /docs views convert.
+     * The goals report measures goal events: the rows ingest adds, named by
+     * the goal event definition and flagged is_goal_event, for events that met
+     * an active definition. The seeded definition is declared before the seeded
+     * page views, so the /docs views add goal events.
      */
     test.describe('the goals report measures the goals this site has', () => {
 
@@ -175,9 +175,10 @@ test.describe('every configured report renders in a browser', () => {
         });
 
         /**
-         * Each goal event's conversions are rows named by it, so the grid is the
-         * event name over the conversion rows, a row per channel that brought
-         * them. The total is the trend's; the report has no separate count box.
+         * A definition's goal events are rows named by it, so the grid is the
+         * event name over the goal event rows, a row per channel that brought
+         * them, with their count and value beside it. The total is the trend's;
+         * the report has no separate count box.
          */
         test('the Goal Events grid lists the goal event by name and channel', async ({ page }) => {
             await expect(page.locator('#goalMetrics')).toHaveCount(0);
@@ -187,18 +188,20 @@ test.describe('every configured report renders in a browser', () => {
             await expect(rows.first()).toBeVisible({ timeout: 20_000 });
 
             const channels = ['Organic Search', 'Referral', 'Direct', '(unknown)'];
-            let conversions = 0;
+            let goalEvents = 0;
 
             // By column, not position: a rank cell leads each row.
             for (const cells of await rows.evaluateAll((trs) => trs.map((tr) => ({
                 channel: tr.querySelector('td[data-column="attributedChannel"]').innerText.trim(),
-                conversions: tr.querySelector('td[data-column="goalConversions"]').firstChild.textContent,
+                goalEvents: tr.querySelector('td[data-column="goalEvents"]').firstChild.textContent,
+                hasValue: tr.querySelector('td[data-column="goalValue"]') !== null,
             })))) {
                 expect(channels, `a goal row's channel: ${cells.channel}`).toContain(cells.channel);
-                conversions += Number(cells.conversions.replace(/[^0-9]/g, ''));
+                expect(cells.hasValue, 'Goal Value sits beside Goal Events').toBe(true);
+                goalEvents += Number(cells.goalEvents.replace(/[^0-9]/g, ''));
             }
 
-            expect(conversions).toBeGreaterThan(0);
+            expect(goalEvents).toBeGreaterThan(0);
         });
 
         /**

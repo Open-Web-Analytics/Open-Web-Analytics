@@ -391,7 +391,7 @@ final class TemplateLatentVarTest extends TestCase
                 ],
                 ['name="name"', 'name="conditionValue[]"', 'id="owa_goalVocabulary"',
                  'data-description="The path of the page."', 'value="newsletter_signup"',
-                 'name="customTriggerEvent"'],
+                 'name="customTriggerEvent"', 'value="once_per_event" selected'],
             ],
         ];
     }

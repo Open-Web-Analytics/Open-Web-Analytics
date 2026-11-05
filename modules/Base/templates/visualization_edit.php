@@ -93,8 +93,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
         <section class="owa_funnelBuild" aria-labelledby="owa_funnelStepsHeading">
 
             <h2 id="owa_funnelStepsHeading">Steps <span class="owa_builderRequired">Required</span></h2>
-            <p class="owa_builderHelp">In order, first to last. A page is matched on its path; an event is
-                one of this Property's goal event definitions, counted wherever it would count a conversion.</p>
+            <p class="owa_builderHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'In order, first to last. A page is matched on its path; an event is one of this Property\'s goal event definitions, counted wherever it would add a goal event.' ) );?></p>
 
             <ol class="owa_funnelStepList" id="owa_goalEventFunnel">
             <?php foreach ( $owa_steps as $owa_stepIndex => $owa_step ):?>

@@ -171,9 +171,9 @@ class Realtime {
     }
 
     /**
-     * Goal completions: the conversion rows, by goal event definition.
+     * Goal events, by goal event definition.
      *
-     * Each conversion is a row named by its definition (Classes\GoalMarking),
+     * Each goal event is a row named by its definition (Classes\GoalMarking),
      * so the breakdown is a GROUP BY.
      */
     private function goals() {

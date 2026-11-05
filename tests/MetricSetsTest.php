@@ -153,14 +153,15 @@ final class MetricSetsTest extends TestCase
     }
 
     /**
-     * A Property with an active goal event offers the Conversions set, and no other.
+     * A Property with an active goal event definition offers the Goals set, and
+     * no other.
      *
      * 1.x's goal groups each added a set measuring goal{N}Completions and
      * goalValueAll, which v2 does not have -- a migrated goal put an unresolvable
-     * "Sale" tab on every report. The set offered now measures goalConversions,
-     * which v2 counts from is_goal_event.
+     * "Sale" tab on every report. The set offered now measures goalEvents and
+     * goalValue, which v2 reads off the goal event rows.
      */
-    public function testAnActiveGoalEventDefinitionAddsTheConversionsSet(): void
+    public function testAnActiveGoalEventDefinitionAddsTheGoalsSet(): void
     {
         if ( ! owa_test_db_available() ) {
             $this->markTestSkipped( 'OWA database not reachable.' );
@@ -169,7 +170,7 @@ final class MetricSetsTest extends TestCase
         $site = array( 'property_id' => $this->aPropertyWithAProfile() );
 
         // Another active goal event on this Property already offers the set.
-        $before = in_array( 'conversions', array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) ), true );
+        $before = in_array( 'goals', array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) ), true );
 
         $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
         $id   = $goal->generateId( 'goal_event:metric-sets-probe:' . uniqid( '', true ) );
@@ -189,12 +190,12 @@ final class MetricSetsTest extends TestCase
             \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->delete( $id );
         }
 
-        $this->assertContains( 'conversions', $keys );
-        $this->assertSame( array(), array_diff( $keys, array( 'site_usage', 'conversions', 'ecommerce' ) ),
-            'a set other than site usage, conversions and e-commerce appeared' );
+        $this->assertContains( 'goals', $keys );
+        $this->assertSame( array(), array_diff( $keys, array( 'site_usage', 'goals', 'ecommerce' ) ),
+            'a set other than site usage, goals and e-commerce appeared' );
 
         $this->assertSame( $before,
-            in_array( 'conversions', array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) ), true ),
+            in_array( 'goals', array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) ), true ),
             'with the probe goal event gone, the set is as it was' );
     }
 

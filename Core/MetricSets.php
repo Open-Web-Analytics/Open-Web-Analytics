@@ -63,10 +63,10 @@ class MetricSets {
             'metrics'     => 'sessions,engagementRate,pageViewsPerSession,averageEngagementTimePerSession,totalUsers',
             'chartMetric' => 'sessions',
         ),
-        'conversions' => array(
-            'label'       => 'Conversions',
-            'metrics'     => 'sessions,goalConversions,goalConversionRatePerSession',
-            'chartMetric' => 'goalConversions',
+        'goals' => array(
+            'label'       => 'Goals',
+            'metrics'     => 'sessions,goalEvents,goalValue,goalEventsPerSession',
+            'chartMetric' => 'goalEvents',
         ),
         'ecommerce' => array(
             'label'       => 'e-commerce',
@@ -78,7 +78,7 @@ class MetricSets {
     /** When a Property has each set: the conditions forProperty() tests. */
     const SHOWN_WHEN = array(
         self::DEFAULT_KEY => 'Always',
-        'conversions'     => 'The Property has an active goal event definition',
+        'goals'           => 'The Property has an active goal event definition',
         'ecommerce'       => '`enableEcommerceReporting` is on for the Property',
     );
 
@@ -109,13 +109,13 @@ class MetricSets {
         $sets[ self::DEFAULT_KEY ] = self::SETS[ self::DEFAULT_KEY ];
 
         /*
-         * Goal conversions, when the Property has an active goal event
-         * definition to convert on. v2's goalConversions counts the is_goal_event
-         * rows the marking added, one per definition an event met.
+         * Goal events, when the Property has an active goal event definition to
+         * add them. goalEvents counts the is_goal_event rows the marking added,
+         * one per definition an event met.
          */
         if ( self::hasActiveGoalEventDefinition( $propertyId ) ) {
 
-            $sets['conversions'] = self::SETS['conversions'];
+            $sets['goals'] = self::SETS['goals'];
         }
 
         if ( \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting', 'property', (string) $propertyId ) ) {

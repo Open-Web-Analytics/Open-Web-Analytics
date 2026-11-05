@@ -324,8 +324,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'engagement_msec' => $this->number( $event->get( 'engagement_msec' ) ),
 
             /*
-             * Whether this event met a goal event definition's conditions, set by
-             * Classes\GoalMarking on the tracking_events_pre_save filter. flag(),
+             * Whether this row is a goal event, set by Classes\GoalMarking on the
+             * tracking_events_pre_save filter. flag(),
              * because the column is NOT NULL: an event the marking never saw
              * stores 0.
              */
@@ -344,6 +344,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'tax'      => $this->number( $event->get( 'ct_tax' ) ),
             'shipping' => $this->number( $event->get( 'ct_shipping' ) ),
             'currency' => $this->text( $event->get( 'currency' ) ),
+
+            // What a goal event is worth, set by Classes\GoalMarking: NULL on every other row.
+            'value'    => $this->number( $event->get( 'value' ) ),
 
             /*
              * The order's own id, under the name v2 reports it by. Nothing

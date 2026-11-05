@@ -187,36 +187,44 @@
             "alias": "formSubmits"
         }
     ],
-    "goalConversionRatePerSession": [
-        {
-            "kind": "ratio",
-            "numerator": "goalConversions",
-            "denominator": "sessions",
-            "precision": 4,
-            "children": [
-                "goalConversions",
-                "sessions"
-            ]
-        }
-    ],
-    "goalConversionRatePerUser": [
-        {
-            "kind": "ratio",
-            "numerator": "goalConversions",
-            "denominator": "totalUsers",
-            "precision": 4,
-            "children": [
-                "goalConversions",
-                "totalUsers"
-            ]
-        }
-    ],
-    "goalConversions": [
+    "goalEvents": [
         {
             "kind": "aggregate",
             "entity": "base.event",
             "expression": "COALESCE(sum(CASE WHEN event.is_goal_event = 1 THEN 1 ELSE 0 END), 0)",
-            "alias": "goalConversions"
+            "alias": "goalEvents"
+        }
+    ],
+    "goalEventsPerSession": [
+        {
+            "kind": "ratio",
+            "numerator": "goalEvents",
+            "denominator": "sessions",
+            "precision": 2,
+            "children": [
+                "goalEvents",
+                "sessions"
+            ]
+        }
+    ],
+    "goalEventsPerUser": [
+        {
+            "kind": "ratio",
+            "numerator": "goalEvents",
+            "denominator": "totalUsers",
+            "precision": 2,
+            "children": [
+                "goalEvents",
+                "totalUsers"
+            ]
+        }
+    ],
+    "goalValue": [
+        {
+            "kind": "aggregate",
+            "entity": "base.event",
+            "expression": "COALESCE(sum(CASE WHEN event.is_goal_event = 1 THEN COALESCE(event.value, 0) ELSE 0 END), 0)",
+            "alias": "goalValue"
         }
     ],
     "netRevenue": [

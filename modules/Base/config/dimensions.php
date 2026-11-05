@@ -272,7 +272,7 @@ return array(
                 'description' => 'Whether the session was the user\'s first.' ),
             'isEngagedSession' => array( 'column' => 'is_engaged_session', 'label' => 'Engaged Session',
                 'family' => 'visit',
-                'description' => 'Whether the session was engaged: ten seconds or more of engagement time, two or more page views, or a goal conversion.',
+                'description' => 'Whether the session was engaged: ten seconds or more of engagement time, two or more page views, or a goal event.',
                 'data_type' => 'boolean' ),
             'sessionId' => array( 'column' => 'session_id', 'label' => 'Session ID',
                 'family' => 'visit', 'description' => 'The identifier of the session the event belongs to.' ),
@@ -332,7 +332,7 @@ return array(
              * problem.
              */
             'isGoalEvent' => array( 'column' => 'is_goal_event', 'label' => 'Goal Event',
-                'family' => 'event', 'description' => 'Whether this event is a goal event\'s conversion.',
+                'family' => 'event', 'description' => 'Whether this event is a goal event.',
                 'data_type' => 'boolean' ),
             'domElementId' => array( 'column' => 'element_id', 'label' => 'Element ID',
                 'family' => 'event', 'description' => 'The id attribute of the element that was clicked.' ),

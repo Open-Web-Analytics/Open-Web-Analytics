@@ -1,7 +1,7 @@
 {
     "title": "Goals",
-    "description": "Goal conversions and the goal conversion rate per session, by day, and the conversions of each goal event by channel.",
-    "metrics": "sessions,goalConversions,goalConversionRatePerSession",
+    "description": "Goal events, their value and goal events per session, by day, and each goal event's count and value by channel.",
+    "metrics": "sessions,goalEvents,goalValue,goalEventsPerSession",
     "widgets": [
         {
             "type": "trend",
@@ -12,7 +12,7 @@
                 "dimensions": "date",
                 "sort": "date"
             },
-            "chartMetric": "goalConversions"
+            "chartMetric": "goalEvents"
         },
         {
             "type": "grid",
@@ -21,9 +21,9 @@
             "title": "Goal Events",
             "colspan": 12,
             "query": {
-                "metrics": "goalConversions,totalUsers",
+                "metrics": "goalEvents,goalValue,totalUsers",
                 "dimensions": "eventName,attributedChannel",
-                "sort": "goalConversions-"
+                "sort": "goalEvents-"
             },
             "constraints": [
                 {

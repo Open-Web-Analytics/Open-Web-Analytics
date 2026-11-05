@@ -99,7 +99,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         }
 
         /*
-         * NOT THE TRIGGER'S OWN NAME. A conversion row is stored under the
+         * NOT THE TRIGGER'S OWN NAME. A goal event is stored under the
          * definition's name, so a goal named newsletter_signup on newsletter_signup
          * would add a second newsletter_signup row for every one the site sent.
          */
@@ -177,19 +177,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
         $definition->set( 'property_id', $propertyId );
         $definition->set( 'name', $this->name() );
-        /*
-         * ALWAYS once per session, whatever was submitted.
-         *
-         * A conversion is a column on the session row, so a second match in the
-         * same session has nowhere to go -- once per event is a setting the
-         * storage can hold and the handler cannot honour. The form offers only
-         * the one choice; this is what makes that true of the row as well, so a
-         * hand-made request cannot store an intent nothing acts on.
-         *
-         * Delete this clamp, not the column, when per-event recording lands.
-         */
-        $definition->set( 'count_mode',
-            \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION );
+        $definition->set( 'count_mode', self::countMode( $this->getParam( 'countMode' ) ) );
 
         $definition->set( 'condition_match',
             $this->getParam( 'conditionMatch' ) === \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_ANY
@@ -237,6 +225,21 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         $this->set( 'status_code', 3219 );
     }
     /**
+     * The count mode to store for what was submitted: one of the two constants,
+     * and the default, once per event, for anything else -- the form's default
+     * for a new definition, and what an API caller sending nothing gets.
+     *
+     * @param  mixed $submitted
+     * @return string
+     */
+    public static function countMode( $submitted ) {
+
+        return $submitted === \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION
+            ? \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION
+            : \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT;
+    }
+
+    /**
      * The trigger as submitted: the picker's event, or for "a custom event"
      * the name typed beside it.
      *
@@ -253,7 +256,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
     /**
      * The definition's name: what was typed for a new one, the stored one for a
-     * saved one. Its conversions are stored under it, so a later save cannot
+     * saved one. Its goal events are stored under it, so a later save cannot
      * change it.
      *
      * @return string

@@ -90,7 +90,7 @@ final class MaterializedEventsTest extends IngestionTestCase
 
         sort($flagged);
 
-        $this->assertSame(['engagement_msec', 'is_goal_event'], $flagged);
+        $this->assertSame(['engagement_msec', 'is_goal_event', 'value'], $flagged);
     }
 
     /** The vocabulary of a materialized event leaves the flagged properties out. */
