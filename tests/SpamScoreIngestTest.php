@@ -243,12 +243,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
 
         $this->assertSame(array(), $this->rowsFor($stored['visitor_id']), 'queued, not yet ingested');
 
-        /*
-         * The envelopes carry what the edge captured. Read from the queue's
-         * file, not received: a received message put back with release() goes
-         * to the delayed file for the NEXT minute (FileEventQueue::delayedFile()),
-         * so a drain straight after it finds nothing due.
-         */
+        // The envelopes carry what the edge captured: read from the queue's file, before the drain receives them.
         $lines = array_values(array_filter(array_map('trim',
             (array) @file($this->queueDir . 'events.txt'))));
         $this->assertCount(3, $lines, 'three beacons queued');

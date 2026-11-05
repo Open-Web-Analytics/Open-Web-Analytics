@@ -34,7 +34,7 @@ namespace OWA\Module\Base\Classes;
  *   events.txt     what log.php appends to, one JSON line per beacon
  *   unprocessed/   batches rotated out of events.txt, oldest name first
  *   processing/    a batch a consumer holds, and its .state sidecar
- *   delayed/       released messages, one file per due minute
+ *   delayed/       messages sent or released with a delay, one file per due minute
  *   archive/       finished batches, when archive_old_events is on
  *
  * A LINE is {"r": times received before, "e": envelope}, plus "p" once it has
@@ -170,9 +170,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             $row['p'] = 1;
         }
 
-        $delay = (int) $delay;
-
-        return $this->appendRow( $delay > 0 ? $this->delayedFile( time() + $delay ) : $this->event_file, $row );
+        return $this->appendRow( $this->fileFor( $delay ), $row );
     }
 
     public function receive( $max, $visibility = 0 ) {
@@ -262,7 +260,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         $row = $this->rowOf( $message );
 
-        if ( $row === null || ! $this->appendRow( $this->delayedFile( time() + max( 0, (int) $delay ) ), $row ) ) {
+        if ( $row === null || ! $this->appendRow( $this->fileFor( $delay ), $row ) ) {
 
             // Not written anywhere: leave it outstanding so it is delivered again.
             return false;
@@ -593,6 +591,17 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     }
 
     /** The delayed file for a due time: one per minute, named for when all of it is due. */
+    /**
+     * Where a line due in $delay seconds goes: events.txt when it is due now,
+     * else the delayed file of the minute it falls due in.
+     */
+    private function fileFor( $delay ) {
+
+        $delay = (int) $delay;
+
+        return $delay > 0 ? $this->delayedFile( time() + $delay ) : $this->event_file;
+    }
+
     private function delayedFile( $due ) {
 
         return $this->delayed_path . (string) ( (int) ceil( $due / 60 ) * 60 ) . '.txt';

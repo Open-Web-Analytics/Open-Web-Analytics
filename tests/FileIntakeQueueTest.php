@@ -148,6 +148,21 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertSame(self::envelope('a'), $again[0]->envelope, 'the envelope is unchanged');
     }
 
+    /** A release with no delay is due now, as a send with none is: the next receive has it. */
+    public function testAMessageReleasedWithNoDelayComesBackOnTheNextReceive(): void
+    {
+        $q = $this->queue();
+        $q->send(self::envelope('a'));
+
+        $first = $q->receive(10, 300)[0];
+        $this->assertTrue($q->release($first, 0));
+
+        $again = $q->receive(10, 300);
+        $this->assertSame(array('a'), self::names($again));
+        $this->assertSame(2, $again[0]->receive_count);
+        $this->assertSame(array(), glob($this->dir . 'delayed/*.txt'), 'not put in a delayed file');
+    }
+
     /** The dead-letter queue is a queue like the main one: received from, with why and when. */
     private function deadLetters(FileEventQueue $q): array
     {
