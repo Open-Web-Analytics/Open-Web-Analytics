@@ -2308,7 +2308,7 @@ class CoreAPI {
             return \OWA\Module\Base\Classes\TrackerIngest::send( $event );
         }
 
-        // Direct: ingested now, and retried from the intake if a write failed.
+        // Direct: ingested now; a beacon whose write failed is queued to retry a minute later.
         $processor_action = \OWA\Core\CoreAPI::getEventProcessor( $event );
 
         \OWA\Core\CoreAPI::debug('About to perform action: '.$processor_action);

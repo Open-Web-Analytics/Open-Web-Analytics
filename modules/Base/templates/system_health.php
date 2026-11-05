@@ -98,8 +98,12 @@ $owa_s = (array) $view->sections;
 
     <?php if ( $owa_key === 'intake' && isset( $owa_sec['type'] ) ): ?>
     <div class="owa_panelIntro">
-        Queue type <code><?php $view->out( $owa_sec['type'] ); ?></code>;
-        beacons are <?php $view->out( $owa_sec['queued'] ? 'queued and drained every minute' : 'ingested as they arrive' ); ?>.
+        <?php if ( $owa_sec['queued'] ): ?>
+        Beacons are queued (<code><?php $view->out( $owa_sec['type'] ); ?></code>) and drained every minute.
+        <?php else: ?>
+        Beacons are written as they arrive; only a failed write is queued
+        (<code><?php $view->out( $owa_sec['type'] ); ?></code>), to retry a minute later.
+        <?php endif; ?>
         Waiting <?php $view->out( $owa_sec['waiting'] === null ? 'unknown' : (string) $owa_sec['waiting'] ); ?>,
         dead letters <?php $view->out( $owa_sec['dead'] === null ? 'unknown' : (string) $owa_sec['dead'] ); ?>.
     </div>

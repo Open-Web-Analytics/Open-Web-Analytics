@@ -250,7 +250,8 @@ class SystemHealth {
             $findings[] = self::finding( 'green', TrackerIngest::isQueued() ? 'Draining' : 'Direct',
                 TrackerIngest::isQueued()
                     ? 'Beacons are queued and nothing is waiting longer than it should.'
-                    : 'Beacons are ingested as they arrive; a failed write is retried from the intake.' );
+                    : 'Beacons are written as they arrive. Only a beacon whose write fails is queued, '
+                        . 'and retried a minute later.' );
         }
 
         $blocked = self::spamBlocked();

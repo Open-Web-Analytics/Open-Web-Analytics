@@ -59,6 +59,26 @@ final class SystemHealthTest extends TestCase
         $this->assertSame('green', SystemHealth::intake()['level']);
     }
 
+    /** Direct mode says only a failed write is queued, so no one reads it as every beacon going to the queue. */
+    public function testTheQuietFindingSaysWhatIsQueuedInEachMode(): void
+    {
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'queue_tracker_ingest');
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', false);
+            $direct = array_column(SystemHealth::intake()['findings'], 'detail', 'label');
+            $this->assertSame('Beacons are written as they arrive. Only a beacon whose write fails is queued, '
+                . 'and retried a minute later.', $direct['Direct'] ?? null);
+
+            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', true);
+            $queued = array_column(SystemHealth::intake()['findings'], 'detail', 'label');
+            $this->assertArrayHasKey('Draining', $queued);
+            $this->assertArrayNotHasKey('Direct', $queued);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', $before);
+        }
+    }
+
     /** The plan's counts and age; a job due five minutes and not started means nothing is draining the queue. */
     public function testAJobDueTooLongIsRedAndAFailedOneYellow(): void
     {
