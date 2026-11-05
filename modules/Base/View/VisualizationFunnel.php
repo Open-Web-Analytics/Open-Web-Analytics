@@ -18,7 +18,7 @@ namespace OWA\Module\Base\View;
 //
 
 /**
- * Goal Funnel Report View
+ * Funnel Report View
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -36,8 +36,7 @@ class VisualizationFunnel extends \OWA\Core\View {
         $this->body->set_template('visualization_funnel.php');
         $this->body->set('funnel', $this->get('funnel'));
         $this->body->set('funnel_json', json_encode($this->get('funnel')));
-        $this->body->set('goal_conversion_rate', $this->get('goal_conversion_rate'));
-        $this->body->set('numGoals', \OWA\Core\CoreAPI::getSetting('base', 'numGoals') );
+        $this->body->set('completion_rate', $this->get('completion_rate'));
         $this->body->set( 'visualization_id', $this->get( 'visualization_id' ) );
 
         /*
@@ -54,7 +53,7 @@ class VisualizationFunnel extends \OWA\Core\View {
         // The funnel's own filter, in words: it narrows every count below.
         $this->body->set('funnel_saved_filter', \OWA\Module\Base\Classes\CustomReports::constraintsInWords(
             (string) $this->get('funnel_saved_constraints') ) );
-        // A step naming a definition the funnel cannot count against. Refused
+        // A step the funnel cannot count: no event, or a property it cannot test. Refused
         // rather than drawn with that step ignored -- see stepPredicate().
         $this->body->set('funnel_step_error',    $this->get('funnel_step_error') );
         $this->body->set('funnel_table_json', json_encode( $this->get('funnel_table') ) );

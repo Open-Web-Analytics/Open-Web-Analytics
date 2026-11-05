@@ -1,9 +1,21 @@
 import $ from 'jquery';
 import { OWA } from './owa.js';
+import { bindBuilder, readVocabulary, setText, CUSTOM_TRIGGER } from './owa.goalbuilder.js';
 
 /**
- * Add and remove rows in a repeatable list -- a goal event definition's
- * conditions and a funnel's steps.
+ * The funnel builder's steps, and rows added and removed in a repeatable list
+ * -- a goal event definition's conditions and a funnel step's.
+ *
+ * A STEP is an event and conditions on it (visualization_edit_step.php): an
+ * event picker, the name field for "another event of yours", all/any, and the
+ * condition rows. Its condition builder is the goal event definition form's
+ * (owa.goalbuilder.js), bound once per step with the step's own class names
+ * (STEP_CLASSES), so the property list follows the event the same way in both.
+ *
+ * A step's condition fields are named by the step's position --
+ * stepConditionProperty[N][] and its Operator and Value siblings -- so the
+ * server can tell whose conditions are whose. renumber() keeps N right as
+ * steps are added, moved and removed.
  *
  * The rows are .constraintRow, the same markup the report builder uses, so they
  * arrive already styled -- including the + and X buttons. Those buttons are
@@ -30,7 +42,121 @@ import { OWA } from './owa.js';
  */
 var LIST_SELECTOR = '[data-owa-repeatable]';
 
+/** A funnel step's parts, for owa.goalbuilder.js's bindBuilder(). */
+export const STEP_CLASSES = {
+    trigger: 'owa_funnelStepEvent',
+    custom: 'owa_funnelStepCustomEvent',
+    condition: 'owa_funnelCondition',
+    property: 'owa_funnelConditionProperty',
+    help: 'owa_funnelConditionHelp',
+    warning: 'owa_funnelConditionWarning',
+    optionName: 'owa_funnelOptionName',
+    optionDescription: 'owa_funnelOptionDescription',
+};
+
+/** What a new step matches: a page, by its path. FunnelStep::DEFAULT_EVENT. */
+export const DEFAULT_EVENT = 'page_view';
+
+function fieldValue( el ) {
+
+    return el ? String( el.value || '' ) : '';
+}
+
+/**
+ * A step row as the preview sends it and the save reads it: the event as
+ * named (the typed name for "another event of yours"), all or any, and each
+ * condition that has a value.
+ *
+ * @param  {HTMLElement} row  li.owa_funnelStep
+ * @return {Object} {name, event, custom, match, conditions: [{property, operator, value}]}
+ */
+export function readStep( row ) {
+
+    const picked = fieldValue( row.querySelector( '.' + STEP_CLASSES.trigger ) );
+    const custom = picked === CUSTOM_TRIGGER;
+    const conditions = [];
+
+    row.querySelectorAll( '.' + STEP_CLASSES.condition ).forEach( ( condition ) => {
+
+        const value = fieldValue( condition.querySelector( '.owa_funnelConditionValue' ) ).trim();
+
+        if ( value === '' ) {
+
+            return;
+        }
+
+        conditions.push( {
+            property: fieldValue( condition.querySelector( '.' + STEP_CLASSES.property ) ),
+            operator: fieldValue( condition.querySelector( '.owa_funnelConditionOperator' ) ),
+            value: value,
+        } );
+    } );
+
+    return {
+        name: fieldValue( row.querySelector( '.owa_funnelStepName' ) ),
+        event: custom ? fieldValue( row.querySelector( '.' + STEP_CLASSES.custom ) ).trim() : picked,
+        custom: custom,
+        match: fieldValue( row.querySelector( '.owa_funnelStepMatch' ) ) === 'any' ? 'any' : 'all',
+        conditions: conditions,
+    };
+}
+
+/**
+ * A row nobody filled in, which is not a step: no condition has a value and
+ * the event is still the default. FunnelStep::isBlank() on the server.
+ */
+export function isBlankStep( step ) {
+
+    return ! step.conditions.length && ! step.custom && step.event === DEFAULT_EVENT;
+}
+
+/**
+ * Point a step's condition fields at its position.
+ *
+ * @param {HTMLElement} row
+ * @param {number}      index  from 0, as the server reads the arrays
+ */
+export function renumber( row, index ) {
+
+    row.querySelectorAll( '[name*="stepCondition"]' ).forEach( ( field ) => {
+
+        field.name = field.name.replace( /(stepCondition(?:Property|Operator|Value))\[\d*\]/, '$1[' + index + ']' );
+    } );
+}
+
+/** The funnel's vocabulary, read once from the page (visualization_edit.php). */
+let vocabulary = null;
+
+/**
+ * Make one step's condition builder live. Called for every step on load and
+ * for each one Add a step adds.
+ *
+ * @param {HTMLElement} row
+ */
+export function bindStep( row ) {
+
+    if ( vocabulary === null ) {
+
+        vocabulary = readVocabulary( 'owa_funnelVocabulary' ) || {};
+
+        // The page's translated words for a property the event does not carry.
+        const form = row.closest( 'form' );
+
+        if ( form ) {
+
+            setText( { notCarriedLabel: form.dataset.notCarriedLabel, notCarriedHelp: form.dataset.notCarriedHelp } );
+        }
+    }
+
+    bindBuilder( row, vocabulary, STEP_CLASSES );
+}
+
 OWA.funnelBuilder = {
+
+    readStep: readStep,
+    isBlankStep: isBlankStep,
+    renumber: renumber,
+    bindStep: bindStep,
 
     /**
      * A blank copy of a row, so the new step does not inherit its values.

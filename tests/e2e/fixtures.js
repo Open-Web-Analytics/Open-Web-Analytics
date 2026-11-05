@@ -97,7 +97,9 @@ const FIXTURE = {
      * The funnel VISUALIZATION, seeded separately and naming nothing about the
      * goal above.
      *
-     * The step paths are ones the pageview fixture already walks, in order, so
+     * Each step is a page_view on the path given here (the seeder writes it as
+     * an event step with a page_path condition). The step paths are ones the
+     * pageview fixture already walks, in order, so
      * every stage counts somebody -- a funnel whose stages are all zero would
      * render and prove nothing about the counting. `/docs` is an ordinary step
      * here; it used to be a bar the report appended from the goal's own

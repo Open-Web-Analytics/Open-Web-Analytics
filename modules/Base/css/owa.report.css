@@ -530,7 +530,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
  * report means the next report to reuse a control inherits none of it and the
  * bar comes apart -- which is what these rules exist to prevent.
  *
- * Used by the goal funnel and by module reports.
+ * Used by the funnel and by module reports.
  * ------------------------------------------------------------------------- */
 
 .owa .owa_reportControls {
@@ -596,7 +596,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 /* ---------------------------------------------------------------------------
- * Goal funnel
+ * Funnel
  *
  * Rewritten with the report. The funnel used to run DOWN the page as a
  * three-column table, and the styling went with it: fixed-height background
@@ -2615,14 +2615,65 @@ li.constraintRow {
     color: #111827;
 }
 
-.owa .owa_funnelStep .owa_funnelStepKind {
-    flex: 0 0 120px;
+/* A step is a sentence -- "A [page_view] event where [all] of these match:" --
+   and its condition rows under it, the goal event definition form's rows
+   (owa.goalbuilder.js) laid out for this column. */
+.owa .owa_funnelStep {
+    align-items: flex-start;
 }
 
-.owa .owa_funnelStep .owa_funnelStepPath,
-.owa .owa_funnelStep .owa_funnelStepGoal {
+.owa .owa_funnelStep > .owa_builderMove,
+.owa .owa_funnelStep > .owa_funnelStepNumber,
+.owa .owa_funnelStep > .owa_funnelStepRemove {
+    margin-top: 10px;
+}
+
+.owa .owa_funnelStepBody {
     flex: 1 1 0;
     min-width: 0;
+}
+
+.owa .owa_funnelStepSentence {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.owa .owa_funnelStep .owa_funnelStepCustomEvent {
+    width: 170px;
+}
+
+.owa .owa_funnelConditions {
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.owa .owa_funnelConditions .constraintRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 8px;
+}
+
+.owa .owa_funnelConditions .constraintValueField {
+    flex: 1 1 120px;
+    min-width: 0;
+}
+
+.owa .owa_funnelConditions .constraintAddButton,
+.owa .owa_funnelConditions .constraintRemoveButton {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
 }
 
 .owa .owa_funnelStepError {
@@ -2757,8 +2808,8 @@ li.constraintRow {
         gap: 6px;
     }
 
-    .owa .owa_funnelStep .owa_funnelStepKind {
-        flex-basis: 104px;
+    .owa .owa_funnelStep .owa_funnelStepCustomEvent {
+        width: 100%;
     }
 
     .owa .owa_funnelStepError {
@@ -4280,28 +4331,6 @@ li.constraintRow {
     max-width: 320px;
 }
 
-/* The funnel builder. .constraintRow gives the row its shape; this is only the
-   parts a funnel step has and a constraint does not -- two text fields of
-   different weight, and the word between them. */
-.owa_goalEventFunnel {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.owa_hierarchyContent #panel .constraintRow .owa_funnelStepName {
-    flex: 0 0 auto;
-    width: 190px;
-    max-width: 190px;
-}
-
-.owa_hierarchyContent #panel .constraintRow .owa_funnelStepPath {
-    flex: 1 1 auto;
-    max-width: 280px;
-    font-family: Menlo, Consolas, monospace;
-    font-size: var(--owa-text-sm);
-}
-
 /* The add and remove controls.
  *
  * The report builder styles these inside its own dialog; in the settings pane
@@ -4336,18 +4365,6 @@ li.constraintRow {
     border-color: #d9b8b1;
     background: #99321f;
     color: #ffffff;
-}
-
-/* Not a picker: a funnel step always matches on the path, so the word sits
-   where the operator dropdown does but is not one. Styled to match the picker's
-   height so the row does not jump. */
-.owa_funnelStepMatches {
-    display: inline-block;
-    color: #999999;
-    font-size: var(--owa-text-sm);
-    padding: 0 8px;
-    line-height: 28px;
-    vertical-align: middle;
 }
 
 /* ---------------------------------------------------------------------------
@@ -4954,7 +4971,8 @@ li.constraintRow {
 }
 
 /* The description is the row's own last line, under the property it describes. */
-.owa .owa_goalConditionHelp {
+.owa .owa_goalConditionHelp,
+.owa .owa_funnelConditionHelp {
     flex-basis: 100%;
     margin: 0 0 0 2px;
     font-size: 12px;
@@ -4962,50 +4980,60 @@ li.constraintRow {
     color: #666666;
 }
 
-.owa .owa_goalConditionHelp:empty {
+.owa .owa_goalConditionHelp:empty,
+.owa .owa_funnelConditionHelp:empty {
     display: none;
 }
 
-.owa .owa_goalConditionHelp.owa_goalConditionWarning {
+.owa .owa_goalConditionHelp.owa_goalConditionWarning,
+.owa .owa_funnelConditionHelp.owa_funnelConditionWarning {
     color: #b0461b;
 }
 
 /* "Label -- description" in the list: wide enough to read, and wrapping. */
-.owa .owa_goalBuilder .constraintRow .chosen-container .chosen-drop {
+.owa .owa_goalBuilder .constraintRow .chosen-container .chosen-drop,
+.owa .owa_funnelConditions .constraintRow .chosen-container .chosen-drop {
     min-width: 420px;
 }
 
-.owa .owa_goalBuilder .chosen-results li {
+.owa .owa_goalBuilder .chosen-results li,
+.owa .owa_funnelConditions .chosen-results li {
     white-space: normal;
     line-height: 1.35;
 }
 
 /* Each item is two lines: the property's name, then what it holds, quieter. */
-.owa .owa_goalBuilder .chosen-results .owa_goalOptionName {
+.owa .owa_goalBuilder .chosen-results .owa_goalOptionName,
+.owa .owa_funnelConditions .chosen-results .owa_funnelOptionName {
     display: block;
     font-size: 12px;
     font-weight: 600;
     color: #303030;
 }
 
-.owa .owa_goalBuilder .chosen-results .owa_goalOptionDescription {
+.owa .owa_goalBuilder .chosen-results .owa_goalOptionDescription,
+.owa .owa_funnelConditions .chosen-results .owa_funnelOptionDescription {
     display: block;
     margin-top: 1px;
     font-size: 11px;
     color: #707070;
 }
 
-.owa .owa_goalBuilder .chosen-results li {
+.owa .owa_goalBuilder .chosen-results li,
+.owa .owa_funnelConditions .chosen-results li {
     padding-top: 6px;
     padding-bottom: 6px;
 }
 
 .owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionName,
-.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionDescription {
+.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionDescription,
+.owa .owa_funnelConditions .chosen-results li.highlighted .owa_funnelOptionName,
+.owa .owa_funnelConditions .chosen-results li.highlighted .owa_funnelOptionDescription {
     color: #ffffff;
 }
 
-.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionDescription {
+.owa .owa_goalBuilder .chosen-results li.highlighted .owa_goalOptionDescription,
+.owa .owa_funnelConditions .chosen-results li.highlighted .owa_funnelOptionDescription {
     opacity: 0.85;
 }
 
@@ -5024,7 +5052,8 @@ li.constraintRow {
         margin-left: 0;
     }
 
-    .owa .owa_goalBuilder .constraintRow .chosen-container .chosen-drop {
+    .owa .owa_goalBuilder .constraintRow .chosen-container .chosen-drop,
+    .owa .owa_funnelConditions .constraintRow .chosen-container .chosen-drop {
         min-width: 0;
         width: calc(100vw - 48px);
     }

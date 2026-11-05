@@ -107,6 +107,10 @@ test.describe('visualization: funnel', () => {
             await expect(stage.locator('.funnelStepName')).toContainText(step.name);
             await expect(stage.locator('.funnelStepPath')).toHaveText(step.path);
         }
+
+        // Of those who entered, the share who reached the last step.
+        await expect(page.locator('.owa_funnelHeadline')).toContainText('Completion Rate');
+        await expect(page.locator('.owa_funnelHeadline')).not.toContainText('conversion');
     });
 
     /**
@@ -178,7 +182,7 @@ test.describe('visualization: funnel', () => {
     /**
      * Visits and visitors are different questions, and the fixture answers them
      * differently: one visitor completes the funnel across several visits, so
-     * counting visits gives more entrants and a lower conversion rate.
+     * counting visits gives more entrants and a lower completion rate.
      */
     test('the counting scope changes what is counted', async ({ page }) => {
         await openFunnelAs(page, 'visitor');

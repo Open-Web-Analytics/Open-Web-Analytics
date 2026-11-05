@@ -69,18 +69,26 @@ final class FunnelBuilderTest extends TestCase
         $this->assertSame( $funnel->getPeriod()->endDate->getYyyymmdd(), $bounds['end'] );
     }
 
+    private static function page( string $path, string $name = '' ): array
+    {
+        return array( 'name' => $name, 'event' => 'page_view', 'match' => 'all', 'conditions' => array(
+            array( 'property' => 'page_path', 'operator' => 'exact', 'value' => $path ) ) );
+    }
+
     /**
      * The preview's funnel is the steps and filter it was sent, made into a
      * definition the way a save makes one: blank rows dropped, a step named
-     * for its page, one of path or goal event kept, and no more than a funnel
-     * may have.
+     * for its page or its event, a row of an old kind not counted, and no more
+     * than a funnel may have.
      */
     public function testThePreviewCountsTheStepsItWasSent(): void
     {
         $sent = array(
-            array( 'kind' => 'path', 'path' => '/blog/', 'name' => '' ),
-            array( 'kind' => 'path', 'path' => '', 'name' => 'Left blank' ),
-            array( 'kind' => 'path', 'path' => '/pricing', 'name' => 'Pricing', 'goal_event_definition_id' => '9' ),
+            self::page( '/blog/' ),
+            self::page( '', 'Left blank' ),
+            array( 'kind' => 'path', 'path' => '/old', 'name' => 'A path step' ),
+            self::page( '/pricing', 'Pricing' ),
+            array( 'name' => '', 'event' => 'newsletter_signup', 'match' => 'any', 'conditions' => array() ),
         );
 
         $preview = new \OWA\Module\Base\Controller\VisualizationPreview( array(
@@ -91,14 +99,20 @@ final class FunnelBuilderTest extends TestCase
         $visualization = $this->call( $preview, 'visualization' );
 
         $this->assertSame( array(
-            array( 'name' => '/blog/', 'path' => '/blog/', 'step_number' => 1 ),
-            array( 'name' => 'Pricing', 'path' => '/pricing', 'step_number' => 2 ),
+            array( 'name' => '/blog/', 'kind' => 'event', 'event' => 'page_view', 'match' => 'all',
+                'conditions' => array( array( 'property' => 'page_path', 'operator' => 'exact', 'value' => '/blog/' ) ),
+                'step_number' => 1 ),
+            array( 'name' => 'Pricing', 'kind' => 'event', 'event' => 'page_view', 'match' => 'all',
+                'conditions' => array( array( 'property' => 'page_path', 'operator' => 'exact', 'value' => '/pricing' ) ),
+                'step_number' => 2 ),
+            array( 'name' => 'newsletter_signup', 'kind' => 'event', 'event' => 'newsletter_signup', 'match' => 'any',
+                'conditions' => array(), 'step_number' => 3 ),
         ), $visualization['definition']['steps'] );
 
         $this->assertSame( 'pagePath=@/blog/', $visualization['definition']['constraints'] );
 
         $many = new \OWA\Module\Base\Controller\VisualizationPreview( array(
-            'steps' => json_encode( array_fill( 0, 15, array( 'kind' => 'path', 'path' => '/x' ) ) ),
+            'steps' => json_encode( array_fill( 0, 15, self::page( '/x' ) ) ),
         ) );
 
         $this->assertCount( \OWA\Module\Base\Controller\VisualizationSave::MAX_STEPS,

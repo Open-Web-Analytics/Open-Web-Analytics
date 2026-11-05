@@ -1071,8 +1071,16 @@ function seedFunnelVisualization(): array
 {
     $steps = [];
 
+    // Each a page step: a page_view event on its path (Classes\FunnelStep).
     foreach (E2E_FUNNEL_VIZ_STEPS as $i => $step) {
-        $steps[] = $step + ['step_number' => $i + 1];
+        $steps[] = [
+            'name'        => $step['name'],
+            'kind'        => 'event',
+            'event'       => 'page_view',
+            'match'       => 'all',
+            'conditions'  => [['property' => 'page_path', 'operator' => 'exact', 'value' => $step['path']]],
+            'step_number' => $i + 1,
+        ];
     }
 
     $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -1146,7 +1154,7 @@ function seedFunnelVisualization(): array
         'id'    => $id,
         'name'  => E2E_FUNNEL_VIZ_NAME,
         'steps' => count($back),
-        'paths' => array_values(array_map(static fn($s) => $s['path'] ?? null, $back)),
+        'paths' => array_values(array_map(static fn($s) => \OWA\Module\Base\Classes\FunnelStep::pageOf((array) $s), $back)),
     ];
 }
 

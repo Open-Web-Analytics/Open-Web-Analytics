@@ -2,45 +2,120 @@
 <?php
 /*
  * One step of the funnel builder (visualization_edit.php): its handle and
- * number, Page is / Event is, the path or the goal event definition, and remove. The
- * numbers and labels are written by the builder's script as the list changes.
+ * number, then "A [page_view] event where [all] of these match:" and its
+ * condition rows, and remove. The numbers, labels and the position in each
+ * condition field's name are written by the builder's script as the list
+ * changes (owa.funnelbuilder.js).
  *
- *   $owa_step        the step: path, goal_event_definition_id, name
+ * The condition rows are the goal event definition form's -- .constraintRow,
+ * a property picker that follows the event, an operator and a value -- under
+ * the step's own class names, so owa.goalbuilder.js drives them the same way.
+ *
+ *   $owa_step        the step as VisualizationEdit::formSteps() draws it:
+ *                    name, picked, custom_event, match, conditions, properties
+ *   $owa_stepIndex   its position, from 0, for the condition fields' names
  *   $owa_stepNo      its number, 0 for the blank row Add a step copies
- *   $owa_stepGoal    its goal event definition id, or ''
  *   $owa_stepErrors  messages about it
- *   $owa_goals       the Property's goal event definitions
  */
 $owa_step       = (array) ( $owa_step ?? array() );
+$owa_stepIndex  = (int) ( $owa_stepIndex ?? 0 );
 $owa_stepNo     = (int) ( $owa_stepNo ?? 0 );
-$owa_stepGoal   = (string) ( $owa_stepGoal ?? '' );
 $owa_stepErrors = (array) ( $owa_stepErrors ?? array() );
-$owa_goals      = (array) ( $owa_goals ?? array() );
+
+$owa_ns     = $view->getNs();
+$owa_picked = (string) ( $owa_step['picked'] ?? \OWA\Module\Base\Classes\FunnelStep::DEFAULT_EVENT );
+$owa_other  = \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM;
+
+// The Property's own events, and this step's if it is one of them and has not been sent lately.
+$owa_custom = (array) $view->customEventNames;
+
+if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_picked )
+     && ! in_array( $owa_picked, $owa_custom, true ) ) {
+
+    array_unshift( $owa_custom, $owa_picked );
+}
 ?>
 <li class="owa_funnelStep">
-    <button type="button" class="owa_builderMove" title="Drag to move, or use the arrow keys"
-            aria-label="Move step <?php echo $owa_stepNo;?>"><i class="fas fa-grip-vertical" aria-hidden="true"></i></button>
+    <button type="button" class="owa_builderMove" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Drag to move, or use the arrow keys' ) );?>"
+            aria-label="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Move step %s' ), $owa_stepNo ) );?>"><i class="fas fa-grip-vertical" aria-hidden="true"></i></button>
     <span class="owa_funnelStepNumber"><?php echo $owa_stepNo ?: '';?></span>
-    <select class="owa_funnelStepKind" name="<?php echo $view->getNs();?>stepKind[]">
-        <option value="path" <?php echo $owa_stepGoal === '' ? 'selected' : '';?>>Page is</option>
-        <option value="goal_event" <?php echo $owa_stepGoal !== '' ? 'selected' : '';?>>Event is</option>
-    </select>
-    <input class="owa_funnelStepPath" type="text" placeholder="/path"
-           name="<?php echo $view->getNs();?>stepPath[]"
-           value="<?php $view->out( $owa_step['path'] ?? '' );?>">
-    <select class="owa_funnelStepGoal" name="<?php echo $view->getNs();?>stepGoalEventDefinitionId[]">
-        <option value=""><?php echo $owa_goals ? 'Choose a goal event definition&hellip;' : 'No goal event definitions yet';?></option>
-        <?php foreach ( $owa_goals as $owa_ge ):?>
-        <option value="<?php $view->out( $owa_ge['id'] );?>"
-            <?php echo $owa_stepGoal === (string) $owa_ge['id'] ? 'selected' : '';?>><?php
-            $view->out( $owa_ge['name'] );?><?php echo empty( $owa_ge['is_active'] ) ? ' (inactive)' : '';?></option>
+
+    <div class="owa_funnelStepBody">
+        <div class="owa_funnelStepSentence">
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'A' ) );?>
+            <select class="owa_funnelStepEvent" name="<?php echo $owa_ns;?>stepEvent[]"
+                    aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'The event this step matches' ) );?>">
+                <optgroup label="<?php $view->out( \OWA\Core\CoreAPI::t( 'OWA events' ) );?>">
+                <?php foreach ( (array) $view->eventNames as $owa_event ):?>
+                    <option value="<?php $view->out( $owa_event );?>" <?php echo $owa_picked === $owa_event ? 'selected' : '';?>><?php $view->out( $owa_event );?></option>
+                <?php endforeach;?>
+                </optgroup>
+                <optgroup label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Your events' ) );?>">
+                <?php foreach ( $owa_custom as $owa_event ):?>
+                    <option value="<?php $view->out( $owa_event );?>" <?php echo $owa_picked === $owa_event ? 'selected' : '';?>><?php $view->out( $owa_event );?></option>
+                <?php endforeach;?>
+                    <option value="<?php $view->out( $owa_other );?>" <?php echo $owa_picked === $owa_other ? 'selected' : '';?>><?php $view->out( \OWA\Core\CoreAPI::t( 'Another event of yours…' ) );?></option>
+                </optgroup>
+            </select>
+            <input class="owa_funnelStepCustomEvent" type="text" maxlength="40"
+                   name="<?php echo $owa_ns;?>stepCustomEvent[]"
+                   value="<?php $view->out( (string) ( $owa_step['custom_event'] ?? '' ) );?>"
+                   placeholder="newsletter_signup"
+                   aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'The name of your event' ) );?>"
+                   <?php echo $owa_picked === $owa_other ? '' : 'hidden';?>>
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'event where' ) );?>
+            <select class="owa_funnelStepMatch" name="<?php echo $owa_ns;?>stepMatch[]"
+                    aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'How many conditions must match' ) );?>">
+                <option value="all" <?php echo ( $owa_step['match'] ?? 'all' ) !== 'any' ? 'selected' : '';?>><?php $view->out( \OWA\Core\CoreAPI::t( 'all' ) );?></option>
+                <option value="any" <?php echo ( $owa_step['match'] ?? '' ) === 'any' ? 'selected' : '';?>><?php $view->out( \OWA\Core\CoreAPI::t( 'any' ) );?></option>
+            </select>
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'of these match:' ) );?>
+        </div>
+
+        <ul class="constraintList owa_funnelConditions" data-owa-repeatable>
+        <?php foreach ( (array) ( $owa_step['conditions'] ?? array() ) as $owa_cond ):?>
+            <li class="constraintRow owa_funnelCondition" data-saved-property="<?php $view->out( (string) ( $owa_cond['property'] ?? '' ) );?>">
+                <span class="constraintDimensionPicker">
+                    <select class="dim-list owa_funnelConditionProperty"
+                            name="<?php echo $owa_ns;?>stepConditionProperty[<?php echo $owa_stepIndex;?>][]"
+                            aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Property' ) );?>">
+                    <?php foreach ( (array) ( $owa_step['properties'] ?? array() ) as $owa_prop ):?>
+                        <option value="<?php $view->out( $owa_prop['name'] );?>"
+                            data-description="<?php $view->out( $owa_prop['description'] ?? '' );?>"
+                            <?php echo ( (string) ( $owa_cond['property'] ?? '' ) === (string) $owa_prop['name'] ) ? 'selected' : '';?>><?php $view->out( $owa_prop['label'] );?></option>
+                    <?php endforeach;?>
+                    </select>
+                </span>
+                <span class="constraintOperatorPicker">
+                    <select class="operator-list owa_funnelConditionOperator"
+                            name="<?php echo $owa_ns;?>stepConditionOperator[<?php echo $owa_stepIndex;?>][]"
+                            aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Comparison' ) );?>">
+                    <?php foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::operators() as $owa_value => $owa_label ):?>
+                        <option value="<?php $view->out( $owa_value );?>" <?php echo ( (string) ( $owa_cond['operator'] ?? '' ) === $owa_value ) ? 'selected' : '';?>><?php $view->out( $owa_label );?></option>
+                    <?php endforeach;?>
+                    </select>
+                </span>
+                <input class="constraintValueField owa_funnelConditionValue" type="text"
+                       name="<?php echo $owa_ns;?>stepConditionValue[<?php echo $owa_stepIndex;?>][]"
+                       aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) );?>"
+                       value="<?php $view->out( (string) ( $owa_cond['value'] ?? '' ) );?>">
+                <span class="constraintAddButton" role="button" tabindex="0"
+                      title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>"
+                      aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>">+</span>
+                <span class="constraintRemoveButton" role="button" tabindex="0"
+                      title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>"
+                      aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>">X</span>
+                <div class="owa_funnelConditionHelp"></div>
+            </li>
         <?php endforeach;?>
-    </select>
+        </ul>
+    </div>
+
     <?php // The stored name, kept while the step is unchanged; see the builder's header. ?>
-    <input class="owa_funnelStepName" type="hidden" name="<?php echo $view->getNs();?>stepName[]"
+    <input class="owa_funnelStepName" type="hidden" name="<?php echo $owa_ns;?>stepName[]"
            value="<?php $view->out( $owa_step['name'] ?? '' );?>">
-    <button type="button" class="owa_iconButton owa_funnelStepRemove" title="Remove this step"
-            aria-label="Remove step <?php echo $owa_stepNo;?>"><i class="fas fa-times" aria-hidden="true"></i></button>
+    <button type="button" class="owa_iconButton owa_funnelStepRemove" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this step' ) );?>"
+            aria-label="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Remove step %s' ), $owa_stepNo ) );?>"><i class="fas fa-times" aria-hidden="true"></i></button>
     <?php foreach ( $owa_stepErrors as $owa_stepError ):?>
     <span class="validation_error owa_funnelStepError"><?php $view->out( $owa_stepError );?></span>
     <?php endforeach;?>

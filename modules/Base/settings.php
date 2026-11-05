@@ -258,6 +258,9 @@ return array(
         // Set by Update075 when it renamed goal event definitions to event names, so its
         // down() can give them back the names they had.
         'goal_event_names_before_075' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
+        // Set by Update079 when it made saved funnel steps event steps, so its down()
+        // can give each funnel back the definition it had.
+        'funnel_steps_before_079' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         /*
          * 1.x's goals, one map per Profile. Nothing in v2 reads or writes it:
          * Update025 made the goals goal event definitions, and Update061 reads the Profile

@@ -15,8 +15,8 @@ namespace OWA\Module\Base\Classes\Migration;
  * name Update075 gives it, see eventName() -- and flagged is_goal_event = 1
  * (Classes\GoalMarking). For each session v1 says completed
  * goal N, the first migrated row of that session that meets the definition
- * Update025 made of slot N -- its condition compiled exactly as the funnel
- * compiles it -- gets one.
+ * Update025 made of slot N -- its condition compiled by
+ * Classes\GoalEventDefinitionPredicate -- gets one.
  *
  * v1's record decides WHICH sessions completed a goal; the definition only
  * finds the row. So nothing is marked that v1 did not count, which is what

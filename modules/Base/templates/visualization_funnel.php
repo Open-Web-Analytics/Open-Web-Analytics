@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /**
- * Goal funnel: a control bar, the funnel left to right, and the numbers under it.
+ * A funnel: a control bar, the funnel left to right, and the numbers under it.
  *
  * The funnel used to run DOWN the page as a three-column table -- prior pages,
  * the step, next pages -- one row per step. Left to right is how every other
@@ -100,8 +100,8 @@ foreach ( $owa_steps as $owa_s ) {
 <?php if ( $view->get('funnel_step_error') ): ?>
 <?php
     /*
-     * A step names a goal event definition that is gone, or one whose conditions a funnel
-     * cannot count against. Nothing is drawn below, on purpose: a funnel with a
+     * A step has no event to match, or tests a property a funnel step cannot.
+     * Nothing is drawn below, on purpose: a funnel with a
      * stage quietly missing still looks like a funnel, and every percentage
      * after the gap would be a plausible number against the wrong denominator.
      */
@@ -114,8 +114,8 @@ foreach ( $owa_steps as $owa_s ) {
 <div class="owa_reportSectionContent">
 
     <div class="owa_funnelHeadline">
-        <?php $view->out($view->goal_conversion_rate);?>
-        <span class="secondaryText">conversion rate</span>
+        <?php $view->out($view->completion_rate);?>
+        <span class="secondaryText"><?php $view->out( \OWA\Core\CoreAPI::t( 'Completion Rate' ) );?></span>
     </div>
 
     <div class="owa_funnelChart">
@@ -136,7 +136,7 @@ foreach ( $owa_steps as $owa_s ) {
             <div class="owa_funnelStepNumber">Step <?php $view->out($owa_step['step_number']);?></div>
             <div class="funnelStepName"><?php $view->out($owa_step['name']);?></div>
             <div class="funnelStepCount"><?php $view->out($owa_count);?> <span class="visitorCountLabel"><?php $view->out($owa_label);?></span></div>
-            <div class="funnelStepPath"><?php $view->out($owa_step['path']);?></div>
+            <div class="funnelStepPath"><?php $view->out($owa_step['summary'] ?? '');?></div>
 
             <?php if ( $owa_k > 0 ):?>
             <div class="owa_funnelDrop">
@@ -178,7 +178,7 @@ foreach ( $owa_steps as $owa_s ) {
 <script>
 (function () {
 
-    // The goal chooser and the scope switch both reload the report, because both
+    // The filter and the scope switch both reload the report, because both
     // are server-rendered state on the URL. Built from the CURRENT location so
     // every other parameter -- period, site, segment -- rides along.
     function goTo( params ) {

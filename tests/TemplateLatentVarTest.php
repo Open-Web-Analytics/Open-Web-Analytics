@@ -307,11 +307,18 @@ final class TemplateLatentVarTest extends TestCase
                     'visualizationTypeLabel' => 'Funnel',
                     'visualizationTypeHint' => 'How many people reached each step of a path.',
                     'visualizationTypeIcon' => 'fas fa-filter',
-                    // The goal events a step may name. EMPTY on purpose: a
-                    // Property with none must still render the builder, and an
-                    // empty picker is the case a foreach over an unset var
+                    // The events a step may match, and the Property's own:
+                    // EMPTY on purpose, the case a foreach over an unset var
                     // would not distinguish from a missing one.
-                    'goalEventDefinitions' => [],
+                    'eventNames' => ['page_view', 'click'], 'customEventNames' => [],
+                    'conditionVocabulary' => ['page_view' => [
+                        ['name' => 'page_path', 'label' => 'Page path', 'description' => '', 'carried' => true]]],
+                    // The step a new funnel opens with, and Add a step copies.
+                    'blankStep' => [
+                        'name' => '', 'picked' => 'page_view', 'custom_event' => '', 'match' => 'all',
+                        'conditions' => [['property' => 'page_path', 'operator' => 'exact', 'value' => '']],
+                        'properties' => [['name' => 'page_path', 'label' => 'Page path', 'description' => '', 'carried' => true]],
+                    ],
                     'propertyId' => '7000000000000001',
                     'validation_errors' => [],
                     // The step cap, read from VisualizationSave so the form
@@ -320,7 +327,8 @@ final class TemplateLatentVarTest extends TestCase
                     // The funnel's filter, and what it may filter on.
                     'constraints' => '', 'dimensionChoices' => [],
                 ],
-                ['name="name"', 'name="stepPath[]"', 'name="visualizationType"'],
+                ['name="name"', 'name="stepEvent[]"', 'name="stepConditionValue[0][]"', 'id="owa_funnelVocabulary"',
+                 'name="visualizationType"'],
             ],
             /*
              * The signed-in user's own account. Rendered for somebody who may
