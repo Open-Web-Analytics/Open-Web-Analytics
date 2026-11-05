@@ -13,7 +13,8 @@ namespace OWA\Module\Base\Classes\Spam;
  * Two hosts are the same when they are equal once each is lower-cased, its
  * port is dropped and a leading `www.` is removed: www.example.com,
  * EXAMPLE.com and example.com:8080 are one host. Nothing else is folded, so
- * blog.example.com is not example.com.
+ * blog.example.com is not example.com; isWithin() is what counts a subdomain
+ * as on a site.
  */
 class Hosts {
 
@@ -56,6 +57,37 @@ class Hosts {
         $host = rtrim( strtolower( $host ), '.' );
 
         return strpos( $host, 'www.' ) === 0 ? substr( $host, 4 ) : $host;
+    }
+
+    /**
+     * Whether a host is one of these or a subdomain of one: equal, or ending in
+     * `.` and the host. Both sides comparable already (of()), so www. is gone
+     * from each. The dot is what keeps badexample.com off example.com.
+     *
+     * @param  string   $host
+     * @param  string[] $hosts
+     * @return bool
+     */
+    public static function isWithin( $host, array $hosts ) {
+
+        $host = (string) $host;
+
+        foreach ( $hosts as $own ) {
+
+            $own = (string) $own;
+
+            if ( $own === '' ) {
+
+                continue;
+            }
+
+            if ( $host === $own || substr( $host, -( strlen( $own ) + 1 ) ) === '.' . $own ) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

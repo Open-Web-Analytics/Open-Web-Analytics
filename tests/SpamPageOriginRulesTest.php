@@ -88,7 +88,39 @@ final class SpamPageOriginRulesTest extends TestCase
     public function testAnotherHostFires(): void
     {
         $this->assertTrue($this->ghost('https://spam.example/landing', 'example.com'));
-        $this->assertTrue($this->ghost('https://blog.example.com/', 'example.com'), 'a subdomain is not the domain');
+        $this->assertTrue($this->ghost('https://example.com.evil.example/', 'example.com'), 'the domain inside another host');
+    }
+
+    /** A subdomain of the domain is on the site, whichever side carries www. */
+    public function testASubdomainOfTheDomainIsOnTheSite(): void
+    {
+        foreach (['example.com', 'www.example.com', 'https://www.example.com'] as $domain) {
+            $this->assertFalse($this->ghost('https://shop.example.com/cart', $domain), "shop. under $domain");
+            $this->assertFalse($this->ghost('https://www.example.com/', $domain), "www. under $domain");
+            $this->assertFalse($this->ghost('https://a.b.example.com/', $domain), "a deeper subdomain under $domain");
+        }
+    }
+
+    /** ...and of each alias. */
+    public function testASubdomainOfAnAliasIsOnTheSite(): void
+    {
+        $this->assertFalse($this->ghost('https://blog.example.org/', 'example.com', 'example.org'));
+        $this->assertFalse($this->ghost('https://www.blog.example.org/', 'example.com', 'www.example.org'));
+        $this->assertTrue($this->ghost('https://blog.example.net/', 'example.com', 'example.org'));
+    }
+
+    /** A host that only ends in the same letters is not a subdomain. */
+    public function testASuffixThatOnlyLooksLikeASubdomainFires(): void
+    {
+        $this->assertTrue($this->ghost('https://badexample.com/', 'example.com'));
+        $this->assertTrue($this->ghost('https://www.badexample.com/', 'www.example.com'));
+        $this->assertTrue($this->ghost('https://shopexample.org/', 'example.com', 'example.org'));
+
+        $this->assertFalse(Hosts::isWithin('badexample.com', ['example.com']));
+        $this->assertTrue(Hosts::isWithin('shop.example.com', ['example.com']));
+        $this->assertTrue(Hosts::isWithin('example.com', ['example.com']));
+        $this->assertFalse(Hosts::isWithin('example.com', ['shop.example.com']), 'the parent is not the subdomain');
+        $this->assertFalse(Hosts::isWithin('example.com', []));
     }
 
     public function testAProfileWithNoDomainNeverFires(): void

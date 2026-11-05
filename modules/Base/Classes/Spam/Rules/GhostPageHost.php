@@ -15,8 +15,9 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  * A "ghost" hit: a beacon posted straight to log.php naming a page that was
  * never loaded, usually on a host that has nothing to do with the site.
  * Hosts are compared as Spam\Hosts does: case ignored, port ignored, and
- * www.example.com the same as example.com. A subdomain is not the domain, so a
- * Profile whose pages are on several hosts lists them as aliases.
+ * www.example.com the same as example.com. A subdomain of the domain or of an
+ * alias is on the site (Hosts::isWithin()): shop.example.com is a page of a
+ * Profile whose domain is example.com, and badexample.com is not.
  *
  * DOES NOT FIRE for a Profile with no domain set: there is nothing to compare
  * against. Nor for a beacon with no page location, which NO_PAGE_LOCATION
@@ -40,7 +41,7 @@ class GhostPageHost extends \OWA\Module\Base\Classes\Spam\Rule {
 
         $hosts = $this->profileHosts( (string) $event->getSiteId() );
 
-        return $hosts && ! in_array( $page, $hosts, true );
+        return $hosts && ! \OWA\Module\Base\Classes\Spam\Hosts::isWithin( $page, $hosts );
     }
 
     /** The Profile's hosts. Separate so a test can name them without a Profile. */
