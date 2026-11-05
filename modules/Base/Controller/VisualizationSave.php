@@ -251,9 +251,27 @@ class VisualizationSave extends \OWA\Core\AdminController {
              * Only one of this Property. One of another, or one that is gone,
              * is refused as the editor refuses it, and nothing is written.
              */
-            if ( ! \OWA\Module\Base\Classes\CustomReports::loadOf( $id, $propertyId ) ) {
+            $existing = \OWA\Module\Base\Classes\CustomReports::loadOf( $id, $propertyId );
+
+            if ( ! $existing ) {
 
                 $this->setStatusCode( 2514 );
+                $this->setRedirectAction( 'base.customReports' );
+
+                return;
+            }
+
+            /*
+             * Authorised against the stored row, as CustomReportSave is: its
+             * author, or someone who administers users. Without it anyone with
+             * edit_reports could overwrite somebody's funnel by its id.
+             */
+            $may = \OWA\Module\Base\Classes\CustomReports::mayEdit(
+                $existing, (string) $user->getUserData( 'user_id' ), (bool) $user->isCapable( 'edit_users' ) );
+
+            if ( ! $may ) {
+
+                $this->setStatusCode( 2515 );
                 $this->setRedirectAction( 'base.customReports' );
 
                 return;

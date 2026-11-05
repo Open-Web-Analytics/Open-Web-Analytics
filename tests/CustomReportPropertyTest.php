@@ -320,6 +320,39 @@ final class CustomReportPropertyTest extends TestCase
         $this->assertSame(2514, $funnelQ['status_code'] ?? null, 'refused as a funnel that does not exist');
     }
 
+    /** A funnel is saved over by its author, or by someone who administers users, as a report is. */
+    public function testAFunnelIsSavedOverByItsAuthorOnly(): void
+    {
+        $viewer  = $this->viewer();
+        $someone = $this->storeFunnel(self::P);
+
+        CoreAPI::dbSingleton()->query('UPDATE owa_custom_report SET user_id = ? WHERE id = ?', [self::AUTHOR, $someone]);
+
+        $rename = function (string $id, string $name): array {
+            $save = new \OWA\Module\Base\Controller\VisualizationSave([
+                'visualizationId' => $id, 'name' => $name, 'propertyId' => self::P, 'visualizationType' => 'funnel',
+            ]);
+            $save->action();
+
+            return $this->data($save);
+        };
+
+        [$refused, $own, $ownSaved] = $this->asUser($viewer, function () use ($rename, $someone) {
+            $own = $this->storeFunnel(self::P);
+
+            return [$rename($someone, 'Overwritten'), $own, $rename($own, 'Renamed by its author')];
+        });
+
+        $this->assertSame(2515, $refused['status_code'] ?? null, 'That funnel belongs to another user.');
+        $this->assertSame('Property fixture funnel', $this->row($someone)['name'], 'not overwritten');
+
+        $this->assertArrayHasKey('reportId', $ownSaved);
+        $this->assertSame('Renamed by its author', $this->row($own)['name']);
+
+        $this->assertArrayHasKey('reportId', $rename($someone, 'Renamed by an admin'), 'an administrator may');
+        $this->assertSame('Renamed by an admin', $this->row($someone)['name']);
+    }
+
     // ---- listing ----------------------------------------------------------
 
     public function testTheRosterListsItsPropertysReportsOnly(): void
