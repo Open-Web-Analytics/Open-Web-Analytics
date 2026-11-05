@@ -54,9 +54,11 @@ final class Update082Test extends TestCase
             $this->assertNotContains($column, $cube);
         }
 
-        $this->assertStringNotContainsString('CubeColumn',
-            (string) file_get_contents(OWA_DIR . 'modules/Base/Update/Update082.php'),
+        $this->assertNotContains(\OWA\Module\Base\Update\CubeColumn::class,
+            class_uses(\OWA\Module\Base\Update\Update082::class),
             'raw only: the CubeColumn trait rebuilds every cube');
+        $this->assertContains(\OWA\Module\Base\Update\CubeColumn::class,
+            class_uses(\OWA\Module\Base\Update\Update073::class), 'the check can see the trait where it is used');
 
         $this->assertSame(['spam_score', 'spam_rules'], array_slice($raw, -2), 'appended, in the order ADD COLUMN appends them');
     }
