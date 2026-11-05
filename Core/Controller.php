@@ -290,26 +290,6 @@ class Controller extends \OWA\Core\Base {
             $this->set('error_code', $this->getParam('error_code'));
         }
 
-        /*
-         * The Property this request names, so its custom dimensions are
-         * registered dimensions before anything validates against the
-         * registry: a report query's constraints and segment, a custom report
-         * or visualization being saved. Cube\Dimensions::registerFor() says
-         * why it is one Property at a time.
-         */
-        $property_id = (string) $this->getParam( 'propertyId' );
-
-        if ( $property_id === '' && $this->getParam( 'siteId' ) ) {
-
-            $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite(
-                (string) $this->getParam( 'siteId' ) );
-        }
-
-        if ( $property_id !== '' ) {
-
-            \OWA\Module\Base\Classes\Cube\Dimensions::registerFor( $property_id );
-        }
-
         // check to see if the controller has created a validator
         if (!empty($this->v)) {
             // if so do the validations required

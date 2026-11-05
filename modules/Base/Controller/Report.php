@@ -252,7 +252,7 @@ class Report extends \OWA\Core\AdminController {
 
         $definition = (array) $report['definition'];
 
-        $error = \OWA\Module\Base\Classes\CustomReports::validate( $definition );
+        $error = \OWA\Module\Base\Classes\CustomReports::validate( $definition, $this->propertyToValidateAgainst() );
 
         if ( $error !== '' ) {
 
@@ -327,6 +327,39 @@ class Report extends \OWA\Core\AdminController {
     }
 
     /**
+     * The Property whose dimensions a custom report is checked against before
+     * it is drawn.
+     *
+     * Asked here because this controller overrides doAction(), so no pre() has
+     * resolved one yet: the target's runs after the check. The same order
+     * ReportController::resolvePropertyId() starts with -- the Property the
+     * request names, else its siteId's, else the one this browser last
+     * reported on. Vocabulary only: which Property is drawn, and whether the
+     * reader may see it, is still the target's to decide.
+     *
+     * @return string '' for none, which checks against the modules' dimensions
+     */
+    private function propertyToValidateAgainst() {
+
+        $named = (string) $this->getParam( 'propertyId' );
+
+        if ( $named !== '' ) {
+
+            return $named;
+        }
+
+        $siteId = (string) ( $this->getParam( 'siteId' ) ?: $this->getParam( 'site_id' ) );
+
+        if ( $siteId !== '' ) {
+
+            return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId );
+        }
+
+        return (string) \OWA\Core\CoreAPI::getStateParam(
+            \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE );
+    }
+
+    /**
      * Put "Edit" beside the title, if this reader may edit this row.
      *
      * ONE place for both kinds. A visualization is edited on its own screen and
@@ -380,9 +413,22 @@ class Report extends \OWA\Core\AdminController {
             ? array( 'do' => 'base.visualizationEdit', 'visualizationId' => $report['id'] )
             : array( 'do' => 'base.customReportEdit',  'customReportId'  => $report['id'] );
 
+        /*
+         * The link state, so the editor opens on the Property the reader is
+         * looking at, whose custom dimensions it offers. A Template made here
+         * has no link state of its own, so it is given this request's, with
+         * the Property the target's pre() resolved when the URL named none.
+         */
+        $state = array_intersect_key( $this->params, array_flip( \OWA\Core\View::LINK_STATE_KEYS ) );
+
+        if ( ! empty( $data['currentPropertyId'] ) ) {
+
+            $state['propertyId'] = (string) $data['currentPropertyId'];
+        }
+
         $data['title_actions'] = array(
             array(
-                'url'   => ( new \OWA\Core\Template() )
+                'url'   => ( new \OWA\Core\Template( null, array( 'link_state' => $state ) ) )
                                ->makeLink( $link, true ),
                 'label' => $is_viz ? 'Edit visualization' : 'Edit report',
                 'icon'  => 'fas fa-pencil-alt',

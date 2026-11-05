@@ -3215,12 +3215,12 @@ class CoreAPI {
     }
 
     /**
-     * Every registered dimension, one entry per name.
+     * Every dimension, one entry per name: the modules' registrations and, when
+     * a Property is named, its applied custom dimensions.
      *
-     * Both registries are keyed name => entity => registration, and this
-     * flattens them to name => registration by letting the last entity win --
-     * which is what this method has always returned, and what its callers (the
-     * report picker and its validation among them) are written against.
+     * Classes\DimensionRegistry::forProperty()->all(), which says how the
+     * entity-keyed registries are flattened and why the custom dimensions are
+     * per Property. Without a Property this is the modules' vocabulary alone.
      *
      * Pass $entities to scope the answer to a set of entities: a dimension is
      * offered only if it is defined on one of them, and a name defined on none
@@ -3229,38 +3229,12 @@ class CoreAPI {
      * scope decides, so the wrong generation is not filtered out downstream, it
      * is never in the answer.
      *
-     * Called without a scope the behaviour is unchanged.
-     *
-     * @param array|null $entities entity names to restrict the answer to
+     * @param array|null      $entities    entity names to restrict the answer to
+     * @param int|string|null $property_id the Property whose custom dimensions to include
      */
-    public static function getAllDimensions( $entities = null ) {
+    public static function getAllDimensions( $entities = null, $property_id = null ) {
 
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-
-        $dims = array();
-
-        /*
-         * Normalized first, then denormalized, because a name carried by both
-         * has always resolved to the denormalized definition and callers depend
-         * on that precedence.
-         */
-        foreach ( array( $s->dimensions, $s->denormalizedDimensions ) as $registry ) {
-
-            foreach ( $registry as $k => $entity_dims ) {
-
-                foreach ( $entity_dims as $entity => $dim ) {
-
-                    if ( $entities !== null && ! in_array( $entity, (array) $entities, true ) ) {
-
-                        continue;
-                    }
-
-                    $dims[$k] = $dim;
-                }
-            }
-        }
-
-        return $dims;
+        return \OWA\Module\Base\Classes\DimensionRegistry::forProperty( $property_id )->all( $entities );
     }
 
     public static function getAllMetrics() {

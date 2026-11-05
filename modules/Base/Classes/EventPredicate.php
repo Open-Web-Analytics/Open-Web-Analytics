@@ -82,40 +82,16 @@ class EventPredicate {
     /**
      * The custom dimensions applied to a Property, as column => label.
      *
-     * Applied only: a pending or failed registration names a column the cube
-     * does not have yet. Read from the registrations, so a name from another
-     * Property's, or one never registered, is not here.
+     * From Classes\DimensionRegistry, where a Property's dimensions are read,
+     * so a step may test what the Property's reports may group by: not
+     * another Property's, and not a pending registration.
      *
      * @param  string $propertyId
      * @return array
      */
     public static function customColumnsFor( $propertyId ) {
 
-        return array_column( self::customDimensionsFor( $propertyId ), 'label', 'column' );
-    }
-
-    /**
-     * The custom dimensions applied to a Property, as dimension registry
-     * entries (Cube\Dimensions::asDimension()), oldest first.
-     *
-     * @param  string $propertyId
-     * @return array
-     */
-    public static function customDimensionsFor( $propertyId ) {
-
-        $out = array();
-
-        foreach ( \OWA\Module\Base\Classes\Cube\Dimensions::forProperty( $propertyId ) as $row ) {
-
-            $row = (array) $row;
-
-            if ( (string) ( $row['state'] ?? '' ) === \OWA\Module\Base\Entity\CustomDimension::STATE_APPLIED ) {
-
-                $out[] = \OWA\Module\Base\Classes\Cube\Dimensions::asDimension( $row );
-            }
-        }
-
-        return $out;
+        return array_column( DimensionRegistry::forProperty( $propertyId )->custom(), 'label', 'column' );
     }
 
     /** May a condition name this property? */

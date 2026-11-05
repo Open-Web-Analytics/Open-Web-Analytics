@@ -170,6 +170,9 @@ final class CustomDimensionBuildTest extends TestCase
             }
         }
 
+        // Deleted under it, so the registry reads this Property's afresh.
+        \OWA\Module\Base\Classes\DimensionRegistry::forget(self::PROPERTY);
+
         foreach (['base.event_raw', 'base.visitor_acquisition'] as $entity) {
             $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
                 \OWA\Core\CoreAPI::entityFactory($entity)->getTableName(), $db->prepare(self::SITE)));
@@ -790,45 +793,90 @@ final class CustomDimensionBuildTest extends TestCase
         $this->register(['key' => 'tier', 'scope' => 'event']);
         $this->record(['key' => 'later', 'scope' => 'event']);
 
-        Dimensions::registerFor(self::PROPERTY);
-
-        $dimensions = \OWA\Core\CoreAPI::getAllDimensions();
+        $dimensions = \OWA\Core\CoreAPI::getAllDimensions(null, self::PROPERTY);
 
         $this->assertArrayHasKey('cd_tier', $dimensions);
         $this->assertArrayHasKey('cd_late', $dimensions, 'applied by the same reconcile');
         $this->assertArrayNotHasKey('cd_later', $dimensions, 'pending');
         $this->assertArrayNotHasKey('cd_tier_set_ts', $dimensions);
 
-        Dimensions::registerFor(self::PROPERTY + 1);
-
+        $this->assertArrayNotHasKey('cd_tier', \OWA\Core\CoreAPI::getAllDimensions(null, self::PROPERTY + 1),
+            "another Property's are not its");
         $this->assertArrayNotHasKey('cd_tier', \OWA\Core\CoreAPI::getAllDimensions(),
-            'naming another Property replaces them');
+            'nor are they among the modules\' dimensions');
     }
 
     /**
-     * A request naming the Property has them before it is validated.
-     *
-     * Core\Controller registers them ahead of the validators, so a custom
-     * report or visualization saved with one, and the editors' pickers, see it.
+     * Applied and de-registered within one process: the registry follows,
+     * though it memoises a Property's dimensions.
      */
-    public function testAControllerNamingThePropertyRegistersThemBeforeItsAction(): void
+    public function testTheRegistryFollowsARegistrationAppliedOrRemovedInTheSameProcess(): void
     {
+        $registry = \OWA\Module\Base\Classes\DimensionRegistry::class;
+
+        $this->assertFalse($registry::forProperty(self::PROPERTY)->has('cd_tier'));
+
         $this->register(['key' => 'tier', 'scope' => 'event']);
 
-        $controller = new class(['propertyId' => (string) CustomDimensionBuildTest::PROPERTY])
-            extends \OWA\Core\Controller {
+        $this->assertTrue($registry::forProperty(self::PROPERTY)->has('cd_tier'), 'applied');
 
-            /** @var bool */
-            public $seen = false;
+        $this->assertTrue(Dimensions::deregister(self::PROPERTY, 'tier')['ok']);
 
-            function action() {
-                $this->seen = \OWA\Module\Base\Classes\CustomReports::isDimension('cd_tier');
-            }
-        };
+        $this->assertFalse($registry::forProperty(self::PROPERTY)->has('cd_tier'), 'removed');
+    }
 
-        $controller->doAction();
+    /**
+     * A segment selects on one, and the segment filter offers it.
+     *
+     * DimensionRegistryTest has the other side: another Property's refused.
+     */
+    public function testASegmentSelectsOnIt(): void
+    {
+        $this->register(['key' => 'tier', 'scope' => 'event', 'label' => 'Tier']);
+        $this->seed(['tier' => 'gold']);
+        $this->rebuild();
 
-        $this->assertTrue($controller->seen);
+        $day = (string) $this->yyyymmdd;
+
+        $segment = new \OWA\Module\Base\Classes\ReportSegment(self::PROPERTY, 'date_range', $day, $day, 'cd_tier==gold');
+
+        $this->assertSame([(string) self::VISITOR], array_map('strval', (array) $segment->subjects('visitor')),
+            (string) $segment->getError());
+
+        $none = new \OWA\Module\Base\Classes\ReportSegment(self::PROPERTY, 'date_range', $day, $day, 'cd_tier==silver');
+
+        $this->assertSame([], $none->subjects('visitor'));
+        $this->assertNull($none->getError(), 'matched nobody, not refused');
+
+        $this->assertContains(['name' => 'cd_tier', 'label' => 'Tier'],
+            (array) ($segment->options()['dimensions']['custom'] ?? []));
+    }
+
+    /**
+     * A REST query of the Profile groups and filters by one, the names checked
+     * before its siteId filter is set. Its segment is checked the same way
+     * (DimensionRegistryTest).
+     */
+    public function testARestQueryGroupsFiltersAndSegmentsByIt(): void
+    {
+        $this->register(['key' => 'tier', 'scope' => 'event']);
+        $this->seed(['tier' => 'gold']);
+        $this->rebuild();
+
+        $day = (string) $this->yyyymmdd;
+
+        $rs = (new \OWA\Module\Base\Controller\ReportsRest([
+            'metrics'     => 'pageViews',
+            'dimensions'  => 'cd_tier',
+            'constraints' => 'cd_tier==gold',
+            'siteId'      => self::SITE,
+            'period'      => 'date_range',
+            'startDate'   => $day,
+            'endDate'     => $day,
+        ]))->getResultSet();
+
+        $this->assertSame([], (array) $rs->request_errors);
+        $this->assertSame('gold', (string) $rs->getResultsRows()[0]['cd_tier']['value']);
     }
 
     /** Its registry entry: what the query engine and the pickers read. */
@@ -852,6 +900,6 @@ final class CustomDimensionBuildTest extends TestCase
 
     protected function tearDown(): void
     {
-        Dimensions::forgetRegistered();
+        \OWA\Module\Base\Classes\DimensionRegistry::forget();
     }
 }

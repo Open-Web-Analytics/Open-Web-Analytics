@@ -297,7 +297,9 @@ class GoalVocabulary {
 
             self::$registryDescriptions = array();
 
-            foreach ( (array) \OWA\Core\CoreAPI::getAllDimensions() as $dim ) {
+            // The modules' dimensions alone: these describe raw row columns,
+            // and a custom dimension is a column of one Property's cube.
+            foreach ( DimensionRegistry::forProperty( null )->all() as $dim ) {
 
                 $col = (string) ( $dim['column'] ?? '' );
 

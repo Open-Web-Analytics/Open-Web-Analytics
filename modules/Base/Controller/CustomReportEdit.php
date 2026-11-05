@@ -156,8 +156,15 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * URL they share, so it must name the Property the report was built
          * on. The form action alone does not carry it, so it travels as a
          * field.
+         *
+         * The dimensions offered below are its: the modules' and its applied
+         * custom ones. pre() has resolved it by now, from the URL or else the
+         * one last reported on, so a builder opened with no propertyId still
+         * offers them, and a widget grouped by one keeps it selected.
          */
-        $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
+        $propertyId = (string) $this->getParam( 'propertyId' );
+
+        $this->set( 'propertyId', $propertyId );
 
         /*
          * Which fact tables each metric can be measured in.
@@ -172,10 +179,10 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * the same answer arriving earlier, not a replacement for it.
          */
         $this->set( 'metric_entities', self::metricEntities() );
-        $this->set( 'dimension_entities', self::dimensionEntities() );
+        $this->set( 'dimension_entities', self::dimensionEntities( $propertyId ) );
 
         $this->set( 'metric_choices',    self::metricChoices() );
-        $this->set( 'dimension_choices', self::dimensionChoices() );
+        $this->set( 'dimension_choices', self::dimensionChoices( $propertyId ) );
         $this->set( 'widget_types',      \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPES );
         $this->set( 'max_widgets',       \OWA\Module\Base\Classes\CustomReports::MAX_WIDGETS );
         $this->set( 'max_metrics',       \OWA\Module\Base\Classes\CustomReports::MAX_METRICS );
@@ -228,15 +235,18 @@ class CustomReportEdit extends \OWA\Core\ReportController {
     }
 
     /**
-     * The dimensions a person may pick: every registered one except those
-     * declared internal, which a feature queries and nobody groups by (the
-     * heatmap's coordinates and element anchor).
+     * The dimensions a person may pick: every one of the Property's
+     * (Classes\DimensionRegistry) except those declared internal, which a
+     * feature queries and nobody groups by (the heatmap's coordinates and
+     * element anchor).
      *
+     * @param  string|null $property_id null for the modules' dimensions alone
      * @return array
      */
-    public static function dimensionChoices() {
+    public static function dimensionChoices( $property_id ) {
 
-        return self::choices( array_filter( (array) \OWA\Core\CoreAPI::getAllDimensions(),
+        return self::choices( array_filter(
+            \OWA\Module\Base\Classes\DimensionRegistry::forProperty( $property_id )->all(),
             static fn( $dim ) => empty( $dim['internal'] ) ) );
     }
 
@@ -268,11 +278,13 @@ class CustomReportEdit extends \OWA\Core\ReportController {
      * The same relation ResultSetManager checks when it picks a base entity, so
      * the builder narrows on exactly what the query engine would refuse.
      *
+     * @param  string|null $property_id whose dimensions; null for the modules' alone
      * @return array<string,array>
      */
-    public static function dimensionEntities() {
+    public static function dimensionEntities( $property_id ) {
 
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
+        $rsm->setPropertyId( (string) $property_id );
 
         /*
          * The fact tables a query can be answered from. Taken from the metric
@@ -293,7 +305,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
         $out = array();
 
-        foreach ( array_keys( (array) \OWA\Core\CoreAPI::getAllDimensions() ) as $name ) {
+        foreach ( array_keys( $rsm->dimensionRegistry()->all() ) as $name ) {
 
             $related = array();
 

@@ -99,9 +99,6 @@ class Dimensions {
     /** The entity a custom dimension is registered against: the cube's. */
     const CUBE_ENTITY = 'base.event';
 
-    /** @var string[] the dimension names registerFor() last registered */
-    private static $registered = array();
-
     /**
      * How many custom dimensions this Property's cube will actually take.
      *
@@ -260,68 +257,14 @@ class Dimensions {
     }
 
     /**
-     * Make one Property's custom dimensions reportable for this request.
-     *
-     * A registration whose column is on the cube becomes a dimension of the
-     * cube entity, named by its column (`cd_plan`), so everything that reads
-     * the dimension registry -- the query engine, the grid's picker, the
-     * custom report and visualization editors and their validation -- sees it
-     * without knowing custom dimensions exist.
-     *
-     * PER PROPERTY, because the column is. Registering `cd_plan` for every
-     * Property at once would let a query of a cube without that column pass
-     * validation and then lose its breakdown to MySQL's "Unknown column",
-     * which the result set swallows (config/dimensions.php). So the registry
-     * holds one Property's at a time, and naming another replaces them.
-     *
-     * Only APPLIED registrations: a pending or failed one names a column that
-     * is not there yet. Read afresh on each call, one indexed query, so a
-     * registration applied earlier in the same process is not missed.
-     *
-     * Called where a request first names its Property: Core\Controller before
-     * validation, and ResultSetManager::setPropertyId() / setSiteId().
-     *
-     * @param int|string $property_id
-     * @return void
-     */
-    public static function registerFor( $property_id ) {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        foreach ( self::$registered as $name ) {
-
-            $service->unregisterDenormalizedDimension( $name, self::CUBE_ENTITY );
-        }
-
-        self::$registered = array();
-
-        foreach ( self::forProperty( $property_id ) as $row ) {
-
-            if ( (string) $row['state'] !== CustomDimension::STATE_APPLIED ) {
-
-                continue;
-            }
-
-            $dimension = self::asDimension( $row );
-
-            // The prefix already rules a clash out; this keeps a release
-            // dimension from ever being replaced if that changes.
-            if ( $service->getDenormalizedDimension( $dimension['name'], self::CUBE_ENTITY ) ) {
-
-                continue;
-            }
-
-            $service->registerDenormalizedDimension( $dimension );
-
-            self::$registered[] = $dimension['name'];
-        }
-    }
-
-    /**
      * One applied registration as a dimension registry entry.
      *
      * The same shape config/dimensions.php produces for a column read, in the
-     * `custom` family so the pickers group them together.
+     * `custom` family so the pickers group them together. A dimension of the
+     * cube entity, named by its column (`cd_plan`), so everything that reads
+     * Classes\DimensionRegistry for this Property -- the query engine, the
+     * grid's picker, the editors and their validation -- sees it without
+     * knowing custom dimensions exist.
      *
      * @param array $row a registration
      * @return array
@@ -344,19 +287,6 @@ class Dimensions {
             'data_type'        => (string) $row['data_type'],
             'denormalized'     => true,
         );
-    }
-
-    /** Forget which Property's dimensions are registered. For tests. */
-    public static function forgetRegistered() {
-
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-
-        foreach ( self::$registered as $name ) {
-
-            $service->unregisterDenormalizedDimension( $name, self::CUBE_ENTITY );
-        }
-
-        self::$registered = array();
     }
 
     /**
@@ -670,6 +600,9 @@ class Dimensions {
                 \OWA\Core\CoreAPI::t( 'Could not remove the registration for %s.' ), $key ) );
         }
 
+        // It stops being a dimension of the Property's queries now.
+        \OWA\Module\Base\Classes\DimensionRegistry::forget( $property_id );
+
         return array( 'ok' => true, 'error' => '',
             'columns' => array_keys( self::columnsOf( $found ) ) );
     }
@@ -846,6 +779,9 @@ class Dimensions {
             }
 
             $entity->update();
+
+            // Applied, or no longer: what the Property's queries may name changed.
+            \OWA\Module\Base\Classes\DimensionRegistry::forget( $property_id );
         }
     }
 

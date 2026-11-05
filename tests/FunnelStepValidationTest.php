@@ -327,10 +327,12 @@ final class FunnelStepValidationTest extends TestCase
             $insert( '7779200000000101', $mine, 'plan', \OWA\Module\Base\Entity\CustomDimension::STATE_APPLIED );
             $insert( '7779200000000102', $mine, 'tier', \OWA\Module\Base\Entity\CustomDimension::STATE_PENDING );
             $insert( '7779200000000103', $theirs, 'seat', \OWA\Module\Base\Entity\CustomDimension::STATE_APPLIED );
+            // Written under the registry, so it reads them afresh.
+            \OWA\Module\Base\Classes\DimensionRegistry::forget();
 
-            $save = function ( array $step ) use ( $mine ) {
+            $save = function ( array $step, string $constraints = '' ) use ( $mine ) {
                 $controller = new \OWA\Module\Base\Controller\VisualizationSave(
-                    array( 'propertyId' => $mine ) + $this->params( array( $step ) ) );
+                    array( 'propertyId' => $mine ) + $this->params( array( $step ), $constraints ) );
                 $controller->validate();
                 $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
                 $v->setAccessible( true );
@@ -345,8 +347,13 @@ final class FunnelStepValidationTest extends TestCase
             $this->assertNotSame( array(), $save( array( 'event' => 'click', 'conditions' => array( array( 'cd_seat', 'exact', 'x' ) ) ) ),
                 "another Property's" );
 
+            // The funnel's filter may name the Property's too, and only its.
+            $this->assertSame( array(), $save( $plan, 'cd_plan==gold' ), 'a filter on one applied to this Property' );
+            $this->assertNotSame( array(), $save( $plan, 'cd_seat==x' ), "a filter on another Property's" );
+
         } finally {
             $db->query( sprintf( 'DELETE FROM %s WHERE property_id IN (?, ?)', $table ), array( $mine, $theirs ) );
+            \OWA\Module\Base\Classes\DimensionRegistry::forget();
         }
     }
 }

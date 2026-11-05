@@ -119,13 +119,17 @@ class CustomReports extends \OWA\Core\ReportController {
          * a millisecond a report. A report saved before an upgrade can name
          * something that no longer exists, and it should say so in the list,
          * not only when someone opens it.
+         *
+         * Against the Property the roster is on, which is where its links open
+         * a report: one grouped by a custom dimension draws only for a Property
+         * that has it.
          */
         foreach ( $reports as $i => $report ) {
 
             $reports[ $i ]['kind']    = self::kindOf( $report );
             $reports[ $i ]['invalid'] = $reports[ $i ]['kind'] === 'report'
                 ? \OWA\Module\Base\Classes\CustomReports::validate(
-                    (array) ( $report['definition'] ?? array() ) )
+                    (array) ( $report['definition'] ?? array() ), (string) $this->getParam( 'propertyId' ) )
                 : '';
         }
 
@@ -185,13 +189,16 @@ class CustomReports extends \OWA\Core\ReportController {
          *
          * Hooked by the roster template, which asks what to make (a report or
          * a funnel) in a modal. Still a real link: with no JavaScript it opens
-         * the report builder.
+         * the report builder, on this Property. A Template made here has no
+         * link state of its own, so it is given this request's.
          */
         if ( ! empty( $this->data['may_author'] ) ) {
 
+            $state = array_intersect_key( $this->params, array_flip( \OWA\Core\View::LINK_STATE_KEYS ) );
+
             $this->set( 'title_actions', array(
                 array(
-                    'url'   => ( new \OWA\Core\Template() )
+                    'url'   => ( new \OWA\Core\Template( null, array( 'link_state' => $state ) ) )
                                    ->makeLink( array( 'do' => 'base.customReportEdit' ), true ),
                     'label' => 'New',
                     'icon'  => 'fa-plus',

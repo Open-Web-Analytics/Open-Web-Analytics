@@ -262,6 +262,8 @@ final class EventPredicateTest extends TestCase
             $insert( '7779000000000101', $mine, 'plan', \OWA\Module\Base\Entity\CustomDimension::STATE_APPLIED );
             $insert( '7779000000000102', $mine, 'tier', \OWA\Module\Base\Entity\CustomDimension::STATE_PENDING );
             $insert( '7779000000000103', $theirs, 'seat', \OWA\Module\Base\Entity\CustomDimension::STATE_APPLIED );
+            // Written under the registry, so it reads them afresh.
+            \OWA\Module\Base\Classes\DimensionRegistry::forget();
 
             $this->assertSame( array( 'cd_plan' => 'Plan' ), EventPredicate::customColumnsFor( $mine ) );
             $this->assertSame( array( 'cd_seat' => 'Seat' ), EventPredicate::customColumnsFor( $theirs ) );
@@ -275,6 +277,7 @@ final class EventPredicateTest extends TestCase
 
         } finally {
             $clean();
+            \OWA\Module\Base\Classes\DimensionRegistry::forget();
         }
     }
 }

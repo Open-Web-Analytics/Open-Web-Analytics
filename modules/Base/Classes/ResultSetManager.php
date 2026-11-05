@@ -239,32 +239,64 @@ class ResultSetManager extends \OWA\Core\Base {
      * Narrow the query to one Profile of its Property.
      *
      * A constraint, as any dimension filter is. Without a propertyId the
-     * Profile also names the Property whose cube is read.
+     * Profile also names the Property whose cube is read, and whose dimensions
+     * the query may name (dimensionRegistry()).
      */
     function setSiteId($siteId) {
 
         //used for urls
         $this->query_params['siteId'] = $siteId;
         $this->setConstraint('siteId', $siteId);
-
-        if ( empty( $this->query_params['propertyId'] ) ) {
-
-            \OWA\Module\Base\Classes\Cube\Dimensions::registerFor(
-                \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( (string) $siteId ) );
-        }
     }
 
     /**
-     * The Property this query is of: its cube holds every Profile in it.
+     * The Property this query is of: its cube holds every Profile in it, and
+     * its custom dimensions are dimensions of this query.
      *
      * @param string $propertyId
      */
     function setPropertyId( $propertyId ) {
 
         $this->query_params['propertyId'] = (string) $propertyId;
+    }
 
-        // Its custom dimensions are dimensions of this query.
-        \OWA\Module\Base\Classes\Cube\Dimensions::registerFor( $propertyId );
+    /** @var string the Property whose dimensions this query may name, if set apart; see setVocabularyProperty() */
+    private $vocabulary_property_id = '';
+
+    /**
+     * Whose dimensions the names in this query are, before it is told which
+     * Property and Profile it reads.
+     *
+     * For a caller that validates names (setConstraints(), setSegment()) before
+     * it sets the Property and the siteId filter, as ReportsRest does. The
+     * siteId filter is applied last on purpose: setSiteId() then replaces any
+     * siteId constraint the request itself carried. Setting the siteId first
+     * to get its Property's vocabulary would let that constraint win instead.
+     * So the Property is named here for the vocabulary alone, and filters
+     * nothing.
+     *
+     * @param string $propertyId
+     */
+    function setVocabularyProperty( $propertyId ) {
+
+        $this->vocabulary_property_id = (string) $propertyId;
+    }
+
+    /**
+     * The dimensions this query may name: the modules' and its Property's
+     * custom ones (Classes\DimensionRegistry).
+     *
+     * Of the Property setVocabularyProperty() named, else the one the query
+     * reads (propertyIdForRequest()). With neither, the modules' alone.
+     *
+     * @return \OWA\Module\Base\Classes\DimensionRegistry
+     */
+    public function dimensionRegistry() {
+
+        return \OWA\Module\Base\Classes\DimensionRegistry::forProperty(
+            $this->vocabulary_property_id !== ''
+                ? $this->vocabulary_property_id
+                : $this->propertyIdForRequest() );
     }
 
     function getSiteId() {
@@ -552,6 +584,17 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             } elseif ($this->isDimension( $item['name'] ) ) {
                 $dimensions[$item['name']] = $item;
+
+            } else {
+
+                /*
+                 * Refused, as an unknown constraint name is (setConstraints()).
+                 * Dropped, it took that condition out of the segment and the
+                 * query answered for everybody the rest of it selects.
+                 */
+                $this->addRequestError( sprintf( \OWA\Core\CoreAPI::t(
+                    '"%s" is not a dimension or a metric, so a segment cannot select on it.' ),
+                    $item['name'] ) );
             }
         }
 
@@ -1030,9 +1073,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     function isDimension( $name ) {
 
-        $dims = \OWA\Core\CoreAPI::getAllDimensions();
-        //print_r($dims);
-        return in_array( $name, array_keys( $dims ) );
+        return $this->dimensionRegistry()->has( $name );
     }
 
     function isMetric( $name ) {
@@ -1057,8 +1098,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function lookupDimension($name, $entity) {
 
         // check for denormalized
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $dim = $service->getDenormalizedDimension($name, $entity->getName());
+        $registry = $this->dimensionRegistry();
+        $dim = $registry->denormalized($name, $entity->getName());
 
         if ($dim) {
             /*
@@ -1085,7 +1126,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $dim = $this->related_dimensions[$name];
             } else {
 
-                $dim = $service->getDimension($name);
+                $dim = $registry->normalized($name);
 
                 if ($dim) {
                     // Registered, but not on this entity: v1 would have joined
@@ -2438,18 +2479,11 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return array();
         }
 
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
         $dims = array();
-        $denormalized_dims = $s->denormalizedDimensions;
 
-        foreach ( $denormalized_dims as $ddim_imp) {
+        foreach ( $this->dimensionRegistry()->onEntity( $entity->getName() ) as $ddim ) {
 
-            foreach ( $ddim_imp as $k => $ddim) {
-
-                if ($k === $entity->getName()) {
-                    $dims[ $ddim['family'] ][] = array( 'name' => $ddim['name'], 'label' => $ddim['label'] );
-                }
-            }
+            $dims[ $ddim['family'] ][] = array( 'name' => $ddim['name'], 'label' => $ddim['label'] );
         }
 
         return $dims;

@@ -50,9 +50,10 @@ class VisualizationFunnel extends \OWA\Core\View {
         $this->body->set('funnel_scope_other',   $this->get('funnel_scope_other') );
         $this->body->set('funnel_scope_label',   $this->get('funnel_scope_label') );
         $this->body->set('funnel_segment_error', $this->get('funnel_segment_error') );
-        // The funnel's own filter, in words: it narrows every count below.
+        // The funnel's own filter, in words: it narrows every count below. A
+        // custom dimension in it is named by its Property's label.
         $this->body->set('funnel_saved_filter', \OWA\Module\Base\Classes\CustomReports::constraintsInWords(
-            (string) $this->get('funnel_saved_constraints') ) );
+            (string) $this->get('funnel_saved_constraints'), (string) $this->get('currentPropertyId') ) );
         // A step the funnel cannot count: no event, or a property it cannot test. Refused
         // rather than drawn with that step ignored -- see stepPredicate().
         $this->body->set('funnel_step_error',    $this->get('funnel_step_error') );

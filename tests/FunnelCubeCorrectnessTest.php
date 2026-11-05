@@ -105,6 +105,8 @@ final class FunnelCubeCorrectnessTest extends TestCase
         $db->query(sprintf('DELETE FROM owa_property WHERE id = %d', self::PROPERTY));
         $db->query(sprintf('DELETE FROM %s WHERE property_id = %d',
             \OWA\Core\CoreAPI::entityFactory('base.custom_dimension')->getTableName(), self::PROPERTY));
+        // Deleted under it, so its memo of the Property's dimensions goes too.
+        \OWA\Module\Base\Classes\DimensionRegistry::forget(self::PROPERTY);
 
         self::$ready = false;
     }

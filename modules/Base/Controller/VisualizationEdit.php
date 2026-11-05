@@ -121,7 +121,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          * Property's custom dimensions, which a funnel can test because it
          * counts over the cube that carries them.
          */
-        $customDimensions = \OWA\Module\Base\Classes\EventPredicate::customDimensionsFor( $propertyId );
+        $customDimensions = \OWA\Module\Base\Classes\DimensionRegistry::forProperty( $propertyId )->custom();
 
         $this->set( 'eventNames', \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames() );
         $this->set( 'customEventNames', GoalEventDefinitionEdit::customEventNames( $propertyId ) );
@@ -143,14 +143,14 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         $this->set( 'constraints', $this->getParam( 'name' ) !== null
             ? (string) $this->getParam( 'constraints' )
             : (string) ( $definition['constraints'] ?? '' ) );
-        $this->set( 'dimensionChoices', CustomReportEdit::dimensionChoices() );
+        $this->set( 'dimensionChoices', CustomReportEdit::dimensionChoices( $propertyId ) );
     }
 
     /**
      * Every event's condition properties, for the builder's pickers, with the
      * Property's custom dimensions added to each list.
      *
-     * @param  array $customDimensions  EventPredicate::customDimensionsFor()
+     * @param  array $customDimensions  DimensionRegistry::custom()
      * @return array  event => list of { name, label, description, carried }
      */
     public static function vocabulary( array $customDimensions ) {
@@ -191,7 +191,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
      * carries "another event of yours" as picked, with the name typed beside it.
      *
      * @param  array $steps             stored, or carried back by a refused save
-     * @param  array $customDimensions  EventPredicate::customDimensionsFor()
+     * @param  array $customDimensions  DimensionRegistry::custom()
      * @return array  list of { name, picked, custom_event, match, conditions, properties }
      */
     public static function formSteps( array $steps, array $customDimensions ) {

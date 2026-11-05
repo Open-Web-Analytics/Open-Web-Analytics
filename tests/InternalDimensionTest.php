@@ -21,7 +21,7 @@ final class InternalDimensionTest extends TestCase
 
     private static function picked(): array
     {
-        return array_column( CustomReportEdit::dimensionChoices(), 'name' );
+        return array_column( CustomReportEdit::dimensionChoices( null ), 'name' );
     }
 
     public function testTheHeatmapsDimensionsAreRegisteredAndNotOffered(): void

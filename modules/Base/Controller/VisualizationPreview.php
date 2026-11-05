@@ -34,7 +34,8 @@ class VisualizationPreview extends VisualizationFunnel {
     function action() {
 
         $problem = \OWA\Module\Base\Classes\CustomReports::constraintsProblem(
-            (string) $this->getParam( 'funnelFilter' ), \OWA\Core\CoreAPI::t( 'The funnel' ) );
+            (string) $this->getParam( 'funnelFilter' ), \OWA\Core\CoreAPI::t( 'The funnel' ),
+            (string) $this->getParam( 'propertyId' ) );
 
         if ( $problem !== '' ) {
 
