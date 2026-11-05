@@ -13,19 +13,21 @@
  * right: the funnel counted as it stands, from the steps on the screen, over
  * the last 30 days (base.visualizationPreview).
  *
- * The form posts the steps as parallel arrays -- stepKind[], stepPath[],
- * stepGoalEventDefinitionId[], stepName[] -- in row order, so the order on the
- * screen is the order saved. A step is a page path or a goal event definition;
- * its name is not asked for. A stored name rides along in stepName[] while the
- * step it names is unchanged, and a step with none is named for its page or
- * definition.
+ * Every step is an event and conditions on it (Classes\FunnelStep): a page is
+ * a page_view with a page_path condition, which is what a new step starts as.
+ * The form posts the steps as parallel arrays -- stepEvent[],
+ * stepCustomEvent[], stepMatch[], stepName[] -- in row order, so the order on
+ * the screen is the order saved, and each step's conditions as
+ * stepConditionProperty[N][] and its siblings, N the step's position
+ * (VisualizationSave::rowsFromRequest()). A step's name is not asked for. A
+ * stored name rides along in stepName[] while the step it names is unchanged,
+ * and a step with none is named for its page or its event.
  */
 $owa_v      = (array) $view->visualization;
 $owa_type   = (string) ( $view->visualizationType ?: 'funnel' );
 $owa_id     = (string) ( $owa_v['id'] ?? '' );
 $owa_errors = (array) $view->validation_errors;
-$owa_steps  = (array) $view->steps ?: array( array() );
-$owa_goals  = (array) $view->goalEventDefinitions;
+$owa_steps  = (array) $view->steps ?: array( (array) $view->blankStep );
 
 // The errors each step row shows; the rest are shown under the steps.
 $owa_shownErrors = array( 'name' => true, 'constraints' => true );
@@ -38,7 +40,9 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
  */
 ?>
 <form method="post" name="owa_visualization" class="owa_editor owa_funnelEditor" id="owa_funnelForm"
-      action="<?php echo $view->makeLink( array( 'do' => 'base.visualizationSave' ) );?>">
+      action="<?php echo $view->makeLink( array( 'do' => 'base.visualizationSave' ) );?>"
+      data-not-carried-label="<?php $view->out( \OWA\Core\CoreAPI::t( '%s -- not carried by %s' ) );?>"
+      data-not-carried-help="<?php $view->out( \OWA\Core\CoreAPI::t( 'A %s event does not carry this property.' ) );?>">
 
     <?php echo $view->createNonceFormField( 'base.visualizationSave' );?>
     <input type="hidden" name="<?php echo $view->getNs();?>visualizationId" value="<?php $view->out( $view->visualizationId ?? '' );?>">
@@ -93,21 +97,21 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
         <section class="owa_funnelBuild" aria-labelledby="owa_funnelStepsHeading">
 
             <h2 id="owa_funnelStepsHeading">Steps <span class="owa_builderRequired">Required</span></h2>
-            <p class="owa_builderHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'In order, first to last. A page is matched on its path; an event is one of this Property\'s goal event definitions, counted wherever it would add a goal event.' ) );?></p>
+            <p class="owa_builderHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'In order, first to last. Each step is an event, and optionally what it carries: a page is a page_view with its page path. A step with no conditions matches every event of that name.' ) );?></p>
 
-            <ol class="owa_funnelStepList" id="owa_goalEventFunnel">
-            <?php foreach ( $owa_steps as $owa_stepIndex => $owa_step ):?>
+            <ol class="owa_funnelStepList" id="owa_funnelSteps">
+            <?php foreach ( array_values( $owa_steps ) as $owa_stepIndex => $owa_step ):?>
             <?php
-                $owa_step     = (array) $owa_step;
-                $owa_stepNo   = (int) $owa_stepIndex + 1;
-                $owa_stepGoal = (string) ( $owa_step['goal_event_definition_id'] ?? '' );
+                $owa_step       = (array) $owa_step;
+                $owa_stepNo     = (int) $owa_stepIndex + 1;
                 $owa_stepErrors = array();
 
-                foreach ( array( 'stepName', 'stepPath', 'stepGoalEventDefinition' ) as $owa_key ) {
-                    $owa_field = $owa_key . $owa_stepNo;
-                    $owa_shownErrors[ $owa_field ] = true;
-                    if ( ! empty( $owa_errors[ $owa_field ] ) ) {
-                        $owa_stepErrors[] = $owa_errors[ $owa_field ];
+                // The step's own messages: stepEvent<N>, and stepCondition<N>_<C> for each condition.
+                foreach ( $owa_errors as $owa_field => $owa_message ) {
+                    if ( $owa_field === 'stepEvent' . $owa_stepNo
+                         || strpos( (string) $owa_field, 'stepCondition' . $owa_stepNo . '_' ) === 0 ) {
+                        $owa_shownErrors[ $owa_field ] = true;
+                        $owa_stepErrors[] = $owa_message;
                     }
                 }
 
@@ -149,10 +153,15 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
     <?php // One blank step, for Add a step to copy. ?>
     <template id="owa_funnelStepTemplate">
         <?php
-            $owa_step = array(); $owa_stepNo = 0; $owa_stepGoal = ''; $owa_stepErrors = array();
+            $owa_step = (array) $view->blankStep; $owa_stepIndex = 0; $owa_stepNo = 0; $owa_stepErrors = array();
             include( 'visualization_edit_step.php' );
         ?>
     </template>
+    <?php // Every event's condition properties, so a step's pickers follow its event (owa.goalbuilder.js). ?>
+    <script type="application/json" id="owa_funnelVocabulary"><?php
+        echo json_encode( (array) $view->conditionVocabulary,
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+    ?></script>
 </form>
 
 <?php if ( $owa_id ):?>
@@ -177,13 +186,25 @@ jQuery( function () {
 
     var MAX_STEPS   = <?php echo (int) ( $view->maxSteps ?: 10 );?>;
     var DIMENSIONS  = <?php echo json_encode( array_values( (array) $view->dimensionChoices ) );?>;
+    // The words this script writes about a step, translated; %s is the step's number.
+    var TEXT = <?php echo json_encode( array(
+        'eventLabel' => \OWA\Core\CoreAPI::t( 'The event step %s matches' ),
+        'needsEvent' => \OWA\Core\CoreAPI::t( 'Step %s needs an event.' ),
+        'fullUrl'    => \OWA\Core\CoreAPI::t( 'Step %s needs a path, such as /basket, not a full web address.' ),
+    ), JSON_HEX_TAG | JSON_HEX_AMP );?>;
+
+    function say( pattern, n ) {
+        return String( pattern ).replace( '%s', n );
+    }
+
     var PREVIEW_URL = <?php echo json_encode( $view->makeLink( array(
         'do'          => 'base.visualizationPreview',
         'period'      => 'last_thirty_days',
         'funnelScope' => 'session',
     ), true ) );?>;
 
-    var $list = jQuery( '#owa_goalEventFunnel' );
+    var $list   = jQuery( '#owa_funnelSteps' );
+    var builder = OWA.funnelBuilder;
 
     var filters = new OWA.filterPills( {
         pills: 'owa_funnelFilters', add: 'owa_funnelAddFilter', form: 'owa_funnelFilterForm',
@@ -201,34 +222,26 @@ jQuery( function () {
     }
 
     function readStep( row ) {
-
-        var $row = jQuery( row );
-
-        return {
-            kind:          $row.find( '.owa_funnelStepKind' ).val() || 'path',
-            path:          jQuery.trim( $row.find( '.owa_funnelStepPath' ).val() || '' ),
-            goal_event_definition_id: $row.find( '.owa_funnelStepGoal' ).val() || '',
-            name:          $row.find( '.owa_funnelStepName' ).val() || ''
-        };
+        return builder.readStep( row );
     }
 
-    function valueOf( step ) {
-        return step.kind === 'goal_event' ? step.goal_event_definition_id : step.path;
+    /** A step the save keeps: not a row left as it was added. */
+    function isStep( step ) {
+        return ! builder.isBlankStep( step );
     }
 
-    /** Numbers, labels and the page/event field each row shows, after any change to the list. */
+    /** Numbers, labels and the condition fields' position, after any change to the list. */
     function syncRows() {
 
         rows().each( function ( i ) {
 
             var $row = jQuery( this );
             var n    = i + 1;
-            var goal = $row.find( '.owa_funnelStepKind' ).val() === 'goal_event';
+
+            builder.renumber( this, i );
 
             $row.find( '.owa_funnelStepNumber' ).text( n );
-            $row.find( '.owa_funnelStepPath' ).toggle( ! goal ).attr( 'aria-label', 'Page path of step ' + n );
-            $row.find( '.owa_funnelStepGoal' ).toggle( goal ).attr( 'aria-label', 'Goal event definition of step ' + n );
-            $row.find( '.owa_funnelStepKind' ).attr( 'aria-label', 'What step ' + n + ' matches' );
+            $row.find( '.owa_funnelStepEvent' ).attr( 'aria-label', say( TEXT.eventLabel, n ) );
             $row.find( '.owa_builderMove' ).attr( 'aria-label', 'Move step ' + n );
             $row.find( '.owa_funnelStepRemove' ).attr( 'aria-label', 'Remove step ' + n );
         } );
@@ -250,15 +263,21 @@ jQuery( function () {
 
             var step = readStep( this );
 
-            if ( ! valueOf( step ) ) {
+            if ( ! isStep( step ) ) {
                 return;
             }
 
             kept++;
 
-            if ( ! problem && step.kind !== 'goal_event' && /^[a-z][a-z0-9+.\-]*:\/\//i.test( step.path ) ) {
-                problem = 'Step ' + ( i + 1 ) + ' needs a path, such as /basket, not a full web address.';
+            if ( ! problem && step.event === '' ) {
+                problem = say( TEXT.needsEvent, i + 1 );
             }
+
+            step.conditions.forEach( function ( c ) {
+                if ( ! problem && c.property === 'page_path' && /^[a-z][a-z0-9+.\-]*:\/\//i.test( c.value ) ) {
+                    problem = say( TEXT.fullUrl, i + 1 );
+                }
+            } );
         } );
 
         if ( problem ) {
@@ -308,13 +327,19 @@ jQuery( function () {
 
             var step = readStep( this );
 
-            if ( ! valueOf( step ) ) {
+            if ( ! isStep( step ) ) {
                 return;
             }
 
-            if ( step.kind !== 'goal_event' && /^[a-z][a-z0-9+.\-]*:\/\//i.test( step.path ) ) {
+            if ( step.event === '' ) {
                 bad = true;
             }
+
+            step.conditions.forEach( function ( c ) {
+                if ( c.property === 'page_path' && /^[a-z][a-z0-9+.\-]*:\/\//i.test( c.value ) ) {
+                    bad = true;
+                }
+            } );
 
             steps.push( step );
         } );
@@ -426,13 +451,14 @@ jQuery( function () {
             return;
         }
 
-        var $row = jQuery( jQuery( '#owa_funnelStepTemplate' ).html() );
+        var $row = jQuery( jQuery( '#owa_funnelStepTemplate' ).html() ).filter( '.owa_funnelStep' );
 
         $list.append( $row );
+        builder.bindStep( $row[0] );
         syncRows();
         refresh();
 
-        $row.find( '.owa_funnelStepPath' ).trigger( 'focus' );
+        $row.find( '.owa_funnelConditionValue' ).first().trigger( 'focus' );
     }
 
     function moveStep( from, to ) {
@@ -460,16 +486,22 @@ jQuery( function () {
     jQuery( '#owa_funnelAddStep' ).on( 'click', addStep );
 
     $list
-        .on( 'change', '.owa_funnelStepKind', function () {
-
-            // A different kind of step is a different step: its old name goes.
+        /*
+         * Anything that changes what a step matches makes it a different step:
+         * its stored name goes, and it is named for its page or event again.
+         */
+        .on( 'input change', '.owa_funnelStepEvent, .owa_funnelStepCustomEvent, .owa_funnelStepMatch, '
+            + '.owa_funnelConditionProperty, .owa_funnelConditionOperator, .owa_funnelConditionValue', function () {
             jQuery( this ).closest( '.owa_funnelStep' ).find( '.owa_funnelStepName' ).val( '' );
+            refresh();
+        } )
+        // A condition added or removed by its + and X.
+        .on( 'owa:rowadded', '.owa_funnelCondition', function () {
             syncRows();
             refresh();
         } )
-        .on( 'input change', '.owa_funnelStepPath, .owa_funnelStepGoal', function () {
-            jQuery( this ).closest( '.owa_funnelStep' ).find( '.owa_funnelStepName' ).val( '' );
-            refresh();
+        .on( 'click keypress', '.owa_funnelConditions .constraintRemoveButton', function () {
+            window.setTimeout( refresh, 0 );
         } )
         .on( 'click', '.owa_funnelStepRemove', function () {
 
@@ -565,6 +597,10 @@ jQuery( function () {
             refresh();
             return false;
         }
+    } );
+
+    rows().each( function () {
+        builder.bindStep( this );
     } );
 
     syncRows();

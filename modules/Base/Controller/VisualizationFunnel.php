@@ -20,7 +20,7 @@ namespace OWA\Module\Base\Controller;
 
 
 /**
- * Goal Funnel Report Controller
+ * Funnel Report Controller
  * 
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -66,8 +66,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * The cube's alias in the funnel query.
      *
      * One place, because a step predicate is compiled elsewhere -- by
-     * Classes\GoalEventDefinitionPredicate for a goal step -- and is handed the
-     * alias rather than assuming it. The two disagreeing is exactly the kind of
+     * Classes\EventPredicate -- and is handed the alias rather than assuming
+     * it. The two disagreeing is exactly the kind of
      * thing that produces a query that runs and answers about the wrong table.
      */
     const ALIAS = 'e';
@@ -106,11 +106,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         /*
          * The steps come from the VISUALIZATION's own definition.
          *
-         * They used to come from a goal's funnel config, which made a report
-         * depend on admin configuration and tied goal_N_start -- an ingest-time
-         * stamp -- to a reporting artefact. A goal event definition says what starts it
-         * directly now, so this is free to be what it always was: an analysis
-         * of a path, defined where it is looked at.
+         * They used to come from a 1.x goal's funnel config, which made a
+         * report depend on admin configuration. A funnel is an analysis of a
+         * path, defined where it is looked at.
          */
         $visualization = $this->visualization();
 
@@ -152,12 +150,6 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         if ( $funnel ) {
 
             /*
-             * The goal's own destination is the last step. Keyed `path` like
-             * every other element: the counting below reads $step['path'], and
-             * the stored steps carry that key since the rename. Built with
-             * 'url' it was the one element the loop could not read.
-             */
-            /*
              * The steps ARE the path. The old report appended the goal's
              * destination as a final step because its steps described the route
              * TO a goal; a visualization's last step is the destination.
@@ -193,8 +185,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
                 $steps[ $i ]['visitors'] = $reached;
 
                 // The template renders by step_number. A stored step carries
-                // one; the appended goal destination is given one above. This
-                // is the backstop, so a funnel saved before the field existed
+                // one. This is the backstop, so a funnel saved before the field existed
                 // still draws in order rather than as a row of blanks.
                 if ( empty( $steps[ $i ]['step_number'] ) ) {
 
@@ -202,25 +193,12 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
                 }
 
                 /*
-                 * A GOAL EVENT STEP HAS NO PATH, and both the table and the
-                 * template read one. VisualizationSave stores a step as ONE of
-                 * two shapes -- {path} or {goal_event_definition_id} --
-                 * deliberately, so that a step cannot carry a stale path beside
-                 * the definition it actually counts. Reading ['path'] unconditionally was
-                 * therefore an undefined-key warning on every render of a
-                 * funnel that ends in a goal, which is the shape the builder
-                 * encourages.
-                 *
-                 * Filled with what the step is measured against, so the column
-                 * keeps meaning the same thing: a path for a path step, and the
-                 * definition's name for a goal step. Empty only when the goal
-                 * has since been deleted -- and stepPredicate() has already
-                 * refused to draw the funnel in that case.
+                 * What the step matches, in words, for the chart and the
+                 * table: its page for a page step, else its event and
+                 * conditions (FunnelStep::summary()).
                  */
-                if ( ! isset( $steps[ $i ]['path'] ) ) {
-
-                    $steps[ $i ]['path'] = $this->goalEventDefinitionLabel( $step );
-                }
+                $steps[ $i ]['summary'] = \OWA\Module\Base\Classes\FunnelStep::summary(
+                    $step, $this->customColumns() );
 
                 /*
                  * Drop-off against the step before, which is what a funnel
@@ -250,11 +228,12 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             }
 
             $entered = isset( $counted[0] ) ? (int) $counted[0] : 0;
-            $goal_step = end( $steps );
+            $last    = end( $steps );
 
             /*
-             * Against the population that ENTERED the funnel, not against a
-             * separate query.
+             * The Completion Rate: of those who entered, the share who reached
+             * the last step. Against the population that ENTERED the funnel,
+             * not against a separate query.
              *
              * The denominator used to be its own request constrained on every
              * required step at once -- `pagePath==a,pagePath==b,...`. Those are
@@ -263,14 +242,14 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
              * the last were silently discarded and the denominator quietly
              * became "whoever hit the last required step".
              */
-            $goal_conversion_rate = $entered > 0
-                ? round( $goal_step['visitors'] / $entered, 4 ) * 100 . '%'
+            $completion_rate = $entered > 0
+                ? round( $last['visitors'] / $entered, 4 ) * 100 . '%'
                 : '0%';
 
             $this->set( 'total_visitors', $entered );
             $this->set( 'funnel_table', $this->stepsAsResultSet(
                 $steps, $entered, $scope === 'session' ? 'sessions' : 'users' ) );
-            $this->set( 'goal_conversion_rate', $goal_conversion_rate );
+            $this->set( 'completion_rate', $completion_rate );
             $this->set( 'funnel', $steps );
         }
 
@@ -313,7 +292,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             $rows[] = array(
                 'step'      => self::cell( 'dimension', 'step', 'Step', $step['step_number'] ),
                 'name'      => self::cell( 'dimension', 'name', 'Name', $step['name'] ),
-                'page'      => self::cell( 'dimension', 'page', 'Page', $step['path'] ),
+                'matches'   => self::cell( 'dimension', 'matches', \OWA\Core\CoreAPI::t( 'Matches' ), $step['summary'] ),
                 'reached'   => self::cell( 'metric', 'reached', ucfirst( $label ), $count, 'integer' ),
                 'continued' => self::cell( 'metric', 'continued', 'Continued',
                                    $i > 0 ? $step['visitor_percentage'] : '' ),
@@ -362,171 +341,76 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
     }
 
     /**
-     * How many subjects reached each step, IN ORDER.
+     * One predicate per step.
      *
-     * ONE query, not one per step. Per subject it takes the first time they hit
-     * each step, then counts those whose times run in order -- "indirectly
-     * followed by": intervening pages are allowed, going backwards is not.
+     * A step is an event and conditions on it (Classes\FunnelStep), compiled
+     * by Classes\EventPredicate over the cube. A page step is a page_view with
+     * a page_path condition, whose value is canonicalised the way the row's
+     * was: the predicate is handed the Property's default page.
      *
-     * What this replaces counted each step independently
-     * (`visitors where pagePath == step`), so it was not a funnel at all: a
-     * visitor who landed straight on the last page and never saw the first
-     * counted in the last step, and steps could out-count the ones before them.
-     *
-     * @param array  $steps ordered, each with a `path`
-     * @param string $scope visitor|session
-     * @return array step index => count
-     */
-    /**
-     * One predicate per step, whatever the step is made of.
-     *
-     * A step is a CONDITION. A path step is the condition "this page"; a goal
-     * event step is the condition somebody already named and saved. Compiling
-     * both to the same shape is what makes them interchangeable in the walk
-     * below -- the counting never learns which kind it is looking at.
+     * A step of any other shape is refused by name. Update079 made every saved
+     * path and goal event step an event step, except one whose goal event
+     * definition was gone or could match nothing, which it left for this to
+     * refuse rather than guess at.
      *
      * @param  array  $step
-     * @param  string $alias  the document table's alias in the funnel query
-     * @return array|null     array( 'sql', 'params' ), or null if refused
+     * @param  int    $number  its position, from 1, for the message
+     * @param  string $alias   the cube's alias in the funnel query
+     * @return array|null      array( 'sql', 'params' ), or null if refused
      */
-    /**
-     * What a goal-event step is measured against, for display.
-     *
-     * The goal's own name -- it is what the author chose to call the thing
-     * being counted, and it is what the funnel's own step name defaults to.
-     *
-     * @param  array $step
-     * @return string
-     */
-    private function goalEventDefinitionLabel( array $step ) {
+    private function stepPredicate( array $step, $number, $alias = self::ALIAS ) {
 
-        $id = (string) ( $step['goal_event_definition_id'] ?? '' );
+        $event = (string) ( $step['event'] ?? '' );
 
-        if ( $id === '' ) {
-
-            return '';
-        }
-
-        $goalEventDefinition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
-        $goalEventDefinition->load( $id );
-
-        return $goalEventDefinition->wasPersisted() ? (string) $goalEventDefinition->get( 'name' ) : '';
-    }
-
-    /**
-     * "this page", as a condition on the cube.
-     *
-     * THE STORED VALUE IS WHAT THE AUTHOR TYPED, and it used to be compared to
-     * owa_document.uri -- which was the path with `?query` appended when there
-     * was one (DocumentHandlers::uriFor, mirroring the v1 derivePageUri the
-     * registry no longer declares). The cube splits those: page_path never
-     * contains a `?`, and page_query holds the rest.
-     *
-     * So two corrections, both on the READ side, because the stored step is
-     * author input and rewriting it would change what they asked for:
-     *
-     *   - CANONICALISED the same way the row was. page_path collapses the
-     *     Profile's default page and the trailing slash, so a step typed as
-     *     `/store/` or `/store/index.php` would otherwise never equal the stored
-     *     `/store`. Same function, same setting, so the two cannot disagree.
-     *
-     *   - A `?` IN THE TYPED PATH is split and matched against both columns. A
-     *     step written `/checkout?step=2` would otherwise never match anything,
-     *     silently, because no page_path has a `?` in it. None of the steps on
-     *     either install here carry one -- measured -- but the old builder
-     *     accepted them and the value survives in the definition.
-     *
-     * WHAT CHANGES FOR A PLAIN PATH: v1 compared the whole uri, so `/thanks`
-     * matched only a hit with no query string at all. On the cube it matches
-     * `/thanks` however the visitor arrived, which is what the step says.
-     *
-     * @param  string $path
-     * @param  string $alias
-     * @return array  { sql, params }
-     */
-    private function pathPredicate( $path, $alias ) {
-
-        $query = null;
-
-        $mark = strpos( $path, '?' );
-
-        if ( $mark !== false ) {
-
-            $query = substr( $path, $mark + 1 );
-            $path  = substr( $path, 0, $mark );
-        }
-
-        $path = \OWA\Module\Base\Classes\V2Event::canonicalPath( $path,
-            (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'property',
-                $this->getParam( 'propertyId' ) ) );
-
-        /*
-         * PAGE VIEWS ONLY, as v1 counted. page_path is on every event -- a
-         * click, a scroll, and the session_start and first_visit markers a
-         * landing page view is saved with, at the same instant -- so without
-         * this one page view and its markers could satisfy two steps.
-         */
-        if ( $query === null || $query === '' ) {
-
-            return array(
-                'sql'    => '( ' . $alias . ".event_type = 'page_view' AND " . $alias . '.page_path = ? )',
-                'params' => array( (string) $path ),
-            );
-        }
-
-        return array(
-            'sql'    => '( ' . $alias . ".event_type = 'page_view' AND " . $alias . '.page_path = ? AND '
-                        . $alias . '.page_query = ? )',
-            'params' => array( (string) $path, $query ),
-        );
-    }
-
-    private function stepPredicate( array $step, $alias = self::ALIAS ) {
-
-        $goalEventDefinitionId = (string) ( $step['goal_event_definition_id'] ?? '' );
-
-        if ( $goalEventDefinitionId === '' ) {
-
-            return $this->pathPredicate( (string) ( $step['path'] ?? '' ), $alias );
-        }
-
-        $goalEventDefinition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
-        $goalEventDefinition->load( $goalEventDefinitionId );
-
-        if ( ! $goalEventDefinition->wasPersisted() ) {
+        if ( ( $step['kind'] ?? '' ) !== \OWA\Module\Base\Classes\FunnelStep::KIND_EVENT || $event === '' ) {
 
             /*
-             * Named, not drawn as an empty stage.
-             *
-             * A definition can be deleted while a funnel still points at it,
-             * and a stage that silently reports zero is indistinguishable from
-             * a stage nobody reached -- which is the number somebody would then
-             * go and investigate.
+             * Named, not drawn as an empty stage: a stage that silently reports
+             * zero is indistinguishable from a stage nobody reached.
              */
-            $this->set( 'funnel_step_error', sprintf(
-                'A step of this funnel names a goal event definition that no longer exists. '
-                . 'Edit the funnel and choose another, or remove the step.' ) );
+            $this->set( 'funnel_step_error', sprintf( \OWA\Core\CoreAPI::t(
+                'Step %s of this funnel has no event to match. Edit the funnel and choose one.' ), $number ) );
 
             return null;
         }
 
-        $predicate = new \OWA\Module\Base\Classes\GoalEventDefinitionPredicate;
+        $predicate = new \OWA\Module\Base\Classes\EventPredicate(
+            (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'property',
+                $this->getParam( 'propertyId' ) ),
+            $this->customColumns() );
 
-        $compiled = $predicate->compile( $goalEventDefinition, $alias );
+        $compiled = $predicate->compile( $event, \OWA\Module\Base\Classes\FunnelStep::matchOf( $step ),
+            \OWA\Module\Base\Classes\FunnelStep::conditionsOf( $step, false ), $alias );
 
         if ( $compiled === null ) {
 
-            $this->set( 'funnel_step_error', sprintf(
-                'The goal event definition "%s" tests %s, which a funnel cannot count against. '
-                . 'A funnel step can test the page: its URL, its title or its type. '
-                . 'The funnel is not drawn rather than drawn with that condition ignored, '
-                . 'which would report a larger number than the definition means.',
-                (string) $goalEventDefinition->get( 'name' ), $predicate->getError() ) );
+            /*
+             * Not drawn with that condition ignored, which would report a
+             * larger number than the step means.
+             */
+            $this->set( 'funnel_step_error', sprintf( \OWA\Core\CoreAPI::t(
+                'Step %s tests %s, which a funnel step cannot test. Edit the funnel and choose another property.' ),
+                $number, $predicate->getError() ) );
 
             return null;
         }
 
         return $compiled;
+    }
+
+    /** @var array|null the Property's applied custom dimensions, column => label */
+    private $customColumns = null;
+
+    /** The custom dimensions a step of this Property's funnel may test. */
+    private function customColumns() {
+
+        if ( $this->customColumns === null ) {
+
+            $this->customColumns = \OWA\Module\Base\Classes\EventPredicate::customColumnsFor(
+                (string) $this->getParam( 'propertyId' ) );
+        }
+
+        return $this->customColumns;
     }
 
     /**
@@ -615,7 +499,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         if ( ! $property ) {
 
             $this->set( 'funnel_step_error',
-                'There is no Property to count the funnel against.' );
+                \OWA\Core\CoreAPI::t( 'There is no Property to count the funnel against.' ) );
 
             return null;
         }
@@ -631,9 +515,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         if ( ! isset( $cubes[ (string) $property ] ) ) {
 
-            $this->set( 'funnel_step_error',
-                "This Property's cube has not been built yet, so there is nothing to "
-                . 'count the funnel against. Run a build and reload.' );
+            $this->set( 'funnel_step_error', \OWA\Core\CoreAPI::t(
+                'This Property\'s cube has not been built yet, so there is nothing to '
+                . 'count the funnel against. Run a build and reload.' ) );
 
             return null;
         }
@@ -646,7 +530,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         foreach ( $steps as $i => $step ) {
 
-            $predicate = $this->stepPredicate( $step, $alias );
+            $predicate = $this->stepPredicate( $step, $i + 1, $alias );
 
             if ( $predicate === null ) {
 

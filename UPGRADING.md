@@ -256,6 +256,26 @@ Update078 renames them in saved custom reports, visualizations and shared
 charts. A REST call or link naming an old metric fails until it uses the new
 name. Update077 adds the `value` column to `owa_event_raw` and every cube.
 
+### Funnel steps are events
+
+Every funnel step is an event and, optionally, conditions on what it carries,
+combined all or any, with the operators a goal event definition's conditions
+use. A page is a `page_view` with a `page_path` condition. A condition can also
+test a custom dimension applied to the funnel's Property. A funnel no longer
+names a goal event definition.
+
+Update079 rewrites saved funnels:
+
+| Step before | Step now |
+|---|---|
+| a page path, `/checkout?step=2` | `page_view` where `page_path` is `/checkout` and `page_query` is `step=2` |
+| a goal event definition | its trigger event, with a copy of its conditions and all/any |
+
+A step whose goal event definition was deleted, or matched nothing, is left as
+it is and named in the update's output; the funnel says which step to replace.
+The funnel's headline figure is now **Completion Rate**, the share of those
+who entered who reached the last step.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

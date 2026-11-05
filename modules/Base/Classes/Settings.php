@@ -3052,6 +3052,7 @@ namespace OWA\Module\Base\Classes;
                 'use_32bit_hash'                    => false,
                 'use_32bit_hash_before_v2'          => false,
                 'goal_event_names_before_075'       => array(),
+                'funnel_steps_before_079'           => array(),
                 'v1_tables_dropped'                 => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.

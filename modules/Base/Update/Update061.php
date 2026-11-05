@@ -17,7 +17,8 @@ namespace OWA\Module\Base\Update;
  * which Update025 turned into goal events without their funnels. Each becomes
  * a funnel visualization: its steps as page steps, and its destination as a
  * step on the goal event Update025 made. is_required has no equivalent and
- * is reported where it was set. They are shared and owned by the first
+ * is reported where it was set. Those are the step kinds of the time: Update076
+ * renames the goal step's key, and Update079 makes both kinds event steps. They are shared and owned by the first
  * administrator, since nobody else can be said to have made them.
  *
  * Idempotent: a rewritten report carries v1_definition and is not touched

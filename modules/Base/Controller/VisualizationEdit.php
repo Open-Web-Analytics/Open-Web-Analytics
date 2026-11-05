@@ -88,7 +88,6 @@ class VisualizationEdit extends \OWA\Core\ReportController {
                 'is_shared'          => $this->getParam( 'isShared' ) ? 1 : 0,
               )
             : (array) $report );
-        $this->set( 'steps', $submitted ?: $stored );
         $this->set( 'visualizationType', $type );
         $this->set( 'visualizationTypeLabel',
             \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES[ $type ] ?? $type );
@@ -97,18 +96,6 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         $this->set( 'visualizationTypeIcon',
             \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $type ] ?? '' );
 
-        /*
-         * The goal event definitions a step may name.
-         *
-         * The SAME list the Goal Event Definitions screen shows, from the same method, so
-         * a funnel cannot offer one the admin screen does not have. They are
-         * the Property's, and so is the report this screen builds.
-         *
-         * Inactive ones are offered too, and labelled. A funnel counts from the
-         * facts rather than from stored goal events, so an inactive definition
-         * still has a meaningful answer: it is a condition, and the condition
-         * held or it did not.
-         */
         $propertyId = (string) $this->getParam( 'propertyId' );
 
         /*
@@ -126,7 +113,22 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          */
         $this->set( 'propertyId', $propertyId );
 
-        $this->set( 'goalEventDefinitions', \OWA\Module\Base\Controller\GoalEventDefinitions::listForProperty( $propertyId ) );
+        /*
+         * What a step can match: the events and the vocabulary the goal event
+         * definition form offers (GoalEventDefinitionEdit) -- OWA's events a
+         * definition may be triggered by, this Property's own, and each
+         * event's properties -- and beside every event's properties the
+         * Property's custom dimensions, which a funnel can test because it
+         * counts over the cube that carries them.
+         */
+        $customDimensions = \OWA\Module\Base\Classes\EventPredicate::customDimensionsFor( $propertyId );
+
+        $this->set( 'eventNames', \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames() );
+        $this->set( 'customEventNames', GoalEventDefinitionEdit::customEventNames( $propertyId ) );
+        $this->set( 'conditionVocabulary', self::vocabulary( $customDimensions ) );
+        $this->set( 'steps', self::formSteps( $submitted ?: $stored, $customDimensions ) );
+        // The row Add a step copies.
+        $this->set( 'blankStep', self::formSteps( array( array() ), $customDimensions )[0] );
 
         /*
          * The step cap, read from the controller that enforces it so the form
@@ -142,6 +144,117 @@ class VisualizationEdit extends \OWA\Core\ReportController {
             ? (string) $this->getParam( 'constraints' )
             : (string) ( $definition['constraints'] ?? '' ) );
         $this->set( 'dimensionChoices', CustomReportEdit::dimensionChoices() );
+    }
+
+    /**
+     * Every event's condition properties, for the builder's pickers, with the
+     * Property's custom dimensions added to each list.
+     *
+     * @param  array $customDimensions  EventPredicate::customDimensionsFor()
+     * @return array  event => list of { name, label, description, carried }
+     */
+    public static function vocabulary( array $customDimensions ) {
+
+        $vocabulary = GoalEventDefinitionEdit::vocabulary();
+
+        foreach ( $vocabulary as $event => $properties ) {
+
+            $vocabulary[ $event ] = array_merge( $properties, self::customProperties( $customDimensions ) );
+        }
+
+        return $vocabulary;
+    }
+
+    /** The custom dimensions as picker entries. */
+    private static function customProperties( array $customDimensions ) {
+
+        $out = array();
+
+        foreach ( $customDimensions as $dimension ) {
+
+            $out[] = array( 'name' => (string) $dimension['column'], 'label' => (string) $dimension['label'],
+                'description' => (string) $dimension['description'], 'carried' => true );
+        }
+
+        return $out;
+    }
+
+    /**
+     * The steps as the form draws them: the event as picked, all or any, the
+     * conditions, and the properties each condition's picker offers.
+     *
+     * A new funnel's one step, and any stored step that is not an event step,
+     * draw as the default: a page_view with an empty page_path condition, the
+     * common case, ready to type a path into.
+     *
+     * A stored step on a site's own event is picked by name; a refused save
+     * carries "another event of yours" as picked, with the name typed beside it.
+     *
+     * @param  array $steps             stored, or carried back by a refused save
+     * @param  array $customDimensions  EventPredicate::customDimensionsFor()
+     * @return array  list of { name, picked, custom_event, match, conditions, properties }
+     */
+    public static function formSteps( array $steps, array $customDimensions ) {
+
+        $default = \OWA\Module\Base\Classes\FunnelStep::DEFAULT_EVENT;
+        $custom  = \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM;
+        $columns = array_column( $customDimensions, 'label', 'column' );
+        $out     = array();
+
+        foreach ( $steps ?: array( array() ) as $step ) {
+
+            $step = (array) $step;
+
+            $isEvent = ( $step['kind'] ?? '' ) === \OWA\Module\Base\Classes\FunnelStep::KIND_EVENT;
+            $picked  = $isEvent ? (string) ( $step['event'] ?? '' ) : $default;
+
+            $conditions = array();
+
+            foreach ( $isEvent ? (array) ( $step['conditions'] ?? array() ) : array() as $condition ) {
+
+                if ( is_array( $condition ) ) {
+
+                    $conditions[] = array(
+                        'property' => (string) ( $condition['property'] ?? '' ),
+                        'operator' => (string) ( $condition['operator'] ?? '' ),
+                        'value'    => (string) ( $condition['value'] ?? '' ),
+                    );
+                }
+            }
+
+            if ( ! $conditions ) {
+
+                $conditions[] = array( 'property' => $picked === $default
+                    ? \OWA\Module\Base\Classes\FunnelStep::DEFAULT_PROPERTY : '',
+                    'operator' => \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_EXACT, 'value' => '' );
+            }
+
+            $typed = $picked === $custom ? (string) ( $step['custom_event'] ?? '' ) : '';
+            $event = $picked === $custom ? ( $typed !== '' ? $typed : $custom ) : $picked;
+
+            // A custom dimension is not one of the event's properties, so it is not passed as "in use".
+            $inUse = array();
+
+            foreach ( $conditions as $condition ) {
+
+                if ( ! isset( $columns[ $condition['property'] ] ) ) {
+
+                    $inUse[] = array( 'condition_property' => $condition['property'] );
+                }
+            }
+
+            $out[] = array(
+                'name'         => $isEvent ? (string) ( $step['name'] ?? '' ) : '',
+                'picked'       => $picked,
+                'custom_event' => $typed,
+                'match'        => \OWA\Module\Base\Classes\FunnelStep::matchOf( $step ),
+                'conditions'   => $conditions,
+                'properties'   => array_merge( GoalEventDefinitionEdit::conditionProperties( $event, $inUse ),
+                    self::customProperties( $customDimensions ) ),
+            );
+        }
+
+        return $out;
     }
 
     /**

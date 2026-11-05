@@ -17,6 +17,16 @@ async function gotoAction(page, doName, extra = '') {
     await page.goto(`?owa_do=${doName}${extra}`, { waitUntil: 'networkidle' });
 }
 
+/*
+ * A step is an event and conditions on it. A new one is a page_view with a
+ * page_path condition, so typing a page is typing into its first condition's
+ * value. The blank step Add a step copies sits in a <template>, which no
+ * locator reaches.
+ */
+const stepRows = (page) => page.locator('#owa_funnelSteps > .owa_funnelStep');
+const pathField = (page, i) => stepRows(page).nth(i).locator('.owa_funnelConditionValue').first();
+const pathFields = (page) => page.locator('#owa_funnelSteps > .owa_funnelStep .owa_funnelConditionValue');
+
 test.describe('visualizations', () => {
 
     test.beforeEach(async ({ page }) => {
@@ -37,11 +47,11 @@ test.describe('visualizations', () => {
             .toHaveValue('funnel');
 
         await page.fill('input[name="name"]', name);
-        await page.locator('input[name="stepPath[]"]').first().fill('/docs');
+        await pathField(page, 0).fill('/docs');
 
         await page.click('#owa_funnelAddStep');
-        await expect(page.locator('input[name="stepPath[]"]').nth(1)).toBeFocused();
-        await page.locator('input[name="stepPath[]"]').nth(1).fill('/thanks');
+        await expect(pathField(page, 1)).toBeFocused();
+        await pathField(page, 1).fill('/thanks');
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
@@ -126,7 +136,7 @@ test.describe('visualizations', () => {
         ]);
 
         expect(page.url()).toContain('visualizationType=funnel');
-        await expect(page.locator('input[name="stepPath[]"]').first()).toBeVisible();
+        await expect(pathField(page, 0)).toBeVisible();
     });
 
     /**
@@ -157,15 +167,15 @@ test.describe('visualizations', () => {
     });
 
     /**
-     * A step is a PATH. The counting matches on the path alone, so a full web
-     * address matches nothing and every stage reports zero. Refused rather than
-     * silently trimmed.
+     * A page step's path is a PATH. page_path holds no scheme or host, so a
+     * full web address matches nothing and every stage reports zero. Refused
+     * rather than silently trimmed.
      */
     test('a step given a full web address is refused', async ({ page }) => {
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', 'E2E Bad Step');
-        await page.locator('input[name="stepPath[]"]').first().fill('https://example.test/basket');
+        await pathField(page, 0).fill('https://example.test/basket');
 
         // Caught in the form, on the same rule the save applies.
         await expect(page.locator('#owa_visualizationSubmit')).toBeDisabled();
@@ -196,10 +206,10 @@ test.describe('visualizations', () => {
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', 'E2E Second Step');
-        await page.locator('input[name="stepPath[]"]').first().fill('/one');
+        await pathField(page, 0).fill('/one');
 
         await page.click('#owa_funnelAddStep');
-        await page.locator('input[name="stepPath[]"]').nth(1).fill('https://example.test/two');
+        await pathField(page, 1).fill('https://example.test/two');
 
         await expect(page.locator('#owa_visualizationSubmit')).toBeDisabled();
         await expect(page.locator('#owa_visualizationBlocker')).toContainText('Step 2');
@@ -211,10 +221,10 @@ test.describe('visualizations', () => {
         ]);
 
         // The message is on the step it is about, and the work is still there.
-        const second = page.locator('#owa_goalEventFunnel .owa_funnelStep').nth(1);
+        const second = stepRows(page).nth(1);
 
         await expect(second.locator('.validation_error')).toContainText('Step 2: enter a path');
-        await expect(second.locator('input[name="stepPath[]"]')).toHaveValue('https://example.test/two');
+        await expect(second.locator('.owa_funnelConditionValue').first()).toHaveValue('https://example.test/two');
     });
 
     /**
@@ -236,64 +246,48 @@ test.describe('visualizations', () => {
         await page.fill('input[name="name"]', 'E2E Gate ' + Date.now());
         await expect(page.locator('#owa_visualizationBlocker')).toContainText('at least one step');
 
-        await page.locator('input[name="stepPath[]"]').first().fill('/basket');
+        await pathField(page, 0).fill('/basket');
 
         await expect(page.locator('#owa_visualizationSubmit')).toBeEnabled();
         await expect(page.locator('#owa_visualizationBlocker')).toBeHidden();
     });
 
     /**
-     * A STEP CAN BE A GOAL EVENT, AND IT MEANS THE SAME THING.
+     * A STEP IS AN EVENT AND ITS CONDITIONS, written in the step.
      *
-     * A funnel step is a condition; a goal event is a condition somebody named.
-     * So naming one in a step has to count exactly what writing its conditions
-     * into the step by hand would count -- and the fixture is built so that can
-     * be checked rather than asserted: the seeded goal event's condition is
-     * page_uri exactly /docs, and the seeded funnel's last step is the path
-     * /docs. Two ways of saying one thing.
+     * The fixture funnel's last step is the page /docs. Written here as a
+     * page_view whose page path matches the regex ^/docs$, it is the same
+     * condition said another way, so the two funnels count the same.
      *
-     * Building the second one HERE rather than seeding it, because that also
-     * proves the builder stores a goal-event step in a shape the counting
-     * reads -- which is where the last four bugs in this feature were.
+     * Built here rather than seeded, because that also proves the builder
+     * stores an event step with its operator in a shape the counting reads.
      */
-    test('a goal event step counts what its conditions count', async ({ page }) => {
-        const name = 'E2E Goal Step Funnel ' + Date.now();
+    test('an event step counts what its conditions count', async ({ page }) => {
+        const name = 'E2E Event Step Funnel ' + Date.now();
 
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', name);
 
-        // Two page steps, then a third naming the goal event.
-        await page.locator('input[name="stepPath[]"]').first().fill('/');
+        // There is no Page/Event switch: every step is an event, a page_view to start.
+        await expect(page.locator('select[name="stepKind[]"]')).toHaveCount(0);
+        await expect(stepRows(page).first().locator('.owa_funnelStepEvent')).toHaveValue('page_view');
+
+        await pathField(page, 0).fill('/');
 
         await page.click('#owa_funnelAddStep');
-        await page.locator('input[name="stepPath[]"]').nth(1).fill('/pricing');
+        await pathField(page, 1).fill('/pricing');
 
         await page.click('#owa_funnelAddStep');
 
-        const third = page.locator('#owa_goalEventFunnel .owa_funnelStep').nth(2);
+        const third = stepRows(page).nth(2);
 
-        await third.locator('select[name="stepKind[]"]').selectOption('goal_event');
+        await third.locator('.owa_funnelConditionOperator').first().selectOption('regex');
+        await third.locator('.owa_funnelConditionValue').first().fill('^/docs$');
 
-        // The picker offers this Property's goal events, and the fixture's is
-        // one of them.
-        const goalPicker = third.locator('select[name="stepGoalEventDefinitionId[]"]');
-        await expect(goalPicker).toBeVisible();
-        /*
-         * By the id behind the label, not by the label -- selectOption takes a
-         * literal label, and the option carries an "(inactive)" suffix when it
-         * has one, so a label match is a thing that breaks on a fixture change
-         * rather than on a real one.
-         */
-        const goalValue = await goalPicker.locator('option', { hasText: FIXTURE.goal.name })
-            .first().getAttribute('value');
-
-        expect(goalValue, 'the fixture goal event is not offered as a step').toBeTruthy();
-
-        await goalPicker.selectOption(goalValue);
-
-        // The path field is not asked for once the kind is a goal event.
-        await expect(third.locator('input[name="stepPath[]"]')).toBeHidden();
+        // Each step's conditions are named by its position, for the save to tell them apart.
+        await expect(third.locator('.owa_funnelConditionValue').first())
+            .toHaveAttribute('name', /stepConditionValue\[2\]\[\]$/);
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
@@ -306,12 +300,13 @@ test.describe('visualizations', () => {
             .map((c) => parseInt(c.trim(), 10));
 
         expect(mine).toHaveLength(3);
+        expect(mine[2], 'the event step counted nobody').toBeGreaterThan(0);
 
-        // It computed something, rather than a goal-event step quietly matching
-        // nothing -- which is what every wrong version of this looked like.
-        expect(mine[2], 'the goal event step counted nobody').toBeGreaterThan(0);
+        // The chart says what the step matches.
+        await expect(page.locator('.owa_funnelStepColumn').nth(2).locator('.funnelStepPath'))
+            .toHaveText('page_view where Page path matches regex ^/docs$');
 
-        // --- and it is the SAME funnel as the path version ---------------------
+        // --- and it is the SAME funnel as the page version ---------------------
         await gotoAction(page, 'base.customReports', `&owa_siteId=${FIXTURE.siteId}`);
 
         await Promise.all([
@@ -322,75 +317,37 @@ test.describe('visualizations', () => {
 
         await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
 
-        const byPath = (await page.locator('.funnelStepCount').allTextContents())
+        const byPage = (await page.locator('.funnelStepCount').allTextContents())
             .map((c) => parseInt(c.trim(), 10));
 
-        expect(mine,
-            'naming the goal event counts something different from writing its condition out'
-        ).toEqual(byPath);
+        expect(mine, 'the regex step counts something different from the page it says').toEqual(byPage);
     });
 
     /**
-     * A goal event the funnel cannot count against is refused AT THE BUILDER.
-     *
-     * A goal event may test any tracking property; a funnel step is matched
-     * against the page, because that is what the funnel's query joins. Told
-     * here, the author can choose another; told at render time, they have saved
-     * something that refuses to draw every time it is opened.
-     *
-     * Skipped when the fixture Property has no such goal event -- the fixture's
-     * own is on page_uri, which compiles.
+     * A condition the save refuses is said on the step it is about, and the
+     * step comes back as it was typed. A regex that does not compile would
+     * match nothing, for ever; the form does not check it, the save does.
      */
-    test('a goal event a funnel cannot count is refused when it is chosen', async ({ page }) => {
-        await gotoAction(page, 'base.goalEventDefinitionEdit', `&owa_siteId=${FIXTURE.siteId}`);
-
-        const name = 'E2E_Unfunnelable_' + Date.now();
-
-        await page.fill('input[name="name"]', name);
-
-        // A condition on something that is not the page. `medium` is a real
-        // tracking property and a real dimension -- it is simply not one the
-        // funnel's join can reach.
-        const property = page.locator('select[name="conditionProperty[]"]');
-
-        if (await property.locator('option[value="medium"]').count() === 0) {
-            test.skip(true, 'this install offers no non-page condition property');
-        }
-
-        await property.selectOption('medium');
-        await page.fill('input[name="conditionValue[]"]', 'organic');
-
-        await Promise.all([
-            page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[value="Save Goal Event Definition"]').click(),
-        ]);
-
-        // Now try to use it as a funnel step.
+    test('a condition the save refuses is shown on its step', async ({ page }) => {
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', 'E2E Refused Step');
 
-        const row = page.locator('#owa_goalEventFunnel .owa_funnelStep').first();
+        const row = stepRows(page).first();
 
-        await row.locator('select[name="stepKind[]"]').selectOption('goal_event');
-        const picker = row.locator('select[name="stepGoalEventDefinitionId[]"]');
-        const value = await picker.locator('option', { hasText: name }).first()
-            .getAttribute('value');
-
-        expect(value, 'the goal event just created is not offered as a step').toBeTruthy();
-
-        await picker.selectOption(value);
+        await row.locator('.owa_funnelConditionOperator').first().selectOption('regex');
+        await row.locator('.owa_funnelConditionValue').first().fill('([');
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
             page.click('#owa_visualizationSubmit'),
         ]);
 
-        // Back on the form, saying which property is the problem -- not saved
-        // and not silently counting the conditions it COULD express, which
-        // would report a wider number than the goal event means.
         await expect(page.locator('input[name="name"]')).toHaveValue('E2E Refused Step');
-        await expect(page.locator('body')).toContainText('medium');
+        await expect(stepRows(page).first().locator('.validation_error'))
+            .toContainText('Step 1: the regular expression is not valid.');
+        await expect(stepRows(page).first().locator('.owa_funnelConditionOperator').first()).toHaveValue('regex');
+        await expect(pathField(page, 0)).toHaveValue('([');
     });
 
     /**
@@ -428,7 +385,7 @@ test.describe('visualizations', () => {
             if (i > 0) {
                 await page.click('#owa_funnelAddStep');
             }
-            await page.locator('input[name="stepPath[]"]').nth(i).fill(steps[i].path);
+            await pathField(page, i).fill(steps[i].path);
         }
 
         const rows = preview.locator('.owa_funnelPreviewStep');
@@ -452,7 +409,7 @@ test.describe('visualizations', () => {
         await expect(rows.first().locator('.owa_funnelPreviewFill')).toHaveAttribute('style', /width: 100(\.0)?%/);
 
         // A step that matches nothing counts nobody, and the preview follows.
-        await page.locator('input[name="stepPath[]"]').last().fill('/no-such-page');
+        await pathFields(page).last().fill('/no-such-page');
 
         await expect.poll(async () => (await counts()).slice(-1)[0], { timeout: 20_000 }).toBe(0);
     });
@@ -483,7 +440,7 @@ test.describe('visualizations', () => {
             document.querySelector('input[name="visualizationId"]').value = '';
         });
 
-        const paths = () => page.locator('input[name="stepPath[]"]').evaluateAll((els) => els.map((e) => e.value));
+        const paths = () => pathFields(page).evaluateAll((els) => els.map((e) => e.value));
         const names = () => page.locator('input[name="stepName[]"]').evaluateAll((els) => els.map((e) => e.value));
 
         const fixture = FIXTURE.funnelVisualization.steps;
@@ -492,9 +449,9 @@ test.describe('visualizations', () => {
         expect(await names()).toEqual(fixture.map((s) => s.name));
 
         // The last step dragged onto the first takes its place...
-        const handle = (i) => page.locator('#owa_goalEventFunnel .owa_funnelStep').nth(i).locator('.owa_builderMove');
+        const handle = (i) => stepRows(page).nth(i).locator('.owa_builderMove');
 
-        await handle(2).dragTo(page.locator('#owa_goalEventFunnel .owa_funnelStep').nth(0));
+        await handle(2).dragTo(stepRows(page).nth(0));
         expect(await paths()).toEqual([fixture[2].path, fixture[0].path, fixture[1].path]);
 
         // ...and the arrow keys move it back.
@@ -506,7 +463,7 @@ test.describe('visualizations', () => {
         await expect(page.locator('.owa_funnelStepNumber')).toHaveText(['1', '2', '3']);
 
         // Changing a step drops its stored name.
-        await page.locator('input[name="stepPath[]"]').nth(1).fill('/pricing/plans');
+        await pathField(page, 1).fill('/pricing/plans');
         expect((await names())[1]).toBe('');
 
         await Promise.all([
@@ -531,7 +488,7 @@ test.describe('visualizations', () => {
         await gotoAction(page, 'base.visualizationEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         await page.fill('input[name="name"]', name);
-        await page.locator('input[name="stepPath[]"]').first().fill('/');
+        await pathField(page, 0).fill('/');
 
         await page.click('#owa_funnelAddFilter');
 

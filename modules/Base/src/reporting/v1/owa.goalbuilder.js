@@ -1,8 +1,9 @@
 import $ from 'jquery';
 
 /**
- * A goal event definition's condition builder: the property list follows the
- * event.
+ * A condition builder: the property list follows the event. A goal event
+ * definition's form has one (bind(), below), and each funnel step has one
+ * (owa.funnelbuilder.js), through bindBuilder() with its own class names.
  *
  * The page renders the properties of the SAVED event
  * (goal_event_definition_edit.php) and carries every event's list as JSON
@@ -28,6 +29,28 @@ import $ from 'jquery';
  */
 
 export const SEPARATOR = ' — ';
+
+/**
+ * The class names one builder's parts carry. The goal event definition form's
+ * are these; a funnel step passes its own to bindBuilder().
+ *
+ *   trigger            the event picker
+ *   custom             the field naming "another event of yours"
+ *   condition          a condition row
+ *   property           a condition row's property picker
+ *   help, warning      the line under a row, and its class when it warns
+ *   optionName, optionDescription  the two lines of a picker's list item
+ */
+export const GOAL_CLASSES = {
+    trigger: 'owa_goalTrigger',
+    custom: 'owa_goalCustomTrigger',
+    condition: 'owa_goalCondition',
+    property: 'owa_goalProperty',
+    help: 'owa_goalConditionHelp',
+    warning: 'owa_goalConditionWarning',
+    optionName: 'owa_goalOptionName',
+    optionDescription: 'owa_goalOptionDescription',
+};
 
 /**
  * The trigger picker's value for "another event of yours", named in the field
@@ -153,10 +176,11 @@ export function helpText( property, event ) {
  * highlighting. Idempotent: an item already split is left alone.
  *
  * @param {HTMLElement} li
+ * @param {Object}      classes  the builder's class names (GOAL_CLASSES)
  */
-export function formatResult( li ) {
+export function formatResult( li, classes = GOAL_CLASSES ) {
 
-    if ( li.querySelector( '.owa_goalOptionName' ) ) {
+    if ( li.querySelector( '.' + classes.optionName ) ) {
 
         return;
     }
@@ -169,8 +193,8 @@ export function formatResult( li ) {
         return;
     }
 
-    li.innerHTML = '<span class="owa_goalOptionName">' + html.slice( 0, at ) + '</span>'
-        + '<span class="owa_goalOptionDescription">' + html.slice( at + SEPARATOR.length ) + '</span>';
+    li.innerHTML = '<span class="' + classes.optionName + '">' + html.slice( 0, at ) + '</span>'
+        + '<span class="' + classes.optionDescription + '">' + html.slice( at + SEPARATOR.length ) + '</span>';
 }
 
 /**
@@ -179,7 +203,7 @@ export function formatResult( li ) {
  * chosen rewrites every item on each keystroke of a search, and says nothing
  * when it does, so the list is watched rather than hooked.
  */
-function splitResults( select ) {
+function splitResults( select, classes ) {
 
     const container = select.nextElementSibling;
     const results = container && container.querySelector( '.chosen-results' );
@@ -193,7 +217,7 @@ function splitResults( select ) {
 
     new MutationObserver( () => {
 
-        results.querySelectorAll( 'li.active-result' ).forEach( formatResult );
+        results.querySelectorAll( 'li.active-result' ).forEach( ( li ) => formatResult( li, classes ) );
 
     } ).observe( results, { childList: true, subtree: true } );
 }
@@ -235,9 +259,10 @@ function selectedProperty( select ) {
     } : null;
 }
 
-function readVocabulary() {
+/** The vocabulary a page carries as JSON in the element with this id, or null. */
+export function readVocabulary( id = 'owa_goalVocabulary' ) {
 
-    const el = document.getElementById( 'owa_goalVocabulary' );
+    const el = document.getElementById( id );
 
     if ( ! el ) {
 
@@ -260,9 +285,9 @@ function readVocabulary() {
  * chosen copies the option's text into its closed box, and the text carries the
  * description so the list can show and search it; the box gets the label back.
  */
-function syncRow( row, event ) {
+function syncRow( row, event, classes ) {
 
-    const select = row.querySelector( 'select.owa_goalProperty' );
+    const select = row.querySelector( 'select.' + classes.property );
 
     if ( ! select ) {
 
@@ -277,12 +302,12 @@ function syncRow( row, event ) {
         shown.textContent = property.label;
     }
 
-    const help = row.querySelector( '.owa_goalConditionHelp' );
+    const help = row.querySelector( '.' + classes.help );
 
     if ( help ) {
 
         help.textContent = helpText( property, event );
-        help.classList.toggle( 'owa_goalConditionWarning', !! property && property.carried === false );
+        help.classList.toggle( classes.warning, !! property && property.carried === false );
     }
 }
 
@@ -308,9 +333,9 @@ function refresh( select ) {
  * page is not changing the event. On a CHANGE, a property the new event does
  * not carry is kept only if it is the row's saved one.
  */
-function buildRow( row, vocabulary, event, onLoad = false ) {
+function buildRow( row, vocabulary, event, classes, onLoad = false ) {
 
-    const select = row.querySelector( 'select.owa_goalProperty' );
+    const select = row.querySelector( 'select.' + classes.property );
 
     if ( ! select ) {
 
@@ -328,13 +353,13 @@ function buildRow( row, vocabulary, event, onLoad = false ) {
     if ( ! select.nextElementSibling || ! select.nextElementSibling.classList.contains( 'chosen-container' ) ) {
 
         enhance( select, { search_contains: true, width: '260px' } );
-        splitResults( select );
+        splitResults( select, classes );
     } else {
 
         refresh( select );
     }
 
-    syncRow( row, event );
+    syncRow( row, event, classes );
 }
 
 /**
@@ -346,22 +371,24 @@ export function triggerName( picked, typed ) {
     return picked === CUSTOM_TRIGGER ? ( String( typed || '' ).trim() || 'custom' ) : picked;
 }
 
-function bind() {
+/**
+ * Make one builder live: its event picker, the custom name field beside it,
+ * and its condition rows.
+ *
+ * Everything is found inside `builder` by the class names given, and the
+ * events are delegated from it, so a page can carry several -- a funnel has
+ * one per step -- and a builder added later is bound the same way.
+ *
+ * @param {HTMLElement} builder
+ * @param {Object}      vocabulary  event => list of {name, label, description, carried}
+ * @param {Object}      classes     the builder's class names (GOAL_CLASSES)
+ */
+export function bindBuilder( builder, vocabulary, classes = GOAL_CLASSES ) {
 
-    const builder = document.querySelector( '.owa_goalBuilder' );
-    const vocabulary = readVocabulary();
-
-    if ( ! builder || ! vocabulary ) {
-
-        return;
-    }
-
-    setText( { notCarriedLabel: builder.dataset.notCarriedLabel, notCarriedHelp: builder.dataset.notCarriedHelp } );
-
-    const trigger = builder.querySelector( 'select.owa_goalTrigger' );
-    const custom = builder.querySelector( 'input.owa_goalCustomTrigger' );
+    const trigger = builder.querySelector( 'select.' + classes.trigger );
+    const custom = builder.querySelector( 'input.' + classes.custom );
     const event = () => triggerName( trigger ? trigger.value : '', custom ? custom.value : '' );
-    const rows = () => builder.querySelectorAll( '.owa_goalCondition' );
+    const rows = () => builder.querySelectorAll( '.' + classes.condition );
 
     // The name field is for "another event of yours" only.
     const showCustom = () => {
@@ -372,7 +399,7 @@ function bind() {
         }
     };
 
-    rows().forEach( ( row ) => buildRow( row, vocabulary, event(), true ) );
+    rows().forEach( ( row ) => buildRow( row, vocabulary, event(), classes, true ) );
     showCustom();
 
     if ( trigger ) {
@@ -382,19 +409,19 @@ function bind() {
         $( trigger ).on( 'change', () => {
 
             showCustom();
-            rows().forEach( ( row ) => buildRow( row, vocabulary, event() ) );
+            rows().forEach( ( row ) => buildRow( row, vocabulary, event(), classes ) );
         } );
     }
 
-    $( builder ).on( 'change', 'select.owa_goalProperty', function () {
+    $( builder ).on( 'change', 'select.' + classes.property, function () {
 
-        syncRow( this.closest( '.owa_goalCondition' ), event() );
+        syncRow( this.closest( '.' + classes.condition ), event(), classes );
     } );
 
     // A row the + button added: a fresh picker on the first property.
-    $( builder ).on( 'owa:rowadded', '.owa_goalCondition', function () {
+    $( builder ).on( 'owa:rowadded', '.' + classes.condition, function () {
 
-        const select = this.querySelector( 'select.owa_goalProperty' );
+        const select = this.querySelector( 'select.' + classes.property );
 
         if ( select ) {
 
@@ -404,8 +431,24 @@ function bind() {
         // A copy of a saved row is not that condition.
         this.dataset.savedProperty = '';
 
-        buildRow( this, vocabulary, event() );
+        buildRow( this, vocabulary, event(), classes );
     } );
+}
+
+/** The goal event definition form's builder. */
+function bind() {
+
+    const builder = document.querySelector( '.owa_goalBuilder' );
+    const vocabulary = readVocabulary( 'owa_goalVocabulary' );
+
+    if ( ! builder || ! vocabulary ) {
+
+        return;
+    }
+
+    setText( { notCarriedLabel: builder.dataset.notCarriedLabel, notCarriedHelp: builder.dataset.notCarriedHelp } );
+
+    bindBuilder( builder, vocabulary, GOAL_CLASSES );
 }
 
 if ( typeof document !== 'undefined' ) {

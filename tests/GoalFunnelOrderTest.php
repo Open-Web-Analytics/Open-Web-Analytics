@@ -302,6 +302,13 @@ final class GoalFunnelOrderTest extends TestCase
         $m = new ReflectionMethod($controller, 'countFunnel');
         $m->setAccessible(true);
 
+        // Written here as pages; a page step is a page_view event on its path (Classes\FunnelStep).
+        $steps = array_map(static function ($step) {
+            return array('kind' => 'event', 'event' => 'page_view', 'match' => 'all', 'conditions' => array(
+                array('property' => 'page_path', 'operator' => 'exact', 'value' => $step['path']),
+            ));
+        }, $steps);
+
         return $m->invoke($controller, $steps, $scope);
     }
 

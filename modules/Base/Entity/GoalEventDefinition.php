@@ -82,7 +82,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      * An @ in the pattern -- an email address, say -- would end it early, so
      * one not already escaped is escaped. "\@" is left as written; "\\@" is an
      * escaped backslash before a bare @, which gets escaped too. The database
-     * side (GoalEventDefinitionPredicate, REGEXP) takes the pattern undelimited.
+     * side (Classes\EventPredicate, REGEXP) takes the pattern undelimited.
      *
      * @param  string $pattern what the author typed
      * @return string
@@ -95,9 +95,9 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     /**
      * Does one value satisfy one comparison?
      *
-     * The single place a condition is decided, so the definition's own test,
-     * its funnel steps and anything added later agree about what "contains"
-     * means.
+     * The single place a condition is decided at ingest. Classes\EventPredicate
+     * mirrors it in SQL, for this definition read back and for a funnel step's
+     * conditions, so they agree about what "contains" means.
      *
      * @param  mixed  $value     the property's value on the event
      * @param  string $operator  one of the MATCH_ constants

@@ -21,12 +21,14 @@ use OWA\Module\Base\Classes\GoalEventDefinitionPredicate;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * A goal event definition compiled into a funnel step.
+ * A goal event definition compiled into a predicate over stored rows, which
+ * Classes\Migration\GoalMigrator uses to find the 1.x conversions it would
+ * have marked. The comparisons are Classes\EventPredicate's (EventPredicateTest);
+ * this holds the definition's own rules on top of them.
  *
  * The pair have to agree. The same definition decides a goal event at ingest
- * through GoalEventDefinition::compare(), and a funnel stage at read time
- * through this -- so a difference between them is a funnel stage that
- * disagrees with the goal event count sitting beside it on the same screen.
+ * through GoalEventDefinition::compare(), and a stored row at read time
+ * through this.
  *
  * These tests hold the two against each other operator by operator, and hold
  * the line on the two things that must never happen quietly: a condition the
@@ -101,9 +103,9 @@ final class GoalEventDefinitionPredicateTest extends TestCase
         $p = new GoalEventDefinitionPredicate;
 
         /*
-         * The funnel's own alias, passed in rather than defaulted: the predicate
-         * is compiled into someone else's query and the two agreeing about what
-         * the alias means is the contract.
+         * An alias passed in rather than defaulted: the predicate is compiled
+         * into someone else's query and the two agreeing about what the alias
+         * means is the contract.
          */
         return array( $p->compile( $this->goalEventDefinition( $conditions, $match, $trigger ),
             \OWA\Module\Base\Controller\VisualizationFunnel::ALIAS ), $p );
