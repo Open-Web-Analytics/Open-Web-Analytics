@@ -30,6 +30,49 @@ final class ProfileSettingsScreenTest extends TestCase
         return (array) $property->getValue( $controller );
     }
 
+    /** @var array|null  [ site_id, rows ]: a Profile's own setting rows, every column, before a test saved through the screen */
+    private ?array $held = null;
+
+    /**
+     * Keep every Profile-scope row of this Profile, for tearDown() to put back.
+     *
+     * A save through SitesEditSettings writes the whole profile_observation
+     * group: a field the post leaves out is saved empty, which removes that
+     * Profile's value. The suite's database is a real install's, so a test
+     * that saves on one of its Profiles has to leave the Profile as it was.
+     */
+    private function holdProfile( string $site_id ): void
+    {
+        $this->held = array( $site_id, (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
+            "SELECT * FROM %s WHERE scope_type = 'profile' AND scope_id = ?",
+            \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName() ), array( $site_id ) ) );
+    }
+
+    /** The held rows put back exactly, and nothing else at that Profile. */
+    protected function tearDown(): void
+    {
+        if ( $this->held === null ) {
+            return;
+        }
+
+        list( $site_id, $rows ) = $this->held;
+        $this->held = null;
+
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName();
+
+        $db->query( sprintf( "DELETE FROM %s WHERE scope_type = 'profile' AND scope_id = ?", $table ), array( $site_id ) );
+
+        foreach ( $rows as $row ) {
+            $row = (array) $row;
+
+            $db->query( sprintf( 'INSERT INTO %s (%s) VALUES (%s)', $table, implode( ', ', array_keys( $row ) ),
+                implode( ', ', array_fill( 0, count( $row ), '?' ) ) ), array_values( $row ) );
+        }
+
+        \OWA\Core\CoreAPI::settingCacheFlush();
+    }
+
     private function requireDb(): void
     {
         if ( ! owa_test_db_available() ) {
@@ -209,6 +252,8 @@ final class ProfileSettingsScreenTest extends TestCase
         $site_id = $this->aSiteId();
         $key     = 'campaignKeys';
 
+        $this->holdProfile( $site_id );
+
         $property_id = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id );
 
         if ( $property_id === '' ) {
@@ -269,37 +314,28 @@ final class ProfileSettingsScreenTest extends TestCase
         $site_id = $this->aSiteId();
         $key     = 'domain_aliases';
 
-        $held = \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key );
+        $this->holdProfile( $site_id );
 
         \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
 
-        try {
-            if ( (string) \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', $key, 'profile', $site_id )['inherited'] !== '' ) {
-                $this->markTestSkipped( "this install sets $key above the Profile" );
-            }
-
-            $save = function ( $value ) use ( $site_id, $key ) {
-
-                $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-                    'siteId' => $site_id, 'config' => array( 'base.' . $key => $value ) ) );
-                $c->action();
-            };
-
-            $save( 'example.test' );
-            $this->assertSame( 'example.test',
-                \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ) );
-
-            $save( '' );
-            $this->assertNull(
-                \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ) );
-
-        } finally {
-            \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
-
-            if ( $held !== null ) {
-                \OWA\Core\CoreAPI::setScopedSetting( 'profile', $site_id, 'base', $key, $held );
-            }
+        if ( (string) \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', $key, 'profile', $site_id )['inherited'] !== '' ) {
+            $this->markTestSkipped( "this install sets $key above the Profile" );
         }
+
+        $save = function ( $value ) use ( $site_id, $key ) {
+
+            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+                'siteId' => $site_id, 'config' => array( 'base.' . $key => $value ) ) );
+            $c->action();
+        };
+
+        $save( 'example.test' );
+        $this->assertSame( 'example.test',
+            \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ) );
+
+        $save( '' );
+        $this->assertNull(
+            \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ) );
     }
 
     /**
@@ -311,25 +347,18 @@ final class ProfileSettingsScreenTest extends TestCase
         $this->requireDb();
         $site_id = $this->aSiteId();
 
-        $held = \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'tracker_page_views' );
+        $this->holdProfile( $site_id );
 
         \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', 'tracker_page_views' );
 
-        try {
-            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-                'siteId'   => $site_id,
-                'config'   => array( 'base.tracker_page_views' => '0' ),
-                'override' => array( 'base.tracker_page_views' => '1' ),
-            ) );
-            $c->action();
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+            'siteId'   => $site_id,
+            'config'   => array( 'base.tracker_page_views' => '0' ),
+            'override' => array( 'base.tracker_page_views' => '1' ),
+        ) );
+        $c->action();
 
-            $this->assertNull( \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'tracker_page_views' ) );
-
-        } finally {
-            if ( $held !== null ) {
-                \OWA\Core\CoreAPI::setScopedSetting( 'profile', $site_id, 'base', 'tracker_page_views', $held );
-            }
-        }
+        $this->assertNull( \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'tracker_page_views' ) );
     }
 
     /**
@@ -412,52 +441,41 @@ final class ProfileSettingsScreenTest extends TestCase
             'notice_email'      => array( 'owner@example.test', 'owner@example.test' ),
         );
 
-        $held     = array();
+        $this->holdProfile( $site_id );
+
         $config   = array();
         $override = array();
 
         foreach ( $posted as $key => list( $value ) ) {
-            $held[ $key ] = \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key );
             \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
 
             $config[ 'base.' . $key ]   = $value;
             $override[ 'base.' . $key ] = '1';
         }
 
-        try {
-            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-                'siteId' => $site_id, 'config' => $config, 'override' => $override ) );
-            $c->action();
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+            'siteId' => $site_id, 'config' => $config, 'override' => $override ) );
+        $c->action();
 
-            foreach ( $posted as $key => list( , $stored ) ) {
-                $this->assertSame( $stored,
-                    \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
-                    "base.$key was not stored at the Profile" );
-            }
+        foreach ( $posted as $key => list( , $stored ) ) {
+            $this->assertSame( $stored,
+                \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
+                "base.$key was not stored at the Profile" );
+        }
 
-            $this->assertSame( array( 'source' => 'src', 'medium' => 'channel' ),
-                \OWA\Core\CoreAPI::getSetting( 'base', 'campaignKeys', 'profile', $site_id ),
-                'the reader resolves the Profile\'s value' );
+        $this->assertSame( array( 'source' => 'src', 'medium' => 'channel' ),
+            \OWA\Core\CoreAPI::getSetting( 'base', 'campaignKeys', 'profile', $site_id ),
+            'the reader resolves the Profile\'s value' );
 
-            // Every switch off, and the text fields emptied as a person would.
-            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-                'siteId' => $site_id,
-                'config' => array( 'base.excluded_ips' => '', 'base.campaignKeys' => '', 'base.notice_email' => '' ) ) );
-            $c->action();
+        // Every switch off, and the text fields emptied as a person would.
+        $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+            'siteId' => $site_id,
+            'config' => array( 'base.excluded_ips' => '', 'base.campaignKeys' => '', 'base.notice_email' => '' ) ) );
+        $c->action();
 
-            foreach ( array_keys( $posted ) as $key ) {
-                $this->assertNull( \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
-                    "base.$key stayed at the Profile" );
-            }
-
-        } finally {
-            foreach ( $held as $key => $value ) {
-                \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
-
-                if ( $value !== null ) {
-                    \OWA\Core\CoreAPI::setScopedSetting( 'profile', $site_id, 'base', $key, $value );
-                }
-            }
+        foreach ( array_keys( $posted ) as $key ) {
+            $this->assertNull( \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ),
+                "base.$key stayed at the Profile" );
         }
     }
 
