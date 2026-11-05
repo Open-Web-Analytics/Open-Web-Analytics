@@ -107,7 +107,7 @@ final class Chunk {
                 'session_id'     => (string) $event->get( 'session_id' ),
                 'page_view_seq'  => self::isInt( $page_view_seq, 1, PHP_INT_MAX ) ? (int) $page_view_seq : null,
                 'page_location'  => $location === '' ? null : mb_substr( $location, 0, 1024 ),
-                'page_path'      => self::path( $location, $site_id ),
+                'page_path'      => self::path( $location ),
                 'ts'             => (int) $event->get( 'ts' ),
                 'offset_ms'      => self::clamp( $event->get( 'offset_ms' ), 0, 2147483647 ),
                 'duration_ms'    => self::clamp( $event->get( 'duration_ms' ), 0, 2147483647 ),
@@ -220,7 +220,7 @@ final class Chunk {
      * The page's path, canonicalised exactly as a raw event's page_path is, so
      * Page Detail's pagePath finds the same page here.
      */
-    private static function path( $location, $site_id ) {
+    private static function path( $location ) {
 
         if ( $location === '' ) {
 
@@ -230,8 +230,7 @@ final class Chunk {
         $parts = \OWA\Module\Base\Classes\V2Event::parseUrl( $location );
 
         return mb_substr( (string) \OWA\Module\Base\Classes\V2Event::canonicalPath(
-            $parts['path'], (string) \OWA\Core\CoreAPI::getSetting(
-                'base', 'default_page', 'profile', $site_id ) ), 0, 1024 );
+            $parts['path'], \OWA\Module\Base\Classes\TrackingEventHelpers::directoryIndexPages() ), 0, 1024 );
     }
 
     private static function isInt( $v, $min, $max ) {

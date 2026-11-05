@@ -105,7 +105,7 @@ class GoalEventDefinitionPredicate {
             );
         }
 
-        // No default page: ingest compares the typed path as written, and this has to agree with it.
+        // No index pages: ingest compares the typed path as written, and this has to agree with it.
         $predicate = new EventPredicate();
 
         $compiled = $predicate->compile( $trigger, $definition->conditionMatch(), $rows, $alias );

@@ -25,9 +25,9 @@ final class EventPredicateTest extends TestCase
 
     /** @param array $conditions list of [property, operator, value] */
     private function compile( string $event, array $conditions, string $match = 'all',
-                              ?string $defaultPage = null, array $custom = array() ): array
+                              ?array $indexPages = null, array $custom = array() ): array
     {
-        $p = new EventPredicate( $defaultPage, $custom );
+        $p = new EventPredicate( $indexPages, $custom );
 
         $rows = array_map( static function ( $c ) {
             return array( 'property' => $c[0], 'operator' => $c[1], 'value' => $c[2] );
@@ -183,21 +183,23 @@ final class EventPredicateTest extends TestCase
     }
 
     /**
-     * PAGE PATHS ARE CANONICALISED when a default page is given, the way the
-     * row's was, for exact and not-exact: `/store/` and `/store/index.php` both
-     * equal the stored `/store`. The root stays '/'.
+     * PAGE PATHS ARE CANONICALISED when directory index pages are given, the
+     * way the row's was, for exact and not-exact: `/store/`, `/store/index.php`
+     * and `/store/INDEX.HTML` all equal the stored `/store`. The root stays '/'.
      */
-    public function testAPagePathIsCanonicalisedWithTheDefaultPage(): void
+    public function testAPagePathIsCanonicalisedWithTheIndexPages(): void
     {
-        $E = GoalEventDefinition::class;
+        $E     = GoalEventDefinition::class;
+        $index = \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES;
 
-        foreach ( array( '/store/' => '/store', '/store/index.php' => '/store', '/' => '/', '/store' => '/store' )
+        foreach ( array( '/store/' => '/store', '/store/index.php' => '/store', '/store/INDEX.HTML' => '/store',
+                         '/' => '/', '/store' => '/store', '/index.php/store' => '/index.php/store' )
                   as $typed => $stored ) {
 
             foreach ( array( $E::MATCH_EXACT, $E::MATCH_NOT ) as $operator ) {
 
                 list( $out ) = $this->compile( 'page_view', array( array( 'page_path', $operator, $typed ) ),
-                    'all', 'index.php' );
+                    'all', $index );
 
                 $this->assertSame( array( 'page_view', $stored ), $out['params'], "$operator $typed" );
             }
@@ -205,21 +207,25 @@ final class EventPredicateTest extends TestCase
 
         // Other operators match part of the value, and keep it as typed.
         list( $begins ) = $this->compile( 'page_view', array( array( 'page_path', $E::MATCH_BEGINS, '/store/' ) ),
-            'all', 'index.php' );
+            'all', $index );
         $this->assertSame( array( 'page_view', '/store/' ), $begins['params'] );
 
         // Only page_path is a path.
-        list( $title ) = $this->compile( 'page_view', array( array( 'page_title', $E::MATCH_EXACT, 'Store/' ) ),
-            'all', 'index.php' );
-        $this->assertSame( array( 'page_view', 'Store/' ), $title['params'] );
+        list( $title ) = $this->compile( 'page_view', array( array( 'page_title', $E::MATCH_EXACT, 'Store/index.php' ) ),
+            'all', $index );
+        $this->assertSame( array( 'page_view', 'Store/index.php' ), $title['params'] );
 
-        // With no default page given -- a goal event definition's predicate -- the value is as typed.
+        // With no index pages given -- a goal event definition's predicate -- the value is as typed.
         list( $raw ) = $this->compile( 'page_view', array( array( 'page_path', $E::MATCH_EXACT, '/store/' ) ) );
         $this->assertSame( array( 'page_view', '/store/' ), $raw['params'] );
 
-        // An empty default page still collapses the trailing slash, as the row's canonicalPath() does.
-        list( $empty ) = $this->compile( 'page_view', array( array( 'page_path', $E::MATCH_EXACT, '/store/' ) ), 'all', '' );
+        // An empty list still collapses the trailing slash, as the row's canonicalPath() does, and nothing else.
+        list( $empty ) = $this->compile( 'page_view', array( array( 'page_path', $E::MATCH_EXACT, '/store/' ) ), 'all', array() );
         $this->assertSame( array( 'page_view', '/store' ), $empty['params'] );
+
+        list( $kept ) = $this->compile( 'page_view', array( array( 'page_path', $E::MATCH_EXACT, '/store/index.php' ) ),
+            'all', array() );
+        $this->assertSame( array( 'page_view', '/store/index.php' ), $kept['params'] );
     }
 
     /** It works with no database connection: the SQL vocabulary loads with the driver class. */

@@ -47,13 +47,17 @@ async function save(page) {
 test('a Property setting inherits until its Override switch is on', async ({ page }) => {
     await adminLogin(page);
 
-    // default_page has nothing set above the Profile: a plain field, no switch to turn on.
+    // domain_aliases has nothing set above the Profile: a plain field, no switch to turn on.
     await page.goto(PROFILE_SCREEN, { waitUntil: 'networkidle' });
-    await expect(page.locator('input[name="config[base.default_page]"]')).toBeEnabled();
-    await expect(page.locator('input[name="override[base.default_page]"]')).toHaveCount(0);
+    await expect(page.locator('input[name="config[base.domain_aliases]"]')).toBeEnabled();
+    await expect(page.locator('input[name="override[base.domain_aliases]"]')).toHaveCount(0);
 
     // And e-commerce is no longer offered per Profile.
     await expect(page.locator('[name="config[base.enableEcommerceReporting]"]')).toHaveCount(0);
+
+    // Nor the retired default_page, nor its install-wide successor.
+    await expect(page.locator('[name="config[base.default_page]"]')).toHaveCount(0);
+    await expect(page.locator('[name="config[base.directory_index_pages]"]')).toHaveCount(0);
 
     const SCREEN = await propertyScreen(page);
     await page.goto(SCREEN, { waitUntil: 'networkidle' });

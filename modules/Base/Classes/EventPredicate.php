@@ -36,40 +36,43 @@ namespace OWA\Module\Base\Classes;
  * the pricing page" would become "from the pricing page" and report a bigger
  * number that looks plausible.
  *
- * PAGE PATHS ARE CANONICALISED ON THE READ SIDE, when the caller gives a
- * default page. page_path is stored canonical (V2Event::canonicalPath(): the
- * Profile's default page and a trailing slash collapsed), so a condition typed
+ * PAGE PATHS ARE CANONICALISED ON THE READ SIDE, when the caller gives the
+ * directory index pages. page_path is stored canonical (V2Event::canonicalPath():
+ * a directory index page and a trailing slash collapsed), so a condition typed
  * `/store/` or `/store/index.php` would otherwise never equal the stored
  * `/store`. The typed value is what the author asked for and stays as stored;
- * the comparison uses the same function and the same setting as the row, so the
- * two cannot disagree. Exact and not-exact only: the other operators match on
- * part of the value, where collapsing the end of it would change what they say.
+ * the comparison uses the same function and the same setting as the row
+ * (TrackingEventHelpers::directoryIndexPages()), so the two cannot disagree.
+ * Exact and not-exact only: the other operators match on part of the value,
+ * where collapsing the end of it would change what they say.
  *
  * Goal event definitions do not get this. Ingest compares the typed value with
  * the canonical row as it is (GoalEventDefinition::matchesRow()), and their
  * predicate has to agree with ingest, so GoalEventDefinitionPredicate passes no
- * default page.
+ * index pages.
  */
 class EventPredicate {
 
     /** Set when compile() returns null: which property could not be expressed. */
     private $error = '';
 
-    /** @var string|null  the Property's default page, or null to compare paths as written */
-    private $defaultPage;
+    /** @var array|null  directory index file names, or null to compare paths as written */
+    private $indexPages;
 
     /** @var array  custom dimension column => label, applied to the Property */
     private $customColumns;
 
     /**
-     * @param string|null $defaultPage   canonicalise page_path conditions with
-     *                                   this default page; null leaves them as written
-     * @param array       $customColumns the Property's applied custom dimensions,
-     *                                   column => label (customColumnsFor())
+     * @param array|string|null $indexPages  canonicalise page_path conditions with
+     *                                       these directory index file names
+     *                                       (V2Event::indexPageNames()); null leaves
+     *                                       them as written
+     * @param array             $customColumns the Property's applied custom dimensions,
+     *                                       column => label (customColumnsFor())
      */
-    public function __construct( $defaultPage = null, array $customColumns = array() ) {
+    public function __construct( $indexPages = null, array $customColumns = array() ) {
 
-        $this->defaultPage   = $defaultPage === null ? null : (string) $defaultPage;
+        $this->indexPages    = $indexPages === null ? null : \OWA\Module\Base\Classes\V2Event::indexPageNames( $indexPages );
         $this->customColumns = $customColumns;
     }
 
@@ -178,13 +181,13 @@ class EventPredicate {
 
         $E = \OWA\Module\Base\Entity\GoalEventDefinition::class;
 
-        if ( $this->defaultPage === null || $property !== 'page_path'
+        if ( $this->indexPages === null || $property !== 'page_path'
              || ! in_array( $operator, array( constant( $E . '::MATCH_EXACT' ), constant( $E . '::MATCH_NOT' ) ), true ) ) {
 
             return $value;
         }
 
-        return (string) \OWA\Module\Base\Classes\V2Event::canonicalPath( $value, $this->defaultPage );
+        return (string) \OWA\Module\Base\Classes\V2Event::canonicalPath( $value, $this->indexPages );
     }
 
     /**

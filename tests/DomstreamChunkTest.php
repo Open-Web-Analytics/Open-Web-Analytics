@@ -66,6 +66,39 @@ final class DomstreamChunkTest extends TestCase
         ], json_decode(gzdecode($rows['payload']['payload']), true));
     }
 
+    /**
+     * The page path is canonicalised as ingest's page_path is, directory index
+     * page included, so Page Detail finds the recording under /store. The list
+     * is set for this request, so a stored one does not decide it.
+     */
+    public function testThePagePathFoldsADirectoryIndexPage(): void
+    {
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'directory_index_pages');
+
+        \OWA\Core\CoreAPI::setSetting('base', 'directory_index_pages',
+            \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES);
+
+        try {
+            $location = 'https://chunk.test/store/index.html?plan=pro';
+
+            $rows = Chunk::fromEvent($this->event(['page_location' => $location,
+                'samples' => $this->samples([[0, 's', 1]])]));
+
+            $this->assertNotNull($rows, Chunk::refusal());
+            $this->assertSame('/store', $rows['chunk']['page_path']);
+
+            $event = new \OWA\Module\Base\Classes\Event();
+            $event->setProperties(['site_id' => 'chunk-site', 'page_location' => $location]);
+
+            $this->assertSame(
+                \OWA\Module\Base\Classes\TrackingEventHelpers::derivePagePath(null, $event),
+                $rows['chunk']['page_path'], 'the raw row\'s page_path and the chunk\'s are one reading');
+
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'directory_index_pages', $before);
+        }
+    }
+
     public function testTheIdIsTheChunksOwnContent(): void
     {
         $a = Chunk::fromEvent($this->event(['samples' => $this->samples([[0, 's', 1]])]));

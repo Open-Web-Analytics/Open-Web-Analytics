@@ -320,7 +320,7 @@ final class SettingsRegistryTest extends TestCase
      * An unregistered setting is unconstrained, and that is load-bearing.
      *
      * Base has not declared yet, and eight of its settings live at profile
-     * scope right now -- default_page, domain_aliases, query_string_filters,
+     * scope right now -- default_page (since removed, Update080), domain_aliases, query_string_filters,
      * p3p_policy (since removed), enableEcommerceReporting, goals, goal_groups and
      * v2_raw_collection (goal_groups since removed, Update056). Reading "nothing declared it" as "install only" would
      * refuse every write the Observation Settings screen makes.
@@ -348,7 +348,7 @@ final class SettingsRegistryTest extends TestCase
      * The trap this guards is base's adoption. Seven base settings live at
      * profile scope right now and none of them is declared, so they pass the
      * check by being unknown. The day base ships a declaration file,
-     * `default_page` without a `scopes` key becomes install-only and the
+     * `domain_aliases` without a `scopes` key becomes install-only and the
      * Observation Settings screen silently stops saving -- the form posts, the
      * write is refused, the page redirects, and the value is simply not there.
      *

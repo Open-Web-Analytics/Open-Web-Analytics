@@ -109,23 +109,23 @@ final class ProfileSettingsScreenTest extends TestCase
 
         $controller = new \OWA\Module\Base\Controller\SitesEditSettings( array(
             'siteId'   => $site_id,
-            'config'   => array( 'base.default_page' => 'home.html' ),
-            'override' => array( 'base.default_page' => '1' ),
+            'config'   => array( 'base.domain_aliases' => 'example.test' ),
+            'override' => array( 'base.domain_aliases' => '1' ),
         ) );
 
         $controller->errorAction();
 
         $data = $this->data( $controller );
 
-        $this->assertSame( 'home.html', $data['posted']['config']['base.default_page'] ?? null );
-        $this->assertSame( '1', $data['posted']['override']['base.default_page'] ?? null );
+        $this->assertSame( 'example.test', $data['posted']['config']['base.domain_aliases'] ?? null );
+        $this->assertSame( '1', $data['posted']['override']['base.domain_aliases'] ?? null );
 
         $html = \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
             \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.profileObservation' ),
             'profile', $site_id, 'owa_', $data['posted'] );
 
         $this->assertMatchesRegularExpression(
-            '#<input type="text" size="50" name="owa_config\[base\.default_page\]" value="home\.html" id=#', $html,
+            '#<input type="text" size="50" name="owa_config\[base\.domain_aliases\]" value="example\.test" id=#', $html,
             'the typed value comes back, enabled' );
     }
 
@@ -145,8 +145,8 @@ final class ProfileSettingsScreenTest extends TestCase
 
         $refusal = new \OWA\Module\Base\Controller\SitesEditSettings( array(
             'siteId'   => $site_id,
-            'config'   => array( 'base.default_page' => 'home.html' ),
-            'override' => array( 'base.default_page' => '1' ),
+            'config'   => array( 'base.domain_aliases' => 'example.test' ),
+            'override' => array( 'base.domain_aliases' => '1' ),
         ) );
         $refusal->errorAction();
 
@@ -262,36 +262,43 @@ final class ProfileSettingsScreenTest extends TestCase
         }
     }
 
-    /** default_page has nothing above it: a plain field, saved by its value. */
+    /** domain_aliases has nothing above it: a plain field, saved by its value. */
     public function testAFieldWithNothingAboveIsSavedByItsValue(): void
     {
         $this->requireDb();
         $site_id = $this->aSiteId();
+        $key     = 'domain_aliases';
 
-        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', 'default_page' );
+        $held = \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key );
 
-        if ( (string) \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', 'default_page', 'profile', $site_id )['inherited'] !== '' ) {
-            $this->markTestSkipped( 'this install sets default_page above the Profile' );
-        }
-
-        $save = function ( $value ) use ( $site_id ) {
-
-            $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
-                'siteId' => $site_id, 'config' => array( 'base.default_page' => $value ) ) );
-            $c->action();
-        };
+        \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
 
         try {
-            $save( 'index.html' );
-            $this->assertSame( 'index.html',
-                \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'default_page' ) );
+            if ( (string) \OWA\Module\Base\Classes\SettingsForm::inheritance( 'base', $key, 'profile', $site_id )['inherited'] !== '' ) {
+                $this->markTestSkipped( "this install sets $key above the Profile" );
+            }
+
+            $save = function ( $value ) use ( $site_id, $key ) {
+
+                $c = new \OWA\Module\Base\Controller\SitesEditSettings( array(
+                    'siteId' => $site_id, 'config' => array( 'base.' . $key => $value ) ) );
+                $c->action();
+            };
+
+            $save( 'example.test' );
+            $this->assertSame( 'example.test',
+                \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ) );
 
             $save( '' );
             $this->assertNull(
-                \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', 'default_page' ) );
+                \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ) );
 
         } finally {
-            \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', 'default_page' );
+            \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $site_id, 'base', $key );
+
+            if ( $held !== null ) {
+                \OWA\Core\CoreAPI::setScopedSetting( 'profile', $site_id, 'base', $key, $held );
+            }
         }
     }
 
@@ -358,8 +365,13 @@ final class ProfileSettingsScreenTest extends TestCase
             $this->assertStringContainsString( $control, $html, "base.$key is not offered on the Profile" );
         }
 
-        foreach ( array( 'domain_aliases', 'query_string_filters', 'default_page' ) as $key ) {
+        foreach ( array( 'domain_aliases', 'query_string_filters' ) as $key ) {
             $this->assertStringContainsString( 'name="owa_config[base.' . $key . ']"', $html, "base.$key is still offered" );
+        }
+
+        // Retired, and its install-wide successor is on no screen. The names are checked on the html the asserts above found fields in.
+        foreach ( array( 'default_page', 'directory_index_pages' ) as $key ) {
+            $this->assertStringNotContainsString( '[base.' . $key . ']', $html, "base.$key is offered on the Profile" );
         }
 
         foreach ( array( 'Pages and domains', 'Campaign parameters', 'Privacy and exclusions', 'Visitor announcements' ) as $legend ) {

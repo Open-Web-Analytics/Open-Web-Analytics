@@ -2307,8 +2307,25 @@ class TrackingEventHelpers {
             $event->get( 'page_location' ) );
 
         return \OWA\Module\Base\Classes\V2Event::canonicalPath(
-            $parts['path'], (string) \OWA\Core\CoreAPI::getSetting(
-                'base', 'default_page', 'profile', $event->getSiteId() ) );
+            $parts['path'], self::directoryIndexPages() );
+    }
+
+    /**
+     * The install's directory index file names (base.directory_index_pages),
+     * as V2Event::indexPageNames() lists them.
+     *
+     * The one reading of the setting. Ingest canonicalises page_path with it,
+     * and the funnel and Domstream canonicalise what they compare with
+     * page_path with it, so a path the row stored is the path they look for.
+     * Install-wide: which file a web server serves for a directory is not a
+     * property of one Profile.
+     *
+     * @return array
+     */
+    static function directoryIndexPages() {
+
+        return \OWA\Module\Base\Classes\V2Event::indexPageNames(
+            \OWA\Core\CoreAPI::getSetting( 'base', 'directory_index_pages' ) );
     }
 
     /**
@@ -2357,7 +2374,7 @@ class TrackingEventHelpers {
      * keeps the URL.
      *
      * The referrer is deliberately left alone beyond its host and query: it is
-     * somebody else's URL, and collapsing it against THIS site's default page
+     * somebody else's URL, and collapsing it with THIS install's directory index pages
      * would be a category error.
      */
     static function deriveRefererHost( $value, $event ) {
@@ -2859,21 +2876,14 @@ class TrackingEventHelpers {
             $url = substr($url, 0, -1);
         }
 
-        //check and remove default page
-        $default_page = $site->getSiteSetting( 'default_page' );
+        /*
+         * A directory index page, as page_path drops one. Only on a URL with no
+         * query left: its last segment is then the path's, where with a query
+         * it would be part of a parameter's value.
+         */
+        if ( strpos( $url, '?' ) === false ) {
 
-        if ($default_page) {
-
-            $default_length = strlen($default_page);
-
-            if ($default_length) {
-
-                //test for string
-                $default_test = substr($url, 0 - $default_length, $default_length);
-                if ($default_test === $default_page) {
-                    $url = substr($url, 0, 0 - $default_length);
-                }
-            }
+            $url = \OWA\Module\Base\Classes\V2Event::dropIndexPage( $url, self::directoryIndexPages() );
         }
 
         // check and remove trailing slash

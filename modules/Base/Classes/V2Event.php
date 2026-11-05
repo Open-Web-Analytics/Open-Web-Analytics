@@ -179,45 +179,47 @@ class V2Event {
     }
 
     /**
+     * The file names a web server serves for a directory, and the default of
+     * base.directory_index_pages. A path ending in one of them is the
+     * directory's own page: /store/index.html is /store.
+     */
+    const DIRECTORY_INDEX_PAGES = array(
+        'index.html', 'index.htm', 'index.php', 'default.htm', 'default.html', 'default.aspx', 'default.asp' );
+
+    /**
      * A page path, canonicalised.
      *
      * THE PATH IS A READING, AND page_location IS THE EVIDENCE. This edits the
      * reading only: the URL as it arrived is stored untouched beside it, so
      * nothing here can destroy what was observed.
      *
-     * Two collapses, both of which v1 does too:
+     * Two collapses:
      *
-     *   - the site's default page. /store/index.html and /store/ are one page
-     *     to everyone except a report that groups on the raw path.
+     *   - a directory index page (dropIndexPage()). /store/index.html and
+     *     /store/ are one page to everyone except a report that groups on the
+     *     raw path.
      *   - the trailing slash, for the same reason -- except on the root, which
      *     IS '/' and would otherwise group under the empty string.
      *
      * NOT LOWERCASED. Paths are case-sensitive by specification and by most
      * servers' behaviour, so /About and /about can be two pages; folding them
-     * would merge rows that a site may deliberately keep apart.
+     * would merge rows that a site may deliberately keep apart. Only an index
+     * page's name is compared without case: a server that answers for
+     * Default.aspx answers for default.aspx too.
      *
-     * @param string|null $path
-     * @param string      $default_page  e.g. 'index.html', or '' for none
+     * @param string|null  $path
+     * @param array|string $index_pages  directory index file names (indexPageNames());
+     *                                   none folds only the trailing slash
      * @return string|null
      */
-    public static function canonicalPath( $path, $default_page = '' ) {
+    public static function canonicalPath( $path, $index_pages = array() ) {
 
         if ( $path === null || $path === '' ) {
 
             return $path;
         }
 
-        $path = (string) $path;
-
-        if ( $default_page !== '' ) {
-
-            $length = strlen( $default_page );
-
-            if ( substr( $path, -$length ) === $default_page ) {
-
-                $path = substr( $path, 0, -$length );
-            }
-        }
+        $path = self::dropIndexPage( (string) $path, $index_pages );
 
         // The root is '/' and stays that way. Stripping its slash would leave
         // '' and hide the home page under a different value from every other
@@ -228,6 +230,76 @@ class V2Event {
         }
 
         return $path === '' ? '/' : $path;
+    }
+
+    /**
+     * A path with its last segment removed when that segment is a directory
+     * index page, and the slash before it kept: /store/index.html is /store/.
+     *
+     * THE LAST SEGMENT ONLY, and all of it. /index.php/products is a front
+     * controller's route and keeps its path, and /store/myindex.html is not
+     * /store/my. The name is compared without case.
+     *
+     * @param  string       $path
+     * @param  array|string $index_pages  as canonicalPath() takes them
+     * @return string
+     */
+    public static function dropIndexPage( $path, $index_pages ) {
+
+        $path  = (string) $path;
+        $names = self::indexPageNames( $index_pages );
+
+        if ( ! $names ) {
+
+            return $path;
+        }
+
+        $slash = strrpos( $path, '/' );
+        $last  = $slash === false ? $path : substr( $path, $slash + 1 );
+
+        if ( $last === '' || ! in_array( strtolower( $last ), $names, true ) ) {
+
+            return $path;
+        }
+
+        return $slash === false ? '' : substr( $path, 0, $slash + 1 );
+    }
+
+    /**
+     * Directory index file names as a list, lowercased.
+     *
+     * Takes a list, or one string separated by commas, which is how a config
+     * file is likeliest to write it. Blanks are dropped, so an empty list or ''
+     * names nothing.
+     *
+     * @param  array|string|null $value
+     * @return array
+     */
+    public static function indexPageNames( $value ) {
+
+        if ( is_string( $value ) ) {
+
+            $value = explode( ',', $value );
+        }
+
+        $out = array();
+
+        foreach ( (array) $value as $name ) {
+
+            if ( ! is_scalar( $name ) ) {
+
+                continue;
+            }
+
+            $name = strtolower( trim( (string) $name ) );
+
+            if ( $name !== '' && ! in_array( $name, $out, true ) ) {
+
+                $out[] = $name;
+            }
+        }
+
+        return $out;
     }
 
     /**
