@@ -346,7 +346,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * A step is an event and conditions on it (Classes\FunnelStep), compiled
      * by Classes\EventPredicate over the cube. A page step is a page_view with
      * a page_path condition, whose value is canonicalised the way the row's
-     * was: the predicate is handed the Property's default page.
+     * was: the predicate is handed the install's directory index pages.
      *
      * A step of any other shape is refused by name. Update079 made every saved
      * path and goal event step an event step, except one whose goal event
@@ -375,8 +375,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         }
 
         $predicate = new \OWA\Module\Base\Classes\EventPredicate(
-            (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'property',
-                $this->getParam( 'propertyId' ) ),
+            \OWA\Module\Base\Classes\TrackingEventHelpers::directoryIndexPages(),
             $this->customColumns() );
 
         $compiled = $predicate->compile( $event, \OWA\Module\Base\Classes\FunnelStep::matchOf( $step ),

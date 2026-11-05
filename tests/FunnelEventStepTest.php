@@ -13,8 +13,8 @@ use OWA\Module\Base\Controller\VisualizationFunnel;
  *
  * A page is a page_view with a page_path condition, compared the way the row
  * was stored: the typed path is canonicalised on the READ side with the
- * Profile's default page (V2Event::canonicalPath()), so `/store/` matches the
- * stored `/store`. The stored step keeps what the author typed.
+ * install's directory index pages (V2Event::canonicalPath()), so `/store/` and
+ * `/store/index.php` match the stored `/store`. The stored step keeps what the author typed.
  */
 final class FunnelEventStepTest extends TestCase
 {
@@ -70,24 +70,35 @@ final class FunnelEventStepTest extends TestCase
     }
 
     /**
-     * The default page is collapsed with the default_page setting, as the row's
-     * was. Set for this request only, and read with no Property, which is the
-     * installation's value.
+     * A directory index page is collapsed with the directory_index_pages list,
+     * as the row's was. Set for this request only, so a list the install stored
+     * does not decide it.
      */
-    public function testTheDefaultPageIsCollapsed(): void
+    public function testADirectoryIndexPageIsCollapsed(): void
     {
-        $before = \OWA\Core\CoreAPI::getSetting( 'base', 'default_page' );
+        $before = \OWA\Core\CoreAPI::getSetting( 'base', 'directory_index_pages' );
 
-        \OWA\Core\CoreAPI::setSetting( 'base', 'default_page', 'index.php' );
+        \OWA\Core\CoreAPI::setSetting( 'base', 'directory_index_pages',
+            \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES );
 
         try {
-            list( $out ) = $this->predicate( self::page( '/store/index.php' ) );
+            foreach ( array( '/store/index.php', '/store/index.html', '/store/Default.aspx' ) as $path ) {
 
-            $this->assertSame( array( 'page_view', '/store' ), $out['params'],
-                'The default page was not collapsed, so this step cannot match the path the row stored.' );
+                list( $out ) = $this->predicate( self::page( $path ) );
+
+                $this->assertSame( array( 'page_view', '/store' ), $out['params'],
+                    "$path was not collapsed, so this step cannot match the path the row stored." );
+            }
+
+            \OWA\Core\CoreAPI::setSetting( 'base', 'directory_index_pages', array( 'home.cfm' ) );
+
+            list( $custom ) = $this->predicate( self::page( '/store/index.php' ) );
+
+            $this->assertSame( array( 'page_view', '/store/index.php' ), $custom['params'],
+                'the list is read, not the default' );
 
         } finally {
-            \OWA\Core\CoreAPI::setSetting( 'base', 'default_page', $before );
+            \OWA\Core\CoreAPI::setSetting( 'base', 'directory_index_pages', $before );
         }
     }
 

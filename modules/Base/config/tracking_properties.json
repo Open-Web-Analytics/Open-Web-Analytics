@@ -1305,7 +1305,7 @@
         ]
     },
     "page_path": {
-        "description": "The path of the page's URL, with the Profile's default page name and a trailing slash removed.",
+        "description": "The path of the page's URL, with a directory index page name, such as index.html, and a trailing slash removed.",
         "set_by": "event",
         "from": [
             "page_location"
@@ -1319,7 +1319,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::derivePagePath"
         ],
-        "note": "The path, canonicalised: the Profile’s default page and the trailing slash collapse. Set by its own callback off page_location, like every other property -- it used to be cut inside the row builder, which is how the registry came to declare a property nothing produced."
+        "note": "The path, canonicalised: a last segment named in base.directory_index_pages and the trailing slash collapse. Set by its own callback off page_location, like every other property -- it used to be cut inside the row builder, which is how the registry came to declare a property nothing produced."
     },
     "page_query": {
         "description": "The query string of the page's URL, without OWA's own parameters or campaign parameters.",
@@ -1353,7 +1353,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveRefererHost"
         ],
-        "note": "The referring site’s host, and what the cube pass classifies source and medium from. Empty when the referrer is the page’s own host, the cookie domain or a subdomain of it -- the rule a click uses -- so a session starting from the site’s own page reads as direct rather than as a referral from itself; referer_url keeps the URL. Left alone beyond the host: it is somebody else’s URL, and canonicalising it against THIS site’s default page would be a category error."
+        "note": "The referring site’s host, and what the cube pass classifies source and medium from. Empty when the referrer is the page’s own host, the cookie domain or a subdomain of it -- the rule a click uses -- so a session starting from the site’s own page reads as direct rather than as a referral from itself; referer_url keeps the URL. Left alone beyond the host: it is somebody else’s URL, and canonicalising it with THIS install’s directory index pages would be a category error."
     },
     "referer_query": {
         "description": "The query string of the referring page's URL.",

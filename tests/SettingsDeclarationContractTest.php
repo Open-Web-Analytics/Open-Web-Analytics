@@ -440,6 +440,45 @@ final class SettingsDeclarationContractTest extends TestCase
             $this->assertSame( array( 'install', 'profile' ), $c->scopesFor( 'base', $key ),
                 "base.$key is offered on the Profile only" );
         }
+
+        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'directory_index_pages' ) );
+    }
+
+    /**
+     * directory_index_pages is on no screen, at any level, and default_page,
+     * which it replaced, is declared nowhere.
+     *
+     * Every module's fieldsets are registered first: the install screens'
+     * register only when the admin nav is built, and a module's only when it
+     * is active.
+     */
+    public function testTheDirectoryIndexListIsOnNoScreen(): void
+    {
+        foreach ( array( \OWA\Module\Base\Module::class, \OWA\Module\Domstream\Module::class,
+                         \OWA\Module\MaxmindGeoip\Module::class, \OWA\Module\Sqs\Module::class,
+                         \OWA\Module\Hello\Module::class ) as $class ) {
+
+            $module = new $class();
+            $module->registerActions();
+            $module->registerAdminPanels();
+        }
+
+        $sets = $this->settings()->registeredFieldSets();
+
+        // An install screen's and a Profile screen's, so the loop below has something to check.
+        foreach ( array( 'base.tracking', 'base.profileObservation' ) as $id ) {
+            $this->assertArrayHasKey( $id, $sets, 'the fieldsets this checks were registered' );
+        }
+
+        foreach ( $sets as $id => $set ) {
+            foreach ( array( 'directory_index_pages', 'default_page' ) as $key ) {
+                $this->assertNotContains( $key, (array) ( $set['settings'] ?? array() ), "fieldset $id offers base.$key" );
+            }
+        }
+
+        $this->assertArrayHasKey( 'directory_index_pages', $this->baseDeclaration() );
+        $this->assertArrayNotHasKey( 'default_page', $this->baseDeclaration() );
+        $this->assertArrayNotHasKey( 'default_page', $this->literalDefaults() );
     }
 
     /**

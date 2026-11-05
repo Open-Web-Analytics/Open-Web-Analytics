@@ -22,18 +22,105 @@ use OWA\Module\Base\Classes\V2Event;
  */
 final class UrlCanonicalisationTest extends TestCase
 {
-    public function testTheSiteDefaultPageIsCollapsed(): void
+    public function testADirectoryIndexPageIsCollapsed(): void
     {
         // The whole point: one page, one row in a page report.
-        $this->assertSame('/store', V2Event::canonicalPath('/store/index.html', 'index.html'));
-        $this->assertSame('/store', V2Event::canonicalPath('/store/', 'index.html'));
-        $this->assertSame('/store', V2Event::canonicalPath('/store', 'index.html'));
+        $this->assertSame('/store', V2Event::canonicalPath('/store/index.html', ['index.html']));
+        $this->assertSame('/store', V2Event::canonicalPath('/store/', ['index.html']));
+        $this->assertSame('/store', V2Event::canonicalPath('/store', ['index.html']));
     }
 
-    public function testATrailingSlashIsCollapsedWithoutADefaultPage(): void
+    /** Every name in the default list folds, with nothing configured. */
+    public function testEachDefaultIndexPageIsCollapsed(): void
     {
-        $this->assertSame('/store', V2Event::canonicalPath('/store/', ''));
-        $this->assertSame('/a/b/c', V2Event::canonicalPath('/a/b/c///', ''));
+        $this->assertSame(['index.html', 'index.htm', 'index.php', 'default.htm', 'default.html',
+            'default.aspx', 'default.asp'], V2Event::DIRECTORY_INDEX_PAGES);
+
+        foreach (V2Event::DIRECTORY_INDEX_PAGES as $name) {
+            $this->assertSame('/store', V2Event::canonicalPath('/store/' . $name, V2Event::DIRECTORY_INDEX_PAGES), $name);
+        }
+    }
+
+    /** The setting's default is that list, so an install that sets nothing folds them. */
+    public function testTheSettingsDefaultIsTheList(): void
+    {
+        $declared = (include OWA_DIR . 'modules/Base/settings.php')['settings']['directory_index_pages'] ?? [];
+
+        $this->assertSame(V2Event::DIRECTORY_INDEX_PAGES, $declared['default'] ?? null);
+        $this->assertSame(['install'], $declared['scopes'] ?? null, 'install-wide, not per Profile');
+    }
+
+    /** The name is compared without case; the rest of the path keeps its own. */
+    public function testTheIndexPageIsComparedWithoutCase(): void
+    {
+        $this->assertSame('/Store', V2Event::canonicalPath('/Store/Default.aspx', V2Event::DIRECTORY_INDEX_PAGES));
+        $this->assertSame('/store', V2Event::canonicalPath('/store/INDEX.HTML', ['index.html']));
+        $this->assertSame('/store', V2Event::canonicalPath('/store/index.html', ['Index.HTML']));
+    }
+
+    /** Only the last segment, and only the whole of it. */
+    public function testAMiddleSegmentIsUntouched(): void
+    {
+        $this->assertSame('/index.php/products',
+            V2Event::canonicalPath('/index.php/products', V2Event::DIRECTORY_INDEX_PAGES));
+        $this->assertSame('/store/myindex.html',
+            V2Event::canonicalPath('/store/myindex.html', V2Event::DIRECTORY_INDEX_PAGES));
+        $this->assertSame('/store/index.html.bak',
+            V2Event::canonicalPath('/store/index.html.bak', V2Event::DIRECTORY_INDEX_PAGES));
+    }
+
+    public function testACustomListIsUsed(): void
+    {
+        $this->assertSame('/store', V2Event::canonicalPath('/store/home.cfm', ['home.cfm']));
+        $this->assertSame('/store/index.html', V2Event::canonicalPath('/store/index.html', ['home.cfm']),
+            'a list that does not name index.html does not fold it');
+
+        // A config file is likeliest to write it as one string.
+        $this->assertSame('/store', V2Event::canonicalPath('/store/home.cfm', 'index.html, home.cfm'));
+    }
+
+    public function testAnEmptyListFoldsNothingButTheTrailingSlash(): void
+    {
+        $this->assertSame('/store/index.html', V2Event::canonicalPath('/store/index.html', []));
+        $this->assertSame('/store/index.html', V2Event::canonicalPath('/store/index.html', ''));
+        $this->assertSame('/store/index.html', V2Event::canonicalPath('/store/index.html', [' ', '']));
+        $this->assertSame('/store', V2Event::canonicalPath('/store/', []));
+    }
+
+    public function testATrailingSlashIsCollapsedWithoutAnIndexPage(): void
+    {
+        $this->assertSame('/store', V2Event::canonicalPath('/store/', []));
+        $this->assertSame('/a/b/c', V2Event::canonicalPath('/a/b/c///', []));
+        $this->assertSame('/store', V2Event::canonicalPath('/store/', V2Event::DIRECTORY_INDEX_PAGES));
+    }
+
+    /**
+     * Ingest folds with the install's list. Set here for this request, so the
+     * case does not depend on what the install stored.
+     */
+    public function testIngestFoldsTheIndexPage(): void
+    {
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'directory_index_pages');
+
+        \OWA\Core\CoreAPI::setSetting('base', 'directory_index_pages', V2Event::DIRECTORY_INDEX_PAGES);
+
+        try {
+            $event = new \OWA\Module\Base\Classes\Event();
+            $event->setProperties(['site_id' => 'canonical-path-site',
+                'page_location' => 'https://canonical.test/store/index.html?x=1']);
+
+            $this->assertSame('/store',
+                \OWA\Module\Base\Classes\TrackingEventHelpers::derivePagePath(null, $event));
+
+            \OWA\Core\CoreAPI::setSetting('base', 'directory_index_pages', ['home.cfm']);
+
+            $this->assertSame('/store/index.html',
+                \OWA\Module\Base\Classes\TrackingEventHelpers::derivePagePath(null, $event),
+                'the list is read, not the default');
+
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'directory_index_pages', $before);
+        }
     }
 
     /**
@@ -45,9 +132,9 @@ final class UrlCanonicalisationTest extends TestCase
      */
     public function testTheRootIsStillASlash(): void
     {
-        $this->assertSame('/', V2Event::canonicalPath('/', 'index.html'));
-        $this->assertSame('/', V2Event::canonicalPath('/', ''));
-        $this->assertSame('/', V2Event::canonicalPath('/index.html', 'index.html'));
+        $this->assertSame('/', V2Event::canonicalPath('/', ['index.html']));
+        $this->assertSame('/', V2Event::canonicalPath('/', []));
+        $this->assertSame('/', V2Event::canonicalPath('/index.html', ['index.html']));
     }
 
     /**
@@ -58,20 +145,21 @@ final class UrlCanonicalisationTest extends TestCase
      */
     public function testThePathIsNotLowercased(): void
     {
-        $this->assertSame('/About', V2Event::canonicalPath('/About', ''));
+        $this->assertSame('/About', V2Event::canonicalPath('/About', []));
+        $this->assertSame('/About', V2Event::canonicalPath('/About/index.html', V2Event::DIRECTORY_INDEX_PAGES));
     }
 
     public function testNothingIsInventedFromNothing(): void
     {
-        $this->assertNull(V2Event::canonicalPath(null, 'index.html'));
-        $this->assertSame('', V2Event::canonicalPath('', 'index.html'));
+        $this->assertNull(V2Event::canonicalPath(null, ['index.html']));
+        $this->assertSame('', V2Event::canonicalPath('', ['index.html']));
     }
 
-    /** A default page only matches at the end, not anywhere in the path. */
-    public function testTheDefaultPageIsASuffixNotASubstring(): void
+    /** An index page only matches as the last segment, not anywhere in the path. */
+    public function testTheIndexPageIsTheLastSegmentNotASubstring(): void
     {
         $this->assertSame('/index.html/deeper',
-            V2Event::canonicalPath('/index.html/deeper', 'index.html'));
+            V2Event::canonicalPath('/index.html/deeper', ['index.html']));
     }
 
     public function testNamedParametersAreRemoved(): void

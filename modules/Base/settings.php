@@ -206,18 +206,27 @@ return array(
         'db_type' => array( 'default' => '', 'description' => 'The database driver: mysql (PDO where available, otherwise mysqli), mysqli or pdo_mysql.' ),
         'db_user' => array( 'default' => '', 'description' => 'The user name OWA connects to the database as.' ),
         'default_cache_expiration_period' => array( 'default' => 604800, 'description' => 'How long a parsed user agent stays in the object cache, in seconds. Default 604800 (7 days).' ),
-        'default_page' => array(
-            'default'  => '',
-            'storable' => true,
-            // Per Profile, on its Observation Settings screen.
-            'scopes'   => array( 'install', 'profile' ),
-            'type'     => 'text',
-            'label'    => 'Default Page',
-            'description' =>
-                'The page your web server serves when a URL names none (e.g. index.html), so '
-                . 'www.domain.com and www.domain.com/index.html count as one page.',
-        ),
+        // The default_page rows Update080 removed, and the install row it wrote, for its down().
+        'default_page_before_080' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'default_reporting_period' => array( 'default' => 'last_seven_days', 'description' => 'The date range a report shows when none is chosen. Default last_seven_days.' ),
+        /*
+         * Install only, and on no screen: which file a web server serves for a
+         * directory is not something each Profile decides, and the default
+         * covers the servers OWA sees. Not `internal`, so the wiki's settings
+         * reference lists it. It replaced the per-Profile default_page;
+         * Update080 added any stored default_page value the default lacked.
+         */
+        'directory_index_pages' => array(
+            'default'  => \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES,
+            'storable' => true,
+            'autoload' => true,
+            'scopes'   => array( 'install' ),
+            'description' =>
+                'The file names a web server serves for a directory, as a list or separated by commas. A page '
+                . 'path whose last segment is one of them, in any case, is recorded without it, so '
+                . '/store/index.html and /store are one page. Applies to events recorded after the change; '
+                . 'paths already stored keep theirs.',
+        ),
         'disableAllEndpoints' => array( 'default' => false, 'description' => 'When true, turns off every entry point: index.php, log.php, api/index.php, cli.php and install.php.' ),
         'disabledEndpoints' => array( 'default' => array(), 'description' => 'Entry-point file names to turn off, such as install.php. Empty by default.' ),
         'domain_aliases' => array(

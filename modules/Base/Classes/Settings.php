@@ -2969,7 +2969,8 @@ namespace OWA\Module\Base\Classes;
                 'theme'                                => '',
                 'reserved_words'                    => array('do' => 'action'),
                 'start_page'                        => 'base.reportingHome',
-                'default_page'                        => '', // move to site settings
+                // A page path's last segment named here is dropped: /store/index.html is /store.
+                'directory_index_pages'             => \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES,
                 'default_cache_expiration_period'    => 604800,
                 'nonce_expiration_period'            => 7200,
                 'default_reporting_period'            => 'last_seven_days',
@@ -3053,6 +3054,7 @@ namespace OWA\Module\Base\Classes;
                 'use_32bit_hash_before_v2'          => false,
                 'goal_event_names_before_075'       => array(),
                 'funnel_steps_before_079'           => array(),
+                'default_page_before_080'           => array(),
                 'v1_tables_dropped'                 => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.

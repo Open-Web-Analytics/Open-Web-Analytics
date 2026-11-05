@@ -820,7 +820,7 @@ final class EventRawIngestionTest extends IngestionTestCase
      *
      * The host is what the cube pass classifies source and medium from, so it is
      * the reading that has to be there. Beyond that the URL is SOMEBODY ELSE'S,
-     * and canonicalising it against this site's default page or filtering it
+     * and canonicalising it with this install's directory index pages or filtering it
      * against this site's parameter list would be a category error -- their
      * ?q=shoes is the search term, not plumbing to strip.
      */
@@ -1251,6 +1251,31 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->assertStringContainsString('/v2/store/', $row['page_location'],
             'and the URL still says exactly what arrived');
+    }
+
+    /**
+     * A directory index page collapses with no setting stored: the default list
+     * names index.html. Set for this request, so a list the install stored does
+     * not decide it.
+     */
+    public function testADirectoryIndexPageIsCollapsed(): void
+    {
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'directory_index_pages');
+
+        \OWA\Core\CoreAPI::setSetting('base', 'directory_index_pages',
+            \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES);
+
+        try {
+            $row = $this->firePageView([
+                'page_location' => 'https://owa-test-site/v2/store/index.html?keep=me',
+            ])['page_view'];
+
+            $this->assertSame('/v2/store', $row['page_path']);
+            $this->assertStringContainsString('/v2/store/index.html', $row['page_location']);
+
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'directory_index_pages', $before);
+        }
     }
 
     /**

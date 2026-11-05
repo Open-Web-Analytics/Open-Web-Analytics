@@ -100,7 +100,7 @@ final class ProfileChainQueryCountTest extends TestCase
         \OWA\Core\CoreAPI::settingCacheFlush();
 
         $cold = $this->queriesDuring( function () {
-            \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'profile', $this->siteId );
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', $this->siteId );
         } );
 
         $this->assertSame( 1, $cold,
@@ -122,7 +122,7 @@ final class ProfileChainQueryCountTest extends TestCase
 
         \OWA\Core\CoreAPI::settingCacheFlush();
 
-        \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'profile', $this->siteId );
+        \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', $this->siteId );
 
         $joined = \OWA\Core\CoreAPI::settingScopeChain( 'profile', $this->siteId );
 
@@ -197,8 +197,8 @@ final class ProfileChainQueryCountTest extends TestCase
         \OWA\Core\CoreAPI::settingCacheFlush();
 
         $this->assertSame(
-            \OWA\Core\CoreAPI::getSetting( 'base', 'default_page' ),
-            \OWA\Core\CoreAPI::getSetting( 'base', 'default_page', 'profile', 'OWA-no-such-profile' ) );
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', 'OWA-no-such-profile' ) );
 
         $this->assertSame(
             array( array( 'type' => 'profile', 'id' => 'OWA-no-such-profile' ) ),

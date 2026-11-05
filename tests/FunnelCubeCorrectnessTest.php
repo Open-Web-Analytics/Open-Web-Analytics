@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
  *
  * And that Update079 kept what each saved step counted: a path step and a goal
  * event step, made event steps, count what they counted before -- a trailing
- * slash, the default page and a typed ? included.
+ * slash, a directory index page and a typed ? included.
  */
 final class FunnelCubeCorrectnessTest extends TestCase
 {
@@ -36,8 +36,8 @@ final class FunnelCubeCorrectnessTest extends TestCase
 
     private array $goals = [];
 
-    /** default_page as it was, put back after a test that sets it. */
-    private $defaultPage = '';
+    /** directory_index_pages as it was, put back after a test that sets it. */
+    private $indexPages = [];
 
     public static function setUpBeforeClass(): void
     {
@@ -75,12 +75,12 @@ final class FunnelCubeCorrectnessTest extends TestCase
         \OWA\Core\CoreAPI::dbSingleton()->query(sprintf('DELETE FROM %s WHERE site_id = ?',
             \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY)), [self::SITE]);
 
-        $this->defaultPage = \OWA\Core\CoreAPI::getSetting('base', 'default_page');
+        $this->indexPages = \OWA\Core\CoreAPI::getSetting('base', 'directory_index_pages');
     }
 
     protected function tearDown(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'default_page', $this->defaultPage);
+        \OWA\Core\CoreAPI::setSetting('base', 'directory_index_pages', $this->indexPages);
 
         foreach ($this->goals as $goal) {
             \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_definition_condition WHERE goal_event_definition_id = ?', [$goal]);
@@ -303,8 +303,8 @@ final class FunnelCubeCorrectnessTest extends TestCase
 
     /**
      * A path step, converted, counts what the path step did: the typed path
-     * canonicalised as the row's was -- a trailing slash, and the default
-     * page -- and a typed ? split into page_path and page_query.
+     * canonicalised as the row's was -- a trailing slash, and a directory
+     * index page -- and a typed ? split into page_path and page_query.
      */
     public function testAConvertedPathStepCountsWhatThePathStepCounted(): void
     {
@@ -322,10 +322,15 @@ final class FunnelCubeCorrectnessTest extends TestCase
         $this->assertSame([2, 2], $this->funnel([['path' => '/store'], ['path' => '/checkout?']]),
             'a ? with nothing after it is no condition on the query');
 
-        \OWA\Core\CoreAPI::setSetting('base', 'default_page', 'index.php');
+        // The default list, set for this request: a list the install stored does not decide it.
+        \OWA\Core\CoreAPI::setSetting('base', 'directory_index_pages',
+            \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES);
 
         $this->assertSame([2, 2], $this->funnel([['path' => '/store/index.php'], ['path' => '/checkout']]),
-            'the default page is collapsed');
+            'a directory index page is collapsed');
+
+        $this->assertSame([2, 2], $this->funnel([['path' => '/store/index.html'], ['path' => '/checkout']]),
+            'whichever of the list it is');
     }
 
     /**
