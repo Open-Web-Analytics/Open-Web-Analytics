@@ -473,12 +473,7 @@ final class GoalMarkingTest extends TestCase
 
         $events = $this->filter( $purchase );
 
-        $this->assertSame( array( 'purchase' => 0, 'Bought_probe' => 1 ), $this->flags( $events ),
-            'DIAG row=' . json_encode( \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $purchase ) )
-            . ' goals=' . json_encode( \OWA\Core\CoreAPI::dbSingleton()->get_results(
-                'SELECT d.name, d.trigger_event_type, d.is_active, d.count_mode, d.property_id, c.condition_property, c.condition_operator, c.condition_value'
-              . ' FROM owa_goal_event_definition d LEFT JOIN owa_goal_event_definition_condition c ON c.goal_event_definition_id = d.id' ) )
-            . ' property=' . $this->propertyId . ' site=' . $this->siteId );
+        $this->assertSame( array( 'purchase' => 0, 'Bought_probe' => 1 ), $this->flags( $events ) );
 
         $row = \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $events[1] );
 

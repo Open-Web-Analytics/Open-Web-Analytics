@@ -358,6 +358,14 @@ class Entity {
 
         $type = (string) $this->properties[ $name ]->get( 'data_type' );
 
+        // The STRING '0' is falsy to PHP and a value to everyone else: a goal
+        // condition "revenue greater than 0" stored its 0 as nothing, and
+        // matched no event.
+        if ( $value === '0' ) {
+
+            return true;
+        }
+
         if ( ! in_array( $type, $this->numericColumnTypes(), true ) ) {
 
             return false;

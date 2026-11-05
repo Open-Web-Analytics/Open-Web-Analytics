@@ -97,6 +97,16 @@ final class EntityFalsyWriteTest extends TestCase
         $this->assertSame('organic', $s->get('tagged_medium'), 'null blanked a text column');
     }
 
+    /** The string '0' is a value on a text column, not nothing. */
+    public function testAStringColumnStoresTheStringZero(): void
+    {
+        $s = $this->row();
+        $s->set('tagged_medium', 'organic');
+
+        $s->set('tagged_medium', '0');
+        $this->assertSame('0', $s->get('tagged_medium'), "'0' was dropped as if it were empty");
+    }
+
     /** A numeric column must not accept a non-numeric falsy value either. */
     /**
      * clear() is how a caller says "this is now blank".
