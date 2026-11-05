@@ -420,6 +420,11 @@ test.describe('visualizations', () => {
      * is unchanged, and is named for its page once it is changed.
      */
     test('steps move, and keep their names until they change', async ({ page }) => {
+        // Tall enough for all three steps: Playwright scrolls the drop target
+        // into view between pressing the handle and releasing it, and a native
+        // drag does not survive that scroll.
+        await page.setViewportSize({ width: 1280, height: 1400 });
+
         await gotoAction(page, 'base.customReports', `&owa_siteId=${FIXTURE.siteId}`);
 
         await Promise.all([
