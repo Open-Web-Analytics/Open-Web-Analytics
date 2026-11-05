@@ -243,18 +243,20 @@ final class SpamScoreIngestTest extends IngestionTestCase
 
         $this->assertSame(array(), $this->rowsFor($stored['visitor_id']), 'queued, not yet ingested');
 
-        // The envelopes carry what the edge captured.
-        $messages = TrackerIngest::$queue->receive(10, 300);
-        $this->assertCount(3, $messages);
+        /*
+         * The envelopes carry what the edge captured. Read from the queue's
+         * file, not received: a received message put back with release() goes
+         * to the delayed file for the NEXT minute (FileEventQueue::delayedFile()),
+         * so a drain straight after it finds nothing due.
+         */
+        $lines = array_values(array_filter(array_map('trim',
+            (array) @file($this->queueDir . 'events.txt'))));
+        $this->assertCount(3, $lines, 'three beacons queued');
 
-        $first = $messages[0]->envelope['properties'];
+        $first = (array) (json_decode($lines[0], true)['e']['properties'] ?? array());
         $this->assertSame('no-cors', $first['request_sec_fetch_mode'] ?? null);
         $this->assertSame('https://www.' . self::DOMAIN . '/spam', $first['request_referer'] ?? null);
         $this->assertSame('https://www.' . self::DOMAIN . '/spam', $first['received_page_location'] ?? null);
-
-        foreach ($messages as $message) {
-            TrackerIngest::$queue->release($message, 0);
-        }
 
         $before = Blocks::$writes;
         $counts = TrackerIngest::drain(time() + 30);
