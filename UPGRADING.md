@@ -276,6 +276,35 @@ it is and named in the update's output; the funnel says which step to replace.
 The funnel's headline figure is now **Completion Rate**, the share of those
 who entered who reached the last step.
 
+### Spam detection replaces "Log Requests From Known Robots"
+
+The `log_robots` setting is gone. Every beacon now gets a spam score, the sum
+of the points of the spam rules it meets, and a beacon whose score reaches the
+spam threshold is not stored. Both settings are on Settings > General, under
+Tracking Request Processing:
+
+| Setting | Values | Default |
+|---|---|---|
+| `spam_detection` (Spam Detection) | `normal`: the user agent names a robot or crawler, as robot detection did. `strict`: also the request's headers, the page it came from and its URL | `normal` |
+| `spam_threshold` (Spam Threshold) | a number of at least 0.1, one decimal place; blank stores every beacon | `5.0` |
+
+Each stored row records its score and the rules it met in
+`owa_event_raw.spam_score` and `spam_rules` (Update082). Blocked beacons are
+counted per day, Profile and rule in `owa_spam_block` (Update083), and System
+Health shows today's and yesterday's counts under Tracker ingest.
+
+Update084 reads the install's `log_robots`:
+
+| `log_robots` stored at the install | After Update084 |
+|---|---|
+| on | `spam_threshold` is blank: nothing is blocked, as robots were stored before |
+| off, or not stored | nothing changes: the default threshold blocks what was dropped |
+
+Either way the `log_robots` rows are removed; the update's down() puts them
+back. A `log_robots` set in `owa-config.php` is not migrated and is no longer
+read: to keep storing robots, set `spam_threshold` to blank there or on the
+settings screen instead.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0
