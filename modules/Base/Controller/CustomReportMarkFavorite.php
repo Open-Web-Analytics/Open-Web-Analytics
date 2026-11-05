@@ -30,6 +30,18 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
         $this->type = 'options';
         $this->setRequiredCapability( 'view_reports' );
         $this->setNonceRequired();
+
+        /*
+         * The Property the report is starred on: the one the request names, else
+         * the report's own (CustomReports::requestProperty()).
+         */
+        $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
+            (string) $this->getParam( 'customReportId' ), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );
+
+        if ( $propertyId !== '' ) {
+
+            $this->setParam( 'propertyId', $propertyId );
+        }
     }
 
     public function validate() {
@@ -40,10 +52,11 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
     function action() {
 
         $id     = (string) $this->getParam( 'customReportId' );
-        $report = \OWA\Module\Base\Classes\CustomReports::load( $id );
+        $report = \OWA\Module\Base\Classes\CustomReports::loadOf( $id, (string) $this->getParam( 'propertyId' ) );
 
         /*
-         * The report has to exist, and that is the whole check.
+         * The report has to exist on the Property the request is on, and that
+         * is the whole check.
          *
          * Not "and you must be allowed to see it": a custom report renders for
          * anyone with view_reports by design, so there is no narrower set to

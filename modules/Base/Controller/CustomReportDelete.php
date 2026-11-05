@@ -35,6 +35,18 @@ class CustomReportDelete extends \OWA\Core\AdminController {
         $this->type = 'options';
         $this->setRequiredCapability( 'edit_reports' );
         $this->setNonceRequired();
+
+        /*
+         * The Property the report is deleted on: the one the request names, else
+         * the report's own (CustomReports::requestProperty()).
+         */
+        $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
+            (string) $this->getParam( 'customReportId' ), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );
+
+        if ( $propertyId !== '' ) {
+
+            $this->setParam( 'propertyId', $propertyId );
+        }
     }
 
     public function validate() {
@@ -46,7 +58,10 @@ class CustomReportDelete extends \OWA\Core\AdminController {
 
         $id = (string) $this->getParam( 'customReportId' );
 
-        $report = \OWA\Module\Base\Classes\CustomReports::load( $id );
+        $propertyId = (string) $this->getParam( 'propertyId' );
+
+        // One of another Property is not found, and is answered as one below.
+        $report = \OWA\Module\Base\Classes\CustomReports::loadOf( $id, $propertyId );
 
         $user = \OWA\Core\CoreAPI::getCurrentUser();
 
@@ -69,12 +84,18 @@ class CustomReportDelete extends \OWA\Core\AdminController {
         } else {
 
             /*
-             * A report somebody else owns, or one that is already gone, are
-             * answered the same way: back to the roster, nothing destroyed.
+             * A report somebody else owns, one of another Property, or one
+             * that is already gone, are answered the same way: back to the roster, nothing destroyed.
              * Distinguishing them would tell a caller whether an id they are
              * not allowed to touch exists.
              */
             $this->setStatusCode( 2513 );
+        }
+
+        // Back to the roster of the same Property, which lists its reports.
+        if ( $propertyId !== '' ) {
+
+            $this->set( 'propertyId', $propertyId );
         }
 
         $this->setRedirectAction( 'base.customReports' );

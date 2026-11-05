@@ -16,16 +16,18 @@ namespace OWA\Module\Base\Entity;
  * narrowing so that one day a definition could come from a user; this is that
  * day, and none of them may be relaxed.
  *
- * NO site_id, deliberately. A custom report is site-agnostic like every other
- * report: the site filter in the report chrome chooses at view time, so one
- * report works across every site its reader can see. Recording a site here
- * would make the filter either decorative or a contradiction.
+ * OF ONE PROPERTY (`property_id`), as reporting is: it is listed, opened,
+ * edited and drawn on that Property alone, and its names are checked against
+ * that Property's dimensions (Classes\DimensionRegistry), custom ones
+ * included. A report is drawn for every Profile of its Property; the Profile
+ * dimension is how one breaks a Profile out. The shipped reports in
+ * modules/Base/reports/ are the install's and belong to no Property.
  *
  * `user_id` is the CREATOR, and it is what the roster filters on -- a
  * non-admin sees their own reports listed. It does not gate VIEWING: a report
- * reached by its URL renders for anyone with view_reports on the site being
- * looked at, which is what makes the URL shareable. The report can show nothing
- * its reader could not already query for themselves.
+ * reached by its URL renders for anyone with view_reports on its Property,
+ * which is what makes the URL shareable. The report can show nothing its
+ * reader could not already query for themselves.
  *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
@@ -53,6 +55,15 @@ class CustomReport extends \OWA\Core\Entity {
         // per-user table in this schema uses -- notification_state included.
         $user_id = new \OWA\Module\Base\Classes\DbColumn( 'user_id', OWA_DTD_VARCHAR255 );
         $this->setProperty( $user_id );
+
+        /*
+         * The Property it belongs to: owa_property.id, set when it is made, to
+         * the Property its author was on, and never changed. Nullable only for
+         * Update081, which adds it and assigns every row made before it.
+         */
+        $property_id = new \OWA\Module\Base\Classes\DbColumn( 'property_id', OWA_DTD_BIGINT );
+        $property_id->setIndex();
+        $this->setProperty( $property_id );
 
         /*
          * The definition, as JSON.

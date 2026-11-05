@@ -18,6 +18,19 @@ class VisualizationSave extends \OWA\Core\AdminController {
         parent::__construct( $params );
         $this->setRequiredCapability( 'edit_reports' );
         $this->setNonceRequired();
+
+        /*
+         * The Property it is saved to: the one the form posts, else an existing
+         * visualization's own (CustomReports::requestProperty()). Set here, so
+         * validate() checks the steps against its custom dimensions.
+         */
+        $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
+            (string) $this->getParam( 'visualizationId' ), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );
+
+        if ( $propertyId !== '' ) {
+
+            $this->setParam( 'propertyId', $propertyId );
+        }
     }
 
     /**
@@ -41,6 +54,10 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
             array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
+
+        // A new one is stored on a Property, as a report is (CustomReports::save()).
+        $this->addValidation( 'propertyId', (string) $this->getParam( 'propertyId' ), 'required',
+            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'No Property was named to save this to.' ) ) );
 
         /*
          * The step rules, from Classes\FunnelStep, which the preview applies
@@ -212,7 +229,21 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
         $report = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
 
+        $propertyId = (string) $this->getParam( 'propertyId' );
+
         if ( $id ) {
+
+            /*
+             * Only one of this Property. One of another, or one that is gone,
+             * is refused as the editor refuses it, and nothing is written.
+             */
+            if ( ! \OWA\Module\Base\Classes\CustomReports::loadOf( $id, $propertyId ) ) {
+
+                $this->setStatusCode( 2513 );
+                $this->setRedirectAction( 'base.customReports' );
+
+                return;
+            }
 
             $report->load( $id );
         }
@@ -256,6 +287,8 @@ class VisualizationSave extends \OWA\Core\AdminController {
             $report->set( 'id', $report->generateId(
                 'visualization:' . uniqid( '', true ) ) );
             $report->set( 'user_id', (string) $user->getUserData( 'user_id' ) );
+            // Of the Property the builder was on, for good.
+            $report->set( 'property_id', $propertyId );
             $report->set( 'creation_timestamp', \OWA\Core\CoreAPI::getRequestTimestamp() );
             $report->create();
         }
@@ -267,8 +300,6 @@ class VisualizationSave extends \OWA\Core\AdminController {
          */
         $this->set( 'reportId',
             \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $report->get( 'id' ) );
-
-        $propertyId = (string) $this->getParam( 'propertyId' );
 
         if ( $propertyId !== '' ) {
 

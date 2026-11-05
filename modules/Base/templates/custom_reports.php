@@ -1,8 +1,8 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /**
- * The custom report roster: every report and funnel the reader may see, in one
- * list with a Type column.
+ * The custom report roster: every report and funnel of this Property the reader
+ * may see, in one list with a Type column.
  *
  * Ownership decides what is LISTED, not what may be opened. An admin sees every
  * report; everyone else sees their own and the shared ones. A report reached by

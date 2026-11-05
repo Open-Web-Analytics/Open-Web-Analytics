@@ -25,12 +25,38 @@ class VisualizationEdit extends \OWA\Core\ReportController {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'edit_reports' );
+
+        /*
+         * Edited on its own Property: the one the request names, else the
+         * visualization's (CustomReports::requestProperty()), set before pre()
+         * resolves one.
+         */
+        $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
+            (string) $this->getParam( 'visualizationId' ), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );
+
+        if ( $propertyId !== '' ) {
+
+            $this->setParam( 'propertyId', $propertyId );
+        }
     }
 
     function action() {
 
         $id     = (string) $this->getParam( 'visualizationId' );
-        $report = $id ? \OWA\Module\Base\Classes\CustomReports::load( $id ) : null;
+        $report = $id ? \OWA\Module\Base\Classes\CustomReports::loadOf( $id, (string) $this->getParam( 'propertyId' ) ) : null;
+
+        /*
+         * One that is not on this Property, of another or gone, is refused as
+         * one this reader may not edit is. It used to open as a blank form
+         * carrying the id.
+         */
+        if ( $id && ! $report ) {
+
+            $this->setStatusCode( 2513 );
+            $this->setRedirectAction( 'base.customReports' );
+
+            return;
+        }
 
         if ( $report ) {
 

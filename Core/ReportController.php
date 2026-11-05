@@ -364,7 +364,7 @@ class ReportController extends \OWA\Core\AdminController {
             unset( $nav['Ecommerce'] );
         }
 
-        return self::withCustomReports( $nav );
+        return self::withCustomReports( $nav, (string) $propertyId );
     }
 
     /**
@@ -487,15 +487,17 @@ class ReportController extends \OWA\Core\AdminController {
      * install is running. A module registering navigation is answering "what
      * does this install have"; this is answering "what does this person have".
      *
-     * Reports and funnels are one list, so their favorites are one group. The
-     * section keeps its column with no favorites, since All reports is where
-     * one gets built, and it is current on any custom report and on both
-     * builders, favorite or not.
+     * Reports and funnels are one list, so their favorites are one group:
+     * those of the Property the nav is of, as a report is listed on its own
+     * Property alone. The section keeps its column with no favorites, since
+     * All reports is where one gets built, and it is current on any custom
+     * report and on both builders, favorite or not.
      *
-     * @param array $nav
+     * @param array  $nav
+     * @param string $propertyId
      * @return array
      */
-    private static function withCustomReports( array $nav ) {
+    private static function withCustomReports( array $nav, $propertyId ) {
 
         $user = \OWA\Core\CoreAPI::getCurrentUser();
 
@@ -508,7 +510,8 @@ class ReportController extends \OWA\Core\AdminController {
 
         $favorites = \OWA\Module\Base\Classes\CustomReports::favorites(
             (string) $user->getUserData( 'user_id' ),
-            (bool) $user->isCapable( 'edit_users' )
+            (bool) $user->isCapable( 'edit_users' ),
+            $propertyId
         );
 
         $links = array();

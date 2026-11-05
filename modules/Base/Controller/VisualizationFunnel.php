@@ -86,10 +86,32 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      */
     private $savedConstraints = '';
 
-    /** The visualization being drawn: the stored one this report names. */
+    /**
+     * Drawn on its own Property when the request names none, as the report
+     * dispatcher does (CustomReports::requestProperty()): this action can be
+     * reached by name as well as through it.
+     */
+    function __construct( $params ) {
+
+        parent::__construct( $params );
+
+        $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
+            $this->visualizationId(), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );
+
+        if ( $propertyId !== '' ) {
+
+            $this->setParam( 'propertyId', $propertyId );
+        }
+    }
+
+    /**
+     * The visualization being drawn: the stored one this report names, if it
+     * is of the Property being reported on.
+     */
     protected function visualization() {
 
-        return \OWA\Module\Base\Classes\CustomReports::load( $this->visualizationId() );
+        return \OWA\Module\Base\Classes\CustomReports::loadOf(
+            $this->visualizationId(), (string) $this->getParam( 'propertyId' ) );
     }
 
     protected function visualizationId() {

@@ -50,7 +50,7 @@ async function findBreakdownReport(page) {
         return breakdownUrl;
     }
 
-    await page.goto('?owa_do=base.customReports', { waitUntil: 'networkidle' });
+    await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
 
     const href = await page
         .locator(`table.owa_customReportRoster a:text-is("${FIXTURE.breakdownReportName}")`)

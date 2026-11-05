@@ -25,10 +25,12 @@ namespace OWA\Module\Base\Controller;
  * sent one, and the roster is where they find what they have. And not
  * view_reports either, which looks like the obvious choice and is wrong:
  * view_reports is listed in capabilitiesThatRequireSiteAccess, so it is only
- * satisfied against a particular site. The roster has no site -- it lists
- * reports, and a custom report is site-agnostic -- so requiring view_reports
- * refuses every non-admin with "No access to any site", which is what the e2e
- * suite caught.
+ * satisfied against a particular site, and a request for the roster need name
+ * none. Requiring it refused every non-admin with "No access to any site",
+ * which is what the e2e suite caught.
+ *
+ * It lists the reports of ONE PROPERTY, the one pre() resolved: a report
+ * belongs to the Property it was made on, and is listed there alone.
  *
  * What edit_reports changes is whether the New and Edit controls appear.
  *
@@ -104,7 +106,7 @@ class CustomReports extends \OWA\Core\ReportController {
 
         $reports = \OWA\Module\Base\Classes\CustomReports::roster(
             $user_id, $sees_all, $sort, $descending, null, $this->rosterType(),
-            $mine_only, $favorites_only );
+            $mine_only, $favorites_only, (string) $this->getParam( 'propertyId' ) );
 
         // What the headings need to draw themselves: which one is active, and
         // which way, so each can link to the OPPOSITE of what it shows now.
@@ -120,16 +122,16 @@ class CustomReports extends \OWA\Core\ReportController {
          * something that no longer exists, and it should say so in the list,
          * not only when someone opens it.
          *
-         * Against the Property the roster is on, which is where its links open
-         * a report: one grouped by a custom dimension draws only for a Property
-         * that has it.
+         * Against the report's own Property, which is the one the roster is
+         * on: one grouped by a custom dimension draws only where it is applied.
          */
         foreach ( $reports as $i => $report ) {
 
             $reports[ $i ]['kind']    = self::kindOf( $report );
             $reports[ $i ]['invalid'] = $reports[ $i ]['kind'] === 'report'
                 ? \OWA\Module\Base\Classes\CustomReports::validate(
-                    (array) ( $report['definition'] ?? array() ), (string) $this->getParam( 'propertyId' ) )
+                    (array) ( $report['definition'] ?? array() ),
+                    \OWA\Module\Base\Classes\CustomReports::propertyOf( $report ) )
                 : '';
         }
 
@@ -218,15 +220,11 @@ class CustomReports extends \OWA\Core\ReportController {
          * not a report of a time range, and neither control would change
          * anything on the page.
          *
-         * THE SITES FILTER STAYS, though it used to go with them on the same
-         * reasoning -- that a custom report is site-agnostic, so the list reads
-         * the same whichever Property is selected. The list does; the page does
-         * not. Every report link on it carries the current propertyId
-         * (add_state), because a report opened from here has to open FOR
-         * somewhere. So the Property is live on this screen and decides where
-         * these links land --
-         * hiding the control that shows it left that state invisible and
-         * unchangeable, which is how it read as the tile going missing.
+         * THE SITES FILTER STAYS. The list is of the Property it shows, and
+         * every report link on it carries that propertyId (add_state). It was
+         * once hidden on the reasoning that a custom report was site-agnostic,
+         * which left that state invisible and unchangeable, and read as the
+         * tile going missing.
          */
         $this->hideTimeControls();
     }
