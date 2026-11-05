@@ -207,7 +207,7 @@ class TrackerIngest {
     }
 
     /**
-     * A beacon whose ingest failed in the request: retry it from the intake.
+     * A beacon whose ingest failed in the request: queue it, to retry a minute later.
      *
      * @param  Event $event
      * @param  array $envelope  the beacon as it arrived, before processing rewrote it
