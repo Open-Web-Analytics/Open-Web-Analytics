@@ -38,6 +38,18 @@ class CustomReportSave extends \OWA\Core\AdminController {
 
         $this->setRequiredCapability( 'edit_reports' );
         $this->setNonceRequired();
+
+        /*
+         * The Property the report is saved to: the one the form posts, else an
+         * existing report's own (CustomReports::requestProperty()).
+         */
+        $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
+            (string) $this->getParam( 'customReportId' ), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );
+
+        if ( $propertyId !== '' ) {
+
+            $this->setParam( 'propertyId', $propertyId );
+        }
     }
 
     public function validate() {
@@ -51,7 +63,19 @@ class CustomReportSave extends \OWA\Core\AdminController {
         $user    = \OWA\Core\CoreAPI::getCurrentUser();
         $user_id = (string) $user->getUserData( 'user_id' );
 
-        $id = (string) $this->getParam( 'customReportId' );
+        $id         = (string) $this->getParam( 'customReportId' );
+        $propertyId = (string) $this->getParam( 'propertyId' );
+
+        /*
+         * Saved only to a Property the author may report on, a create as well
+         * as an edit: edit_reports is held on every Property. Refused as an
+         * unknown report is, so a Property's reports are not told apart from
+         * none. No Property at all is save()'s to refuse.
+         */
+        if ( $propertyId !== '' && ! \OWA\Module\Base\Classes\CustomReports::mayReportOn( $propertyId ) ) {
+
+            return $this->refuse( \OWA\Core\CoreAPI::t( 'That report does not exist.' ) );
+        }
 
         /*
          * An EDIT is authorised against the stored row, not against the id in
@@ -60,7 +84,17 @@ class CustomReportSave extends \OWA\Core\AdminController {
          */
         if ( $id !== '' ) {
 
-            $existing = \OWA\Module\Base\Classes\CustomReports::load( $id );
+            /*
+             * Of this Property, or not found: asked before ownership, so a
+             * report of another Property is answered as one that does not
+             * exist rather than as somebody else's.
+             */
+            $existing = \OWA\Module\Base\Classes\CustomReports::loadOf( $id, $propertyId );
+
+            if ( ! $existing ) {
+
+                return $this->refuse( \OWA\Core\CoreAPI::t( 'That report does not exist.' ) );
+            }
 
             $may = \OWA\Module\Base\Classes\CustomReports::mayEdit(
                 $existing, $user_id, (bool) $user->isCapable( 'edit_users' ) );
@@ -71,14 +105,15 @@ class CustomReportSave extends \OWA\Core\AdminController {
             }
         }
 
-        // Validated against the dimensions of the Property the builder was on,
-        // which the form posts: a custom dimension of its is a choice there.
+        // Stored on, and validated against the dimensions of, the Property the
+        // builder was on, which the form posts: a custom dimension of its is a
+        // choice there. An existing report's is its own (loadOf() above).
         $result = \OWA\Module\Base\Classes\CustomReports::save( array(
             'id'         => $id,
             'name'       => $this->getParam( 'customReportName' ),
             'definition' => $this->getParam( 'customReportDefinition' ),
             'is_shared'  => (bool) $this->getParam( 'isShared' ),
-        ), $user_id, (string) $this->getParam( 'propertyId' ) );
+        ), $user_id, $propertyId );
 
         if ( ! $result['ok'] ) {
 
@@ -109,8 +144,6 @@ class CustomReportSave extends \OWA\Core\AdminController {
          * afford. Caught by the e2e suite, not by any unit test: it needs a real
          * user with a real site grant to reproduce.
          */
-        $propertyId = (string) $this->getParam( 'propertyId' );
-
         if ( $propertyId !== '' ) {
 
             $this->set( 'propertyId', $propertyId );

@@ -175,6 +175,42 @@ final class Update061Test extends TestCase
         $this->assertSame($row['creation_timestamp'], $this->row($plan['id'])['creation_timestamp'], 'not re-created');
     }
 
+    /**
+     * The order of a 1.x upgrade: this runs on a table with no property_id,
+     * which Update081 adds later and then gives each converted funnel its
+     * Profile's Property.
+     */
+    public function testItsFunnelsAreMadeBeforePropertyIdAndThenGivenTheirProfilesProperty(): void
+    {
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $u081  = new \OWA\Module\Base\Update\Update081();
+        $kept  = [];
+
+        // Update081's down() forgets every row's Property; put them back after.
+        foreach ((array) $db->get_results('SELECT id, property_id FROM owa_custom_report WHERE property_id IS NOT NULL') as $row) {
+            $kept[(string) ((array) $row)['id']] = (string) ((array) $row)['property_id'];
+        }
+
+        try {
+            $this->assertTrue($u081->down(), 'the table as 1.x left it, with no property_id');
+
+            $plan = $this->plans()[0];
+            $db->query('DELETE FROM owa_custom_report WHERE id = ?', [$plan['id']]);
+
+            $this->assertTrue($this->update->up(), 'made on the columns it knows');
+            $this->assertSame('funnel', $this->row($plan['id'])['visualization_type'] ?? null);
+
+            $this->assertTrue($u081->up());
+            $this->assertSame(self::PROPERTY, (string) $this->row($plan['id'])['property_id'], "its Profile's Property");
+        } finally {
+            $u081->up();
+
+            foreach ($kept as $id => $property) {
+                $db->query('UPDATE owa_custom_report SET property_id = ? WHERE id = ?', [$property, $id]);
+            }
+        }
+    }
+
     public function testAFunnelWhoseGoalEventDefinitionIsMissingEndsAtItsLastPage(): void
     {
         \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event WHERE property_id = ?', [self::PROPERTY]);

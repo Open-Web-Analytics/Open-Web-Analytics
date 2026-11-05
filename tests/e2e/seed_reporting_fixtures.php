@@ -603,6 +603,28 @@ function seedCube(): array
 }
 
 /**
+ * The Property the fixture reports belong to: the fixture site's. A custom
+ * report is listed and opened on its own Property alone, and the specs report
+ * on this one.
+ */
+function e2eReportProperty(): string
+{
+    return (string) \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite(E2E_SITE_ID);
+}
+
+/**
+ * A fixture report found by name and reused, on the fixture Property.
+ *
+ * A row seeded before reports had a Property was given one by Update081, by
+ * rule, which need not be the fixture site's.
+ */
+function e2eKeepOnReportProperty(string $id): void
+{
+    \OWA\Core\CoreAPI::dbSingleton()->query('UPDATE owa_custom_report SET property_id = ? WHERE id = ?',
+        [e2eReportProperty(), $id]);
+}
+
+/**
  * One stored custom report, owned by a user nobody logs in as.
  *
  * Written through CustomReports::save() rather than as a raw row, so it is
@@ -621,6 +643,8 @@ function seedOthersReport(): array
     foreach ((array) $db->getAllRows() as $row) {
 
         if (($row['name'] ?? '') === E2E_OTHERS_REPORT_NAME) {
+
+            e2eKeepOnReportProperty((string) $row['id']);
 
             return ['id' => $row['id'], 'owner' => $row['user_id'], 'reused' => true];
         }
@@ -642,7 +666,7 @@ function seedOthersReport(): array
                 ],
             ]],
         ],
-    ], E2E_OTHERS_REPORT_OWNER);
+    ], E2E_OTHERS_REPORT_OWNER, e2eReportProperty());
 
     return ['id' => $result['id'] ?? '', 'owner' => E2E_OTHERS_REPORT_OWNER,
             'error' => $result['error'] ?? ''];
@@ -663,6 +687,8 @@ function seedBreakdownReport(): array
     foreach ((array) $db->getAllRows() as $row) {
 
         if (($row['name'] ?? '') === E2E_BREAKDOWN_REPORT_NAME) {
+
+            e2eKeepOnReportProperty((string) $row['id']);
 
             return ['id' => $row['id'], 'reused' => true];
         }
@@ -687,7 +713,7 @@ function seedBreakdownReport(): array
                 ],
             ]],
         ],
-    ], E2E_ADMIN_ID);
+    ], E2E_ADMIN_ID, e2eReportProperty());
 
     return ['id' => $result['id'] ?? '', 'error' => $result['error'] ?? ''];
 }
@@ -705,6 +731,8 @@ function seedBoxesReport(): array
     foreach ((array) $db->getAllRows() as $row) {
 
         if (($row['name'] ?? '') === E2E_BOXES_REPORT_NAME) {
+
+            e2eKeepOnReportProperty((string) $row['id']);
 
             return ['id' => $row['id'], 'reused' => true];
         }
@@ -725,7 +753,7 @@ function seedBoxesReport(): array
                 ],
             ]],
         ],
-    ], E2E_USER_ID);
+    ], E2E_USER_ID, e2eReportProperty());
 
     return ['id' => $result['id'] ?? '', 'error' => $result['error'] ?? ''];
 }
@@ -1137,6 +1165,9 @@ function seedFunnelVisualization(): array
         $report->set('creation_timestamp', \OWA\Core\CoreAPI::getRequestTimestamp());
         $report->create();
     }
+
+    // On the fixture Property, a reused row included (e2eKeepOnReportProperty()).
+    e2eKeepOnReportProperty($id);
 
     /*
      * Read BACK, not returned from what was written.

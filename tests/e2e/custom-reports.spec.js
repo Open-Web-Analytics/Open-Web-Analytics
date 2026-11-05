@@ -48,8 +48,9 @@ async function openBuilderOnGrid(page) {
     await startWidget(page, 'grid');
 }
 
+/** The roster of the fixture Property, which the reports here are saved on and listed on alone. */
 async function openRoster(page) {
-    await page.goto('?owa_do=base.customReports', { waitUntil: 'networkidle' });
+    await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
 }
 
 /**
@@ -2792,7 +2793,7 @@ test.describe('custom reports', () => {
                 const name = await buildOne(page, 'RosterStar');
 
                 // Sorted by name, so the round trip has an order to keep.
-                await page.goto('?owa_do=base.customReports&rosterSort=name&rosterDesc=0',
+                await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}&rosterSort=name&rosterDesc=0`,
                     { waitUntil: 'networkidle' });
 
                 const row  = page.locator('.owa_customReportRoster tbody tr', { hasText: name });
@@ -3060,7 +3061,8 @@ test.describe('custom reports', () => {
             const adminPage = await adminContext.newPage();
 
             await loginAs(adminPage, FIXTURE.adminUserId, FIXTURE.adminPassword);
-            await adminPage.goto('?owa_do=base.customReports', { waitUntil: 'networkidle' });
+            // On the fixture Property, which the report is of and is listed on alone.
+            await adminPage.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
 
             const href = await adminPage
                 .locator(`table.owa_customReportRoster a:text-is("${FIXTURE.othersReportName}")`)

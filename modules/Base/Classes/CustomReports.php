@@ -1755,6 +1755,115 @@ class CustomReports {
     }
 
     /**
+     * One stored report of one Property, or null.
+     *
+     * A report of another Property is answered as one that does not exist, so
+     * a request naming the wrong Property cannot tell a report there from no
+     * report at all. Every screen and write that takes a report by id reads it
+     * through this, with the Property the request is on.
+     *
+     * @param  string     $id
+     * @param  string|int $property_id
+     * @return array|null
+     */
+    public static function loadOf( $id, $property_id ) {
+
+        $report = self::load( $id );
+
+        return $report && self::isOfProperty( $report, $property_id ) ? $report : null;
+    }
+
+    /**
+     * The Property a stored report belongs to, or '' for a row that has none.
+     *
+     * @param  array|null $report
+     * @return string
+     */
+    public static function propertyOf( $report ) {
+
+        $property_id = (string) ( ( (array) $report )['property_id'] ?? '' );
+
+        return $property_id === '0' ? '' : $property_id;
+    }
+
+    /**
+     * Whether a stored report belongs to this Property. A row with no Property
+     * belongs to none.
+     *
+     * @param  array|null $report
+     * @param  string|int $property_id
+     * @return bool
+     */
+    public static function isOfProperty( $report, $property_id ) {
+
+        $own = self::propertyOf( $report );
+
+        return $own !== '' && $own === (string) $property_id;
+    }
+
+    /**
+     * Whether the signed-in user may report on this Property: view_reports on
+     * it, checked against a Profile of it they may see.
+     *
+     * Asked by the saves on top of edit_reports, which is held on every
+     * Property: a report or funnel is saved only to a Property its author can
+     * open it on.
+     *
+     * @param  string|int $property_id
+     * @return bool
+     */
+    public static function mayReportOn( $property_id ) {
+
+        if ( (string) $property_id === '' ) {
+
+            return false;
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+
+        return (bool) $user->isCapable( 'view_reports', $user->siteIdForProperty( (string) $property_id ) );
+    }
+
+    /**
+     * The Property a request about one stored report is on: the one it names
+     * (propertyId, else its siteId's), else the report's own.
+     *
+     * A link that names no Property opens the report on its own, so a link
+     * made before reports had one, or cut down to its reportId, still works.
+     * Access is then checked against that Property, as for any report. A link
+     * naming another Property finds nothing (loadOf()).
+     *
+     * Asked by each controller's constructor, which sets it as the request's
+     * propertyId before the capability check and pre() read it. With no id,
+     * the request's propertyId as it is, and nothing is read: pre() resolves
+     * the Property of a screen about no report.
+     *
+     * @param  string      $id          the report's id, or '' for a new one
+     * @param  string|null $property_id the request's propertyId
+     * @param  string|null $site_id     the request's siteId
+     * @return string                   '' when the request names none and there is no such report
+     */
+    public static function requestProperty( $id, $property_id, $site_id ) {
+
+        if ( (string) $property_id !== '' || (string) $id === '' ) {
+
+            return (string) $property_id;
+        }
+
+        if ( (string) $site_id !== '' ) {
+
+            $named = (string) \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id );
+
+            if ( $named !== '' ) {
+
+                return $named;
+            }
+        }
+
+        return self::propertyOf( self::load( $id ) );
+    }
+
+    /**
      * The reports a user may see listed.
      *
      * Ownership governs the ROSTER, not viewing: an admin sees every report, a
@@ -1776,15 +1885,33 @@ class CustomReports {
      * @param bool   $favorites_only true to list only what this user starred.
      *                          The same kind of thing as $mine_only, and it
      *                          narrows the same way.
+     * @param string|null $property_id the Property whose reports are listed;
+     *                          '' lists nothing, and null every Property's,
+     *                          which no screen asks for
      * @return array
      */
-    public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null, $type = null, $mine_only = false, $favorites_only = false ) {
+    public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null, $type = null, $mine_only = false, $favorites_only = false, $property_id = null ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $sql    = 'SELECT * FROM owa_custom_report';
         $params = array();
         $where  = array();
+
+        /*
+         * A report is of one Property, and is listed on that Property alone.
+         * No Property, which a reader who may see none has, lists none.
+         */
+        if ( $property_id !== null ) {
+
+            if ( (string) $property_id === '' ) {
+
+                return array();
+            }
+
+            $where[]  = 'property_id = ?';
+            $params[] = (string) $property_id;
+        }
 
         $starred = \OWA\Module\Base\Classes\CustomReportFavorites::idsFor( $user_id );
 
@@ -1946,12 +2073,28 @@ class CustomReports {
      * Returns the id on success, or a string error. The caller decides how to
      * show the error; this decides whether there is one.
      *
+     * The Property is the one the report belongs to. A new report is stored
+     * on it, and an edit is refused unless the report is already of it, as
+     * one that does not exist is: a report never moves between Properties.
+     *
      * @param array  $fields {id, name, definition}
      * @param string $user_id the author, for a new report
      * @param string|null $property_id the Property it is built on, whose dimensions it may name
      * @return array {ok:bool, id:string, error:string}
      */
     public static function save( array $fields, $user_id, $property_id = null ) {
+
+        $id = (string) ( $fields['id'] ?? '' );
+
+        if ( $id !== '' && ! self::loadOf( $id, $property_id ) ) {
+
+            return self::failure( \OWA\Core\CoreAPI::t( 'That report does not exist.' ) );
+        }
+
+        if ( $id === '' && (string) $property_id === '' ) {
+
+            return self::failure( \OWA\Core\CoreAPI::t( 'No Property was named to save this to.' ) );
+        }
 
         $name = trim( (string) ( $fields['name'] ?? '' ) );
 
@@ -1992,7 +2135,6 @@ class CustomReports {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
 
-        $id  = (string) ( $fields['id'] ?? '' );
         $now = time();
 
         if ( $id !== '' ) {
@@ -2026,6 +2168,7 @@ class CustomReports {
 
             $entity->set( 'id', $id );
             $entity->set( 'user_id', (string) $user_id );
+            $entity->set( 'property_id', (string) $property_id );
             $entity->set( 'creation_timestamp', $now );
             $entity->create();
 
@@ -2033,7 +2176,8 @@ class CustomReports {
 
             // user_id is NOT reassigned on edit. The creator is a fact about
             // the report, and an admin editing someone's report must not
-            // silently become its author on the roster.
+            // silently become its author on the roster. Nor is property_id:
+            // the edit was refused above unless it is already this one.
             $entity->update();
         }
 
@@ -2088,16 +2232,17 @@ class CustomReports {
     const NAV_LIMIT = 10;
 
     /**
-     * The reader's favorites of either kind, for the nav: the ones they may
-     * still see, by name.
+     * The reader's favorites of either kind on one Property, for the nav: the
+     * ones they may still see, by name.
      *
      * @param string $user_id
      * @param bool   $all
+     * @param string $property_id the Property the nav is of; '' lists none
      * @return array
      */
-    public static function favorites( $user_id, $all = false ) {
+    public static function favorites( $user_id, $all = false, $property_id = '' ) {
 
-        return self::roster( $user_id, $all, 'name', false, self::NAV_LIMIT, null, false, true );
+        return self::roster( $user_id, $all, 'name', false, self::NAV_LIMIT, null, false, true, (string) $property_id );
     }
 
     /**

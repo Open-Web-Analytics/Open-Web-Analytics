@@ -150,30 +150,37 @@ class Update061 extends \OWA\Core\Update {
         }
 
         $owner = $this->firstAdmin();
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' )->getTableName();
 
         foreach ( $plans as $plan ) {
 
-            $report = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
-            $report->load( $plan['id'] );
-
-            if ( $report->wasPersisted() ) {
+            if ( $db->get_row( sprintf( 'SELECT id FROM %s WHERE id = ?', $table ), array( $plan['id'] ) ) ) {
 
                 continue;
             }
 
-            $report->setProperties( array(
-                'id'                     => $plan['id'],
-                'name'                   => $plan['name'],
-                'user_id'                => $owner,
-                'report_type'            => \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION,
-                'visualization_type'     => 'funnel',
-                'is_shared'              => 1,
-                'definition'             => json_encode( array( 'steps' => $plan['steps'] ) ),
-                'creation_timestamp'     => time(),
-                'last_updated_timestamp' => time(),
-            ) );
+            /*
+             * RAW SQL ON THE COLUMNS THIS UPDATE KNOWS. The entity writes every
+             * column it declares, and it declares the ones later updates add:
+             * on an upgrade from 1.x, property_id is not there until Update081,
+             * which then gives each of these its site's Property.
+             */
+            $ok = $db->query( sprintf( 'INSERT INTO %s (id, name, user_id, report_type, visualization_type, is_shared,'
+                . ' definition, creation_timestamp, last_updated_timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', $table ),
+                array(
+                    $plan['id'],
+                    $plan['name'],
+                    $owner,
+                    \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION,
+                    'funnel',
+                    1,
+                    json_encode( array( 'steps' => $plan['steps'] ) ),
+                    time(),
+                    time(),
+                ) );
 
-            if ( $report->create() !== true ) {
+            if ( $ok === false ) {
 
                 $this->e->notice( sprintf( 'Converting the funnel of goal "%s" failed.', $plan['goal'] ) );
 
@@ -315,10 +322,8 @@ class Update061 extends \OWA\Core\Update {
                 $steps[] = $last;
             }
 
-            $report = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
-
             $plans[] = array(
-                'id'    => $report->generateId( 'visualization:v1-funnel:' . $site_id . ':' . $goal_number ),
+                'id'    => self::funnelId( $site_id, $goal_number ),
                 'name'  => sprintf( '%s funnel (%s, from 1.x)', $goal['goal_name'], self::siteName( $site_id ) ),
                 'goal'  => (string) $goal['goal_name'],
                 'steps' => $steps,
@@ -327,6 +332,20 @@ class Update061 extends \OWA\Core\Update {
         }
 
         return $plans;
+    }
+
+    /**
+     * The id a Profile's goal slot's funnel is converted under. Derived, so a
+     * re-run finds it, and so Update081 can tell which Profile it was of.
+     *
+     * @param  string $site_id
+     * @param  int    $goal_number
+     * @return string
+     */
+    public static function funnelId( $site_id, $goal_number ) {
+
+        return \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' )
+            ->generateId( 'visualization:v1-funnel:' . $site_id . ':' . (int) $goal_number );
     }
 
     private static function siteName( $site_id ) {

@@ -61,6 +61,19 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         // Authoring, not viewing. A reader who may open a shared report does
         // not necessarily get to build one.
         $this->setRequiredCapability( 'edit_reports' );
+
+        /*
+         * A report is edited on its own Property: the one the request names,
+         * else the report's (CustomReports::requestProperty()). Set before
+         * pre() resolves one, so it does not fall back to the last reported on.
+         */
+        $propertyId = \OWA\Module\Base\Classes\CustomReports::requestProperty(
+            (string) $this->getParam( 'customReportId' ), $this->getParam( 'propertyId' ), $this->getCurrentSiteId() );
+
+        if ( $propertyId !== '' ) {
+
+            $this->setParam( 'propertyId', $propertyId );
+        }
     }
 
     function action() {
@@ -70,7 +83,8 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
         if ( $id !== '' ) {
 
-            $report = \OWA\Module\Base\Classes\CustomReports::load( $id );
+            // One of another Property is not found here.
+            $report = \OWA\Module\Base\Classes\CustomReports::loadOf( $id, (string) $this->getParam( 'propertyId' ) );
 
             if ( ! $report ) {
 

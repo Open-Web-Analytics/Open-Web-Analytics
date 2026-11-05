@@ -3003,9 +3003,10 @@ namespace OWA\Module\Base\Classes;
                                 // Authoring a custom report. Admin-only by
                                 // default; grant it to another role in the
                                 // config file to let analysts build their own.
-                                // NOT in capabilitiesThatRequireSiteAccess: a
-                                // custom report is site-agnostic, so there is
-                                // no one site to check access against.
+                                // NOT in capabilitiesThatRequireSiteAccess, so
+                                // it is held on every Property. A custom report
+                                // is of one, and drawing it asks view_reports
+                                // there.
                                 'edit_reports',
                                 // Changing the email address on your own
                                 // account. Admin-only by default; grant it to

@@ -174,11 +174,11 @@ class Report extends \OWA\Core\AdminController {
      *
      * VIEWING IS NOT GATED ON AUTHORSHIP, deliberately. Ownership decides what
      * the roster LISTS and who may edit; a report reached by its URL renders
-     * for anyone who may view reports, which is what "shareable by url" has to
-     * mean to be true. It is safe because a custom report is a saved QUERY, not
-     * saved data: every figure in it is one the reader could already have asked
-     * for through the ordinary reporting UI, against a site the site filter
-     * would already let them choose.
+     * for anyone who may view reports on its Property, which is what "shareable
+     * by url" has to mean to be true. It is safe because a custom report is a
+     * saved QUERY, not saved data: every figure in it is one the reader could
+     * already have asked for through the ordinary reporting UI, on that
+     * Property.
      *
      * The definition is re-validated on the way OUT, not trusted because it was
      * validated on the way in. Two reasons, and neither is hypothetical: the
@@ -224,13 +224,28 @@ class Report extends \OWA\Core\AdminController {
 
     private function renderCustom( $id ) {
 
-        $report = \OWA\Module\Base\Classes\CustomReports::load(
-            substr( $id, strlen( self::CUSTOM_PREFIX ) ) );
+        $row_id = substr( $id, strlen( self::CUSTOM_PREFIX ) );
+
+        /*
+         * Of the Property the request names, else of its own (requestProperty()).
+         * One of another Property is not found, as a report that does not
+         * exist is.
+         */
+        $property_id = \OWA\Module\Base\Classes\CustomReports::requestProperty(
+            $row_id, $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) ?: $this->getParam( 'site_id' ) );
+
+        $report = \OWA\Module\Base\Classes\CustomReports::loadOf( $row_id, $property_id );
 
         if ( ! $report ) {
 
             return $this->reportNotResolved( $id, 'not found', 404 );
         }
+
+        /*
+         * The target is built from these params, so it is drawn for this
+         * Property, and access is checked against it there.
+         */
+        $this->setParam( 'propertyId', $property_id );
 
         /*
          * A VISUALIZATION brings its own controller.
@@ -252,7 +267,8 @@ class Report extends \OWA\Core\AdminController {
 
         $definition = (array) $report['definition'];
 
-        $error = \OWA\Module\Base\Classes\CustomReports::validate( $definition, $this->propertyToValidateAgainst() );
+        // Against its own Property's dimensions, custom ones included.
+        $error = \OWA\Module\Base\Classes\CustomReports::validate( $definition, $property_id );
 
         if ( $error !== '' ) {
 
@@ -324,39 +340,6 @@ class Report extends \OWA\Core\AdminController {
          * which is the ordinary case on any install with more than one author.
          */
         return $this->withSharedTag( $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report ), $report );
-    }
-
-    /**
-     * The Property whose dimensions a custom report is checked against before
-     * it is drawn.
-     *
-     * Asked here because this controller overrides doAction(), so no pre() has
-     * resolved one yet: the target's runs after the check. The same order
-     * ReportController::resolvePropertyId() starts with -- the Property the
-     * request names, else its siteId's, else the one this browser last
-     * reported on. Vocabulary only: which Property is drawn, and whether the
-     * reader may see it, is still the target's to decide.
-     *
-     * @return string '' for none, which checks against the modules' dimensions
-     */
-    private function propertyToValidateAgainst() {
-
-        $named = (string) $this->getParam( 'propertyId' );
-
-        if ( $named !== '' ) {
-
-            return $named;
-        }
-
-        $siteId = (string) ( $this->getParam( 'siteId' ) ?: $this->getParam( 'site_id' ) );
-
-        if ( $siteId !== '' ) {
-
-            return \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId );
-        }
-
-        return (string) \OWA\Core\CoreAPI::getStateParam(
-            \OWA\Module\Base\Controller\ReportingHome::LAST_PROPERTY_COOKIE );
     }
 
     /**

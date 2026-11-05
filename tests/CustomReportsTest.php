@@ -29,6 +29,9 @@ final class CustomReportsTest extends TestCase
     private const AUTHOR = 'custom-report-author@example.test';
     private const OTHER  = 'custom-report-other@example.test';
 
+    /** The Property every report here is saved on (CustomReportPropertyTest covers two). */
+    private const PROPERTY = '7781000000000101';
+
     /** @var string[] ids to clean up */
     private static $created = array();
 
@@ -124,7 +127,7 @@ final class CustomReportsTest extends TestCase
         $result = CustomReports::save(array(
             'name'       => $overrides['name'] ?? 'A Custom Report',
             'definition' => $overrides['definition'] ?? $this->definition(),
-        ) + $overrides, $author);
+        ) + $overrides, $author, self::PROPERTY);
 
         if (!empty($result['id'])) {
             self::$created[] = $result['id'];
@@ -1643,7 +1646,7 @@ final class CustomReportsTest extends TestCase
             'id'         => $saved['id'],
             'name'       => 'Edited By An Admin',
             'definition' => $this->definition(),
-        ), 'an-admin@example.test');
+        ), 'an-admin@example.test', self::PROPERTY);
 
         $this->assertTrue($edited['ok'], $edited['error']);
         $this->assertSame($saved['id'], $edited['id'], 'an edit is not a new report');
@@ -1763,7 +1766,7 @@ final class CustomReportsTest extends TestCase
             'id'         => $saved['id'],
             'name'       => 'Renamed, Still Shared',
             'definition' => $this->definition(),
-        ), self::AUTHOR);
+        ), self::AUTHOR, self::PROPERTY);
 
         $row = CustomReports::load($saved['id']);
 
@@ -1963,7 +1966,7 @@ final class CustomReportsTest extends TestCase
         Favorites::toggle($b['id'], self::AUTHOR);
         Favorites::toggle($a['id'], self::AUTHOR);
 
-        $ids = array_column(CustomReports::favorites(self::AUTHOR), 'id');
+        $ids = array_column(CustomReports::favorites(self::AUTHOR, false, self::PROPERTY), 'id');
 
         $this->assertNotContains($plain['id'], $ids);
         $this->assertLessThan(array_search($b['id'], $ids, true), array_search($a['id'], $ids, true));
@@ -2244,7 +2247,7 @@ final class CustomReportsTest extends TestCase
         $user->setRole('admin');
         $user->setAuthStatus(true);
 
-        $list = (array) (new \OWA\Module\Base\Controller\CustomReports(array()))->doAction();
+        $list = (array) (new \OWA\Module\Base\Controller\CustomReports(array('propertyId' => self::PROPERTY)))->doAction();
         $row = array_values(array_filter((array) ($list['custom_reports'] ?? array()),
             fn ($r) => (string) $r['id'] === (string) $saved['id']))[0] ?? array();
 

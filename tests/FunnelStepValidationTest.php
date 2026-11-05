@@ -29,7 +29,13 @@ final class FunnelStepValidationTest extends TestCase
      */
     private function params( array $steps, string $constraints = '' ): array
     {
-        $p = array( 'name' => 'Probe', 'constraints' => $constraints, 'stepName' => array(), 'stepEvent' => array(),
+        /*
+         * On a Property, as the builder always posts one: a new funnel is
+         * stored on it. Not digits, so nothing reads custom dimensions for it
+         * from a database the no-database job does not have.
+         */
+        $p = array( 'name' => 'Probe', 'propertyId' => 'funnel-step-validation', 'constraints' => $constraints,
+            'stepName' => array(), 'stepEvent' => array(),
             'stepCustomEvent' => array(), 'stepMatch' => array(), 'stepConditionProperty' => array(),
             'stepConditionOperator' => array(), 'stepConditionValue' => array() );
 
@@ -96,6 +102,24 @@ final class FunnelStepValidationTest extends TestCase
     public function testACompleteStepIsAccepted(): void
     {
         $this->assertFalse( $this->refuses( array( 1 => $this->step( 'Basket', '/basket' ) ) ) );
+    }
+
+    /** A funnel is stored on a Property, so a save that names none is refused. */
+    public function testANewFunnelNeedsAProperty(): void
+    {
+        $params = $this->params( array( 1 => $this->step( 'Basket', '/basket' ) ) );
+        unset( $params['propertyId'] );
+
+        $controller = new \OWA\Module\Base\Controller\VisualizationSave( $params );
+        $controller->validate();
+
+        $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
+        $v->setAccessible( true );
+        $validator = $v->getValue( $controller );
+        $validator->doValidations();
+
+        $this->assertSame( array( 'propertyId' => 'No Property was named to save this to.' ),
+            (array) $validator->getErrorMsgs() );
     }
 
     /** A row with a stored name and no condition value is not a step, so a funnel of only that has none. */
