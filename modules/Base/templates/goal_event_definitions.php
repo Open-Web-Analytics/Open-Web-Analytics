@@ -44,6 +44,7 @@
             <tr>
                 <th>Name</th>
                 <th>Counts</th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'How often' ) );?></th>
                 <th>Value</th>
                 <th>Status</th>
                 <th></th>
@@ -82,6 +83,8 @@
                     <span class="owa_goalEventIncomplete">no condition set &mdash; counts nothing</span>
                     <?php endif;?>
                 </td>
+                <td class="owa_goalEventCountMode"><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::countModes()[
+                    \OWA\Module\Base\Entity\GoalEventDefinition::countModeOf( $owa_ke['count_mode'] ?? '' ) ] );?></td>
                 <td><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::centsToDecimal( $owa_ke['value'] ) );?></td>
                 <td><?php echo $owa_ke['is_active'] ? 'Active' : 'Inactive';?></td>
                 <td>

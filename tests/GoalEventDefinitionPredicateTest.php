@@ -23,10 +23,10 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * A goal event definition compiled into a funnel step.
  *
- * The pair have to agree. The same definition decides a conversion at ingest
+ * The pair have to agree. The same definition decides a goal event at ingest
  * through GoalEventDefinition::compare(), and a funnel stage at read time
  * through this -- so a difference between them is a funnel stage that
- * disagrees with the conversion count sitting beside it on the same screen.
+ * disagrees with the goal event count sitting beside it on the same screen.
  *
  * These tests hold the two against each other operator by operator, and hold
  * the line on the two things that must never happen quietly: a condition the
@@ -247,7 +247,7 @@ final class GoalEventDefinitionPredicateTest extends TestCase
 
         $this->assertStringContainsString( '0 = 1', $out['sql'],
             'An unrecognised operator compiles to something that can match, while compare() '
-            . 'answers false for it -- so the funnel and the conversion count disagree.' );
+            . 'answers false for it -- so the funnel and the goal event count disagree.' );
 
         $this->assertFalse( GoalEventDefinition::compare( '/a', 'sideways', '/a' ),
             'compare() no longer refuses an unknown operator, so this expectation is stale.' );
@@ -299,7 +299,7 @@ final class GoalEventDefinitionPredicateTest extends TestCase
      * matchesRow() asks isset() before it compares, so at ingest a `not`
      * condition is not met by a row that has no such value at all. This used
      * to COALESCE the column to '' and match it, which counted a funnel step
-     * the conversion beside it did not.
+     * the goal event beside it did not.
      */
     public function testAnAbsentValueMatchesNoConditionLikeIngest(): void
     {

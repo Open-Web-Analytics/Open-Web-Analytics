@@ -1,7 +1,7 @@
 {
     "counts": {
-        "metricNames": 41,
-        "metricImplementations": 41,
+        "metricNames": 42,
+        "metricImplementations": 42,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
         "dimensionNamesDenormalized": 95,
@@ -176,7 +176,7 @@
                     ],
                     "data_type": "integer",
                     "denominator": "",
-                    "description": "Sessions with ten seconds or more of engagement time, two or more page views, or a goal conversion.",
+                    "description": "Sessions with ten seconds or more of engagement time, two or more page views, or a goal event.",
                     "entity": "base.event",
                     "group": "Site Usage",
                     "label": "Engaged Sessions",
@@ -477,61 +477,11 @@
                 }
             }
         ],
-        "goalConversionRatePerSession": [
+        "goalEvents": [
             {
-                "name": "goalConversionRatePerSession",
+                "name": "goalEvents",
                 "class": "base.configurableMetric",
-                "label": "Goal Conversion Rate Per Session",
-                "group": "Goals",
-                "params": {
-                    "column": "",
-                    "condition": [],
-                    "data_type": "percentage",
-                    "denominator": "sessions",
-                    "description": "Goal conversions divided by sessions. It counts conversions, not converting sessions, so it can exceed 100%.",
-                    "entity": "base.event",
-                    "group": "Goals",
-                    "label": "Goal Conversion Rate Per Session",
-                    "metric_type": "ratio",
-                    "minuend": "",
-                    "name": "goalConversionRatePerSession",
-                    "numerator": "goalConversions",
-                    "precision": 4,
-                    "subtrahend": "",
-                    "subtrahend_column": ""
-                }
-            }
-        ],
-        "goalConversionRatePerUser": [
-            {
-                "name": "goalConversionRatePerUser",
-                "class": "base.configurableMetric",
-                "label": "Goal Conversion Rate Per User",
-                "group": "Goals",
-                "params": {
-                    "column": "",
-                    "condition": [],
-                    "data_type": "percentage",
-                    "denominator": "totalUsers",
-                    "description": "Goal conversions divided by users. It counts conversions, not converting users, so it can exceed 100%.",
-                    "entity": "base.event",
-                    "group": "Goals",
-                    "label": "Goal Conversion Rate Per User",
-                    "metric_type": "ratio",
-                    "minuend": "",
-                    "name": "goalConversionRatePerUser",
-                    "numerator": "goalConversions",
-                    "precision": 4,
-                    "subtrahend": "",
-                    "subtrahend_column": ""
-                }
-            }
-        ],
-        "goalConversions": [
-            {
-                "name": "goalConversions",
-                "class": "base.configurableMetric",
-                "label": "Goal Conversions",
+                "label": "Goal Events",
                 "group": "Goals",
                 "params": {
                     "column": "id",
@@ -541,13 +491,91 @@
                     ],
                     "data_type": "integer",
                     "denominator": "",
-                    "description": "The number of goal conversions. Each goal event an event meets is one conversion, so one event can convert on several goal events.",
+                    "description": "The number of goal events. An event that meets several goal event definitions adds one for each.",
                     "entity": "base.event",
                     "group": "Goals",
-                    "label": "Goal Conversions",
+                    "label": "Goal Events",
                     "metric_type": "count",
                     "minuend": "",
-                    "name": "goalConversions",
+                    "name": "goalEvents",
+                    "numerator": "",
+                    "precision": "",
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "goalEventsPerSession": [
+            {
+                "name": "goalEventsPerSession",
+                "class": "base.configurableMetric",
+                "label": "Goal Events Per Session",
+                "group": "Goals",
+                "params": {
+                    "column": "",
+                    "condition": [],
+                    "data_type": "decimal",
+                    "denominator": "sessions",
+                    "description": "The average number of goal events per session.",
+                    "entity": "base.event",
+                    "group": "Goals",
+                    "label": "Goal Events Per Session",
+                    "metric_type": "ratio",
+                    "minuend": "",
+                    "name": "goalEventsPerSession",
+                    "numerator": "goalEvents",
+                    "precision": 2,
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "goalEventsPerUser": [
+            {
+                "name": "goalEventsPerUser",
+                "class": "base.configurableMetric",
+                "label": "Goal Events Per User",
+                "group": "Goals",
+                "params": {
+                    "column": "",
+                    "condition": [],
+                    "data_type": "decimal",
+                    "denominator": "totalUsers",
+                    "description": "The average number of goal events per user.",
+                    "entity": "base.event",
+                    "group": "Goals",
+                    "label": "Goal Events Per User",
+                    "metric_type": "ratio",
+                    "minuend": "",
+                    "name": "goalEventsPerUser",
+                    "numerator": "goalEvents",
+                    "precision": 2,
+                    "subtrahend": "",
+                    "subtrahend_column": ""
+                }
+            }
+        ],
+        "goalValue": [
+            {
+                "name": "goalValue",
+                "class": "base.configurableMetric",
+                "label": "Goal Value",
+                "group": "Goals",
+                "params": {
+                    "column": "value",
+                    "condition": [
+                        1,
+                        "is_goal_event"
+                    ],
+                    "data_type": "currency",
+                    "denominator": "",
+                    "description": "The total value of the goal events: each goal event definition's value, or the revenue of the purchase that met it.",
+                    "entity": "base.event",
+                    "group": "Goals",
+                    "label": "Goal Value",
+                    "metric_type": "sum",
+                    "minuend": "",
+                    "name": "goalValue",
                     "numerator": "",
                     "precision": "",
                     "subtrahend": "",
@@ -1706,7 +1734,7 @@
                 "column": "is_engaged_session",
                 "family": "visit",
                 "label": "Engaged Session",
-                "description": "Whether the session was engaged: ten seconds or more of engagement time, two or more page views, or a goal conversion.",
+                "description": "Whether the session was engaged: ten seconds or more of engagement time, two or more page views, or a goal event.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -1719,7 +1747,7 @@
                 "column": "is_goal_event",
                 "family": "event",
                 "label": "Goal Event",
-                "description": "Whether this event is a goal event's conversion.",
+                "description": "Whether this event is a goal event.",
                 "foreign_key_name": "",
                 "data_type": "boolean",
                 "denormalized": true
@@ -2908,7 +2936,7 @@
             "column": "is_engaged_session",
             "family": "visit",
             "label": "Engaged Session",
-            "description": "Whether the session was engaged: ten seconds or more of engagement time, two or more page views, or a goal conversion.",
+            "description": "Whether the session was engaged: ten seconds or more of engagement time, two or more page views, or a goal event.",
             "foreign_key_name": "",
             "data_type": "boolean",
             "denormalized": true
@@ -2919,7 +2947,7 @@
             "column": "is_goal_event",
             "family": "event",
             "label": "Goal Event",
-            "description": "Whether this event is a goal event's conversion.",
+            "description": "Whether this event is a goal event.",
             "foreign_key_name": "",
             "data_type": "boolean",
             "denormalized": true

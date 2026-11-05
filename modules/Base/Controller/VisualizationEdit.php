@@ -105,7 +105,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          * the Property's, and so is the report this screen builds.
          *
          * Inactive ones are offered too, and labelled. A funnel counts from the
-         * facts rather than from stored conversions, so an inactive definition
+         * facts rather than from stored goal events, so an inactive definition
          * still has a meaningful answer: it is a condition, and the condition
          * held or it did not.
          */

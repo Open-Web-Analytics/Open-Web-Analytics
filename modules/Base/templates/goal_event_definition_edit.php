@@ -33,12 +33,12 @@ choose the event, then pick a property of it, how to compare it, and what to com
     <div class="setting">
         <div class="title">Name</div>
         <?php if ( ! empty( $view->goalEventDefinitionId ) && ! empty( $owa_ke['name'] ) ):?>
-        <div class="description">Each conversion is stored as an event with this name. It cannot be changed: for another name, create another goal event definition and switch this one off.</div>
+        <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Each goal event is stored as an event with this name. It cannot be changed: for another name, create another goal event definition and switch this one off.' ) );?></div>
         <div class="field">
             <code><?php $view->out( $owa_ke['name'] );?></code>
         </div>
         <?php else:?>
-        <div class="description">Each conversion is stored as an event with this name, which reports show: Signup_Completed rather than Goal_3. A letter, then up to 39 letters, digits and underscores. It cannot be changed once the goal event definition is saved.</div>
+        <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Each goal event is stored as an event with this name, which reports show: Signup_Completed rather than Goal_3. A letter, then up to 39 letters, digits and underscores. It cannot be changed once the goal event definition is saved.' ) );?></div>
         <div class="field">
             <input class="owa_largeFormField" type="text" maxlength="40"
                    name="<?php echo $view->getNs();?>name"
@@ -177,8 +177,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
 
     <div class="setting">
         <div class="title">Value <span class="owa_optional">optional</span></div>
-        <div class="description">What one of these is worth. Left blank it counts without
-        a value.</div>
+        <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'What one goal event is worth, in the Property\'s currency. Left blank, a goal event met by a purchase carries the purchase\'s revenue, and any other carries no value.' ) );?></div>
         <div class="field">
             <input class="owa_shortFormField" type="text"
                    name="<?php echo $view->getNs();?>value"
@@ -190,29 +189,25 @@ choose the event, then pick a property of it, how to compare it, and what to com
     </div>
 
     <div class="setting">
-        <div class="title">Count</div>
-        <div class="description">How often a match counts: once per session.</div>
+        <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'How often' ) );?></div>
+        <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Once per event adds a goal event for every event that matches. Once per session adds one for the first match in a session, and none for the rest of it.' ) );?></div>
         <div class="field">
             <?php
-                /*
-                 * ONE choice, on purpose.
-                 *
-                 * Once per event is a real setting the storage can hold, and the
-                 * handler cannot honour it: a conversion is a column on the
-                 * session row, so a second match in the same session has nowhere
-                 * to go. Offering it would let someone save a rule that says one
-                 * thing and counts another -- the quietest kind of wrong, because
-                 * the number looks fine.
-                 *
-                 * The select stays rather than the field disappearing: what a
-                 * definition counts is part of reading it, and a screen that says
-                 * nothing about it reads as if the question does not exist. The
-                 * save clamps to this too, so an out-of-band value cannot store
-                 * an intent nothing acts on.
-                 */
+            /*
+             * A NEW definition defaults to once per event. An existing one shows
+             * what it stores, and a falsy count_mode is once per session, which
+             * is what every definition migrated from 1.x is
+             * (GoalEventDefinition::countMode()). A refused form comes back with
+             * what was submitted.
+             */
+            $owa_count = ! empty( $owa_ke['count_mode'] ) || ! empty( $owa_ke['id'] )
+                ? \OWA\Module\Base\Entity\GoalEventDefinition::countModeOf( $owa_ke['count_mode'] ?? '' )
+                : \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT;
             ?>
             <select name="<?php echo $view->getNs();?>countMode">
-                <option value="once_per_session" selected>Once per session</option>
+            <?php foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::countModes() as $owa_value => $owa_label ):?>
+                <option value="<?php $view->out( $owa_value );?>" <?php echo $owa_count === $owa_value ? 'selected' : '';?>><?php $view->out( $owa_label );?></option>
+            <?php endforeach;?>
             </select>
         </div>
     </div>

@@ -107,13 +107,34 @@ return array(
             'condition'   => array( 'column' => 'is_entrance', 'value' => 1 ),
         ),
 
-        'goalConversions' => array(
-            'label'       => 'Goal Conversions',
-            'description' => 'The number of goal conversions. Each goal event an event meets is one conversion, so one event can convert on several goal events.',
+        /*
+         * GOAL EVENTS: the rows Classes\GoalMarking adds, one for each goal event
+         * definition an event meets (once per session, for a definition that
+         * says so). An event meeting two definitions adds two.
+         */
+        'goalEvents' => array(
+            'label'       => 'Goal Events',
+            'description' => 'The number of goal events. An event that meets several goal event definitions adds one for each.',
             'group'       => 'Goals',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
+            'condition'   => array( 'column' => 'is_goal_event', 'value' => 1 ),
+        ),
+
+        /*
+         * What the goal events were worth: each carries its definition's value,
+         * or the revenue of the purchase that met it, in minor units of the
+         * currency beside it (EventRaw `value`). A goal event worth nothing
+         * carries NULL and adds nothing.
+         */
+        'goalValue' => array(
+            'label'       => 'Goal Value',
+            'description' => 'The total value of the goal events: each goal event definition\'s value, or the revenue of the purchase that met it.',
+            'group'       => 'Goals',
+            'metric_type' => 'sum',
+            'data_type'   => 'currency',
+            'column'      => 'value',
             'condition'   => array( 'column' => 'is_goal_event', 'value' => 1 ),
         ),
 
@@ -399,19 +420,21 @@ return array(
         ),
 
         /*
-         * Goal conversions, as a rate and a share, off the flag the event row
-         * already carries. 1.x spelled these goalConversionRateAll /
-         * goalValueAll and needed the goal configuration to do it.
+         * Goal events per session, off the flag the event row already carries.
+         * A DECIMAL, not a percentage: it counts goal events, not sessions that
+         * had one, so it passes 1 wherever a session has two. 1.x spelled the
+         * nearest thing goalConversionRateAll and needed the goal configuration
+         * to compute it.
          */
-        'goalConversionRatePerSession' => array(
-            'label'       => 'Goal Conversion Rate Per Session',
-            'description' => 'Goal conversions divided by sessions. It counts conversions, not converting sessions, so it can exceed 100%.',
+        'goalEventsPerSession' => array(
+            'label'       => 'Goal Events Per Session',
+            'description' => 'The average number of goal events per session.',
             'group'       => 'Goals',
             'metric_type' => 'ratio',
-            'data_type'   => 'percentage',
-            'numerator'   => 'goalConversions',
+            'data_type'   => 'decimal',
+            'numerator'   => 'goalEvents',
             'denominator' => 'sessions',
-            'precision'   => 4,
+            'precision'   => 2,
         ),
 
         /*
@@ -469,15 +492,15 @@ return array(
             'precision'   => 0,
         ),
 
-        'goalConversionRatePerUser' => array(
-            'label'       => 'Goal Conversion Rate Per User',
-            'description' => 'Goal conversions divided by users. It counts conversions, not converting users, so it can exceed 100%.',
+        'goalEventsPerUser' => array(
+            'label'       => 'Goal Events Per User',
+            'description' => 'The average number of goal events per user.',
             'group'       => 'Goals',
             'metric_type' => 'ratio',
-            'data_type'   => 'percentage',
-            'numerator'   => 'goalConversions',
+            'data_type'   => 'decimal',
+            'numerator'   => 'goalEvents',
             'denominator' => 'totalUsers',
-            'precision'   => 4,
+            'precision'   => 2,
         ),
 
         'sessionsPerUser' => array(
@@ -579,7 +602,7 @@ return array(
          */
         'engagedSessions' => array(
             'label'       => 'Engaged Sessions',
-            'description' => 'Sessions with ten seconds or more of engagement time, two or more page views, or a goal conversion.',
+            'description' => 'Sessions with ten seconds or more of engagement time, two or more page views, or a goal event.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',

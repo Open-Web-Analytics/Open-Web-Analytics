@@ -31,8 +31,8 @@ class V1Names {
         'visitDuration'           => 'averageEngagementTimePerSession',
         'bounces'                 => 'bouncedSessions',
         'bounceRate'              => 'bounceRate',
-        'goalCompletionsAll'      => 'goalConversions',
-        'goalConversionRateAll'   => 'goalConversionRatePerSession',
+        'goalCompletionsAll'      => 'goalEvents',
+        'goalConversionRateAll'   => 'goalEventsPerSession',
         'transactions'            => 'transactions',
         'transactionRevenue'      => 'transactionRevenue',
         'taxRevenue'              => 'taxRevenue',
@@ -48,7 +48,7 @@ class V1Names {
         'feedReaders'             => null,
         'feedSubscriptions'       => null,
         'goalStartsAll'           => null,
-        'goalValueAll'            => null,
+        'goalValueAll'            => 'goalValue',
         'goalAbandonRateAll'      => null,
         'lineItemQuantity'        => null,
         'lineItemRevenue'         => null,
@@ -156,6 +156,8 @@ class V1Names {
 
     /** Kept or mapped, with a different meaning. */
     const REDEFINED = array(
+        'goalCompletionsAll'    => 'now goal events, which a definition counting once per event adds for every match',
+        'goalConversionRateAll' => 'now goal events per session, a decimal rather than a share of sessions',
         'bounceRate'    => 'now the share of sessions that were not engaged',
         'bounces'       => 'now sessions that were not engaged',
         'visitDuration' => 'now average engagement time, in milliseconds',

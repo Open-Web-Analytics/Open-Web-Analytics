@@ -234,6 +234,28 @@ For module authors:
 - `hierarchy_tier` and `hierarchy_root_label` are no longer read. A screen that
   sets them is unaffected.
 
+### Goal events: a count mode, a value, and new metric names
+
+A goal event definition counts **once per event** (every match adds a goal
+event) or **once per session** (the first match in a session adds one). A new
+definition defaults to once per event; one migrated from 1.x counts once per
+session, as it always did. The definition's value is now carried onto its goal
+events, in the Property's currency; with no value, a goal event met by a
+purchase carries the purchase's revenue. Goal events stored before this carry
+no value.
+
+| Before | Now |
+|---|---|
+| `goalConversions` (Goal Conversions) | `goalEvents` (Goal Events) |
+| `goalConversionRatePerSession` (a percentage) | `goalEventsPerSession` (a decimal) |
+| `goalConversionRatePerUser` (a percentage) | `goalEventsPerUser` (a decimal) |
+| (none) | `goalValue` (Goal Value) |
+| metric set `conversions` (Conversions) | metric set `goals` (Goals) |
+
+Update078 renames them in saved custom reports, visualizations and shared
+charts. A REST call or link naming an old metric fails until it uses the new
+name. Update077 adds the `value` column to `owa_event_raw` and every cube.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

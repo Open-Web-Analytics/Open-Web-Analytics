@@ -165,7 +165,7 @@ final class Update049Test extends TestCase
      * piece is tested on its own, and this is the one that would have caught the
      * whole thing being pointless.
      */
-    public function testAMigratedGoalConvertsOnTheRowItWasAlwaysMeantTo(): void
+    public function testAMigratedGoalMarksTheRowItWasAlwaysMeantTo(): void
     {
         $siteId = $this->siteIdForProperty();
 
@@ -199,7 +199,7 @@ final class Update049Test extends TestCase
             $events = \OWA\Module\Base\Classes\Ingest::at(
                 \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE, array( $event ) );
 
-            // A conversion is a row of its own, added to the set (GoalMarking).
+            // A goal event is a row of its own, added to the set (GoalMarking).
             return count( array_filter( $events, static function ( $e ) {
                 return $e->get( 'is_goal_event' ) === 1;
             } ) );

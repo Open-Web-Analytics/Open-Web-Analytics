@@ -85,6 +85,26 @@ class Currency {
     }
 
     /**
+     * The currency a Property's reports format money in: its currencyISO3
+     * setting, else the install's. ResultSetManager::formatCurrency() reads it,
+     * and so does Classes\GoalMarking for a goal event carrying its definition's
+     * value, so the value is in the currency it is shown in.
+     *
+     * @param  string $property_id  '' for the install's
+     * @return string as the setting holds it
+     */
+    public static function ofProperty( $property_id ) {
+
+        $property_id = (string) $property_id;
+
+        $currency = $property_id !== ''
+            ? \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3', 'property', $property_id )
+            : \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' );
+
+        return (string) ( $currency ?: \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' ) );
+    }
+
+    /**
      * Minor units back to a major-unit amount.
      *
      * @param  int|float $minor

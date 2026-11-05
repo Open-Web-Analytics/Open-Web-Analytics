@@ -6,12 +6,12 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Update075: a goal event's name becomes an event name, and the events flagged
- * before it get conversion rows of their own.
+ * before it get goal events, rows of their own.
  *
  * down() is exercised, and up() runs again after it, so the database the suite
  * runs against ends where it started. Both walk every flagged row in raw, which
  * on the suite's database is these fixtures and whatever the dev install has
- * converted since; up() after down() restores those too.
+ * marked since; up() after down() restores those too.
  *
  * On the goal tables under the names they had before Update076, which is what
  * an upgrade meets here: Update076 is rolled back first and applied again last.
@@ -122,7 +122,7 @@ final class Update075Test extends TestCase
         $this->assertSame([], (array) \OWA\Core\CoreAPI::getSetting('base', 'goal_event_names_before_075'));
     }
 
-    public function testAFlaggedEventGetsItsConversionRowAndDownPutsTheFlagBack(): void
+    public function testAFlaggedEventGetsItsGoalEventAndDownPutsTheFlagBack(): void
     {
         $this->goal('Contact page', [['page_path', 'exact', '/contact']]);
 
@@ -135,17 +135,17 @@ final class Update075Test extends TestCase
         $this->assertSame(0, $this->flag($met), 'the event that met it is an ordinary event now');
         $this->assertSame(1, $this->flag($missed), 'meets no goal event, so it keeps its flag');
 
-        $conversions = $this->conversions();
-        $this->assertCount(1, $conversions, 'and a second run adds none');
-        $this->assertSame('Contact_page', $conversions[0]['event_type']);
-        $this->assertSame('/contact', $conversions[0]['page_path']);
-        $this->assertSame((string) $met['ts'], (string) $conversions[0]['ts']);
+        $goalEvents = $this->goalEvents();
+        $this->assertCount(1, $goalEvents, 'and a second run adds none');
+        $this->assertSame('Contact_page', $goalEvents[0]['event_type']);
+        $this->assertSame('/contact', $goalEvents[0]['page_path']);
+        $this->assertSame((string) $met['ts'], (string) $goalEvents[0]['ts']);
 
         $this->assertTrue($this->update->down());
 
         $this->assertSame(1, $this->flag($met));
         $this->assertSame(1, $this->flag($missed));
-        $this->assertSame([], $this->conversions());
+        $this->assertSame([], $this->goalEvents());
     }
 
     /** A flagged page view on this Profile, today. @return array its key */
@@ -178,7 +178,7 @@ final class Update075Test extends TestCase
             'SELECT is_goal_event FROM owa_event_raw WHERE id = ? AND yyyymmdd = ?', [$row['id'], $row['yyyymmdd']]))['is_goal_event'];
     }
 
-    private function conversions(): array
+    private function goalEvents(): array
     {
         return array_map(fn ($r) => (array) $r, (array) \OWA\Core\CoreAPI::dbSingleton()->get_results(
             "SELECT * FROM owa_event_raw WHERE visitor_id = ? AND event_type <> 'page_view'", [self::VISITOR]));

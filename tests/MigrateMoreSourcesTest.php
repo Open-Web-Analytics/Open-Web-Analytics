@@ -504,8 +504,8 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertEquals([], $progress['refusals'], 'nothing refused');
     }
 
-    /** v1's record decides which sessions converted; the definition finds the row. */
-    public function testARecordedCompletionIsAConversionRowCopiedFromTheRowThatMetTheGoal(): void
+    /** v1's record decides which sessions completed a goal; the definition finds the row. */
+    public function testARecordedCompletionIsAGoalEventCopiedFromTheRowThatMetTheGoal(): void
     {
         $this->goalTablesBefore076();
 
@@ -522,13 +522,14 @@ final class MigrateMoreSourcesTest extends TestCase
             'condition_property' => 'page_path', 'condition_operator' => 'exact', 'condition_value' => '/thanks']);
         $condition->create();
 
-        // A session v1 says completed goal 1 (and goal 2, which no longer exists).
+        // A session v1 says completed goal 1, worth 12.50 -- v1 stored hundredths --
+        // and goal 2, which no longer exists.
         $this->insert('session', ['id' => self::SESSION, 'site_id' => self::SITE, 'visitor_id' => self::VISITOR,
-            'timestamp' => self::T, 'yyyymmdd' => self::DAY, 'goal_1' => 1, 'goal_2' => 1]);
+            'timestamp' => self::T, 'yyyymmdd' => self::DAY, 'goal_1' => 1, 'goal_1_value' => 1250, 'goal_2' => 1]);
         $this->fact('request', '1790000000000000801', ['document_id' => '101', 'is_entry_page' => 1]);
         $this->fact('request', '1790000000000000802', ['document_id' => '102', 'timestamp' => self::T + 60]);
 
-        // And one v1 did NOT record converting, which also saw /thanks.
+        // And one v1 did NOT record completing it, which also saw /thanks.
         $this->insert('session', ['id' => '1790000000000000423', 'site_id' => self::SITE, 'visitor_id' => self::VISITOR,
             'timestamp' => self::T + 3600, 'yyyymmdd' => self::DAY]);
         $this->fact('request', '1790000000000000803', ['document_id' => '102', 'session_id' => '1790000000000000423',
@@ -537,12 +538,14 @@ final class MigrateMoreSourcesTest extends TestCase
         (new RequestMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
         $progress = (new GoalMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
 
-        $conversions = $this->rows('Thanks');
+        $goalEvents = $this->rows('Thanks');
 
-        $this->assertCount(1, $conversions, 'only the session v1 counted, and only its /thanks view');
-        $this->assertSame(1, (int) $conversions[0]['is_goal_event']);
-        $this->assertSame('/thanks', $conversions[0]['page_path']);
-        $this->assertSame(self::SESSION, (string) $conversions[0]['session_id']);
+        $this->assertCount(1, $goalEvents, 'only the session v1 counted, and only its /thanks view');
+        $this->assertSame(1, (int) $goalEvents[0]['is_goal_event']);
+        $this->assertSame('/thanks', $goalEvents[0]['page_path']);
+        $this->assertSame(self::SESSION, (string) $goalEvents[0]['session_id']);
+        $this->assertSame(1250, (int) $goalEvents[0]['value'], 'what v1 recorded it as worth, in cents');
+        $this->assertSame('USD', $goalEvents[0]['currency']);
         $this->assertSame(1, $progress['rows_written']);
         $this->assertEquals(['goal_not_located' => 1], $progress['refusals'], 'goal 2 no longer exists');
 
@@ -551,9 +554,10 @@ final class MigrateMoreSourcesTest extends TestCase
 
         $thanks_view = array_values(array_filter($this->rows('page_view'), fn ($r) => $r['page_path'] === '/thanks'
             && (string) $r['session_id'] === self::SESSION))[0];
-        $this->assertSame($thanks_view['ts'], $conversions[0]['ts'], 'copied from the row that met it');
+        $this->assertSame($thanks_view['ts'], $goalEvents[0]['ts'], 'copied from the row that met it');
+        $this->assertNull($thanks_view['value'], 'the page view that met it carries no value');
 
-        // A re-run stores nothing new and does not call the converted session unlocated.
+        // A re-run stores nothing new and does not call the completed session unlocated.
         \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_migration_progress WHERE site_id = ? AND source = ?',
             [self::SITE, 'session_goals']);
         $again = (new GoalMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
@@ -562,7 +566,7 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertEquals(['goal_not_located' => 1], $again['refusals']);
         $this->assertCount(1, $this->rows('Thanks'));
 
-        // Reverting the pass deletes the conversion and leaves the page views to theirs.
+        // Reverting the pass deletes the goal event and leaves the page views to theirs.
         $this->assertSame(1, (new GoalMigrator(V1Schema::PREFIX))->revertSite(self::SITE));
         $this->assertSame([], $this->rows('Thanks'));
         $this->assertCount(3, $this->rows('page_view'));
@@ -571,10 +575,10 @@ final class MigrateMoreSourcesTest extends TestCase
     /**
      * This pass runs in Update062, before Update075 renames the goal event
      * definitions whose 1.x names are not event names. Stored under the 1.x
-     * name, the migrated conversions and every later one were two goal events in
+     * name, the migrated goal events and every later one were under two names in
      * the Goals report.
      */
-    public function testAConversionCarriesTheNameUpdate075GivesItsGoalEventDefinition(): void
+    public function testAGoalEventCarriesTheNameUpdate075GivesItsGoalEventDefinition(): void
     {
         $this->goalTablesBefore076();
 

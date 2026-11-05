@@ -244,7 +244,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
 
     /**
      * The names Update075 renames to, which the v1 migration also stores
-     * conversions under: unique within a Property, case-blind, in id order,
+     * goal events under: unique within a Property, case-blind, in id order,
      * and a Property's goal events alone give what all of them do.
      */
     public function testTheNamesGoalEventDefinitionsAreGivenAreUniqueWithinTheirProperty(): void
@@ -314,7 +314,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
         }
     }
 
-    /** A saved goal event keeps its name: its conversion rows already carry it. */
+    /** A saved goal event definition keeps its name: its goal events already carry it. */
     public function testASavedGoalEventDefinitionKeepsItsName(): void
     {
         $id = $this->storedGoal( 'Kept_name_75' );
@@ -534,7 +534,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
      * event on the site. It went unnoticed because a condition on a page column
      * finds that column NULL on a click -- but a condition on host, or on
      * device_type, would have fired on scrolls, clicks and session_start alike,
-     * counting several conversions for one visit to one page.
+     * counting several goal events for one visit to one page.
      */
     public function testAGoalOnlyMatchesItsTriggerEventType(): void
     {
@@ -549,7 +549,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
 
         $this->assertFalse( $goalEventDefinition->matchesRow( $this->row( array(
             'event_type' => 'click', 'host' => 'example.com' ) ) ),
-            'A goal triggered on a page view counted a click as a conversion.' );
+            'A goal triggered on a page view counted a click as a goal event.' );
     }
 
     /**
@@ -558,7 +558,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
      * It used to mean every event type. No writer produces one -- Update025
      * gives every migrated goal event a trigger and GoalEventDefinitionSave defaults one --
      * and "every event" would mark a page view and the session_start and
-     * first_visit materialized beside it: three conversions for one visit.
+     * first_visit materialized beside it: three goal events for one visit.
      */
     public function testAnEmptyTriggerMatchesNothing(): void
     {
@@ -705,7 +705,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
      * create a goal and delete it. The reason nobody noticed is that an
      * unreachable row is also an invisible one -- until one of those 64-bit ids
      * collides with a new goal event's and a condition somebody deleted starts
-     * deciding what converts.
+     * deciding what is marked.
      */
     public function testDeletingAGoalEventDefinitionDeletesItsConditions(): void
     {
@@ -759,7 +759,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
      * and ONLY those.
      *
      * The second half is the part worth asserting: a cleanup that also removed a
-     * live definition's conditions would silently stop that goal converting, and
+     * live definition's conditions would silently stop that definition marking, and
      * the install would look tidy.
      *
      * On the tables under the names they had before Update076, which is what an
@@ -797,7 +797,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
             $this->assertTrue( $update->up(), 'the cleanup reported failure' );
 
             $this->assertCount( 1, $this->conditionRowsFor( $liveId, true ),
-                'The cleanup deleted a live definition\'s condition, which stops it converting.' );
+                'The cleanup deleted a live definition\'s condition, which stops it marking.' );
 
             $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->selectFrom( \OWA\Core\CoreAPI::entityFactory(
@@ -847,7 +847,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /* ---------------- money ---------------- */
 
     /**
-     * Cents, matching v2's revenue column, so the value is not converted twice.
+     * Hundredths of what the author typed (GoalEventDefinition's value column).
      *
      * round() before the cast: (int) truncates, so 0.29 through float
      * representation becomes 28 -- the classic money-in-floats error, and one
@@ -887,19 +887,16 @@ final class GoalEventDefinitionStorageTest extends TestCase
 
     /* ---------------- counting ---------------- */
 
-    /**
-     * Counting is once per session, whatever was asked for.
-     *
-     * A conversion is a COLUMN on the session row -- goal_N -- so a second
-     * match in the same session has nowhere to go. Once per event is a setting
-     * the storage can hold and the handler cannot honour, which makes it the
-     * quietest kind of wrong: the row says one thing, the number means another,
-     * and nothing looks broken.
-     *
-     * So the form offers one choice and the save clamps to it. Asserted on the
-     * SAVE rather than the form, because the form is not the only way in.
+    /*
+     * The count mode was clamped to once per session on every save, because a
+     * 1.x goal was a column on the session row and could not record a second
+     * match. Goal events are rows now and marking honours both modes
+     * (GoalMarkingTest), so the save stores what was chosen, and the form and
+     * the list are GoalEventDefinitionCountModeTest's.
      */
-    public function testTheCountModeIsClampedToOncePerSession(): void
+
+    /** The save stores the submitted count mode through countMode(), and nothing clamps it. */
+    public function testTheSaveStoresTheCountModeItWasGiven(): void
     {
         $body = (string) file_get_contents(
             OWA_DIR . 'modules/Base/Controller/GoalEventDefinitionSave.php' );
@@ -907,37 +904,35 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $write = substr( $body, (int) strpos( $body, "set( 'count_mode'" ) );
         $write = substr( $write, 0, (int) strpos( $write, ';' ) );
 
-        $this->assertStringContainsString( 'COUNT_PER_SESSION', $write,
-            'The save does not write once-per-session.' );
+        // Single-quoted: in double quotes $this would interpolate and the needle be something else.
+        $this->assertStringContainsString( 'self::countMode( $this->getParam( \'countMode\' ) )', $write,
+            'The save does not store the count mode it was given.' );
 
-        $this->assertStringNotContainsString( 'COUNT_PER_EVENT', $write,
-            'The save still writes once-per-event on request, so a hand-made post can store a '
-            . 'counting rule the handler cannot honour.' );
-
-        $this->assertStringNotContainsString( "getParam( 'countMode' )", $write,
-            'The save reads countMode from the request, so what is stored is not what is '
-            . 'counted.' );
+        $this->assertSame( 1, substr_count( $body, "set( 'count_mode'" ), 'one write, not a clamp after it' );
     }
 
-    /**
-     * And the form offers exactly the one choice.
-     *
-     * The field stays rather than disappearing: what a goal event counts is
-     * part of reading it, and a screen silent about it reads as though the
-     * question does not exist.
-     */
-    public function testTheFormOffersOnlyOncePerSession(): void
+    /** ...and a definition saved with either one reads back as it. */
+    public function testEitherCountModeIsStoredAndReadBack(): void
     {
-        $body = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/goal_event_definition_edit.php' );
+        foreach ( array( \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT,
+                         \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION ) as $mode ) {
 
-        $this->assertStringContainsString( 'countMode', $body,
-            'The form does not ask about counting at all, so a goal event does not say how '
-            . 'often it counts.' );
+            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+            $id     = $entity->generateId( 'goal_event:count-mode-probe:' . uniqid( '', true ) );
 
-        $this->assertSame( 1, substr_count( $body, 'value="once_per_session"' ) );
+            $this->created[] = $id;
 
-        $this->assertStringNotContainsString( 'once_per_event', $body,
-            'The form still offers once per event, which the handler cannot honour.' );
+            $entity->set( 'id', $id );
+            $entity->set( 'property_id', $this->propertyId );
+            $entity->set( 'name', 'Count_mode_probe' );
+            $entity->set( 'trigger_event_type', 'page_view' );
+            $entity->set( 'count_mode', \OWA\Module\Base\Controller\GoalEventDefinitionSave::countMode( $mode ) );
+            $entity->create();
+
+            $read = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+            $read->load( $id );
+
+            $this->assertSame( $mode, $read->countMode() );
+        }
     }
 }

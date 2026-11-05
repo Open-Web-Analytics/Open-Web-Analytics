@@ -1733,16 +1733,10 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
 
         // The Property's currency, which is what its revenue was recorded in.
-        $propertyId = $this->propertyIdForRequest();
-
-        $currency = $propertyId !== ''
-            ? \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3', 'property', $propertyId )
-            : \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' );
-
         return \OWA\Core\Lib::formatCurrency(
                 $value,
                 \OWA\Core\CoreAPI::getSetting( 'base', 'currencyLocal' ),
-                $currency ?: \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' )
+                \OWA\Module\Base\Classes\Currency::ofProperty( $this->propertyIdForRequest() )
         );
     }
 

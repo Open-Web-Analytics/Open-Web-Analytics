@@ -14,18 +14,18 @@ namespace OWA\Module\Base\Classes;
  * into the same kind of predicate a path step compiles to, evaluated against
  * the facts at read time.
  *
- * The tempting alternative is to read the stored conversion: owa_session
- * carries goal_N per goal, stamped at ingest. It is wrong for a funnel in three
- * separate ways, and each one alone would be enough:
+ * The tempting alternative is to read what ingest stored: 1.x's owa_session
+ * carried goal_N per goal, and v2 stores a goal event per match. Both are wrong
+ * for a funnel in three separate ways, and each one alone would be enough:
  *
  *   1. IT HAS NO TIMESTAMP. A funnel is an ORDER -- step N counts only those
  *      who reached it after step N-1 -- and a flag on the session says the
- *      session converted at some point, not when. There is nothing to order.
+ *      session met the goal at some point, not when. There is nothing to order.
  *
  *   2. IT IS SESSION-SCOPED. A funnel counted by visitor has no column to read.
  *
  *   3. IT IS STAMPED FORWARD ONLY. is_goal_event is written at ingest, so a
- *      definition created this morning has no conversions behind it and a
+ *      definition created this morning has no goal events behind it and a
  *      funnel drawn over last month would be empty -- while every fact needed
  *      to answer the question is sitting in the cube. Counting takes the cheap
  *      mechanism; ordering takes the one that can see the past.
@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Classes;
  * A definition named in a funnel step is a condition matched against the event
  * stream like any other step condition; the goal flag lives on the event row, so
  * it is a row filter, not a counter being read back. Nothing in a funnel consults
- * a stored conversion total.
+ * a stored goal event count.
  *
  * WHAT IT COMPILES AGAINST
  *
@@ -163,9 +163,9 @@ class GoalEventDefinitionPredicate {
     /**
      * One comparison, mirroring GoalEventDefinition::compare().
      *
-     * The pair have to agree: the same definition decides a conversion at
+     * The pair have to agree: the same definition decides a goal event at
      * ingest through compare() and a funnel stage at read time through this, so
-     * a difference between them is a funnel that disagrees with the conversion
+     * a difference between them is a funnel that disagrees with the goal event
      * count beside it.
      *
      * Two places where they cannot agree exactly, both stated rather than
@@ -314,7 +314,7 @@ class GoalEventDefinitionPredicate {
                  * what compare() answers by falling off the end of its switch.
                  *
                  * Not exact-match, which is the obvious wrong guess: it would
-                 * make the funnel disagree with the conversion count beside it
+                 * make the funnel disagree with the goal event count beside it
                  * on exactly the definitions that are already malformed.
                  */
                 return array( 'sql' => '( 0 = 1 )', 'params' => array() );

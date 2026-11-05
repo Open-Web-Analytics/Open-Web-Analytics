@@ -959,7 +959,7 @@
         "note": "The site's OWN id for a logged-in person -- not a display name, which is a custom user property now. The one field that outlives a cookie, which is what makes it the only honest basis for joining a person's devices, and equally what makes it the thing log_visitor_pii gates: an install that turns visitor PII off must be able to stop storing it. gateUserId() DELETES the property rather than returning null, because a null is not written back and would leave the beacon's value in place. FORWARD-ONLY: events collected before someone identified themselves stay anonymous."
     },
     "currency": {
-        "description": "The ISO 4217 code of the order's currency. When the tracker sends none, the Property's currency setting.",
+        "description": "The ISO 4217 code of the order's currency. When the tracker sends none, the Property's currency setting. On a goal event, the currency of its value.",
         "set_by": "client",
         "from": [
             "o_cur"
@@ -1488,7 +1488,7 @@
         ]
     },
     "is_goal_event": {
-        "description": "Whether the event is a goal event's conversion. Set by OWA at ingest.",
+        "description": "Whether the event is a goal event. Set by OWA at ingest.",
         "set_by": "event",
         "from": [
             "event_type"
@@ -1501,6 +1501,22 @@
         "data_type": "boolean",
         "required": false,
         "callbacks": [],
-        "note": "1 on the row a conversion adds: Classes\\GoalMarking, a callback on the tracking_events_pre_save filter that runs after the materializers, judges EVERY event in the set on its own values and appends a row named by the goal event for each goal event it met. 0 on every other row, the event that met the goal event included, so a conversion is counted once. Nothing a beacon sends can set it: the marking always writes 0 or 1.\nNOT MATERIALIZED: a materialized event is judged for itself rather than inheriting the verdict on the event that carried it.\nTWO VALUES, NOT THREE: the column is NOT NULL DEFAULT 0, and row() writes 0 for an event the marking never saw.\n`from` names event_type, the trigger gate. The conditions read whichever columns each goal event names, which a static list cannot say."
+        "note": "1 on a goal event: the row Classes\\GoalMarking, a callback on the tracking_events_pre_save filter that runs after the materializers, adds for each goal event definition an event in the set met, judging EVERY event on its own values. It is named by the definition. 0 on every other row, the event that met the definition included, so a goal event is counted once. Nothing a beacon sends can set it: the marking always writes 0 or 1.\nNOT MATERIALIZED: a materialized event is judged for itself rather than inheriting the verdict on the event that carried it.\nTWO VALUES, NOT THREE: the column is NOT NULL DEFAULT 0, and row() writes 0 for an event the marking never saw.\n`from` names event_type, the trigger gate. The conditions read whichever columns each definition names, which a static list cannot say."
+    },
+    "value": {
+        "description": "What a goal event is worth, in minor units of its currency. Set by OWA at ingest, on goal events only.",
+        "set_by": "event",
+        "from": [
+            "revenue"
+        ],
+        "column": "value",
+        "events": [
+            "*"
+        ],
+        "materialize": false,
+        "data_type": "integer",
+        "required": false,
+        "callbacks": [],
+        "note": "Set by Classes\\GoalMarking on the goal event rows it adds: the definition's value when it is above 0, with `currency` set to the one the Property's reports are formatted in; else, when the event that met the definition is a purchase, its `revenue` and `currency`; else nothing. Every other row is NULL: the marking clears it on each event it is handed, and nothing a beacon sends can set it.\nNOT MATERIALIZED: a goal event is built from the event that met its definition, and that event's value is not its own.\n`from` names revenue, the one property it can be copied from. The definition's value is read from the definition, which no property describes."
     }
 }

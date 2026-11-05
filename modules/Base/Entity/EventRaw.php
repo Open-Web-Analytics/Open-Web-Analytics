@@ -346,10 +346,10 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'engagement_msec', OWA_DTD_INT ) );
 
         /*
-         * Set on the event that MET the condition -- a goal event is an
-         * ordinary event flagged, so eventCount stays a count of what happened
-         * and a conversion needs no row of its own. Decided per
-         * event by Classes\GoalMarking on Ingest::TRACKING_EVENTS_PRE_SAVE.
+         * 1 on a GOAL EVENT: the row Classes\GoalMarking adds, on
+         * Ingest::TRACKING_EVENTS_PRE_SAVE, for each goal event definition an
+         * event met, named by the definition. 0 on every other row, the event
+         * that met the definition included, so the goal event is counted once.
          *
          * NOT NULL with a default, because a boolean holding three values
          * groups as three things.
@@ -380,6 +380,18 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'tax', OWA_DTD_BIGINT ) );
         $this->setProperty( $this->column( 'shipping', OWA_DTD_BIGINT ) );
         $this->setProperty( $this->column( 'currency', OWA_DTD_CHAR3 ) );
+
+        /*
+         * WHAT A GOAL EVENT IS WORTH, in minor units of `currency`, beside
+         * revenue and in the same units. Set by Classes\GoalMarking on the goal
+         * events it adds: the definition's value when it has one, else the
+         * revenue of the purchase that met it. NULL on every other row, and on a
+         * goal event with neither. The Goal Value metric sums it. Update077.
+         */
+        $this->setProperty( $this->column( 'value', OWA_DTD_BIGINT ) );
+        $this->properties['value']->setDescription(
+            'What a goal event is worth, in minor units of its currency: its definition\'s value, '
+          . 'else the revenue of the purchase that met it. Empty on every other event.' );
 
         $this->setProperty( $this->column( 'raw_ua', OWA_DTD_VARCHAR1024 ) );
 

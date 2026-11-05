@@ -443,8 +443,8 @@ function seed(): array
      *    a previous run died midway, and the fixture should be torn down, not
      *    patched up.
      */
-    // The goal is declared BEFORE the page views: conversions are added as each
-    // event is saved, so a goal added afterwards converts nothing already on disk.
+    // The goal is declared BEFORE the page views: goal events are added as each
+    // event is saved, so a definition added afterwards marks nothing already on disk.
     $out['goal_seeded'] = seedGoal();
 
     $existing = countSiteRequests(E2E_SITE_ID);
