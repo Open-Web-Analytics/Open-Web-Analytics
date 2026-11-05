@@ -563,6 +563,36 @@ final class CustomReportPropertyTest extends TestCase
         $this->assertSame('That funnel belongs to another user.', $_owa_messages[2515]['message'] ?? null);
     }
 
+    /**
+     * A reader who is not an administrator stars a report with the propertyId
+     * its links carry, or with none: view_reports is checked on the report's
+     * Property, not on a siteId the request does not have.
+     */
+    public function testAReaderStarsAReportWithOnlyItsProperty(): void
+    {
+        $viewer = $this->viewer();
+        $id     = $this->store(self::P);
+        $su     = $this->serviceUser($viewer);
+
+        $capable = function (array $params) use ($su): bool {
+            $star = new \OWA\Module\Base\Controller\CustomReportMarkFavorite($params);
+            $m    = new \ReflectionMethod($star, 'isCurrentUserCapable');
+            $m->setAccessible(true);
+
+            return $m->invoke($star, $su);
+        };
+
+        $this->assertTrue($capable(['customReportId' => $id, 'propertyId' => self::P]), 'its propertyId alone');
+        $this->assertTrue($capable(['customReportId' => $id]), 'no Property named: its own');
+        $this->assertFalse($capable(['customReportId' => $id, 'propertyId' => self::Q]), 'a Property it may not see');
+
+        $this->asUser($viewer, function () use ($id) {
+            (new \OWA\Module\Base\Controller\CustomReportMarkFavorite(['customReportId' => $id, 'propertyId' => self::P]))->action();
+        });
+
+        $this->assertTrue(Favorites::isFavorite($id, (string) $viewer->get('user_id')));
+    }
+
     public function testAFunnelOfAnotherPropertyIsNotEditedSavedOrDrawn(): void
     {
         $id = $this->storeFunnel(self::P);
