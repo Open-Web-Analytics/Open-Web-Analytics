@@ -20,9 +20,8 @@ namespace OWA\Module\Base\Classes\Spam;
  * once at the end. A drain that dies before flush() loses its counts and not
  * its beacons: the counts are a report, and the beacons were blocked either way.
  *
- * INSERT ... ON DUPLICATE KEY UPDATE blocked = blocked + ?, so two writers
- * adding to one row both count. The dialect layer has no upsert helper; the
- * migration tallies write the same statement (Migration\FactMigrator).
+ * An insert-or-add (OWA_SQL_INSERT_OR_ADD, the dialect's upsert): two writers
+ * adding to one row both count.
  */
 class Blocks {
 
@@ -145,9 +144,11 @@ class Blocks {
 
         self::$writes++;
 
-        $ok = \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
-            'INSERT INTO %s (yyyymmdd, site_id, rule, blocked) VALUES (?, ?, ?, ?)'
-          . ' ON DUPLICATE KEY UPDATE blocked = blocked + ?', self::table() ),
+        // The driver first: loading it is what defines the OWA_SQL_* constants.
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        $ok = $db->query( sprintf( OWA_SQL_INSERT_OR_ADD, self::table(),
+                'yyyymmdd, site_id, rule, blocked', '?, ?, ?, ?', 'yyyymmdd, site_id, rule', 'blocked' ),
             array( $yyyymmdd, $site_id, $rule, $count, $count ) ) !== false;
 
         if ( ! $ok ) {
