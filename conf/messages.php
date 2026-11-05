@@ -62,6 +62,10 @@ $_owa_messages = [
     2511 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Custom report saved.' )],
     2512 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Custom report deleted.' )],
     2513 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The custom report could not be deleted.' )],
+    // A funnel refused by the editor or the save: one not on this Property, of
+    // one the reader may not report on, or gone; and one of somebody else's.
+    2514 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'That funnel does not exist.' )],
+    2515 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'That funnel belongs to another user.' )],
 
     // User management
     3000 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'User added.' )],

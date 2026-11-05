@@ -392,6 +392,16 @@ final class CustomReportPropertyTest extends TestCase
         }
     }
 
+    /** The funnel refusals say what happened, not that something could not be deleted. */
+    public function testTheFunnelRefusalsHaveMessagesOfTheirOwn(): void
+    {
+        $_owa_messages = [];
+        require __DIR__ . '/../conf/messages.php';
+
+        $this->assertSame('That funnel does not exist.', $_owa_messages[2514]['message'] ?? null);
+        $this->assertSame('That funnel belongs to another user.', $_owa_messages[2515]['message'] ?? null);
+    }
+
     public function testAFunnelOfAnotherPropertyIsNotEditedSavedOrDrawn(): void
     {
         $id = $this->storeFunnel(self::P);
@@ -402,7 +412,7 @@ final class CustomReportPropertyTest extends TestCase
             'propertyId'      => self::Q,
         ]))->doAction();
 
-        $this->assertSame(2513, $edit['status_code'] ?? null);
+        $this->assertSame(2514, $edit['status_code'] ?? null, 'That funnel does not exist.');
         $this->assertSame('base.customReports', $edit['do'] ?? '');
 
         $save = new \OWA\Module\Base\Controller\VisualizationSave([
@@ -412,7 +422,7 @@ final class CustomReportPropertyTest extends TestCase
         ]);
         $save->action();
 
-        $this->assertSame(2513, $this->data($save)['status_code'] ?? null);
+        $this->assertSame(2514, $this->data($save)['status_code'] ?? null);
         $this->assertSame('Property fixture funnel', $this->row($id)['name']);
         $this->assertSame(self::P, (string) $this->row($id)['property_id']);
 

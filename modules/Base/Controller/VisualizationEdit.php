@@ -46,13 +46,13 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         $report = $id ? \OWA\Module\Base\Classes\CustomReports::loadOf( $id, (string) $this->getParam( 'propertyId' ) ) : null;
 
         /*
-         * One that is not on this Property, of another or gone, is refused as
-         * one this reader may not edit is. It used to open as a blank form
-         * carrying the id.
+         * One that is not on this Property, of another or gone, is refused
+         * back to the roster as one that does not exist. It used to open as a
+         * blank form carrying the id.
          */
         if ( $id && ! $report ) {
 
-            $this->setStatusCode( 2513 );
+            $this->setStatusCode( 2514 );
             $this->setRedirectAction( 'base.customReports' );
 
             return;
@@ -74,7 +74,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
 
             if ( ! $may ) {
 
-                $this->setStatusCode( 2513 );
+                $this->setStatusCode( 2515 );
                 $this->setRedirectAction( 'base.customReports' );
 
                 return;

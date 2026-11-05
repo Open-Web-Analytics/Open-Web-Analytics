@@ -239,7 +239,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
              */
             if ( ! \OWA\Module\Base\Classes\CustomReports::loadOf( $id, $propertyId ) ) {
 
-                $this->setStatusCode( 2513 );
+                $this->setStatusCode( 2514 );
                 $this->setRedirectAction( 'base.customReports' );
 
                 return;
