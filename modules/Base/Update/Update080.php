@@ -14,8 +14,8 @@ namespace OWA\Module\Base\Update;
  * /store/index.html and /store were two pages on every Profile nobody had
  * configured. directory_index_pages is a list, install-wide and on no screen,
  * whose default names the index files web servers serve
- * (V2Event::DIRECTORY_INDEX_PAGES). page_path, the funnel's page conditions and
- * Domstream's page path all fold a last segment named in it.
+ * (V2Event::DIRECTORY_INDEX_PAGES). page_path, and everything compared with
+ * it, folds a last segment named in it.
  *
  * Every stored default_page value, at the install and on each Profile, is
  * read. A name the default list already has needs nothing. Any other is added:

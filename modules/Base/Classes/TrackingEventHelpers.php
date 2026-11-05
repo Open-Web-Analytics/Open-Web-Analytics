@@ -2315,8 +2315,9 @@ class TrackingEventHelpers {
      * as V2Event::indexPageNames() lists them.
      *
      * The one reading of the setting. Ingest canonicalises page_path with it,
-     * and the funnel and Domstream canonicalise what they compare with
-     * page_path with it, so a path the row stored is the path they look for.
+     * and every reader that compares a path with page_path (the funnel, any
+     * module's) canonicalises with it too, so a path the row stored is the
+     * path they look for.
      * Install-wide: which file a web server serves for a directory is not a
      * property of one Profile.
      *
