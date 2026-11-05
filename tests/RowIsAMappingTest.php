@@ -112,11 +112,13 @@ final class RowIsAMappingTest extends TestCase
                 continue;
             }
 
-            // $this->text( $event->get( 'x' ) ) / ->number( ... ) / ->flag( ... ),
-            // a bare $event->get( 'x' ), or one of the identity locals. The three
-            // coercions are the only wrappers allowed: each answers a storable
-            // value for one declared type and reads nothing but its argument.
-            $read = '/^(?:\$this->(?:text|number|flag)\(\s*)?\$event->get\(\s*\'\w+\'\s*\)/';
+            // $this->text( $event->get( 'x' ) ) / ->number( ... ) / ->decimal( ... )
+            // / ->flag( ... ), a bare $event->get( 'x' ), or one of the identity
+            // locals. The four coercions are the only wrappers allowed: each
+            // answers a storable value for one declared type and reads nothing
+            // but its argument. decimal() is spam_score's, which number() would
+            // cut to an integer.
+            $read = '/^(?:\$this->(?:text|number|decimal|flag)\(\s*)?\$event->get\(\s*\'\w+\'\s*\)/';
 
             if ( preg_match( $read, $expression )
                  || in_array( ltrim( $expression, '$' ), self::IDENTITY, true ) ) {

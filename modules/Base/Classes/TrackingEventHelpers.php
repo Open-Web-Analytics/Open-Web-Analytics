@@ -1248,6 +1248,104 @@ class TrackingEventHelpers {
     }
 
     /*
+     * THE BEACON REQUEST'S OWN HEADERS, for spam scoring (Classes\Spam).
+     *
+     * Read here, at the edge, because a queued beacon is scored by the drain,
+     * where $_SERVER is not the beacon's. Each rides the event in the queue
+     * envelope like the user agent does, and none of them reaches a column.
+     *
+     * request_referer is the Referer header of the request to log.php, which a
+     * browser sets to the page that sent the beacon. It is not HTTP_REFERER,
+     * which the tracker sends (p_r) and which is the page's own referrer.
+     */
+
+    static function requestSecFetchMode( $value = '' ) {
+
+        return self::requestHeader( $value, 'HTTP_SEC_FETCH_MODE' );
+    }
+
+    static function requestSecFetchSite( $value = '' ) {
+
+        return self::requestHeader( $value, 'HTTP_SEC_FETCH_SITE' );
+    }
+
+    static function requestSecFetchDest( $value = '' ) {
+
+        return self::requestHeader( $value, 'HTTP_SEC_FETCH_DEST' );
+    }
+
+    static function requestSecChUa( $value = '' ) {
+
+        return self::requestHeader( $value, 'HTTP_SEC_CH_UA' );
+    }
+
+    static function requestSecChUaPlatform( $value = '' ) {
+
+        return self::requestHeader( $value, 'HTTP_SEC_CH_UA_PLATFORM' );
+    }
+
+    static function requestSecChUaMobile( $value = '' ) {
+
+        return self::requestHeader( $value, 'HTTP_SEC_CH_UA_MOBILE' );
+    }
+
+    static function requestAcceptEncoding( $value = '' ) {
+
+        return self::requestHeader( $value, 'HTTP_ACCEPT_ENCODING' );
+    }
+
+    static function requestAcceptLanguage( $value = '' ) {
+
+        return self::requestHeader( $value, 'HTTP_ACCEPT_LANGUAGE' );
+    }
+
+    static function requestReferer( $value = '' ) {
+
+        return self::requestHeader( $value, 'HTTP_REFERER' );
+    }
+
+    /*
+     * The page URL and its referrer AS THE BEACON CARRIED THEM, for the
+     * query_string spam rules. Copied here, in the edge stamp, because the
+     * property stage cleans both (data_type url: tags stripped, quotes and
+     * dollar signs escaped), which removes exactly what those rules look for.
+     */
+
+    static function receivedPageLocation( $value, $event ) {
+
+        return self::received( $value, $event->get( 'page_location' ) );
+    }
+
+    static function receivedReferer( $value, $event ) {
+
+        return self::received( $value, $event->get( 'HTTP_REFERER' ) );
+    }
+
+    /** The value already on the event, else the copy. '' when neither. */
+    private static function received( $value, $copy ) {
+
+        if ( $value !== null && $value !== false && $value !== '' ) {
+
+            return $value;
+        }
+
+        return is_string( $copy ) ? $copy : '';
+    }
+
+    /** A header of the request, or the value already on the event. '' when neither. */
+    private static function requestHeader( $value, $server_key ) {
+
+        if ( $value !== null && $value !== false && $value !== '' ) {
+
+            return $value;
+        }
+
+        $header = \OWA\Core\CoreAPI::getServerParam( $server_key );
+
+        return is_string( $header ) ? $header : '';
+    }
+
+    /*
      * httpHostDefault() stood here, and goes with the HTTP_HOST property.
      *
      * It returned the Host header of the BEACON request -- this OWA instance's

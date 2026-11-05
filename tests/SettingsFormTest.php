@@ -79,8 +79,9 @@ final class SettingsFormTest extends TestCase
     {
         $html = $this->generalPage();
 
+        // spam_detection and spam_threshold where log_robots was (Update084).
         foreach (array(
-            'log_robots', 'log_named_users', 'excluded_ips',
+            'spam_detection', 'spam_threshold', 'log_named_users', 'excluded_ips',
             'anonymize_ips', 'query_string_filters', 'announce_visitors',
             'notice_email', 'timezone',
         ) as $key) {
@@ -105,6 +106,38 @@ final class SettingsFormTest extends TestCase
                   'Page views', 'Clicks and downloads', 'Forms', 'Scroll depth', 'Site search', 'JavaScript errors', 'Visits and cookies'),
             array_slice(array_column($sets, 'legend'), 0, 11),
             'the page renders its fieldsets in the order it registered them');
+    }
+
+    /** Spam detection: two plain levels, a threshold, and no log_robots row. */
+    public function testTheSpamSettingsRenderUnderTrackingRequestProcessing(): void
+    {
+        $sets = array_column(\OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral'), null, 'id');
+
+        $this->assertSame(array('spam_detection', 'spam_threshold'),
+            array_slice((array) $sets['base.tracking']['settings'], 0, 2));
+        $this->assertNotContains('log_robots', (array) $sets['base.tracking']['settings']);
+
+        $html = $this->generalPage();
+
+        $this->assertStringContainsString('<option value="normal"', $html);
+        $this->assertStringContainsString('>Normal</option>', $html);
+        $this->assertStringContainsString('>Strict</option>', $html);
+        $this->assertStringNotContainsString('id="log_robots"', $html);
+        $this->assertStringNotContainsString('rule set', strtolower($html), 'people choose a level, not rule sets');
+    }
+
+    /** A number of at least 0.1 with one decimal place, or blank. */
+    public function testTheSpamThresholdIsValidated(): void
+    {
+        $c = $this->config();
+
+        foreach (array('5', '5.0', '0.1', '7.5', '12', '9999.9', '', ' 2.5 ') as $ok) {
+            $this->assertNull($c->valueProblem('base', 'spam_threshold', $ok), var_export($ok, true));
+        }
+
+        foreach (array('0', '0.0', '-1', '7.55', 'five', '1e3', '.5', '10000') as $bad) {
+            $this->assertNotNull($c->valueProblem('base', 'spam_threshold', $bad), var_export($bad, true));
+        }
     }
 
     /** A fieldset reaches a page through a group the page names. */

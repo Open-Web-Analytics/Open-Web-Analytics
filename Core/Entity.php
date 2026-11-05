@@ -397,6 +397,7 @@ class Entity {
             'OWA_DTD_TINYINT2',
             'OWA_DTD_TINYINT4',
             'OWA_DTD_SERIAL',
+            'OWA_DTD_DECIMAL6_1',
             // Spelled TINYINT(1) in MySQL, so already covered there -- named
             // anyway, because a dialect with a real boolean type spells it
             // differently and 0/false must stay storable in it.
@@ -1256,6 +1257,30 @@ class Entity {
     function addUniqueIndex( $name, array $columns ) {
 
         $this->_tableProperties['unique_indexes'][ $name ] = $columns;
+    }
+
+    /**
+     * Declare a primary key over several columns, in key order.
+     *
+     * For a table whose rows are identified by what they count, such as
+     * owa_spam_block's (day, Profile, rule), where a derived id column would
+     * be a second spelling of the same three values. Db::createTable() emits
+     * it at table level; no column may also call DbColumn::setPrimaryKey().
+     * Not for a partitioned table, whose key createTable() builds itself.
+     *
+     * @param string[] $columns
+     */
+    function setCompositePrimaryKey( array $columns ) {
+
+        $this->_tableProperties['composite_primary_key'] = array_values( $columns );
+    }
+
+    /** @return string[] the columns of a composite primary key, or none */
+    function getCompositePrimaryKey() {
+
+        return isset( $this->_tableProperties['composite_primary_key'] )
+            ? $this->_tableProperties['composite_primary_key']
+            : array();
     }
 
     /** @return array name => columns */

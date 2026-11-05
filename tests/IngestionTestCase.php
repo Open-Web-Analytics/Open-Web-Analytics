@@ -198,7 +198,8 @@ abstract class IngestionTestCase extends TestCase
      */
     protected function fireEvent(string $event_type, array $props)
     {
-        // Anonymous, non-robotic request so logEvent does not drop the event.
+        // Anonymous, non-robotic request, so the event is neither dropped at the
+        // edge nor blocked as spam at ingest.
         if (!isset($props['HTTP_USER_AGENT'])) {
             $props['HTTP_USER_AGENT'] = $_SERVER['HTTP_USER_AGENT'];
         }

@@ -16,6 +16,182 @@
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::userAgentDefault"
         ]
     },
+    "request_sec_fetch_mode": {
+        "description": "The Sec-Fetch-Mode header of the beacon request. Browsers that send Fetch Metadata send it on every request. Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "HTTP_SEC_FETCH_MODE"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::requestSecFetchMode"
+        ],
+        "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
+    },
+    "request_sec_fetch_site": {
+        "description": "The Sec-Fetch-Site header of the beacon request. Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "HTTP_SEC_FETCH_SITE"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::requestSecFetchSite"
+        ],
+        "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
+    },
+    "request_sec_fetch_dest": {
+        "description": "The Sec-Fetch-Dest header of the beacon request. Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "HTTP_SEC_FETCH_DEST"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::requestSecFetchDest"
+        ],
+        "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
+    },
+    "request_sec_ch_ua": {
+        "description": "The Sec-CH-UA header of the beacon request: the brands a Chromium browser reports. Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "HTTP_SEC_CH_UA"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::requestSecChUa"
+        ],
+        "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
+    },
+    "request_sec_ch_ua_platform": {
+        "description": "The Sec-CH-UA-Platform header of the beacon request: the operating system a Chromium browser reports. Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "HTTP_SEC_CH_UA_PLATFORM"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::requestSecChUaPlatform"
+        ],
+        "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
+    },
+    "request_sec_ch_ua_mobile": {
+        "description": "The Sec-CH-UA-Mobile header of the beacon request: ?1 from a phone, ?0 otherwise. Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "HTTP_SEC_CH_UA_MOBILE"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::requestSecChUaMobile"
+        ],
+        "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
+    },
+    "request_accept_encoding": {
+        "description": "The Accept-Encoding header of the beacon request. Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "HTTP_ACCEPT_ENCODING"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::requestAcceptEncoding"
+        ],
+        "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
+    },
+    "request_accept_language": {
+        "description": "The Accept-Language header of the beacon request, whole. Read by spam detection and not stored; language keeps its first five characters.",
+        "set_by": "request",
+        "from": [
+            "HTTP_ACCEPT_LANGUAGE"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::requestAcceptLanguage"
+        ],
+        "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it."
+    },
+    "request_referer": {
+        "description": "The Referer header of the beacon request itself, which a browser sets to the page that sent the beacon. Not the page's own referrer (HTTP_REFERER). Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "HTTP_REFERER"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::requestReferer"
+        ],
+        "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it. Not HTTP_REFERER, which the tracker sends as p_r and which is the page's referrer."
+    },
+    "received_page_location": {
+        "description": "The page URL exactly as the beacon carried it, before OWA cleans or canonicalises it. Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "p_l"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::receivedPageLocation"
+        ],
+        "note": "A copy of the beacon parameter taken at the edge, before the property stage sanitizes the URL (Sanitize::cleanUrl() strips tags, escapes quotes and dollar signs) and before canonicalisation or the query filters, so the query_string spam rules see what the beacon actually carried. Request-set, so it is environmental: ProcessEvent neither sanitizes nor re-applies it, a beacon cannot name it (admitRequestParams()), and it rides the queue envelope to the drain. `from` is the request parameter it is copied from. Stored by nothing. Copied from page_location."
+    },
+    "received_referer": {
+        "description": "The page's referrer exactly as the beacon carried it, before OWA cleans it. Read by spam detection and not stored.",
+        "set_by": "request",
+        "from": [
+            "p_r"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::receivedReferer"
+        ],
+        "note": "A copy of the beacon parameter taken at the edge, before the property stage sanitizes the URL (Sanitize::cleanUrl() strips tags, escapes quotes and dollar signs) and before canonicalisation or the query filters, so the query_string spam rules see what the beacon actually carried. Request-set, so it is environmental: ProcessEvent neither sanitizes nor re-applies it, a beacon cannot name it (admitRequestParams()), and it rides the queue envelope to the drain. `from` is the request parameter it is copied from. Stored by nothing. Copied from HTTP_REFERER."
+    },
     "language": {
         "description": "The visitor's preferred language from the Accept-Language header, cut to its first five characters (for example en-US).",
         "set_by": "request",
@@ -1518,5 +1694,61 @@
         "required": false,
         "callbacks": [],
         "note": "Set by Classes\\GoalMarking on the goal event rows it adds: the definition's value when it is above 0, with `currency` set to the one the Property's reports are formatted in; else, when the event that met the definition is a purchase, its `revenue` and `currency`; else nothing. Every other row is NULL: the marking clears it on each event it is handed, and nothing a beacon sends can set it.\nNOT MATERIALIZED: a goal event is built from the event that met its definition, and that event's value is not its own.\n`from` names revenue, the one property it can be copied from. The definition's value is read from the definition, which no property describes."
+    },
+    "spam_score": {
+        "description": "The beacon's spam score: the sum of the points of the spam rules it met, 0.0 when it met none. Set by OWA at ingest. A beacon whose score reaches the spam threshold is not stored.",
+        "set_by": "event",
+        "from": [
+            "HTTP_USER_AGENT",
+            "request_sec_fetch_mode",
+            "request_sec_fetch_site",
+            "request_sec_fetch_dest",
+            "request_sec_ch_ua",
+            "request_sec_ch_ua_platform",
+            "request_sec_ch_ua_mobile",
+            "request_accept_encoding",
+            "request_accept_language",
+            "request_referer",
+            "received_page_location",
+            "received_referer",
+            "page_location",
+            "site_id"
+        ],
+        "column": "spam_score",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Set by Classes\\Spam\\Score::admit(), from Handler\\EventRawHandlers::notify() before the set of events is built, so session_start, first_visit and every goal event carry the beacon's score: they copy it from the carrier (materialize()). Nothing a beacon sends can set it.\n`from` names what the shipped rules read. A rule set a module adds may read anything on the event, which a static list cannot say.\nNULL only on rows stored before it existed."
+    },
+    "spam_rules": {
+        "description": "The spam rules the beacon met, each with its points, highest first, such as NO_CLIENT_HINTS=2.5. Empty when it met none. Set by OWA at ingest.",
+        "set_by": "event",
+        "from": [
+            "HTTP_USER_AGENT",
+            "request_sec_fetch_mode",
+            "request_sec_fetch_site",
+            "request_sec_fetch_dest",
+            "request_sec_ch_ua",
+            "request_sec_ch_ua_platform",
+            "request_sec_ch_ua_mobile",
+            "request_accept_encoding",
+            "request_accept_language",
+            "request_referer",
+            "received_page_location",
+            "received_referer",
+            "page_location",
+            "site_id"
+        ],
+        "column": "spam_rules",
+        "events": [
+            "*"
+        ],
+        "data_type": "string",
+        "required": false,
+        "callbacks": [],
+        "note": "Set beside spam_score, by the same call and for the same events. Cut to whole entries at 255 characters (Spam\\Score::format())."
     }
 }

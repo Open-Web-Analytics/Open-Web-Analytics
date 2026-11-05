@@ -293,18 +293,9 @@ return array(
             'description' =>
                 'Controls the logging of requests made by named users.',
         ),
-        'log_robots' => array(
-            'default'  => false,
-            'storable' => true,
-            'autoload' => true,
-            // Install only: CoreAPI::logEvent() reads the install's value.
-            'type'     => 'boolean',
-            'label'    => 'Log Requests From Known Robots',
-            'description' =>
-                'Controls the logging of page requests made by known robots and '
-                . 'spiders. Turning this feature on will dramatically increase the '
-                . 'number of requests that are processed and logged.',
-        ),
+        // Set by Update084 when it turned log_robots into a blank spam_threshold, so its
+        // down() can put the log_robots rows and the spam_threshold row back as they were.
+        'log_robots_before_084' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         /*
          * Whether user_id is stored. It gated user_name and user_email, which are
          * custom user properties now (PLAN.html §2.26.1), so it moves to the one
@@ -472,6 +463,38 @@ return array(
         'session_length' => array( 'default' => 1800, 'description' => 'How long a visitor can be inactive before their next event starts a new session, in seconds. Default 1800 (30 minutes).' ),
         'site_id' => array( 'default' => '' ),
         'source_param' => array( 'default' => 'source' ),
+        /*
+         * SPAM DETECTION (Classes\Spam). Every beacon is scored; one whose score
+         * reaches spam_threshold is not stored. Install only: Spam\Score reads
+         * the install's values, for every Profile alike. The level is mapped to
+         * rule sets by Spam\RuleSets, and a module adjusts that mapping with the
+         * spam_rule_sets filter; the screen offers levels only.
+         */
+        'spam_detection' => array(
+            'default'  => 'normal',
+            'storable' => true,
+            'autoload' => true,
+            'type'     => 'select',
+            'label'    => 'Spam Detection',
+            'description' =>
+                '<strong>Normal</strong> blocks requests whose user agent names a robot or crawler.<br>'
+                . '<strong>Strict</strong> also checks that a request looks like it came from the browser it claims '
+                . 'to be, from a page of your site, with an ordinary URL.',
+            'options'  => array( 'normal' => 'Normal', 'strict' => 'Strict' ),
+        ),
+        'spam_threshold' => array(
+            'default'  => 5.0,
+            'storable' => true,
+            'autoload' => true,
+            'type'     => 'text',
+            'label'    => 'Spam Threshold',
+            'description' =>
+                'A request whose spam score reaches this number is not recorded. Leave blank to record every '
+                . 'request; each one still gets a score.',
+            // 0.1 to 9999.9, at most one decimal place; blank for none.
+            'pattern'  => '/^$|^(?:0\\.[1-9]|[1-9][0-9]{0,3}(?:\\.[0-9])?)$/',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Spam Threshold is a number of at least 0.1 with at most one decimal place, or blank.' ),
+        ),
         'start_page' => array( 'default' => 'base.reportingHome', 'description' => 'The screen OWA opens after login, and when index.php is requested with no action. Default base.reportingHome.' ),
         'theme' => array( 'default' => '', 'description' => 'A directory under the themes directory whose templates override module templates. Empty uses none.' ),
         /*

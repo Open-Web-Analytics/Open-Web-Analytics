@@ -23,8 +23,8 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
     // A tracking beacon has no authenticated user; logEvent() drops named
     // users. Ensure the CLI/test context looks like an anonymous request.
     if (!isset($_SERVER['HTTP_USER_AGENT'])) {
-        // Non-robotic UA — logEvent() aborts robotic requests when
-        // log_robots is false (the default), which would skip the INSERT.
+        // Non-robotic UA: under the default spam_detection (normal) a robot
+        // agent scores the default threshold and is not stored.
         $_SERVER['HTTP_USER_AGENT'] =
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
             . '(KHTML, like Gecko) Chrome/120.0 Safari/537.36';

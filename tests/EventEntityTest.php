@@ -33,9 +33,10 @@ final class EventEntityTest extends TestCase
         // when a row reached raw, which no report reads (Entity\Event).
         $copied = array_values(array_intersect($this->raw()->getColumns(), $event));
 
-        // And the stamped prior touch, which attributed_* is the reading of.
+        // And the stamped prior touch, which attributed_* is the reading of, and
+        // the spam score, which is about the request.
         $this->assertSame(['created_at', 'prior_touch_source', 'prior_touch_medium', 'prior_touch_campaign',
-            'prior_touch_ad', 'prior_touch_referer_host', 'prior_touch_ts'],
+            'prior_touch_ad', 'prior_touch_referer_host', 'prior_touch_ts', 'spam_score', 'spam_rules'],
             array_values(array_diff($this->raw()->getColumns(), $event)),
             'the cube leaves out exactly the raw columns it means to');
 

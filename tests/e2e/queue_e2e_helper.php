@@ -34,7 +34,7 @@
  * This file (like all of tests/) is excluded from the release tarball.
  */
 
-// A beacon fired by the seeder path with no UA is dropped as robotic; this helper
+// The seeder sets a browser UA so its beacons are not blocked as spam; this helper
 // only inspects/drains, but boot parity with the seeder keeps behavior identical.
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
     $_SERVER['HTTP_USER_AGENT'] =

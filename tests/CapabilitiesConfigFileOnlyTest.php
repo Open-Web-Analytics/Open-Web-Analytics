@@ -160,7 +160,7 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
     {
         $d = $this->staticBaseSettings();
 
-        foreach ( array( 'timezone', 'log_robots', 'anonymize_ips' ) as $editable ) {
+        foreach ( array( 'timezone', 'spam_detection', 'anonymize_ips' ) as $editable ) {
 
             $this->assertArrayNotHasKey( $editable, $d,
                 sprintf( 'base.%s is meant to be editable from the admin UI', $editable ) );

@@ -2889,7 +2889,8 @@ namespace OWA\Module\Base\Classes;
                 'db_password'                        => '',
                 'db_force_new_connections'            => true,
                 'db_make_persistant_connections'    => false,
-                'log_robots'                        => false,
+                'spam_detection'                    => 'normal',
+                'spam_threshold'                    => 5.0,
                 'clean_query_string'                => true,
                 'query_string_filters'                => '', // move to site settings
                 'async_log_dir'                        => '', //OWA_DATA_DIR . 'logs/',
@@ -3056,6 +3057,7 @@ namespace OWA\Module\Base\Classes;
                 'goal_event_names_before_075'       => array(),
                 'funnel_steps_before_079'           => array(),
                 'default_page_before_080'           => array(),
+                'log_robots_before_084'             => array(),
                 'v1_tables_dropped'                 => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.

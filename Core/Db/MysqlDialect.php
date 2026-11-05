@@ -65,6 +65,13 @@ if ( ! defined( 'OWA_DTD_CHAR2' ) ) { define('OWA_DTD_CHAR2', 'CHAR(2)'); }
 if ( ! defined( 'OWA_DTD_CHAR3' ) ) { define('OWA_DTD_CHAR3', 'CHAR(3)'); }
 
 /*
+ * A spam score (owa_event_raw.spam_score): one decimal place, up to 99999.9.
+ * Numeric, so Entity::numericColumnTypes() names it and a score of 0.0 is
+ * stored rather than dropped as falsy.
+ */
+if ( ! defined( 'OWA_DTD_DECIMAL6_1' ) ) { define('OWA_DTD_DECIMAL6_1', 'DECIMAL(6,1)'); }
+
+/*
  * MySQL 5.7+ and MariaDB 10.2+ both have it; on either it is a text type with
  * validation, so a dialect without JSON can define this as its own text type
  * and nothing above here changes.

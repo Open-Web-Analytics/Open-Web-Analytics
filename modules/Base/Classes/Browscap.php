@@ -71,12 +71,6 @@ class Browscap extends \OWA\Core\Base {
 
     }
 
-    // DEPRICATED
-    function robotCheck() {
-
-        return $this->isRobot();
-    }
-
     function lookup( $user_agent ) {
 
         $cap = null;
@@ -166,123 +160,6 @@ class Browscap extends \OWA\Core\Base {
         }
 
         return null;
-    }
-
-    function robotRegexCheck() {
-
-        $robots = array(
-            'bot',
-            'crawl',
-            'spider',
-            'curl',
-            'host',
-            'localhost',
-            'java',
-            'libcurl',
-            'libwww',
-            'lwp',
-            'perl',
-            'php',
-            'wget',
-            'search',
-            'slurp',
-            'robot',
-            'WordPress.com mShots',
-
-            // Generic HTTP clients and automation drivers. None of these carry
-            // a token the list above matches, and none of them are browsers, so
-            // anything arriving under one is a script.
-            //
-            // Kept deliberately specific. A detected robot is DISCARDED rather
-            // than flagged -- see CoreAPI, which aborts the event -- so a false
-            // positive costs a real page view. That asymmetry is why these are
-            // product names rather than loose words.
-            'go-http-client',
-            'node-fetch',
-            'python-requests',
-            'python-urllib',
-            'okhttp',
-            'axios',
-            'guzzlehttp',
-            'postmanruntime',
-            'scrapy',
-            'headlesschrome',
-            'phantomjs',
-            'puppeteer',
-            'playwright',
-            'selenium',
-            'webdriver',
-        );
-
-        $match = false;
-
-        foreach ( $robots as $k => $robot ) {
-
-            // stripos() returns int 0 for a match at the start of the string,
-            // which is falsy -- so a truthy check here let any UA *beginning*
-            // with a robot token (curl/..., Wget/..., Java/...) pass as human.
-            if ( stripos( $this->ua , $robot ) !== false ) {
-
-                \OWA\Core\CoreAPI::debug('Robot detect string found: ' . $robot );
-
-                $match = true;
-
-                break;
-            }
-        }
-
-        return $match;
-    }
-
-    function isRobot() {
-
-        if ( $this->robotRegexCheck() ) {
-
-            return true;
-        }
-
-        return $this->parserSaysSpider();
-    }
-
-    /**
-     * Ask the user-agent parser whether it recognises this as a crawler.
-     *
-     * A second opinion rather than a replacement: measured against real crawler
-     * strings the two disagree in BOTH directions. The token list catches
-     * Bytespider, which disguises itself as Android Chrome and which the parser
-     * calls a phone; the parser catches WhatsApp, which carries no token any
-     * list would think to include. Neither is a superset of the other.
-     *
-     * The parser's answer comes from its regexes data file, which is bundled
-     * with the package and only refreshes when upstream cuts a release -- there
-     * has not been one since July 2025. A newer file can be pointed at with the
-     * `ua-regexes` setting without waiting for that.
-     *
-     * Neither of these can identify a headless browser that reports itself as
-     * ordinary Chrome. That is not a gap in the data file; it is the limit of
-     * asking the client what it is.
-     *
-     * @return bool
-     */
-    protected function parserSaysSpider() {
-
-        if ( ! is_object( $this->browser ) || ! isset( $this->browser->device ) ) {
-
-            return false;
-        }
-
-        $family = isset( $this->browser->device->family )
-            ? (string) $this->browser->device->family
-            : '';
-
-        if ( strtolower( $family ) !== 'spider' ) {
-
-            return false;
-        }
-
-        \OWA\Core\CoreAPI::debug( 'Robot detected by user agent parser: device family Spider' );
-
-        return true;
     }
 
     function get( $name ) {

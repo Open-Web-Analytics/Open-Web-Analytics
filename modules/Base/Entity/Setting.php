@@ -20,7 +20,7 @@ namespace OWA\Module\Base\Entity;
  * inheritance model exists to make. One row per setting can say it: a row means
  * this value, no row means ask my parent.
  *
- * It also makes settings queryable ("which Profiles log robots?"), which
+ * It also makes settings queryable ("which Profiles log named users?"), which
  * unserializing every blob does not, and lets one key be written without
  * rewriting every other setting at that scope -- two concurrent writers to one
  * blob lose one of the two.

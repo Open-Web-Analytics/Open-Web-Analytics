@@ -325,18 +325,36 @@ class TrackerIngest {
             return $counts;
         }
 
-        while ( time() < $deadline ) {
+        // Blocked beacons are counted in memory and written once per key at the end (Spam\Blocks).
+        $batching = ! \OWA\Module\Base\Classes\Spam\Blocks::batching();
 
-            $messages = $queue->receive( self::BATCH, self::VISIBILITY );
+        if ( $batching ) {
 
-            if ( ! $messages ) {
+            \OWA\Module\Base\Classes\Spam\Blocks::begin();
+        }
 
-                break;
+        try {
+
+            while ( time() < $deadline ) {
+
+                $messages = $queue->receive( self::BATCH, self::VISIBILITY );
+
+                if ( ! $messages ) {
+
+                    break;
+                }
+
+                foreach ( $messages as $message ) {
+
+                    $counts[ self::ingestMessage( $queue, $message ) ]++;
+                }
             }
 
-            foreach ( $messages as $message ) {
+        } finally {
 
-                $counts[ self::ingestMessage( $queue, $message ) ]++;
+            if ( $batching ) {
+
+                \OWA\Module\Base\Classes\Spam\Blocks::flush();
             }
         }
 

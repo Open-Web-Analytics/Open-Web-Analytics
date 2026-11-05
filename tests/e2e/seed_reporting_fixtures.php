@@ -278,7 +278,7 @@ const E2E_NEW_PROPERTY_DOMAIN = 'owa-e2e-created-property.example.test';
 $owa_root = dirname(__DIR__, 2) . '/';
 
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
-    // Non-robotic UA or logEvent() drops the beacon when log_robots is false.
+    // Non-robotic UA, or the default spam_threshold blocks the beacon.
     $_SERVER['HTTP_USER_AGENT'] =
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
         . '(KHTML, like Gecko) Chrome/120.0 Safari/537.36';

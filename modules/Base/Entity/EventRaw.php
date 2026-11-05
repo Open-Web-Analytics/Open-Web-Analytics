@@ -425,6 +425,31 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'prior_touch_ts', OWA_DTD_BIGINT ) );
 
         /*
+         * THE BEACON'S SPAM SCORE, and the rules that made it (Classes\Spam).
+         * Every row of one beacon carries the same two values. A beacon whose
+         * score reached the install's spam_threshold has no rows at all, so
+         * what is here scored below it, or was stored with no threshold set.
+         *
+         * spam_score is 0.0 when no rule fired and NULL on rows stored before
+         * the column existed (Update082), migrated v1 history included.
+         * spam_rules is SpamAssassin's tests= form, highest points first:
+         * `NO_CLIENT_HINTS=2.5`. NULL when no rule fired.
+         *
+         * Raw only: the cube entity drops both. A score is about the request,
+         * which no report groups by, and a cube column costs every cube a
+         * rebuild and the custom dimensions their room.
+         */
+        $this->setProperty( $this->column( 'spam_score', OWA_DTD_DECIMAL6_1 ) );
+        $this->properties['spam_score']->setDescription(
+            'The beacon\'s spam score: the points of the spam rules it met, added up. 0.0 when it met '
+          . 'none; empty on rows stored before spam detection. Not carried into the cube.' );
+
+        $this->setProperty( $this->column( 'spam_rules', OWA_DTD_VARCHAR255 ) );
+        $this->properties['spam_rules']->setDescription(
+            'The spam rules the beacon met, each with its points, highest first, such as '
+          . 'NO_CLIENT_HINTS=2.5. Empty when it met none. Not carried into the cube.' );
+
+        /*
          * Indexes, as measured in the prototype. The two composites are the
          * report shapes: every query bounds site_id and a date range, and the
          * event-type one serves a breakdown of a single event over a period.

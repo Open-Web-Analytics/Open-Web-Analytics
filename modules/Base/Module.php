@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 81;
+        $this->required_schema_version = 84;
         return parent::__construct();
     }
 
@@ -834,7 +834,8 @@ class Module extends \OWA\Core\Module {
             'id'       => 'base.tracking',
             'legend'   => 'Tracking Request Processing',
             'settings' => array(
-                'log_robots',
+                'spam_detection',
+                'spam_threshold',
                 'log_named_users',
                 'excluded_ips',
                 'anonymize_ips',
@@ -1332,6 +1333,8 @@ class Module extends \OWA\Core\Module {
                 'event_raw',
                 'visitor_acquisition',
                 'custom_dimension',
+                // Beacons spam detection blocked, per day, Profile and rule (Classes\Spam\Blocks).
+                'spam_block',
                 // How far the v1 migration has got, and what it wrote
                 // (Classes\Migration).
                 'migration_progress',

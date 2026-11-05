@@ -153,20 +153,20 @@ final class SettingsStoreConsolidationTest extends TestCase
     {
         $this->requireDb();
 
-        $this->write( 'property', 'P1', 'log_robots', false );
+        $this->write( 'property', 'P1', 'a_flag', false );
 
         \OWA\Core\CoreAPI::settingCacheFlush();
 
         $rows = \OWA\Core\CoreAPI::settingRowsForChain( $this->chain( array(
             'property' => 'P1', 'install' => \OWA\Module\Base\Classes\Settings::INSTALL_SCOPE_ID ) ) );
 
-        $key = self::MODULE . '|log_robots';
+        $key = self::MODULE . '|a_flag';
 
         $this->assertArrayHasKey( $key, $rows['effective'], 'the row exists' );
         $this->assertFalse( $rows['effective'][ $key ], 'and it holds false, not nothing' );
 
         $this->assertNull(
-            \OWA\Core\CoreAPI::getScopedSettingRow( 'property', 'P2', self::MODULE, 'log_robots' ),
+            \OWA\Core\CoreAPI::getScopedSettingRow( 'property', 'P2', self::MODULE, 'a_flag' ),
             'while a scope with no row still answers null' );
     }
 
