@@ -47,7 +47,9 @@ final class EventRawEntityTest extends TestCase
          * clicked element the heatmap draws a click: a BIGINT and two SMALLINTs,
          * which left the measured ceiling on MySQL 8.4 at 36. 75 without
          * remote_host (Update074), a VARCHAR(255) that no dimension read. 76
-         * with value (Update077), what a goal event is worth: a BIGINT.
+         * with value (Update077), what a goal event is worth: a BIGINT. 78 with
+         * spam_score and spam_rules (Update082), a DECIMAL(6,1) and a VARCHAR(255):
+         * raw only, so the cube entity drops both and the ceiling does not move.
          *
          * A COUNT IS THE POINT HERE, not an inconvenience. The other nine
          * param-bound first-class properties were deliberately left in the bag --
@@ -57,7 +59,7 @@ final class EventRawEntityTest extends TestCase
          * MySQL 8.4. This number moving is how that decision gets noticed being
          * reversed one column at a time.
          */
-        $this->assertCount(76, $columns);
+        $this->assertCount(78, $columns);
 
         // browser_type, and NOT `browser`. Both columns existed and both were
         // written from the one property -- config/dimensions.php declares

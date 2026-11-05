@@ -38,10 +38,10 @@ final class SettingsShutdownSaveTest extends TestCase
      * the shutdown save would succeed and the read-back would still see
      * nothing, and this test would be reporting the wrong failure.
      *
-     * log_robots is storable, has a code default to restore to, and is not on
+     * spam_detection is storable, has a code default to restore to, and is not on
      * the boot path for anything this test disturbs.
      */
-    private const KEY   = 'log_robots';
+    private const KEY   = 'spam_detection';
 
     protected function setUp(): void
     {

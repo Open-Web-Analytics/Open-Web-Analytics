@@ -65,6 +65,13 @@ if ( ! defined( 'OWA_DTD_CHAR2' ) ) { define('OWA_DTD_CHAR2', 'CHAR(2)'); }
 if ( ! defined( 'OWA_DTD_CHAR3' ) ) { define('OWA_DTD_CHAR3', 'CHAR(3)'); }
 
 /*
+ * A spam score (owa_event_raw.spam_score): one decimal place, up to 99999.9.
+ * Numeric, so Entity::numericColumnTypes() names it and a score of 0.0 is
+ * stored rather than dropped as falsy.
+ */
+if ( ! defined( 'OWA_DTD_DECIMAL6_1' ) ) { define('OWA_DTD_DECIMAL6_1', 'DECIMAL(6,1)'); }
+
+/*
  * MySQL 5.7+ and MariaDB 10.2+ both have it; on either it is a text type with
  * validation, so a dialect without JSON can define this as its own text type
  * and nothing above here changes.
@@ -89,6 +96,16 @@ if ( ! defined( 'OWA_SQL_DROP_TABLE' ) ) { define('OWA_SQL_DROP_TABLE', 'DROP TA
 if ( ! defined( 'OWA_SQL_SHOW_TABLE' ) ) { define('OWA_SQL_SHOW_TABLE', "show tables like '%s'"); }
 if ( ! defined( 'OWA_SQL_INSERT_ROW' ) ) { define('OWA_SQL_INSERT_ROW', 'INSERT into %s (%s) VALUES (%s)'); }
 if ( ! defined( 'OWA_SQL_UPDATE_ROW' ) ) { define('OWA_SQL_UPDATE_ROW', 'UPDATE %s SET %s %s'); }
+
+/*
+ * Insert a counter row, or add to the one already there: table, columns,
+ * placeholders, the key columns, the counter column. The last placeholder is
+ * the amount to add. MySQL finds the row by any unique key and does not need
+ * the key columns; a dialect whose upsert names its conflict target
+ * (ON CONFLICT (...) DO UPDATE) reads them from %4$s. Spam\Blocks uses it.
+ */
+if ( ! defined( 'OWA_SQL_INSERT_OR_ADD' ) ) { define('OWA_SQL_INSERT_OR_ADD',
+    'INSERT INTO %1$s (%2$s) VALUES (%3$s) ON DUPLICATE KEY UPDATE %5$s = %5$s + ?'); }
 if ( ! defined( 'OWA_SQL_DELETE_ROW' ) ) { define('OWA_SQL_DELETE_ROW', "DELETE from %s %s"); }
 if ( ! defined( 'OWA_SQL_CREATE_INDEX' ) ) { define('OWA_SQL_CREATE_INDEX', 'CREATE INDEX %s ON %s (%s)'); }
 if ( ! defined( 'OWA_SQL_DROP_INDEX' ) ) { define('OWA_SQL_DROP_INDEX', 'DROP INDEX %s ON %s'); }

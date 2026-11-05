@@ -11,9 +11,11 @@ namespace OWA\Module\Domstream\Controller;
  * Stores a `domstream` tracking event: one chunk of a recording.
  *
  * Routed here by name (tracking.domstream, Module::addTrackingEventProcessor),
- * after logEvent()'s edge checks -- robot, excluded IP, unregistered site, the
+ * after logEvent()'s edge checks -- excluded IP, unregistered site, the
  * named-user gate -- which every tracking event passes. Not dispatched under
- * tracking.*, so Base's event-table handler never sees a chunk.
+ * tracking.*, so Base's event-table handler never sees a chunk, and the spam
+ * score is asked here instead: a chunk whose score reaches the threshold is
+ * not stored (Classes\Spam\Score::admit()).
  *
  * IDEMPOTENT. The chunk's id is derived from its site, recording and seq, so a
  * chunk delivered twice finds itself already stored and is handled.
@@ -37,6 +39,11 @@ class ProcessEvent extends \OWA\Core\Controller {
         if ( ! $this->event ) {
 
             \OWA\Core\CoreAPI::debug( 'domstream: no event to process.' );
+
+            return;
+        }
+
+        if ( ! \OWA\Module\Base\Classes\Spam\Score::admit( $this->event ) ) {
 
             return;
         }

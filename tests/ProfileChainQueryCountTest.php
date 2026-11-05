@@ -107,7 +107,7 @@ final class ProfileChainQueryCountTest extends TestCase
             'A Profile scope chain and its settings must come back in one query.' );
 
         $warm = $this->queriesDuring( function () {
-            \OWA\Core\CoreAPI::getSetting( 'base', 'log_robots', 'profile', $this->siteId );
+            \OWA\Core\CoreAPI::getSetting( 'base', 'spam_detection', 'profile', $this->siteId );
             \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting', 'profile', $this->siteId );
         } );
 

@@ -82,6 +82,18 @@ class EventRawHandlers extends \OWA\Core\Observer {
     function notify( $event ) {
 
         /*
+         * THE SPAM SCORE FIRST, before the set is built. A beacon at or over the
+         * install's spam_threshold writes nothing: no row, no session_start or
+         * first_visit, no goal event, no visitor store. One under it carries its
+         * score, and every event built from it below copies the score. See
+         * Classes\Spam\Score.
+         */
+        if ( ! \OWA\Module\Base\Classes\Spam\Score::admit( $event ) ) {
+
+            return OWA_EHS_EVENT_HANDLED;
+        }
+
+        /*
          * The events this beacon will be saved as, the incoming one first. The
          * callbacks decide: materializers append session_start and first_visit,
          * goal marking a goal event per definition met. See Ingest.
@@ -362,6 +374,10 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'prior_touch_ad'           => $this->text( $event->get( 'prior_touch_ad' ) ),
             'prior_touch_referer_host' => $this->text( $event->get( 'prior_touch_referer_host' ) ),
             'prior_touch_ts'           => $this->number( $event->get( 'prior_touch_ts' ) ),
+
+            // The beacon's spam score and the rules behind it, set by Spam\Score::admit().
+            'spam_score' => $this->decimal( $event->get( 'spam_score' ) ),
+            'spam_rules' => $this->text( $event->get( 'spam_rules' ) ),
 
             'raw_ua'      => $this->text( $event->get( 'HTTP_USER_AGENT' ) ),
             'params' => $this->params( $event ),
@@ -1190,6 +1206,24 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         return (int) $value;
+    }
+
+    /**
+     * A one-decimal value, or null when it is absent.
+     *
+     * number() casts to an integer, which would store a score of 7.5 as 7.
+     *
+     * @param mixed $value
+     * @return float|null
+     */
+    protected function decimal( $value ) {
+
+        if ( $value === null || $value === false || $value === '' || ! is_numeric( $value ) ) {
+
+            return null;
+        }
+
+        return round( (float) $value, 1 );
     }
 
     /**

@@ -98,6 +98,9 @@ class Event extends EventRaw {
             unset( $this->properties[ 'prior_touch_' . $part ] );
         }
 
+        // NOR THE SPAM SCORE. It is about the request, and no report reads it.
+        unset( $this->properties['spam_score'], $this->properties['spam_rules'] );
+
         // NOR SITE_TS. It serves the realtime screen, which reads raw; on a
         // cube it would only slow every build's staging insert.
         unset( $this->_tableProperties['composite_indexes']['site_ts'] );

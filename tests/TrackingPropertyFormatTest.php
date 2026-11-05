@@ -324,6 +324,10 @@ final class TrackingPropertyFormatTest extends TestCase
          * Each is now removed rather than tolerated, so the bucket shrank for a
          * good reason and the floor has to say what it expects instead of
          * demanding the old size.
+         *
+         * It grew by eleven with spam detection: the beacon request's headers and
+         * the two URLs as they arrived (request_*, received_*), read by
+         * Classes\Spam and deliberately stored nowhere.
          */
         /*
          * `param` came down from 10 to 9 when file_name and file_extension were

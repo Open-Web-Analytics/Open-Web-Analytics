@@ -78,6 +78,9 @@ final class SqlPortabilityLintTest extends TestCase {
         'modules/Base/Controller/PartitionRotateCli.php',
         'modules/Base/Controller/PartitionStatusCli.php',
         'modules/Base/Controller/PartitionsCli.php',
+        // information_schema and UNION SELECT here are patterns matched against
+        // visitor URLs, not SQL: the spam rule that finds injection probes.
+        'modules/Base/Classes/Spam/Rules/QueryAttackPayload.php',
     ];
 
     /**

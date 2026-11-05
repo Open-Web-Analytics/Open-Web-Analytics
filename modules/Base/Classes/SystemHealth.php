@@ -253,12 +253,55 @@ class SystemHealth {
                     : 'Beacons are ingested as they arrive; a failed write is retried from the intake.' );
         }
 
+        $blocked = self::spamBlocked();
+
+        if ( $blocked ) {
+
+            $findings[] = $blocked;
+        }
+
         return self::section( 'Tracker ingest', $findings, array(
             'type'     => (string) ( \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_ingest_queue_type' ) ?: 'file' ),
             'queued'   => TrackerIngest::isQueued(),
             'waiting'  => $main['messages'],
             'dead'     => $dlq ? $dlq['messages'] : null,
         ) );
+    }
+
+    /**
+     * Beacons spam detection blocked today and yesterday, in total and by rule
+     * (owa_spam_block, Classes\Spam\Blocks), as a green finding: blocking is
+     * the setting working. Null when it blocked none.
+     *
+     * Today and yesterday rather than 24 hours, because the table counts by
+     * day, derived as raw's yyyymmdd is.
+     *
+     * @return array|null
+     */
+    public static function spamBlocked() {
+
+        $yesterday = (int) date( 'Ymd', strtotime( '-1 day', time() ) );
+
+        $counts = \OWA\Module\Base\Classes\Spam\Blocks::since( $yesterday );
+        $total  = (int) ( $counts[ \OWA\Module\Base\Entity\SpamBlock::TOTAL ] ?? 0 );
+
+        if ( ! $total ) {
+
+            return null;
+        }
+
+        unset( $counts[ \OWA\Module\Base\Entity\SpamBlock::TOTAL ] );
+
+        $rules = array();
+
+        foreach ( $counts as $rule => $n ) {
+
+            $rules[] = sprintf( '%s %d', $rule, $n );
+        }
+
+        return self::finding( 'green', \OWA\Core\CoreAPI::t( 'Blocked as spam' ), sprintf(
+            \OWA\Core\CoreAPI::t( '%1$d beacon(s) today and yesterday. By rule: %2$s.' ),
+            $total, $rules ? implode( ', ', $rules ) : '-' ) );
     }
 
     /**

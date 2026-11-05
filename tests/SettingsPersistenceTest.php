@@ -55,13 +55,13 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $default = $c->default_config['base']['log_robots'] ?? null;
-        $this->assertNotNull($default, 'expected a code default for base.log_robots');
+        $default = $c->default_config['base']['spam_detection'] ?? null;
+        $this->assertNotNull($default, 'expected a code default for base.spam_detection');
 
-        $c->persistSetting('base', 'log_robots', $default);
+        $c->persistSetting('base', 'spam_detection', $default);
 
         $this->assertArrayNotHasKey(
-            'log_robots',
+            'spam_detection',
             $c->db_settings['base'] ?? [],
             'A value identical to the code default was persisted. That pins the '
             . 'default forever and breaks silently when the default later changes.'
@@ -72,11 +72,11 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $c->persistSetting('base', 'log_robots', 'customised');
+        $c->persistSetting('base', 'spam_detection', 'customised');
 
         $this->assertSame(
             'customised',
-            $c->db_settings['base']['log_robots'] ?? null,
+            $c->db_settings['base']['spam_detection'] ?? null,
             'A genuine customisation must still be stored.'
         );
     }
@@ -89,15 +89,15 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $default = $c->default_config['base']['log_robots'];
+        $default = $c->default_config['base']['spam_detection'];
 
-        $c->persistSetting('base', 'log_robots', 'customised');
-        $this->assertArrayHasKey('log_robots', $c->db_settings['base']);
+        $c->persistSetting('base', 'spam_detection', 'customised');
+        $this->assertArrayHasKey('spam_detection', $c->db_settings['base']);
 
-        $c->persistSetting('base', 'log_robots', $default);
+        $c->persistSetting('base', 'spam_detection', $default);
 
         $this->assertArrayNotHasKey(
-            'log_robots',
+            'spam_detection',
             $c->db_settings['base'],
             'Re-persisting the default should remove the stored override.'
         );
@@ -486,15 +486,15 @@ final class SettingsPersistenceTest extends TestCase
     {
         $c = $this->settings();
 
-        $default = $c->default_config['base']['log_robots'] ?? null;
-        $this->assertNotNull($default, 'expected a code default for base.log_robots');
+        $default = $c->default_config['base']['spam_detection'] ?? null;
+        $this->assertNotNull($default, 'expected a code default for base.spam_detection');
 
-        $c->persistSetting('base', 'log_robots', 'not-the-default');
-        $this->assertSame('not-the-default', $c->get('base', 'log_robots'));
+        $c->persistSetting('base', 'spam_detection', 'not-the-default');
+        $this->assertSame('not-the-default', $c->get('base', 'spam_detection'));
 
-        $c->removeSetting('base', 'log_robots');
+        $c->removeSetting('base', 'spam_detection');
 
-        $this->assertSame($default, $c->get('base', 'log_robots'),
+        $this->assertSame($default, $c->get('base', 'spam_detection'),
             'removing a stored value restores the default, it does not blank the setting');
     }
 }

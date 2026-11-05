@@ -70,6 +70,10 @@ final class TrackingPropertyConfigTest extends TestCase
          * Four is what is left, and every one is a genuine reading of the
          * REQUEST: the agent, the address, the language and the edge clock.
          * REMOTE_HOST, the visitor's network host, went in Update074.
+         *
+         * Then fifteen: nine headers of the beacon request and the two URLs as
+         * they arrived, which spam detection reads (Classes\Spam) and nothing
+         * stores. The floor stays at the four that reach a column.
          */
         $floors = array( 'client' => 30, 'event' => 15, 'request' => 4 );
 

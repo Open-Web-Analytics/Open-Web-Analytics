@@ -125,6 +125,6 @@ final class ConfigFileLogPathsTest extends TestCase
         }
 
         // Discriminating, not a blanket refusal of the module.
-        $this->assertTrue($c->mayPersistInstallWide('base', 'log_robots'));
+        $this->assertTrue($c->mayPersistInstallWide('base', 'spam_detection'));
     }
 }

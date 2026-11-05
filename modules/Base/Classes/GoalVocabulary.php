@@ -135,6 +135,10 @@ class GoalVocabulary {
                             . 'name an element',
         'anchor_x'       => 'where inside the element the click landed, for drawing it',
         'anchor_y'       => 'where inside the element the click landed, for drawing it',
+
+        'spam_score' => 'how much the request looked like spam, stamped on every row '
+                        . 'of the beacon. Not something a visitor did',
+        'spam_rules' => 'the spam rules the request met. Not something a visitor did',
     );
 
     /**

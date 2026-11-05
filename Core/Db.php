@@ -3880,6 +3880,14 @@ class Db extends \OWA\Core\Base {
             }
         }
 
+        // A key over several columns is a table-level clause (Entity::setCompositePrimaryKey()).
+        if ( ! $partition_column && method_exists( $entity, 'getCompositePrimaryKey' )
+             && $entity->getCompositePrimaryKey() ) {
+
+            $columns .= sprintf( ', %s (%s)', OWA_DTD_PRIMARY_KEY,
+                implode( ', ', $entity->getCompositePrimaryKey() ) );
+        }
+
         if ( $indexes ) {
 
             $columns .= ', ' . implode( ', ', $indexes );

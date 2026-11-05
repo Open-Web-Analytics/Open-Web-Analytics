@@ -424,16 +424,19 @@ final class SettingsDeclarationContractTest extends TestCase
     }
 
     /**
-     * Read only at the install, so declared only there: logEvent() reads the
-     * install's log_robots, and an event's date parts are filed in the
-     * install's timezone. goals keeps the Profile scope its 1.x rows are at.
+     * Read only at the install, so declared only there: Spam\Score reads the
+     * install's spam_detection and spam_threshold, and an event's date parts
+     * are filed in the install's timezone. goals keeps the Profile scope its
+     * 1.x rows are at.
      */
     public function testInstallOnlySettingsDeclareNoLevelBelowIt(): void
     {
         $c = $this->settings();
 
         $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'timezone' ) );
-        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'log_robots' ) );
+        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'spam_detection' ) );
+        $this->assertSame( array( 'install' ), $c->scopesFor( 'base', 'spam_threshold' ) );
+        $this->assertFalse( $c->isRegistered( 'base', 'log_robots' ), 'spam_threshold replaced it (Update084)' );
         $this->assertSame( array( 'install', 'profile' ), $c->scopesFor( 'base', 'goals' ) );
 
         foreach ( array( 'announce_visitors', 'notice_email', 'anonymize_ips', 'excluded_ips', 'log_named_users' ) as $key ) {

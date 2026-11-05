@@ -305,4 +305,62 @@ final class SystemHealthTest extends TestCase
         $this->assertSame(\OWA\Module\Base\Controller\SystemHealth::class,
             $s->getMapValue('actions', 'base.systemHealth')['class_name']);
     }
+
+    /** A scratch owa_spam_block for the block-count finding, emptied of anything else. */
+    private function withSpamBlocks(callable $test): void
+    {
+        $table   = 'spam_block_phpunit_health';
+        $scratch = \OWA\Core\CoreAPI::entityFactory('base.spam_block');
+        $scratch->setTableName($table);
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->query('DROP TABLE IF EXISTS owa_' . $table);
+        $this->assertTrue($scratch->createTable());
+
+        \OWA\Module\Base\Classes\Spam\Blocks::$table = 'owa_' . $table;
+
+        try {
+            $test();
+        } finally {
+            \OWA\Module\Base\Classes\Spam\Blocks::$table = null;
+            $db->query('DROP TABLE IF EXISTS owa_' . $table);
+        }
+    }
+
+    public function testNothingBlockedShowsNothing(): void
+    {
+        $this->withSpamBlocks(function () {
+            $this->assertNull(SystemHealth::spamBlocked());
+            $this->assertArrayNotHasKey('Blocked as spam', self::levels(SystemHealth::intake()));
+        });
+    }
+
+    /** Today and yesterday, in total and by rule, as information rather than a warning. */
+    public function testBlockedBeaconsAreAGreenFindingWithTheirCounts(): void
+    {
+        $this->withSpamBlocks(function () {
+            $today     = (int) date('Ymd');
+            $yesterday = (int) date('Ymd', strtotime('-1 day'));
+            $older     = (int) date('Ymd', strtotime('-3 days'));
+
+            \OWA\Module\Base\Classes\Spam\Blocks::record($today, 'site-a', ['NO_FETCH_METADATA', 'NO_CLIENT_HINTS']);
+            \OWA\Module\Base\Classes\Spam\Blocks::record($today, 'site-b', ['NO_FETCH_METADATA']);
+            \OWA\Module\Base\Classes\Spam\Blocks::record($yesterday, 'site-a', ['UA_ROBOT_TOKEN']);
+            \OWA\Module\Base\Classes\Spam\Blocks::record($older, 'site-a', ['UA_ROBOT_TOKEN']);
+
+            $this->assertSame(['*' => 3, 'NO_FETCH_METADATA' => 2, 'NO_CLIENT_HINTS' => 1, 'UA_ROBOT_TOKEN' => 1],
+                \OWA\Module\Base\Classes\Spam\Blocks::since($yesterday), 'the older day is not counted');
+
+            $finding = SystemHealth::spamBlocked();
+
+            $this->assertSame('green', $finding['level']);
+            $this->assertSame('Blocked as spam', $finding['label']);
+            $this->assertSame('3 beacon(s) today and yesterday. By rule: NO_FETCH_METADATA 2, NO_CLIENT_HINTS 1, UA_ROBOT_TOKEN 1.',
+                $finding['detail']);
+
+            $intake = SystemHealth::intake();
+            $this->assertSame('green', self::levels($intake)['Blocked as spam']);
+            $this->assertSame('green', $intake['level'], 'blocking is not a warning');
+        });
+    }
 }
