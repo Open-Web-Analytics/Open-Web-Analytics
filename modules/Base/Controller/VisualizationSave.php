@@ -231,6 +231,20 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
         $propertyId = (string) $this->getParam( 'propertyId' );
 
+        /*
+         * Saved only to a Property the author may report on, a create as well
+         * as an edit: edit_reports is held on every Property. Refused as a
+         * funnel that does not exist is, so a Property's funnels are not told
+         * apart from none.
+         */
+        if ( ! \OWA\Module\Base\Classes\CustomReports::mayReportOn( $propertyId ) ) {
+
+            $this->setStatusCode( 2514 );
+            $this->setRedirectAction( 'base.customReports' );
+
+            return;
+        }
+
         if ( $id ) {
 
             /*

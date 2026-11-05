@@ -23,6 +23,12 @@ final class CustomReportPropertyTest extends TestCase
     const SITE_P = 'owa-custom-report-property-site-p';
     const AUTHOR = 'custom-report-property-author@example.test';
 
+    /** owa_site.id of SITE_P, which a probe viewer is granted. */
+    const SITE_P_ROW = 77810000000000010;
+
+    /** Probe users' user_ids begin with this. */
+    const VIEWER_PREFIX = 'crp-viewer-';
+
     /** @var string[] custom report ids to delete */
     private $reports = [];
 
@@ -36,7 +42,7 @@ final class CustomReportPropertyTest extends TestCase
 
         $site = CoreAPI::entityFactory('base.site');
         $site->setProperties([
-            'id'          => 77810000000000010,
+            'id'          => self::SITE_P_ROW,
             'site_id'     => self::SITE_P,
             'property_id' => self::P,
             'name'        => 'Custom report Property fixture profile',
@@ -62,8 +68,74 @@ final class CustomReportPropertyTest extends TestCase
         $db->query(sprintf("DELETE FROM %s WHERE site_id = '%s'",
             CoreAPI::entityFactory('base.site')->getTableName(), $db->prepare(self::SITE_P)));
 
-        foreach ((array) $db->get_results('SELECT id FROM owa_custom_report WHERE user_id = ?', [self::AUTHOR]) as $row) {
+        foreach ((array) $db->get_results('SELECT id FROM owa_custom_report WHERE user_id = ? OR user_id LIKE ?',
+                [self::AUTHOR, self::VIEWER_PREFIX . '%']) as $row) {
             CustomReports::delete(((array) $row)['id']);
+        }
+
+        $db->query(sprintf('DELETE FROM owa_site_user WHERE site_id = %d', self::SITE_P_ROW));
+        $db->query('DELETE FROM owa_user WHERE user_id LIKE ?', [self::VIEWER_PREFIX . '%']);
+    }
+
+    /**
+     * A viewer granted SITE_P, and so Property P: view_reports there, and
+     * neither edit_reports nor edit_users. The saves are driven through
+     * action(), which edit_reports gates before.
+     */
+    private function viewer(): \OWA\Module\Base\Entity\User
+    {
+        $user_id = self::VIEWER_PREFIX . substr(md5(uniqid('', true)), 0, 8);
+
+        $um = CoreAPI::supportClassFactory('base', 'userManager');
+        $this->assertNotFalse($um->createNewUser([
+            'user_id' => $user_id, 'role' => 'viewer', 'password' => 'crp-' . uniqid('', true),
+            'email_address' => $user_id . '@example.test', 'real_name' => 'Custom report Property probe',
+        ]), 'could not create the probe user');
+
+        $user = CoreAPI::entityFactory('base.user');
+        $user->load($user_id, 'user_id');
+
+        $grant = CoreAPI::entityFactory('base.site_user');
+        $grant->set('user_id', $user->get('id'));
+        $grant->set('site_id', self::SITE_P_ROW);
+        $grant->create();
+
+        return $user;
+    }
+
+    /** The probe as a ServiceUser, with its grants read. */
+    private function serviceUser(\OWA\Module\Base\Entity\User $user): \OWA\Module\Base\Classes\ServiceUser
+    {
+        $su = new \OWA\Module\Base\Classes\ServiceUser();
+        $su->loadNewUserByObject($user);
+
+        return $su;
+    }
+
+    /**
+     * Run $fn signed in as this user, then put the current user back as it
+     * was: the controllers ask CoreAPI::getCurrentUser(), one object per process.
+     */
+    private function asUser(\OWA\Module\Base\Entity\User $user, callable $fn)
+    {
+        $current = CoreAPI::getCurrentUser();
+        $fields  = array_filter((new \ReflectionObject($current))->getProperties(), fn ($p) => !$p->isStatic());
+        $saved   = [];
+
+        foreach ($fields as $field) {
+            $field->setAccessible(true);
+            $saved[$field->getName()] = $field->getValue($current);
+        }
+
+        try {
+            $current->loadNewUserByObject($user);
+            $current->setAuthStatus(true);
+
+            return $fn();
+        } finally {
+            foreach ($fields as $field) {
+                $field->setValue($current, $saved[$field->getName()]);
+            }
         }
     }
 
@@ -190,6 +262,62 @@ final class CustomReportPropertyTest extends TestCase
 
         $this->assertSame(self::P, (string) $this->row($id)['property_id']);
         $this->assertSame('visualization', $this->row($id)['report_type']);
+    }
+
+    /**
+     * A report or funnel is saved only to a Property its author may report
+     * on, a create or an edit, and is refused as an unknown one is.
+     */
+    public function testSavingNeedsViewAccessToTheProperty(): void
+    {
+        $viewer = $this->viewer();
+        $theirs = $this->store(self::Q, 'On Q, untouched');
+
+        $saveReport = function (array $params): array {
+            $save = new \OWA\Module\Base\Controller\CustomReportSave($params + [
+                'customReportName'       => 'Saved by a viewer',
+                'customReportDefinition' => json_encode($this->definition('Saved by a viewer')),
+            ]);
+
+            // A refusal goes back to the builder, which is drawn.
+            ob_start();
+            $save->action();
+            ob_end_clean();
+
+            return $this->data($save);
+        };
+
+        $saveFunnel = function (array $params): array {
+            $save = new \OWA\Module\Base\Controller\VisualizationSave($params + [
+                'name' => 'Funnel by a viewer', 'visualizationType' => 'funnel',
+            ]);
+            $save->action();
+
+            return $this->data($save);
+        };
+
+        [$onP, $onQ, $editQ, $funnelP, $funnelQ] = $this->asUser($viewer, fn () => [
+            $saveReport(['propertyId' => self::P]),
+            $saveReport(['propertyId' => self::Q]),
+            $saveReport(['propertyId' => self::Q, 'customReportId' => $theirs]),
+            $saveFunnel(['propertyId' => self::P]),
+            $saveFunnel(['propertyId' => self::Q]),
+        ]);
+
+        $created = static fn (array $data) => substr((string) ($data['reportId'] ?? ''),
+            strlen(\OWA\Module\Base\Controller\Report::CUSTOM_PREFIX));
+
+        $this->reports[] = $created($onP);
+        $this->reports[] = $created($funnelP);
+
+        $this->assertSame(self::P, (string) ($this->row($created($onP))['property_id'] ?? ''), 'a report on P, which it may see');
+        $this->assertSame(self::P, (string) ($this->row($created($funnelP))['property_id'] ?? ''), 'a funnel on P');
+
+        $this->assertArrayNotHasKey('reportId', $onQ, 'no report on Q, which it may not see');
+        $this->assertSame('On Q, untouched', $this->row($theirs)['name'], 'nor an edit of one there');
+
+        $this->assertArrayNotHasKey('reportId', $funnelQ, 'no funnel on Q');
+        $this->assertSame(2514, $funnelQ['status_code'] ?? null, 'refused as a funnel that does not exist');
     }
 
     // ---- listing ----------------------------------------------------------

@@ -1802,6 +1802,29 @@ class CustomReports {
     }
 
     /**
+     * Whether the signed-in user may report on this Property: view_reports on
+     * it, checked against a Profile of it they may see.
+     *
+     * Asked by the saves on top of edit_reports, which is held on every
+     * Property: a report or funnel is saved only to a Property its author can
+     * open it on.
+     *
+     * @param  string|int $property_id
+     * @return bool
+     */
+    public static function mayReportOn( $property_id ) {
+
+        if ( (string) $property_id === '' ) {
+
+            return false;
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+
+        return (bool) $user->isCapable( 'view_reports', $user->siteIdForProperty( (string) $property_id ) );
+    }
+
+    /**
      * The Property a request about one stored report is on: the one it names
      * (propertyId, else its siteId's), else the report's own.
      *

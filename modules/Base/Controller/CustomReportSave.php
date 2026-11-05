@@ -63,7 +63,19 @@ class CustomReportSave extends \OWA\Core\AdminController {
         $user    = \OWA\Core\CoreAPI::getCurrentUser();
         $user_id = (string) $user->getUserData( 'user_id' );
 
-        $id = (string) $this->getParam( 'customReportId' );
+        $id         = (string) $this->getParam( 'customReportId' );
+        $propertyId = (string) $this->getParam( 'propertyId' );
+
+        /*
+         * Saved only to a Property the author may report on, a create as well
+         * as an edit: edit_reports is held on every Property. Refused as an
+         * unknown report is, so a Property's reports are not told apart from
+         * none. No Property at all is save()'s to refuse.
+         */
+        if ( $propertyId !== '' && ! \OWA\Module\Base\Classes\CustomReports::mayReportOn( $propertyId ) ) {
+
+            return $this->refuse( \OWA\Core\CoreAPI::t( 'That report does not exist.' ) );
+        }
 
         /*
          * An EDIT is authorised against the stored row, not against the id in
@@ -77,7 +89,7 @@ class CustomReportSave extends \OWA\Core\AdminController {
              * report of another Property is answered as one that does not
              * exist rather than as somebody else's.
              */
-            $existing = \OWA\Module\Base\Classes\CustomReports::loadOf( $id, (string) $this->getParam( 'propertyId' ) );
+            $existing = \OWA\Module\Base\Classes\CustomReports::loadOf( $id, $propertyId );
 
             if ( ! $existing ) {
 
@@ -101,7 +113,7 @@ class CustomReportSave extends \OWA\Core\AdminController {
             'name'       => $this->getParam( 'customReportName' ),
             'definition' => $this->getParam( 'customReportDefinition' ),
             'is_shared'  => (bool) $this->getParam( 'isShared' ),
-        ), $user_id, (string) $this->getParam( 'propertyId' ) );
+        ), $user_id, $propertyId );
 
         if ( ! $result['ok'] ) {
 
@@ -132,8 +144,6 @@ class CustomReportSave extends \OWA\Core\AdminController {
          * afford. Caught by the e2e suite, not by any unit test: it needs a real
          * user with a real site grant to reproduce.
          */
-        $propertyId = (string) $this->getParam( 'propertyId' );
-
         if ( $propertyId !== '' ) {
 
             $this->set( 'propertyId', $propertyId );
