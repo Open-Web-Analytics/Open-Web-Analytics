@@ -3,7 +3,8 @@
 namespace OWA\Module\Base\Entity;
 
 /**
- * One goal event: an author-named thing worth counting.
+ * One goal event definition: an author-named thing worth counting. Each event
+ * that meets it adds a goal event, a row named by it (Classes\GoalMarking).
  *
  * This replaces the twenty numbered goal slots that lived, all twenty of them
  * whether used or not, inside one serialized array in a settings row. That
@@ -12,8 +13,8 @@ namespace OWA\Module\Base\Entity;
  * happened being worth counting -- inside a settings blob, which is not what a
  * setting is.
  *
- * MODELLED FOR v2, DELIBERATELY. In v2 an author names a goal event, gives it an
- * event type and a condition, and when the condition matches the server
+ * MODELLED FOR v2, DELIBERATELY. In v2 an author names a goal event definition,
+ * gives it an event type and a condition, and when the condition matches the server
  * materialises an additional row whose event_type IS that name (PLAN.html
  * §7.14). The columns here are exactly what that needs, so the v2 migration is
  * a read of this table and not a reinterpretation of it:
@@ -29,7 +30,7 @@ namespace OWA\Module\Base\Entity;
  * implemented goal type, url_destination, is the same row with property
  * 'page_uri'. One shape, both eras, no translation.
  */
-class GoalEvent extends \OWA\Core\Entity {
+class GoalEventDefinition extends \OWA\Core\Entity {
 
     /*
      * How a condition compares.
@@ -81,7 +82,7 @@ class GoalEvent extends \OWA\Core\Entity {
      * An @ in the pattern -- an email address, say -- would end it early, so
      * one not already escaped is escaped. "\@" is left as written; "\\@" is an
      * escaped backslash before a bare @, which gets escaped too. The database
-     * side (GoalEventPredicate, REGEXP) takes the pattern undelimited.
+     * side (GoalEventDefinitionPredicate, REGEXP) takes the pattern undelimited.
      *
      * @param  string $pattern what the author typed
      * @return string
@@ -94,7 +95,7 @@ class GoalEvent extends \OWA\Core\Entity {
     /**
      * Does one value satisfy one comparison?
      *
-     * The single place a condition is decided, so the goal event's own test,
+     * The single place a condition is decided, so the definition's own test,
      * its funnel steps and anything added later agree about what "contains"
      * means.
      *
@@ -170,7 +171,7 @@ class GoalEvent extends \OWA\Core\Entity {
     const PROPERTY_PAGE_URI = 'page_uri';
 
     /**
-     * What a goal event triggers on when nobody chose.
+     * What a goal event definition triggers on when nobody chose.
      *
      * A v2 event name, because this is what gets STORED on a save -- and
      * trigger_event_type is a gate at ingest now, so a v1 name here would match
@@ -185,9 +186,15 @@ class GoalEvent extends \OWA\Core\Entity {
      */
     const TRIGGER_CUSTOM = '(custom)';
 
+    /** The table's name before Update076. See namedBefore076(). */
+    const TABLE_BEFORE_076 = 'goal_event';
+
+    /** Whether this entity is on the names before Update076. */
+    private $onNamesBefore076 = false;
+
     function __construct() {
 
-        $this->setTableName( 'goal_event' );
+        $this->setTableName( 'goal_event_definition' );
         $this->setCachable();
 
         $id = new \OWA\Module\Base\Classes\DbColumn( 'id', OWA_DTD_BIGINT );
@@ -195,7 +202,7 @@ class GoalEvent extends \OWA\Core\Entity {
         $this->setProperty( $id );
 
         /*
-         * The PROPERTY this goal event belongs to -- the website, not one way
+         * The PROPERTY this definition belongs to -- the website, not one way
          * of watching it.
          *
          * A behaviour worth counting is a fact about the product: two Profiles
@@ -246,12 +253,12 @@ class GoalEvent extends \OWA\Core\Entity {
         /*
          * How several conditions combine: 'all' or 'any'.
          *
-         * On the goal event rather than on each condition, because it is a fact
+         * On the definition rather than on each condition, because it is a fact
          * about the SET. A row that carried its own conjunction would let two
          * disagree, and there would be no answer to what the third one meant.
          *
          * Falsy reads as ALL -- the safer reading, and what a single-condition
-         * goal event means either way.
+         * definition means either way.
          */
         $condition_match = new \OWA\Module\Base\Classes\DbColumn( 'condition_match', OWA_DTD_VARCHAR255 );
         $this->setProperty( $condition_match );
@@ -264,15 +271,15 @@ class GoalEvent extends \OWA\Core\Entity {
         $this->setProperty( $value );
 
         /*
-         * The 1.x slot a goal event was migrated from (Update025), or NULL for
+         * The 1.x slot a definition was migrated from (Update025), or NULL for
          * one created since. Nothing writes it any more and nothing on v2 reads
          * it: the goal{N} metrics it numbered were removed with the v1 metric
-         * vocabulary. It is the only link between a goal event and the
+         * vocabulary. It is the only link between a definition and the
          * owa_session.goal_N columns that hold 1.x's conversion history.
          *
          * PENDING REMOVAL. Kept only for the v1-to-v2 history migration; drop it
          * (an update, since Update025 shipped it in 1.13) once that migration
-         * no longer needs to map goal_N to a goal event.
+         * no longer needs to map goal_N to a definition.
          */
         $goal_number = new \OWA\Module\Base\Classes\DbColumn( 'goal_number', OWA_DTD_INT );
         $goal_number->setIndex();
@@ -292,10 +299,46 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * A goal event name made from free text: every run of characters an event
-     * name cannot hold turned into one underscore, starting with a letter and
-     * cut to the length one may have. For Update075, which renames the goal
-     * events made before names were event names.
+     * This entity on the table name Update076 replaced, goal_event, and its
+     * conditions on theirs (GoalEventDefinitionCondition::namedBefore076()).
+     *
+     * For the code an upgrade from 1.x runs before Update076, which meets the
+     * tables as 1.x left them: the updates up to Update075, and the v1
+     * migration in Update062 (Classes\Migration\GoalMigrator).
+     * loadConditions(), delete() and GoalEventDefinitionPredicate read the
+     * conditions under the same names.
+     *
+     * @return $this
+     */
+    public function namedBefore076() {
+
+        $this->setTableName( self::TABLE_BEFORE_076 );
+        $this->onNamesBefore076 = true;
+
+        return $this;
+    }
+
+    /** A condition entity on the names this one is on. */
+    protected function conditionEntity() {
+
+        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' );
+
+        return $this->onNamesBefore076 ? $condition->namedBefore076() : $condition;
+    }
+
+    /** The condition column holding this entity's id. */
+    protected function conditionColumn() {
+
+        return $this->onNamesBefore076
+            ? GoalEventDefinitionCondition::DEFINITION_COLUMN_BEFORE_076
+            : GoalEventDefinitionCondition::DEFINITION_COLUMN;
+    }
+
+    /**
+     * A goal event definition's name made from free text: every run of
+     * characters an event name cannot hold turned into one underscore, starting
+     * with a letter and cut to the length one may have. For Update075, which
+     * renames the definitions made before names were event names.
      *
      * @param  string $text
      * @return string
@@ -313,18 +356,18 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * The event name Update075 gives each goal event whose name is not a
-     * usable event name unique within its Property.
+     * The event name Update075 gives each goal event definition whose name is
+     * not a usable event name unique within its Property.
      *
-     * One that another goal event of the Property already has, or that OWA
+     * One that another definition of the Property already has, or that OWA
      * collects, gets a number on the end. Read by Update075, which renames
      * them, AND by the v1 migration (Classes\Migration\GoalMigrator), which
      * runs first, in Update062: the conversion rows it stores must carry the
-     * name the goal event will have, or they group apart from every later one.
+     * name the definition will have, or they group apart from every later one.
      * Pure, so both give the same answer from the same rows; once Update075
      * has run it has nothing to rename.
      *
-     * @param  array $rows  goal events' id, property_id and name, in id order:
+     * @param  array $rows  definitions' id, property_id and name, in id order:
      *                      a Property's alone gives what all of them would
      * @return array id => the new name, for each one that is renamed
      */
@@ -369,7 +412,7 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * Why a name cannot be a goal event's, or '' when it can.
+     * Why a name cannot be a goal event definition's, or '' when it can.
      *
      * A name OWA collects itself is refused: a goal row called click would be
      * counted as a click by every report that counts them.
@@ -415,7 +458,7 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * Why an event cannot trigger a goal event, or '' when it can.
+     * Why an event cannot trigger a goal event definition, or '' when it can.
      *
      * One of OWA's goal triggers, or a name a site can send as its own event:
      * the tracker's custom name pattern, not an event OWA or a module sends,
@@ -437,7 +480,7 @@ class GoalEvent extends \OWA\Core\Entity {
         if ( in_array( $trigger, \OWA\Core\CoreAPI::trackingEventTypes(), true )
              || in_array( $trigger, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
 
-            return sprintf( \OWA\Core\CoreAPI::t( 'A goal event cannot be triggered by %s.' ), $trigger );
+            return sprintf( \OWA\Core\CoreAPI::t( 'A goal event definition cannot be triggered by %s.' ), $trigger );
         }
 
         if ( ! preg_match( \OWA\Module\Base\Classes\TrackingEventHelpers::CUSTOM_NAME_PATTERN, $trigger ) ) {
@@ -453,7 +496,7 @@ class GoalEvent extends \OWA\Core\Entity {
         return '';
     }
 
-    /** Does this goal event count right now? */
+    /** Does this definition count right now? */
     public function isActive() {
 
         return (bool) $this->get( 'is_active' );
@@ -462,8 +505,8 @@ class GoalEvent extends \OWA\Core\Entity {
     /**
      * The Property a Profile observes.
      *
-     * Goal events belong to the Property -- the website -- and every Profile of
-     * it inherits them. Callers hold a Profile id because that is what the
+     * Goal event definitions belong to the Property -- the website -- and every
+     * Profile of it inherits them. Callers hold a Profile id because that is what the
      * request carries and what a session belongs to, so the hop happens here
      * rather than at each of them.
      *
@@ -534,9 +577,9 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * This goal event's conditions, in the order they were written.
+     * This definition's conditions, in the order they were written.
      *
-     * @return array of \OWA\Module\Base\Entity\GoalEventCondition
+     * @return array of \OWA\Module\Base\Entity\GoalEventDefinitionCondition
      */
     public function loadConditions() {
 
@@ -545,19 +588,19 @@ class GoalEvent extends \OWA\Core\Entity {
             return array();
         }
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $entity = $this->conditionEntity();
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
         $db->selectColumn( '*' );
-        $db->where( 'goal_event_id', $this->get( 'id' ) );
+        $db->where( $this->conditionColumn(), $this->get( 'id' ) );
         $db->orderBy( 'sort_order', OWA_SQL_ASCENDING );
 
         $conditions = array();
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
-            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $condition = $this->conditionEntity();
             $condition->setProperties( $row );
 
             $conditions[] = $condition;
@@ -567,26 +610,26 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * Delete this goal event AND the conditions that belong to it.
+     * Delete this definition AND the conditions that belong to it.
      *
      * Entity::delete() removes one row from one table, so every delete until
      * now left the conditions behind with nothing able to reach them. Measured
      * on the test install before the fix: 31 of 40 condition rows pointed at a
-     * goal event that no longer existed.
+     * definition that no longer existed.
      *
-     * ON THE ENTITY rather than in GoalEventDelete, because that controller is
-     * not the only caller: the e2e fixtures and the tests delete goal events
-     * too, and a cascade living in one of several callers is a cascade that
-     * happens sometimes.
+     * ON THE ENTITY rather than in GoalEventDefinitionDelete, because that
+     * controller is not the only caller: the e2e fixtures and the tests delete
+     * definitions too, and a cascade living in one of several callers is a
+     * cascade that happens sometimes.
      *
      * BY ANY COLUMN, because the inherited signature allows it. The ids are
      * resolved first, so delete( $property_id, 'property_id' ) cascades as well
      * as delete( $id ) does.
      *
-     * CONDITIONS GO ONE AT A TIME, BY ID. GoalEventCondition is cachable, and
-     * Entity::delete() evicts the key it was given -- so a single
-     * delete( $goal_event_id, 'goal_event_id' ) would clear the wrong key and
-     * leave every condition still in cache under its own id.
+     * CONDITIONS GO ONE AT A TIME, BY ID. GoalEventDefinitionCondition is
+     * cachable, and Entity::delete() evicts the key it was given -- so a single
+     * delete( $definition_id, 'goal_event_definition_id' ) would clear the
+     * wrong key and leave every condition still in cache under its own id.
      *
      * @param  mixed  $value
      * @param  string $col
@@ -601,7 +644,7 @@ class GoalEvent extends \OWA\Core\Entity {
 
         foreach ( $this->conditionIdsFor( $col, $value ) as $condition_id ) {
 
-            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $condition = $this->conditionEntity();
             $condition->delete( $condition_id );
         }
 
@@ -609,7 +652,7 @@ class GoalEvent extends \OWA\Core\Entity {
     }
 
     /**
-     * The condition ids belonging to whichever goal events ( $col, $value )
+     * The condition ids belonging to whichever definitions ( $col, $value )
      * names -- every role, which is why this is not loadConditions().
      *
      * @param  string $col
@@ -639,12 +682,12 @@ class GoalEvent extends \OWA\Core\Entity {
 
         foreach ( $ids as $id ) {
 
-            $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $entity = $this->conditionEntity();
 
             $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->selectFrom( $entity->getTableName() );
             $db->selectColumn( 'id' );
-            $db->where( 'goal_event_id', $id );
+            $db->where( $this->conditionColumn(), $id );
 
             foreach ( (array) $db->getAllRows() as $row ) {
 
@@ -655,7 +698,7 @@ class GoalEvent extends \OWA\Core\Entity {
         return $out;
     }
     /**
-     * Does this ROW satisfy the goal event?
+     * Does this ROW satisfy the definition?
      *
      * THE ROW, NOT THE EVENT, and that is the whole point of moving this. A
      * condition used to be matched against the tracking event, which meant it
@@ -678,10 +721,11 @@ class GoalEvent extends \OWA\Core\Entity {
      *
      * AN EMPTY TRIGGER MATCHES NOTHING, the same answer as no conditions. It
      * used to mean every event, for rows written before the column existed --
-     * but Update025 gives every migrated goal event a trigger and GoalEventSave
-     * defaults one, so no such row exists. Meaning "every event" would have
-     * marked the page view AND the session_start and first_visit materialized
-     * beside it, three conversions for one visit to a goal page.
+     * but Update025 gives every migrated definition a trigger and
+     * GoalEventDefinitionSave defaults one, so no such row exists. Meaning
+     * "every event" would have marked the page view AND the session_start and
+     * first_visit materialized beside it, three conversions for one visit to a
+     * goal page.
      *
      * AN ABSENT OR NULL COLUMN CANNOT ANSWER, so it does not match -- whatever
      * the operator. Passing NULL through to compare() would make `not` true for
@@ -694,7 +738,7 @@ class GoalEvent extends \OWA\Core\Entity {
      * @param  array|null $conditions  the conditions, already loaded, or null to
      *                                 load them -- the caller passes them when
      *                                 it is matching many rows against the same
-     *                                 goal event, which is ingest's shape.
+     *                                 definition, which is ingest's shape.
      * @return bool
      */
     public function matchesRow( array $row, $conditions = null ) {
@@ -715,7 +759,7 @@ class GoalEvent extends \OWA\Core\Entity {
          * NO conditions means no match, not every match.
          *
          * An empty rule is vacuously true, and treating it that way would make
-         * a half-written goal event count every single event on the site --
+         * a half-written definition count every single event on the site --
          * loudly wrong, and only after it had already happened. This install
          * already had a goal that could never fire; one that fires for
          * everything is the worse direction to be wrong in.

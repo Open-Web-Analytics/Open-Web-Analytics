@@ -160,7 +160,7 @@ final class MetricSetsTest extends TestCase
      * "Sale" tab on every report. The set offered now measures goalConversions,
      * which v2 counts from is_goal_event.
      */
-    public function testAnActiveGoalEventAddsTheConversionsSet(): void
+    public function testAnActiveGoalEventDefinitionAddsTheConversionsSet(): void
     {
         if ( ! owa_test_db_available() ) {
             $this->markTestSkipped( 'OWA database not reachable.' );
@@ -171,7 +171,7 @@ final class MetricSetsTest extends TestCase
         // Another active goal event on this Property already offers the set.
         $before = in_array( 'conversions', array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) ), true );
 
-        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
         $id   = $goal->generateId( 'goal_event:metric-sets-probe:' . uniqid( '', true ) );
 
         $goal->set( 'id', $id );
@@ -186,7 +186,7 @@ final class MetricSetsTest extends TestCase
         try {
             $keys = array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) );
         } finally {
-            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $id );
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->delete( $id );
         }
 
         $this->assertContains( 'conversions', $keys );

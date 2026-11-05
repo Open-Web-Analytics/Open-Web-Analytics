@@ -255,12 +255,12 @@ return array(
         'feed_subscription_param' => array( 'default' => 'sid', 'description' => 'The name, after the ns prefix, of the URL parameter that carries a feed subscriber id. It is removed from page URLs before they are stored. Default sid (owa_sid).' ),
         'geolocation_lookup' => array( 'default' => false, 'description' => 'Whether OWA resolves a location from each visitor\'s IP address. Turned on by the Maxmind GeoIP module when it is active.' ),
         'geolocation_service' => array( 'default' => '', 'description' => 'Which geolocation service resolves locations. Set to maxmind by the Maxmind GeoIP module.' ),
-        // Set by Update075 when it renamed goal events to event names, so its
+        // Set by Update075 when it renamed goal event definitions to event names, so its
         // down() can give them back the names they had.
         'goal_event_names_before_075' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         /*
          * 1.x's goals, one map per Profile. Nothing in v2 reads or writes it:
-         * Update025 made the goals goal events, and Update061 reads the Profile
+         * Update025 made the goals goal event definitions, and Update061 reads the Profile
          * rows by SQL, in up() and in down(), for the funnels inside them. The
          * Profile scope stays because those rows do (see
          * SettingsRegistryTest::testNothingStoredAtAScopeBecomesUnwritableThere).

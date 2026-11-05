@@ -78,7 +78,7 @@ class MetricSets {
     /** When a Property has each set: the conditions forProperty() tests. */
     const SHOWN_WHEN = array(
         self::DEFAULT_KEY => 'Always',
-        'conversions'     => 'The Property has an active goal event',
+        'conversions'     => 'The Property has an active goal event definition',
         'ecommerce'       => '`enableEcommerceReporting` is on for the Property',
     );
 
@@ -109,11 +109,11 @@ class MetricSets {
         $sets[ self::DEFAULT_KEY ] = self::SETS[ self::DEFAULT_KEY ];
 
         /*
-         * Goal conversions, when the Property has an active goal event to
-         * convert on. v2's goalConversions counts the is_goal_event rows the
-         * marking added, one per goal event an event met.
+         * Goal conversions, when the Property has an active goal event
+         * definition to convert on. v2's goalConversions counts the is_goal_event
+         * rows the marking added, one per definition an event met.
          */
-        if ( self::hasActiveGoalEvent( $propertyId ) ) {
+        if ( self::hasActiveGoalEventDefinition( $propertyId ) ) {
 
             $sets['conversions'] = self::SETS['conversions'];
         }
@@ -127,16 +127,16 @@ class MetricSets {
     }
 
     /**
-     * Whether a Property has at least one active goal event.
+     * Whether a Property has at least one active goal event definition.
      *
      * @param string|int $propertyId
      * @return bool
      */
-    protected static function hasActiveGoalEvent( $propertyId ) {
+    protected static function hasActiveGoalEventDefinition( $propertyId ) {
 
         $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(
             sprintf( 'SELECT 1 AS present FROM %s WHERE property_id = ? AND is_active = 1 LIMIT 1',
-                \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName() ),
+                \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->getTableName() ),
             array( (string) $propertyId ) );
 
         return ! empty( $row['present'] );

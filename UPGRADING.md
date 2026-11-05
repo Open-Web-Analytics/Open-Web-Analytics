@@ -205,9 +205,9 @@ For module authors:
 ### The funnel builder: steps, a filter and a live preview
 
 The funnel builder has the report editor's header (name, Shared, Cancel / Save).
-A step is "Page is" a path or "Event is" a goal event, and steps move by
-dragging or with the arrow keys. A step's name is no longer asked for: a step
-with none is named for its page or goal event, and a stored name is kept while
+A step is "Page is" a path or "Event is" a goal event definition, and steps move
+by dragging or with the arrow keys. A step's name is no longer asked for: a step
+with none is named for its page or definition, and a stored name is kept while
 its step is unchanged. A funnel may carry its own filter, which applies to every
 step under any filter its reader adds, and the funnel says so. A preview beside
 the steps counts the funnel as it stands over the last 30 days.

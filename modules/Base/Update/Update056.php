@@ -29,6 +29,9 @@ namespace OWA\Module\Base\Update;
  * Update025 creates both tables from the current entities, so on an upgrade
  * from before 1.13 neither column exists by the time this runs, and each drop is
  * guarded.
+ *
+ * The goal tables are read under the names they had before Update076
+ * (namedBefore076()), which is what an upgrade meets here.
  */
 class Update056 extends \OWA\Core\Update {
 
@@ -38,9 +41,9 @@ class Update056 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
-        $db        = \OWA\Core\CoreAPI::dbSingleton();
-        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $db         = \OWA\Core\CoreAPI::dbSingleton();
+        $condition  = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
+        $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
 
         if ( $this->hasColumn( $condition, 'role' ) ) {
 
@@ -55,7 +58,7 @@ class Update056 extends \OWA\Core\Update {
             return false;
         }
 
-        if ( $this->dropColumnIfPresent( $goalEvent, 'goal_group' ) === false ) {
+        if ( $this->dropColumnIfPresent( $definition, 'goal_group' ) === false ) {
 
             $this->e->notice( 'Dropping owa_goal_event.goal_group failed' );
 
@@ -78,13 +81,13 @@ class Update056 extends \OWA\Core\Update {
      */
     function down() {
 
-        if ( $this->addColumnIfMissing( \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' ),
+        if ( $this->addColumnIfMissing( \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076(),
                 'goal_group', OWA_DTD_VARCHAR255 ) === false ) {
 
             return false;
         }
 
-        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
 
         if ( $this->addColumnIfMissing( $condition, 'role', OWA_DTD_VARCHAR255 ) === false ) {
 

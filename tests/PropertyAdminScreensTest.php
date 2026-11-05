@@ -433,7 +433,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         foreach ( array( 'base.users'        => 'the Organization',
                          'base.sites'        => 'the site control',
-                         'base.goalEvents' => 'a Profile' ) as $gone => $where ) {
+                         'base.goalEventDefinitions' => 'a Profile' ) as $gone => $where ) {
 
             $this->assertNotContains(
                 $gone, $actions,
@@ -461,14 +461,14 @@ final class PropertyAdminScreensTest extends TestCase
         $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
 
         /*
-         * base.goalEvents is NOT in this list any more.
+         * base.goalEventDefinitions is NOT in this list any more.
          *
          * It was, on the grounds that the control was the only way in. It is
-         * not: getHierarchyNav() files Goal Events under Property, so the
+         * not: getHierarchyNav() files Goal Event Definitions under Property, so the
          * "edit" link on any row reaches the settings screen whose left-hand
          * nav carries it. The control's own link was a second door to the same
          * room, hung on the Profile row -- which said goals are per Profile,
-         * and they are not: owa_goal_event is keyed on property_id.
+         * and they are not: owa_goal_event_definition is keyed on property_id.
          *
          * What this still guards is that each TIER is reachable, which is what
          * the control is for.
@@ -699,15 +699,15 @@ final class PropertyAdminScreensTest extends TestCase
 
         $this->assertSame( 'Details', $property['base.propertyProfile'] ?? null );
         /*
-         * Goal events sit under the PROPERTY, not the Profile.
+         * Goal event definitions sit under the PROPERTY, not the Profile.
          *
          * A behaviour worth counting is a fact about the website: two Profiles
          * of one Property both want the same signup counted, and defining it
          * twice is how the two drift.
          */
-        $this->assertSame( 'Goal events', $property['base.goalEvents'] ?? null );
-        $this->assertArrayNotHasKey( 'base.goalEvents', $profile,
-            'Goal events are listed under the Observation Profile as well, so the same '
+        $this->assertSame( 'Goal event definitions', $property['base.goalEventDefinitions'] ?? null );
+        $this->assertArrayNotHasKey( 'base.goalEventDefinitions', $profile,
+            'Goal event definitions are listed under the Observation Profile as well, so the same '
             . 'list appears twice and it is unclear which tier owns it.' );
         $this->assertSame(
             'Access', $property['base.propertyAccess'] ?? null,
@@ -845,12 +845,12 @@ final class PropertyAdminScreensTest extends TestCase
     public function testEveryHierarchyScreenExplainsItself(): void
     {
         $screens = array(
-            'organization_profile.php' => 'Organization',
-            'property_profile.php'     => 'Property',
-            'property_access.php'      => 'Property',
-            'profile_settings.php'     => 'Observation Profile',
-            'sites_addoredit.php'      => 'Observation Profile',
-            'goal_events.php'        => 'Observation Profile',
+            'organization_profile.php'   => 'Organization',
+            'property_profile.php'       => 'Property',
+            'property_access.php'        => 'Property',
+            'profile_settings.php'       => 'Observation Profile',
+            'sites_addoredit.php'        => 'Observation Profile',
+            'goal_event_definitions.php' => 'Observation Profile',
         );
 
         foreach ( $screens as $template => $term ) {
@@ -1104,14 +1104,14 @@ final class PropertyAdminScreensTest extends TestCase
             'A column label is larger than the page heading it sits under.' );
     }
 
-    /** Goal Events renders in the pane like every other hierarchy screen. */
-    public function testGoalEventsUsesThePaneConvention(): void
+    /** Goal Event Definitions renders in the pane like every other hierarchy screen. */
+    public function testGoalEventDefinitionsUsesThePaneConvention(): void
     {
-        $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/goal_events.php' );
+        $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/goal_event_definitions.php' );
 
         $this->assertStringContainsString(
             '<div id="panel">', $body,
-            'Goal Events uses subview_content, so none of the pane styling reaches it and it '
+            'Goal Event Definitions uses subview_content, so none of the pane styling reaches it and it '
             . 'looks like a different application.' );
 
         $this->assertStringNotContainsString( 'subview_content', $body );

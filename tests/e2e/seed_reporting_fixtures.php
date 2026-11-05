@@ -1172,16 +1172,16 @@ function unseedFunnelVisualization(): int
 }
 
 /** The fixture goal event's id: derived, so a re-seed updates rather than duplicates. */
-function e2eGoalEventId(): string
+function e2eGoalEventDefinitionId(): string
 {
-    return (string) \OWA\Core\CoreAPI::entityFactory('base.goal_event')
+    return (string) \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition')
         ->generateId('goal_event:e2e:' . E2E_SITE_ID);
 }
 
 function seedGoal(): array
 {
     /*
-     * A goal event row and its one condition, written the way GoalEventSave
+     * A goal event row and its one condition, written the way GoalEventDefinitionSave
      * writes them: triggered by page_view, conditioned on page_path.
      *
      * It was seeded through GoalManager::saveGoal(), the 1.x goal shape, which
@@ -1192,32 +1192,32 @@ function seedGoal(): array
      * seedFunnelVisualization(), which seeds the path separately and does not
      * name this goal at all.
      */
-    $id = e2eGoalEventId();
+    $id = e2eGoalEventDefinitionId();
 
-    $goalEvent = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
-    $goalEvent->load($id);
+    $goalEventDefinition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition');
+    $goalEventDefinition->load($id);
 
-    $goalEvent->set('property_id', \OWA\Module\Base\Entity\GoalEvent::propertyFor(E2E_SITE_ID));
-    $goalEvent->set('name', E2E_GOAL_NAME);
-    $goalEvent->set('is_active', 1);
-    $goalEvent->set('trigger_event_type', 'page_view');
+    $goalEventDefinition->set('property_id', \OWA\Module\Base\Entity\GoalEventDefinition::propertyFor(E2E_SITE_ID));
+    $goalEventDefinition->set('name', E2E_GOAL_NAME);
+    $goalEventDefinition->set('is_active', 1);
+    $goalEventDefinition->set('trigger_event_type', 'page_view');
 
-    if ($goalEvent->wasPersisted()) {
-        $goalEvent->update();
+    if ($goalEventDefinition->wasPersisted()) {
+        $goalEventDefinition->update();
     } else {
-        $goalEvent->set('id', $id);
-        $goalEvent->set('creation_date', \OWA\Core\CoreAPI::getRequestTimestamp());
-        $goalEvent->create();
+        $goalEventDefinition->set('id', $id);
+        $goalEventDefinition->set('creation_date', \OWA\Core\CoreAPI::getRequestTimestamp());
+        $goalEventDefinition->create();
     }
 
     $db = \OWA\Core\CoreAPI::dbSingleton();
-    $db->deleteFrom(\OWA\Core\CoreAPI::entityFactory('base.goal_event_condition')->getTableName());
-    $db->where('goal_event_id', $id);
+    $db->deleteFrom(\OWA\Core\CoreAPI::entityFactory('base.goal_event_definition_condition')->getTableName());
+    $db->where('goal_event_definition_id', $id);
     $db->executeQuery();
 
-    $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
+    $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition_condition');
     $condition->set('id', $condition->generateId('goal_event_condition:' . $id . ':1'));
-    $condition->set('goal_event_id', $id);
+    $condition->set('goal_event_definition_id', $id);
     $condition->set('sort_order', 1);
     $condition->set('condition_property', 'page_path');
     $condition->set('condition_operator', 'exact');
@@ -1227,12 +1227,12 @@ function seedGoal(): array
 
     // Read back, so the seed output reports what the database holds rather than
     // what was handed to it.
-    $stored = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
+    $stored = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition');
     $stored->load($id);
     $conditions = $stored->loadConditions();
 
     return [
-        'goal_event_id' => $id,
+        'goal_event_definition_id' => $id,
         'goal_name'     => (string) $stored->get('name'),
         'trigger'       => (string) $stored->get('trigger_event_type'),
         'goal_url'      => $conditions ? (string) $conditions[0]->get('condition_value') : '',
@@ -1290,7 +1290,7 @@ function teardown(): array
     /*
      * The fixture goal event, and the conditions hanging off it.
      *
-     * Goals are ROWS now, in owa_goal_event -- the table loop above does not
+     * Goals are ROWS now, in owa_goal_event_definition -- the table loop above does not
      * reach them because it clears fact tables, and a goal event left behind
      * keeps converting against real traffic and keeps its group showing as a
      * metric-set tab on every tabbed report.
@@ -1298,26 +1298,26 @@ function teardown(): array
      * Only this one is removed, by its derived id: an install may have goal
      * events of its own, and clearing the table wholesale would take them too.
      *
-     * Its conditions go first. They are separate rows keyed by goal_event_id
+     * Its conditions go first. They are separate rows keyed by goal_event_definition_id
      * and nothing cascades, so deleting only the goal event leaves conditions
      * pointing at an id that no longer resolves -- and the next run's goal
      * event, minted at the same derived id, would inherit them.
      */
     try {
-        $goalEventId = e2eGoalEventId();
+        $goalEventDefinitionId = e2eGoalEventDefinitionId();
 
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
-        $goalEvent->load($goalEventId);
+        $goalEventDefinition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition');
+        $goalEventDefinition->load($goalEventDefinitionId);
 
-        if ($goalEvent->wasPersisted()) {
+        if ($goalEventDefinition->wasPersisted()) {
 
             $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->deleteFrom(
-                \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition')->getTableName());
-            $db->where('goal_event_id', $goalEventId);
+                \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition_condition')->getTableName());
+            $db->where('goal_event_definition_id', $goalEventDefinitionId);
             $db->executeQuery();
 
-            $goalEvent->delete($goalEventId);
+            $goalEventDefinition->delete($goalEventDefinitionId);
             $removed['goal'] = 'fixture goal event removed';
 
         } else {

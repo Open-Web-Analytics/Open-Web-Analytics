@@ -8,21 +8,21 @@ namespace OWA\Module\Base\Classes;
 //
 
 /**
- * A row for each goal event an event met (PLAN 1.3.2).
+ * A goal event for each goal event definition an event met (PLAN 1.3.2).
  *
  * A CALLBACK ON Ingest::TRACKING_EVENTS_PRE_SAVE, at priority 100 -- after the
  * materializers at 10 -- so it is handed every event one beacon will be saved as
- * and judges each on its own values. A goal event whose trigger is first_visit
+ * and judges each on its own values. A definition whose trigger is first_visit
  * converts on the first_visit; one whose trigger is page_view converts only on
  * the page view, even though the materialized events beside it carry the same
  * page.
  *
- * A CONVERSION IS A ROW OF ITS OWN, named by the goal event's name and
+ * A CONVERSION IS A ROW OF ITS OWN, named by the definition's name and
  * flagged is_goal_event = 1, materialized from the event that met it the way
  * session_start is from a page view. The event that met it stays an ordinary
  * event with is_goal_event = 0: flagging both would count the conversion twice.
- * So a goal event's conversions are the rows under its name, and an event meeting
- * two goal events adds two.
+ * So a definition's conversions are the rows under its name, and an event
+ * meeting two definitions adds two.
  *
  * TESTED AGAINST THE ROW EACH EVENT WILL BECOME (EventRawHandlers::rowFor), not
  * the raw properties: conditions name columns, and the row is where a value
@@ -36,7 +36,7 @@ namespace OWA\Module\Base\Classes;
 class GoalMarking {
 
     /**
-     * site_id => list of array( 'event' => GoalEvent, 'conditions' => array )
+     * site_id => list of array( 'definition' => GoalEventDefinition, 'conditions' => array )
      *
      * Ingest runs this for every row of every beacon, so the goals and their
      * conditions are read ONCE per site per process. Both halves matter:
@@ -48,11 +48,11 @@ class GoalMarking {
     private static $goals = array();
 
     /**
-     * Judge every event in the set, and add a row for each goal event met.
+     * Judge every event in the set, and add a row for each definition met.
      *
      * @param  array $events  the set from Ingest::TRACKING_EVENTS_PRE_SAVE
      * @return array          the same set, each marked 0, and a row marked 1 per
-     *                        goal event met
+     *                        definition met
      */
     public static function mark( $events ) {
 
@@ -93,12 +93,12 @@ class GoalMarking {
 
             foreach ( $goals as $goal ) {
 
-                if ( ! $goal['event']->matchesRow( $row, $goal['conditions'] ) ) {
+                if ( ! $goal['definition']->matchesRow( $row, $goal['conditions'] ) ) {
 
                     continue;
                 }
 
-                $name = (string) $goal['event']->get( 'name' );
+                $name = (string) $goal['definition']->get( 'name' );
 
                 /*
                  * One row per NAME in the set. Every row of one beacon
@@ -116,11 +116,11 @@ class GoalMarking {
     }
 
     /**
-     * The row a conversion adds: the event that met the goal event, under the
-     * goal event's name.
+     * The row a conversion adds: the event that met the definition, under the
+     * definition's name.
      *
      * @param  object $trigger
-     * @param  string $name     the goal event's name
+     * @param  string $name     the definition's name
      * @return object
      */
     public static function conversion( $trigger, $name ) {
@@ -132,13 +132,13 @@ class GoalMarking {
     }
 
     /**
-     * The active goal events of the Property this Profile belongs to, with their
+     * The active definitions of the Property this Profile belongs to, with their
      * conditions.
      *
      * READ FROM THE TABLE, not through GoalManager::getActiveGoals(). That
      * method answers in the 1.x goal shape, keyed by SLOT NUMBER, and it seeds
      * slots 1..20 and keeps only the goals whose number is one of them -- so a
-     * goal event created without a slot, which is what the current screen makes,
+     * definition created without a slot, which is what the current screen makes,
      * was never marked at ingest at all. Reading the table by property_id and
      * is_active has no opinion about slots.
      *
@@ -159,12 +159,12 @@ class GoalMarking {
             return self::$goals[ $site_id ];
         }
 
-        $property_id = \OWA\Module\Base\Entity\GoalEvent::propertyFor( $site_id );
+        $property_id = \OWA\Module\Base\Entity\GoalEventDefinition::propertyFor( $site_id );
 
         /*
-         * No Property means NO goal events. Db::where() drops a clause whose
+         * No Property means NO definitions. Db::where() drops a clause whose
          * value is empty instead of matching nothing, so an unguarded query here
-         * would hand this Profile every Property's goal events -- a
+         * would hand this Profile every Property's definitions -- a
          * cross-Property leak, not an empty list.
          */
         if ( ! $property_id ) {
@@ -172,7 +172,7 @@ class GoalMarking {
             return self::$goals[ $site_id ];
         }
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
@@ -182,26 +182,26 @@ class GoalMarking {
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
-            $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-            $goalEvent->setProperties( $row );
+            $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+            $definition->setProperties( $row );
 
-            $conditions = $goalEvent->loadConditions();
+            $conditions = $definition->loadConditions();
 
             /*
-             * A goal event with no conditions is dropped here rather than
+             * A definition with no conditions is dropped here rather than
              * carried and refused per row. matchesRow() answers false for it
              * anyway -- an empty rule is not a universal one -- so this only
              * saves the walk. Not on a custom event, whose name is its
              * condition.
              */
             if ( ! $conditions
-                 && ! \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $goalEvent->get( 'trigger_event_type' ) ) ) {
+                 && ! \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $definition->get( 'trigger_event_type' ) ) ) {
 
                 continue;
             }
 
             self::$goals[ $site_id ][] = array(
-                'event'      => $goalEvent,
+                'definition' => $definition,
                 'conditions' => $conditions,
             );
         }
@@ -212,7 +212,7 @@ class GoalMarking {
     /**
      * Drop the memo.
      *
-     * For tests, which create a goal event and then expect the next row to be
+     * For tests, which create a definition and then expect the next row to be
      * marked by it. In a request the memo is exactly right: goals do not change
      * while a beacon is being stored.
      */

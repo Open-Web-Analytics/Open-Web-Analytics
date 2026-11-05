@@ -86,8 +86,8 @@ final class RealtimeTest extends TestCase
     protected function tearDown(): void
     {
         foreach ($this->goals as $id) {
-            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_condition WHERE goal_event_id = ?', [$id]);
-            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event WHERE id = ?', [$id]);
+            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_definition_condition WHERE goal_event_definition_id = ?', [$id]);
+            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_definition WHERE id = ?', [$id]);
         }
     }
 
@@ -323,7 +323,7 @@ final class RealtimeTest extends TestCase
 
     private function goal(string $name, array $conditions): string
     {
-        $entity = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition');
         $id     = $entity->generateId('goal_event:realtime:' . uniqid('', true));
 
         $entity->setProperties(['id' => $id, 'property_id' => self::PROPERTY, 'name' => $name,
@@ -332,9 +332,9 @@ final class RealtimeTest extends TestCase
         $this->assertTrue((bool) $entity->create());
 
         foreach ($conditions as $n => $c) {
-            $row = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
+            $row = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition_condition');
             $row->setProperties(['id' => $row->generateId('goal_event_condition:' . $id . ':' . $n),
-                'goal_event_id' => $id, 'sort_order' => $n + 1, 'condition_property' => $c[0],
+                'goal_event_definition_id' => $id, 'sort_order' => $n + 1, 'condition_property' => $c[0],
                 'condition_operator' => $c[1], 'condition_value' => $c[2],
                 'creation_date' => \OWA\Core\CoreAPI::getRequestTimestamp()]);
             $this->assertTrue((bool) $row->create());

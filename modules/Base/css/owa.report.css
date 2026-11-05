@@ -4167,7 +4167,7 @@ li.constraintRow {
 
 
 /* ------------------------------------------------------------------
- * Goal events
+ * Goal event definitions
  * ------------------------------------------------------------------
  *
  * The condition rows reuse .constraintRow wholesale -- same markup, same class
@@ -4224,7 +4224,7 @@ li.constraintRow {
     padding: 1px 5px;
 }
 
-/* A goal event with no condition counts nothing. Coloured like a warning
+/* A goal event definition with no condition counts nothing. Coloured like a warning
    because it is one: this install had a goal in exactly that state and nothing
    anywhere said it would never fire. */
 .owa_goalEventIncomplete {
@@ -4236,7 +4236,7 @@ li.constraintRow {
  *
  * The sibling settings screens get theirs from size="50" attributes, which give
  * every input the same measure. These are sized here instead: the goal event
- * form mixes long text, a short money field and a rename box, and an attribute
+ * definition form mixes long text, a short money field and a rename box, and an attribute
  * per input is how they drifted apart in the first place. */
 .owa_hierarchyContent #panel .owa_largeFormField {
     width: 400px;
@@ -4911,7 +4911,8 @@ li.constraintRow {
 }
 
 /* ---------------------------------------------------------------------------
-   A goal event's condition builder (goal_event_edit.php, owa.goalbuilder.js).
+   A goal event definition's condition builder (goal_event_definition_edit.php,
+   owa.goalbuilder.js).
 
    ONE PANEL, read as a sentence: "A [click] event where [all] of these match",
    then the conditions. The event decides which properties exist, so it opens

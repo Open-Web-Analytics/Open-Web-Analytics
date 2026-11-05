@@ -1,8 +1,8 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use OWA\Module\Base\Entity\GoalEvent;
-use OWA\Module\Base\Classes\GoalEventPredicate;
+use OWA\Module\Base\Entity\GoalEventDefinition;
+use OWA\Module\Base\Classes\GoalEventDefinitionPredicate;
 
 /*
  * BOOTED, BUT NOT CONNECTED, and the two are different things.
@@ -21,18 +21,18 @@ use OWA\Module\Base\Classes\GoalEventPredicate;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * A goal event compiled into a funnel step.
+ * A goal event definition compiled into a funnel step.
  *
- * The pair have to agree. The same goal event decides a conversion at ingest
- * through GoalEvent::compare(), and a funnel stage at read time through this --
- * so a difference between them is a funnel stage that disagrees with the
- * conversion count sitting beside it on the same screen.
+ * The pair have to agree. The same definition decides a conversion at ingest
+ * through GoalEventDefinition::compare(), and a funnel stage at read time
+ * through this -- so a difference between them is a funnel stage that
+ * disagrees with the conversion count sitting beside it on the same screen.
  *
  * These tests hold the two against each other operator by operator, and hold
  * the line on the two things that must never happen quietly: a condition the
  * funnel cannot express being dropped, and an empty rule matching everything.
  */
-final class GoalEventPredicateTest extends TestCase
+final class GoalEventDefinitionPredicateTest extends TestCase
 {
     /**
      * A goal event carrying the given conditions, without touching a database.
@@ -46,7 +46,7 @@ final class GoalEventPredicateTest extends TestCase
      * asks a condition for three values. That is the whole surface, and these
      * are exactly it.
      */
-    private function goalEvent( array $conditions, $match = GoalEvent::MATCH_ALL, $trigger = 'page_view' )
+    private function goalEventDefinition( array $conditions, $match = GoalEventDefinition::MATCH_ALL, $trigger = 'page_view' )
     {
         $rows = array();
 
@@ -96,16 +96,16 @@ final class GoalEventPredicateTest extends TestCase
         };
     }
 
-    private function compile( array $conditions, $match = GoalEvent::MATCH_ALL, $trigger = 'page_view' )
+    private function compile( array $conditions, $match = GoalEventDefinition::MATCH_ALL, $trigger = 'page_view' )
     {
-        $p = new GoalEventPredicate;
+        $p = new GoalEventDefinitionPredicate;
 
         /*
          * The funnel's own alias, passed in rather than defaulted: the predicate
          * is compiled into someone else's query and the two agreeing about what
          * the alias means is the contract.
          */
-        return array( $p->compile( $this->goalEvent( $conditions, $match, $trigger ),
+        return array( $p->compile( $this->goalEventDefinition( $conditions, $match, $trigger ),
             \OWA\Module\Base\Controller\VisualizationFunnel::ALIAS ), $p );
     }
 
@@ -120,7 +120,7 @@ final class GoalEventPredicateTest extends TestCase
     public function testAnExactPageConditionBecomesAColumnComparison(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_path', GoalEvent::MATCH_EXACT, '/thanks' ) ) );
+            array( 'page_path', GoalEventDefinition::MATCH_EXACT, '/thanks' ) ) );
 
         $this->assertNotNull( $out );
         $this->assertStringContainsString( 'e.page_path', $out['sql'] );
@@ -151,8 +151,8 @@ final class GoalEventPredicateTest extends TestCase
     public function testAConditionThatIsNotAColumnIsRefusedByName(): void
     {
         list( $out, $p ) = $this->compile( array(
-            array( 'page_path', GoalEvent::MATCH_EXACT, '/basket' ),
-            array( 'page_type', GoalEvent::MATCH_EXACT, 'attachment' ) ) );
+            array( 'page_path', GoalEventDefinition::MATCH_EXACT, '/basket' ),
+            array( 'page_type', GoalEventDefinition::MATCH_EXACT, 'attachment' ) ) );
 
         $this->assertNull( $out,
             'A goal event testing something that is not a column compiled anyway, so the '
@@ -176,7 +176,7 @@ final class GoalEventPredicateTest extends TestCase
                   as $column ) {
 
             list( $out ) = $this->compile( array(
-                array( $column, GoalEvent::MATCH_EXACT, 'x' ) ) );
+                array( $column, GoalEventDefinition::MATCH_EXACT, 'x' ) ) );
 
             $this->assertNotNull( $out, "$column is a cube column and did not compile." );
 
@@ -185,11 +185,11 @@ final class GoalEventPredicateTest extends TestCase
     }
 
     /** ALL and ANY are what the goal event says, not what the compiler prefers. */
-    public function testConditionsCombineTheWayTheGoalEventSays(): void
+    public function testConditionsCombineTheWayTheGoalEventDefinitionSays(): void
     {
         list( $all ) = $this->compile( array(
-            array( 'page_path',   GoalEvent::MATCH_EXACT, '/a' ),
-            array( 'page_title', GoalEvent::MATCH_EXACT, 'A' ) ), GoalEvent::MATCH_ALL );
+            array( 'page_path',   GoalEventDefinition::MATCH_EXACT, '/a' ),
+            array( 'page_title', GoalEventDefinition::MATCH_EXACT, 'A' ) ), GoalEventDefinition::MATCH_ALL );
 
         // Joined by the conditions' own combinator; the trigger and the
         // not-NULL guards add ANDs of their own around them.
@@ -197,8 +197,8 @@ final class GoalEventPredicateTest extends TestCase
         $this->assertStringNotContainsString( ' OR ', $all['sql'] );
 
         list( $any ) = $this->compile( array(
-            array( 'page_path',   GoalEvent::MATCH_EXACT, '/a' ),
-            array( 'page_title', GoalEvent::MATCH_EXACT, 'A' ) ), GoalEvent::MATCH_ANY );
+            array( 'page_path',   GoalEventDefinition::MATCH_EXACT, '/a' ),
+            array( 'page_title', GoalEventDefinition::MATCH_EXACT, 'A' ) ), GoalEventDefinition::MATCH_ANY );
 
         $this->assertStringContainsString( ') OR ( e.page_title', $any['sql'] );
         $this->assertStringNotContainsString( ') AND ( e.page_title', $any['sql'] );
@@ -213,7 +213,7 @@ final class GoalEventPredicateTest extends TestCase
      * refused, because it is not an error -- it is a goal event that genuinely
      * counts nothing.
      */
-    public function testAGoalEventWithNoConditionsMatchesNothing(): void
+    public function testAGoalEventDefinitionWithNoConditionsMatchesNothing(): void
     {
         list( $out ) = $this->compile( array() );
 
@@ -228,13 +228,13 @@ final class GoalEventPredicateTest extends TestCase
      */
     public function testACustomEventWithNoConditionsMatchesEveryOne(): void
     {
-        list( $out ) = $this->compile( array(), GoalEvent::MATCH_ALL, 'newsletter_signup' );
+        list( $out ) = $this->compile( array(), GoalEventDefinition::MATCH_ALL, 'newsletter_signup' );
 
         $this->assertSame( '( ' . \OWA\Module\Base\Controller\VisualizationFunnel::ALIAS . '.event_type = ? )', $out['sql'] );
         $this->assertSame( array( 'newsletter_signup' ), $out['params'] );
 
         foreach ( array( 'page_view', 'exception', 'owa_custom' ) as $trigger ) {
-            list( $out ) = $this->compile( array(), GoalEvent::MATCH_ALL, $trigger );
+            list( $out ) = $this->compile( array(), GoalEventDefinition::MATCH_ALL, $trigger );
             $this->assertSame( '( 0 = 1 )', $out['sql'], $trigger );
         }
     }
@@ -249,7 +249,7 @@ final class GoalEventPredicateTest extends TestCase
             'An unrecognised operator compiles to something that can match, while compare() '
             . 'answers false for it -- so the funnel and the conversion count disagree.' );
 
-        $this->assertFalse( GoalEvent::compare( '/a', 'sideways', '/a' ),
+        $this->assertFalse( GoalEventDefinition::compare( '/a', 'sideways', '/a' ),
             'compare() no longer refuses an unknown operator, so this expectation is stale.' );
     }
 
@@ -262,8 +262,8 @@ final class GoalEventPredicateTest extends TestCase
      */
     public function testAnEmptyTargetMatchesNothingRatherThanEverything(): void
     {
-        foreach ( array( GoalEvent::MATCH_CONTAINS, GoalEvent::MATCH_BEGINS,
-                         GoalEvent::MATCH_REGEX ) as $operator ) {
+        foreach ( array( GoalEventDefinition::MATCH_CONTAINS, GoalEventDefinition::MATCH_BEGINS,
+                         GoalEventDefinition::MATCH_REGEX ) as $operator ) {
 
             list( $out ) = $this->compile( array( array( 'page_path', $operator, '' ) ) );
 
@@ -271,7 +271,7 @@ final class GoalEventPredicateTest extends TestCase
                 "An empty $operator target compiles to something that matches, while compare() "
                 . 'answers false for it.' );
 
-            $this->assertFalse( GoalEvent::compare( '/anything', $operator, '' ) );
+            $this->assertFalse( GoalEventDefinition::compare( '/anything', $operator, '' ) );
         }
     }
 
@@ -286,7 +286,7 @@ final class GoalEventPredicateTest extends TestCase
     public function testContainsHasNoPatternLanguage(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_path', GoalEvent::MATCH_CONTAINS, '50%_off' ) ) );
+            array( 'page_path', GoalEventDefinition::MATCH_CONTAINS, '50%_off' ) ) );
 
         $this->assertStringContainsString( 'LOCATE', $out['sql'] );
         $this->assertStringNotContainsString( 'LIKE', $out['sql'] );
@@ -304,18 +304,18 @@ final class GoalEventPredicateTest extends TestCase
     public function testAnAbsentValueMatchesNoConditionLikeIngest(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_title', GoalEvent::MATCH_NOT, 'Checkout' ) ) );
+            array( 'page_title', GoalEventDefinition::MATCH_NOT, 'Checkout' ) ) );
 
         $this->assertStringContainsString( 'e.page_title IS NOT NULL AND', $out['sql'] );
         $this->assertStringNotContainsString( 'COALESCE', $out['sql'] );
 
-        $goal = new GoalEvent();
+        $goal = new GoalEventDefinition();
         $goal->set( 'trigger_event_type', 'page_view' );
-        $goal->set( 'condition_match', GoalEvent::MATCH_ALL );
+        $goal->set( 'condition_match', GoalEventDefinition::MATCH_ALL );
 
-        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' );
         $condition->set( 'condition_property', 'page_title' );
-        $condition->set( 'condition_operator', GoalEvent::MATCH_NOT );
+        $condition->set( 'condition_operator', GoalEventDefinition::MATCH_NOT );
         $condition->set( 'condition_value', 'Checkout' );
 
         $this->assertFalse( $goal->matchesRow( array( 'event_type' => 'page_view', 'page_title' => null ),
@@ -332,13 +332,13 @@ final class GoalEventPredicateTest extends TestCase
     public function testTheTriggerEventTypeGates(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_path', GoalEvent::MATCH_EXACT, '/thanks' ) ), GoalEvent::MATCH_ALL, 'click' );
+            array( 'page_path', GoalEventDefinition::MATCH_EXACT, '/thanks' ) ), GoalEventDefinition::MATCH_ALL, 'click' );
 
         $this->assertStringStartsWith( '( e.event_type = ? AND', $out['sql'] );
         $this->assertSame( 'click', $out['params'][0] );
 
         list( $none ) = $this->compile( array(
-            array( 'page_path', GoalEvent::MATCH_EXACT, '/thanks' ) ), GoalEvent::MATCH_ALL, '' );
+            array( 'page_path', GoalEventDefinition::MATCH_EXACT, '/thanks' ) ), GoalEventDefinition::MATCH_ALL, '' );
 
         $this->assertSame( '( 0 = 1 )', $none['sql'] );
     }
@@ -361,7 +361,7 @@ final class GoalEventPredicateTest extends TestCase
         foreach ( $columns as $column ) {
 
             list( $out ) = $this->compile( array(
-                array( $column, GoalEvent::MATCH_EXACT, 'x' ) ) );
+                array( $column, GoalEventDefinition::MATCH_EXACT, 'x' ) ) );
 
             $this->assertNotNull( $out, "$column is offered but does not compile." );
         }
@@ -384,7 +384,7 @@ final class GoalEventPredicateTest extends TestCase
     public function testItCompilesWithoutAConnection(): void
     {
         list( $out ) = $this->compile( array(
-            array( 'page_path', GoalEvent::MATCH_CONTAINS, '/checkout' ) ) );
+            array( 'page_path', GoalEventDefinition::MATCH_CONTAINS, '/checkout' ) ) );
 
         $this->assertNotNull( $out );
         $this->assertNotSame( '', $out['sql'] );

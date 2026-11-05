@@ -72,8 +72,8 @@ final class FunnelCubeCorrectnessTest extends TestCase
     protected function tearDown(): void
     {
         foreach ($this->goals as $goal) {
-            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_condition WHERE goal_event_id = ?', [$goal]);
-            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event WHERE id = ?', [$goal]);
+            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_definition_condition WHERE goal_event_definition_id = ?', [$goal]);
+            \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event_definition WHERE id = ?', [$goal]);
         }
     }
 
@@ -134,16 +134,16 @@ final class FunnelCubeCorrectnessTest extends TestCase
     /** A goal event on $trigger whose page_path is $path. */
     private function goal(string $trigger, string $path): string
     {
-        $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event');
+        $goal = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition');
         $id = (string) (9200000000000003000 + count($this->goals));
         $goal->setProperties(['id' => $id, 'property_id' => self::PROPERTY, 'name' => 'Correctness_goal',
-            'trigger_event_type' => $trigger, 'condition_match' => \OWA\Module\Base\Entity\GoalEvent::MATCH_ALL,
+            'trigger_event_type' => $trigger, 'condition_match' => \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_ALL,
             'is_active' => 1]);
         $goal->create();
 
-        $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_condition');
-        $condition->setProperties(['id' => (string) ((int) $id + 500), 'goal_event_id' => $id,
-            'condition_property' => 'page_path', 'condition_operator' => \OWA\Module\Base\Entity\GoalEvent::MATCH_EXACT,
+        $condition = \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition_condition');
+        $condition->setProperties(['id' => (string) ((int) $id + 500), 'goal_event_definition_id' => $id,
+            'condition_property' => 'page_path', 'condition_operator' => \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_EXACT,
             'condition_value' => $path]);
         $condition->create();
 
@@ -212,7 +212,7 @@ final class FunnelCubeCorrectnessTest extends TestCase
         $this->event(self::V1, self::S, 'page_view', '/a', 0);
         $this->event(self::V1, self::S, 'click', '/thanks', 10);
 
-        $steps = [['path' => '/a'], ['goal_event_id' => $thanks]];
+        $steps = [['path' => '/a'], ['goal_event_definition_id' => $thanks]];
 
         $this->assertSame([1, 0], $this->funnel($steps), 'a click on /thanks is not a page_view goal');
 

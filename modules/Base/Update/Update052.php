@@ -22,6 +22,9 @@ namespace OWA\Module\Base\Update;
  * might.
  *
  * NOT CLI-ONLY: one column off raw and off every cube.
+ *
+ * The goal tables are read under the names they had before Update076
+ * (namedBefore076()), which is what an upgrade meets here.
  */
 class Update052 extends \OWA\Core\Update {
 
@@ -69,7 +72,7 @@ class Update052 extends \OWA\Core\Update {
      */
     protected function migrateConditions() {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
@@ -78,7 +81,7 @@ class Update052 extends \OWA\Core\Update {
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
-            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
             $condition->load( $row['id'] );
 
             if ( ! $condition->wasPersisted() ) {

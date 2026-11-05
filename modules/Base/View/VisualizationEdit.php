@@ -13,7 +13,7 @@ class VisualizationEdit extends \OWA\Core\View {
         $this->body->set( 'visualizationTypeLabel', $this->get( 'visualizationTypeLabel' ) );
         $this->body->set( 'visualizationTypeHint', $this->get( 'visualizationTypeHint' ) );
         $this->body->set( 'visualizationTypeIcon', $this->get( 'visualizationTypeIcon' ) );
-        $this->body->set( 'goalEvents', (array) $this->get( 'goalEvents' ) );
+        $this->body->set( 'goalEventDefinitions', (array) $this->get( 'goalEventDefinitions' ) );
         $this->body->set( 'maxSteps', $this->get( 'maxSteps' ) );
         $this->body->set( 'propertyId', $this->get( 'propertyId' ) );
         $this->body->set( 'validation_errors', $this->get( 'validation_errors' ) ?? array() );

@@ -2,13 +2,13 @@
 namespace OWA\Module\Base\Controller;
 
 /**
- * Create or edit one goal event.
+ * Create or edit one goal event definition.
  *
  * Replaces the goal entry screen, which edited a numbered SLOT -- so creating a
  * goal meant picking an unused number out of twenty, and there was no
- * twenty-first. A goal event is a row: it is created, not claimed.
+ * twenty-first. A definition is a row: it is created, not claimed.
  */
-class GoalEventEdit extends \OWA\Core\AdminController {
+class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
 
     function __construct( $params ) {
 
@@ -21,37 +21,37 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
         $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
 
-        if ( $this->getParam( 'goalEventId' ) ) {
+        if ( $this->getParam( 'goalEventDefinitionId' ) ) {
 
-            $goalEvent->load( $this->getParam( 'goalEventId' ) );
+            $definition->load( $this->getParam( 'goalEventDefinitionId' ) );
 
         }
 
-        $this->set( 'goalEvent', $goalEvent->_getProperties() );
+        $this->set( 'goalEventDefinition', $definition->_getProperties() );
 
         $conditions = array();
 
-        foreach ( $goalEvent->get( 'id' ) ? $goalEvent->loadConditions() : array() as $condition ) {
+        foreach ( $definition->get( 'id' ) ? $definition->loadConditions() : array() as $condition ) {
 
             $conditions[] = $condition->_getProperties();
         }
 
         $this->set( 'conditions', $conditions );
         /* Whatever it resolved to, so the form saves the row it opened. */
-        $this->set( 'goalEventId', $goalEvent->get( 'id' ) );
+        $this->set( 'goalEventDefinitionId', $definition->get( 'id' ) );
         $this->set( 'propertyId', $propertyId );
         /*
          * The trigger first, because the condition vocabulary depends on it: a
          * click carries element_id and a page view does not, and offering a
          * property the event cannot carry produces a goal that never fires.
          */
-        $trigger = (string) $goalEvent->get( 'trigger_event_type' );
+        $trigger = (string) $definition->get( 'trigger_event_type' );
 
         if ( $trigger === '' ) {
 
-            $trigger = \OWA\Module\Base\Entity\GoalEvent::TRIGGER_DEFAULT;
+            $trigger = \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_DEFAULT;
         }
 
         $this->set( 'triggerEvent', $trigger );
@@ -67,13 +67,13 @@ class GoalEventEdit extends \OWA\Core\AdminController {
         $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->setView( 'base.optionsHierarchy' );
-        $this->setSubview( 'base.goalEventEdit' );
+        $this->setSubview( 'base.goalEventDefinitionEdit' );
     }
 
     /**
      * Every trigger's condition properties, so the picker follows the event as
      * it changes (owa.goalbuilder.js). Both screens that render the form set it
-     * -- this one and GoalEventSave's refused-form path -- from here.
+     * -- this one and GoalEventDefinitionSave's refused-form path -- from here.
      *
      * @return array  event => list of { name, label, description, carried }
      */
@@ -91,8 +91,8 @@ class GoalEventEdit extends \OWA\Core\AdminController {
          * all events, so one list serves them all under the picker's custom
          * value; owa.goalbuilder.js falls back to it for any name not above.
          */
-        $vocabulary[ \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM ] =
-            self::conditionProperties( \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM );
+        $vocabulary[ \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM ] =
+            self::conditionProperties( \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM );
 
         return $vocabulary;
     }
@@ -109,7 +109,7 @@ class GoalEventEdit extends \OWA\Core\AdminController {
      *
      * Read from the Property's cube over the last CUSTOM_EVENT_DAYS, which the
      * date partitions bound. A name not sent in that window can still be typed
-     * in, and a goal event's own trigger is always offered (the template adds
+     * in, and a definition's own trigger is always offered (the template adds
      * it).
      *
      * @param  string $propertyId
@@ -141,7 +141,7 @@ class GoalEventEdit extends \OWA\Core\AdminController {
 
             $name = (string) ( $row['eventName']['value'] ?? '' );
 
-            if ( \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $name ) ) {
+            if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $name ) ) {
 
                 $names[] = $name;
             }
@@ -156,8 +156,9 @@ class GoalEventEdit extends \OWA\Core\AdminController {
      * Classes\GoalVocabulary answers it: the columns of the stored ROW that the
      * trigger event carries. Three things used to answer this question
      * differently -- this list offered every client and server PROPERTY name,
-     * marking matched against the event, and GoalEventPredicate kept its own map
-     * of four v1 names -- and none of the three agreed with what gets stored.
+     * marking matched against the event, and GoalEventDefinitionPredicate kept
+     * its own map of four v1 names -- and none of the three agreed with what
+     * gets stored.
      *
      * A COLUMN ALREADY IN USE IS KEPT IN THE LIST even when the trigger does not
      * carry it, and labelled as not carried. Dropping it would silently rewrite
@@ -166,7 +167,7 @@ class GoalEventEdit extends \OWA\Core\AdminController {
      * that cannot match.
      *
      * @param  string $event_name  the trigger event
-     * @param  array  $conditions  this goal event's stored conditions
+     * @param  array  $conditions  this definition's stored conditions
      * @return array  list of { name, label, description, carried }
      */
     public static function conditionProperties( $event_name, array $conditions = array() ) {

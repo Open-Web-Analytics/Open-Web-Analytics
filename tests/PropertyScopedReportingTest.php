@@ -93,10 +93,10 @@ final class PropertyScopedReportingTest extends TestCase
             $db->query(sprintf('DELETE FROM owa_site_user WHERE site_id = %s', $entity->generateId($site)));
             $db->query('DELETE FROM owa_site WHERE site_id = ?', [$site]);
         }
-        foreach ((array) $db->get_results(sprintf('SELECT id FROM owa_goal_event WHERE property_id IN (%d, %d)',
+        foreach ((array) $db->get_results(sprintf('SELECT id FROM owa_goal_event_definition WHERE property_id IN (%d, %d)',
                 self::PROPERTY, self::OTHER_PROPERTY)) as $goal) {
-            $db->query('DELETE FROM owa_goal_event_condition WHERE goal_event_id = ?', [((array) $goal)['id']]);
-            \OWA\Core\CoreAPI::entityFactory('base.goal_event')->delete(((array) $goal)['id']);
+            $db->query('DELETE FROM owa_goal_event_definition_condition WHERE goal_event_definition_id = ?', [((array) $goal)['id']]);
+            \OWA\Core\CoreAPI::entityFactory('base.goal_event_definition')->delete(((array) $goal)['id']);
         }
 
         $db->query(sprintf('DELETE FROM owa_property WHERE id IN (%d, %d)', self::PROPERTY, self::OTHER_PROPERTY));
@@ -348,7 +348,7 @@ final class PropertyScopedReportingTest extends TestCase
 
     public function testAPropertyScreenResolvesItsProperty(): void
     {
-        $controller = new \OWA\Module\Base\Controller\GoalEvents([]);
+        $controller = new \OWA\Module\Base\Controller\GoalEventDefinitions([]);
         $m = new ReflectionMethod(\OWA\Core\Controller::class, 'resolveCurrentPropertyId');
         $m->setAccessible(true);
 
@@ -358,7 +358,7 @@ final class PropertyScopedReportingTest extends TestCase
             'an old link naming a Profile lands on its Property');
     }
 
-    public function testGoalEventsAndCustomDimensionsAreReachedByTheProperty(): void
+    public function testGoalEventDefinitionsAndCustomDimensionsAreReachedByTheProperty(): void
     {
         $controller = new \OWA\Module\Base\Controller\OrganizationProfile([]);
 
@@ -368,13 +368,13 @@ final class PropertyScopedReportingTest extends TestCase
         // No Profile in context, and a Property whose Profiles this user may not see.
         $params = array_column((array) $nav->invoke($controller, '', '7000000000000099')['Property'], 'params', 'do');
 
-        $this->assertSame(['propertyId' => '7000000000000099'], $params['base.goalEvents'] ?? null);
+        $this->assertSame(['propertyId' => '7000000000000099'], $params['base.goalEventDefinitions'] ?? null);
         $this->assertSame(['propertyId' => '7000000000000099'], $params['base.customDimensions'] ?? null);
     }
 
-    private function goalEventSave(array $params): \OWA\Module\Base\Controller\GoalEventSave
+    private function goalEventDefinitionSave(array $params): \OWA\Module\Base\Controller\GoalEventDefinitionSave
     {
-        return new \OWA\Module\Base\Controller\GoalEventSave($params + [
+        return new \OWA\Module\Base\Controller\GoalEventDefinitionSave($params + [
             'name' => 'PSR_goal', 'triggerEvent' => 'page_view',
             'conditionProperty' => ['page_path'], 'conditionOperator' => ['eq'], 'conditionValue' => ['/thanks'],
         ]);
@@ -392,33 +392,33 @@ final class PropertyScopedReportingTest extends TestCase
         return (bool) $validator->hasErrors;
     }
 
-    public function testAGoalEventIsSavedToTheProperty(): void
+    public function testAGoalEventDefinitionIsSavedToTheProperty(): void
     {
-        $this->assertTrue($this->refuses($this->goalEventSave([])), 'saved with no Property');
-        $this->assertTrue($this->refuses($this->goalEventSave(['propertyId' => '7000000000000099'])),
+        $this->assertTrue($this->refuses($this->goalEventDefinitionSave([])), 'saved with no Property');
+        $this->assertTrue($this->refuses($this->goalEventDefinitionSave(['propertyId' => '7000000000000099'])),
             'saved to a Property that does not exist');
 
-        $save = $this->goalEventSave(['propertyId' => (string) self::PROPERTY]);
+        $save = $this->goalEventDefinitionSave(['propertyId' => (string) self::PROPERTY]);
         $this->assertFalse($this->refuses($save));
         $save->action();
 
         $data = $this->data($save);
 
-        $this->assertSame('base.goalEvents', $data['do'] ?? null);
+        $this->assertSame('base.goalEventDefinitions', $data['do'] ?? null);
         $this->assertSame((string) self::PROPERTY, $data['propertyId'] ?? null);
         $this->assertSame(3219, $data['status_code'] ?? null);
 
-        $listed = \OWA\Module\Base\Controller\GoalEvents::listForProperty((string) self::PROPERTY);
+        $listed = \OWA\Module\Base\Controller\GoalEventDefinitions::listForProperty((string) self::PROPERTY);
         $this->assertSame(['PSR_goal'], array_column($listed, 'name'));
 
-        $delete = new \OWA\Module\Base\Controller\GoalEventDelete([
-            'goalEventId' => $listed[0]['id'], 'propertyId' => (string) self::PROPERTY]);
+        $delete = new \OWA\Module\Base\Controller\GoalEventDefinitionDelete([
+            'goalEventDefinitionId' => $listed[0]['id'], 'propertyId' => (string) self::PROPERTY]);
         $delete->action();
 
         $data = $this->data($delete);
 
         $this->assertSame((string) self::PROPERTY, $data['propertyId'] ?? null);
         $this->assertSame(3220, $data['status_code'] ?? null);
-        $this->assertSame([], \OWA\Module\Base\Controller\GoalEvents::listForProperty((string) self::PROPERTY));
+        $this->assertSame([], \OWA\Module\Base\Controller\GoalEventDefinitions::listForProperty((string) self::PROPERTY));
     }
 }

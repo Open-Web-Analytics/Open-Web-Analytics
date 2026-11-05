@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <?php
 /*
- * One goal event.
+ * One goal event definition.
  *
  * The condition is presented as a constraint row -- the same markup and the
  * same class names the report builder uses (li.constraintRow >
@@ -14,31 +14,31 @@
  * condition). Whether several conditions can combine is a v2 question, and
  * rendering an add button that cannot be saved would answer it in the UI first.
  */
-$owa_ke = (array) $view->goalEvent;
+$owa_ke = (array) $view->goalEventDefinition;
 
 $owa_operators = array(
-    \OWA\Module\Base\Entity\GoalEvent::MATCH_EXACT  => 'Exactly Matching',
-    \OWA\Module\Base\Entity\GoalEvent::MATCH_BEGINS => 'Begins With',
-    \OWA\Module\Base\Entity\GoalEvent::MATCH_REGEX  => 'Matches Regex',
+    \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_EXACT  => 'Exactly Matching',
+    \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_BEGINS => 'Begins With',
+    \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_REGEX  => 'Matches Regex',
 );
 ?>
 <div class="panel_headline"><?php echo $view->headline;?></div>
 <div id="panel">
 <div class="owa_panelIntro">Goal events are custom events that are created when OWA observes
-a behavior pattern you specify. Give it a name, then say which events count: choose the event,
-then pick a property of it, how to compare it, and what to compare it to.</div>
+a behavior pattern you specify. A goal event definition names them and says which events count:
+choose the event, then pick a property of it, how to compare it, and what to compare it to.</div>
 
-<form method="post" name="owa_goalEvent">
+<form method="post" name="owa_goalEventDefinition">
 
     <div class="setting">
         <div class="title">Name</div>
-        <?php if ( ! empty( $view->goalEventId ) && ! empty( $owa_ke['name'] ) ):?>
-        <div class="description">Each conversion is stored as an event with this name. It cannot be changed: for another name, create a goal event and switch this one off.</div>
+        <?php if ( ! empty( $view->goalEventDefinitionId ) && ! empty( $owa_ke['name'] ) ):?>
+        <div class="description">Each conversion is stored as an event with this name. It cannot be changed: for another name, create another goal event definition and switch this one off.</div>
         <div class="field">
             <code><?php $view->out( $owa_ke['name'] );?></code>
         </div>
         <?php else:?>
-        <div class="description">Each conversion is stored as an event with this name, which reports show: Signup_Completed rather than Goal_3. A letter, then up to 39 letters, digits and underscores. It cannot be changed once the goal event is saved.</div>
+        <div class="description">Each conversion is stored as an event with this name, which reports show: Signup_Completed rather than Goal_3. A letter, then up to 39 letters, digits and underscores. It cannot be changed once the goal event definition is saved.</div>
         <div class="field">
             <input class="owa_largeFormField" type="text" maxlength="40"
                    name="<?php echo $view->getNs();?>name"
@@ -50,7 +50,7 @@ then pick a property of it, how to compare it, and what to compare it to.</div>
 
     <div class="setting">
         <div class="title">Counts when</div>
-        <div class="description">Which event counts as this goal, and the values it must carry. Only properties the chosen event carries are offered: a page view has no click target, for example. A goal event with no conditions matches nothing.</div>
+        <div class="description">Which event counts as this goal, and the values it must carry. Only properties the chosen event carries are offered: a page view has no click target, for example. A goal event definition with no conditions matches nothing.</div>
         <div class="field">
             <?php
             /*
@@ -75,19 +75,19 @@ then pick a property of it, how to compare it, and what to compare it to.</div>
                     <?php
                     /*
                      * OWA's events, then the site's own: the ones its Profiles
-                     * sent lately, and this goal event's trigger if it is one of
+                     * sent lately, and this definition's trigger if it is one of
                      * them and has not been sent lately. The last choice names
                      * any other in the field beside the picker.
                      */
                     $owa_custom = (array) $view->customTriggerEvents;
 
-                    if ( \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $view->triggerEvent )
+                    if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $view->triggerEvent )
                          && ! in_array( $view->triggerEvent, $owa_custom, true ) ) {
 
                         array_unshift( $owa_custom, $view->triggerEvent );
                     }
 
-                    $owa_other = \OWA\Module\Base\Entity\GoalEvent::TRIGGER_CUSTOM;
+                    $owa_other = \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM;
                     ?>
                     <select class="owa_goalTrigger" name="<?php echo $view->getNs();?>triggerEvent"
                             aria-label="The event this goal counts">
@@ -147,7 +147,7 @@ then pick a property of it, how to compare it, and what to compare it to.</div>
                         <span class="constraintOperatorPicker">
                             <select class="operator-list" name="<?php echo $view->getNs();?>conditionOperator[]"
                                     aria-label="Comparison">
-                            <?php foreach ( \OWA\Module\Base\Entity\GoalEvent::operators() as $owa_value => $owa_label ):?>
+                            <?php foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::operators() as $owa_value => $owa_label ):?>
                                 <option value="<?php $view->out( $owa_value );?>"
                                     <?php echo ( ( $owa_cond['condition_operator'] ?? '' ) === $owa_value ) ? 'selected' : '';?>>
                                     <?php $view->out( $owa_label );?>
@@ -183,7 +183,7 @@ then pick a property of it, how to compare it, and what to compare it to.</div>
             <input class="owa_shortFormField" type="text"
                    name="<?php echo $view->getNs();?>value"
                    value="<?php $view->out( isset( $owa_ke['id'] )
-                       ? \OWA\Module\Base\Entity\GoalEvent::centsToDecimal( $owa_ke['value'] ?? 0 )
+                       ? \OWA\Module\Base\Entity\GoalEventDefinition::centsToDecimal( $owa_ke['value'] ?? 0 )
                        : '' );?>">
             <span class="validation_error"><?php $view->out( $view->validation_errors['value'] ?? '' );?></span>
         </div>
@@ -205,7 +205,7 @@ then pick a property of it, how to compare it, and what to compare it to.</div>
                  * the number looks fine.
                  *
                  * The select stays rather than the field disappearing: what a
-                 * goal event counts is part of reading it, and a screen that says
+                 * definition counts is part of reading it, and a screen that says
                  * nothing about it reads as if the question does not exist. The
                  * save clamps to this too, so an out-of-band value cannot store
                  * an intent nothing acts on.
@@ -219,12 +219,12 @@ then pick a property of it, how to compare it, and what to compare it to.</div>
 
     <div class="setting">
         <div class="title">Status</div>
-        <div class="description">An inactive goal event keeps its definition and stops
+        <div class="description">An inactive goal event definition is kept and stops
         counting.</div>
         <div class="field">
             <?php
             /*
-             * A NEW goal event defaults to Active.
+             * A NEW definition defaults to Active.
              *
              * The stored default is falsy, deliberately -- a row half-written
              * by anything other than this form must not start counting on its
@@ -241,30 +241,30 @@ then pick a property of it, how to compare it, and what to compare it to.</div>
         </div>
     </div>
 
-    <?php echo $view->createNonceFormField('base.goalEventSave');?>
+    <?php echo $view->createNonceFormField('base.goalEventDefinitionSave');?>
     <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->propertyId );?>">
-    <input type="hidden" name="<?php echo $view->getNs();?>goalEventId" value="<?php $view->out( $view->goalEventId ?? '' );?>">
-    <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventSave">
-    <input class="owa-button" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Goal Event">
+    <input type="hidden" name="<?php echo $view->getNs();?>goalEventDefinitionId" value="<?php $view->out( $view->goalEventDefinitionId ?? '' );?>">
+    <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventDefinitionSave">
+    <input class="owa-button" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Goal Event Definition">
 </form>
 
 <?php if ( ! empty( $owa_ke['id'] ) ):?>
 <div class="owa_dangerZone">
-    <div class="owa_dangerZoneTitle">Delete this goal event</div>
+    <div class="owa_dangerZoneTitle">Delete this goal event definition</div>
     <div class="owa_dangerZoneBody">
         It stops counting and is removed from reports. The events it has already counted are kept.
     </div>
     <form method="post">
-        <?php echo $view->createNonceFormField('base.goalEventDelete');?>
+        <?php echo $view->createNonceFormField('base.goalEventDefinitionDelete');?>
         <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->propertyId );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>goalEventId" value="<?php $view->out( $owa_ke['id'] );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventDelete">
+        <input type="hidden" name="<?php echo $view->getNs();?>goalEventDefinitionId" value="<?php $view->out( $owa_ke['id'] );?>">
+        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventDefinitionDelete">
         <input class="owa-button owa-button-danger" type="submit"
-               name="<?php echo $view->getNs();?>submit_btn" value="Delete Goal Event"
+               name="<?php echo $view->getNs();?>submit_btn" value="Delete Goal Event Definition"
                data-owa-confirm
-               data-owa-confirm-title="Delete this goal event?"
+               data-owa-confirm-title="Delete this goal event definition?"
                data-owa-confirm-body="&ldquo;<?php $view->out( $owa_ke['name'] ?? '' );?>&rdquo; stops counting and leaves reports. Events already counted are kept."
-               data-owa-confirm-proceed="Delete goal event">
+               data-owa-confirm-proceed="Delete goal event definition">
     </form>
 </div>
 <?php endif;?>

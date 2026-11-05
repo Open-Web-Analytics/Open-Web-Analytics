@@ -52,7 +52,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
          * perfectly complete step.
          */
         $kinds = (array) $this->getParam( 'stepKind' );
-        $goals = (array) $this->getParam( 'stepGoalEventId' );
+        $goals = (array) $this->getParam( 'stepGoalEventDefinitionId' );
         $kept  = 0;
 
         foreach ( (array) $this->getParam( 'stepPath' ) as $i => $path ) {
@@ -64,7 +64,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
             $isGoal = ( (string) ( $kinds[ $i ] ?? 'path' ) ) === 'goal_event';
 
             /*
-             * A row with no page or goal event is not a step: one someone
+             * A row with no page or definition is not a step: one someone
              * added and left alone is not a mistake. A step's name is optional
              * -- see stepsFromForm() -- so it does not make a row a step.
              */
@@ -80,7 +80,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
                 /*
                  * And it has to be one a funnel can actually count.
                  *
-                 * A goal event may test any tracking property; a funnel step is
+                 * A definition may test any tracking property; a funnel step is
                  * matched against the page, because that is what its query
                  * joins. Refusing HERE means the author is told while they can
                  * still choose another -- rather than saving something that
@@ -90,7 +90,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
                 if ( $error !== '' ) {
 
-                    $this->addValidation( 'stepGoalEvent' . $number, '', 'required',
+                    $this->addValidation( 'stepGoalEventDefinition' . $number, '', 'required',
                         array( 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'Step %s: %s' ), $number, $error ) ) );
                 }
 
@@ -145,8 +145,8 @@ class VisualizationSave extends \OWA\Core\AdminController {
     /**
      * The steps a form posted, as a definition stores them.
      *
-     * A row with neither a page nor a goal event is skipped. A step with no
-     * name is named for its page, or for its goal event: the builder asks for
+     * A row with neither a page nor a goal event definition is skipped. A step
+     * with no name is named for its page, or for its definition: the builder asks for
      * the page or the event and nothing else, and keeps a stored name only
      * while the step it names is unchanged.
      *
@@ -170,7 +170,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
             if ( $name === '' ) {
 
-                $name = $isGoal ? self::goalEventName( $goal ) : $path;
+                $name = $isGoal ? self::goalEventDefinitionName( $goal ) : $path;
             }
 
             /*
@@ -178,14 +178,14 @@ class VisualizationSave extends \OWA\Core\AdminController {
              *
              * The form posts both fields whatever the kind. Storing the unused
              * one as well would leave a step carrying a stale path beside its
-             * goal event, and the next reader could not tell which the funnel
+             * definition, and the next reader could not tell which the funnel
              * actually counts.
              */
             $steps[] = $isGoal
                 ? array(
-                    'name'          => $name,
-                    'goal_event_id' => $goal,
-                    'step_number'   => count( $steps ) + 1,
+                    'name'                     => $name,
+                    'goal_event_definition_id' => $goal,
+                    'step_number'              => count( $steps ) + 1,
                   )
                 : array(
                     'name'        => $name,
@@ -197,37 +197,37 @@ class VisualizationSave extends \OWA\Core\AdminController {
         return $steps;
     }
 
-    private static function goalEventName( $id ) {
+    private static function goalEventDefinitionName( $id ) {
 
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $goalEvent->load( $id );
+        $goalEventDefinition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+        $goalEventDefinition->load( $id );
 
-        return $goalEvent->wasPersisted() ? (string) $goalEvent->get( 'name' ) : '';
+        return $goalEventDefinition->wasPersisted() ? (string) $goalEventDefinition->get( 'name' ) : '';
     }
 
     /**
-     * Why this goal event cannot be a funnel step, or '' if it can.
+     * Why this goal event definition cannot be a funnel step, or '' if it can.
      *
      * Asked of the SAME compiler the funnel uses, not of a second list of
      * acceptable properties written here -- two lists is how a screen comes to
      * accept something the report then refuses.
      *
-     * @param  string $goalEventId
+     * @param  string $goalEventDefinitionId
      * @return string
      */
-    private function goalEventStepError( $goalEventId ) {
+    private function goalEventStepError( $goalEventDefinitionId ) {
 
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $goalEvent->load( $goalEventId );
+        $goalEventDefinition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+        $goalEventDefinition->load( $goalEventDefinitionId );
 
-        if ( ! $goalEvent->wasPersisted() ) {
+        if ( ! $goalEventDefinition->wasPersisted() ) {
 
-            return 'that goal event no longer exists.';
+            return 'that goal event definition no longer exists.';
         }
 
-        $predicate = new \OWA\Module\Base\Classes\GoalEventPredicate;
+        $predicate = new \OWA\Module\Base\Classes\GoalEventDefinitionPredicate;
 
-        if ( $predicate->compile( $goalEvent ) !== null ) {
+        if ( $predicate->compile( $goalEventDefinition ) !== null ) {
 
             return '';
         }
@@ -235,7 +235,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
         return sprintf(
             '"%s" tests %s. A funnel step is matched against the page -- its URL, its title '
             . 'or its type -- so this one cannot be counted as a stage.',
-            (string) $goalEvent->get( 'name' ), $predicate->getError() );
+            (string) $goalEventDefinition->get( 'name' ), $predicate->getError() );
     }
 
     function action() {
@@ -254,7 +254,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
             (array) $this->getParam( 'stepName' ),
             (array) $this->getParam( 'stepKind' ),
             (array) $this->getParam( 'stepPath' ),
-            (array) $this->getParam( 'stepGoalEventId' ) );
+            (array) $this->getParam( 'stepGoalEventDefinitionId' ) );
 
         $definition = array( 'steps' => $steps );
 
@@ -351,7 +351,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
          * has typed several steps into.
          */
         $names = (array) $this->getParam( 'stepName' );
-        $goals = (array) $this->getParam( 'stepGoalEventId' );
+        $goals = (array) $this->getParam( 'stepGoalEventDefinitionId' );
         $steps = array();
 
         /*
@@ -359,15 +359,15 @@ class VisualizationSave extends \OWA\Core\AdminController {
          *
          * This is the refusal path, so it is carrying back what somebody typed
          * rather than what will be stored -- a step refused for naming an
-         * unusable goal event must come back still showing that goal event, or
+         * unusable definition must come back still showing that definition, or
          * the message explains a choice the form no longer displays.
          */
         foreach ( (array) $this->getParam( 'stepPath' ) as $i => $path ) {
 
             $steps[] = array(
-                'name'          => $names[ $i ] ?? '',
-                'path'          => $path,
-                'goal_event_id' => $goals[ $i ] ?? '',
+                'name'                     => $names[ $i ] ?? '',
+                'path'                     => $path,
+                'goal_event_definition_id' => $goals[ $i ] ?? '',
             );
         }
 
@@ -380,7 +380,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
          * per-field message this save writes was being dropped and the author
          * saw only the chrome's generic "the form data contained one or more
          * errors". For a path that is survivable -- the field is right there
-         * and its problem is usually obvious. For a goal event it is not: "this
+         * and its problem is usually obvious. For a goal event step it is not: "this
          * one tests medium, which a funnel cannot count against" is the whole
          * of what the author needs, and without it there is nothing on the
          * screen to explain why a perfectly ordinary-looking choice was

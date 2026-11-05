@@ -1,8 +1,9 @@
 import { optionsFor, optionText, helpText, fill, formatResult, setText, triggerName, SEPARATOR, CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/v1/owa.goalbuilder.js';
 
 /**
- * The goal event builder's picker (owa.goalbuilder.js): what it offers for an
- * event, keeping a property already in use, and how an option reads.
+ * The goal event definition builder's picker (owa.goalbuilder.js): what it
+ * offers for an event, keeping a property already in use, and how an option
+ * reads.
  */
 
 const VOCAB = {

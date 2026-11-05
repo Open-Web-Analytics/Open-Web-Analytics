@@ -98,8 +98,8 @@ class Ingest {
      *        transaction id its site already has, keeping any event
      *        materialized beside it.
      *   100  GoalMarking::mark -- judges EVERY event in the set, each on its
-     *        own values, and appends a row named by the goal event for each
-     *        goal event met. Last, so it sees whatever was appended. A
+     *        own values, and appends a goal event, named by its definition,
+     *        for each definition met. Last, so it sees whatever was appended. A
      *        callback appending at a priority above 100 appends an event that
      *        is never judged.
      *

@@ -1,17 +1,20 @@
 import $ from 'jquery';
 
 /**
- * A goal event's condition builder: the property list follows the event.
+ * A goal event definition's condition builder: the property list follows the
+ * event.
  *
- * The page renders the properties of the SAVED event (goal_event_edit.php) and
- * carries every event's list as JSON beside it, so changing the event rebuilds
- * each condition's picker here instead of offering page-view properties for a
- * click until the form is saved and reloaded.
+ * The page renders the properties of the SAVED event
+ * (goal_event_definition_edit.php) and carries every event's list as JSON
+ * beside it, so changing the event rebuilds each condition's picker here
+ * instead of offering page-view properties for a click until the form is saved
+ * and reloaded.
  *
  * A SAVED condition's property stays when the new event does not carry it,
- * labelled "not carried by <event>" -- as GoalEventEdit::conditionProperties()
- * does on the server. Dropping it would rewrite a stored condition to whatever
- * came first in the list on the next save. A property picked on this page and
+ * labelled "not carried by <event>" -- as
+ * GoalEventDefinitionEdit::conditionProperties() does on the server. Dropping
+ * it would rewrite a stored condition to whatever came first in the list on the
+ * next save. A property picked on this page and
  * not yet saved is not kept: nothing would be lost, so the picker moves to the
  * new event's list without a warning. The saved property is on the row as
  * data-saved-property; a new or added row has none.
@@ -28,8 +31,9 @@ export const SEPARATOR = ' — ';
 
 /**
  * The trigger picker's value for "another event of yours", named in the field
- * beside it: GoalEvent::TRIGGER_CUSTOM. Its vocabulary is the one every custom
- * event shares, and an event the vocabulary has no list for is a custom one.
+ * beside it: GoalEventDefinition::TRIGGER_CUSTOM. Its vocabulary is the one
+ * every custom event shares, and an event the vocabulary has no list for is a
+ * custom one.
  */
 export const CUSTOM_TRIGGER = '(custom)';
 

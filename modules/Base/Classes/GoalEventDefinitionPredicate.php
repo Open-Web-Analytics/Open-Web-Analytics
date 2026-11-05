@@ -3,16 +3,16 @@
 namespace OWA\Module\Base\Classes;
 
 /**
- * A goal event's conditions, as a row predicate.
+ * A goal event definition's conditions, as a row predicate.
  *
  * WHY THIS EXISTS AT ALL, AND WHY IT IS NOT A LOOKUP
  *
- * A funnel step is a CONDITION on the event stream, and a goal event is a
- * condition somebody named. So "the last step is my Signup goal event" ought to
- * mean the same thing as writing that goal event's conditions into the step by
- * hand -- which is what this makes true: it compiles the conditions into the
- * same kind of predicate a path step compiles to, evaluated against the facts
- * at read time.
+ * A funnel step is a CONDITION on the event stream, and a goal event definition
+ * is a condition somebody named. So "the last step is my Signup definition"
+ * ought to mean the same thing as writing that definition's conditions into the
+ * step by hand -- which is what this makes true: it compiles the conditions
+ * into the same kind of predicate a path step compiles to, evaluated against
+ * the facts at read time.
  *
  * The tempting alternative is to read the stored conversion: owa_session
  * carries goal_N per goal, stamped at ingest. It is wrong for a funnel in three
@@ -24,13 +24,13 @@ namespace OWA\Module\Base\Classes;
  *
  *   2. IT IS SESSION-SCOPED. A funnel counted by visitor has no column to read.
  *
- *   3. IT IS STAMPED FORWARD ONLY. is_goal_event is written at ingest, so a goal
- *      event created this morning has no conversions behind it and a funnel drawn
- *      over last month would be empty -- while every fact needed to answer the
- *      question is sitting in the cube. Counting takes the cheap mechanism;
- *      ordering takes the one that can see the past.
+ *   3. IT IS STAMPED FORWARD ONLY. is_goal_event is written at ingest, so a
+ *      definition created this morning has no conversions behind it and a
+ *      funnel drawn over last month would be empty -- while every fact needed
+ *      to answer the question is sitting in the cube. Counting takes the cheap
+ *      mechanism; ordering takes the one that can see the past.
  *
- * A goal event named in a funnel step is a condition matched against the event
+ * A definition named in a funnel step is a condition matched against the event
  * stream like any other step condition; the goal flag lives on the event row, so
  * it is a row filter, not a counter being read back. Nothing in a funnel consults
  * a stored conversion total.
@@ -45,7 +45,7 @@ namespace OWA\Module\Base\Classes;
  *
  * So the check is the one Classes\GoalVocabulary already performs for the
  * builder, the save and marking: a name it does not know is REFUSED BY NAME
- * rather than dropped. Dropping one would silently WIDEN the goal event --
+ * rather than dropped. Dropping one would silently WIDEN the definition --
  * "purchase over 50 from the pricing page" would become "from the pricing page"
  * and report a bigger number that looks perfectly plausible. It is also the
  * registry check that has to stand between an author's stored name and a column
@@ -57,7 +57,7 @@ namespace OWA\Module\Base\Classes;
  *
  * @since owa 1.8.0
  */
-class GoalEventPredicate {
+class GoalEventDefinitionPredicate {
 
     /** Set when compile() returns null: which property could not be expressed. */
     private $error = '';
@@ -69,24 +69,24 @@ class GoalEventPredicate {
     }
 
     /**
-     * Compile one goal event into ( sql, params ), or null if it cannot be.
+     * Compile one definition into ( sql, params ), or null if it cannot be.
      *
-     * @param  \OWA\Module\Base\Entity\GoalEvent $goalEvent
+     * @param  \OWA\Module\Base\Entity\GoalEventDefinition $definition
      * @param  string $alias  the document table's alias in the caller's query
      * @return array|null     array( 'sql' => string, 'params' => array )
      */
-    public function compile( $goalEvent, $alias = 'd' ) {
+    public function compile( $definition, $alias = 'd' ) {
 
         $this->error = '';
 
-        $conditions = $goalEvent->loadConditions();
+        $conditions = $definition->loadConditions();
 
         /*
-         * THE TRIGGER GATES, as it does in matchesRow(): a goal event on
+         * THE TRIGGER GATES, as it does in matchesRow(): a definition on
          * page_view is not met by a click on the same page. No trigger matches
          * nothing, there as here.
          */
-        $trigger = (string) $goalEvent->get( 'trigger_event_type' );
+        $trigger = (string) $definition->get( 'trigger_event_type' );
 
         if ( $trigger === '' ) {
 
@@ -96,11 +96,11 @@ class GoalEventPredicate {
         /*
          * NO conditions matches NOTHING, which is what matchesRow() answers
          * for the same case and for the same reason: an empty rule is
-         * vacuously true, and a half-written goal event that counted every
+         * vacuously true, and a half-written definition that counted every
          * event on the site would be loudly wrong only after the fact.
          *
          * `0 = 1` rather than a refusal, because this is not an error -- it is
-         * a goal event that genuinely counts nothing, and the funnel should say
+         * a definition that genuinely counts nothing, and the funnel should say
          * zero rather than fail to draw.
          *
          * Except on a custom event, whose name is its own condition, as in
@@ -108,13 +108,13 @@ class GoalEventPredicate {
          */
         if ( ! $conditions ) {
 
-            return \OWA\Module\Base\Entity\GoalEvent::isCustomTrigger( $trigger )
+            return \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $trigger )
                 ? array( 'sql' => '( ' . $alias . '.event_type = ? )', 'params' => array( $trigger ) )
                 : array( 'sql' => '( 0 = 1 )', 'params' => array() );
         }
 
-        $any = $goalEvent->conditionMatch()
-               === \OWA\Module\Base\Entity\GoalEvent::MATCH_ANY;
+        $any = $definition->conditionMatch()
+               === \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_ANY;
 
         $parts  = array();
         $params = array();
@@ -161,9 +161,9 @@ class GoalEventPredicate {
     }
 
     /**
-     * One comparison, mirroring GoalEvent::compare().
+     * One comparison, mirroring GoalEventDefinition::compare().
      *
-     * The pair have to agree: the same goal event decides a conversion at
+     * The pair have to agree: the same definition decides a conversion at
      * ingest through compare() and a funnel stage at read time through this, so
      * a difference between them is a funnel that disagrees with the conversion
      * count beside it.
@@ -197,7 +197,7 @@ class GoalEventPredicate {
      * connection, fatalled on an undefined constant.
      *
      * That is worth fixing rather than working around in the test, because the
-     * compiler is otherwise pure -- it turns a goal event into a string and
+     * compiler is otherwise pure -- it turns a definition into a string and
      * some parameters, and needing a live database to do that is a dependency
      * it should not have.
      *
@@ -221,7 +221,7 @@ class GoalEventPredicate {
 
         self::ensureSqlVocabulary();
 
-        $E = \OWA\Module\Base\Entity\GoalEvent::class;
+        $E = \OWA\Module\Base\Entity\GoalEventDefinition::class;
 
         // NULL never reaches here: compile() requires the column to be set,
         // as matchesRow() does before it compares.
@@ -315,7 +315,7 @@ class GoalEventPredicate {
                  *
                  * Not exact-match, which is the obvious wrong guess: it would
                  * make the funnel disagree with the conversion count beside it
-                 * on exactly the goal events that are already malformed.
+                 * on exactly the definitions that are already malformed.
                  */
                 return array( 'sql' => '( 0 = 1 )', 'params' => array() );
         }

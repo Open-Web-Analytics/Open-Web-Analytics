@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = 11;
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 75;
+        $this->required_schema_version = 76;
         return parent::__construct();
     }
 
@@ -266,8 +266,8 @@ class Module extends \OWA\Core\Module {
         /*
          * THE EVENTS A BEACON IS SAVED AS. Callbacks on the one store point, in
          * priority order: the materializers append session_start and
-         * first_visit, then goal marking appends a row for each goal event an
-         * event in the set met. See Classes\Ingest.
+         * first_visit, then goal marking appends a goal event for each
+         * definition an event in the set met. See Classes\Ingest.
          *
          * Registered here because registerFilters() runs from
          * Service::initializeFramework(), which Caller's constructor calls in
@@ -442,10 +442,10 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.visualizationEdit',             'OWA\\Module\\Base\\Controller\\VisualizationEdit',           'Controller/VisualizationEdit.php' );
         $this->registerAction( 'base.visualizationFunnel',           'OWA\\Module\\Base\\Controller\\VisualizationFunnel',         'Controller/VisualizationFunnel.php' );
         $this->registerAction( 'base.visualizationPreview',          'OWA\\Module\\Base\\Controller\\VisualizationPreview',        'Controller/VisualizationPreview.php' );
-        $this->registerAction( 'base.goalEvents',                     'OWA\\Module\\Base\\Controller\\GoalEvents',                    'Controller/GoalEvents.php' );
-        $this->registerAction( 'base.goalEventEdit',                  'OWA\\Module\\Base\\Controller\\GoalEventEdit',                 'Controller/GoalEventEdit.php' );
-        $this->registerAction( 'base.goalEventSave',                  'OWA\\Module\\Base\\Controller\\GoalEventSave',                 'Controller/GoalEventSave.php' );
-        $this->registerAction( 'base.goalEventDelete',                'OWA\\Module\\Base\\Controller\\GoalEventDelete',               'Controller/GoalEventDelete.php' );
+        $this->registerAction( 'base.goalEventDefinitions',          'OWA\\Module\\Base\\Controller\\GoalEventDefinitions',        'Controller/GoalEventDefinitions.php' );
+        $this->registerAction( 'base.goalEventDefinitionEdit',       'OWA\\Module\\Base\\Controller\\GoalEventDefinitionEdit',     'Controller/GoalEventDefinitionEdit.php' );
+        $this->registerAction( 'base.goalEventDefinitionSave',       'OWA\\Module\\Base\\Controller\\GoalEventDefinitionSave',     'Controller/GoalEventDefinitionSave.php' );
+        $this->registerAction( 'base.goalEventDefinitionDelete',     'OWA\\Module\\Base\\Controller\\GoalEventDefinitionDelete',   'Controller/GoalEventDefinitionDelete.php' );
         $this->registerAction( 'base.optionsModules',                'OWA\\Module\\Base\\Controller\\OptionsModules',               'Controller/OptionsModules.php' );
         $this->registerAction( 'base.optionsReset',                  'OWA\\Module\\Base\\Controller\\OptionsReset',                 'Controller/OptionsReset.php' );
         $this->registerAction( 'base.optionsUpdate',                 'OWA\\Module\\Base\\Controller\\OptionsUpdate',                'Controller/OptionsUpdate.php' );
@@ -1300,8 +1300,8 @@ class Module extends \OWA\Core\Module {
              * entityFactory resolves by PSR-4 rather than from this list.
              */
             'setting',
-            'goal_event',
-            'goal_event_condition',
+            'goal_event_definition',
+            'goal_event_definition_condition',
                 'user',
                 'scheduled_job',
                 'notification',

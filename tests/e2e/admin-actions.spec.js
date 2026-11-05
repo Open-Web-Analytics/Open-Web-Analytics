@@ -632,7 +632,7 @@ test.describe('admin: the site control fan-out', () => {
 
     test.beforeEach(async ({ page }) => {
         await adminLogin(page);
-        await page.goto(`?owa_do=base.goalEvents&owa_siteId=${FIXTURE.siteId}`,
+        await page.goto(`?owa_do=base.goalEventDefinitions&owa_siteId=${FIXTURE.siteId}`,
             { waitUntil: 'networkidle' });
         await page.locator('#owa_siteControlSummary').click();
         await expect(page.locator('#owa_siteControlPanel')).toBeVisible();

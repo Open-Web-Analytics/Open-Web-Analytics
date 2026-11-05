@@ -9,7 +9,7 @@ namespace OWA\Module\Base\Controller;
  * differently from the funnel the author is about to save. A read, like the
  * funnel: it asks for view_reports on the Property and changes nothing.
  *
- *   steps          JSON: [{kind: path|goal_event, path, goal_event_id, name}]
+ *   steps          JSON: [{kind: path|goal_event, path, goal_event_definition_id, name}]
  *   funnelFilter   the funnel's own filter, in the stored constraints format
  *
  * Answers {data: {scope, steps: [{name, reached}]}} or {error}.
@@ -32,7 +32,7 @@ class VisualizationPreview extends VisualizationFunnel {
             'name'       => '',
             'definition' => array(
                 'steps'       => VisualizationSave::stepsFromForm(
-                    $column( 'name' ), $column( 'kind' ), $column( 'path' ), $column( 'goal_event_id' ) ),
+                    $column( 'name' ), $column( 'kind' ), $column( 'path' ), $column( 'goal_event_definition_id' ) ),
                 'constraints' => (string) $this->getParam( 'funnelFilter' ),
             ),
         );

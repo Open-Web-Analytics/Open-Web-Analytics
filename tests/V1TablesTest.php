@@ -40,7 +40,7 @@ final class V1TablesTest extends TestCase
             $this->assertNotContains(substr($table, strlen('owa_')), V1Tables::all(), $table);
         }
 
-        foreach (['event_raw', 'visitor_acquisition', 'site', 'user', 'setting', 'goal_event'] as $kept) {
+        foreach (['event_raw', 'visitor_acquisition', 'site', 'user', 'setting', 'goal_event_definition'] as $kept) {
             $this->assertNotContains($kept, V1Tables::all());
         }
     }

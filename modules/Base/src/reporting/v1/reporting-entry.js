@@ -96,8 +96,8 @@ import './owa.reportnav.js';
 import './owa.copy.js';
 // The add-a-Profile form: shows only the fields the answers make relevant.
 import './owa.profileform.js';
-// Funnel steps on the goal event screen: the constraint rows' + and X are
-// bound per row inside the report builder, so reusing the markup does not
+// Funnel steps on the goal event definition screen: the constraint rows' + and
+// X are bound per row inside the report builder, so reusing the markup does not
 // reuse the behaviour.
 import './owa.funnelbuilder.js';
 import './owa.goalbuilder.js';

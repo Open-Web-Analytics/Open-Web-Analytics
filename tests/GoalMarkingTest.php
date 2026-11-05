@@ -64,7 +64,7 @@ final class GoalMarkingTest extends TestCase
     {
         foreach ( $this->created as $id ) {
 
-            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $id );
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->delete( $id );
         }
 
         $this->created = [];
@@ -217,7 +217,7 @@ final class GoalMarkingTest extends TestCase
      * invisible to ingest. Reading the table by property_id has no opinion
      * about slots.
      */
-    public function testAGoalEventWithNoSlotNumberStillMarks(): void
+    public function testAGoalEventDefinitionWithNoSlotNumberStillMarks(): void
     {
         $goal = $this->makeGoal( array( array( 'page_path', 'exact', '/slotless' ) ) );
 
@@ -232,7 +232,7 @@ final class GoalMarkingTest extends TestCase
     }
 
     /** An inactive goal event marks nothing. */
-    public function testAnInactiveGoalEventDoesNotMark(): void
+    public function testAnInactiveGoalEventDefinitionDoesNotMark(): void
     {
         $this->makeGoal( array( array( 'page_path', 'exact', '/off' ) ), array(
             'is_active' => 0 ) );
@@ -354,7 +354,7 @@ final class GoalMarkingTest extends TestCase
      */
     private function makeGoal( array $conditions, array $overrides = array() )
     {
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
         $id     = $entity->generateId( 'goal_event:marking-probe:' . uniqid( '', true ) );
 
         $this->created[] = $id;
@@ -375,9 +375,9 @@ final class GoalMarkingTest extends TestCase
 
             $n++;
 
-            $row = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $row = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' );
             $row->set( 'id', $row->generateId( 'goal_event_condition:' . $id . ':' . $n ) );
-            $row->set( 'goal_event_id', $id );
+            $row->set( 'goal_event_definition_id', $id );
             $row->set( 'sort_order', $n );
             $row->set( 'condition_property', $c[0] );
             $row->set( 'condition_operator', $c[1] );

@@ -133,8 +133,8 @@ final class GoalCustomEventNamesTest extends TestCase
         }
 
         $this->assertSame(['newsletter_signup', 'video_play'],
-            \OWA\Module\Base\Controller\GoalEventEdit::customEventNames((string) self::PROPERTY));
+            \OWA\Module\Base\Controller\GoalEventDefinitionEdit::customEventNames((string) self::PROPERTY));
 
-        $this->assertSame([], \OWA\Module\Base\Controller\GoalEventEdit::customEventNames('not-a-property'));
+        $this->assertSame([], \OWA\Module\Base\Controller\GoalEventDefinitionEdit::customEventNames('not-a-property'));
     }
 }

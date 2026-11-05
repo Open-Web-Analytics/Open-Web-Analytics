@@ -66,9 +66,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * The cube's alias in the funnel query.
      *
      * One place, because a step predicate is compiled elsewhere -- by
-     * Classes\GoalEventPredicate for a goal step -- and is handed the alias
-     * rather than assuming it. The two disagreeing is exactly the kind of thing
-     * that produces a query that runs and answers about the wrong table.
+     * Classes\GoalEventDefinitionPredicate for a goal step -- and is handed the
+     * alias rather than assuming it. The two disagreeing is exactly the kind of
+     * thing that produces a query that runs and answers about the wrong table.
      */
     const ALIAS = 'e';
 
@@ -108,7 +108,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          *
          * They used to come from a goal's funnel config, which made a report
          * depend on admin configuration and tied goal_N_start -- an ingest-time
-         * stamp -- to a reporting artefact. A goal event says what starts it
+         * stamp -- to a reporting artefact. A goal event definition says what starts it
          * directly now, so this is free to be what it always was: an analysis
          * of a path, defined where it is looked at.
          */
@@ -204,22 +204,22 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
                 /*
                  * A GOAL EVENT STEP HAS NO PATH, and both the table and the
                  * template read one. VisualizationSave stores a step as ONE of
-                 * two shapes -- {path} or {goal_event_id} -- deliberately, so
-                 * that a step cannot carry a stale path beside the goal event
-                 * it actually counts. Reading ['path'] unconditionally was
+                 * two shapes -- {path} or {goal_event_definition_id} --
+                 * deliberately, so that a step cannot carry a stale path beside
+                 * the definition it actually counts. Reading ['path'] unconditionally was
                  * therefore an undefined-key warning on every render of a
                  * funnel that ends in a goal, which is the shape the builder
                  * encourages.
                  *
                  * Filled with what the step is measured against, so the column
                  * keeps meaning the same thing: a path for a path step, and the
-                 * goal event's name for a goal step. Empty only when the goal
+                 * definition's name for a goal step. Empty only when the goal
                  * has since been deleted -- and stepPredicate() has already
                  * refused to draw the funnel in that case.
                  */
                 if ( ! isset( $steps[ $i ]['path'] ) ) {
 
-                    $steps[ $i ]['path'] = $this->goalEventLabel( $step );
+                    $steps[ $i ]['path'] = $this->goalEventDefinitionLabel( $step );
                 }
 
                 /*
@@ -398,19 +398,19 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * @param  array $step
      * @return string
      */
-    private function goalEventLabel( array $step ) {
+    private function goalEventDefinitionLabel( array $step ) {
 
-        $id = (string) ( $step['goal_event_id'] ?? '' );
+        $id = (string) ( $step['goal_event_definition_id'] ?? '' );
 
         if ( $id === '' ) {
 
             return '';
         }
 
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $goalEvent->load( $id );
+        $goalEventDefinition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+        $goalEventDefinition->load( $id );
 
-        return $goalEvent->wasPersisted() ? (string) $goalEvent->get( 'name' ) : '';
+        return $goalEventDefinition->wasPersisted() ? (string) $goalEventDefinition->get( 'name' ) : '';
     }
 
     /**
@@ -483,45 +483,45 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
     private function stepPredicate( array $step, $alias = self::ALIAS ) {
 
-        $goalEventId = (string) ( $step['goal_event_id'] ?? '' );
+        $goalEventDefinitionId = (string) ( $step['goal_event_definition_id'] ?? '' );
 
-        if ( $goalEventId === '' ) {
+        if ( $goalEventDefinitionId === '' ) {
 
             return $this->pathPredicate( (string) ( $step['path'] ?? '' ), $alias );
         }
 
-        $goalEvent = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
-        $goalEvent->load( $goalEventId );
+        $goalEventDefinition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
+        $goalEventDefinition->load( $goalEventDefinitionId );
 
-        if ( ! $goalEvent->wasPersisted() ) {
+        if ( ! $goalEventDefinition->wasPersisted() ) {
 
             /*
              * Named, not drawn as an empty stage.
              *
-             * A goal event can be deleted while a funnel still points at it,
+             * A definition can be deleted while a funnel still points at it,
              * and a stage that silently reports zero is indistinguishable from
              * a stage nobody reached -- which is the number somebody would then
              * go and investigate.
              */
             $this->set( 'funnel_step_error', sprintf(
-                'A step of this funnel names a goal event that no longer exists. '
+                'A step of this funnel names a goal event definition that no longer exists. '
                 . 'Edit the funnel and choose another, or remove the step.' ) );
 
             return null;
         }
 
-        $predicate = new \OWA\Module\Base\Classes\GoalEventPredicate;
+        $predicate = new \OWA\Module\Base\Classes\GoalEventDefinitionPredicate;
 
-        $compiled = $predicate->compile( $goalEvent, $alias );
+        $compiled = $predicate->compile( $goalEventDefinition, $alias );
 
         if ( $compiled === null ) {
 
             $this->set( 'funnel_step_error', sprintf(
-                'The goal event "%s" tests %s, which a funnel cannot count against. '
+                'The goal event definition "%s" tests %s, which a funnel cannot count against. '
                 . 'A funnel step can test the page: its URL, its title or its type. '
                 . 'The funnel is not drawn rather than drawn with that condition ignored, '
-                . 'which would report a larger number than the goal event means.',
-                (string) $goalEvent->get( 'name' ), $predicate->getError() ) );
+                . 'which would report a larger number than the definition means.',
+                (string) $goalEventDefinition->get( 'name' ), $predicate->getError() ) );
 
             return null;
         }

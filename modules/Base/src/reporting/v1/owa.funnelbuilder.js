@@ -2,8 +2,8 @@ import $ from 'jquery';
 import { OWA } from './owa.js';
 
 /**
- * Add and remove rows in a repeatable list -- a goal event's conditions and
- * its funnel steps.
+ * Add and remove rows in a repeatable list -- a goal event definition's
+ * conditions and a funnel's steps.
  *
  * The rows are .constraintRow, the same markup the report builder uses, so they
  * arrive already styled -- including the + and X buttons. Those buttons are
@@ -23,9 +23,10 @@ import { OWA } from './owa.js';
 /*
  * Any list that opts in, not just the funnel.
  *
- * A goal event's conditions are a repeatable list for the same reason its
- * funnel is, and they were built twice before this was generalised. The list
- * declares itself with data-owa-repeatable so a third one needs no JS at all.
+ * A goal event definition's conditions are a repeatable list for the same
+ * reason a funnel's steps are, and they were built twice before this was
+ * generalised. The list declares itself with data-owa-repeatable so a third one
+ * needs no JS at all.
  */
 var LIST_SELECTOR = '[data-owa-repeatable]';
 

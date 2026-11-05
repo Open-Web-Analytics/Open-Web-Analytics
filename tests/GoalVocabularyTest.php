@@ -12,7 +12,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  *
  * There used to be three answers to "what can a condition name". The builder
  * offered every client and server PROPERTY name; marking matched against the
- * tracking event, so it read property names too; and GoalEventPredicate kept a
+ * tracking event, so it read property names too; and GoalEventDefinitionPredicate kept a
  * hand-written map of four v1 names to four v1 columns. None of the three agreed
  * with the row that actually gets written, which is why every goal declaration in
  * the field named something the row does not have.

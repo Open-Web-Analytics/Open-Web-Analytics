@@ -277,7 +277,7 @@ test.describe('visualizations', () => {
 
         // The picker offers this Property's goal events, and the fixture's is
         // one of them.
-        const goalPicker = third.locator('select[name="stepGoalEventId[]"]');
+        const goalPicker = third.locator('select[name="stepGoalEventDefinitionId[]"]');
         await expect(goalPicker).toBeVisible();
         /*
          * By the id behind the label, not by the label -- selectOption takes a
@@ -342,7 +342,7 @@ test.describe('visualizations', () => {
      * own is on page_uri, which compiles.
      */
     test('a goal event a funnel cannot count is refused when it is chosen', async ({ page }) => {
-        await gotoAction(page, 'base.goalEventEdit', `&owa_siteId=${FIXTURE.siteId}`);
+        await gotoAction(page, 'base.goalEventDefinitionEdit', `&owa_siteId=${FIXTURE.siteId}`);
 
         const name = 'E2E_Unfunnelable_' + Date.now();
 
@@ -362,7 +362,7 @@ test.describe('visualizations', () => {
 
         await Promise.all([
             page.waitForNavigation({ waitUntil: 'networkidle' }),
-            page.locator('input[value="Save Goal Event"]').click(),
+            page.locator('input[value="Save Goal Event Definition"]').click(),
         ]);
 
         // Now try to use it as a funnel step.
@@ -373,7 +373,7 @@ test.describe('visualizations', () => {
         const row = page.locator('#owa_goalEventFunnel .owa_funnelStep').first();
 
         await row.locator('select[name="stepKind[]"]').selectOption('goal_event');
-        const picker = row.locator('select[name="stepGoalEventId[]"]');
+        const picker = row.locator('select[name="stepGoalEventDefinitionId[]"]');
         const value = await picker.locator('option', { hasText: name }).first()
             .getAttribute('value');
 

@@ -4,7 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
 
-use OWA\Module\Base\Entity\GoalEvent;
+use OWA\Module\Base\Entity\GoalEventDefinition;
 
 /**
  * Goal declarations move to the v2 vocabulary, or their goal is switched off.
@@ -19,11 +19,16 @@ use OWA\Module\Base\Entity\GoalEvent;
  * The gate and this migration have to ship together: gating on a v1 trigger name
  * would refuse every row, so the goals would go from counting nothing quietly to
  * counting nothing differently.
+ *
+ * Run on the goal tables as an upgrade meets them here, under the names they had
+ * before Update076: setUp() rolls Update076 back and tearDown() applies it again.
  */
 final class Update049Test extends TestCase
 {
     /** @var \OWA\Module\Base\Update\Update049 */
     private $update;
+
+    private ?\OWA\Module\Base\Update\Update076 $renames = null;
 
     private array $created = [];
 
@@ -53,12 +58,19 @@ final class Update049Test extends TestCase
         if ( ! $this->propertyId ) {
             $this->markTestSkipped( 'needs a Profile with a Property' );
         }
+
+        $this->renames = new \OWA\Module\Base\Update\Update076();
+        $this->assertTrue( $this->renames->down(), 'the goal tables under their names before Update076' );
     }
 
     protected function tearDown(): void
     {
+        if ( $this->renames ) {
+            $this->assertTrue( $this->renames->up(), 'the goal tables renamed back' );
+        }
+
         foreach ( $this->created as $id ) {
-            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->delete( $id );
+            \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->delete( $id );
         }
 
         $this->created = [];
@@ -69,7 +81,7 @@ final class Update049Test extends TestCase
     /** The v1 trigger name becomes the v2 event name. */
     public function testTheTriggerBecomesAV2EventName(): void
     {
-        $id = $this->makeGoal( GoalEvent::TRIGGER_PAGE_VIEW, array(
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
             array( 'page_uri', 'exact', '/thanks' ) ) );
 
         $this->assertTrue( $this->update->up() );
@@ -81,7 +93,7 @@ final class Update049Test extends TestCase
     /** The v1 property names become raw column names. */
     public function testTheConditionPropertiesBecomeColumns(): void
     {
-        $id = $this->makeGoal( GoalEvent::TRIGGER_PAGE_VIEW, array(
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
             array( 'page_uri', 'begins', '/thanks' ),
             array( 'medium',   'exact', 'organic-search' ) ) );
 
@@ -99,7 +111,7 @@ final class Update049Test extends TestCase
      */
     public function testASecondRunChangesNothing(): void
     {
-        $id = $this->makeGoal( GoalEvent::TRIGGER_PAGE_VIEW, array(
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
             array( 'page_uri', 'exact', '/twice' ) ) );
 
         $this->assertTrue( $this->update->up() );
@@ -122,7 +134,7 @@ final class Update049Test extends TestCase
      */
     public function testAnUntranslatableConditionSwitchesItsGoalOff(): void
     {
-        $id = $this->makeGoal( GoalEvent::TRIGGER_PAGE_VIEW, array(
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
             array( 'page_type', 'exact', 'attachment' ) ) );
 
         $this->assertTrue( $this->update->up() );
@@ -137,7 +149,7 @@ final class Update049Test extends TestCase
     /** A goal whose conditions all translate stays on. */
     public function testAMigratedGoalStaysActive(): void
     {
-        $id = $this->makeGoal( GoalEvent::TRIGGER_PAGE_VIEW, array(
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
             array( 'page_uri', 'exact', '/still-on' ) ) );
 
         $this->assertTrue( $this->update->up() );
@@ -161,10 +173,13 @@ final class Update049Test extends TestCase
             $this->markTestSkipped( 'needs a Profile under the Property' );
         }
 
-        $id = $this->makeGoal( GoalEvent::TRIGGER_PAGE_VIEW, array(
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
             array( 'page_uri', 'begins', '/checkout/done' ) ) );
 
         $this->assertTrue( $this->update->up() );
+
+        // Then the rest of the upgrade, which renames the tables marking reads.
+        $this->assertTrue( $this->renames->up() );
 
         \OWA\Module\Base\Classes\GoalMarking::forget();
 
@@ -214,7 +229,7 @@ final class Update049Test extends TestCase
 
     private function reload( $id )
     {
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
         $entity->load( $id );
 
         return $entity;
@@ -225,7 +240,7 @@ final class Update049Test extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( \OWA\Core\CoreAPI::entityFactory(
-            'base.goal_event_condition' )->getTableName() );
+            'base.goal_event_definition_condition' )->namedBefore076()->getTableName() );
         $db->selectColumn( 'condition_property, sort_order' );
         $db->where( 'goal_event_id', $id );
         $db->orderBy( 'sort_order', OWA_SQL_ASCENDING );
@@ -241,7 +256,7 @@ final class Update049Test extends TestCase
 
     private function makeGoal( $trigger, array $conditions ): string
     {
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
         $id     = $entity->generateId( 'goal_event:049-probe:' . uniqid( '', true ) );
 
         $this->created[] = $id;
@@ -260,7 +275,7 @@ final class Update049Test extends TestCase
 
             $n++;
 
-            $row = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $row = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
             $row->set( 'id', $row->generateId( 'goal_event_condition:' . $id . ':' . $n ) );
             $row->set( 'goal_event_id', $id );
             $row->set( 'sort_order', $n );

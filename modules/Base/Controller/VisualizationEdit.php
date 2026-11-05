@@ -98,14 +98,14 @@ class VisualizationEdit extends \OWA\Core\ReportController {
             \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $type ] ?? '' );
 
         /*
-         * The goal events a step may name.
+         * The goal event definitions a step may name.
          *
-         * The SAME list the Goal Events screen shows, from the same method, so
+         * The SAME list the Goal Event Definitions screen shows, from the same method, so
          * a funnel cannot offer one the admin screen does not have. They are
          * the Property's, and so is the report this screen builds.
          *
          * Inactive ones are offered too, and labelled. A funnel counts from the
-         * facts rather than from stored conversions, so an inactive goal event
+         * facts rather than from stored conversions, so an inactive definition
          * still has a meaningful answer: it is a condition, and the condition
          * held or it did not.
          */
@@ -126,7 +126,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
          */
         $this->set( 'propertyId', $propertyId );
 
-        $this->set( 'goalEvents', \OWA\Module\Base\Controller\GoalEvents::listForProperty( $propertyId ) );
+        $this->set( 'goalEventDefinitions', \OWA\Module\Base\Controller\GoalEventDefinitions::listForProperty( $propertyId ) );
 
         /*
          * The step cap, read from the controller that enforces it so the form

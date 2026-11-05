@@ -43,6 +43,9 @@ namespace OWA\Module\Base\Update;
  * IDEMPOTENT. GoalVocabulary::columnFor() returns a column unchanged, and
  * Compat::eventName() leaves a current name alone, so a second run finds
  * nothing to do.
+ *
+ * The goal tables are read under the names they had before Update076
+ * (namedBefore076()), which is what an upgrade meets here.
  */
 class Update049 extends \OWA\Core\Update {
 
@@ -72,7 +75,7 @@ class Update049 extends \OWA\Core\Update {
      */
     protected function migrateTriggers() {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
@@ -94,7 +97,7 @@ class Update049 extends \OWA\Core\Update {
                 continue;
             }
 
-            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
             $goal->load( $row['id'] );
 
             if ( ! $goal->wasPersisted() ) {
@@ -127,7 +130,7 @@ class Update049 extends \OWA\Core\Update {
      */
     protected function migrateConditions() {
 
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $entity->getTableName() );
@@ -158,7 +161,7 @@ class Update049 extends \OWA\Core\Update {
                 continue;
             }
 
-            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' );
+            $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
             $condition->load( $row['id'] );
 
             if ( ! $condition->wasPersisted() ) {
@@ -183,7 +186,7 @@ class Update049 extends \OWA\Core\Update {
 
         foreach ( array_keys( $unmappable ) as $goal_event_id ) {
 
-            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' );
+            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
             $goal->load( $goal_event_id );
 
             if ( ! $goal->wasPersisted() || ! $goal->isActive() ) {

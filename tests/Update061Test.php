@@ -7,6 +7,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Update061: saved 1.14 custom reports into v2's names, pre-1.13 funnels into
  * visualizations, and down() putting both back.
+ *
+ * On the goal tables under the names they had before Update076, which is what
+ * an upgrade meets here: Update076 is rolled back first and applied again last.
  */
 final class Update061Test extends TestCase
 {
@@ -21,11 +24,16 @@ final class Update061Test extends TestCase
 
     private \OWA\Module\Base\Update\Update061 $update;
 
+    private ?\OWA\Module\Base\Update\Update076 $renames = null;
+
     protected function setUp(): void
     {
         if (!owa_test_db_available()) {
             $this->markTestSkipped('writes reports');
         }
+
+        $this->renames = new \OWA\Module\Base\Update\Update076();
+        $this->assertTrue($this->renames->down(), 'the goal tables under their names before Update076');
 
         $this->update = new \OWA\Module\Base\Update\Update061();
         $this->clean();
@@ -65,6 +73,10 @@ final class Update061Test extends TestCase
         if (isset($this->update)) {
             $this->clean();
             $this->update->up();
+        }
+
+        if ($this->renames) {
+            $this->assertTrue($this->renames->up(), 'the goal tables renamed back');
         }
     }
 
@@ -163,7 +175,7 @@ final class Update061Test extends TestCase
         $this->assertSame($row['creation_timestamp'], $this->row($plan['id'])['creation_timestamp'], 'not re-created');
     }
 
-    public function testAFunnelWhoseGoalEventIsMissingEndsAtItsLastPage(): void
+    public function testAFunnelWhoseGoalEventDefinitionIsMissingEndsAtItsLastPage(): void
     {
         \OWA\Core\CoreAPI::dbSingleton()->query('DELETE FROM owa_goal_event WHERE property_id = ?', [self::PROPERTY]);
 

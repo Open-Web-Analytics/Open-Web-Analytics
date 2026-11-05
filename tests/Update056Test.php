@@ -9,11 +9,17 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * The rows are written with raw SQL: the entities no longer declare either
  * column, so the fixture has to put the 1.14 shape back itself (down()).
+ *
+ * On the goal tables under the names they had before Update076, which is what
+ * an upgrade meets here: Update076 is rolled back first and applied again last.
  */
 final class Update056Test extends TestCase
 {
     /** @var \OWA\Module\Base\Update\Update056 */
     private $update;
+
+    /** @var \OWA\Module\Base\Update\Update076 */
+    private $renames;
 
     private string $goalEventId = '';
 
@@ -24,6 +30,9 @@ final class Update056Test extends TestCase
         if ( ! owa_test_db_available() ) {
             $this->markTestSkipped( 'OWA database not reachable.' );
         }
+
+        $this->renames = new \OWA\Module\Base\Update\Update076();
+        $this->assertTrue( $this->renames->down(), 'the goal tables under their names before Update076' );
 
         $this->update = new \OWA\Module\Base\Update\Update056();
 
@@ -51,6 +60,8 @@ final class Update056Test extends TestCase
 
         $db->query( sprintf( "DELETE FROM %s WHERE module = 'base' AND name = 'goal_groups' AND scope_id = 'owa-update056-probe'",
             \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName() ) );
+
+        $this->assertTrue( $this->renames->up(), 'the goal tables renamed back' );
     }
 
     /**
@@ -61,7 +72,7 @@ final class Update056Test extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $this->goalEventId = (string) \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )
+        $this->goalEventId = (string) \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )
             ->generateId( 'goal_event:update056-probe:' . uniqid( '', true ) );
 
         $db->query( sprintf(
@@ -71,7 +82,7 @@ final class Update056Test extends TestCase
 
         foreach ( array( 'match' => '', 'start' => 'start' ) as $key => $role ) {
 
-            $id = (string) \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' )
+            $id = (string) \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )
                 ->generateId( 'goal_event_condition:' . $this->goalEventId . ':' . $key );
 
             $this->conditionIds[ $key ] = $id;
@@ -123,12 +134,12 @@ final class Update056Test extends TestCase
 
     private function goalEventTable(): string
     {
-        return \OWA\Core\CoreAPI::entityFactory( 'base.goal_event' )->getTableName();
+        return \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076()->getTableName();
     }
 
     private function conditionTable(): string
     {
-        return \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_condition' )->getTableName();
+        return \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076()->getTableName();
     }
 
     private function conditionRows(): array
