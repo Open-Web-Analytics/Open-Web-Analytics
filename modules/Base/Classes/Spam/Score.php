@@ -16,8 +16,9 @@ namespace OWA\Module\Base\Classes\Spam;
  * threshold blocks nothing; the score is still computed and stored.
  *
  * WHERE IT RUNS. admit() is called by Handler\EventRawHandlers::notify() for
- * every beacon that becomes raw rows, before the set of events is built, and by
- * Domstream's processor for a recording chunk. That is after the property stage
+ * every beacon that becomes raw rows, before the set of events is built. A
+ * module whose events are processed outside tracking.* calls admit() itself.
+ * That is after the property stage
  * -- geolocation and the parsed agent are on the event -- and before anything is
  * written, in the request for a direct beacon and in the drain for a queued
  * one. The edge's exclusions (named users, excluded addresses, unknown sites)
