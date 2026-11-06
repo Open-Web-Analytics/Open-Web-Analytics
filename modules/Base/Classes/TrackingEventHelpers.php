@@ -119,6 +119,9 @@ class TrackingEventHelpers {
     /** @var array property name => its `description`, kept aside from the definitions */
     private static $property_descriptions = array();
 
+    /** @var string[] the properties declared `internal`, which the wiki leaves out */
+    private static $internal_properties = array();
+
     /**
      * Views of the registry, built once per process: it is read from a file
      * and never changes at runtime. Rebuilt per call, the v1 migration spent
@@ -207,14 +210,20 @@ class TrackingEventHelpers {
                     . json_last_error_msg() );
             }
 
-            /* 'note' documents the entry for whoever edits the file and
-               'description' for the wiki; neither is part of the definition
-               the pipeline consumes. */
+            /* 'note' documents the entry for whoever edits the file,
+               'description' for the wiki, and 'internal' keeps a property out
+               of the wiki; none is part of the definition the pipeline
+               consumes. */
             foreach ( $config as $property => $definition ) {
 
                 self::$property_descriptions[ $property ] = (string) ( $definition['description'] ?? '' );
 
-                unset( $config[ $property ]['note'], $config[ $property ]['description'] );
+                if ( ! empty( $definition['internal'] ) ) {
+
+                    self::$internal_properties[] = $property;
+                }
+
+                unset( $config[ $property ]['note'], $config[ $property ]['description'], $config[ $property ]['internal'] );
             }
 
             self::$property_config = $config;
@@ -298,6 +307,21 @@ class TrackingEventHelpers {
         self::allProperties();
 
         return self::$property_descriptions[ $property ] ?? '';
+    }
+
+    /**
+     * Whether the property's entry is `internal`: what spam detection reads off
+     * the request, say. It works like any other property; the generated wiki
+     * does not list it.
+     *
+     * @param  string $property
+     * @return bool
+     */
+    public static function isInternal( $property ) {
+
+        self::allProperties();
+
+        return in_array( $property, self::$internal_properties, true );
     }
 
     /**

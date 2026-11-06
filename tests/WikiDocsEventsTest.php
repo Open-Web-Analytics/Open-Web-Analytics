@@ -40,6 +40,12 @@ final class WikiDocsEventsTest extends TestCase
         return $config;
     }
 
+    /** The registry the wiki lists: every property not declared `internal`. */
+    private static function published(): array
+    {
+        return array_filter( self::registry(), fn ( $p ) => empty( $p['internal'] ) );
+    }
+
     private static function events(): array
     {
         $declared = include OWA_DIR . 'modules/Base/config/tracking_events.php';
@@ -82,11 +88,12 @@ final class WikiDocsEventsTest extends TestCase
 
     public function testEveryPropertyHasARowWithWhatItIsSetFrom(): void
     {
-        $md = self::generate( 'event-properties' );
+        $md       = self::generate( 'event-properties' );
+        $internal = array_keys( array_diff_key( self::registry(), self::published() ) );
 
-        foreach ( self::registry() as $name => $p ) {
+        foreach ( self::published() as $name => $p ) {
 
-            $from = (array) ( $p['from'] ?? array() );
+            $from = array_values( array_diff( (array) ( $p['from'] ?? array() ), $internal ) );
             self::assertNotEmpty( $from, "$name declares no `from`" );
 
             // For a tracker property `from` is the wire key; for the others it is
@@ -98,10 +105,10 @@ final class WikiDocsEventsTest extends TestCase
                 $md, "$name has no row, or its row does not lead with $first" );
         }
 
-        self::assertSame( count( self::registry() ), preg_match_all( '/^\| `[^`]+` \| `/m', $md ),
+        self::assertSame( count( self::published() ), preg_match_all( '/^\| `[^`]+` \| `/m', $md ),
             'one row per property, and no others' );
 
-        foreach ( self::registry() as $name => $p ) {
+        foreach ( self::published() as $name => $p ) {
 
             self::assertMatchesRegularExpression(
                 '/^\| `' . preg_quote( $name, '/' ) . '` \|.*\| ' . preg_quote( $p['description'], '/' ) . ' \|$/m',
@@ -118,7 +125,8 @@ final class WikiDocsEventsTest extends TestCase
         foreach ( TrackingEventHelpers::eventNames() as $event ) {
 
             $md       = self::generate( "event-properties-$event" );
-            $expected = TrackingEventHelpers::propertiesForEvent( $event );
+            $expected = array_values( array_filter( TrackingEventHelpers::propertiesForEvent( $event ),
+                fn ( $p ) => ! TrackingEventHelpers::isInternal( $p ) ) );
 
             preg_match_all( '/^\| `([^`]+)` \| `/m', $md, $m );
 
@@ -175,6 +183,23 @@ final class WikiDocsEventsTest extends TestCase
             foreach ( (array) $p['from'] as $key ) {
                 self::assertArrayHasKey( $key, $wire, "$name is sent as $key, which no wire rename reads" );
             }
+        }
+    }
+
+    /** What spam detection reads off the request is declared internal, and no generated section names it. */
+    public function testInternalPropertiesAreInNoGeneratedSection(): void
+    {
+        $internal = array_keys( array_diff_key( self::registry(), self::published() ) );
+
+        self::assertContains( 'request_sec_fetch_mode', $internal );
+        self::assertContains( 'received_page_location', $internal );
+
+        $md = self::generate( 'event-properties' ) . self::generate( 'event-types' )
+            . self::generate( 'event-properties-page_view' ) . self::generate( 'raw-columns' );
+
+        foreach ( $internal as $name ) {
+            self::assertTrue( TrackingEventHelpers::isInternal( $name ), "$name is not internal to the helpers" );
+            self::assertStringNotContainsString( "`$name`", $md, "$name is published" );
         }
     }
 }

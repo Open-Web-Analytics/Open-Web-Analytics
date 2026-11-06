@@ -5,8 +5,10 @@
  * One table per `set_by`, because `from` means a different thing in each: the
  * wire key the tracker sends it under, the $_SERVER keys tried in order, or the
  * properties it is derived from. The registry's `description` is the user-facing
- * text; its `note` is for whoever edits the file and is not published. Older
- * names come from the `legacy` renames in conf/beacon_compat.php.
+ * text; its `note` is for whoever edits the file and is not published. A
+ * property declared `internal` is left out, and out of the `from` lists of the
+ * properties derived from it. Older names come from the `legacy` renames in
+ * conf/beacon_compat.php.
  *
  *   event-properties          every property
  *   event-properties-<event>  only those <event> carries, from propertiesForEvent()
@@ -32,6 +34,9 @@ return function ( $event = null ) {
         $config = array_intersect_key( $config,
             array_flip( TrackingEventHelpers::propertiesForEvent( $event ) ) );
     }
+
+    $internal = array_keys( array_filter( $config, fn ( $p ) => ! empty( $p['internal'] ) ) );
+    $config   = array_diff_key( $config, array_flip( $internal ) );
 
     $compat = (array) \OWA\Core\CoreAPI::loadConf( 'beacon_compat.php', 'beacon.compat' );
     $legacy = array();
@@ -90,7 +95,7 @@ return function ( $event = null ) {
 
         foreach ( $rows as $name => $p ) {
 
-            $from = $code( (array) ( $p['from'] ?? array() ) );
+            $from = $code( array_values( array_diff( (array) ( $p['from'] ?? array() ), $internal ) ) );
 
             if ( isset( $legacy[ $name ] ) ) {
                 $from .= ' (older trackers: ' . $code( $legacy[ $name ] ) . ')';

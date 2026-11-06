@@ -446,8 +446,8 @@ class EventRaw extends \OWA\Core\Entity {
 
         $this->setProperty( $this->column( 'spam_rules', OWA_DTD_VARCHAR255 ) );
         $this->properties['spam_rules']->setDescription(
-            'The spam rules the beacon met, each with its points, highest first, such as '
-          . 'NO_CLIENT_HINTS=2.5. Empty when it met none. Not carried into the cube.' );
+            'The spam rules the beacon met, each with its points, highest first, as NAME=points. '
+          . 'Empty when it met none. Not carried into the cube.' );
 
         /*
          * Indexes, as measured in the prototype. The two composites are the
