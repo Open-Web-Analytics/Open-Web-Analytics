@@ -18,6 +18,7 @@
     },
     "request_sec_fetch_mode": {
         "description": "The Sec-Fetch-Mode header of the beacon request. Browsers that send Fetch Metadata send it on every request. Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "HTTP_SEC_FETCH_MODE"
@@ -34,6 +35,7 @@
     },
     "request_sec_fetch_site": {
         "description": "The Sec-Fetch-Site header of the beacon request. Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "HTTP_SEC_FETCH_SITE"
@@ -50,6 +52,7 @@
     },
     "request_sec_fetch_dest": {
         "description": "The Sec-Fetch-Dest header of the beacon request. Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "HTTP_SEC_FETCH_DEST"
@@ -66,6 +69,7 @@
     },
     "request_sec_ch_ua": {
         "description": "The Sec-CH-UA header of the beacon request: the brands a Chromium browser reports. Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "HTTP_SEC_CH_UA"
@@ -82,6 +86,7 @@
     },
     "request_sec_ch_ua_platform": {
         "description": "The Sec-CH-UA-Platform header of the beacon request: the operating system a Chromium browser reports. Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "HTTP_SEC_CH_UA_PLATFORM"
@@ -98,6 +103,7 @@
     },
     "request_sec_ch_ua_mobile": {
         "description": "The Sec-CH-UA-Mobile header of the beacon request: ?1 from a phone, ?0 otherwise. Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "HTTP_SEC_CH_UA_MOBILE"
@@ -114,6 +120,7 @@
     },
     "request_accept_encoding": {
         "description": "The Accept-Encoding header of the beacon request. Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "HTTP_ACCEPT_ENCODING"
@@ -130,6 +137,7 @@
     },
     "request_accept_language": {
         "description": "The Accept-Language header of the beacon request, whole. Read by spam detection and not stored; language keeps its first five characters.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "HTTP_ACCEPT_LANGUAGE"
@@ -146,6 +154,7 @@
     },
     "request_referer": {
         "description": "The Referer header of the beacon request itself, which a browser sets to the page that sent the beacon. Not the page's own referrer (HTTP_REFERER). Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "HTTP_REFERER"
@@ -162,6 +171,7 @@
     },
     "received_page_location": {
         "description": "The page URL exactly as the beacon carried it, before OWA cleans or canonicalises it. Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "p_l"
@@ -178,6 +188,7 @@
     },
     "received_referer": {
         "description": "The page's referrer exactly as the beacon carried it, before OWA cleans it. Read by spam detection and not stored.",
+        "internal": true,
         "set_by": "request",
         "from": [
             "p_r"
@@ -1724,7 +1735,7 @@
         "note": "Set by Classes\\Spam\\Score::admit(), from Handler\\EventRawHandlers::notify() before the set of events is built, so session_start, first_visit and every goal event carry the beacon's score: they copy it from the carrier (materialize()). Nothing a beacon sends can set it.\n`from` names what the shipped rules read. A rule set a module adds may read anything on the event, which a static list cannot say.\nNULL only on rows stored before it existed."
     },
     "spam_rules": {
-        "description": "The spam rules the beacon met, each with its points, highest first, such as NO_CLIENT_HINTS=2.5. Empty when it met none. Set by OWA at ingest.",
+        "description": "The spam rules the beacon met, each with its points, highest first, as NAME=points. Empty when it met none. Set by OWA at ingest.",
         "set_by": "event",
         "from": [
             "HTTP_USER_AGENT",

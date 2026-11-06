@@ -154,6 +154,11 @@ final class TrackingPropertyConfigTest extends TestCase
                     'description', $definition,
                     "$name carries its description into the registered definition; descriptions "
                     . 'are for the wiki, not for the pipeline.' );
+
+                $this->assertArrayNotHasKey(
+                    'internal', $definition,
+                    "$name carries `internal` into the registered definition; it is for the wiki, "
+                    . 'not for the pipeline.' );
             }
         }
     }

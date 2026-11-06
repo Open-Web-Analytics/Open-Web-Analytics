@@ -6,7 +6,7 @@
  *
  * Properties are read through TrackingEventHelpers, so a materialized event
  * leaves out the properties declared `"materialize": false` exactly as ingest
- * does.
+ * does. A property declared `"internal": true` is not listed.
  */
 
 use OWA\Module\Base\Classes\TrackingEventHelpers;
@@ -20,11 +20,14 @@ return function () {
         throw new RuntimeException( 'No first-class events are declared.' );
     }
 
+    $listed = fn ( $name ) => array_values( array_filter( TrackingEventHelpers::propertiesForEvent( $name ),
+        fn ( $p ) => ! TrackingEventHelpers::isInternal( $p ) ) );
+
     // What every event carries: the intersection, so it is stated once.
     $every = null;
 
     foreach ( $names as $name ) {
-        $props = TrackingEventHelpers::propertiesForEvent( $name );
+        $props = $listed( $name );
         $every = $every === null ? $props : array_values( array_intersect( $every, $props ) );
     }
 
@@ -33,7 +36,7 @@ return function () {
 
     foreach ( $names as $name ) {
 
-        $own = array_diff( TrackingEventHelpers::propertiesForEvent( $name ), $every );
+        $own = array_diff( $listed( $name ), $every );
 
         $out .= sprintf( "| `%s` | %s | %s |\n", $name,
             str_replace( '|', '\\|', trim( (string) ( $declared[ $name ]['description'] ?? '' ) ) ) ?: '—',
