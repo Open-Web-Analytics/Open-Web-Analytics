@@ -415,11 +415,16 @@ PeriodPicker.prototype = {
 
         const label = i === 0 ? 'Start date' : 'End date';
         const cls   = 'owa_periodField' + ( which === 'cmp' ? ' owa_periodFieldCmp' : '' ) + ( editable ? ( outlined ? ' is-target' : '' ) : ' is-readonly' );
-        const input = editable
-            ? '<input type="date" data-in="' + which + i + '" value="' + toIso( ymd ) + '" max="' + toIso( this.today ) + '">'
-            : '<input type="text" readonly tabindex="-1" value="' + esc( formatDate( ymd ) ) + '">';
 
-        return '<label class="' + cls + '"><span>' + label + '</span>' + input + '</label>';
+        // A preset's date is text, not a read-only input: nothing to focus,
+        // so a click on it draws no focus ring on a field that cannot change.
+        if ( ! editable ) {
+
+            return '<div class="' + cls + '"><span>' + label + '</span><span class="owa_periodValue">' + esc( formatDate( ymd ) ) + '</span></div>';
+        }
+
+        return '<label class="' + cls + '"><span>' + label + '</span>'
+            + '<input type="date" data-in="' + which + i + '" value="' + toIso( ymd ) + '" max="' + toIso( this.today ) + '"></label>';
     },
 
     fieldsHtml( target ) {

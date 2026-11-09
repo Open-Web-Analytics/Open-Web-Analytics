@@ -168,7 +168,9 @@ describe( 'the control', () => {
         make();
         click( $( '.owa_periodTrigger' ) );
 
-        expect( $$( '.owa_periodField input[readonly]' ) ).toHaveLength( 2 );
+        // Text, not inputs: nothing in a read-only field can take focus or draw a focus ring.
+        expect( $$( '.owa_periodField.is-readonly .owa_periodValue' ).map( ( v ) => v.textContent ) ).toEqual( [ 'Oct 13, 2026', 'Nov 9, 2026' ] );
+        expect( $$( '.owa_periodField.is-readonly input, .owa_periodField.is-readonly [tabindex]' ) ).toHaveLength( 0 );
         expect( $( '.owa_periodKind' ).textContent ).toBe( 'Relative period' );
         expect( $( '.owa_periodCal' ).classList.contains( 'is-readonly' ) ).toBe( true );
 
@@ -191,7 +193,7 @@ describe( 'the control', () => {
         expect( button( 'Previous year' ) ).toBeDefined();
         expect( $$( '.owa_periodField' ) ).toHaveLength( 4 );
         expect( $$( '.owa_periodKind' ).map( ( k ) => k.textContent ) ).toEqual( [ 'Relative period', 'Relative period' ] );
-        expect( $$( '.owa_periodFieldCmp input' ).map( ( i ) => i.value ) ).toEqual( [ 'Sep 15, 2026', 'Oct 12, 2026' ] );
+        expect( $$( '.owa_periodFieldCmp .owa_periodValue' ).map( ( v ) => v.textContent ) ).toEqual( [ 'Sep 15, 2026', 'Oct 12, 2026' ] );
     } );
 
     test( 'clicking days sets a custom range; a read-only calendar ignores clicks', () => {

@@ -236,7 +236,7 @@
 .owa_periodFieldCmp:focus-within { box-shadow: 0 0 0 1px var(--owa-period-gold); }
 /* A preset's dates: read-only, so no box to type in. */
 .owa_periodField.is-readonly { background: var(--owa-period-readonly); border-color: transparent; }
-.owa_periodField.is-readonly input { color: #374151; cursor: default; }
+.owa_periodField .owa_periodValue { font-size: 14px; color: #374151; font-variant-numeric: tabular-nums; cursor: default; }
 
 .owa_periodCal { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; }
 .owa_periodCalNav { display: none; }
@@ -4973,7 +4973,7 @@ li.constraintRow {
     .owa_periodChipsCmp button[aria-pressed="true"] { background: var(--owa-period-gold); border-color: var(--owa-period-gold); }
     .owa_periodPhoneCompare { display: block; }
     .owa_periodPhoneCompare .owa_periodSwitchRow { padding: 4px 0; font-size: 16px; }
-    .owa_periodField input { font-size: 16px; }
+    .owa_periodField input, .owa_periodField .owa_periodValue { font-size: 16px; }
     .owa_periodKind { font-size: 11px; }
     .owa_periodCal { grid-template-rows: auto auto auto; padding: 6px 8px 8px; border: 1px solid var(--owa-period-line); border-radius: 10px; }
     .owa_periodCalNav { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; font-size: 16px; font-weight: 600; }
