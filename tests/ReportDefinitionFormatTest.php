@@ -1123,6 +1123,33 @@ final class ReportDefinitionFormatTest extends TestCase
         }
     }
 
+    /**
+     * A compared report's widgets ask for the comparison, as they ask for the
+     * period: the report view builds its link state by hand, and it once left
+     * the comparison out, so the page said "Compare" and no widget did.
+     */
+    public function testAComparedReportsWidgetsQueryTheComparison(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $query = $this->queryFor( $this->renderedWith( self::trendCard(), array(),
+            array( 'period' => 'last_28_days', 'compare' => 'previous_year' ) ), 'cardurl' );
+
+        $this->assertSame( 'previous_year', $query['compare'] ?? null );
+        $this->assertArrayNotHasKey( 'compareStartDate', $query );
+
+        $query = $this->queryFor( $this->renderedWith( self::trendCard(), array(),
+            array( 'period' => 'last_28_days', 'compare' => 'date_range',
+                   'compareStartDate' => '20250101', 'compareEndDate' => '20250131' ) ), 'cardurl' );
+
+        $this->assertSame( array( 'date_range', '20250101', '20250131' ),
+            array( $query['compare'] ?? null, $query['compareStartDate'] ?? null, $query['compareEndDate'] ?? null ) );
+
+        $query = $this->queryFor( $this->renderedWith( self::trendCard(), array(), array( 'period' => 'last_28_days' ) ), 'cardurl' );
+
+        $this->assertArrayNotHasKey( 'compare', $query, 'no comparison asked for, none passed on' );
+    }
+
     /** A stand-in for a TimePeriod: only its two dates are read. */
     private static function period( string $start, string $end ): object
     {
