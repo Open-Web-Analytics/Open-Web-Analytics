@@ -10,7 +10,7 @@
 
 import {
     PeriodPicker, compareRange, initialState, settle, toParams, calendarTarget,
-    pickDay, formatRange, toIso, fromIso,
+    pickDay, formatRange, toIso, fromIso, parseDateInput,
 } from '../../modules/Base/src/reporting/v1/owa.periodpicker.js';
 
 const fixture = require( '../fixtures/compare-ranges.json' );
@@ -102,18 +102,38 @@ describe( 'state', () => {
         expect( calendarTarget( s, 'cmp' ) ).toBe( 'main' );
     } );
 
-    test( 'two clicks make a range, in either order', () => {
+    test( 'a click sets the start, the next the end; an end before the start is refused', () => {
         const s = { main: [ '20261001', '20261031' ] };
-        let pending = pickDay( s, 'main', '20261020', null );
-        expect( s.main ).toEqual( [ '20261020', '20261020' ] );
-        expect( pending ).toBe( 'main' );
 
-        pending = pickDay( s, 'main', '20261005', pending );
-        expect( s.main ).toEqual( [ '20261005', '20261020' ] );
-        expect( pending ).toBeNull();
+        // The start; the end stays, as it is still after it.
+        let edge = pickDay( s, 'main', '20261005', 0 );
+        expect( s.main ).toEqual( [ '20261005', '20261031' ] );
+        expect( edge ).toBe( 1 );
 
-        expect( pickDay( s, null, '20261001', null ) ).toBeNull();
+        // An end before the start changes nothing and still waits for the end.
+        edge = pickDay( s, 'main', '20261003', edge );
+        expect( s.main ).toEqual( [ '20261005', '20261031' ] );
+        expect( edge ).toBe( 1 );
+
+        edge = pickDay( s, 'main', '20261020', edge );
         expect( s.main ).toEqual( [ '20261005', '20261020' ] );
+        expect( edge ).toBe( 0 );
+
+        // A start after the end takes the end with it.
+        edge = pickDay( s, 'main', '20261025', edge );
+        expect( s.main ).toEqual( [ '20261025', '20261025' ] );
+
+        expect( pickDay( s, null, '20261001', 0 ) ).toBe( 0 );
+    } );
+
+    test( 'a typed date is read in the forms people type', () => {
+        expect( parseDateInput( 'Oct 13, 2026' ) ).toBe( '20261013' );
+        expect( parseDateInput( '10/13/2026' ) ).toBe( '20261013' );
+        expect( parseDateInput( '2026-10-13' ) ).toBe( '20261013' );
+        expect( parseDateInput( ' 20261013 ' ) ).toBe( '20261013' );
+        expect( parseDateInput( '2026-02-30' ) ).toBe( '' );
+        expect( parseDateInput( 'next tuesday' ) ).toBe( '' );
+        expect( parseDateInput( '' ) ).toBe( '' );
     } );
 
     test( 'dates convert to and from an <input type="date">', () => {
@@ -176,9 +196,10 @@ describe( 'the control', () => {
 
         click( button( 'Custom date range' ) );
 
+        // Text fields: a date input would bring the browser's own pop-up calendar.
         const inputs = $$( '.owa_periodField input' );
-        expect( inputs.map( ( i ) => i.type ) ).toEqual( [ 'date', 'date' ] );
-        expect( inputs.map( ( i ) => i.value ) ).toEqual( [ '2026-10-13', '2026-11-09' ] );
+        expect( inputs.map( ( i ) => i.type ) ).toEqual( [ 'text', 'text' ] );
+        expect( inputs.map( ( i ) => i.value ) ).toEqual( [ 'Oct 13, 2026', 'Nov 9, 2026' ] );
         expect( $( '.owa_periodKind' ).textContent ).toBe( 'Fixed period' );
         expect( $( '.owa_periodCal' ).classList.contains( 'is-readonly' ) ).toBe( false );
     } );
@@ -203,16 +224,63 @@ describe( 'the control', () => {
         expect( $( '[data-d="20261020"]' ).hasAttribute( 'data-act' ) ).toBe( false );
 
         click( button( 'Custom date range' ) );
-        click( $( '[data-d="20261020"]' ) );
-        expect( $( '.owa_periodWhy' ).textContent ).toMatch( /Click the last day/ );
-        click( $( '[data-d="20261002"]' ) );
+        const target = () => $$( '.owa_periodField.is-target' ).map( ( f ) => f.getAttribute( 'data-f' ) );
+        expect( target() ).toEqual( [ 'main0' ] );
+        expect( $( '.owa_periodWhy' ).textContent ).toMatch( /set the start date/ );
 
-        expect( $$( '.owa_periodField input' ).map( ( i ) => i.value ) ).toEqual( [ '2026-10-02', '2026-10-20' ] );
+        const day = $( '[data-d="20261002"]' );
+        click( day );
+
+        // Drawn in place: the day clicked is still the one in the page.
+        expect( $( '[data-d="20261002"]' ) ).toBe( day );
+        expect( $$( '.owa_periodField input' ).map( ( i ) => i.value ) ).toEqual( [ 'Oct 2, 2026', 'Nov 9, 2026' ] );
+        expect( target() ).toEqual( [ 'main1' ] );
+        expect( $( '.owa_periodWhy' ).textContent ).toMatch( /set the end date/ );
+        // Still white and editable: only the outline moved.
+        expect( $$( '.owa_periodField.is-readonly' ) ).toHaveLength( 0 );
+
+        // Days before the start cannot be the end.
+        expect( $( '[data-d="20261001"]' ).disabled ).toBe( true );
+        click( $( '[data-d="20261020"]' ) );
+
+        expect( $$( '.owa_periodField input' ).map( ( i ) => i.value ) ).toEqual( [ 'Oct 2, 2026', 'Oct 20, 2026' ] );
+        expect( target() ).toEqual( [ 'main0' ] );
+        expect( $( '[data-d="20261001"]' ).disabled ).toBe( false );
         expect( $( '[data-d="20261110"]' ).disabled ).toBe( true );
 
         click( $( '[data-act="apply"]' ) );
         expect( applied[0] ).toMatchObject( { period: null, startDate: '20261002', endDate: '20261020', compare: null } );
         expect( $( '.owa_periodPanel' ) ).toBeNull();
+    } );
+
+    test( 'a typed date is taken on Enter; an end before the start is refused and named', () => {
+        make();
+        click( $( '.owa_periodTrigger' ) );
+        click( button( 'Custom date range' ) );
+
+        const field = ( k ) => $( '[data-in="' + k + '"]' );
+        const type = ( k, text ) => {
+            field( k ).focus();
+            field( k ).value = text;
+            field( k ).dispatchEvent( new Event( 'change', { bubbles: true } ) );
+        };
+
+        field( 'main1' ).dispatchEvent( new FocusEvent( 'focusin', { bubbles: true } ) );
+        expect( $$( '.owa_periodField.is-target' ).map( ( f ) => f.getAttribute( 'data-f' ) ) ).toEqual( [ 'main1' ] );
+
+        type( 'main0', '10/1/2026' );
+        expect( field( 'main0' ).value ).toBe( 'Oct 1, 2026' );
+
+        type( 'main1', 'Sep 3, 2026' );
+        expect( field( 'main1' ).value ).toBe( 'Nov 9, 2026' );
+        expect( $( '.owa_periodWhy' ).textContent ).toBe( 'The end date can’t be before the start date.' );
+
+        type( 'main1', 'nonsense' );
+        expect( $( '.owa_periodWhy' ).textContent ).toMatch( /Couldn’t read “nonsense” as a date/ );
+
+        type( 'main1', '2026-10-15' );
+        click( $( '[data-act="apply"]' ) );
+        expect( applied[0] ).toMatchObject( { startDate: '20261001', endDate: '20261015' } );
     } );
 
     test( 'Apply hands back a preset and a relative comparison', () => {

@@ -226,27 +226,66 @@ export function calendarTarget( state, focus ) {
  * A click on a day. The first click starts a range on that day, the second
  * ends it, in either order.
  *
- * @return {string|null} the key still waiting for its last day, or null
+ * @param {number} edge which date the click sets: 0 the start, 1 the end
+ * @return {number} which date the next click sets
  */
-export function pickDay( state, target, ymd, pending ) {
+export function pickDay( state, target, ymd, edge ) {
 
     if ( ! target ) {
 
-        return null;
+        return edge;
     }
 
-    if ( pending !== target ) {
+    const r = state[ target ].slice();
 
-        state[ target ] = [ ymd, ymd ];
+    // The start; the end moves with it only if it would now be before it.
+    if ( edge === 0 ) {
 
-        return target;
+        r[0] = ymd;
+
+        if ( r[1] < ymd ) r[1] = ymd;
+
+        state[ target ] = r;
+
+        return 1;
     }
 
-    const first = state[ target ][0];
+    // The end, which cannot be before the start (those days are disabled
+    // while an end is being picked; this guards the state as well).
+    if ( ymd < r[0] ) {
 
-    state[ target ] = first <= ymd ? [ first, ymd ] : [ ymd, first ];
+        return 1;
+    }
 
-    return null;
+    r[1] = ymd;
+    state[ target ] = r;
+
+    return 0;
+}
+
+function validYmd( y, m, d ) {
+
+    const t = Date.UTC( y, m - 1, d );
+    const x = new Date( t );
+
+    return y >= 1990 && x.getUTCFullYear() === y && x.getUTCMonth() === m - 1 && x.getUTCDate() === d ? toYmd( t ) : '';
+}
+
+/**
+ * A typed date as yyyymmdd, or '' if it is not one. Takes 2026-10-13,
+ * 20261013, and what the browser's Date reads: "Oct 13, 2026", "10/13/2026".
+ */
+export function parseDateInput( text ) {
+
+    const t = String( text || '' ).trim();
+    let m;
+
+    if ( ( m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec( t ) ) ) return validYmd( +m[1], +m[2], +m[3] );
+    if ( ( m = /^(\d{4})(\d{2})(\d{2})$/.exec( t ) ) ) return validYmd( +m[1], +m[2], +m[3] );
+
+    const d = t ? new Date( t ) : null;
+
+    return d && ! isNaN( d ) ? validYmd( d.getFullYear(), d.getMonth() + 1, d.getDate() ) : '';
 }
 
 /**
@@ -265,7 +304,8 @@ export function PeriodPicker( el, config, onApply ) {
     this.applied  = initialState( this.config );
     this.draft    = null;
     this.focus    = 'main';
-    this.pending  = null;
+    this.edge     = 0;
+    this.badInput = '';
     this.page     = '';
     this.uid      = 'owaPeriod' + ( ++PeriodPicker.seq );
 
@@ -287,6 +327,13 @@ export function PeriodPicker( el, config, onApply ) {
         if ( e.key === 'Escape' && this.draft ) {
 
             this.close();
+        }
+
+        // Enter commits a typed date (by leaving the field, which fires change).
+        if ( e.key === 'Enter' && e.target.matches && e.target.matches( '[data-in]' ) ) {
+
+            e.preventDefault();
+            e.target.blur();
         }
     } );
 }
@@ -311,9 +358,10 @@ PeriodPicker.prototype = {
 
     open() {
 
-        this.draft   = JSON.parse( JSON.stringify( this.applied ) );
-        this.focus   = 'main';
-        this.pending = null;
+        this.draft    = JSON.parse( JSON.stringify( this.applied ) );
+        this.focus    = 'main';
+        this.edge     = 0;
+        this.badInput = '';
 
         document.addEventListener( 'mousedown', this._onDoc );
         document.body.classList.add( 'owa_periodOpen' );
@@ -323,8 +371,9 @@ PeriodPicker.prototype = {
 
     close( refocus = true ) {
 
-        this.draft   = null;
-        this.pending = null;
+        this.draft    = null;
+        this.edge     = 0;
+        this.badInput = '';
 
         document.removeEventListener( 'mousedown', this._onDoc );
         document.body.classList.remove( 'owa_periodOpen' );
@@ -420,11 +469,13 @@ PeriodPicker.prototype = {
         // so a click on it draws no focus ring on a field that cannot change.
         if ( ! editable ) {
 
-            return '<div class="' + cls + '"><span>' + label + '</span><span class="owa_periodValue">' + esc( formatDate( ymd ) ) + '</span></div>';
+            return '<div class="' + cls + '"><span>' + label + '</span><span class="owa_periodValue" data-out="' + which + i + '">' + esc( formatDate( ymd ) ) + '</span></div>';
         }
 
-        return '<label class="' + cls + '"><span>' + label + '</span>'
-            + '<input type="date" data-in="' + which + i + '" value="' + toIso( ymd ) + '" max="' + toIso( this.today ) + '"></label>';
+        // A text field, not <input type="date">: a date input brings the
+        // browser's own pop-up calendar, a second calendar beside this one.
+        return '<label class="' + cls + '" data-f="' + which + i + '"><span>' + label + '</span>'
+            + '<input type="text" autocomplete="off" spellcheck="false" data-in="' + which + i + '" value="' + esc( formatDate( ymd ) ) + '"></label>';
     },
 
     fieldsHtml( target ) {
@@ -436,13 +487,13 @@ PeriodPicker.prototype = {
 
         let h = '<div class="owa_periodFields">'
             + '<div class="owa_periodLabel"><i aria-hidden="true"></i>Date range' + kind( pEd ) + '</div>'
-            + '<div class="owa_periodFieldRow">' + this.fieldHtml( 'main', 0, d.main[0], pEd, target === 'main' ) + '<span aria-hidden="true">–</span>' + this.fieldHtml( 'main', 1, d.main[1], pEd, target === 'main' ) + '</div>'
+            + '<div class="owa_periodFieldRow">' + this.fieldHtml( 'main', 0, d.main[0], pEd, target === 'main' && this.edge === 0 ) + '<span aria-hidden="true">–</span>' + this.fieldHtml( 'main', 1, d.main[1], pEd, target === 'main' && this.edge === 1 ) + '</div>'
             + '<div class="owa_periodPhoneCompare">' + this.switchHtml( 'p' ) + ( d.cmpOn ? this.chipsHtml( true ) : '' ) + '</div>';
 
         if ( d.cmpOn ) {
 
             h += '<div class="owa_periodLabel owa_periodLabelCmp"><i aria-hidden="true"></i>Compared to' + kind( cEd ) + '</div>'
-                + '<div class="owa_periodFieldRow">' + this.fieldHtml( 'cmp', 0, d.cmp[0], cEd, target === 'cmp' ) + '<span aria-hidden="true">–</span>' + this.fieldHtml( 'cmp', 1, d.cmp[1], cEd, target === 'cmp' ) + '</div>';
+                + '<div class="owa_periodFieldRow">' + this.fieldHtml( 'cmp', 0, d.cmp[0], cEd, target === 'cmp' && this.edge === 0 ) + '<span aria-hidden="true">–</span>' + this.fieldHtml( 'cmp', 1, d.cmp[1], cEd, target === 'cmp' && this.edge === 1 ) + '</div>';
         }
 
         return h + '</div>';
@@ -495,19 +546,10 @@ PeriodPicker.prototype = {
             for ( let i = 1; i <= days; i++ ) {
 
                 const ymd = key + String( i ).padStart( 2, '0' );
-                const cl  = [];
 
-                if ( ymd >= r[0] && ymd <= r[1] ) cl.push( 'in-r' );
-                if ( ymd === r[0] ) cl.push( 'r-start' );
-                if ( ymd === r[1] ) cl.push( 'r-end' );
-                if ( c && ymd >= c[0] && ymd <= c[1] ) cl.push( 'in-c' );
-                if ( c && ymd === c[0] ) cl.push( 'c-start' );
-                if ( c && ymd === c[1] ) cl.push( 'c-end' );
-                if ( ymd === this.today ) cl.push( 'is-today' );
-
-                h += '<button type="button" class="owa_periodDay ' + cl.join( ' ' ) + '" data-d="' + ymd + '"'
+                h += '<button type="button" class="' + this.dayClass( ymd ) + '" data-d="' + ymd + '"'
                     + ( target ? ' data-act="day"' : ' tabindex="-1" aria-disabled="true"' )
-                    + ( ymd > this.today ? ' disabled' : '' )
+                    + ( this.dayDisabled( ymd, target ) ? ' disabled' : '' )
                     + ' aria-label="' + esc( formatDate( ymd ) ) + '"><span>' + i + '</span></button>';
             }
 
@@ -525,11 +567,42 @@ PeriodPicker.prototype = {
         return h + '</div></div>';
     },
 
+    /**
+     * A day that cannot be clicked: after today, or, while an end date is
+     * being picked, before the start date.
+     */
+    dayDisabled( ymd, target ) {
+
+        return ymd > this.today || ( !! target && this.edge === 1 && ymd < this.draft[ target ][0] );
+    },
+
+    /** A day's classes: where it falls in the range and the comparison. */
+    dayClass( ymd ) {
+
+        const r = this.draft.main, c = this.draft.cmpOn ? this.draft.cmp : null;
+        const cl = [ 'owa_periodDay' ];
+
+        if ( ymd >= r[0] && ymd <= r[1] ) cl.push( 'in-r' );
+        if ( ymd === r[0] ) cl.push( 'r-start' );
+        if ( ymd === r[1] ) cl.push( 'r-end' );
+        if ( c && ymd >= c[0] && ymd <= c[1] ) cl.push( 'in-c' );
+        if ( c && ymd === c[0] ) cl.push( 'c-start' );
+        if ( c && ymd === c[1] ) cl.push( 'c-end' );
+        if ( ymd === this.today ) cl.push( 'is-today' );
+
+        return cl.join( ' ' );
+    },
+
     whyHtml( target ) {
 
         const d = this.draft;
         const pEd = d.preset === 'custom';
         const cEd = d.cmpOn && d.cmpKey === 'custom';
+
+        if ( this.badInput ) {
+
+            return esc( this.badInput );
+        }
 
         let s = pEd ? '<b>Fixed dates.</b>' : '<b>' + esc( this.presetLabel( d.preset ) ) + '</b>, counted from today.';
 
@@ -538,13 +611,9 @@ PeriodPicker.prototype = {
             s += cEd ? ' Compared to <b>fixed dates</b>.' : ' Compared to <b>' + esc( this.compareLabel( d.cmpKey ).toLowerCase() ) + '</b>.';
         }
 
-        if ( this.pending ) {
+        if ( target ) {
 
-            s += ' Click the last day.';
-
-        } else if ( target ) {
-
-            s += ' Type dates or click two days.';
+            s += this.edge === 0 ? ' Click a day to set the start date.' : ' Click a day to set the end date.';
 
         } else {
 
@@ -691,9 +760,10 @@ PeriodPicker.prototype = {
                 break;
 
             case 'day':
-                this.pending = pickDay( d, calendarTarget( d, this.focus ), el.getAttribute( 'data-d' ), this.pending );
+                this.edge = pickDay( d, calendarTarget( d, this.focus ), el.getAttribute( 'data-d' ), this.edge );
+                this.badInput = '';
                 settle( d, this.presets );
-                this.render();
+                this.refresh();
                 return;
 
             case 'mprev':
@@ -708,7 +778,9 @@ PeriodPicker.prototype = {
                 return;
         }
 
-        this.pending = null;
+        // Choosing a period or comparison starts the calendar on its start date.
+        this.edge     = 0;
+        this.badInput = '';
         settle( d, this.presets );
         this.render( jump );
     },
@@ -722,31 +794,85 @@ PeriodPicker.prototype = {
             return;
         }
 
-        const k   = el.getAttribute( 'data-in' );
-        const key = k.indexOf( 'cmp' ) === 0 ? 'cmp' : 'main';
-        const i   = +k.slice( -1 );
-        const ymd = fromIso( el.value );
+        const k    = el.getAttribute( 'data-in' );
+        const key  = k.indexOf( 'cmp' ) === 0 ? 'cmp' : 'main';
+        const i    = +k.slice( -1 );
+        const ymd  = parseDateInput( el.value );
+        const r    = this.draft[ key ].slice();
+        const text = el.value.trim();
 
-        if ( ymd && ymd <= this.today ) {
+        this.focus = key;
 
-            const r = this.draft[ key ].slice();
+        if ( ! ymd ) {
+
+            this.badInput = 'Couldn’t read “' + text + '” as a date. Try a date like ' + formatDate( this.today ) + '.';
+
+        } else if ( ymd > this.today ) {
+
+            this.badInput = formatDate( ymd ) + ' is after today.';
+
+        } else if ( i === 1 && ymd < r[0] ) {
+
+            this.badInput = 'The end date can’t be before the start date.';
+
+        } else {
 
             r[ i ] = ymd;
 
-            if ( r[0] > r[1] ) {
-
-                r[ i === 0 ? 1 : 0 ] = ymd;
-            }
+            // A start after the end moves the end with it.
+            if ( r[0] > r[1] ) r[1] = ymd;
 
             this.draft[ key ] = r;
+            this.badInput = '';
+            this.edge = i === 0 ? 1 : 0;
             settle( this.draft, this.presets );
         }
 
-        this.focus   = key;
-        this.pending = null;
-        this.render( true );
+        // Back to what the field holds; a refused date is named in the footer.
+        el.value = formatDate( this.draft[ key ][ i ] );
+
+        if ( ! this.badInput && ! this.el.querySelector( '[data-d="' + ymd + '"]' ) ) {
+
+            // A date before the first month drawn: draw the calendar again.
+            this.page = ymd.substr( 0, 6 );
+            this.render( true );
+
+            return;
+        }
+
+        this.refresh();
+
+        if ( ! this.badInput ) {
+
+            this.page = ymd.substr( 0, 6 );
+
+            // Only when the day is out of sight. The change often comes from
+            // the mousedown on a day; scrolling then would move the days
+            // under the pointer and the click would land on another one.
+            if ( ! this.dayInView( ymd ) ) {
+
+                this.scrollCalendarTo( ymd );
+            }
+        }
     },
 
+    /** Is the day on screen in the calendar's scrolling box? */
+    dayInView( ymd ) {
+
+        const box = this.el.querySelector( '.owa_periodCalMonths' );
+        const day = box && box.querySelector( '[data-d="' + ymd + '"]' );
+
+        if ( ! day ) {
+
+            return false;
+        }
+
+        const b = box.getBoundingClientRect(), r = day.getBoundingClientRect();
+
+        return r.top >= b.top && r.bottom <= b.bottom;
+    },
+
+    /** Clicking into a field picks which date the next day clicked sets. */
     onFocus( e ) {
 
         const el = e.target.closest && e.target.closest( '[data-in]' );
@@ -756,18 +882,67 @@ PeriodPicker.prototype = {
             return;
         }
 
-        const key = el.getAttribute( 'data-in' ).indexOf( 'cmp' ) === 0 ? 'cmp' : 'main';
+        const k = el.getAttribute( 'data-in' );
 
-        if ( key !== this.focus ) {
+        this.focus = k.indexOf( 'cmp' ) === 0 ? 'cmp' : 'main';
+        this.edge  = +k.slice( -1 );
 
-            this.focus   = key;
-            this.pending = null;
+        this.refresh();
+    },
 
-            this.el.querySelectorAll( '.owa_periodField:not(.is-readonly)' ).forEach( ( f ) => {
+    /**
+     * Bring the open panel in line with the draft without drawing it again:
+     * the days' classes and which can be clicked, the dates in the fields,
+     * which field the next click sets, and the line beside the buttons.
+     *
+     * Not a render: a typed date is committed when its field loses focus,
+     * which is often the mousedown on a day. Redrawing then would replace
+     * that day before its click arrived, and the click would be lost.
+     */
+    refresh() {
 
-                f.classList.toggle( 'is-target', f.classList.contains( 'owa_periodFieldCmp' ) === ( key === 'cmp' ) );
-            } );
+        if ( ! this.draft ) {
+
+            return;
         }
+
+        const d      = this.draft;
+        const target = calendarTarget( d, this.focus );
+
+        this.el.querySelectorAll( '.owa_periodDay' ).forEach( ( b ) => {
+
+            const ymd = b.getAttribute( 'data-d' );
+
+            b.className = this.dayClass( ymd );
+            b.disabled  = this.dayDisabled( ymd, target );
+        } );
+
+        this.el.querySelectorAll( '[data-in]' ).forEach( ( input ) => {
+
+            const k = input.getAttribute( 'data-in' );
+
+            if ( input !== document.activeElement ) {
+
+                input.value = formatDate( d[ k.slice( 0, -1 ) ][ +k.slice( -1 ) ] );
+            }
+        } );
+
+        this.el.querySelectorAll( '[data-out]' ).forEach( ( out ) => {
+
+            const k = out.getAttribute( 'data-out' );
+
+            out.textContent = formatDate( d[ k.slice( 0, -1 ) ][ +k.slice( -1 ) ] );
+        } );
+
+        this.el.querySelectorAll( '[data-f]' ).forEach( ( f ) => {
+
+            f.classList.toggle( 'is-target', f.getAttribute( 'data-f' ) === target + this.edge );
+        } );
+
+        const why = this.el.querySelector( '.owa_periodWhy' );
+
+        if ( why ) why.innerHTML = this.whyHtml( target );
     },
 };
+
 

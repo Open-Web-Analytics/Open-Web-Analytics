@@ -230,10 +230,9 @@
 .owa_periodField span { font-size: 11px; color: var(--owa-period-muted); }
 .owa_periodField input { width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
 .owa_periodField input:focus { outline: none; }
-.owa_periodField:focus-within, .owa_periodField.is-target { border-color: var(--owa-period-blue); }
-.owa_periodField:focus-within { box-shadow: 0 0 0 1px var(--owa-period-blue); }
-.owa_periodFieldCmp:focus-within, .owa_periodFieldCmp.is-target { border-color: var(--owa-period-gold); }
-.owa_periodFieldCmp:focus-within { box-shadow: 0 0 0 1px var(--owa-period-gold); }
+/* Focused, or the field the next day clicked sets: the same outline. */
+.owa_periodField:focus-within, .owa_periodField.is-target { border-color: var(--owa-period-blue); box-shadow: 0 0 0 1px var(--owa-period-blue); }
+.owa_periodFieldCmp:focus-within, .owa_periodFieldCmp.is-target { border-color: var(--owa-period-gold); box-shadow: 0 0 0 1px var(--owa-period-gold); }
 /* A preset's dates: read-only, so no box to type in. */
 .owa_periodField.is-readonly { background: var(--owa-period-readonly); border-color: transparent; }
 .owa_periodField .owa_periodValue { font-size: 14px; color: #374151; font-variant-numeric: tabular-nums; cursor: default; }
@@ -263,7 +262,7 @@
 .owa_periodDay.is-today > span::after { content: ""; position: absolute; bottom: 2px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: currentColor; }
 .owa_periodDay.is-today:not(.r-start):not(.r-end):not(.c-start):not(.c-end) > span { color: var(--owa-period-blue); font-weight: 600; }
 .owa_periodDay:disabled { color: #b8bfc9; cursor: default; }
-.owa_periodCal:not(.is-readonly) .owa_periodDay:not(:disabled):hover > span { background: #eef2f7; }
+.owa_periodCal:not(.is-readonly) .owa_periodDay:not(:disabled):not(.r-start):not(.r-end):not(.c-start):not(.c-end):hover > span { background: #eef2f7; }   /* not over a first or last day's circle */
 .owa_periodCal.is-readonly .owa_periodDay { cursor: default; }
 
 .owa_periodFoot { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border-top: 1px solid var(--owa-period-line); }
