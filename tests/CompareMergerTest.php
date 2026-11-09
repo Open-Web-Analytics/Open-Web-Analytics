@@ -84,6 +84,36 @@ final class CompareMergerTest extends TestCase
         $this->assertSame( array( 1, 2, 3 ), array_map( fn ( $r ) => $r['pageViews']['compare_value'], $rs->resultsRows ) );
     }
 
+    /**
+     * A trend also carries the comparison's own rows on the period's dates,
+     * so a day the period has no row for keeps its comparison value.
+     */
+    public function testATrendCarriesTheComparisonsRowsOnThePeriodsDates(): void
+    {
+        $row = fn ( $date, $views ) => array( 'date' => self::cell( 'date', $date, 'dimension' ), 'pageViews' => self::cell( 'pageViews', $views ) );
+
+        // The period has nothing on Nov 3; the week before had 7.
+        $rs  = self::rs( array(), array( $row( '20261102', 10 ), $row( '20261104', 30 ) ) );
+        $crs = self::rs( array(), array( $row( '20261026', 1 ), $row( '20261027', 7 ), $row( '20261028', 3 ) ) );
+
+        CompareMerger::merge( $rs, $crs, array( 'date' ), array( '20261102', '20261104' ), array( '20261026', '20261028' ), 'previous_period_dow' );
+
+        $this->assertSame(
+            array( array( '20261102', '20261026', 1 ), array( '20261103', '20261027', 7 ), array( '20261104', '20261028', 3 ) ),
+            array_map( fn ( $r ) => array( $r['date']['value'], $r['date']['compare_period_value'], $r['pageViews']['value'] ), $rs->compare['rows'] ) );
+    }
+
+    public function testAGridCarriesNoComparisonRows(): void
+    {
+        $row = fn ( $path, $v ) => array( 'pagePath' => self::cell( 'pagePath', $path, 'dimension' ), 'pageViews' => self::cell( 'pageViews', $v ) );
+
+        $rs = self::rs( array(), array( $row( '/a', 1 ) ) );
+        CompareMerger::merge( $rs, self::rs( array(), array( $row( '/a', 2 ) ) ), array( 'pagePath' ),
+            array( '20261102', '20261104' ), array( '20261026', '20261028' ), 'previous_period' );
+
+        $this->assertArrayNotHasKey( 'rows', $rs->compare );
+    }
+
     public function testATimeAxisWithACategoryIsMatchedOnBoth(): void
     {
         $row = fn ( $hour, $medium, $v ) => array( 'dateHour' => self::cell( 'dateHour', $hour, 'dimension' ),

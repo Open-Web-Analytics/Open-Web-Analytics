@@ -76,6 +76,32 @@ class CompareMerger {
 
         $rs->aggregates = self::mergeCells( (array) $rs->aggregates, (array) ( $crs->aggregates ?? array() ) );
 
+        /*
+         * A TREND -- every dimension a time-axis one -- also gets the
+         * comparison's own rows, its dates moved onto the period's. A chart
+         * draws the comparison as a line of its own, and a day the period has
+         * no row for (nothing happened) still has a comparison value; matched
+         * onto the period's rows alone, that day's would be lost.
+         */
+        if ( $dims && ! self::restrictable( $dims ) ) {
+
+            $rs->compare['rows'] = array();
+
+            foreach ( (array) ( $crs->resultsRows ?? array() ) as $row ) {
+
+                foreach ( $dims as $d ) {
+
+                    if ( isset( $row[ $d ] ) && is_array( $row[ $d ] ) && $row[ $d ]['value'] !== null && $row[ $d ]['value'] !== '' ) {
+
+                        $row[ $d ]['compare_period_value'] = $row[ $d ]['value'];
+                        $row[ $d ]['value'] = self::shift( self::TIME_AXIS[ $d ], (string) $row[ $d ]['value'], $cmp[0], $main[0] );
+                    }
+                }
+
+                $rs->compare['rows'][] = $row;
+            }
+        }
+
         if ( empty( $rs->resultsRows ) ) {
 
             return $rs;
