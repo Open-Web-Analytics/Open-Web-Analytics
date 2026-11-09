@@ -118,6 +118,24 @@ class Report extends \OWA\Core\View {
             $link_state[ 'period' ] = $period->get();
         }
 
+        /*
+         * The comparison too, as the controller resolved it: every widget's
+         * query is built from this state, and so is every link to another
+         * report, which should open compared the same way.
+         */
+        $picker = (array) $this->get( 'period_picker' );
+
+        if ( ! empty( $picker['compare'] ) ) {
+
+            $link_state[ 'compare' ] = $picker['compare'];
+
+            if ( $picker['compare'] === 'date_range' ) {
+
+                $link_state[ 'compareStartDate' ] = $picker['compareStartDate'];
+                $link_state[ 'compareEndDate' ]   = $picker['compareEndDate'];
+            }
+        }
+
         $this->_setLinkState( $link_state );
 
         // set Js libs to be loaded

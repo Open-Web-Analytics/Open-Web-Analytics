@@ -310,6 +310,30 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $this->assertCount( count( $this->period()->getPeriodLabels() ), $config['presets'] ?? array() );
     }
 
+    /** Every widget's query carries the report's comparison, as it carries its period. */
+    public function testTheWidgetsQueriesCarryTheComparison(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; rendering loads the site list.' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $html = (string) \OWA\Core\CoreAPI::displayView( (array) ( new \OWA\Module\Base\Controller\Report(
+            array( 'reportId' => 'pages', 'period' => 'last_28_days', 'compare' => 'previous_year' ) ) )->doAction() );
+
+        preg_match_all( "/'([^']*do=reports[^']*)'/", $html, $m );
+
+        $this->assertNotEmpty( $m[1], 'the report queries no widget data' );
+
+        foreach ( $m[1] as $url ) {
+
+            $this->assertStringContainsString( 'compare=previous_year', html_entity_decode( $url ), $url );
+        }
+    }
+
     public function testAnInvalidComparisonIsRefused(): void
     {
         if ( ! owa_test_db_available() ) {
