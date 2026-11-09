@@ -46,6 +46,9 @@ OWA.areaChart = function( options ) {
          */
         totalColor: "#1874CD",
 
+        // The compared period's line: the gold the period picker gives it.
+        compareColor: "#b48a12",
+
         /*
          * How many of a dimension's values get their own line.
          *
@@ -409,7 +412,9 @@ OWA.areaChart.prototype = {
              */
             for ( var c = 0; c < dataseries.length; c++ ) {
 
-                dataseries[c].color = dataseries[c].isTotal
+                dataseries[c].color = dataseries[c].isCompare
+                    ? this.options.compareColor
+                    : dataseries[c].isTotal
                     ? this.options.totalColor
                     : this.options.colors[ ( c - 1 ) % this.options.colors.length ];
             }
@@ -670,10 +675,76 @@ OWA.areaChart.prototype = {
             } );
         }
 
+        var series  = [ this.areaSeries( resultSet.getMetricLabel( y_name ), data ) ];
+        var compare = this.compareSeries( resultSet, x_name, y_name, x_type, xs );
+
+        if ( compare ) {
+
+            series.push( compare );
+        }
+
         return {
-            series: [ this.areaSeries( resultSet.getMetricLabel( y_name ), data ) ],
+            series: series,
             points: data.length,
             x_type: x_type
+        };
+    },
+
+    /**
+     * The compared period as a line over the period's area, or null.
+     *
+     * From resultSet.compare.rows: the comparison's own rows with their
+     * dates already moved onto the period's (CompareMerger), so the two line
+     * up day for day. Each point keeps the date it really is, for the
+     * tooltip.
+     */
+    compareSeries : function ( resultSet, x_name, y_name, x_type, xs ) {
+
+        var rows = resultSet.compare && resultSet.compare.rows;
+
+        /*
+         * A comparison with no rows at all is still a line when the period's
+         * days are known: nothing happened then, which for a count is a line
+         * at zero and for a ratio is no line drawn.
+         */
+        if ( ! rows || ( ! rows.length && ! xs ) ) {
+
+            return null;
+        }
+
+        var that = this;
+        var byX  = {};
+        var when = {};
+
+        rows.forEach( function ( row ) {
+
+            if ( ! row[ x_name ] || ! row[ y_name ] ) {
+
+                return;
+            }
+
+            var x = that.formatValue( x_type, row[ x_name ].value );
+
+            byX[ x ]  = that.formatValue( row[ y_name ].data_type, row[ y_name ].value ) * 1;
+            when[ x ] = row[ x_name ].compare_period_value;
+        } );
+
+        var fill = this.zeroForMissing( resultSet, y_name ) ? 0 : null;
+        var axis = xs || Object.keys( byX ).map( Number ).sort( function ( a, b ) { return a - b; } );
+
+        var data = axis.map( function ( x ) {
+            return [ x, byX.hasOwnProperty( x ) ? byX[ x ] : fill ];
+        } );
+
+        return {
+            label: 'Compared to',
+            isCompare: true,
+            data: data,
+            // The date each point really is, by x: for the tooltip.
+            compareDates: when,
+            lines: { show: true, fill: false, lineWidth: 1.5 },
+            shadowSize: 0,
+            points: data.length === 1 ? { show: true, fill: true, radius: 3 } : undefined
         };
     },
 
@@ -1561,8 +1632,15 @@ OWA.areaChart.prototype = {
                     var x = item.datapoint[0].toFixed(0),
                         y = item.datapoint[1].toFixed(0);
                         
-                    if (that.options.xaxis.mode === 'time') {
-                    
+                    // A compared point is labelled with the date it really is.
+                    var real = item.series.compareDates && item.series.compareDates[ item.datapoint[0] ];
+
+                    if ( real ) {
+
+                        x = that.timestampFormatter( that.formatValue( that.xType, String( real ) ) );
+
+                    } else if (that.options.xaxis.mode === 'time') {
+
                         x = that.timestampFormatter(x);
                     }
                     

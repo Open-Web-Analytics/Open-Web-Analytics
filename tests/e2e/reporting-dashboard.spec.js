@@ -735,6 +735,20 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(page.locator('.owa_periodBadge')).not.toHaveCount(0);
     });
 
+    test('a compared report puts the change under each metric box and a second line on the trend', async ({ page }) => {
+        const url = new URL(page.url());
+        url.searchParams.set('owa_compare', 'previous_period');
+        await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+        const lines = page.locator('.owa_metricInfoboxCompare');
+        await expect(lines.first()).toBeVisible();
+        await expect(lines.first()).toContainText('vs ');
+        expect(await lines.count()).toEqual(await page.locator('.owa_metricInfobox').count());
+
+        // The trend's legend names the compared line beside the period's.
+        await expect(page.locator('.owa_chartLegend').first()).toContainText('Compared to');
+    });
+
     test('server-rendered images resolve to public/, not the denied module tree', async ({ page }) => {
         // Regression: makeImageLink() (owa_template.php) emits the <img> src for
         // server-rendered images (the header logo, browser/referral/document icons,
