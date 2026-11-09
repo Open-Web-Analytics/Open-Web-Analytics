@@ -144,6 +144,13 @@ class PaginatedResultSet {
      */
     var $notReady = null;
 
+    /**
+     * The comparison period, when the request asked for one (`compare`): its
+     * key, startDate, endDate and aggregates. Each metric cell then carries
+     * compare_value, compare_formatted_value and change. See CompareMerger.
+     */
+    var $compare = null;
+
     var $errors;
 
     /**
