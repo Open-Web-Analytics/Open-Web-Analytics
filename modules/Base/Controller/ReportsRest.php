@@ -55,6 +55,16 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 		$this->setValidation( 'dateRange', $range );
 
+		$compare = new \OWA\Core\Validation\CompareRange();
+
+		$compare->setValues( array(
+			'compare'          => $this->getParam('compare'),
+			'compareStartDate' => $this->getParam('compareStartDate'),
+			'compareEndDate'   => $this->getParam('compareEndDate'),
+		) );
+
+		$this->setValidation( 'compareRange', $compare );
+
 		// if no report name is specified do these validations necesary for generic resultSet.
 		if ( ! $this->get('report_name') ) {
 			

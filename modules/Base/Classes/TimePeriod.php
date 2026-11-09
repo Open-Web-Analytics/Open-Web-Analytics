@@ -53,9 +53,146 @@ class TimePeriod {
         $this->endDate = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');
     }
 
+    /**
+     * Periods the picker no longer offers.
+     *
+     * Comparison replaced them: "Same month last year" is This month compared
+     * to the previous year. A request naming one is treated as naming no
+     * period, so an old bookmark opens on the default period rather than an
+     * error page.
+     */
+    const RETIRED_PERIODS = array( 'same_day_last_week', 'same_week_last_year', 'same_month_last_year' );
+
+    /** The period used when the default_reporting_period setting names one that is not offered. */
+    const FALLBACK_PERIOD = 'last_seven_days';
+
+    /**
+     * The comparisons the picker offers, keyed by the `compare` request value.
+     * `date_range` is a comparison with its own compareStartDate and
+     * compareEndDate, the way `period=date_range` is.
+     */
+    const COMPARE_PERIODS = array(
+        'previous_period_dow' => 'Previous period (match day of week)',
+        'previous_period'     => 'Previous period',
+        'previous_year'       => 'Previous year',
+        'previous_year_dow'   => 'Previous year (match day of week)',
+    );
+
+    public static function isRetired( $period ) {
+
+        return in_array( (string) $period, self::RETIRED_PERIODS, true );
+    }
+
     function getDefaultReportingPeriod() {
 
-        return \OWA\Core\CoreAPI::getSetting( 'base', 'default_reporting_period' );
+        $period = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_reporting_period' );
+
+        return $this->isValid( $period ) && $period !== 'date_range' ? $period : self::FALLBACK_PERIOD;
+    }
+
+    /**
+     * Every value `compare` may take.
+     *
+     * @return array<int, string>
+     */
+    public static function getValidComparePeriods() {
+
+        return array_merge( array_keys( self::COMPARE_PERIODS ), array( 'date_range' ) );
+    }
+
+    /**
+     * The dates a comparison covers, for a period from $start to $end.
+     *
+     * Plain calendar arithmetic on yyyymmdd dates, done in UTC so no clock
+     * change can move a day. The picker does the same arithmetic in the
+     * browser to preview the range; tests/fixtures/compare-ranges.json holds
+     * cases both are tested against.
+     *
+     * - previous_period: the same number of days, immediately before.
+     * - previous_period_dow: moved back by the length rounded up to whole
+     *   weeks, so each day lines up with the same weekday.
+     * - previous_year: the same dates a year earlier; 29 February becomes the
+     *   28th.
+     * - previous_year_dow: 364 days earlier, the same weekdays.
+     *
+     * @param string $key   a key of COMPARE_PERIODS
+     * @param string $start yyyymmdd
+     * @param string $end   yyyymmdd
+     * @return array{0: string, 1: string}|null [start, end] as yyyymmdd, or null for an unknown key
+     */
+    public static function compareRange( $key, $start, $end ) {
+
+        $utc = new \DateTimeZone( 'UTC' );
+        $s   = \DateTimeImmutable::createFromFormat( '!Ymd', (string) $start, $utc );
+        $e   = \DateTimeImmutable::createFromFormat( '!Ymd', (string) $end, $utc );
+
+        if ( ! $s || ! $e ) {
+
+            return null;
+        }
+
+        $days = (int) $s->diff( $e )->days + 1;
+
+        switch ( $key ) {
+
+            case 'previous_period':
+                $back = $days;
+                break;
+
+            case 'previous_period_dow':
+                $back = (int) ceil( $days / 7 ) * 7;
+                break;
+
+            case 'previous_year_dow':
+                $back = 364;
+                break;
+
+            case 'previous_year':
+                $year = function ( \DateTimeImmutable $d ) use ( $utc ) {
+                    $y = (int) $d->format( 'Y' ) - 1;
+                    $m = (int) $d->format( 'n' );
+                    $last = (int) ( new \DateTimeImmutable( sprintf( '%04d-%02d-01', $y, $m ), $utc ) )->format( 't' );
+                    return sprintf( '%04d%02d%02d', $y, $m, min( (int) $d->format( 'j' ), $last ) );
+                };
+                return array( $year( $s ), $year( $e ) );
+
+            default:
+                return null;
+        }
+
+        return array(
+            $s->modify( "-$back days" )->format( 'Ymd' ),
+            $e->modify( "-$back days" )->format( 'Ymd' ),
+        );
+    }
+
+    /**
+     * The predefined periods with the dates each covers now, in the order the
+     * picker lists them. The picker shows these dates before anything is
+     * applied, and they are cut here, in the installation's timezone, so the
+     * browser never has to work out what today is.
+     *
+     * @return array<int, array{key: string, label: string, startDate: string, endDate: string}>
+     */
+    function getPresets() {
+
+        $out = array();
+
+        foreach ( $this->getPeriodLabels() as $key => $p ) {
+
+            $tp = new self();
+            $tp->now = $this->now;
+            $tp->set( $key );
+
+            $out[] = array(
+                'key'       => $key,
+                'label'     => $p['label'],
+                'startDate' => $tp->getStartDate()->getYyyymmdd(),
+                'endDate'   => $tp->getEndDate()->getYyyymmdd(),
+            );
+        }
+
+        return $out;
     }
 
     /**
@@ -156,6 +293,72 @@ class TimePeriod {
         }
 
         return '';
+    }
+
+    /**
+     * Why a request's comparison is not usable, or '' if it is (or there is none).
+     *
+     * `compare` names one of COMPARE_PERIODS, or `date_range` with
+     * compareStartDate and compareEndDate. Two compare dates and no `compare`
+     * mean date_range, as two dates and no `period` do.
+     *
+     * @param array $map request parameters
+     * @return string a user-facing reason, or ''
+     */
+    public static function getCompareError( $map ) {
+
+        $map     = (array) $map;
+        $compare = trim( (string) ( $map['compare'] ?? '' ) );
+        $start   = trim( (string) ( $map['compareStartDate'] ?? '' ) );
+        $end     = trim( (string) ( $map['compareEndDate'] ?? '' ) );
+
+        if ( $compare === '' && $start === '' && $end === '' ) {
+
+            return '';
+        }
+
+        if ( $compare !== '' && $compare !== 'date_range' ) {
+
+            return in_array( $compare, self::getValidComparePeriods(), true ) ? ''
+                : sprintf( '"%s" is not a comparison.', htmlspecialchars( $compare, ENT_QUOTES ) );
+        }
+
+        $error = self::getRangeError( array( 'period' => 'date_range', 'startDate' => $start, 'endDate' => $end ) );
+
+        return $error === '' ? '' : 'Compared to: ' . $error;
+    }
+
+    /**
+     * The comparison a request asks for, resolved against this period's dates.
+     *
+     * @param array $map request parameters
+     * @return array{compare: string, startDate: string, endDate: string}|null null when there is none
+     */
+    function getCompareFromMap( $map ) {
+
+        $map = (array) $map;
+
+        if ( self::getCompareError( $map ) !== '' ) {
+
+            return null;
+        }
+
+        $compare = trim( (string) ( $map['compare'] ?? '' ) );
+        $start   = trim( (string) ( $map['compareStartDate'] ?? '' ) );
+
+        if ( $compare === '' && $start === '' ) {
+
+            return null;
+        }
+
+        if ( $compare === '' || $compare === 'date_range' ) {
+
+            return array( 'compare' => 'date_range', 'startDate' => $start, 'endDate' => trim( (string) $map['compareEndDate'] ) );
+        }
+
+        $r = self::compareRange( $compare, $this->startDate->getYyyymmdd(), $this->endDate->getYyyymmdd() );
+
+        return $r ? array( 'compare' => $compare, 'startDate' => $r[0], 'endDate' => $r[1] ) : null;
     }
 
     function setFromMap( $map ) {
@@ -274,24 +477,19 @@ class TimePeriod {
 
         return array(
 
-                    'today'                 => array('label' => 'Today', 'covers' => 'Today'),
-                    'yesterday'             => array('label' => 'Yesterday', 'covers' => 'Yesterday'),
-                    'this_week'             => array('label' => 'This Week', 'covers' => 'Sunday to Saturday of the current week'),
-                    'this_month'             => array('label' => 'This Month', 'covers' => 'The current calendar month'),
-                    'this_year'             => array('label' => 'This Year', 'covers' => 'The current calendar year'),
-                    'last_week'              => array('label' => 'Last Week', 'covers' => 'Sunday to Saturday of the previous week'),
-                    'last_month'             => array('label' => 'Last Month', 'covers' => 'The previous calendar month'),
-                    'last_year'             => array('label' => 'Last Year', 'covers' => 'The previous calendar year'),
-                    //'last_half_hour'         => array('label' => 'The Last 30 Minutes'),
-                    //'last_hour'             => array('label' => 'Last Hour'),
-                    //'last_24_hours'         => array('label' => 'Last 24 Hours'),
-                    'last_seven_days'         => array('label' => 'Last Seven Days', 'covers' => 'Today and the six days before it'),
-                    'last_thirty_days'         => array('label' => 'Last Thirty Days', 'covers' => 'Today and the 29 days before it'),
-                    'same_day_last_week'     => array('label' => 'Same Day Last Week', 'covers' => 'The day seven days ago'),
-                    'same_week_last_year'     => array('label' => 'Same Week Last Year', 'covers' => 'The dates of the current week, one year earlier'),
-                    'same_month_last_year'     => array('label' => 'Same Month Last Year', 'covers' => 'The current month, one year earlier'),
-                    //'date_range'             => array('label' => 'Date Range')
-                    //'time_range'            => array('label' => 'Time Range')
+                    'today'            => array('label' => 'Today', 'covers' => 'Today'),
+                    'yesterday'        => array('label' => 'Yesterday', 'covers' => 'Yesterday'),
+                    'this_week'        => array('label' => 'This week (Sun – today)', 'covers' => 'Sunday of the current week to today'),
+                    'last_seven_days'  => array('label' => 'Last 7 days', 'covers' => 'Today and the six days before it'),
+                    'last_week'        => array('label' => 'Last week (Sun – Sat)', 'covers' => 'Sunday to Saturday of the previous week'),
+                    'last_28_days'     => array('label' => 'Last 28 days', 'covers' => 'Today and the 27 days before it'),
+                    'last_thirty_days' => array('label' => 'Last 30 days', 'covers' => 'Today and the 29 days before it'),
+                    'this_month'       => array('label' => 'This month', 'covers' => 'The 1st of the current month to today'),
+                    'last_month'       => array('label' => 'Last month', 'covers' => 'The previous calendar month'),
+                    'last_90_days'     => array('label' => 'Last 90 days', 'covers' => 'Today and the 89 days before it'),
+                    'quarter_to_date'  => array('label' => 'Quarter to date', 'covers' => 'The first day of the current quarter to today'),
+                    'this_year'        => array('label' => 'This year (Jan – today)', 'covers' => '1 January of the current year to today'),
+                    'last_year'        => array('label' => 'Last calendar year', 'covers' => 'The previous calendar year'),
         );
 
     }
@@ -302,23 +500,21 @@ class TimePeriod {
         $map = self::normalizeMap( $map );
 
         $time_now = \OWA\Core\Lib::time_now( $this->now );
-        $nowDate = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');
-        $nowDate->set($time_now['timestamp'], 'timestamp');
         $start = '';
         $end = '';
 
         /*
          * The start (00:00:00) or end (23:59:59) of the day $offset days from
-         * today, $years from this year. Counted in calendar days by mktime(),
+         * today. Counted in calendar days by mktime(),
          * never in seconds: a day is 23 or 25 hours long when the clocks
          * change, and 7 x 86400 seconds back from the end of today is a
          * different date on those nights.
          */
-        $day = function ( $offset, $end = false, $years = 0 ) use ( $time_now ) {
+        $day = function ( $offset, $end = false ) use ( $time_now ) {
 
             return $end
-                ? mktime( 23, 59, 59, $time_now['month'], $time_now['day'] + $offset, $time_now['year'] + $years )
-                : mktime( 0, 0, 0, $time_now['month'], $time_now['day'] + $offset, $time_now['year'] + $years );
+                ? mktime( 23, 59, 59, $time_now['month'], $time_now['day'] + $offset, $time_now['year'] )
+                : mktime( 0, 0, 0, $time_now['month'], $time_now['day'] + $offset, $time_now['year'] );
         };
 
         switch ($this->period) {
@@ -349,19 +545,39 @@ class TimePeriod {
                 $end = $day( 0, true );
                 break;
 
+            /*
+             * The "this ..." periods end TODAY, not on the last day of the
+             * week, month or year: the days after today have no data, and a
+             * trend drew them as a flat line at zero.
+             */
             case "this_week":
                 $start = $day( - $time_now['dayofweek'] );
-                $end = $day( 6 - $time_now['dayofweek'], true );
+                $end = $day( 0, true );
                 break;
 
             case "this_month":
                 $start = mktime(0, 0, 0, $time_now['month'], 1 , $time_now['year']);
-                $end = mktime(23, 59, 59, $time_now['month'], $nowDate->get('num_days_in_month'), $time_now['year']);
+                $end = $day( 0, true );
                 break;
 
             case "this_year":
                 $start = mktime(0, 0, 0, 1, 1, $time_now['year']);
-                $end = mktime(23, 59, 59, 12, 31, $time_now['year']);
+                $end = $day( 0, true );
+                break;
+
+            case "quarter_to_date":
+                $start = mktime(0, 0, 0, (int) ( floor( ( $time_now['month'] - 1 ) / 3 ) * 3 ) + 1, 1, $time_now['year']);
+                $end = $day( 0, true );
+                break;
+
+            case "last_28_days":
+                $start = $day( -27 );
+                $end = $day( 0, true );
+                break;
+
+            case "last_90_days":
+                $start = $day( -89 );
+                $end = $day( 0, true );
                 break;
 
             case "yesterday":
@@ -388,24 +604,6 @@ class TimePeriod {
                 $end = mktime(23, 59, 59, 12, 31, $year);
                 break;
 
-            case "same_day_last_week":
-                $start = $day( -7 );
-                $end = $day( -7, true );
-                break;
-            ///
-            case "same_month_last_year":
-                $year = $time_now['year'] - 1;
-                $month = $time_now['month'];
-                $start = mktime(0, 0, 0, $month, 1, $year);
-                $last = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');
-                $last->set($start, 'timestamp');
-                $end = mktime(23, 59, 59, $month, $last->get('num_days_in_month'), $year);
-                break;
-            
-            case "same_week_last_year":
-                $start = $day( - $time_now['dayofweek'], false, -1 );
-                $end = $day( 6 - $time_now['dayofweek'], true, -1 );
-                break;
 
             /*
              * "all_time" is gone. It set the start to 1 January 1969 and the

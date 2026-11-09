@@ -130,6 +130,48 @@ class ReportController extends \OWA\Core\AdminController {
             $currentUser->siteIdForProperty( $propertyId ) );
     }
 
+    /**
+     * What the period picker starts from: the presets with today's dates for
+     * each, the period being shown, and the comparison if there is one.
+     *
+     * @param \OWA\Module\Base\Classes\TimePeriod $period
+     * @param array $params request parameters
+     * @return array
+     */
+    public static function periodPickerConfig( $period, $params ) {
+
+        $presets = $period->getPresets();
+        $today   = '';
+
+        foreach ( $presets as $p ) {
+
+            if ( $p['key'] === 'today' ) {
+
+                $today = $p['endDate'];
+            }
+        }
+
+        $compare = $period->getCompareFromMap( $params );
+        $labels  = array();
+
+        foreach ( \OWA\Module\Base\Classes\TimePeriod::COMPARE_PERIODS as $key => $label ) {
+
+            $labels[] = array( 'key' => $key, 'label' => $label );
+        }
+
+        return array(
+            'today'            => $today,
+            'presets'          => $presets,
+            'compares'         => $labels,
+            'period'           => (string) $period->get(),
+            'startDate'        => $period->getStartDate()->getYyyymmdd(),
+            'endDate'          => $period->getEndDate()->getYyyymmdd(),
+            'compare'          => $compare ? $compare['compare'] : '',
+            'compareStartDate' => $compare ? $compare['startDate'] : '',
+            'compareEndDate'   => $compare ? $compare['endDate'] : '',
+        );
+    }
+
     function validate() {
 
         /*
@@ -139,6 +181,16 @@ class ReportController extends \OWA\Core\AdminController {
          *
          * Constructed rather than named: setValidation() takes the object.
          */
+        /*
+         * A retired period -- an old bookmark to "Same Month Last Year" -- is
+         * treated as no period, so the report opens on the default instead of
+         * refusing.
+         */
+        if ( \OWA\Module\Base\Classes\TimePeriod::isRetired( $this->getParam('period') ) ) {
+
+            unset( $this->params['period'] );
+        }
+
         $range = new \OWA\Core\Validation\DateRange();
 
         $range->setValues( array(
@@ -148,6 +200,16 @@ class ReportController extends \OWA\Core\AdminController {
         ) );
 
         $this->setValidation( 'dateRange', $range );
+
+        $compare = new \OWA\Core\Validation\CompareRange();
+
+        $compare->setValues( array(
+            'compare'          => $this->getParam('compare'),
+            'compareStartDate' => $this->getParam('compareStartDate'),
+            'compareEndDate'   => $this->getParam('compareEndDate'),
+        ) );
+
+        $this->setValidation( 'compareRange', $compare );
 
         $period = $this->getParam('period');
 
@@ -269,6 +331,7 @@ class ReportController extends \OWA\Core\AdminController {
         $this->setPeriod();
         // check to see if the period is a default period. TODO move this ot view where needed.
         $this->set('is_default_period', $this->period->isDefaultPeriod() );
+        $this->set( 'period_picker', self::periodPickerConfig( $this->period, $this->params ) );
         $this->setView('base.report');
         $this->setViewMethod('delegate');
 

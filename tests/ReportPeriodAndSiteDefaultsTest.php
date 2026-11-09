@@ -52,8 +52,8 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $types = array(
             'today', 'yesterday', 'this_week', 'this_month', 'this_year',
             'last_week', 'last_month', 'last_year', 'last_seven_days',
-            'last_thirty_days', 'same_day_last_week', 'same_week_last_year',
-            'same_month_last_year', 'last_24_hours', 'last_hour',
+            'last_28_days', 'last_thirty_days', 'last_90_days', 'quarter_to_date',
+            'last_24_hours', 'last_hour',
             'last_half_hour', 'date_range', 'time_range', 'day',
         );
 
@@ -254,6 +254,83 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
             $this->assertStringContainsString( $bad, (string) ( $data['error_msg'] ?? '' ),
                 'the message must name the value that was refused' );
         }
+    }
+
+    /**
+     * An old link to a retired period ("Same Month Last Year") opens the report
+     * on the default period. Comparison replaced those periods, and a bookmark
+     * should not become an error page.
+     */
+    public function testARetiredPeriodRendersTheDefaultInsteadOfRefusing(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; rendering loads the site list.' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        foreach ( \OWA\Module\Base\Classes\TimePeriod::RETIRED_PERIODS as $retired ) {
+
+            $data = (array) ( new \OWA\Module\Base\Controller\Report(
+                array( 'reportId' => 'pages', 'period' => $retired ) ) )->doAction();
+
+            $this->assertSame( 'base.report', $data['view'] ?? null, "period=$retired was refused" );
+            $this->assertSame( $this->period()->getDefaultReportingPeriod(), $data['period_picker']['period'] ?? null,
+                "period=$retired should open on the default period" );
+        }
+    }
+
+    /**
+     * The picker is drawn from the config the page hands it. The view once
+     * dropped it, the page passed {} and the picker threw on its missing
+     * dates, so no report showed a period at all.
+     */
+    public function testTheRenderedReportHandsThePickerItsConfig(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; rendering loads the site list.' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $html = (string) \OWA\Core\CoreAPI::displayView( (array) ( new \OWA\Module\Base\Controller\Report(
+            array( 'reportId' => 'pages', 'period' => 'last_28_days', 'compare' => 'previous_year' ) ) )->doAction() );
+
+        $this->assertSame( 1, preg_match( "/displayTimePeriodPicker\\('#owa_timePeriodControl', (\\{.*?\\})\\);/s", $html, $m ),
+            'the report does not start the picker' );
+
+        $config = json_decode( $m[1], true );
+
+        $this->assertSame( 'last_28_days', $config['period'] ?? null, 'the picker was handed no config' );
+        $this->assertSame( 'previous_year', $config['compare'] ?? null );
+        $this->assertCount( count( $this->period()->getPeriodLabels() ), $config['presets'] ?? array() );
+    }
+
+    public function testAnInvalidComparisonIsRefused(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; rendering loads the site list.' );
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+        $user->setRole( 'admin' );
+        $user->setAuthStatus( true );
+
+        $data = (array) ( new \OWA\Module\Base\Controller\Report(
+            array( 'reportId' => 'pages', 'compare' => 'same_month_last_year' ) ) )->doAction();
+
+        $this->assertSame( 'base.error', $data['view'] ?? null );
+        $this->assertStringContainsString( 'same_month_last_year', (string) ( $data['error_msg'] ?? '' ) );
+
+        $data = (array) ( new \OWA\Module\Base\Controller\Report(
+            array( 'reportId' => 'pages', 'compare' => 'previous_year' ) ) )->doAction();
+
+        $this->assertSame( 'base.report', $data['view'] ?? null );
+        $this->assertSame( 'previous_year', $data['period_picker']['compare'] ?? null );
     }
 
     public function testAValidPeriodAndNoPeriodBothStillRender(): void

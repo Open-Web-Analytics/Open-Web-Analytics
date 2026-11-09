@@ -94,6 +94,7 @@ class Report extends \OWA\Core\View {
         $this->body->set('currentPropertyId', $this->get('currentPropertyId'));
         // "Data as of" in the header, or null; see ReportController::pre().
         $this->body->set('report_as_of', $this->get('report_as_of') ?: null);
+        $this->body->set('period_picker', $this->get('period_picker') ?: null);
 
 
         // load body template

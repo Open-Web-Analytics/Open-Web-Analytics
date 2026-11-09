@@ -2,63 +2,7 @@
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
-
-// The report period-picker's jqote2 markup. This was formerly fetched over HTTP from
-// modules/base/templates/filter_period.php -- a file that contained NO PHP, just this
-// pure client-side template, given a .php extension by convention. Inlining it here
-// drops the per-report round-trip AND removes modules_url's last runtime code-fetch
-// (it is now image-only), so the web-access allowlist needs no templates/ exception.
-const FILTER_PERIOD_TMPL =
-`<div class="timePeriodControlContainer">
-
-    <table id="owa_reportPeriodLabelContainer" cellpadding="0" cellspacing="0"
-           role="button" tabindex="0" aria-controls="owa_reportPeriodFiltersContainer" aria-expanded="false">
-        <TR>
-            <TD class="owa_reportPeriodIcon"><i class="far fa-calendar-alt" aria-hidden="true"></i></TD>
-            <TD class="owa_reportPeriodLabelText">
-
-                <span>
-                    <*=this.datelabel *>
-                </span>
-            </TD>
-
-            <TD class="owa_reportRevealControl"><i class="fas fa-chevron-down" aria-hidden="true"></i></TD>
-        </TR>
-    </table>
-
-    <table id="owa_reportPeriodFiltersContainer" style="display:none;" cellpadding="0" cellspacing="0">
-        <TR>
-            <TH colspan="3">
-                Enter a Date Range:
-            </TH>
-        </TR>
-        <TR>
-            <TD class="picker" valign="top">
-                <div>Start: <input type="text" id="owa_report-datepicker-start-display" size="10"></div>
-                <div id="owa_report-datepicker-start"></div>
-            <TD class="picker" valign="top">
-                <div>End: <input type="text" id="owa_report-datepicker-end-display"  size="10"></div>
-                <div id="owa_report-datepicker-end"></div>
-            </TD>
-            <TD valign="top" class="owa_reportPeriodPresets">
-                Predefined Periods:<BR>
-
-                <SELECT id="owa_reportPeriodFilter" name="owa_reportPeriodFilter">
-                    <OPTION>Select...</OPTION>
-                    <* for (period in this.periods) { *>
-                    <OPTION VALUE="<*= period *>" <* if ( period === this.selectedPeriod ) { *>selected<* } *> >
-                        <*= this.periods[period] *>
-                    </OPTION>
-                    <* } *>
-                </SELECT>
-                <P><INPUT class="submit-button" type="submit" id="owa_reportPeriodFilterSubmit" name="" value="Change Date Range"></P>
-            </TD>
-        </TR>
-        <TR>
-            <TD colspan="3"></TD>
-        </TR>
-    </table>
-</div>`;
+import { PeriodPicker } from './owa.periodpicker.js';
 
 OWA.report = function(dom_id, options) {
     
@@ -157,41 +101,47 @@ OWA.report.prototype = {
     
     config: '',
     
-    displayTimePeriodPicker : function(dom_id) {
+    /**
+     * The period picker (owa.periodpicker.js), given the config
+     * ReportController::periodPickerConfig() builds. Apply sets the period and
+     * comparison parameters it hands back and reloads the report.
+     */
+    displayTimePeriodPicker : function( dom_id, config ) {
+
         var that = this;
-        dom_id = dom_id || '#owa_reportPeriodLabelContainer';
-        
-        if ( ! this.timePeriodControl ) {
-        
-            this.timePeriodControl = new OWA.report.timePeriodControl(
-                    dom_id, 
-                    {
-                        startDate: this.getStartDate(), 
-                        endDate: this.getEndDate(), 
-                        selectedPeriod: this.getProperty('period') 
-                    } 
-            );
-            
-            //bind event listener for when a new date is set
-            jQuery(dom_id).bind( 
-                'owa_new_time_period_set',
-                function(event, startDate, endDate) { 
-                    
-                    that.setDateRange(startDate, endDate);
-                    that.reload(); 
-                } 
-            );
-            
-            // bind event listener for when new fixed period is set
-            // this will go away once data picker sets it's own fixed
-            // time periods instead of relying on the server to do it.
-            jQuery(dom_id).bind( 
-                'owa_new_fixed_time_period_set',
-                function(event, period) { 
-                    
-                    that.reportSetTimePeriod(period);
-                } 
-            );    
+        var el = document.querySelector( dom_id || '#owa_timePeriodControl' );
+
+        // No dates means no config: drawing a picker of nothing would throw.
+        if ( ! el || this.timePeriodControl || ! config || ! config.startDate || ! config.endDate ) {
+
+            return;
+        }
+
+        this.timePeriodControl = new PeriodPicker( el, config || {}, function( params ) {
+
+            that.applyPeriodParams( params );
+            that.reload();
+        } );
+    },
+
+    /** Set (or, for null, remove) each period and comparison parameter. */
+    applyPeriodParams : function( params ) {
+
+        for ( var k in params ) {
+
+            if ( ! params.hasOwnProperty( k ) ) {
+
+                continue;
+            }
+
+            if ( params[ k ] === null || params[ k ] === '' ) {
+
+                this.removeProperty( k );
+
+            } else {
+
+                this.setProperty( k, params[ k ] );
+            }
         }
     },
     
@@ -422,334 +372,6 @@ OWA.report.formatAsOf = function( asOf, timezone ) {
         delete opts.timeZone;
 
         return new Intl.DateTimeFormat( undefined, opts ).format( new Date( asOf * 1000 ) );
-    }
-};
-
-OWA.report.timePeriodControl = function( dom_id, options ) {
-    
-    var options = options || {};
-    this.dom_id = dom_id || 'owa_reportPeriodControl';
-    this.startDate = '';
-    this.endDate = '';
-    this.label = '';
-    
-    if (options.hasOwnProperty('startDate')) {
-        this.setStartDate( options.startDate );
-    }
-    
-    if (options.hasOwnProperty('endDate')) {
-        this.setEndDate( options.endDate );
-    }
-    
-    if (options.hasOwnProperty('selectedPeriod')) {
-        this.setSelectedPeriod(options.selectedPeriod);
-    }
-    
-    this.label = OWA.util.sprintf(
-                        '%s - %s', 
-                        this.formatYyyymmdd(this.getStartDate(), '/'), 
-                        this.formatYyyymmdd(this.getEndDate(), '/')
-                );
-
-    this.setupDomElements();
-    
-};
-
-OWA.report.timePeriodControl.prototype = {
-    
-    fixedPeriods: {
-        
-        today:                    'Today',
-        yesterday:                 'Yesterday',
-        this_week:                 'This Week',
-        this_month:             'This Month',
-        this_year:                 'This Year',
-        last_week:                 'Last Week',
-        last_month:                'Last Month',
-        last_year:                'Last Year',
-        last_seven_days:        'Last Seven Days',
-        last_thirty_days:        'Last Thirty Days',
-        same_day_last_week:        'Same Day Last Week',
-        same_week_last_year:     'Same Week Last Year',
-        same_month_last_year:    'Same Month Last Year'
-    },
-    
-    setSelectedPeriod : function( period ) {
-        
-        this.selectedPeriod = period;
-    },
-    
-    /**
-     * yyyymmdd as the date string the CALENDARS parse.
-     *
-     * The year is FOUR digits, because the datepickers are created with
-     * `dateFormat: 'mm-dd-yy'` and in jQuery UI's date format `yy` is a
-     * four-digit year -- `y` is the two-digit one. This emitted two ('07-27-26'
-     * for 20260727), so jQuery UI threw "Missing number at position 6" parsing
-     * the defaultDate it was handed, the calendars never received the period's
-     * dates, and they showed something unrelated to the period named beside
-     * them.
-     *
-     * The label reads from this too, so a date range now shows its full year.
-     */
-    formatYyyymmdd : function( yyyymmdd, sep ) {
-
-        sep = sep || '-';
-
-        var year = yyyymmdd.substr(0,4);
-        var month = yyyymmdd.substr(4,2);
-        var day = yyyymmdd.substr(6,2);
-
-        return month + sep + day + sep + year;
-    },
-    
-    /**
-     * yyyymmdd as a Date, the inverse of what the submit handler emits.
-     *
-     * 'yymmdd' is jQuery UI's four-digit-year-month-day, which is exactly the
-     * shape the server speaks -- the same format the submit handler formats
-     * back into. Returns null for an absent or unparseable value rather than
-     * throwing, because a missing date must not take the whole picker down.
-     */
-    /**
-     * Put the predefined-period menu back to its placeholder.
-     *
-     * Choosing specific dates means the report is no longer on a named period,
-     * so leaving "Last Thirty Days" selected in the menu says something untrue
-     * -- and it is the control the reader looks at to know what they are seeing.
-     *
-     * The placeholder is the first option and carries no value of its own, so it
-     * is selected by INDEX rather than by a value that does not exist.
-     */
-    clearFixedPeriodSelection : function() {
-
-        jQuery( '#owa_reportPeriodFilter' ).prop( 'selectedIndex', 0 );
-    },
-
-    parseYyyymmdd : function( yyyymmdd ) {
-
-        if ( ! yyyymmdd ) {
-
-            return null;
-        }
-
-        try {
-
-            return jQuery.datepicker.parseDate( 'yymmdd', String( yyyymmdd ) );
-
-        } catch ( e ) {
-
-            return null;
-        }
-    },
-
-    setStartDate : function( yyyymmdd ) {
-        
-        this.startDate = yyyymmdd;
-    },
-    
-    setEndDate : function( yyyymmdd ) {
-        
-        this.endDate = yyyymmdd;
-    },
-    
-    getStartDate : function() {
-        
-        return this.startDate;
-    },
-    
-    getEndDate : function() {
-        
-        return this.endDate;
-    },
-    
-    isValidDateString : function(str) {
-        
-        if (str.length != 10 ) {
-            return false;
-        }
-        
-        if (str.substr(2,1) != '-' || str.substr( 5,1) != '-' ) {
-            return false;
-        }
-
-        return true;
-    },
-    
-    setupDomElements : function() {
-        
-        //closure
-        var that = this;
-        
-        // set template data obj
-        var data = {
-            periods:         this.fixedPeriods, 
-            datelabel:         this.label,
-            selectedPeriod: this.selectedPeriod
-        };
-        // compile the inlined template directly into the dom (no server fetch).
-        {
-            // inject into dom
-            jQuery(that.dom_id).jqoteapp(FILTER_PERIOD_TMPL, data, '*');
-    
-            // register show/hide controls event handler
-            // Enter and space as well as a click: the control is a button.
-            jQuery("#owa_reportPeriodLabelContainer").on('click keydown', function( e ) {
-
-                if ( e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ' ) {
-                    return;
-                }
-
-                e.preventDefault();
-
-                var open = ! jQuery('#owa_reportPeriodFiltersContainer').toggle().is(':hidden');
-
-                jQuery(this).toggleClass('is-open', open).attr('aria-expanded', open ? 'true' : 'false');
-            });
-            
-            // bind handler to change start date picker when user enters date by hand.
-            jQuery('#owa_report-datepicker-start-display').change( function() {
-                var value = jQuery(this).val();
-                if ( that.isValidDateString( value ) ) {
-                    // set date picker
-                    jQuery("#owa_report-datepicker-start").datepicker( "setDate", value );
-                    // simulate triggering the onSelect event by calling the
-                    // handler directly.
-                    var func = jQuery("#owa_report-datepicker-start").datepicker("option","onSelect");
-                    func(value);
-                } else {
-                    alert('Date must be in mm-dd-yyyy format.');
-                    // wipe value
-                    jQuery('#owa_report-datepicker-start-display').val('');
-                }
-            });
-            
-            // bind handler to change end date picker when user enters date by hand.
-            jQuery('#owa_report-datepicker-end-display').change( function() {
-                var value = jQuery(this).val();
-                if ( that.isValidDateString( value ) ) {
-                    // set date picker
-                    jQuery("#owa_report-datepicker-end").datepicker( "setDate", value ); 
-                    // simulate triggering the onSelect event by calling the
-                    // handler directly.
-                    var func = jQuery("#owa_report-datepicker-end").datepicker("option","onSelect");
-                    func(value);
-    
-                } else {
-                    alert('Date must be in mm-dd-yyyy format.');
-                    // wipe value
-                    jQuery('#owa_report-datepicker-end-display').val('');
-                }
-            });
-            
-            // create data picker objects
-            jQuery("#owa_report-datepicker-start").datepicker({
-                
-                dateFormat: 'mm-dd-yy',
-                altField: "#owa_report-datepicker-start-display",
-                onSelect: function(selectedDate) {
-                    // parse date
-                    var instance = jQuery("#owa_report-datepicker-start").data( "datepicker" );
-                    var date = jQuery.datepicker.parseDate(
-                            instance.settings.dateFormat ||
-                            jQuery.datepicker._defaults.dateFormat,
-                            selectedDate, instance.settings );
-                    
-                    // Picking a day means this is a custom range.
-                    that.clearFixedPeriodSelection();
-
-                    // constrain min date
-                    jQuery("#owa_report-datepicker-end").datepicker( "option", 'minDate', date);        
-                    // constrain new max date using value from end date picker
-                    jQuery("#owa_report-datepicker-start").datepicker( "option", 'maxDate',
-                        jQuery("#owa_report-datepicker-end").datepicker( "getDate" )    
-                    
-                    );
-                },
-                defaultDate: that.formatYyyymmdd( that.getStartDate() )
-            });    
-            
-            jQuery("#owa_report-datepicker-end").datepicker({
-                
-                dateFormat: 'mm-dd-yy',
-                altField: "#owa_report-datepicker-end-display",
-                onSelect: function(selectedDate) { 
-                
-                    // parse date
-                    var instance = jQuery("#owa_report-datepicker-end").data( "datepicker" );
-                    var date = jQuery.datepicker.parseDate(
-                            instance.settings.dateFormat ||
-                            jQuery.datepicker._defaults.dateFormat,
-                            selectedDate, instance.settings );
-                    
-                    // Picking a day means this is a custom range.
-                    that.clearFixedPeriodSelection();
-
-                    // constrain min date using value from start date picker
-                    jQuery("#owa_report-datepicker-end").datepicker( "option", 'minDate', 
-                        jQuery("#owa_report-datepicker-start").datepicker( "getDate" )
-                    
-                    );        
-                    // constrain new max date 
-                    jQuery("#owa_report-datepicker-start").datepicker( "option", 'maxDate', date); 
-                },
-                defaultDate: that.formatYyyymmdd( that.getEndDate() )
-            });
-
-            /*
-             * The two calendars bound each other from the start.
-             *
-             * Without this they only constrain one another once something is
-             * clicked -- the onSelect handlers above are what set minDate and
-             * maxDate -- so on load the end calendar would happily offer a date
-             * before its own start.
-             *
-             * The dates themselves are already selected by the defaultDate each
-             * picker was created with. That is worth stating because it looks
-             * like it needs a setDate() and does not: for an INLINE picker
-             * defaultDate is the selection, and it fills the display field too.
-             * A setDate() here was measured to change nothing.
-             */
-            var owaStartDate = that.parseYyyymmdd( that.getStartDate() );
-            var owaEndDate   = that.parseYyyymmdd( that.getEndDate() );
-
-            if ( owaStartDate && owaEndDate ) {
-                jQuery( "#owa_report-datepicker-end" ).datepicker( 'option', 'minDate', owaStartDate );
-                jQuery( "#owa_report-datepicker-start" ).datepicker( 'option', 'maxDate', owaEndDate );
-            }
-            
-            // trigger owa_new_time_period_set event when 
-            // submit button is pressed
-            jQuery('#owa_reportPeriodFilterSubmit').click(function() {
-
-                // The report is on a date range now, not on a named period.
-                that.clearFixedPeriodSelection();
-
-                jQuery(that.dom_id).trigger(
-                    'owa_new_time_period_set', 
-                    [
-                        jQuery.datepicker.formatDate(
-                            'yymmdd', 
-                            jQuery("#owa_report-datepicker-start").datepicker( "getDate" )
-                        ),
-                        jQuery.datepicker.formatDate(
-                            'yymmdd', 
-                            jQuery("#owa_report-datepicker-end").datepicker( "getDate" )  
-                        )
-                    ]
-                );
-            });
-            
-            // trigger change event when new fixed time period is selected
-            // TODO: refactor this to just set new dates in the date pickers
-            jQuery('#owa_reportPeriodFilter').change( function() { 
-                
-                var period = jQuery("#owa_reportPeriodFilter option:selected").val();
-                jQuery(that.dom_id).trigger('owa_new_fixed_time_period_set', [period]);
-
-            });
-
-        }
     }
 };
 

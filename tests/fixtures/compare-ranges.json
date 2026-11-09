@@ -1,0 +1,18 @@
+{
+    "_comment": "Comparison ranges for a period. TimePeriod::compareRange() (tests/TimePeriodCompareTest.php) and the picker's compareRange() (tests/js/PeriodPicker.test.js) are both tested against these, so the preview the browser shows is the range the server reports.",
+    "cases": [
+        { "key": "previous_period",     "start": "20261013", "end": "20261109", "want": ["20260915", "20261012"] },
+        { "key": "previous_period_dow", "start": "20261013", "end": "20261109", "want": ["20260915", "20261012"] },
+        { "key": "previous_period",     "start": "20261011", "end": "20261109", "want": ["20260911", "20261010"] },
+        { "key": "previous_period_dow", "start": "20261011", "end": "20261109", "want": ["20260906", "20261005"] },
+        { "key": "previous_period",     "start": "20261109", "end": "20261109", "want": ["20261108", "20261108"] },
+        { "key": "previous_period_dow", "start": "20261109", "end": "20261109", "want": ["20261102", "20261102"] },
+        { "key": "previous_period",     "start": "20261101", "end": "20261107", "want": ["20261025", "20261031"] },
+        { "key": "previous_period",     "start": "20260101", "end": "20260131", "want": ["20251201", "20251231"] },
+        { "key": "previous_year",       "start": "20261013", "end": "20261109", "want": ["20251013", "20251109"] },
+        { "key": "previous_year",       "start": "20240201", "end": "20240229", "want": ["20230201", "20230228"] },
+        { "key": "previous_year",       "start": "20251215", "end": "20260115", "want": ["20241215", "20250115"] },
+        { "key": "previous_year_dow",   "start": "20261013", "end": "20261109", "want": ["20251014", "20251110"] },
+        { "key": "previous_year_dow",   "start": "20240229", "end": "20240229", "want": ["20230302", "20230302"] }
+    ]
+}
