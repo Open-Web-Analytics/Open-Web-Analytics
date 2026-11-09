@@ -68,7 +68,8 @@ final class DriverNativeResultLintTest extends TestCase
         $root = rtrim(OWA_DIR, '/');
         $out  = array();
 
-        $skip = array('vendor', 'node_modules', 'tests', '.git', 'public', 'build');
+        $skip = array('vendor', 'node_modules', 'tests', '.git', 'public', 'build',
+            '.claude'); // agent worktrees: whole other checkouts of OWA
 
         $it = new RecursiveIteratorIterator(
             new RecursiveCallbackFilterIterator(

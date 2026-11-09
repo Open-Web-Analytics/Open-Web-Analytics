@@ -141,6 +141,7 @@ final class ClassLoadSmokeTest extends TestCase
             '/includes/MaxMind',        // vendored MaxMind reader, already namespaced
             '/public/',                 // build output
             'owa-config',               // install-generated config
+            '/.claude/',                // agent worktrees: whole other checkouts of OWA
         ];
         $skipBasenames = [
             'owa_env.php', 'owa.php', 'index.php', 'install.php',
