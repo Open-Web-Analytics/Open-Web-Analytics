@@ -404,7 +404,7 @@ PeriodPicker.prototype = {
 
         return '<button type="button" class="owa_periodTrigger" data-act="toggle" aria-haspopup="dialog" aria-expanded="' + ( this.draft ? 'true' : 'false' ) + '" aria-controls="' + this.uid + '">'
             + '<span class="owa_periodTriggerMain">' + badge + '<span class="owa_periodTriggerRange">' + esc( formatRange( a.main[0], a.main[1] ) ) + '</span></span>'
-            + ( a.cmpOn && a.cmp[0] ? '<span class="owa_periodTriggerCompare"><i aria-hidden="true"></i>Compare: ' + esc( formatRange( a.cmp[0], a.cmp[1] ) ) + '</span>' : '' )
+            + ( a.cmpOn && a.cmp[0] ? '<span class="owa_periodTriggerCompare">Compare: ' + esc( formatRange( a.cmp[0], a.cmp[1] ) ) + '</span>' : '' )
             + '<span class="owa_periodChevron" aria-hidden="true"></span></button>';
     },
 
