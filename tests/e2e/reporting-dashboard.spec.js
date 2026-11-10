@@ -834,6 +834,57 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await expect(legend).toContainText('Chrome');
     });
 
+    test('the charted metric and the grid\'s sort are one choice', async ({ page }) => {
+        const boxes = page.locator('.owa_metricInfobox');
+        const grid = page.locator('.owa_gridTable').first();
+        const metrics = await grid.locator('thead th.owa_gridMetric').evaluateAll((ths) => ths.map((th) => th.dataset.column));
+        // A box the grid also has a column for, and not the one charted now.
+        const pick = await boxes.evaluateAll((els, cols) => {
+            const el = els.find((e) => !e.classList.contains('owa_metricInfoboxCharted') && cols.includes(e.dataset.metric));
+            return el ? el.dataset.metric : null;
+        }, metrics);
+        expect(pick, 'a second metric that is both a box and a grid column').toBeTruthy();
+
+        // A box sorts the grid by its metric, largest first.
+        await page.locator(`.owa_metricInfobox[data-metric="${pick}"]`).first().click();
+        await expect(grid.locator(`thead th[data-column="${pick}"]`)).toHaveAttribute('aria-sort', 'descending');
+
+        // Sorting the grid by another metric charts that one.
+        const back = metrics.find((m) => m !== pick);
+        await grid.locator(`thead th[data-column="${back}"] button`).first().click();
+        await expect(grid.locator(`thead th[data-column="${back}"]`)).toHaveAttribute('aria-sort', 'descending');
+        await expect(page.locator(`.owa_metricInfobox[data-metric="${back}"]`).first()).toHaveClass(/owa_metricInfoboxCharted/);
+    });
+
+    test('compared, the tooltip of the last point stays inside the window', async ({ page }) => {
+        const url = new URL(page.url());
+        url.searchParams.set('owa_compare', 'previous_period');
+        await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+        const area = page.locator('.owa_areaChart').first();
+        await expect(page.locator('.owa_chartLegend').first()).toContainText('Chrome');
+
+        const at = await area.evaluate((el) => {
+            const plot = window.jQuery(el).data('plot');
+            const total = plot.getData().find((s) => !s.isCompare);
+            const last = total.data[total.data.length - 1];
+            const o = plot.pointOffset({ x: last[0], y: last[1] });
+            const box = el.getBoundingClientRect();
+            return { x: box.left + o.left, y: box.top + o.top };
+        });
+        await page.mouse.move(at.x, at.y);
+
+        const tip = page.locator('#tooltip');
+        await expect(tip).toBeVisible();
+        await expect(tip.locator('.owa_chartTipHead')).toContainText(' vs ');
+        const b = await tip.boundingBox();
+        const width = page.viewportSize().width;
+        expect(b.x).toBeGreaterThanOrEqual(0);
+        expect(b.x + b.width).toBeLessThanOrEqual(width);
+        // Flipped to the pointer's left, not over it.
+        expect(b.x + b.width).toBeLessThan(at.x);
+    });
+
     test('compared, each metric cell shows its change under the value', async ({ page }) => {
         const url = new URL(page.url());
         url.searchParams.set('owa_compare', 'previous_period');

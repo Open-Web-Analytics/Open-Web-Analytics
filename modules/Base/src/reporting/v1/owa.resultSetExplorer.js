@@ -938,9 +938,17 @@ OWA.resultSetExplorer.prototype = {
                     return;
                 }
 
-                if ( that.areaChart.changeMetric( jQuery( this ).attr( 'data-metric' ) ) ) {
+                var metric = jQuery( this ).attr( 'data-metric' );
+
+                if ( that.areaChart.changeMetric( metric ) ) {
 
                     that.markChartedMetric();
+
+                    // A grid whose rows the chart draws sorts by it too (linkTrendToGrid).
+                    if ( that.onChartMetric ) {
+
+                        that.onChartMetric( metric );
+                    }
                 }
             } );
 
@@ -3279,10 +3287,35 @@ OWA.GRID_ROWS_CHARTED = 5;
  *
  * The grid's first load may arrive before the trend has drawn its chart, so
  * the rows wait on the trend (plotGridRows) and makeAreaChart hands them over.
+ *
+ * The chart's metric and the grid's sort are one choice: the lines are the
+ * top rows by the metric they draw. Sorting the grid by a metric the trend
+ * carries charts it; clicking a metric box sorts the grid by it, largest
+ * first. Sorting by a dimension leaves the chart's metric as it is.
  */
 OWA.linkTrendToGrid = function ( trend, grid, count ) {
 
     count = count || OWA.GRID_ROWS_CHARTED;
+
+    var sortedBy = grid.resultSet ? grid.resultSet.sortColumn : undefined;
+
+    var isMetric = function ( rs, name ) {
+
+        var row  = rs && rs.resultsRows && rs.resultsRows[0];
+        var cell = row && row[ name ];
+
+        return !! cell && cell.result_type === 'metric';
+    };
+
+    trend.onChartMetric = function ( metric ) {
+
+        var rs = grid.resultSet;
+
+        if ( rs && isMetric( rs, metric ) && ! ( rs.sortColumn === metric && rs.sortOrder === 'desc' ) ) {
+
+            grid.changeSort( metric, 'desc' );
+        }
+    };
 
     var send = function () {
 
@@ -3292,6 +3325,12 @@ OWA.linkTrendToGrid = function ( trend, grid, count ) {
 
             return;
         }
+
+        // A new sort by a metric: chart it. Not the first load -- the report
+        // names what its chart draws.
+        var resorted = rs.sortColumn !== sortedBy;
+
+        sortedBy = rs.sortColumn;
 
         var dims = OWA.util.urldecode( new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'dimensions' ) ) || '' )
             .split( ',' )
@@ -3332,6 +3371,11 @@ OWA.linkTrendToGrid = function ( trend, grid, count ) {
         if ( trend.areaChart ) {
 
             trend.areaChart.plotRows( dims, rows );
+
+            if ( resorted && isMetric( rs, rs.sortColumn ) && trend.areaChart.changeMetric( rs.sortColumn ) ) {
+
+                trend.markChartedMetric();
+            }
         }
     };
 

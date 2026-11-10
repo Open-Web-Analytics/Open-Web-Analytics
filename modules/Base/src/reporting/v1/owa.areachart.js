@@ -105,6 +105,33 @@ OWA.areaChart = function( options ) {
     this.init = false;
 }
 
+/**
+ * Where a tooltip w wide and h tall goes beside the pointer: right of it and
+ * below, flipped left or up where that side runs out of the view (the
+ * window's scrolled box: left, top, width, height), and never outside it.
+ */
+OWA.areaChart.besidePointer = function ( pointer, w, h, view ) {
+
+    var gap = 12, edge = 8;
+    var left = pointer.x + gap;
+    var top  = pointer.y + gap;
+
+    if ( left + w > view.left + view.width - edge ) {
+
+        left = pointer.x - gap - w;
+    }
+
+    if ( top + h > view.top + view.height - edge ) {
+
+        top = pointer.y - gap - h;
+    }
+
+    return {
+        left: Math.max( view.left + edge, Math.min( left, view.left + view.width - edge - w ) ),
+        top:  Math.max( view.top + edge, top )
+    };
+};
+
 OWA.areaChart.prototype = {
         
     setDomId: function(dom_id) {
@@ -1835,7 +1862,7 @@ OWA.areaChart.prototype = {
                 change = '<span class="owa_gridChange ' + d.cls + '">' + esc( d.text ) + '</span>';
             }
 
-            html += '<tr><th><i style="background:' + esc( String( s.color ) ) + '"></i>' + esc( s.label || '' ) + '</th>'
+            html += '<tr><th><i style="background:' + esc( String( s.color ) ) + '"></i><span>' + esc( s.label || '' ) + '</span></th>'
                 + '<td>' + esc( v === null ? '\u2014' : that.tipNumber( v ) ) + '</td><td>' + change + '</td></tr>';
         } );
 
@@ -2040,10 +2067,14 @@ OWA.areaChart.prototype = {
         } );
     },
 
-    // shows a tool tip for flot charts
-    showTooltip : function(x, y, contents) {
-    
-        jQuery('<div id="tooltip">' + contents + '</div>').css( {
+    /**
+     * Shows a tooltip for flot charts at x, y. Given the pointer, it goes
+     * beside the pointer instead: right of it and below, or left of it and
+     * above where that would run off the window.
+     */
+    showTooltip : function(x, y, contents, pointer) {
+
+        var tip = jQuery('<div id="tooltip">' + contents + '</div>').css( {
             position: 'absolute',
             display: 'none',
             top: y + 5,
@@ -2054,7 +2085,19 @@ OWA.areaChart.prototype = {
             opacity: 0.90,
             // Never under the pointer: over the tooltip, the pointer has left the chart.
             'pointer-events': 'none'
-        }).appendTo("body").fadeIn(100);
+        }).appendTo("body");
+
+        if ( pointer ) {
+
+            tip.css( OWA.areaChart.besidePointer( pointer, tip.outerWidth(), tip.outerHeight(), {
+                left: window.pageXOffset,
+                top: window.pageYOffset,
+                width: document.documentElement.clientWidth,
+                height: document.documentElement.clientHeight
+            } ) );
+        }
+
+        tip.fadeIn(100);
     },
 
     
@@ -2129,8 +2172,8 @@ OWA.areaChart.prototype = {
 
                     if ( compared ) {
 
-                        // Below and right of the pointer: it is taller than the old one.
-                        that.showTooltip( item.pageX + 7, item.pageY + 7, compared );
+                        // Beside the pointer, kept in the window: it is taller than the old one.
+                        that.showTooltip( item.pageX, item.pageY, compared, { x: item.pageX, y: item.pageY } );
 
                         return;
                     }

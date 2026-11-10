@@ -199,6 +199,26 @@ describe( 'the compared tooltip', () => {
         expect( chart.comparedX( day( '20261104' ), null ) ).toBeNull();
     } );
 
+    describe( 'it goes beside the pointer, inside the window', () => {
+        const view = { left: 0, top: 100, width: 1000, height: 600 };
+
+        test( 'right of the pointer and below', () => {
+            expect( OWA.areaChart.besidePointer( { x: 200, y: 300 }, 250, 150, view ) ).toEqual( { left: 212, top: 312 } );
+        } );
+
+        test( 'left of the pointer near the right edge', () => {
+            expect( OWA.areaChart.besidePointer( { x: 900, y: 300 }, 250, 150, view ).left ).toBe( 900 - 12 - 250 );
+        } );
+
+        test( 'above the pointer near the bottom', () => {
+            expect( OWA.areaChart.besidePointer( { x: 200, y: 650 }, 250, 150, view ).top ).toBe( 650 - 12 - 150 );
+        } );
+
+        test( 'wider than either side, it is held inside the window', () => {
+            expect( OWA.areaChart.besidePointer( { x: 500, y: 300 }, 600, 150, view ).left ).toBe( 8 );
+        } );
+    } );
+
     test( 'nothing compared, no compared tooltip', () => {
         const chart = new OWA.areaChart();
         chart.dataseries = [ { label: 'Visits', data: [ [ 1, 2 ] ] } ];
@@ -242,6 +262,57 @@ describe( 'OWA.linkTrendToGrid', () => {
 
         expect( trendExplorer.areaChart.plotRows ).toHaveBeenCalledTimes( 2 );
         expect( trendExplorer.areaChart.plotRows.mock.calls[1][1][0].label ).toBe( 'Firefox / Linux' );
+    } );
+
+    describe( 'the chart\'s metric and the grid\'s sort are one choice', () => {
+
+        const sortedBy = ( column ) => ( {
+            self: 'https://owa.test/api/index.php?metrics=visits,pageViews&dimensions=browserType',
+            sortColumn: column, sortOrder: 'desc',
+            resultsRows: [ {
+                browserType: { value: 'Chrome', formatted_value: 'Chrome', result_type: 'dimension' },
+                visits: { value: 3, result_type: 'metric' },
+                pageViews: { value: 9, result_type: 'metric' },
+            } ],
+        } );
+
+        function linked() {
+            const g = { resultSet: sortedBy( 'pageViews' ), setResultSet( rs ) { this.resultSet = rs; }, changeSort: jest.fn() };
+            const trendExplorer = {
+                areaChart: { plotRows: jest.fn(), changeMetric: jest.fn( () => true ) },
+                markChartedMetric: jest.fn(),
+            };
+            OWA.linkTrendToGrid( trendExplorer, g );
+            return { g, trendExplorer };
+        }
+
+        test( 'the first load leaves the chart on the metric the report names', () => {
+            expect( linked().trendExplorer.areaChart.changeMetric ).not.toHaveBeenCalled();
+        } );
+
+        test( 'sorting the grid by another metric charts it', () => {
+            const { g, trendExplorer } = linked();
+            g.setResultSet( sortedBy( 'visits' ) );
+            expect( trendExplorer.areaChart.changeMetric ).toHaveBeenCalledWith( 'visits' );
+            expect( trendExplorer.markChartedMetric ).toHaveBeenCalled();
+        } );
+
+        test( 'sorting by a dimension leaves the chart\'s metric alone', () => {
+            const { g, trendExplorer } = linked();
+            g.setResultSet( sortedBy( 'browserType' ) );
+            expect( trendExplorer.areaChart.changeMetric ).not.toHaveBeenCalled();
+        } );
+
+        test( 'charting a metric from its box sorts the grid by it, largest first', () => {
+            const { g, trendExplorer } = linked();
+            trendExplorer.onChartMetric( 'visits' );
+            expect( g.changeSort ).toHaveBeenCalledWith( 'visits', 'desc' );
+
+            // Already sorted by it, or not in the grid: no new sort.
+            trendExplorer.onChartMetric( 'pageViews' );
+            trendExplorer.onChartMetric( 'bounces' );
+            expect( g.changeSort ).toHaveBeenCalledTimes( 1 );
+        } );
     } );
 
     test( 'before the trend has a chart, the rows wait on it', () => {
