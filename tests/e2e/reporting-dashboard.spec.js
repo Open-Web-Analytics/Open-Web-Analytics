@@ -171,13 +171,11 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
-     * A trend with nothing to break out is the filled area it has always been.
-     *
-     * Sixty-one shipped trends are grouped by date alone. The fill is what
-     * makes one read as an area chart, and it is decided PER SERIES now -- so
-     * the case to protect is that a lone series still gets it.
+     * The dashboard's trend is a card: one series over date alone, drawn as a
+     * line. A card's chart is the shape behind its figures; a trend's is the
+     * filled area (the Browser Types trend below).
      */
-    test('a trend over date alone is a single filled area', async ({ page }) => {
+    test('a trend card over date alone is a single line, not filled', async ({ page }) => {
         const state = await page.evaluate(() => {
             const ac = window.siteTrend.areaChart;
             return {
@@ -190,7 +188,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         });
 
         expect(state.count).toBe(1);
-        expect(state.fill).toBe(true);
+        expect(state.fill).toBe(false);
 
         // No legend and no legend interaction for one line: naming the only
         // series says nothing, and a control that can only turn itself off is
@@ -827,6 +825,133 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         page.__owaErrors = errors;
         await login(page);
         await openReport(page);
+    });
+
+    test('the trend draws a line for each of the top rows of the grid', async ({ page }) => {
+        // Every seeded page view is Chrome: the grid's one row, and the chart's one line over the total.
+        const legend = page.locator('.owa_chartLegend').first();
+        await expect(legend).toContainText('Total');
+        await expect(legend).toContainText('Chrome');
+
+        // A trend, not a card: its total is a filled area under the lines.
+        const fill = await page.evaluate(() => {
+            const trend = Object.values(window).find((o) => o && o.areaChart && o.areaChart.dom_id === 'site_usage_trend-chart');
+            return trend.areaChart.dataseries[0].lines.fill;
+        });
+        expect(fill).toBe(true);
+
+        // A title over it says so, with the day/month control across from it.
+        const head = page.locator('.owa_chartHead').first();
+        await expect(head.locator('.owa_chartTitle')).toHaveText(/^.+ by Browser over time$/);
+        await expect(head.locator('.owa_chartGranularity')).toBeVisible();
+        expect((await page.locator('.owa_areaChart').first().boundingBox()).height).toBeGreaterThanOrEqual(250);
+    });
+
+    test('the charted metric and the grid\'s sort are one choice', async ({ page }) => {
+        const boxes = page.locator('.owa_metricInfobox');
+        const grid = page.locator('.owa_gridTable').first();
+        const metrics = await grid.locator('thead th.owa_gridMetric').evaluateAll((ths) => ths.map((th) => th.dataset.column));
+        // A box the grid also has a column for, and not the one charted now.
+        const pick = await boxes.evaluateAll((els, cols) => {
+            const el = els.find((e) => !e.classList.contains('owa_metricInfoboxCharted') && cols.includes(e.dataset.metric));
+            return el ? el.dataset.metric : null;
+        }, metrics);
+        expect(pick, 'a second metric that is both a box and a grid column').toBeTruthy();
+
+        // A box sorts the grid by its metric, largest first.
+        await page.locator(`.owa_metricInfobox[data-metric="${pick}"]`).first().click();
+        await expect(grid.locator(`thead th[data-column="${pick}"]`)).toHaveAttribute('aria-sort', 'descending');
+
+        // Sorting the grid by another metric charts that one.
+        const back = metrics.find((m) => m !== pick);
+        await grid.locator(`thead th[data-column="${back}"] button`).first().click();
+        await expect(grid.locator(`thead th[data-column="${back}"]`)).toHaveAttribute('aria-sort', 'descending');
+        await expect(page.locator(`.owa_metricInfobox[data-metric="${back}"]`).first()).toHaveClass(/owa_metricInfoboxCharted/);
+    });
+
+    test('anywhere over the plot, the nearest day is active and the tooltip follows the pointer', async ({ page }) => {
+        const area = page.locator('.owa_areaChart').first();
+        await expect(page.locator('.owa_chartLegend').first()).toContainText('Chrome');
+        const box = await area.boundingBox();
+
+        // High in the plot, away from every line.
+        await page.mouse.move(box.x + box.width * 0.5, box.y + 20);
+        const tip = page.locator('#tooltip');
+        await expect(tip).toBeVisible();
+        await expect(tip.locator('.owa_chartTip tr').first()).toContainText('Total');
+        const first = await tip.boundingBox();
+        const active = () => tip.locator('.owa_chartTipHead').textContent();
+        const dayA = await active();
+
+        // Further along: the tooltip moved with the pointer and names another day.
+        await page.mouse.move(box.x + box.width * 0.9, box.y + 20);
+        await expect.poll(active).not.toBe(dayA);
+        expect((await tip.boundingBox()).x).not.toBe(first.x);
+
+        // Out of the plot: gone.
+        await page.mouse.move(box.x + box.width * 0.5, box.y - 40);
+        await expect(tip).toHaveCount(0);
+    });
+
+    test('the tooltip of the first point is not under the side nav', async ({ page }) => {
+        const area = page.locator('.owa_areaChart').first();
+        await expect(page.locator('.owa_chartLegend').first()).toContainText('Chrome');
+
+        const at = await area.evaluate((el) => {
+            const plot = window.jQuery(el).data('plot');
+            const total = plot.getData()[0];
+            const first = total.data[0];
+            const o = plot.pointOffset({ x: first[0], y: first[1] });
+            const box = el.getBoundingClientRect();
+            return { x: box.left + o.left, y: box.top + o.top };
+        });
+        await page.mouse.move(at.x, at.y);
+
+        const tip = page.locator('#tooltip');
+        await expect(tip).toBeVisible();
+        const b = await tip.boundingBox();
+        // Right of the point, so inside the chart's own column, clear of the nav to its left.
+        expect(b.x).toBeGreaterThan(at.x);
+        // Below it.
+        expect(b.y).toBeGreaterThan(at.y);
+        expect(b.x).toBeGreaterThanOrEqual((await area.boundingBox()).x);
+    });
+
+    test('compared, the tooltip of the last point stays inside the window', async ({ page }) => {
+        const url = new URL(page.url());
+        url.searchParams.set('owa_compare', 'previous_period');
+        await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+        const area = page.locator('.owa_areaChart').first();
+        await expect(page.locator('.owa_chartLegend').first()).toContainText('Chrome');
+
+        const at = await area.evaluate((el) => {
+            const plot = window.jQuery(el).data('plot');
+            const total = plot.getData().find((s) => !s.isCompare);
+            const last = total.data[total.data.length - 1];
+            const o = plot.pointOffset({ x: last[0], y: last[1] });
+            const box = el.getBoundingClientRect();
+            return { x: box.left + o.left, y: box.top + o.top };
+        });
+        const yMax = () => area.evaluate((el) => window.jQuery(el).data('plot').getAxes().yaxis.max);
+        const before = await yMax();
+
+        await page.mouse.move(at.x, at.y);
+
+        const tip = page.locator('#tooltip');
+        await expect(tip).toBeVisible();
+        await expect(tip.locator('.owa_chartTipHead')).toContainText(' vs ');
+        // Each line's value on the compared day, beside its own.
+        await expect(tip.locator('tr').first().locator('td.owa_chartTipWas')).toHaveText(/^[\d,.]+$|^—$/);
+        const b = await tip.boundingBox();
+        const width = page.viewportSize().width;
+        expect(b.x).toBeGreaterThanOrEqual(0);
+        expect(b.x + b.width).toBeLessThanOrEqual(width);
+        // Flipped to the pointer's left, not over it.
+        expect(b.x + b.width).toBeLessThan(at.x);
+
+        // The hovered line's comparison is drawn now; the y axis was already scaled to it.
+        expect(await yMax()).toBe(before);
     });
 
     test('compared, each metric cell shows its change under the value', async ({ page }) => {

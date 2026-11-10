@@ -330,4 +330,56 @@ final class ReportsRestControllerTest extends RestControllerTestCase
 
         $this->assertSame(422, $resp['status']);
     }
+
+    /**
+     * rowValues restricts a query to the rows a grid is showing: a trend by
+     * date and page, of /a and /b only, with the comparison's rows for both.
+     * A page path may contain a comma, so the values travel as JSON.
+     */
+    public function testRowValuesRestrictATrendToTheGridsRows(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $day  = date('Ymd');
+        $week = date('Ymd', strtotime('-7 days'));
+
+        $this->seedPageViews($site, [
+            [$day, '/a', 3], [$day, '/b,c', 1], [$day, '/z', 9],
+            [$week, '/a', 1], [$week, '/z', 4],
+        ]);
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'dimensions' => 'date,pagePath', 'sort' => 'date', 'resultsPerPage' => 100,
+             'period' => 'date_range', 'startDate' => $day, 'endDate' => $day,
+             'compare' => 'previous_period_dow', 'siteId' => $site,
+             'rowValues' => json_encode(['pagePath' => ['/a', '/b,c']])]
+        );
+
+        $this->assertSame(201, $resp['status'], $resp['raw']);
+
+        $paths = array_map(fn ($r) => $r['pagePath']['value'], $resp['data']['resultsRows']);
+        sort($paths);
+        $this->assertSame(['/a', '/b,c'], $paths);
+
+        $compared = array_map(fn ($r) => [$r['date']['value'], $r['pagePath']['value'], (int) $r['pageViews']['value']],
+            $resp['data']['compare']['rows']);
+        $this->assertSame([[$day, '/a', 1]], $compared, 'the comparison is of the same rows, on the period\'s dates');
+    }
+
+    public function testRowValuesNamingAnotherDimensionAreRefused(): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'dimensions' => 'date', 'period' => 'today', 'siteId' => $this->profile(true),
+             'rowValues' => json_encode(['pagePath' => ['/a']])]
+        );
+
+        $this->assertSame(422, $resp['status']);
+    }
 }

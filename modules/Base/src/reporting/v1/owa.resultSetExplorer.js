@@ -136,7 +136,11 @@ OWA.resultSetExplorer = function(dom_id, options) {
             series:[],
             showDots: false,
             showLegend: true,
-            lineWidth: 2.5
+            lineWidth: 2.5,
+            // Off where the widget shows a heading of its own.
+            showTitle: true,
+            // The total as a filled area; a card draws a plain line.
+            fill: true
         },
         // A `pie` widget's options; see OWA.shareChart.
         shareChart: {
@@ -727,6 +731,8 @@ OWA.resultSetExplorer.prototype = {
         };
 
         var ac = new OWA.areaChart();
+        ac.options.showTitle = this.options.areaChart.showTitle !== false;
+        ac.options.fill      = this.options.areaChart.fill !== false;
         dom_id = dom_id || this.dom_id;
         // set the target dom_id chart should appear in
         ac.setDomId( dom_id );
@@ -754,6 +760,13 @@ OWA.resultSetExplorer.prototype = {
 
         // Now that it can, draw it -- generate() ran before this was set.
         ac.drawGranularityControl( dom_id );
+        ac.drawTitle( dom_id );
+
+        // Rows a linked grid handed over before the chart existed.
+        if ( this.plotGridRows ) {
+
+            ac.plotRows( this.plotGridRows.dims, this.plotGridRows.rows, this.plotGridRows.label );
+        }
 
         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
@@ -932,9 +945,17 @@ OWA.resultSetExplorer.prototype = {
                     return;
                 }
 
-                if ( that.areaChart.changeMetric( jQuery( this ).attr( 'data-metric' ) ) ) {
+                var metric = jQuery( this ).attr( 'data-metric' );
+
+                if ( that.areaChart.changeMetric( metric ) ) {
 
                     that.markChartedMetric();
+
+                    // A grid whose rows the chart draws sorts by it too (linkTrendToGrid).
+                    if ( that.onChartMetric ) {
+
+                        that.onChartMetric( metric );
+                    }
                 }
             } );
 
@@ -3258,4 +3279,123 @@ OWA.linkTrendToBreakdownGrid = function ( trend, grid ) {
 
         trend.changeConstraints( constraints );
     } );
+};
+
+/** How many of a grid's rows its trend draws as lines. */
+OWA.GRID_ROWS_CHARTED = 5;
+
+/**
+ * The trend draws a line for each of the top rows of the grid under it.
+ *
+ * The grid's rows as it shows them: its sort, its filter, its page. Each time
+ * the grid has a new result set, the trend is handed the first rows of it --
+ * their dimension values, and a label from their formatted values. A row with
+ * an empty value is left out: it cannot be asked for by value.
+ *
+ * The grid's first load may arrive before the trend has drawn its chart, so
+ * the rows wait on the trend (plotGridRows) and makeAreaChart hands them over.
+ *
+ * The chart's metric and the grid's sort are one choice: the lines are the
+ * top rows by the metric they draw. Sorting the grid by a metric the trend
+ * carries charts it; clicking a metric box sorts the grid by it, largest
+ * first. Sorting by a dimension leaves the chart's metric as it is.
+ */
+OWA.linkTrendToGrid = function ( trend, grid, count ) {
+
+    count = count || OWA.GRID_ROWS_CHARTED;
+
+    var sortedBy = grid.resultSet ? grid.resultSet.sortColumn : undefined;
+
+    var isMetric = function ( rs, name ) {
+
+        var row  = rs && rs.resultsRows && rs.resultsRows[0];
+        var cell = row && row[ name ];
+
+        return !! cell && cell.result_type === 'metric';
+    };
+
+    trend.onChartMetric = function ( metric ) {
+
+        var rs = grid.resultSet;
+
+        if ( rs && isMetric( rs, metric ) && ! ( rs.sortColumn === metric && rs.sortOrder === 'desc' ) ) {
+
+            grid.changeSort( metric, 'desc' );
+        }
+    };
+
+    var send = function () {
+
+        var rs = grid.resultSet;
+
+        if ( ! rs || ! rs.self ) {
+
+            return;
+        }
+
+        // A new sort by a metric: chart it. Not the first load -- the report
+        // names what its chart draws.
+        var resorted = rs.sortColumn !== sortedBy;
+
+        sortedBy = rs.sortColumn;
+
+        var dims = OWA.util.urldecode( new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'dimensions' ) ) || '' )
+            .split( ',' )
+            .map( function ( d ) { return d.trim(); } )
+            .filter( Boolean );
+
+        var rows = [];
+
+        ( rs.resultsRows || [] ).forEach( function ( row ) {
+
+            if ( rows.length >= count || ! dims.length ) {
+
+                return;
+            }
+
+            var values = {};
+            var labels = [];
+
+            for ( var i = 0; i < dims.length; i++ ) {
+
+                var cell = row[ dims[i] ];
+
+                if ( ! cell || cell.value === null || cell.value === undefined || cell.value === '' ) {
+
+                    return;
+                }
+
+                values[ dims[i] ] = String( cell.value );
+                labels.push( cell.formatted_value === null || cell.formatted_value === undefined || cell.formatted_value === ''
+                    ? String( cell.value ) : String( cell.formatted_value ) );
+            }
+
+            rows.push( { values: values, label: labels.join( ' / ' ) } );
+        } );
+
+        var label = dims.map( function ( d ) { return OWA.dataGrid.prototype.labelOf( rs, d ); } ).join( ' / ' );
+
+        trend.plotGridRows = { dims: dims, rows: rows, label: label };
+
+        if ( trend.areaChart ) {
+
+            trend.areaChart.plotRows( dims, rows, label );
+
+            if ( resorted && isMetric( rs, rs.sortColumn ) && trend.areaChart.changeMetric( rs.sortColumn ) ) {
+
+                trend.markChartedMetric();
+            }
+        }
+    };
+
+    var setResultSet = grid.setResultSet;
+
+    grid.setResultSet = function () {
+
+        setResultSet.apply( this, arguments );
+
+        send();
+    };
+
+    send();
 };

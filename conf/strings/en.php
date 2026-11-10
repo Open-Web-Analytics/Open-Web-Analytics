@@ -297,4 +297,7 @@ return array(
     'event where' => 'event where',
     'of these match:' => 'of these match:',
     'or' => 'or',
+    'rowValues must be a JSON object of dimension names to lists of values.' => 'rowValues must be a JSON object of dimension names to lists of values.',
+    'rowValues names %s, which is not one of the query\'s dimensions.' => 'rowValues names %s, which is not one of the query\'s dimensions.',
+    'rowValues needs 1 to %d values for %s.' => 'rowValues needs 1 to %d values for %s.',
 );

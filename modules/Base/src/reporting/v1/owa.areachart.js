@@ -2,7 +2,7 @@
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
-import { formatRange } from './owa.periodpicker.js';
+import { formatRange, describeChange } from './owa.periodpicker.js';
 
 OWA.areaChart = function( options ) {
 
@@ -10,7 +10,13 @@ OWA.areaChart = function( options ) {
     this.options = {
         
         series: [],
-        height: 125,
+        // The plot's height where its container does not set one.
+        height: 250,
+        // A title over the chart, beside its controls. Off where the widget
+        // already has a heading of its own.
+        showTitle: true,
+        // The total filled under its line. Off for a card: a line is enough there.
+        fill: true,
         width:    '99%', // needed for flot resize plugin
         xaxis: {
             mode: 'time'
@@ -104,6 +110,33 @@ OWA.areaChart = function( options ) {
     this.domSelector = '';
     this.init = false;
 }
+
+/**
+ * Where a tooltip w wide and h tall goes beside the pointer: right of it and
+ * below, flipped left or above only where that side runs out of the view (the
+ * window's scrolled box: left, top, width, height), and never outside it.
+ */
+OWA.areaChart.besidePointer = function ( pointer, w, h, view ) {
+
+    var gap = 12, edge = 8;
+    var left = pointer.x + gap;
+    var top  = pointer.y + gap;
+
+    if ( left + w > view.left + view.width - edge ) {
+
+        left = pointer.x - gap - w;
+    }
+
+    if ( top + h > view.top + view.height - edge ) {
+
+        top = pointer.y - gap - h;
+    }
+
+    return {
+        left: Math.max( view.left + edge, Math.min( left, view.left + view.width - edge - w ) ),
+        top:  Math.max( view.top + edge, top )
+    };
+};
 
 OWA.areaChart.prototype = {
         
@@ -325,7 +358,7 @@ OWA.areaChart.prototype = {
 
             var built = breakdown
                 ? this.seriesByDimension( resultSet, x_name, y_name, breakdown )
-                : this.singleSeries( resultSet, x_name, y_name );
+                : this.withGridRows( this.singleSeries( resultSet, x_name, y_name ), resultSet, x_name, y_name );
 
             var dataseries = built.series;
 
@@ -347,7 +380,9 @@ OWA.areaChart.prototype = {
                     tickDecimals: null,
                     tickLength: 0
                 },
-                grid: {show: this.options.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null,
+                grid: {show: this.options.showGrid, hoverable: true, clickable: true,
+                       // The active point is highlighted here (onHover), not by flot's nearest-point guess.
+                       autoHighlight: false, borderWidth:0, borderColor: null,
                        color: this.options.gridColor, tickColor: this.options.tickColor},
                 series: {
                     points: { show: this.options.showDots, fill: this.options.showDots },
@@ -383,7 +418,7 @@ OWA.areaChart.prototype = {
                     container: jQuery( '#' + dom_id + ' > .owa_chartLegend' ),
                     noColumns: dataseries.length
                 },
-                hooks: { drawSeries: [ this.dashLine ] }
+                hooks: { drawSeries: [ this.dashLine ], drawOverlay: [ this.crosshairHook() ] }
             };
 
             this.xType = built.x_type;
@@ -409,23 +444,41 @@ OWA.areaChart.prototype = {
             /*
              * A colour each, fixed here rather than left to flot's rotation, so
              * the legend, the lines and the dimming all agree about which
-             * colour belongs to which line. The total is always first.
+             * colour belongs to which line. The total is always first; a
+             * comparison takes the colour of the line it is the comparison of.
              */
+            var nth = 0;
+
             for ( var c = 0; c < dataseries.length; c++ ) {
 
-                dataseries[c].color = dataseries[c].isCompare || dataseries[c].isTotal
-                    ? this.options.totalColor
-                    : this.options.colors[ ( c - 1 ) % this.options.colors.length ];
+                if ( ! dataseries[c].isCompare ) {
+
+                    dataseries[c].color = dataseries[c].isTotal
+                        ? this.options.totalColor
+                        : this.options.colors[ nth++ % this.options.colors.length ];
+                }
+            }
+
+            for ( var k = 0; k < dataseries.length; k++ ) {
+
+                if ( dataseries[k].isCompare ) {
+
+                    dataseries[k].color = dataseries[ dataseries[k].compareOf || 0 ].color;
+                }
             }
 
             this.dataseries = dataseries;
             this.selected   = null;
+            this.hovered    = null;
+            this.activeX    = null;
 
             this.draw();
 
             this.bindLegend();
 
             this.drawGranularityControl( dom_id );
+
+            this.drawTitle( dom_id );
 
             this.watchWidth( dom_id );
 
@@ -531,6 +584,8 @@ OWA.areaChart.prototype = {
             this.draw();
 
             this.drawGranularityControl( dom_id );
+
+            this.drawTitle( dom_id );
 
             this.watchWidth( dom_id );
 
@@ -753,6 +808,244 @@ OWA.areaChart.prototype = {
             shadowSize: 0,
             points: data.length === 1 ? { show: true, fill: true, radius: 3 } : undefined
         };
+    },
+
+    /**
+     * The rows of the grid under the chart, as lines over its total.
+     *
+     * OWA.linkTrendToGrid hands the chart the top rows the grid is showing
+     * (plotRows); their numbers come from a query of their own, by the x axis
+     * and the grid's dimensions and restricted to those rows (rowValues), so
+     * the total stays the trend's own, not the sum of a few rows.
+     *
+     * Each line keeps its comparison when the report is compared, drawn only
+     * while that line is hovered or selected -- with several lines, a dashed
+     * partner for every one of them would be unreadable.
+     *
+     * The series are ordered lines first and comparisons last, so a legend
+     * entry's index is its series' index.
+     */
+    withGridRows : function ( built, resultSet, x_name, y_name ) {
+
+        if ( ! this.plot || ! this.plot.rows.length ) {
+
+            return built;
+        }
+
+        if ( ! this.rowsResultSet || this.rowsX !== x_name ) {
+
+            // Fetched for another axis -- the reader changed days to months.
+            this.fetchRows();
+
+            return built;
+        }
+
+        var that  = this;
+        var dims  = this.plot.dims;
+        var total = built.series.filter( function ( s ) { return ! s.isCompare; } )[0];
+        var totalCompare = built.series.filter( function ( s ) { return s.isCompare; } )[0];
+        var xs    = total.data.map( function ( p ) { return p[0]; } );
+        var fill  = this.zeroForMissing( resultSet, y_name ) ? 0 : null;
+        var cmpRs = this.rowsResultSet.compare;
+
+        var keyOf = function ( values ) {
+
+            return dims.map( function ( d ) { return String( values[ d ] ); } ).join( '\u0001' );
+        };
+
+        var collect = function ( rows ) {
+
+            var by = {};
+
+            ( rows || [] ).forEach( function ( row ) {
+
+                if ( ! row[ x_name ] || ! row[ y_name ] ) {
+
+                    return;
+                }
+
+                var values = {};
+
+                dims.forEach( function ( d ) { values[ d ] = row[ d ] ? row[ d ].value : ''; } );
+
+                var key = keyOf( values );
+                var x   = that.formatValue( row[ x_name ].data_type, row[ x_name ].value );
+
+                by[ key ] = by[ key ] || { points: {}, when: {} };
+                by[ key ].points[ x ] = ( by[ key ].points[ x ] || 0 )
+                    + that.formatValue( row[ y_name ].data_type, row[ y_name ].value ) * 1;
+
+                if ( row[ x_name ].compare_period_value ) {
+
+                    by[ key ].when[ x ] = row[ x_name ].compare_period_value;
+                }
+            } );
+
+            return by;
+        };
+
+        var main = collect( this.rowsResultSet.resultsRows );
+        var cmp  = cmpRs ? collect( cmpRs.rows ) : null;
+
+        var dataOf = function ( entry ) {
+
+            return xs.map( function ( x ) {
+
+                return [ x, entry && entry.points.hasOwnProperty( x ) ? entry.points[ x ] : fill ];
+            } );
+        };
+
+        var one   = xs.length === 1 ? { show: true, fill: true, radius: 3 } : undefined;
+        var lines = [];
+        var compares = [];
+
+        total.label = 'Total';
+
+        this.plot.rows.forEach( function ( row, i ) {
+
+            var key = keyOf( row.values );
+
+            lines.push( {
+                label: row.label,
+                rowKey: key,
+                data: dataOf( main[ key ] ),
+                lines: { fill: false },
+                points: one
+            } );
+
+            if ( cmp ) {
+
+                compares.push( {
+                    isCompare: true,
+                    compareOf: i + 1,
+                    data: dataOf( cmp[ key ] ),
+                    compareDates: cmp[ key ] ? cmp[ key ].when : {},
+                    tooltipLabel: row.label,
+                    dashed: xs.length > 1,
+                    lines: { show: true, fill: false, lineWidth: 1.5 },
+                    shadowSize: 0,
+                    points: one
+                } );
+            }
+        } );
+
+        if ( totalCompare ) {
+
+            totalCompare.compareOf = 0;
+            compares.unshift( totalCompare );
+        }
+
+        return {
+            series: [ total ].concat( lines, compares ),
+            points: built.points,
+            x_type: built.x_type
+        };
+    },
+
+    /**
+     * Chart these rows of the grid, or none.
+     *
+     * @param array dims the grid's dimensions
+     * @param array rows [{ values: { dim: value }, label }] in the grid's order
+     * @param string label the dimensions' names, for the chart's title
+     */
+    plotRows : function ( dims, rows, label ) {
+
+        var plot = { dims: dims || [], rows: rows || [], label: label || '' };
+        var key  = JSON.stringify( plot );
+
+        if ( this.plot && this.plotKey === key ) {
+
+            return false;
+        }
+
+        this.plot          = plot;
+        this.plotKey       = key;
+        this.rowsResultSet = null;
+        this.rowsX         = null;
+
+        if ( ! plot.rows.length ) {
+
+            this.redraw();
+
+            return true;
+        }
+
+        this.fetchRows();
+
+        return true;
+    },
+
+    /** The trend's own query again, by the x axis and the grid's dimensions, for the plotted rows only. */
+    fetchRows : function () {
+
+        if ( ! this.plot || ! this.plot.rows.length || ! this.explorer || ! this.explorer.resultSet ) {
+
+            return;
+        }
+
+        var x    = this.xDimension || 'date';
+        var dims = this.plot.dims;
+        var url  = new OWA.uri( this.explorer.resultSet.self );
+        var restrict = {};
+
+        dims.forEach( function ( d ) { restrict[ d ] = []; } );
+
+        this.plot.rows.forEach( function ( row ) {
+
+            dims.forEach( function ( d ) {
+
+                if ( restrict[ d ].indexOf( row.values[ d ] ) === -1 ) {
+
+                    restrict[ d ].push( row.values[ d ] );
+                }
+            } );
+        } );
+
+        url.setQueryParam( OWA.util.appNs( 'dimensions' ), [ x ].concat( dims ).join( ',' ) );
+        url.setQueryParam( OWA.util.appNs( 'rowValues' ), JSON.stringify( restrict ) );
+        url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), 1000 );
+        url.removeQueryParam( OWA.util.appNs( 'page' ) );
+        url.removeQueryParam( OWA.util.appNs( 'sort' ) );
+
+        var source = url.getSource();
+
+        if ( this.rowsUrl === source ) {
+
+            return;   // already asked
+        }
+
+        this.rowsUrl = source;
+
+        var that = this;
+
+        jQuery.getJSON( source, '', function ( data ) {
+
+            if ( that.rowsUrl !== source ) {
+
+                return;   // a later question has been asked since
+            }
+
+            that.rowsResultSet = new OWA.resultSet( data && data.hasOwnProperty( 'data' ) ? data.data : data );
+            that.rowsX         = x;
+
+            that.redraw();
+        } );
+    },
+
+    /** Draw again from the trend's result set, keeping the metric and axis. */
+    redraw : function () {
+
+        if ( this.explorer && this.explorer.resultSet ) {
+
+            this.generate( this.explorer.resultSet, this.options.series, this.dom_id );
+        }
+    },
+
+    /** Whether a comparison waits for its line to be hovered: when the grid's rows are drawn. */
+    compareOnHover : function () {
+
+        return ( this.dataseries || [] ).some( function ( s ) { return s.rowKey !== undefined; } );
     },
 
     /**
@@ -1060,7 +1353,7 @@ OWA.areaChart.prototype = {
             label: label,
             isTotal: true,
             data: data,
-            lines: { fill: true, fillColor: this.options.fillColor },
+            lines: { fill: this.options.fill !== false, fillColor: this.options.fillColor },
 
             // A line needs two points. A period of one day -- Today -- drew
             // nothing at all, so its one value is a dot.
@@ -1215,10 +1508,41 @@ OWA.areaChart.prototype = {
      * owns fetching; a select that could not refetch would be a control that
      * does nothing, which is worse than no control.
      */
+    /**
+     * What the chart draws, over it: the metric, by the grid's dimensions
+     * when it draws the grid's rows, over time.
+     */
+    chartTitle : function () {
+
+        var rs     = this.explorer && this.explorer.resultSet;
+        var metric = this.chartedMetric();
+
+        if ( ! metric || ! rs || ! rs.aggregates || ! rs.aggregates[ metric ] ) {
+
+            return '';
+        }
+
+        var label = rs.getMetricLabel ? rs.getMetricLabel( metric ) : metric;
+
+        if ( this.plot && this.plot.rows.length && this.plot.label ) {
+
+            return OWA.util.sprintf( OWA.l( '%s by %s over time' ), label, this.plot.label );
+        }
+
+        return OWA.util.sprintf( OWA.l( '%s over time' ), label );
+    },
+
+    drawTitle : function ( dom_id ) {
+
+        var $title = jQuery( '#' + ( dom_id || this.dom_id ) + ' .owa_chartTitle' ).first();
+
+        $title.text( this.options.showTitle ? this.chartTitle() : '' );
+    },
+
     drawGranularityControl : function ( dom_id ) {
 
         var that = this;
-        var $box = jQuery( '#' + dom_id + ' > .owa_chartControls' );
+        var $box = jQuery( '#' + dom_id + ' .owa_chartControls' ).first();
 
         $box.empty();
 
@@ -1444,18 +1768,37 @@ OWA.areaChart.prototype = {
      */
     draw : function () {
 
-        var that = this;
+        var that   = this;
+        var hover  = this.compareOnHover();
+        var active = this.selected !== null ? this.selected : this.hovered;
 
-        var plotted = this.dataseries.map( function ( s, i ) {
+        var plotted = [];
+        var scaleOnly = [];
 
-            var copy = jQuery.extend( {}, s );
+        this.dataseries.forEach( function ( s, i ) {
 
-            if ( that.selected !== null && that.selected !== i ) {
+            var own = s.isCompare ? ( s.compareOf || 0 ) : i;
+
+            /*
+             * With the grid's rows drawn, a comparison shows with its line.
+             * Hidden, it is still handed to flot, undrawn, so the y axis is
+             * scaled to every series and stays put when one comes and goes.
+             */
+            if ( s.isCompare && hover && own !== active ) {
+
+                scaleOnly.push( { data: s.data, lines: { show: false }, points: { show: false }, shadowSize: 0 } );
+
+                return;
+            }
+
+            var copy = jQuery.extend( {}, s, { index: i } );
+
+            if ( that.selected !== null && that.selected !== own ) {
 
                 copy.color = that.fade( s.color, that.options.dimmedOpacity );
             }
 
-            return copy;
+            plotted.push( copy );
         } );
 
         if ( this.xType === 'yyyymmddhh' && this.flotOptions.xaxis ) {
@@ -1469,7 +1812,7 @@ OWA.areaChart.prototype = {
             }
         }
 
-        jQuery.plot( jQuery( this.domSelector ), plotted, this.flotOptions );
+        jQuery.plot( jQuery( this.domSelector ), plotted.concat( scaleOnly ), this.flotOptions );
 
         // What was actually handed to flot, so the drawn state is readable and
         // not only visible. The colours here ARE the dimming.
@@ -1495,6 +1838,410 @@ OWA.areaChart.prototype = {
         }
 
         ctx.setLineDash( series.dashed ? [ 5, 4 ] : [] );
+    },
+
+    /**
+     * A compared chart's tooltip: the day against the day it is compared to,
+     * then every line's value there, its value on the compared day and the
+     * change. Null when nothing is compared.
+     */
+    comparedTooltip : function ( x ) {
+
+        var compares = ( this.dataseries || [] ).filter( function ( s ) { return s.isCompare; } );
+
+        return compares.length ? this.pointTooltip( x ) : null;
+    },
+
+    /**
+     * The tooltip at x: the day, then every line's value there. Compared, the
+     * day it is compared to, and each line's value then and its change.
+     */
+    pointTooltip : function ( x ) {
+
+        var series   = this.dataseries || [];
+        var compares = series.filter( function ( s ) { return s.isCompare; } );
+        var compared = compares.length > 0;
+
+        var that = this;
+        var esc  = OWA.util.escapeHtml;
+
+        var at = function ( s ) {
+
+            for ( var i = 0; i < s.data.length; i++ ) {
+
+                if ( s.data[i][0] === x ) {
+
+                    return s.data[i][1];
+                }
+            }
+
+            return null;
+        };
+
+        var day = function ( t ) {
+
+            return that.xType === 'yyyymmdd' || that.xType === 'yyyymm' || that.xType === 'yyyymmddhh'
+                ? that.timestampFormatter( t ) : String( t );
+        };
+
+        var info = ( this.rowsResultSet && this.rowsResultSet.compare )
+            || ( this.explorer && this.explorer.resultSet && this.explorer.resultSet.compare ) || null;
+
+        var real = this.comparedX( x, info );
+
+        compares.forEach( function ( c ) {
+
+            if ( real === null && c.compareDates && c.compareDates[ x ] ) {
+
+                real = that.formatValue( that.xType, String( c.compareDates[ x ] ) );
+            }
+        } );
+
+        var head = day( x ) + ( compared && real !== null ? ' vs ' + day( real ) : '' );
+
+        var html = '<div class="owa_chartTipHead">' + esc( head ) + '</div><table class="owa_chartTip">';
+
+        series.forEach( function ( s, i ) {
+
+            if ( s.isCompare ) {
+
+                return;
+            }
+
+            var v = at( s );
+            var c = compares.filter( function ( cs ) { return ( cs.compareOf || 0 ) === i; } )[0];
+            var w = c ? at( c ) : null;
+            var change = '';
+
+            if ( c && info ) {
+
+                var ch = v !== null && w !== null && w !== 0 ? ( v - w ) / w : null;
+                var d  = describeChange( { change: ch, compare_formatted_value: w }, info );
+
+                change = '<span class="owa_gridChange ' + d.cls + '">' + esc( d.text ) + '</span>';
+            }
+
+            html += '<tr><th><i style="background:' + esc( String( s.color ) ) + '"></i><span>' + esc( s.label || s.tooltipLabel || '' ) + '</span></th>'
+                + '<td>' + esc( v === null ? '\u2014' : that.tipNumber( v ) ) + '</td>'
+                + ( compared
+                    ? '<td class="owa_chartTipWas">' + ( c ? esc( w === null ? '\u2014' : that.tipNumber( w ) ) : '' ) + '</td>'
+                        + '<td>' + change + '</td>'
+                    : '' )
+                + '</tr>';
+        } );
+
+        return html + '</table>';
+    },
+
+    /** The first line that is not a comparison: the total. */
+    firstLine : function () {
+
+        var series = this.dataseries || [];
+
+        for ( var i = 0; i < series.length; i++ ) {
+
+            if ( ! series[i].isCompare ) {
+
+                return i;
+            }
+        }
+
+        return 0;
+    },
+
+    /** The x of the point nearest to x on the chart's axis, or null. */
+    nearestX : function ( x ) {
+
+        var data = ( this.dataseries && this.dataseries[ this.firstLine() ] || {} ).data || [];
+        var best = null;
+
+        data.forEach( function ( p ) {
+
+            if ( best === null || Math.abs( p[0] - x ) < Math.abs( best - x ) ) {
+
+                best = p[0];
+            }
+        } );
+
+        return best;
+    },
+
+    /**
+     * The pointer moved over the chart.
+     *
+     * Anywhere in the plot, the point nearest the pointer's x is the active
+     * one: on the line the pointer is on, else on the line clicked (selected),
+     * else on the total. A vertical line marks it, and the tooltip follows the
+     * pointer with every line's value there.
+     */
+    onHover : function ( pos, item ) {
+
+        var plot = jQuery( this.domSelector ).data( 'plot' );
+
+        if ( ! plot || ! this.dataseries || ! this.dataseries.length ) {
+
+            return;
+        }
+
+        var o = plot.offset();
+
+        // The plot, and a little either side so its first and last points can be reached.
+        if ( pos.pageX < o.left - 10 || pos.pageX > o.left + plot.width() + 10
+            || pos.pageY < o.top || pos.pageY > o.top + plot.height() ) {
+
+            this.endHover();
+
+            return;
+        }
+
+        var own, x;
+
+        if ( item ) {
+
+            own = item.series.isCompare ? ( item.series.compareOf || 0 ) : this.hoveredLine( item );
+            x   = item.datapoint[0];
+
+        } else {
+
+            own = this.selected !== null && this.selected !== undefined ? this.selected : this.firstLine();
+            x   = this.nearestX( pos.x );
+        }
+
+        if ( x === null ) {
+
+            return;
+        }
+
+        if ( own !== this.hovered ) {
+
+            this.hovered = own;
+
+            // With the grid's rows drawn, a line's comparison shows with it.
+            if ( this.compareOnHover() ) {
+
+                this.draw();
+                plot = jQuery( this.domSelector ).data( 'plot' );
+            }
+        }
+
+        this.activeX = x;
+        this.highlightAt( plot, own, x );
+        this.tipAt( this.pointTooltip( x ), pos.pageX, pos.pageY );
+    },
+
+    /** Mark line own's point at x, and redraw the vertical line. */
+    highlightAt : function ( plot, own, x ) {
+
+        plot.unhighlight();
+
+        plot.getData().forEach( function ( s, si ) {
+
+            if ( s.index !== own || s.isCompare ) {
+
+                return;
+            }
+
+            for ( var j = 0; j < s.data.length; j++ ) {
+
+                if ( s.data[j][0] === x && s.data[j][1] !== null ) {
+
+                    plot.highlight( si, j );
+                }
+            }
+        } );
+
+        plot.triggerRedrawOverlay();
+    },
+
+    /** The tooltip, at the pointer: its contents change only when the point does. */
+    tipAt : function ( html, pageX, pageY ) {
+
+        var $tip = jQuery( '#tooltip' );
+
+        if ( ! $tip.length ) {
+
+            this.showTooltip( pageX, pageY, html, { x: pageX, y: pageY } );
+
+            return;
+        }
+
+        if ( $tip.html() !== html ) {
+
+            $tip.html( html );
+        }
+
+        $tip.css( OWA.areaChart.besidePointer( { x: pageX, y: pageY }, $tip.outerWidth(), $tip.outerHeight(), {
+            left: window.pageXOffset,
+            top: window.pageYOffset,
+            width: document.documentElement.clientWidth,
+            height: document.documentElement.clientHeight
+        } ) );
+    },
+
+    /** The pointer left the plot: no tooltip, no active point. */
+    endHover : function () {
+
+        jQuery( '#tooltip' ).remove();
+
+        var plot = jQuery( this.domSelector ).data( 'plot' );
+
+        if ( this.activeX !== null && this.activeX !== undefined && plot ) {
+
+            this.activeX = null;
+            plot.unhighlight();
+            plot.triggerRedrawOverlay();
+        }
+
+        if ( this.hovered !== null && this.hovered !== undefined ) {
+
+            this.hovered = null;
+
+            if ( this.compareOnHover() ) {
+
+                this.draw();
+            }
+        }
+    },
+
+    /**
+     * A point clicked: its line is the one followed, as a legend click
+     * selects it. Clicking it again puts the total back.
+     */
+    onPointClick : function ( item ) {
+
+        var lines = ( this.dataseries || [] ).filter( function ( s ) { return ! s.isCompare; } );
+
+        if ( ! item || lines.length < 2 ) {
+
+            return;
+        }
+
+        var own = item.series.isCompare ? ( item.series.compareOf || 0 ) : this.hoveredLine( item );
+
+        this.selected = this.selected === own ? null : own;
+        this.hovered  = own;
+        this.draw();
+
+        var plot = jQuery( this.domSelector ).data( 'plot' );
+
+        if ( plot && this.activeX !== null && this.activeX !== undefined ) {
+
+            this.highlightAt( plot, own, this.activeX );
+        }
+    },
+
+    /** flot's drawOverlay hook, bound to this chart. */
+    crosshairHook : function () {
+
+        var that = this;
+
+        return function ( plot, ctx ) { that.drawCrosshair( plot, ctx ); };
+    },
+
+    /** The vertical line at the active x, the height of the plot. */
+    drawCrosshair : function ( plot, ctx ) {
+
+        if ( this.activeX === null || this.activeX === undefined ) {
+
+            return;
+        }
+
+        var o  = plot.getPlotOffset();
+        var cx = o.left + plot.getAxes().xaxis.p2c( this.activeX );
+
+        if ( cx < o.left - 1 || cx > o.left + plot.width() + 1 ) {
+
+            return;
+        }
+
+        cx = Math.round( cx ) + 0.5;
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(55, 65, 81, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo( cx, o.top );
+        ctx.lineTo( cx, o.top + plot.height() );
+        ctx.stroke();
+        ctx.restore();
+    },
+
+    /**
+     * The line a hovered point belongs to. Where lines meet -- every line at
+     * zero on a quiet day -- flot hands over the last of them; the first is
+     * the one meant, the total, whose comparison is the one worth showing.
+     */
+    hoveredLine : function ( item ) {
+
+        var x = item.datapoint[0], y = item.datapoint[1];
+        var series = this.dataseries || [];
+
+        for ( var i = 0; i < item.series.index; i++ ) {
+
+            if ( series[i].isCompare ) {
+
+                continue;
+            }
+
+            for ( var j = 0; j < series[i].data.length; j++ ) {
+
+                if ( series[i].data[j][0] === x ) {
+
+                    if ( series[i].data[j][1] === y ) {
+
+                        return i;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return item.series.index;
+    },
+
+    /**
+     * The point on the comparison's axis that x is compared with: the same
+     * distance from the comparison's start as x is from the period's. Null
+     * when the dates to work it out from are not here.
+     */
+    comparedX : function ( x, info ) {
+
+        var period = this.explorer && this.explorer.resultSet && this.explorer.resultSet.timePeriod;
+
+        if ( ! info || ! info.startDate || ! period || ! period.startDate ) {
+
+            return null;
+        }
+
+        var ymd = function ( t ) {
+
+            t = String( t );
+
+            return Date.UTC( t.substring( 0, 4 ) * 1, t.substring( 4, 6 ) * 1 - 1, t.substring( 6, 8 ) * 1 );
+        };
+
+        if ( this.xType === 'yyyymm' ) {
+
+            var from = String( period.startDate ), to = String( info.startDate );
+            var months = ( from.substring( 0, 4 ) * 12 + from.substring( 4, 6 ) * 1 ) - ( to.substring( 0, 4 ) * 12 + to.substring( 4, 6 ) * 1 );
+            var d = new Date( x );
+
+            return Date.UTC( d.getUTCFullYear(), d.getUTCMonth() - months, 1 );
+        }
+
+        if ( this.xType === 'yyyymmdd' || this.xType === 'yyyymmddhh' ) {
+
+            return x - ( ymd( period.startDate ) - ymd( info.startDate ) );
+        }
+
+        return null;
+    },
+
+    /** A number for the tooltip: digits grouped, at most two decimals. */
+    tipNumber : function ( v ) {
+
+        return this.groupDigits( Math.round( v * 100 ) / 100 );
     },
 
     /**
@@ -1662,10 +2409,14 @@ OWA.areaChart.prototype = {
         } );
     },
 
-    // shows a tool tip for flot charts
-    showTooltip : function(x, y, contents) {
-    
-        jQuery('<div id="tooltip">' + contents + '</div>').css( {
+    /**
+     * Shows a tooltip for flot charts at x, y. Given the pointer, it goes
+     * beside the pointer instead: right of it and below, or left of it and
+     * above where that would run off the window.
+     */
+    showTooltip : function(x, y, contents, pointer) {
+
+        var tip = jQuery('<div id="tooltip">' + contents + '</div>').css( {
             position: 'absolute',
             display: 'none',
             top: y + 5,
@@ -1673,8 +2424,24 @@ OWA.areaChart.prototype = {
             border: '1px solid #cccccc',
             padding: '2px',
             'background-color': '#ffffff',
-            opacity: 0.90
-        }).appendTo("body").fadeIn(100);
+            opacity: 0.90,
+            // Over the report's side nav and sticky headers, which sit above the page.
+            'z-index': 1000,
+            // Never under the pointer: over the tooltip, the pointer has left the chart.
+            'pointer-events': 'none'
+        }).appendTo("body");
+
+        if ( pointer ) {
+
+            tip.css( OWA.areaChart.besidePointer( pointer, tip.outerWidth(), tip.outerHeight(), {
+                left: window.pageXOffset,
+                top: window.pageYOffset,
+                width: document.documentElement.clientWidth,
+                height: document.documentElement.clientHeight
+            } ) );
+        }
+
+        tip.fadeIn(100);
     },
 
     
@@ -1698,48 +2465,16 @@ OWA.areaChart.prototype = {
          * that follows the plot element is below them.
          */
         jQuery("#"+dom_id).html(
-            '<div class="owa_chartControls"></div>'
+            '<div class="owa_chartHead"><div class="owa_chartTitle"></div><div class="owa_chartControls"></div></div>'
           + '<div class="owa_areaChart"></div>'
           + '<div class="owa_chartLegend"></div>' );
 
         jQuery(that.domSelector).css('width', this.getOption('width'));
         jQuery(that.domSelector).css('height', h);
         
-        // binds a tooltip to plot points
-        var previousPoint = null;
-        jQuery(that.domSelector).bind("plothover", function (event, pos, item) {
-
-            jQuery("#x").text(pos.x.toFixed(2));
-            jQuery("#y").text(pos.y.toFixed(2));
-            
-            if (item) {
-                if (previousPoint != item.datapoint) {
-                    
-                    previousPoint = item.datapoint;
-                    
-                    jQuery("#tooltip").remove();
-                    var x = item.datapoint[0].toFixed(0),
-                        y = item.datapoint[1].toFixed(0);
-                        
-                    // A compared point is labelled with the date it really is.
-                    var real = item.series.compareDates && item.series.compareDates[ item.datapoint[0] ];
-
-                    if ( real ) {
-
-                        x = that.timestampFormatter( that.formatValue( that.xType, String( real ) ) );
-
-                    } else if (that.options.xaxis.mode === 'time') {
-
-                        x = that.timestampFormatter(x);
-                    }
-                    
-                    that.showTooltip(item.pageX -75, item.pageY -50,
-                                x+'<BR><B>'+ ( item.series.tooltipLabel || item.series.label ) + ":</B> " + y);
-                }
-            } else {
-                jQuery("#tooltip").remove();
-                previousPoint = null;            
-            }
-        });  
-    }    
+        // The tooltip and the active point follow the pointer; see onHover.
+        jQuery(that.domSelector).bind( 'mouseleave', function () { that.endHover(); } );
+        jQuery(that.domSelector).bind( 'plothover', function ( event, pos, item ) { that.onHover( pos, item ); } );
+        jQuery(that.domSelector).bind( 'plotclick', function ( event, pos, item ) { that.onPointClick( item ); } );
+    }
 }

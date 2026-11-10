@@ -766,19 +766,28 @@ test.describe('the report grid gives every widget a usable width', () => {
             const card = document.querySelector('.owa_widget-trend-card');
             const chart = card.querySelector('.owa_trendChart');
             const plot = card.querySelector('.owa_areaChart');
+            // The chart element also holds the day/month control's row over the
+            // plot and the legend under it: those are not space the plot left.
+            const outer = (el) => {
+                if (!el) return 0;
+                const cs = getComputedStyle(el);
+                return el.getBoundingClientRect().height + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom);
+            };
 
             return {
                 card: Math.round(card.getBoundingClientRect().height),
                 chart: Math.round(chart.getBoundingClientRect().height),
                 plot: Math.round(plot.getBoundingClientRect().height),
+                around: Math.round(outer(chart.querySelector('.owa_chartHead')) + outer(chart.querySelector('.owa_chartLegend'))),
             };
         });
 
         // Comfortably past the 125px default the chart used to draw at.
         expect(m.plot, 'the chart is still at its default height').toBeGreaterThan(180);
 
-        // ...and the plot really is filling the space the chart element has.
-        expect(m.chart - m.plot).toBeLessThanOrEqual(12);
+        // ...and the plot really is filling the space the chart element has
+        // under its control row and over its legend.
+        expect(m.chart - m.around - m.plot).toBeLessThanOrEqual(12);
 
         // The chart is the biggest part of the card, which is what "fills" means.
         expect(m.chart).toBeGreaterThan(m.card / 2);

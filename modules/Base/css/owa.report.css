@@ -1086,7 +1086,7 @@ li.constraintRow {
 }
 /* A class, not the id: a widget's own rules size its chart. */
 .owa .owa_trendChart {
-    min-height: 125px
+    min-height: 250px
 }
 .owa #trend-metrics {
     min-height: 70px
@@ -1359,28 +1359,49 @@ li.constraintRow {
 }
 
 /*
- * The day/month control, top right of a trend.
- *
- * Floated over the plot's own top-right corner rather than given a row: the
- * chart's upper right is empty by construction -- a trend that filled it would
- * be off the top of its own axis -- and a row of its own would push the chart
- * down on every report that has one.
+ * A trend's header: what it draws on the left, the day/month control on the
+ * right, in a row of its own over the plot.
  */
-.owa .owa_chartControls {
-    float: right;
-    position: relative;
-    z-index: 2;
-    margin: 0 4px -4px 0;
+.owa .owa_chartHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
 }
 
-.owa .owa_chartGranularity {
-    font-size: 11px;
-    padding: 1px 4px;
-    border: 1px solid #dcdcdc;
-    border-radius: 3px;
-    background: #ffffff;
-    color: #505050;
+.owa .owa_chartTitle {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+    color: #1f2937;
 }
+
+.owa .owa_chartControls {
+    flex: none;
+    margin-left: auto;
+}
+
+/* Cornered like the period picker's button, with its own chevron: the
+   browser's sat against the right edge, wherever the padding put the text. */
+.owa .owa_chartGranularity {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    height: 32px;
+    padding: 0 30px 0 10px;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+    font: inherit;
+    font-size: 13px;
+    color: #111827;
+    cursor: pointer;
+}
+.owa .owa_chartGranularity:hover { border-color: #a0a0a0; }
+.owa .owa_chartGranularity:focus { border-color: #1874CD; outline: 1px solid #1874CD; }
 
 /*
  * A trend's legend, under the chart.
@@ -1393,6 +1414,18 @@ li.constraintRow {
     margin-top: 6px;
     font-size: 11px;
 }
+
+/* A compared chart's tooltip: the day against its comparison day, then each line. */
+.owa_chartTipHead { padding: 2px 4px 4px; font-size: 12px; color: #374151; white-space: nowrap; }
+.owa_chartTip { border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.owa_chartTip th { padding: 1px 10px 1px 4px; font-weight: 400; text-align: left; white-space: nowrap; }
+/* A long page path is cut short, not left to widen the tooltip off the page. */
+.owa_chartTip th span { display: inline-block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.owa_chartTip th i { display: inline-block; width: 12px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+.owa_chartTip td { padding: 1px 4px; text-align: right; white-space: nowrap; }
+.owa_chartTip .owa_gridChange { display: inline; }
+/* The compared day's value, after the day's own: quieter, as the dashed line is. */
+.owa_chartTip td.owa_chartTipWas { color: #6b7280; }
 
 /* A compared trend's key: the period solid, the comparison dashed. */
 .owa .owa_chartKey { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; color: #374151; }
@@ -3297,11 +3330,12 @@ li.constraintRow {
     min-height: 260px;
 }
 
-/* The boxes share what the row has rather than each taking a fixed slice: the
-   number of metrics belongs to the author, so the width has to follow it. The
-   basis is the inline min-width kpiBox writes -- see metricBoxes.minWidth. */
+/* The boxes are the size a trend's are, 150px, not stretched across the row:
+   a stretched box carried its underline the width of half the report. In a
+   card narrower than the row they shrink, down to the inline min-width kpiBox
+   writes (metricBoxes.minWidth), so four still fit half a row. */
 .owa .owa_trendCardMetrics .owa_metricInfobox {
-    flex: 1 1 auto;
+    flex: 0 1 150px;
 }
 
 /* ---------------------------------------------------------------------------
