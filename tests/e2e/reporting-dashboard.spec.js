@@ -747,6 +747,9 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
         // The compared line is the same metric, so it is no entry in the legend.
         await expect(page.locator('.owa_chartLegend').first()).not.toContainText('Compared');
+        // A key names the two periods instead: the period solid, the comparison dashed.
+        await expect(page.locator('.owa_chartKey .owa_chartKeyPeriod').first()).toBeVisible();
+        await expect(page.locator('.owa_chartKey .owa_chartKeyCompare').first()).toContainText(/\d{4}$/);
 
         // A label that wraps does not push its number below the rest of the row.
         const row = page.locator('.metricInfoboxesContainer').first();

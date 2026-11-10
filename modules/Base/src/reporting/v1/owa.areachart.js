@@ -2,6 +2,7 @@
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
+import { formatRange } from './owa.periodpicker.js';
 
 OWA.areaChart = function( options ) {
 
@@ -382,7 +383,7 @@ OWA.areaChart.prototype = {
                     container: jQuery( '#' + dom_id + ' > .owa_chartLegend' ),
                     noColumns: dataseries.length
                 },
-                hooks: { drawSeries: [ this.dotLine ] }
+                hooks: { drawSeries: [ this.dashLine ] }
             };
 
             this.xType = built.x_type;
@@ -735,7 +736,7 @@ OWA.areaChart.prototype = {
         } );
 
         /*
-         * The same metric over other dates, so the same colour, dotted, and no
+         * The same metric over other dates, so the same colour, dashed, and no
          * label: a legend entry would make it read as one more series to add
          * to the rest.
          */
@@ -745,8 +746,10 @@ OWA.areaChart.prototype = {
             // The date each point really is, by x, and the metric: for the tooltip.
             compareDates: when,
             tooltipLabel: resultSet.getMetricLabel( y_name ),
-            dotted: data.length > 1,
-            lines: { show: true, fill: false, lineWidth: 2 },
+            dashed: data.length > 1,
+            // What the key under the chart calls the two lines.
+            keyLabels: this.compareKeyLabels( resultSet ),
+            lines: { show: true, fill: false, lineWidth: 1.5 },
             shadowSize: 0,
             points: data.length === 1 ? { show: true, fill: true, radius: 3 } : undefined
         };
@@ -1473,24 +1476,77 @@ OWA.areaChart.prototype = {
         this.plotted = plotted;
 
         this.markLegend();
+
+        this.drawCompareKey( plotted );
     },
 
     /**
-     * flot's drawSeries hook: a series marked dotted is stroked as round dots.
+     * flot's drawSeries hook: a series marked dashed is stroked in dashes.
      *
      * flot 0.8 has no dash option. The hook runs just before each series is
-     * drawn, on the same context, so the dash is set for a dotted series and
+     * drawn, on the same context, so the dash is set for a dashed series and
      * cleared for every other one.
      */
-    dotLine : function ( plot, ctx, series ) {
+    dashLine : function ( plot, ctx, series ) {
 
         if ( typeof ctx.setLineDash !== 'function' ) {
 
             return;
         }
 
-        ctx.setLineDash( series.dotted ? [ 0.1, 4 ] : [] );
-        ctx.lineCap = series.dotted ? 'round' : 'butt';
+        ctx.setLineDash( series.dashed ? [ 5, 4 ] : [] );
+    },
+
+    /**
+     * The period's dates and the comparison's, for the key, or null when the
+     * result set does not say what its period was.
+     */
+    compareKeyLabels : function ( resultSet ) {
+
+        var period  = resultSet.timePeriod;
+        var compare = resultSet.compare;
+
+        if ( ! period || ! period.startDate || ! period.endDate || ! compare.startDate || ! compare.endDate ) {
+
+            return null;
+        }
+
+        return [
+            formatRange( String( period.startDate ), String( period.endDate ) ),
+            formatRange( String( compare.startDate ), String( compare.endDate ) )
+        ];
+    },
+
+    /**
+     * Under a compared trend: a solid line and the period's dates, a dashed line
+     * and the comparison's.
+     *
+     * Not a legend of series -- the two lines are one metric over two periods,
+     * so the key names the periods. Written after each draw because flot empties
+     * the legend's container every time it plots.
+     */
+    drawCompareKey : function ( plotted ) {
+
+        var cmp  = plotted.filter( function ( s ) { return s.isCompare; } )[0];
+        var main = plotted.filter( function ( s ) { return ! s.isCompare; } )[0];
+
+        if ( ! cmp || ! main || ! cmp.keyLabels || ( this.flotOptions.legend && this.flotOptions.legend.show ) ) {
+
+            return;
+        }
+
+        var esc  = OWA.util.escapeHtml;
+        var item = function ( cls, color, label ) {
+
+            return '<span class="' + cls + '"><i style="border-top-color:' + esc( String( color ) ) + '"></i>'
+                + esc( label ) + '</span>';
+        };
+
+        jQuery( '#' + this.dom_id + ' > .owa_chartLegend' ).html(
+            '<div class="owa_chartKey">'
+            + item( 'owa_chartKeyPeriod', main.color, cmp.keyLabels[0] )
+            + item( 'owa_chartKeyCompare', cmp.color, cmp.keyLabels[1] )
+            + '</div>' );
     },
 
     /**

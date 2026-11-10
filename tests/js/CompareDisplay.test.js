@@ -91,21 +91,44 @@ describe( 'a trend compared to another period', () => {
         // The same metric, so no label of its own: the tooltip names the metric.
         expect( line.label ).toBeUndefined();
         expect( line.tooltipLabel ).toBe( 'Page Views' );
-        expect( line.dotted ).toBe( true );
-        expect( built.series.find( ( s ) => ! s.isCompare ).dotted ).toBeUndefined();
+        expect( line.dashed ).toBe( true );
+        expect( built.series.find( ( s ) => ! s.isCompare ).dashed ).toBeUndefined();
     } );
 
-    test( 'a dotted series is stroked as dots, and the next series is not', () => {
+    test( 'a dashed series is stroked in dashes, and the next series is not', () => {
         const chart = new OWA.areaChart();
         const ctx   = { dash: null, setLineDash( d ) { this.dash = d; } };
 
-        chart.dotLine( null, ctx, { dotted: true } );
-        expect( ctx.dash ).toEqual( [ 0.1, 4 ] );
-        expect( ctx.lineCap ).toBe( 'round' );
+        chart.dashLine( null, ctx, { dashed: true } );
+        expect( ctx.dash ).toEqual( [ 5, 4 ] );
 
-        chart.dotLine( null, ctx, {} );
+        chart.dashLine( null, ctx, {} );
         expect( ctx.dash ).toEqual( [] );
-        expect( ctx.lineCap ).toBe( 'butt' );
+    } );
+
+    test( 'the key under the chart names the two periods, solid and dashed', () => {
+        const rs = Object.assign( resultSet( [ [ '20261102', 10 ] ], [ [ '20261102', '20261026', 1 ], [ '20261103', '20261027', 2 ] ] ),
+            { timePeriod: { startDate: '20261102', endDate: '20261108' } } );
+
+        const chart = new OWA.areaChart();
+        const line  = chart.singleSeries( rs, 'date', 'pageViews' ).series.find( ( s ) => s.isCompare );
+
+        expect( line.keyLabels[0] ).toMatch( /^Nov 2\s*–\s*8, 2026$/ );
+        expect( line.keyLabels[1] ).toMatch( /^Sep 15\s*–\s*Oct 12, 2026$/ );
+
+        document.body.innerHTML = '<div id="kc"><div class="owa_chartLegend"></div></div>';
+        chart.dom_id = 'kc';
+        chart.flotOptions = { legend: { show: false } };
+        chart.drawCompareKey( [ { color: '#1874CD' }, Object.assign( {}, line, { color: '#1874CD' } ) ] );
+
+        const key = document.querySelector( '#kc .owa_chartKey' );
+        expect( key.querySelector( '.owa_chartKeyPeriod' ).textContent ).toBe( line.keyLabels[0] );
+        expect( key.querySelector( '.owa_chartKeyCompare' ).textContent ).toBe( line.keyLabels[1] );
+    } );
+
+    test( 'no period on the result set, no key', () => {
+        const rs = resultSet( [ [ '20261102', 10 ] ], [ [ '20261102', '20261026', 1 ], [ '20261103', '20261027', 2 ] ] );
+        expect( new OWA.areaChart().singleSeries( rs, 'date', 'pageViews' ).series.find( ( s ) => s.isCompare ).keyLabels ).toBeNull();
     } );
 
     test( 'no comparison, no second line', () => {
