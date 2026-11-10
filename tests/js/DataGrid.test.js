@@ -616,3 +616,62 @@ describe('row actions', () => {
         expect($root.find('.owa_gridRowActions')).toHaveLength(0);
     });
 });
+
+describe('a grid compared to another period', () => {
+
+    const compare = { compare: 'previous_period', startDate: '20260915', endDate: '20261012' };
+
+    function compared() {
+        const c = (name, value, formatted, cv, cf, change) =>
+            cell(name, 'metric', value, formatted, { compare_value: cv, compare_formatted_value: cf, change });
+
+        return resultSet({
+            rows: [
+                { browserType: cell('browserType', 'dimension', 'Chrome'), sessions: c('sessions', 60, '60', 50, '50', 0.2), bounceRate: c('bounceRate', 0.4, '40.00%', 0.5, '50.00%', -0.2) },
+                { browserType: cell('browserType', 'dimension', 'Edge'), sessions: c('sessions', 40, '40', null, null, null), bounceRate: c('bounceRate', 0.3, '30.00%', null, null, null) },
+            ],
+            rs: {
+                compare,
+                aggregates: {
+                    sessions: { name: 'sessions', value: 100, formatted_value: '100', compare_value: 80, compare_formatted_value: '80', change: 0.25 },
+                    bounceRate: { name: 'bounceRate', value: 0.35, formatted_value: '35.00%', compare_value: 0.5, compare_formatted_value: '50.00%', change: -0.3 },
+                },
+            },
+        });
+    }
+
+    const changeIn = ($root, row, column) => $root.find('tbody tr').eq(row).find('td[data-column="' + column + '"] .owa_gridChange');
+
+    test('each metric cell shows its change under the value, the old value in its title', () => {
+        const { $root } = draw(compared());
+
+        // Row 0 is the total; the rows follow.
+        const up = changeIn($root, 1, 'sessions');
+        expect(up.text()).toBe('▲ 20.0%');
+        expect(up.hasClass('is-up')).toBe(true);
+        expect(up.attr('title')).toMatch(/Sep 15.*Oct 12, 2026: 50$/);
+
+        expect(changeIn($root, 1, 'bounceRate').text()).toBe('▼ 20.0%');
+        expect(changeIn($root, 1, 'bounceRate').hasClass('is-down')).toBe(true);
+    });
+
+    test('a row the compared period did not have shows no percentage', () => {
+        const { $root } = draw(compared());
+
+        expect(changeIn($root, 2, 'sessions').text()).toBe('—');
+        expect(changeIn($root, 2, 'sessions').attr('title')).toMatch(/no data$/);
+    });
+
+    test('the total row is compared too', () => {
+        const { $root } = draw(compared());
+
+        expect($root.find('tr.owa_gridTotal td[data-column="sessions"] .owa_gridChange').text()).toBe('▲ 25.0%');
+    });
+
+    test('a dimension cell has no change, and an uncompared grid none at all', () => {
+        const { $root } = draw(compared());
+        expect($root.find('td[data-column="browserType"] .owa_gridChange')).toHaveLength(0);
+
+        expect(draw(resultSet()).$root.find('.owa_gridChange')).toHaveLength(0);
+    });
+});

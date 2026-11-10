@@ -2,7 +2,7 @@
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
-import { formatRange } from './owa.periodpicker.js';
+import { describeChange } from './owa.periodpicker.js';
 
 OWA.kpiBox = function( options ) {
 
@@ -54,23 +54,11 @@ OWA.kpiBox = function( options ) {
  */
 OWA.kpiBox.compareHtml = function ( item, compare ) {
 
-    var range = formatRange( compare.startDate, compare.endDate );
-    var ch    = item.change;
-    var cls   = 'is-flat';
-    var text  = '\u2014';
+    var d = describeChange( item, compare );
 
-    if ( ch !== null && ch !== undefined && isFinite( ch ) ) {
-
-        cls  = ch > 0 ? 'is-up' : ( ch < 0 ? 'is-down' : 'is-flat' );
-        text = ( ch > 0 ? '\u25B2 ' : ( ch < 0 ? '\u25BC ' : '' ) ) + ( Math.abs( ch ) * 100 ).toFixed( 1 ) + '%';
-    }
-
-    var was = item.compare_formatted_value === null || item.compare_formatted_value === undefined
-        ? 'no data' : item.compare_formatted_value;
-
-    return '<p class="owa_metricInfoboxCompare" title="' + OWA.util.escapeHtml( range + ': ' + was ) + '">'
-        + '<span class="' + cls + '">' + OWA.util.escapeHtml( text ) + '</span> vs '
-        + OWA.util.escapeHtml( range ) + '</p>';
+    return '<p class="owa_metricInfoboxCompare" title="' + OWA.util.escapeHtml( d.title ) + '">'
+        + '<span class="' + d.cls + '">' + OWA.util.escapeHtml( d.text ) + '</span> vs '
+        + OWA.util.escapeHtml( d.range ) + '</p>';
 };
 
 OWA.kpiBox.prototype = {

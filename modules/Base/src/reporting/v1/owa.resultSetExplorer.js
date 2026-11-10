@@ -31,6 +31,7 @@
 // was supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
+import { describeChange } from './owa.periodpicker.js';
 
 OWA.resultSet = function( attributes ) {
 
@@ -1421,6 +1422,17 @@ OWA.dataGrid.range = function ( rs ) {
 };
 
 /** A row's share of the total, "16.5%", or '' when there is none to give. */
+/**
+ * A compared cell's change, on a line of its own under the value: up or down
+ * and by how much, with the comparison's own value and dates as its title.
+ */
+OWA.dataGrid.changeEl = function ( cell, compare ) {
+
+    var d = describeChange( cell, compare );
+
+    return jQuery( '<span class="owa_gridChange"></span>' ).addClass( d.cls ).attr( 'title', d.title ).text( d.text );
+};
+
 OWA.dataGrid.share = function ( value, total ) {
 
     var v = parseFloat( value );
@@ -2055,8 +2067,15 @@ OWA.dataGrid.prototype = {
 
                 var agg = aggs[ c.name ];
 
-                $total.append( jQuery( '<td class="owa_gridMetric"></td>' ).attr( 'data-column', c.name )
-                    .text( OWA.util.metricText( agg ) ) );
+                var $agg = jQuery( '<td class="owa_gridMetric"></td>' ).attr( 'data-column', c.name )
+                    .text( OWA.util.metricText( agg ) );
+
+                if ( rs.compare && agg && agg.hasOwnProperty( 'compare_value' ) ) {
+
+                    $agg.append( OWA.dataGrid.changeEl( agg, rs.compare ) );
+                }
+
+                $total.append( $agg );
             } );
 
             $tbody.append( $total );
@@ -2142,6 +2161,11 @@ OWA.dataGrid.prototype = {
                     if ( share ) {
                         $td.append( ' ' ).append( jQuery( '<span class="owa_gridShare"></span>' ).text( '(' + share + ')' ) );
                     }
+                }
+
+                if ( c.kind === 'metric' && rs.compare && cell && cell.hasOwnProperty( 'compare_value' ) ) {
+
+                    $td.append( OWA.dataGrid.changeEl( cell, rs.compare ) );
                 }
 
                 $tr.append( $td );

@@ -946,3 +946,32 @@ PeriodPicker.prototype = {
 };
 
 
+
+/**
+ * How a compared metric reads: the change and its direction, and the
+ * comparison's own value with its dates for a title. One wording for the
+ * metric boxes and the grid cells.
+ *
+ * @param {object} cell     a metric cell with compare_value,
+ *                          compare_formatted_value and change (CompareMerger)
+ * @param {object} compare  the result set's compare: startDate, endDate
+ * @return {{cls: string, text: string, title: string, range: string}}
+ */
+export function describeChange( cell, compare ) {
+
+    const range = formatRange( compare.startDate, compare.endDate );
+    const ch    = cell.change;
+    let cls     = 'is-flat';
+    let text    = '—';
+
+    if ( ch !== null && ch !== undefined && isFinite( ch ) ) {
+
+        cls  = ch > 0 ? 'is-up' : ( ch < 0 ? 'is-down' : 'is-flat' );
+        text = ( ch > 0 ? '▲ ' : ( ch < 0 ? '▼ ' : '' ) ) + ( Math.abs( ch ) * 100 ).toFixed( 1 ) + '%';
+    }
+
+    const was = cell.compare_formatted_value === null || cell.compare_formatted_value === undefined
+        ? 'no data' : cell.compare_formatted_value;
+
+    return { cls: cls, text: text, title: range + ': ' + was, range: range };
+}

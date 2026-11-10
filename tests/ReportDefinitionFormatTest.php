@@ -1150,6 +1150,30 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertArrayNotHasKey( 'compare', $query, 'no comparison asked for, none passed on' );
     }
 
+    /**
+     * A share chart shows the period only, so its query does not ask for the
+     * comparison -- which would cost two more queries for nothing drawn --
+     * while the rest of the report's state, the period, still reaches it.
+     */
+    public function testAShareChartDoesNotQueryTheComparison(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Pie',
+            'metrics' => 'sessions',
+            'widgets' => array(
+                array( 'type' => 'pie', 'id' => 'medium', 'container' => 'traffic-sources', 'chartMetric' => 'sessions',
+                       'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ) ),
+            ),
+        ), array(), array( 'period' => 'last_28_days', 'compare' => 'previous_year' ) );
+
+        $query = $this->queryFor( $html, 'mediumurl' );
+
+        $this->assertArrayNotHasKey( 'compare', $query );
+        $this->assertSame( 'last_28_days', $query['period'] ?? null );
+    }
+
     /** A stand-in for a TimePeriod: only its two dates are read. */
     private static function period( string $start, string $end ): object
     {
