@@ -111,23 +111,24 @@ OWA.areaChart = function( options ) {
 
 /**
  * Where a tooltip w wide and h tall goes beside the pointer: right of it and
- * below, flipped left or up where that side runs out of the view (the
- * window's scrolled box: left, top, width, height), and never outside it.
+ * above, so a point near the x axis does not have its tooltip over the axis.
+ * Flipped left or below where that side runs out of the view (the window's
+ * scrolled box: left, top, width, height), and never outside it.
  */
 OWA.areaChart.besidePointer = function ( pointer, w, h, view ) {
 
     var gap = 12, edge = 8;
     var left = pointer.x + gap;
-    var top  = pointer.y + gap;
+    var top  = pointer.y - gap - h;
 
     if ( left + w > view.left + view.width - edge ) {
 
         left = pointer.x - gap - w;
     }
 
-    if ( top + h > view.top + view.height - edge ) {
+    if ( top < view.top + edge ) {
 
-        top = pointer.y - gap - h;
+        top = pointer.y + gap;
     }
 
     return {
@@ -2166,6 +2167,8 @@ OWA.areaChart.prototype = {
             padding: '2px',
             'background-color': '#ffffff',
             opacity: 0.90,
+            // Over the report's side nav and sticky headers, which sit above the page.
+            'z-index': 1000,
             // Never under the pointer: over the tooltip, the pointer has left the chart.
             'pointer-events': 'none'
         }).appendTo("body");
@@ -2276,8 +2279,10 @@ OWA.areaChart.prototype = {
                         x = that.timestampFormatter(x);
                     }
                     
-                    that.showTooltip(item.pageX -75, item.pageY -50,
-                                x+'<BR><B>'+ ( item.series.tooltipLabel || item.series.label ) + ":</B> " + y);
+                    // Beside the pointer, like the compared one: up and to its left ran under the side nav.
+                    that.showTooltip( item.pageX, item.pageY,
+                                x+'<BR><B>'+ ( item.series.tooltipLabel || item.series.label ) + ":</B> " + y,
+                                { x: item.pageX, y: item.pageY } );
                 }
             } else {
                 jQuery("#tooltip").remove();

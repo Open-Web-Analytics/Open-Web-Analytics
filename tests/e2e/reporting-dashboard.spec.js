@@ -862,6 +862,30 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await expect(page.locator(`.owa_metricInfobox[data-metric="${back}"]`).first()).toHaveClass(/owa_metricInfoboxCharted/);
     });
 
+    test('the tooltip of the first point is not under the side nav', async ({ page }) => {
+        const area = page.locator('.owa_areaChart').first();
+        await expect(page.locator('.owa_chartLegend').first()).toContainText('Chrome');
+
+        const at = await area.evaluate((el) => {
+            const plot = window.jQuery(el).data('plot');
+            const total = plot.getData()[0];
+            const first = total.data[0];
+            const o = plot.pointOffset({ x: first[0], y: first[1] });
+            const box = el.getBoundingClientRect();
+            return { x: box.left + o.left, y: box.top + o.top };
+        });
+        await page.mouse.move(at.x, at.y);
+
+        const tip = page.locator('#tooltip');
+        await expect(tip).toBeVisible();
+        const b = await tip.boundingBox();
+        // Right of the point, so inside the chart's own column, clear of the nav to its left.
+        expect(b.x).toBeGreaterThan(at.x);
+        // Above it: a point on the x axis keeps the axis in view.
+        expect(b.y + b.height).toBeLessThan(at.y);
+        expect(b.x).toBeGreaterThanOrEqual((await area.boundingBox()).x);
+    });
+
     test('compared, the tooltip of the last point stays inside the window', async ({ page }) => {
         const url = new URL(page.url());
         url.searchParams.set('owa_compare', 'previous_period');

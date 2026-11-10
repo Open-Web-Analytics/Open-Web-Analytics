@@ -203,16 +203,16 @@ describe( 'the compared tooltip', () => {
     describe( 'it goes beside the pointer, inside the window', () => {
         const view = { left: 0, top: 100, width: 1000, height: 600 };
 
-        test( 'right of the pointer and below', () => {
-            expect( OWA.areaChart.besidePointer( { x: 200, y: 300 }, 250, 150, view ) ).toEqual( { left: 212, top: 312 } );
+        test( 'right of the pointer and above it, clear of the x axis', () => {
+            expect( OWA.areaChart.besidePointer( { x: 200, y: 300 }, 250, 150, view ) ).toEqual( { left: 212, top: 300 - 12 - 150 } );
         } );
 
         test( 'left of the pointer near the right edge', () => {
             expect( OWA.areaChart.besidePointer( { x: 900, y: 300 }, 250, 150, view ).left ).toBe( 900 - 12 - 250 );
         } );
 
-        test( 'above the pointer near the bottom', () => {
-            expect( OWA.areaChart.besidePointer( { x: 200, y: 650 }, 250, 150, view ).top ).toBe( 650 - 12 - 150 );
+        test( 'below the pointer near the top of the window', () => {
+            expect( OWA.areaChart.besidePointer( { x: 200, y: 180 }, 250, 150, view ).top ).toBe( 192 );
         } );
 
         test( 'wider than either side, it is held inside the window', () => {
