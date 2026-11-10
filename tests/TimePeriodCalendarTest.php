@@ -31,16 +31,17 @@ final class TimePeriodCalendarTest extends TestCase
             case 'today':               return [$today, $today];
             case 'yesterday':           return [$today->modify('-1 day'), $today->modify('-1 day')];
             case 'last_seven_days':     return [$today->modify('-6 days'), $today];
+            case 'last_28_days':        return [$today->modify('-27 days'), $today];
             case 'last_thirty_days':    return [$today->modify('-29 days'), $today];
-            case 'this_week':           return [$today->modify("-$w days"), $today->modify('+' . (6 - $w) . ' days')];
+            case 'last_90_days':        return [$today->modify('-89 days'), $today];
+            // The "this ..." periods and quarter to date end today.
+            case 'this_week':           return [$today->modify("-$w days"), $today];
             case 'last_week':           return [$today->modify('-' . ($w + 7) . ' days'), $today->modify('-' . ($w + 1) . ' days')];
-            case 'same_day_last_week':  return [$today->modify('-7 days'), $today->modify('-7 days')];
-            case 'this_month':          return [$day($y, $m, 1), $day($y, $m + 1, 0)];
+            case 'this_month':          return [$day($y, $m, 1), $today];
             case 'last_month':          return [$day($y, $m - 1, 1), $day($y, $m, 0)];
-            case 'this_year':           return [$day($y, 1, 1), $day($y, 12, 31)];
+            case 'quarter_to_date':     return [$day($y, intdiv($m - 1, 3) * 3 + 1, 1), $today];
+            case 'this_year':           return [$day($y, 1, 1), $today];
             case 'last_year':           return [$day($y - 1, 1, 1), $day($y - 1, 12, 31)];
-            case 'same_month_last_year': return [$day($y - 1, $m, 1), $day($y - 1, $m + 1, 0)];
-            case 'same_week_last_year': return [$day($y - 1, $m, $d - $w), $day($y - 1, $m, $d + 6 - $w)];
         }
 
         throw new \LogicException($period);
@@ -49,10 +50,9 @@ final class TimePeriodCalendarTest extends TestCase
     public static function periods(): array
     {
         return array_map(fn($p) => [$p], [
-            'today', 'yesterday', 'last_seven_days', 'last_thirty_days',
-            'this_week', 'last_week', 'same_day_last_week',
-            'this_month', 'last_month', 'this_year', 'last_year',
-            'same_month_last_year', 'same_week_last_year',
+            'today', 'yesterday', 'last_seven_days', 'last_28_days', 'last_thirty_days', 'last_90_days',
+            'this_week', 'last_week', 'this_month', 'last_month', 'quarter_to_date',
+            'this_year', 'last_year',
         ]);
     }
 

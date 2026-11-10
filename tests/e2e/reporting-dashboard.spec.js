@@ -697,27 +697,42 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(dims.h).toBeGreaterThan(0);
     });
 
-    test('jQuery-UI initializes the datepicker widget', async ({ page }) => {
-        // Pins the jQuery-UI 1.13.3 widget surface so a regression in the
-        // datepicker fails loudly. The date range control is two jQuery-UI
-        // datepickers. (The button widget is pinned on the funnel's filter.)
-        const startInput = page.locator('#owa_report-datepicker-start');
-        await expect(startInput).toHaveClass(/hasDatepicker/);
+    test('the period picker opens with the presets and a calendar', async ({ page }) => {
+        // The period picker is OWA's own (owa.periodpicker.js), handed its
+        // presets by the server. Open it and check both halves drew.
+        await page.locator('.owa_periodTrigger').click();
+        const panel = page.locator('.owa_periodPanel');
+        await expect(panel).toBeVisible();
+        expect(await panel.locator('.owa_periodList button[data-act="preset"]').count()).toBeGreaterThanOrEqual(13);
+        expect(await panel.locator('.owa_periodDay').count()).toBeGreaterThan(27);
     });
 
-    test('jQuery-UI datepicker renders a calendar when the period control opens', async ({ page }) => {
-        // Init alone can pass while the widget is broken at runtime (this is how
-        // the $.curCSS regression slipped past the load probe). OWA's date range
-        // is two INLINE jQuery-UI datepickers (rendered into <div> elements) that
-        // live hidden inside #owa_reportPeriodFiltersContainer until the user
-        // clicks the period label to reveal them. Open it and assert the calendar
-        // grid actually painted -- exercising the widget's runtime render (and,
-        // incidentally, the jQote2 template that builds the period control).
-        await page.locator('#owa_reportPeriodLabelContainer').click();
-        const startCal = page.locator('#owa_report-datepicker-start');
-        await expect(startCal).toBeVisible();
-        // A rendered inline datepicker has clickable day cells.
-        expect(await startCal.locator('a.ui-state-default').count()).toBeGreaterThanOrEqual(1);
+    test('a preset applies through the URL and the picker reopens on it', async ({ page }) => {
+        await page.locator('.owa_periodTrigger').click();
+        await page.locator('.owa_periodList button', { hasText: 'Last 28 days' }).click();
+        await page.locator('.owa_periodFoot [data-act="apply"]').click();
+
+        await page.waitForURL(/period=last_28_days/);
+        await expect(page.locator('.owa_periodBadge')).toHaveText('Last 28 days');
+    });
+
+    test('Compare adds a comparison to the URL and to the button', async ({ page }) => {
+        await page.locator('.owa_periodTrigger').click();
+        await page.locator('.owa_periodLeft .owa_periodSwitch').click();
+        await page.locator('.owa_periodList .owa_periodCmpSelect').selectOption('previous_year');
+        await page.locator('.owa_periodFoot [data-act="apply"]').click();
+
+        await page.waitForURL(/compare=previous_year/);
+        await expect(page.locator('.owa_periodTriggerCompare')).toContainText('Compare:');
+    });
+
+    test('an old link to a retired period opens on the default period', async ({ page }) => {
+        const url = new URL(page.url());
+        url.searchParams.set('owa_period', 'same_month_last_year');
+        await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+        await expect(page.locator('.owa_periodTrigger')).toBeVisible();
+        await expect(page.locator('.owa_periodBadge')).not.toHaveCount(0);
     });
 
     test('server-rendered images resolve to public/, not the denied module tree', async ({ page }) => {

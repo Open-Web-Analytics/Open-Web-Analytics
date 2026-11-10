@@ -216,7 +216,10 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
 </div>
 <script>
 <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
-OWA.items['<?php echo $view->dom_id;?>'].displayTimePeriodPicker('#owa_timePeriodControl');
+OWA.items['<?php echo $view->dom_id;?>'].displayTimePeriodPicker('#owa_timePeriodControl', <?php
+    // json_encode, not makeJson(): makeJson flattens nested arrays, and the presets are a list.
+    echo json_encode( $view->get( 'period_picker' ) ?: new \stdClass(),
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );?>);
 OWA.items['<?php echo $view->dom_id;?>'].showAsOf('#owa_reportAsOf');
 <?php endif;?>
 <?php if ( ! $view->get( 'hideSitesFilter' ) ):?>

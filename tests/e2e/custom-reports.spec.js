@@ -1303,7 +1303,7 @@ test.describe('custom reports', () => {
         test('a custom report has the site filter and the date picker', async ({ page }) => {
             await buildOne(page, 'Chrome');
 
-            await expect(page.locator('#owa_reportPeriodLabelContainer')).toHaveCount(1);
+            await expect(page.locator('.owa_periodTrigger')).toHaveCount(1);
             // The site filter used to be a select in the content column. It is
             // the site control above the left nav now -- same job, and still
             // part of the chrome every report gets for free.

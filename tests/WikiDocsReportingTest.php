@@ -57,20 +57,26 @@ final class WikiDocsReportingTest extends TestCase
     }
 
     /**
-     * The date picker keeps its own list of the periods (owa.report.js). It
-     * must offer the same periods, under the same labels, as the list the
-     * server accepts and the wiki prints.
+     * The date picker has no list of periods of its own: it is handed the
+     * server's (ReportController::periodPickerConfig), so it cannot offer one
+     * the server does not accept or the wiki does not print.
      */
     public function testThePickerOffersThePeriodsTheServerAccepts(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
+        $src = (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.periodpicker.js' )
+             . (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
 
-        $this->assertSame( 1, preg_match( '/fixedPeriods:\s*\{(.*?)\}/s', $src, $block ), 'no fixedPeriods in owa.report.js' );
-        preg_match_all( "/(\w+):\s*'([^']+)'/", $block[1], $m );
+        foreach ( array_keys( ( new TimePeriod() )->getPeriodLabels() ) as $period ) {
 
-        $labels = array_map( fn ( $p ) => $p['label'], ( new TimePeriod() )->getPeriodLabels() );
+            $this->assertStringNotContainsString( "'$period'", $src, "the picker names $period itself instead of reading the server's list" );
+        }
 
-        $this->assertSame( $labels, array_combine( $m[1], $m[2] ) );
+        $period = new TimePeriod();
+        $period->set( 'today' );
+
+        $config = \OWA\Core\ReportController::periodPickerConfig( $period, array() );
+
+        $this->assertSame( array_keys( ( new TimePeriod() )->getPeriodLabels() ), array_column( $config['presets'], 'key' ) );
     }
 
     public function testEveryMetricSetIsListedWithWhenItIsShown(): void

@@ -44,7 +44,8 @@ class View extends \OWA\Core\Base {
      * besides any state keys the controller adds. A controller building a link
      * on a Template of its own, which has no link state, reads them from here.
      */
-    const LINK_STATE_KEYS = array( 'period', 'startDate', 'endDate', 'siteId', 'propertyId', 'startTime', 'endTime' );
+    const LINK_STATE_KEYS = array( 'period', 'startDate', 'endDate', 'siteId', 'propertyId', 'startTime', 'endTime',
+        'compare', 'compareStartDate', 'compareEndDate' );
 
     /**
      * Main view template object

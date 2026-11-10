@@ -78,13 +78,14 @@ final class TimePeriodTest extends TestCase
         foreach ([
             'today', 'yesterday', 'this_week', 'this_month', 'this_year',
             'last_week', 'last_month', 'last_year', 'last_seven_days',
-            'last_thirty_days', 'same_day_last_week', 'same_week_last_year',
-            'same_month_last_year', 'date_range',
+            'last_28_days', 'last_thirty_days', 'last_90_days', 'quarter_to_date', 'date_range',
         ] as $name) {
             $this->assertTrue($tp->isValid($name), "$name should be a valid period");
         }
 
-        foreach (['day', 'week', 'month', 'year', 'hour', 'last_24_hours', ''] as $name) {
+        // Retired: comparison does what these did.
+        foreach (['day', 'week', 'month', 'year', 'hour', 'last_24_hours', '',
+                  'same_day_last_week', 'same_week_last_year', 'same_month_last_year'] as $name) {
             $this->assertFalse($tp->isValid($name), "$name should not be a valid period");
         }
     }

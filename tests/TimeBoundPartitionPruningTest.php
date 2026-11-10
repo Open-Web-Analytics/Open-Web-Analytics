@@ -171,10 +171,10 @@ final class TimeBoundPartitionPruningTest extends TestCase
         return array_map(
             static fn($p) => [$p],
             array_combine(
-                ['today', 'yesterday', 'this_week', 'last_week', 'last_seven_days',
-                 'last_thirty_days', 'this_month', 'last_month', 'this_year', 'last_year'],
-                ['today', 'yesterday', 'this_week', 'last_week', 'last_seven_days',
-                 'last_thirty_days', 'this_month', 'last_month', 'this_year', 'last_year']
+                ['today', 'yesterday', 'this_week', 'last_week', 'last_seven_days', 'last_28_days',
+                 'last_thirty_days', 'last_90_days', 'this_month', 'last_month', 'quarter_to_date', 'this_year', 'last_year'],
+                ['today', 'yesterday', 'this_week', 'last_week', 'last_seven_days', 'last_28_days',
+                 'last_thirty_days', 'last_90_days', 'this_month', 'last_month', 'quarter_to_date', 'this_year', 'last_year']
             )
         );
     }

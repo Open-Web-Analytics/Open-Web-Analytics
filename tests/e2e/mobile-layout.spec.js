@@ -44,8 +44,8 @@ async function overflow(page) {
 }
 
 async function openPicker(page) {
-    await page.locator('.owa_reportPeriodLabelText').first().click();
-    await expect(page.locator('#owa_reportPeriodFiltersContainer')).toBeVisible();
+    await page.locator('.owa_periodTrigger').first().click();
+    await expect(page.locator('.owa_periodPanel')).toBeVisible();
 }
 
 for (const [name, size] of [['phone', PHONE], ['tablet', TABLET]]) {
@@ -86,38 +86,39 @@ test.describe('on a phone', () => {
         await adminLogin(page);
     });
 
-    test('the date range panel stacks its two calendars', async ({ page }) => {
+    /**
+     * A full-screen sheet: the presets as chips above the date fields, one
+     * month of calendar, and Apply in reach at the bottom of the screen.
+     */
+    test('the date range panel is a full-screen sheet', async ({ page }) => {
         await page.goto(report('pages'), { waitUntil: 'networkidle' });
         await openPicker(page);
 
-        const start = await page.locator('#owa_report-datepicker-start').boundingBox();
-        const end = await page.locator('#owa_report-datepicker-end').boundingBox();
+        const sheet = await page.locator('.owa_periodPanel').boundingBox();
+        expect(sheet.x).toBe(0);
+        expect(sheet.width).toBe(390);
+        expect(sheet.height).toBe(844);
 
-        expect(end.y, 'the end calendar is below the start calendar').toBeGreaterThanOrEqual(start.y + start.height);
+        const chips = await page.locator('.owa_periodChips').first().boundingBox();
+        const fields = await page.locator('.owa_periodFieldRow').first().boundingBox();
+        expect(chips.y + chips.height, 'the presets come first').toBeLessThanOrEqual(fields.y);
+        await expect(page.locator('.owa_periodLeft')).toBeHidden();
 
-        // Within the screen's width; how far down it sits depends on what is
-        // above the report (a banner, say), and a phone scrolls down anyway.
-        for (const el of [start, end, await page.locator('#owa_reportPeriodFilterSubmit').boundingBox()]) {
-            expect(el.x).toBeGreaterThanOrEqual(0);
-            expect(el.x + el.width).toBeLessThanOrEqual(390);
-        }
+        await expect(page.locator('.owa_periodMonth:visible')).toHaveCount(1);
+
+        const apply = await page.locator('.owa_periodFoot [data-act="apply"]').boundingBox();
+        expect(apply.y + apply.height).toBeLessThanOrEqual(844);
     });
 
-    /** One column: the presets, then each calendar the panel's full width. */
-    test('the date range panel is one column, calendars full width', async ({ page }) => {
+    test('the calendar pages a month at a time', async ({ page }) => {
         await page.goto(report('pages'), { waitUntil: 'networkidle' });
         await openPicker(page);
 
-        const presets = await page.locator('#owa_reportPeriodFilter').boundingBox();
-        const start = await page.locator('#owa_report-datepicker-start .ui-datepicker').boundingBox();
-        const end = await page.locator('#owa_report-datepicker-end .ui-datepicker').boundingBox();
-
-        expect(presets.y + presets.height, 'the presets come first').toBeLessThanOrEqual(start.y);
-        expect(Math.abs(start.x - end.x), 'the calendars share one column').toBeLessThan(2);
-
-        for (const calendar of [start, end]) {
-            expect(calendar.width, 'a calendar takes the column\'s width').toBeGreaterThan(390 * 0.8);
-        }
+        const name = page.locator('.owa_periodCalNav span');
+        const before = await name.textContent();
+        await page.locator('.owa_periodCalNav [data-act="mprev"]').click();
+        await expect(name).not.toHaveText(before);
+        await expect(page.locator('.owa_periodMonth:visible')).toHaveCount(1);
     });
 
     test('the menu takes the whole screen', async ({ page }) => {
@@ -244,19 +245,27 @@ test.describe('on a phone', () => {
 
         await page.goto(report('pages'), { waitUntil: 'networkidle' });
         await openPicker(page);
-        const panel = page.locator('#owa_reportPeriodFiltersContainer');
-        const controls = await panel.locator('input, select').evaluateAll((els) => els
+        const panel = page.locator('.owa_periodPanel');
+
+        // Custom date range: its two fields are inputs a phone types into.
+        await panel.locator('.owa_periodChips button', { hasText: 'Custom date range' }).click();
+        const controls = await panel.locator('input').evaluateAll((els) => els
             .filter((el) => el.offsetParent !== null)
-            .map((el) => ({ id: el.id, size: parseFloat(getComputedStyle(el).fontSize) })));
-        expect(controls.length).toBe(4);
+            .map((el) => ({ name: el.dataset.in || el.type, size: parseFloat(getComputedStyle(el).fontSize) })));
+        expect(controls.length).toBe(2);
         for (const c of controls) {
-            expect(c.size, `#${c.id} is ${c.size}px`).toBeGreaterThanOrEqual(16);
+            expect(c.size, `${c.name} is ${c.size}px`).toBeGreaterThanOrEqual(16);
         }
 
-        const days = await px(panel.locator('.ui-datepicker td a'));
+        for (const b of await px(panel.locator('.owa_periodChips button, .owa_periodBtn, .owa_periodCalNav button'))) {
+            expect(b.height, `"${b.text}" is ${b.height}px tall`).toBeGreaterThanOrEqual(40);
+        }
+
+        const days = await px(panel.locator('.owa_periodMonth.is-page .owa_periodDay'));
         expect(days.length).toBeGreaterThan(27);
         for (const d of days) {
             expect(d.size, `day ${d.text} is ${d.size}px`).toBeGreaterThanOrEqual(14);
+            expect(d.height, `day ${d.text} is ${d.height}px tall`).toBeGreaterThanOrEqual(44);
         }
     });
 
