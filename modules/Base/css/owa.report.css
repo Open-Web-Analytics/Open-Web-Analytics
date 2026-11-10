@@ -1390,6 +1390,14 @@ li.constraintRow {
     font-size: 11px;
 }
 
+/* A compared chart's tooltip: the day against its comparison day, then each line. */
+.owa_chartTipHead { padding: 2px 4px 4px; font-size: 12px; color: #374151; white-space: nowrap; }
+.owa_chartTip { border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.owa_chartTip th { padding: 1px 10px 1px 4px; font-weight: 400; text-align: left; white-space: nowrap; }
+.owa_chartTip th i { display: inline-block; width: 12px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+.owa_chartTip td { padding: 1px 4px; text-align: right; white-space: nowrap; }
+.owa_chartTip .owa_gridChange { display: inline; }
+
 /* A compared trend's key: the period solid, the comparison dashed. */
 .owa .owa_chartKey { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; color: #374151; }
 .owa .owa_chartKey span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }

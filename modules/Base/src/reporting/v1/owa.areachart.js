@@ -2,7 +2,7 @@
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
-import { formatRange } from './owa.periodpicker.js';
+import { formatRange, describeChange } from './owa.periodpicker.js';
 
 OWA.areaChart = function( options ) {
 
@@ -325,7 +325,7 @@ OWA.areaChart.prototype = {
 
             var built = breakdown
                 ? this.seriesByDimension( resultSet, x_name, y_name, breakdown )
-                : this.singleSeries( resultSet, x_name, y_name );
+                : this.withGridRows( this.singleSeries( resultSet, x_name, y_name ), resultSet, x_name, y_name );
 
             var dataseries = built.series;
 
@@ -409,17 +409,32 @@ OWA.areaChart.prototype = {
             /*
              * A colour each, fixed here rather than left to flot's rotation, so
              * the legend, the lines and the dimming all agree about which
-             * colour belongs to which line. The total is always first.
+             * colour belongs to which line. The total is always first; a
+             * comparison takes the colour of the line it is the comparison of.
              */
+            var nth = 0;
+
             for ( var c = 0; c < dataseries.length; c++ ) {
 
-                dataseries[c].color = dataseries[c].isCompare || dataseries[c].isTotal
-                    ? this.options.totalColor
-                    : this.options.colors[ ( c - 1 ) % this.options.colors.length ];
+                if ( ! dataseries[c].isCompare ) {
+
+                    dataseries[c].color = dataseries[c].isTotal
+                        ? this.options.totalColor
+                        : this.options.colors[ nth++ % this.options.colors.length ];
+                }
+            }
+
+            for ( var k = 0; k < dataseries.length; k++ ) {
+
+                if ( dataseries[k].isCompare ) {
+
+                    dataseries[k].color = dataseries[ dataseries[k].compareOf || 0 ].color;
+                }
             }
 
             this.dataseries = dataseries;
             this.selected   = null;
+            this.hovered    = null;
 
             this.draw();
 
@@ -753,6 +768,243 @@ OWA.areaChart.prototype = {
             shadowSize: 0,
             points: data.length === 1 ? { show: true, fill: true, radius: 3 } : undefined
         };
+    },
+
+    /**
+     * The rows of the grid under the chart, as lines over its total.
+     *
+     * OWA.linkTrendToGrid hands the chart the top rows the grid is showing
+     * (plotRows); their numbers come from a query of their own, by the x axis
+     * and the grid's dimensions and restricted to those rows (rowValues), so
+     * the total stays the trend's own, not the sum of a few rows.
+     *
+     * Each line keeps its comparison when the report is compared, drawn only
+     * while that line is hovered or selected -- with several lines, a dashed
+     * partner for every one of them would be unreadable.
+     *
+     * The series are ordered lines first and comparisons last, so a legend
+     * entry's index is its series' index.
+     */
+    withGridRows : function ( built, resultSet, x_name, y_name ) {
+
+        if ( ! this.plot || ! this.plot.rows.length ) {
+
+            return built;
+        }
+
+        if ( ! this.rowsResultSet || this.rowsX !== x_name ) {
+
+            // Fetched for another axis -- the reader changed days to months.
+            this.fetchRows();
+
+            return built;
+        }
+
+        var that  = this;
+        var dims  = this.plot.dims;
+        var total = built.series.filter( function ( s ) { return ! s.isCompare; } )[0];
+        var totalCompare = built.series.filter( function ( s ) { return s.isCompare; } )[0];
+        var xs    = total.data.map( function ( p ) { return p[0]; } );
+        var fill  = this.zeroForMissing( resultSet, y_name ) ? 0 : null;
+        var cmpRs = this.rowsResultSet.compare;
+
+        var keyOf = function ( values ) {
+
+            return dims.map( function ( d ) { return String( values[ d ] ); } ).join( '\u0001' );
+        };
+
+        var collect = function ( rows ) {
+
+            var by = {};
+
+            ( rows || [] ).forEach( function ( row ) {
+
+                if ( ! row[ x_name ] || ! row[ y_name ] ) {
+
+                    return;
+                }
+
+                var values = {};
+
+                dims.forEach( function ( d ) { values[ d ] = row[ d ] ? row[ d ].value : ''; } );
+
+                var key = keyOf( values );
+                var x   = that.formatValue( row[ x_name ].data_type, row[ x_name ].value );
+
+                by[ key ] = by[ key ] || { points: {}, when: {} };
+                by[ key ].points[ x ] = ( by[ key ].points[ x ] || 0 )
+                    + that.formatValue( row[ y_name ].data_type, row[ y_name ].value ) * 1;
+
+                if ( row[ x_name ].compare_period_value ) {
+
+                    by[ key ].when[ x ] = row[ x_name ].compare_period_value;
+                }
+            } );
+
+            return by;
+        };
+
+        var main = collect( this.rowsResultSet.resultsRows );
+        var cmp  = cmpRs ? collect( cmpRs.rows ) : null;
+
+        var dataOf = function ( entry ) {
+
+            return xs.map( function ( x ) {
+
+                return [ x, entry && entry.points.hasOwnProperty( x ) ? entry.points[ x ] : fill ];
+            } );
+        };
+
+        var one   = xs.length === 1 ? { show: true, fill: true, radius: 3 } : undefined;
+        var lines = [];
+        var compares = [];
+
+        total.label = 'Total';
+
+        this.plot.rows.forEach( function ( row, i ) {
+
+            var key = keyOf( row.values );
+
+            lines.push( {
+                label: row.label,
+                rowKey: key,
+                data: dataOf( main[ key ] ),
+                lines: { fill: false },
+                points: one
+            } );
+
+            if ( cmp ) {
+
+                compares.push( {
+                    isCompare: true,
+                    compareOf: i + 1,
+                    data: dataOf( cmp[ key ] ),
+                    compareDates: cmp[ key ] ? cmp[ key ].when : {},
+                    tooltipLabel: row.label,
+                    dashed: xs.length > 1,
+                    lines: { show: true, fill: false, lineWidth: 1.5 },
+                    shadowSize: 0,
+                    points: one
+                } );
+            }
+        } );
+
+        if ( totalCompare ) {
+
+            totalCompare.compareOf = 0;
+            compares.unshift( totalCompare );
+        }
+
+        return {
+            series: [ total ].concat( lines, compares ),
+            points: built.points,
+            x_type: built.x_type
+        };
+    },
+
+    /**
+     * Chart these rows of the grid, or none.
+     *
+     * @param array dims the grid's dimensions
+     * @param array rows [{ values: { dim: value }, label }] in the grid's order
+     */
+    plotRows : function ( dims, rows ) {
+
+        var plot = { dims: dims || [], rows: rows || [] };
+        var key  = JSON.stringify( plot );
+
+        if ( this.plot && this.plotKey === key ) {
+
+            return false;
+        }
+
+        this.plot          = plot;
+        this.plotKey       = key;
+        this.rowsResultSet = null;
+        this.rowsX         = null;
+
+        if ( ! plot.rows.length ) {
+
+            this.redraw();
+
+            return true;
+        }
+
+        this.fetchRows();
+
+        return true;
+    },
+
+    /** The trend's own query again, by the x axis and the grid's dimensions, for the plotted rows only. */
+    fetchRows : function () {
+
+        if ( ! this.plot || ! this.plot.rows.length || ! this.explorer || ! this.explorer.resultSet ) {
+
+            return;
+        }
+
+        var x    = this.xDimension || 'date';
+        var dims = this.plot.dims;
+        var url  = new OWA.uri( this.explorer.resultSet.self );
+        var restrict = {};
+
+        dims.forEach( function ( d ) { restrict[ d ] = []; } );
+
+        this.plot.rows.forEach( function ( row ) {
+
+            dims.forEach( function ( d ) {
+
+                if ( restrict[ d ].indexOf( row.values[ d ] ) === -1 ) {
+
+                    restrict[ d ].push( row.values[ d ] );
+                }
+            } );
+        } );
+
+        url.setQueryParam( OWA.util.appNs( 'dimensions' ), [ x ].concat( dims ).join( ',' ) );
+        url.setQueryParam( OWA.util.appNs( 'rowValues' ), JSON.stringify( restrict ) );
+        url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), 1000 );
+        url.removeQueryParam( OWA.util.appNs( 'page' ) );
+        url.removeQueryParam( OWA.util.appNs( 'sort' ) );
+
+        var source = url.getSource();
+
+        if ( this.rowsUrl === source ) {
+
+            return;   // already asked
+        }
+
+        this.rowsUrl = source;
+
+        var that = this;
+
+        jQuery.getJSON( source, '', function ( data ) {
+
+            if ( that.rowsUrl !== source ) {
+
+                return;   // a later question has been asked since
+            }
+
+            that.rowsResultSet = new OWA.resultSet( data && data.hasOwnProperty( 'data' ) ? data.data : data );
+            that.rowsX         = x;
+
+            that.redraw();
+        } );
+    },
+
+    /** Draw again from the trend's result set, keeping the metric and axis. */
+    redraw : function () {
+
+        if ( this.explorer && this.explorer.resultSet ) {
+
+            this.generate( this.explorer.resultSet, this.options.series, this.dom_id );
+        }
+    },
+
+    /** Whether a comparison waits for its line to be hovered: when the grid's rows are drawn. */
+    compareOnHover : function () {
+
+        return ( this.dataseries || [] ).some( function ( s ) { return s.rowKey !== undefined; } );
     },
 
     /**
@@ -1444,18 +1696,30 @@ OWA.areaChart.prototype = {
      */
     draw : function () {
 
-        var that = this;
+        var that   = this;
+        var hover  = this.compareOnHover();
+        var active = this.selected !== null ? this.selected : this.hovered;
 
-        var plotted = this.dataseries.map( function ( s, i ) {
+        var plotted = [];
 
-            var copy = jQuery.extend( {}, s );
+        this.dataseries.forEach( function ( s, i ) {
 
-            if ( that.selected !== null && that.selected !== i ) {
+            var own = s.isCompare ? ( s.compareOf || 0 ) : i;
+
+            // With the grid's rows drawn, a comparison shows with its line.
+            if ( s.isCompare && hover && own !== active ) {
+
+                return;
+            }
+
+            var copy = jQuery.extend( {}, s, { index: i } );
+
+            if ( that.selected !== null && that.selected !== own ) {
 
                 copy.color = that.fade( s.color, that.options.dimmedOpacity );
             }
 
-            return copy;
+            plotted.push( copy );
         } );
 
         if ( this.xType === 'yyyymmddhh' && this.flotOptions.xaxis ) {
@@ -1495,6 +1759,131 @@ OWA.areaChart.prototype = {
         }
 
         ctx.setLineDash( series.dashed ? [ 5, 4 ] : [] );
+    },
+
+    /**
+     * A compared chart's tooltip: the day against the day it is compared to,
+     * then every line's value there and its change. Null when nothing is
+     * compared.
+     */
+    comparedTooltip : function ( x ) {
+
+        var series = this.dataseries || [];
+        var compares = series.filter( function ( s ) { return s.isCompare; } );
+
+        if ( ! compares.length ) {
+
+            return null;
+        }
+
+        var that = this;
+        var esc  = OWA.util.escapeHtml;
+
+        var at = function ( s ) {
+
+            for ( var i = 0; i < s.data.length; i++ ) {
+
+                if ( s.data[i][0] === x ) {
+
+                    return s.data[i][1];
+                }
+            }
+
+            return null;
+        };
+
+        var day = function ( t ) {
+
+            return that.xType === 'yyyymmdd' || that.xType === 'yyyymm' || that.xType === 'yyyymmddhh'
+                ? that.timestampFormatter( t ) : String( t );
+        };
+
+        var info = ( this.rowsResultSet && this.rowsResultSet.compare )
+            || ( this.explorer && this.explorer.resultSet && this.explorer.resultSet.compare ) || null;
+
+        var real = this.comparedX( x, info );
+
+        compares.forEach( function ( c ) {
+
+            if ( real === null && c.compareDates && c.compareDates[ x ] ) {
+
+                real = that.formatValue( that.xType, String( c.compareDates[ x ] ) );
+            }
+        } );
+
+        var head = day( x ) + ( real !== null ? ' vs ' + day( real ) : '' );
+
+        var html = '<div class="owa_chartTipHead">' + esc( head ) + '</div><table class="owa_chartTip">';
+
+        series.forEach( function ( s, i ) {
+
+            if ( s.isCompare ) {
+
+                return;
+            }
+
+            var v = at( s );
+            var c = compares.filter( function ( cs ) { return ( cs.compareOf || 0 ) === i; } )[0];
+            var w = c ? at( c ) : null;
+            var change = '';
+
+            if ( c && info ) {
+
+                var ch = v !== null && w !== null && w !== 0 ? ( v - w ) / w : null;
+                var d  = describeChange( { change: ch, compare_formatted_value: w }, info );
+
+                change = '<span class="owa_gridChange ' + d.cls + '">' + esc( d.text ) + '</span>';
+            }
+
+            html += '<tr><th><i style="background:' + esc( String( s.color ) ) + '"></i>' + esc( s.label || '' ) + '</th>'
+                + '<td>' + esc( v === null ? '\u2014' : that.tipNumber( v ) ) + '</td><td>' + change + '</td></tr>';
+        } );
+
+        return html + '</table>';
+    },
+
+    /**
+     * The point on the comparison's axis that x is compared with: the same
+     * distance from the comparison's start as x is from the period's. Null
+     * when the dates to work it out from are not here.
+     */
+    comparedX : function ( x, info ) {
+
+        var period = this.explorer && this.explorer.resultSet && this.explorer.resultSet.timePeriod;
+
+        if ( ! info || ! info.startDate || ! period || ! period.startDate ) {
+
+            return null;
+        }
+
+        var ymd = function ( t ) {
+
+            t = String( t );
+
+            return Date.UTC( t.substring( 0, 4 ) * 1, t.substring( 4, 6 ) * 1 - 1, t.substring( 6, 8 ) * 1 );
+        };
+
+        if ( this.xType === 'yyyymm' ) {
+
+            var from = String( period.startDate ), to = String( info.startDate );
+            var months = ( from.substring( 0, 4 ) * 12 + from.substring( 4, 6 ) * 1 ) - ( to.substring( 0, 4 ) * 12 + to.substring( 4, 6 ) * 1 );
+            var d = new Date( x );
+
+            return Date.UTC( d.getUTCFullYear(), d.getUTCMonth() - months, 1 );
+        }
+
+        if ( this.xType === 'yyyymmdd' || this.xType === 'yyyymmddhh' ) {
+
+            return x - ( ymd( period.startDate ) - ymd( info.startDate ) );
+        }
+
+        return null;
+    },
+
+    /** A number for the tooltip: digits grouped, at most two decimals. */
+    tipNumber : function ( v ) {
+
+        return this.groupDigits( Math.round( v * 100 ) / 100 );
     },
 
     /**
@@ -1662,7 +2051,9 @@ OWA.areaChart.prototype = {
             border: '1px solid #cccccc',
             padding: '2px',
             'background-color': '#ffffff',
-            opacity: 0.90
+            opacity: 0.90,
+            // Never under the pointer: over the tooltip, the pointer has left the chart.
+            'pointer-events': 'none'
         }).appendTo("body").fadeIn(100);
     },
 
@@ -1696,7 +2087,33 @@ OWA.areaChart.prototype = {
         
         // binds a tooltip to plot points
         var previousPoint = null;
+
+        // Leaving the chart puts a hovered line's comparison away again.
+        jQuery(that.domSelector).bind( 'mouseleave', function () {
+
+            jQuery( '#tooltip' ).remove();
+            previousPoint = null;
+
+            if ( that.hovered !== null && that.hovered !== undefined ) {
+
+                that.hovered = null;
+                that.draw();
+            }
+        } );
+
         jQuery(that.domSelector).bind("plothover", function (event, pos, item) {
+
+            if ( item && that.compareOnHover() ) {
+
+                var own = item.series.isCompare ? ( item.series.compareOf || 0 ) : item.series.index;
+
+                if ( own !== that.hovered ) {
+
+                    that.hovered = own;
+                    that.draw();
+                    previousPoint = null;
+                }
+            }
 
             jQuery("#x").text(pos.x.toFixed(2));
             jQuery("#y").text(pos.y.toFixed(2));
@@ -1707,6 +2124,17 @@ OWA.areaChart.prototype = {
                     previousPoint = item.datapoint;
                     
                     jQuery("#tooltip").remove();
+
+                    var compared = that.comparedTooltip( item.datapoint[0] );
+
+                    if ( compared ) {
+
+                        // Below and right of the pointer: it is taller than the old one.
+                        that.showTooltip( item.pageX + 7, item.pageY + 7, compared );
+
+                        return;
+                    }
+
                     var x = item.datapoint[0].toFixed(0),
                         y = item.datapoint[1].toFixed(0);
                         

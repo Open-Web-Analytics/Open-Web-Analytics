@@ -5,6 +5,7 @@
     "widgets": [
         {
             "type": "trend",
+            "plotGridRows": false,
             "id": "trend",
             "container": "trend-chart",
             "query": {

@@ -1,0 +1,252 @@
+/**
+ * A dimension report's trend draws the top rows of the grid under it: a line
+ * per row over the trend's own total, each with its comparison when the report
+ * is compared -- shown only while its line is hovered.
+ */
+
+jest.mock( 'jquery', () => {
+    const jq = jest.requireActual( 'jquery' );
+    jq.__esModule = true;
+    return jq;
+} );
+
+import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+
+const $ = require( 'jquery' );
+
+global.jQuery = global.$ = $;
+
+require( '../../modules/Base/src/reporting/v1/owa.areachart.js' );
+require( '../../modules/Base/src/reporting/v1/owa.resultSetExplorer.js' );
+
+const day = ( ymd ) => Date.UTC( +ymd.substr( 0, 4 ), +ymd.substr( 4, 2 ) - 1, +ymd.substr( 6, 2 ) );
+
+const COMPARE = { compare: 'previous_period', startDate: '20261026', endDate: '20261027' };
+
+/** The trend's own answer: one row per day, the total. */
+function trend( rows, compareRows ) {
+    return {
+        timePeriod: { startDate: '20261102', endDate: '20261103' },
+        resultsRows: rows.map( ( [ d, v ] ) => ( { date: { value: d, data_type: 'yyyymmdd' }, visits: { value: v, data_type: 'integer' } } ) ),
+        compare: compareRows && Object.assign( { rows: compareRows.map( ( [ d, real, v ] ) => ( {
+            date: { value: d, compare_period_value: real, data_type: 'yyyymmdd' },
+            visits: { value: v, data_type: 'integer' },
+        } ) ) }, COMPARE ),
+        relatedMetrics: { Usage: [ { name: 'visits', metric_type: 'count' } ] },
+        getMetricLabel: () => 'Visits',
+    };
+}
+
+/** The rows' answer: by day and browser, restricted to the plotted rows. */
+function byBrowser( rows, compareRows ) {
+    const row = ( [ d, b, v, real ] ) => ( {
+        date: Object.assign( { value: d, data_type: 'yyyymmdd' }, real ? { compare_period_value: real } : {} ),
+        browserType: { value: b, data_type: 'string' },
+        visits: { value: v, data_type: 'integer' },
+    } );
+    return {
+        resultsRows: rows.map( row ),
+        compare: compareRows ? Object.assign( { rows: compareRows.map( row ) }, COMPARE ) : null,
+    };
+}
+
+const ROWS = [ { values: { browserType: 'Chrome' }, label: 'Chrome' }, { values: { browserType: 'Safari' }, label: 'Safari' } ];
+
+function chartWithRows( main, rows ) {
+    const chart = new OWA.areaChart();
+    chart.plot = { dims: [ 'browserType' ], rows: ROWS };
+    chart.rowsResultSet = rows;
+    chart.rowsX = 'date';
+    return chart.withGridRows( chart.singleSeries( main, 'date', 'visits' ), main, 'date', 'visits' );
+}
+
+describe( 'the grid\'s rows as lines', () => {
+
+    test( 'a line per row in the grid\'s order, over the trend\'s own total; a missing day is a zero', () => {
+        const built = chartWithRows( trend( [ [ '20261102', 10 ], [ '20261103', 20 ] ] ),
+            byBrowser( [ [ '20261102', 'Safari', 2 ], [ '20261102', 'Chrome', 6 ], [ '20261103', 'Chrome', 9 ] ] ) );
+
+        expect( built.series.map( ( s ) => s.label ) ).toEqual( [ 'Total', 'Chrome', 'Safari' ] );
+        expect( built.series[0].data ).toEqual( [ [ day( '20261102' ), 10 ], [ day( '20261103' ), 20 ] ] );
+        expect( built.series[1].data ).toEqual( [ [ day( '20261102' ), 6 ], [ day( '20261103' ), 9 ] ] );
+        expect( built.series[2].data ).toEqual( [ [ day( '20261102' ), 2 ], [ day( '20261103' ), 0 ] ] );
+        expect( built.series[1].lines.fill ).toBe( false );
+    } );
+
+    test( 'compared, every line has a dashed comparison, after all the lines', () => {
+        const built = chartWithRows(
+            trend( [ [ '20261102', 10 ], [ '20261103', 20 ] ], [ [ '20261102', '20261026', 5 ], [ '20261103', '20261027', 8 ] ] ),
+            byBrowser( [ [ '20261102', 'Chrome', 6 ] ], [ [ '20261102', 'Chrome', 3, '20261026' ], [ '20261103', 'Safari', 1, '20261027' ] ] ) );
+
+        const kinds = built.series.map( ( s ) => ( s.isCompare ? 'cmp:' + s.compareOf : s.label ) );
+        expect( kinds ).toEqual( [ 'Total', 'Chrome', 'Safari', 'cmp:0', 'cmp:1', 'cmp:2' ] );
+
+        const chrome = built.series[4];
+        expect( chrome.dashed ).toBe( true );
+        expect( chrome.label ).toBeUndefined();
+        expect( chrome.data ).toEqual( [ [ day( '20261102' ), 3 ], [ day( '20261103' ), 0 ] ] );
+        expect( chrome.compareDates[ day( '20261102' ) ] ).toBe( '20261026' );
+    } );
+
+    test( 'rows fetched for another axis are not drawn: they are fetched again', () => {
+        const chart = new OWA.areaChart();
+        chart.plot = { dims: [ 'browserType' ], rows: ROWS };
+        chart.rowsResultSet = byBrowser( [] );
+        chart.rowsX = 'yearMonth';
+        chart.fetchRows = jest.fn();
+
+        const main  = trend( [ [ '20261102', 10 ] ] );
+        const built = chart.withGridRows( chart.singleSeries( main, 'date', 'visits' ), main, 'date', 'visits' );
+
+        expect( built.series ).toHaveLength( 1 );
+        expect( chart.fetchRows ).toHaveBeenCalled();
+    } );
+} );
+
+describe( 'asking for the rows', () => {
+
+    test( 'the trend\'s query, by its axis and the grid\'s dimensions, restricted to the rows', () => {
+        const chart = new OWA.areaChart();
+        chart.explorer = { resultSet: { self: 'https://owa.test/api/index.php?metrics=visits&dimensions=date&page=2&sort=date&compare=previous_period' } };
+        chart.xDimension = 'date';
+
+        const asked = [];
+        const getJSON = $.getJSON;
+        $.getJSON = ( url ) => asked.push( url );
+
+        try {
+            expect( chart.plotRows( [ 'browserType' ], ROWS ) ).toBe( true );
+            // The same rows again ask for nothing.
+            expect( chart.plotRows( [ 'browserType' ], ROWS ) ).toBe( false );
+        } finally {
+            $.getJSON = getJSON;
+        }
+
+        expect( asked ).toHaveLength( 1 );
+        const url = new URL( asked[0] );
+        expect( url.searchParams.get( 'dimensions' ) ).toBe( 'date,browserType' );
+        expect( JSON.parse( url.searchParams.get( 'rowValues' ) ) ).toEqual( { browserType: [ 'Chrome', 'Safari' ] } );
+        expect( url.searchParams.get( 'compare' ) ).toBe( 'previous_period' );
+        expect( url.searchParams.has( 'page' ) ).toBe( false );
+    } );
+} );
+
+describe( 'a line\'s comparison shows with its line', () => {
+
+    function drawn( hovered, selected = null ) {
+        const chart = new OWA.areaChart();
+        chart.dataseries = chartWithRows(
+            trend( [ [ '20261102', 10 ], [ '20261103', 20 ] ], [ [ '20261102', '20261026', 5 ] ] ),
+            byBrowser( [ [ '20261102', 'Chrome', 6 ] ], [ [ '20261102', 'Chrome', 3, '20261026' ] ] ) ).series;
+        chart.dataseries.forEach( ( s, i ) => { s.color = '#00000' + i; } );
+        chart.flotOptions = { legend: { show: true } };
+        chart.domSelector = '#none';
+        chart.dom_id = 'none';
+        chart.hovered = hovered;
+        chart.selected = selected;
+
+        const plot = $.plot;
+        $.plot = jest.fn();
+        try {
+            chart.draw();
+        } finally {
+            $.plot = plot;
+        }
+        return chart.plotted.map( ( s ) => ( s.isCompare ? 'cmp:' + s.compareOf : s.label ) );
+    }
+
+    test( 'nothing hovered: the lines alone', () => {
+        expect( drawn( null ) ).toEqual( [ 'Total', 'Chrome', 'Safari' ] );
+    } );
+
+    test( 'Chrome hovered: Chrome\'s comparison too', () => {
+        expect( drawn( 1 ) ).toEqual( [ 'Total', 'Chrome', 'Safari', 'cmp:1' ] );
+    } );
+
+    test( 'a line selected in the legend keeps its comparison', () => {
+        expect( drawn( null, 0 ) ).toEqual( [ 'Total', 'Chrome', 'Safari', 'cmp:0' ] );
+    } );
+} );
+
+describe( 'the compared tooltip', () => {
+
+    test( 'the day against its comparison day, then each line\'s value and change', () => {
+        const chart = new OWA.areaChart();
+        chart.xType = 'yyyymmdd';
+        chart.rowsResultSet = byBrowser( [], [] );
+        chart.dataseries = chartWithRows(
+            trend( [ [ '20261102', 10 ], [ '20261103', 20 ] ], [ [ '20261102', '20261026', 5 ], [ '20261103', '20261027', 8 ] ] ),
+            byBrowser( [ [ '20261102', 'Chrome', 6 ] ], [ [ '20261102', 'Chrome', 3, '20261026' ] ] ) ).series;
+        chart.dataseries.forEach( ( s ) => { s.color = '#1874CD'; } );
+
+        document.body.innerHTML = chart.comparedTooltip( day( '20261102' ) );
+
+        expect( document.querySelector( '.owa_chartTipHead' ).textContent ).toMatch( / vs / );
+        const rows = [ ...document.querySelectorAll( '.owa_chartTip tr' ) ].map( ( tr ) => tr.textContent );
+        expect( rows ).toEqual( [ 'Total10▲ 100.0%', 'Chrome6▲ 100.0%', 'Safari0—' ] );
+    } );
+
+    test( 'the compared day is worked out from the two starts, data or not', () => {
+        const chart = new OWA.areaChart();
+        chart.explorer = { resultSet: { timePeriod: { startDate: '20261102' } } };
+
+        chart.xType = 'yyyymmdd';
+        expect( chart.comparedX( day( '20261104' ), { startDate: '20261026' } ) ).toBe( day( '20261028' ) );
+
+        chart.xType = 'yyyymm';
+        expect( chart.comparedX( day( '20261101' ), { startDate: '20251101' } ) ).toBe( day( '20251101' ) );
+
+        expect( chart.comparedX( day( '20261104' ), null ) ).toBeNull();
+    } );
+
+    test( 'nothing compared, no compared tooltip', () => {
+        const chart = new OWA.areaChart();
+        chart.dataseries = [ { label: 'Visits', data: [ [ 1, 2 ] ] } ];
+        expect( chart.comparedTooltip( 1 ) ).toBeNull();
+    } );
+} );
+
+describe( 'OWA.linkTrendToGrid', () => {
+
+    function grid( rows ) {
+        return {
+            resultSet: {
+                self: 'https://owa.test/api/index.php?metrics=visits&dimensions=browserType%2CosType',
+                resultsRows: rows.map( ( [ b, o ] ) => ( {
+                    browserType: { value: b, formatted_value: b },
+                    osType: { value: o, formatted_value: o },
+                } ) ),
+            },
+            setResultSet( rs ) { this.resultSet = rs; },
+        };
+    }
+
+    test( 'hands the trend the top rows as the grid shows them, skipping a row with an empty value', () => {
+        const g     = grid( [ [ 'Chrome', 'Mac' ], [ '', 'Linux' ], [ 'Safari', 'iOS' ], [ 'Edge', 'Win' ], [ 'Opera', 'Win' ], [ 'Brave', 'Mac' ], [ 'Vivaldi', 'Win' ] ] );
+        const trendExplorer = { areaChart: { plotRows: jest.fn() } };
+
+        OWA.linkTrendToGrid( trendExplorer, g );
+
+        const [ dims, rows ] = trendExplorer.areaChart.plotRows.mock.calls[0];
+        expect( dims ).toEqual( [ 'browserType', 'osType' ] );
+        expect( rows.map( ( r ) => r.label ) ).toEqual( [ 'Chrome / Mac', 'Safari / iOS', 'Edge / Win', 'Opera / Win', 'Brave / Mac' ] );
+        expect( rows[0].values ).toEqual( { browserType: 'Chrome', osType: 'Mac' } );
+    } );
+
+    test( 'a new page, sort or filter on the grid is handed over again', () => {
+        const g = grid( [ [ 'Chrome', 'Mac' ] ] );
+        const trendExplorer = { areaChart: { plotRows: jest.fn() } };
+
+        OWA.linkTrendToGrid( trendExplorer, g );
+        g.setResultSet( grid( [ [ 'Firefox', 'Linux' ] ] ).resultSet );
+
+        expect( trendExplorer.areaChart.plotRows ).toHaveBeenCalledTimes( 2 );
+        expect( trendExplorer.areaChart.plotRows.mock.calls[1][1][0].label ).toBe( 'Firefox / Linux' );
+    } );
+
+    test( 'before the trend has a chart, the rows wait on it', () => {
+        const trendExplorer = {};
+        OWA.linkTrendToGrid( trendExplorer, grid( [ [ 'Chrome', 'Mac' ] ] ) );
+        expect( trendExplorer.plotGridRows.rows ).toHaveLength( 1 );
+    } );
+} );

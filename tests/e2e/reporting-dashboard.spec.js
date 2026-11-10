@@ -825,6 +825,13 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await openReport(page);
     });
 
+    test('the trend draws a line for each of the top rows of the grid', async ({ page }) => {
+        // Every seeded page view is Chrome: the grid's one row, and the chart's one line over the total.
+        const legend = page.locator('.owa_chartLegend').first();
+        await expect(legend).toContainText('Total');
+        await expect(legend).toContainText('Chrome');
+    });
+
     test('compared, each metric cell shows its change under the value', async ({ page }) => {
         const url = new URL(page.url());
         url.searchParams.set('owa_compare', 'previous_period');

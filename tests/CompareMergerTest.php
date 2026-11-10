@@ -103,6 +103,22 @@ final class CompareMergerTest extends TestCase
             array_map( fn ( $r ) => array( $r['date']['value'], $r['date']['compare_period_value'], $r['pageViews']['value'] ), $rs->compare['rows'] ) );
     }
 
+    /** A trend broken out by a dimension: a line per value, each with its comparison. */
+    public function testABrokenOutTrendCarriesTheComparisonsRowsToo(): void
+    {
+        $row = fn ( $date, $browser, $v ) => array( 'date' => self::cell( 'date', $date, 'dimension' ),
+            'browserType' => self::cell( 'browserType', $browser, 'dimension' ), 'visits' => self::cell( 'visits', $v ) );
+
+        $rs  = self::rs( array(), array( $row( '20261102', 'Chrome', 10 ) ) );
+        $crs = self::rs( array(), array( $row( '20261026', 'Chrome', 4 ), $row( '20261027', 'Safari', 2 ) ) );
+
+        CompareMerger::merge( $rs, $crs, array( 'date', 'browserType' ), array( '20261102', '20261104' ), array( '20261026', '20261028' ), 'previous_period_dow' );
+
+        $this->assertSame(
+            array( array( '20261102', 'Chrome', 4 ), array( '20261103', 'Safari', 2 ) ),
+            array_map( fn ( $r ) => array( $r['date']['value'], $r['browserType']['value'], $r['visits']['value'] ), $rs->compare['rows'] ) );
+    }
+
     public function testAGridCarriesNoComparisonRows(): void
     {
         $row = fn ( $path, $v ) => array( 'pagePath' => self::cell( 'pagePath', $path, 'dimension' ), 'pageViews' => self::cell( 'pageViews', $v ) );

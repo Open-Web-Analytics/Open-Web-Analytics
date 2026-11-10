@@ -755,6 +755,12 @@ OWA.resultSetExplorer.prototype = {
         // Now that it can, draw it -- generate() ran before this was set.
         ac.drawGranularityControl( dom_id );
 
+        // Rows a linked grid handed over before the chart existed.
+        if ( this.plotGridRows ) {
+
+            ac.plotRows( this.plotGridRows.dims, this.plotGridRows.rows );
+        }
+
         //register dom_id as a listener for data change events
         this.registerDataChangeSubscriber( dom_id );
     },
@@ -3258,4 +3264,85 @@ OWA.linkTrendToBreakdownGrid = function ( trend, grid ) {
 
         trend.changeConstraints( constraints );
     } );
+};
+
+/** How many of a grid's rows its trend draws as lines. */
+OWA.GRID_ROWS_CHARTED = 5;
+
+/**
+ * The trend draws a line for each of the top rows of the grid under it.
+ *
+ * The grid's rows as it shows them: its sort, its filter, its page. Each time
+ * the grid has a new result set, the trend is handed the first rows of it --
+ * their dimension values, and a label from their formatted values. A row with
+ * an empty value is left out: it cannot be asked for by value.
+ *
+ * The grid's first load may arrive before the trend has drawn its chart, so
+ * the rows wait on the trend (plotGridRows) and makeAreaChart hands them over.
+ */
+OWA.linkTrendToGrid = function ( trend, grid, count ) {
+
+    count = count || OWA.GRID_ROWS_CHARTED;
+
+    var send = function () {
+
+        var rs = grid.resultSet;
+
+        if ( ! rs || ! rs.self ) {
+
+            return;
+        }
+
+        var dims = OWA.util.urldecode( new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'dimensions' ) ) || '' )
+            .split( ',' )
+            .map( function ( d ) { return d.trim(); } )
+            .filter( Boolean );
+
+        var rows = [];
+
+        ( rs.resultsRows || [] ).forEach( function ( row ) {
+
+            if ( rows.length >= count || ! dims.length ) {
+
+                return;
+            }
+
+            var values = {};
+            var labels = [];
+
+            for ( var i = 0; i < dims.length; i++ ) {
+
+                var cell = row[ dims[i] ];
+
+                if ( ! cell || cell.value === null || cell.value === undefined || cell.value === '' ) {
+
+                    return;
+                }
+
+                values[ dims[i] ] = String( cell.value );
+                labels.push( cell.formatted_value === null || cell.formatted_value === undefined || cell.formatted_value === ''
+                    ? String( cell.value ) : String( cell.formatted_value ) );
+            }
+
+            rows.push( { values: values, label: labels.join( ' / ' ) } );
+        } );
+
+        trend.plotGridRows = { dims: dims, rows: rows };
+
+        if ( trend.areaChart ) {
+
+            trend.areaChart.plotRows( dims, rows );
+        }
+    };
+
+    var setResultSet = grid.setResultSet;
+
+    grid.setResultSet = function () {
+
+        setResultSet.apply( this, arguments );
+
+        send();
+    };
+
+    send();
 };

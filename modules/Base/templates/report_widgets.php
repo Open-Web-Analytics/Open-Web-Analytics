@@ -118,6 +118,15 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php $owa_panelId = $owa_setKey === '' ? '' : 'tab_' . $owa_setKey; ?>
 <div<?php if ( $owa_panelId ): ?> id="<?php $view->out( $owa_panelId ); ?>"<?php endif; ?> class="owa_reportGrid" data-metric-set="<?php $view->out( $owa_setKey ); ?>">
 <?php $owa_rses = array(); ?>
+<?php
+    /*
+     * The trend and the grid of this set that are linked: the trend draws a
+     * line for each of the top rows the grid is showing. The first plain trend
+     * (not broken out, not declining it) and the first full-width grid.
+     */
+    $owa_plotTrend = '';
+    $owa_plotGrid  = '';
+?>
 
 <?php foreach ( $owa_widgets as $owa_w ): ?>
 <?php
@@ -494,6 +503,13 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endif; ?>
         </script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
+<?php
+    if ( $owa_plotTrend === '' && ( $owa_w['type'] ?? '' ) === 'trend' && $owa_breakdown === ''
+            && $owa_chartMetric !== '' && ( $owa_w['plotGridRows'] ?? true ) ) {
+
+        $owa_plotTrend = $owa_id;
+    }
+?>
 <?php if ( $owa_breakdownQuery ): ?>
 <?php
     /*
@@ -811,6 +827,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endif; ?>
         </script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
+<?php if ( $owa_plotGrid === '' && ( $owa_w['type'] ?? '' ) === 'grid' ) { $owa_plotGrid = $owa_id; } ?>
 
 <?php endif; ?>
 
@@ -824,6 +841,11 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endforeach; ?>
 
 </div>
+<?php if ( $owa_plotTrend !== '' && $owa_plotGrid !== '' ): ?>
+<script>
+    OWA.linkTrendToGrid(<?php echo $owa_plotTrend; ?>, <?php echo $owa_plotGrid; ?>);
+</script>
+<?php endif; ?>
 <?php if ( $owa_multiSet ): ?>
 <script>
     // This set, and the widgets whose results belong to it. The tab loads them

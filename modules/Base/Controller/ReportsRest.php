@@ -365,15 +365,18 @@ class ReportsRest extends \OWA\Core\ReportController {
             $rsm->setSiteId( $this->get('siteId' ) );
         }
 
+        $this->restrictToRowValues( $rsm, $this->get( 'rowValues' ) );
+
         /*
-         * The comparison travels on the result set's own links (self, next,
-         * previous), so a refetch from one -- a grid's next page, a trend
-         * changed from days to months -- is still compared. Not on the
-         * comparison's own query: that is the one without overrides.
+         * The comparison and the row restriction travel on the result set's
+         * own links (self, next, previous), so a refetch from one -- a grid's
+         * next page, a trend changed from days to months -- is still compared
+         * and still of those rows. Not on the comparison's own query: that is
+         * the one without overrides.
          */
         if ( ! $overrides ) {
 
-            foreach ( array( 'compare', 'compareStartDate', 'compareEndDate' ) as $key ) {
+            foreach ( array( 'compare', 'compareStartDate', 'compareEndDate', 'rowValues' ) as $key ) {
 
                 $value = $this->get( $key );
 
@@ -409,5 +412,61 @@ class ReportsRest extends \OWA\Core\ReportController {
         }
 
         return $rsm;
+    }
+
+    /** The most values `rowValues` may name for one dimension. */
+    const ROW_VALUES_LIMIT = 25;
+
+    /**
+     * Only the rows a grid is showing: `rowValues` is a JSON object of
+     * dimension name to a list of its values, and each becomes an `in`
+     * constraint. How a trend draws a line per row of the grid under it.
+     *
+     * Not a constraint string: those are split on commas, and a value such as
+     * a page path may contain one. A comparison's query is set up here too, so
+     * it is restricted to the same rows.
+     *
+     * Empty values are dropped: IN never matches NULL.
+     */
+    private function restrictToRowValues( $rsm, $json ) {
+
+        if ( $json === null || $json === '' || $json === false ) {
+
+            return;
+        }
+
+        $map = is_string( $json ) ? json_decode( $json, true ) : null;
+
+        if ( ! is_array( $map ) || ! $map ) {
+
+            $rsm->addRequestError( \OWA\Core\CoreAPI::t( 'rowValues must be a JSON object of dimension names to lists of values.' ) );
+
+            return;
+        }
+
+        $restrictable = \OWA\Module\Base\Classes\CompareMerger::restrictable( (array) $rsm->dimensions );
+
+        foreach ( $map as $dim => $values ) {
+
+            if ( ! in_array( (string) $dim, $restrictable, true ) ) {
+
+                $rsm->addRequestError( sprintf( \OWA\Core\CoreAPI::t( 'rowValues names %s, which is not one of the query\'s dimensions.' ), $dim ) );
+
+                continue;
+            }
+
+            $values = array_values( array_unique( array_filter( array_map( function ( $v ) {
+                return is_scalar( $v ) ? (string) $v : '';
+            }, is_array( $values ) ? $values : array() ), 'strlen' ) ) );
+
+            if ( ! $values || count( $values ) > self::ROW_VALUES_LIMIT ) {
+
+                $rsm->addRequestError( sprintf( \OWA\Core\CoreAPI::t( 'rowValues needs 1 to %d values for %s.' ), self::ROW_VALUES_LIMIT, $dim ) );
+
+                continue;
+            }
+
+            $rsm->setConstraint( (string) $dim, $values, 'in' );
+        }
     }
 }
