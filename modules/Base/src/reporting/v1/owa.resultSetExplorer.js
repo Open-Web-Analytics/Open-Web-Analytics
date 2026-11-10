@@ -136,7 +136,9 @@ OWA.resultSetExplorer = function(dom_id, options) {
             series:[],
             showDots: false,
             showLegend: true,
-            lineWidth: 2.5
+            lineWidth: 2.5,
+            // Off where the widget shows a heading of its own.
+            showTitle: true
         },
         // A `pie` widget's options; see OWA.shareChart.
         shareChart: {
@@ -727,6 +729,7 @@ OWA.resultSetExplorer.prototype = {
         };
 
         var ac = new OWA.areaChart();
+        ac.options.showTitle = this.options.areaChart.showTitle !== false;
         dom_id = dom_id || this.dom_id;
         // set the target dom_id chart should appear in
         ac.setDomId( dom_id );
@@ -754,11 +757,12 @@ OWA.resultSetExplorer.prototype = {
 
         // Now that it can, draw it -- generate() ran before this was set.
         ac.drawGranularityControl( dom_id );
+        ac.drawTitle( dom_id );
 
         // Rows a linked grid handed over before the chart existed.
         if ( this.plotGridRows ) {
 
-            ac.plotRows( this.plotGridRows.dims, this.plotGridRows.rows );
+            ac.plotRows( this.plotGridRows.dims, this.plotGridRows.rows, this.plotGridRows.label );
         }
 
         //register dom_id as a listener for data change events
@@ -3366,11 +3370,13 @@ OWA.linkTrendToGrid = function ( trend, grid, count ) {
             rows.push( { values: values, label: labels.join( ' / ' ) } );
         } );
 
-        trend.plotGridRows = { dims: dims, rows: rows };
+        var label = dims.map( function ( d ) { return OWA.dataGrid.prototype.labelOf( rs, d ); } ).join( ' / ' );
+
+        trend.plotGridRows = { dims: dims, rows: rows, label: label };
 
         if ( trend.areaChart ) {
 
-            trend.areaChart.plotRows( dims, rows );
+            trend.areaChart.plotRows( dims, rows, label );
 
             if ( resorted && isMetric( rs, rs.sortColumn ) && trend.areaChart.changeMetric( rs.sortColumn ) ) {
 

@@ -832,6 +832,12 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         const legend = page.locator('.owa_chartLegend').first();
         await expect(legend).toContainText('Total');
         await expect(legend).toContainText('Chrome');
+
+        // A title over it says so, with the day/month control across from it.
+        const head = page.locator('.owa_chartHead').first();
+        await expect(head.locator('.owa_chartTitle')).toHaveText(/^.+ by Browser over time$/);
+        await expect(head.locator('.owa_chartGranularity')).toBeVisible();
+        expect((await page.locator('.owa_areaChart').first().boundingBox()).height).toBeGreaterThanOrEqual(250);
     });
 
     test('the charted metric and the grid\'s sort are one choice', async ({ page }) => {

@@ -443,6 +443,10 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
         <?php echo $owa_id; ?>.options.sparkline.metric = 'sessions';
+<?php if ( $owa_showTitle || $owa_isTrendCard ): ?>
+        <?php // The widget's own heading, or the card's figure, already says what the chart is. ?>
+        <?php echo $owa_id; ?>.options.areaChart.showTitle = false;
+<?php endif; ?>
 <?php
 ?>
 <?php if ( $owa_chartMetric !== '' ): ?>

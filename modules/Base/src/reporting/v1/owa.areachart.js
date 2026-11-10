@@ -10,7 +10,11 @@ OWA.areaChart = function( options ) {
     this.options = {
         
         series: [],
-        height: 125,
+        // The plot's height where its container does not set one.
+        height: 250,
+        // A title over the chart, beside its controls. Off where the widget
+        // already has a heading of its own.
+        showTitle: true,
         width:    '99%', // needed for flot resize plugin
         xaxis: {
             mode: 'time'
@@ -469,6 +473,8 @@ OWA.areaChart.prototype = {
 
             this.drawGranularityControl( dom_id );
 
+            this.drawTitle( dom_id );
+
             this.watchWidth( dom_id );
 
             this.init = true;
@@ -573,6 +579,8 @@ OWA.areaChart.prototype = {
             this.draw();
 
             this.drawGranularityControl( dom_id );
+
+            this.drawTitle( dom_id );
 
             this.watchWidth( dom_id );
 
@@ -934,10 +942,11 @@ OWA.areaChart.prototype = {
      *
      * @param array dims the grid's dimensions
      * @param array rows [{ values: { dim: value }, label }] in the grid's order
+     * @param string label the dimensions' names, for the chart's title
      */
-    plotRows : function ( dims, rows ) {
+    plotRows : function ( dims, rows, label ) {
 
-        var plot = { dims: dims || [], rows: rows || [] };
+        var plot = { dims: dims || [], rows: rows || [], label: label || '' };
         var key  = JSON.stringify( plot );
 
         if ( this.plot && this.plotKey === key ) {
@@ -1494,10 +1503,41 @@ OWA.areaChart.prototype = {
      * owns fetching; a select that could not refetch would be a control that
      * does nothing, which is worse than no control.
      */
+    /**
+     * What the chart draws, over it: the metric, by the grid's dimensions
+     * when it draws the grid's rows, over time.
+     */
+    chartTitle : function () {
+
+        var rs     = this.explorer && this.explorer.resultSet;
+        var metric = this.chartedMetric();
+
+        if ( ! metric || ! rs || ! rs.aggregates || ! rs.aggregates[ metric ] ) {
+
+            return '';
+        }
+
+        var label = rs.getMetricLabel ? rs.getMetricLabel( metric ) : metric;
+
+        if ( this.plot && this.plot.rows.length && this.plot.label ) {
+
+            return OWA.util.sprintf( OWA.l( '%s by %s over time' ), label, this.plot.label );
+        }
+
+        return OWA.util.sprintf( OWA.l( '%s over time' ), label );
+    },
+
+    drawTitle : function ( dom_id ) {
+
+        var $title = jQuery( '#' + ( dom_id || this.dom_id ) + ' .owa_chartTitle' ).first();
+
+        $title.text( this.options.showTitle ? this.chartTitle() : '' );
+    },
+
     drawGranularityControl : function ( dom_id ) {
 
         var that = this;
-        var $box = jQuery( '#' + dom_id + ' > .owa_chartControls' );
+        var $box = jQuery( '#' + dom_id + ' .owa_chartControls' ).first();
 
         $box.empty();
 
@@ -2164,7 +2204,7 @@ OWA.areaChart.prototype = {
          * that follows the plot element is below them.
          */
         jQuery("#"+dom_id).html(
-            '<div class="owa_chartControls"></div>'
+            '<div class="owa_chartHead"><div class="owa_chartTitle"></div><div class="owa_chartControls"></div></div>'
           + '<div class="owa_areaChart"></div>'
           + '<div class="owa_chartLegend"></div>' );
 

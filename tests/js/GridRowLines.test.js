@@ -227,6 +227,34 @@ describe( 'the compared tooltip', () => {
     } );
 } );
 
+describe( 'the chart\'s title', () => {
+
+    const chart = ( plot ) => {
+        const c = new OWA.areaChart();
+        c.options.series = [ { x: 'date', y: 'visits' } ];
+        c.explorer = { resultSet: { aggregates: { visits: { label: 'Visits' } }, getMetricLabel: () => 'Visits' } };
+        c.plot = plot;
+        return c;
+    };
+
+    test( 'the metric over time', () => {
+        expect( chart( null ).chartTitle() ).toBe( 'Visits over time' );
+    } );
+
+    test( 'by the grid\'s dimensions when it draws the grid\'s rows', () => {
+        expect( chart( { dims: [ 'browserType' ], rows: [ { values: {}, label: 'Chrome' } ], label: 'Browser' } ).chartTitle() )
+            .toBe( 'Visits by Browser over time' );
+    } );
+
+    test( 'none where the widget has a heading of its own', () => {
+        document.body.innerHTML = '<div id="w"><div class="owa_chartHead"><div class="owa_chartTitle">x</div></div></div>';
+        const c = chart( null );
+        c.options.showTitle = false;
+        c.drawTitle( 'w' );
+        expect( document.querySelector( '.owa_chartTitle' ).textContent ).toBe( '' );
+    } );
+} );
+
 describe( 'the hovered line', () => {
 
     const chart = new OWA.areaChart();

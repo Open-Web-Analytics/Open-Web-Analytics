@@ -1082,7 +1082,7 @@ li.constraintRow {
 }
 /* A class, not the id: a widget's own rules size its chart. */
 .owa .owa_trendChart {
-    min-height: 125px
+    min-height: 250px
 }
 .owa #trend-metrics {
     min-height: 70px
@@ -1355,23 +1355,34 @@ li.constraintRow {
 }
 
 /*
- * The day/month control, top right of a trend.
- *
- * Floated over the plot's own top-right corner rather than given a row: the
- * chart's upper right is empty by construction -- a trend that filled it would
- * be off the top of its own axis -- and a row of its own would push the chart
- * down on every report that has one.
+ * A trend's header: what it draws on the left, the day/month control on the
+ * right, in a row of its own over the plot.
  */
+.owa .owa_chartHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.owa .owa_chartTitle {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+    color: #1f2937;
+}
+
 .owa .owa_chartControls {
-    float: right;
-    position: relative;
-    z-index: 2;
-    margin: 0 4px -4px 0;
+    flex: none;
+    margin-left: auto;
 }
 
 .owa .owa_chartGranularity {
-    font-size: 11px;
-    padding: 1px 4px;
+    font-size: 13px;
+    padding: 4px 8px;
     border: 1px solid #dcdcdc;
     border-radius: 3px;
     background: #ffffff;
