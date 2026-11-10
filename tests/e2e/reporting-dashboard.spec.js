@@ -829,6 +829,18 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await openReport(page);
     });
 
+    test('compared, each metric cell shows its change under the value', async ({ page }) => {
+        const url = new URL(page.url());
+        url.searchParams.set('owa_compare', 'previous_period');
+        await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+        const metricCells = page.locator('.owa_gridTable tbody td.owa_gridMetric, .owa_gridTable tbody tr:not(.owa_gridTotal) td[data-column]').filter({ has: page.locator('.owa_gridChange') });
+        await expect(metricCells.first()).toBeVisible();
+
+        const change = page.locator('.owa_gridTable .owa_gridChange').first();
+        await expect(change).toHaveAttribute('title', /\d{4}: /);
+    });
+
     test('a dimension heading opens the dimensions to choose from, by family', async ({ page }) => {
         const pick = page.locator('.owa_gridDimButton').first();
 
