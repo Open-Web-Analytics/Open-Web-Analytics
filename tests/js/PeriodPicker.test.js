@@ -23,8 +23,8 @@ const PRESETS = [
 ];
 
 const COMPARES = [
-    { key: 'previous_period_dow', label: 'Previous period (match day of week)' },
     { key: 'previous_period', label: 'Previous period' },
+    { key: 'previous_period_dow', label: 'Previous period (match day of week)' },
     { key: 'previous_year', label: 'Previous year' },
     { key: 'previous_year_dow', label: 'Previous year (match day of week)' },
 ];
@@ -217,7 +217,9 @@ describe( 'the control', () => {
         expect( select ).toBe( $( '.owa_periodCmpSelect' ) );
         expect( Array.from( select.options ).map( ( o ) => o.textContent ) )
             .toEqual( expect.arrayContaining( [ 'Previous year', 'Custom date range' ] ) );
-        expect( select.value ).toBe( 'previous_period_dow' );
+        // Previous period first, and what Compare starts on.
+        expect( select.options[0].value ).toBe( 'previous_period' );
+        expect( select.value ).toBe( 'previous_period' );
         expect( $$( '.owa_periodField' ) ).toHaveLength( 4 );
         expect( $$( '.owa_periodKind' ).map( ( k ) => k.textContent ) ).toEqual( [ 'Relative period', 'Relative period' ] );
         expect( $$( '.owa_periodFieldCmp .owa_periodValue' ).map( ( v ) => v.textContent ) ).toEqual( [ 'Sep 15, 2026', 'Oct 12, 2026' ] );
