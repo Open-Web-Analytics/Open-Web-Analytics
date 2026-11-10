@@ -113,8 +113,9 @@ describe( 'a trend compared to another period', () => {
         const chart = new OWA.areaChart();
         const line  = chart.singleSeries( rs, 'date', 'pageViews' ).series.find( ( s ) => s.isCompare );
 
-        expect( line.keyLabels[0] ).toMatch( /^Nov 2\s*–\s*8, 2026$/ );
-        expect( line.keyLabels[1] ).toMatch( /^Sep 15\s*–\s*Oct 12, 2026$/ );
+        // No names for them: a custom range is its dates.
+        expect( line.keyLabels[0].label ).toMatch( /^Nov 2\s*–\s*8, 2026$/ );
+        expect( line.keyLabels[1].label ).toMatch( /^Sep 15\s*–\s*Oct 12, 2026$/ );
 
         document.body.innerHTML = '<div id="kc"><div class="owa_chartLegend"></div></div>';
         chart.dom_id = 'kc';
@@ -122,8 +123,30 @@ describe( 'a trend compared to another period', () => {
         chart.drawCompareKey( [ { color: '#1874CD' }, Object.assign( {}, line, { color: '#1874CD' } ) ] );
 
         const key = document.querySelector( '#kc .owa_chartKey' );
-        expect( key.querySelector( '.owa_chartKeyPeriod' ).textContent ).toBe( line.keyLabels[0] );
-        expect( key.querySelector( '.owa_chartKeyCompare' ).textContent ).toBe( line.keyLabels[1] );
+        expect( key.querySelector( '.owa_chartKeyPeriod' ).textContent ).toBe( line.keyLabels[0].label );
+        expect( key.querySelector( '.owa_chartKeyCompare' ).textContent ).toBe( line.keyLabels[1].label );
+        expect( key.querySelector( '.owa_chartKeyPeriod' ).hasAttribute( 'title' ) ).toBe( false );
+    } );
+
+    test( 'a preset and a relative comparison are named as the picker names them, dates in the title', () => {
+        OWA.periodNames = { periods: { last_seven_days: 'Last 7 days' }, compares: { previous_period_dow: 'Previous period (same weekdays)' } };
+
+        const rs = Object.assign( resultSet( [ [ '20261102', 10 ] ], [ [ '20261102', '20261026', 1 ] ] ),
+            { timePeriod: { period: 'last_seven_days', startDate: '20261102', endDate: '20261108' } } );
+        const chart = new OWA.areaChart();
+        const line  = chart.singleSeries( rs, 'date', 'pageViews' ).series.find( ( s ) => s.isCompare );
+
+        document.body.innerHTML = '<div id="kc"><div class="owa_chartLegend"></div></div>';
+        chart.dom_id = 'kc';
+        chart.flotOptions = { legend: { show: false } };
+        chart.drawCompareKey( [ { color: '#1874CD' }, Object.assign( {}, line, { color: '#1874CD' } ) ] );
+
+        const period = document.querySelector( '.owa_chartKeyPeriod' );
+        expect( period.textContent ).toBe( 'Last 7 days' );
+        expect( period.title ).toMatch( /^Nov 2\s*–\s*8, 2026$/ );
+        expect( document.querySelector( '.owa_chartKeyCompare' ).textContent ).toBe( 'Previous period (same weekdays)' );
+
+        delete OWA.periodNames;
     } );
 
     test( 'no period on the result set, no key', () => {
