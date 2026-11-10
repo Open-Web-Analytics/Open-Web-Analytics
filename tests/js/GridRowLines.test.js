@@ -182,8 +182,9 @@ describe( 'the compared tooltip', () => {
         document.body.innerHTML = chart.comparedTooltip( day( '20261102' ) );
 
         expect( document.querySelector( '.owa_chartTipHead' ).textContent ).toMatch( / vs / );
-        const rows = [ ...document.querySelectorAll( '.owa_chartTip tr' ) ].map( ( tr ) => tr.textContent );
-        expect( rows ).toEqual( [ 'Total10▲ 100.0%', 'Chrome6▲ 100.0%', 'Safari0—' ] );
+        // Each line: its value, the compared day's, the change.
+        const cells = [ ...document.querySelectorAll( '.owa_chartTip tr' ) ].map( ( tr ) => [ ...tr.children ].map( ( c ) => c.textContent ) );
+        expect( cells ).toEqual( [ [ 'Total', '10', '5', '▲ 100.0%' ], [ 'Chrome', '6', '3', '▲ 100.0%' ], [ 'Safari', '0', '0', '—' ] ] );
     } );
 
     test( 'the compared day is worked out from the two starts, data or not', () => {
@@ -223,6 +224,26 @@ describe( 'the compared tooltip', () => {
         const chart = new OWA.areaChart();
         chart.dataseries = [ { label: 'Visits', data: [ [ 1, 2 ] ] } ];
         expect( chart.comparedTooltip( 1 ) ).toBeNull();
+    } );
+} );
+
+describe( 'the hovered line', () => {
+
+    const chart = new OWA.areaChart();
+    chart.dataseries = [
+        { label: 'Total', data: [ [ 1, 0 ], [ 2, 7 ] ] },
+        { label: 'Chrome', data: [ [ 1, 0 ], [ 2, 4 ] ] },
+        { label: 'Safari', data: [ [ 1, 0 ], [ 2, 3 ] ] },
+        { isCompare: true, compareOf: 0, data: [ [ 1, 24 ], [ 2, 9 ] ] },
+    ];
+    const hover = ( index, x, y ) => chart.hoveredLine( { series: { index }, datapoint: [ x, y ] } );
+
+    test( 'where lines meet, as on a day with nothing, it is the first: the total', () => {
+        expect( hover( 2, 1, 0 ) ).toBe( 0 );
+    } );
+
+    test( 'otherwise the one under the pointer', () => {
+        expect( hover( 2, 2, 3 ) ).toBe( 2 );
     } );
 } );
 

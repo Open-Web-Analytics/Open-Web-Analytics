@@ -877,6 +877,8 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         const tip = page.locator('#tooltip');
         await expect(tip).toBeVisible();
         await expect(tip.locator('.owa_chartTipHead')).toContainText(' vs ');
+        // Each line's value on the compared day, beside its own.
+        await expect(tip.locator('tr').first().locator('td.owa_chartTipWas')).toHaveText(/^[\d,.]+$|^—$/);
         const b = await tip.boundingBox();
         const width = page.viewportSize().width;
         expect(b.x).toBeGreaterThanOrEqual(0);

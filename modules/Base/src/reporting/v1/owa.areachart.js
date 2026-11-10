@@ -1790,8 +1790,8 @@ OWA.areaChart.prototype = {
 
     /**
      * A compared chart's tooltip: the day against the day it is compared to,
-     * then every line's value there and its change. Null when nothing is
-     * compared.
+     * then every line's value there, its value on the compared day and the
+     * change. Null when nothing is compared.
      */
     comparedTooltip : function ( x ) {
 
@@ -1863,10 +1863,46 @@ OWA.areaChart.prototype = {
             }
 
             html += '<tr><th><i style="background:' + esc( String( s.color ) ) + '"></i><span>' + esc( s.label || '' ) + '</span></th>'
-                + '<td>' + esc( v === null ? '\u2014' : that.tipNumber( v ) ) + '</td><td>' + change + '</td></tr>';
+                + '<td>' + esc( v === null ? '\u2014' : that.tipNumber( v ) ) + '</td>'
+                + '<td class="owa_chartTipWas">' + ( c ? esc( w === null ? '\u2014' : that.tipNumber( w ) ) : '' ) + '</td>'
+                + '<td>' + change + '</td></tr>';
         } );
 
         return html + '</table>';
+    },
+
+    /**
+     * The line a hovered point belongs to. Where lines meet -- every line at
+     * zero on a quiet day -- flot hands over the last of them; the first is
+     * the one meant, the total, whose comparison is the one worth showing.
+     */
+    hoveredLine : function ( item ) {
+
+        var x = item.datapoint[0], y = item.datapoint[1];
+        var series = this.dataseries || [];
+
+        for ( var i = 0; i < item.series.index; i++ ) {
+
+            if ( series[i].isCompare ) {
+
+                continue;
+            }
+
+            for ( var j = 0; j < series[i].data.length; j++ ) {
+
+                if ( series[i].data[j][0] === x ) {
+
+                    if ( series[i].data[j][1] === y ) {
+
+                        return i;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        return item.series.index;
     },
 
     /**
@@ -2148,7 +2184,7 @@ OWA.areaChart.prototype = {
 
             if ( item && that.compareOnHover() ) {
 
-                var own = item.series.isCompare ? ( item.series.compareOf || 0 ) : item.series.index;
+                var own = item.series.isCompare ? ( item.series.compareOf || 0 ) : that.hoveredLine( item );
 
                 if ( own !== that.hovered ) {
 

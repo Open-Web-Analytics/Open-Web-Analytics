@@ -1399,6 +1399,8 @@ li.constraintRow {
 .owa_chartTip th i { display: inline-block; width: 12px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
 .owa_chartTip td { padding: 1px 4px; text-align: right; white-space: nowrap; }
 .owa_chartTip .owa_gridChange { display: inline; }
+/* The compared day's value, after the day's own: quieter, as the dashed line is. */
+.owa_chartTip td.owa_chartTipWas { color: #6b7280; }
 
 /* A compared trend's key: the period solid, the comparison dashed. */
 .owa .owa_chartKey { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; color: #374151; }
