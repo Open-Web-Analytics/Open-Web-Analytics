@@ -318,6 +318,12 @@ p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel, .owa .action_infobox .act
     margin-bottom:0px;
 }
 
+/* Under a metric box's number when the report is compared: the change and the dates. */
+p.owa_metricInfoboxCompare { margin: 2px 0 0; font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+p.owa_metricInfoboxCompare .is-up { color: #137a3e; font-weight: 600; }
+p.owa_metricInfoboxCompare .is-down { color: #b42318; font-weight: 600; }
+p.owa_metricInfoboxCompare .is-flat { font-weight: 600; }
+
 p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_infobox .action_value {
     color:#111827;
     font-size:34px;
@@ -1382,6 +1388,12 @@ li.constraintRow {
     margin-top: 6px;
     font-size: 11px;
 }
+
+/* A compared trend's key: the period solid, the comparison dashed. */
+.owa .owa_chartKey { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; color: #374151; }
+.owa .owa_chartKey span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.owa .owa_chartKey i { width: 18px; height: 0; border-top: 2px solid; }
+.owa .owa_chartKey .owa_chartKeyCompare i { border-top-style: dashed; }
 
 .owa .owa_chartLegend table {
     /* Left, with the chart's y-axis labels, rather than centred under it: a
@@ -3001,6 +3013,15 @@ li.constraintRow {
        showing two metrics gets two half-width boxes rather than two narrow ones
        against a wide gap. */
     flex: 1 1 135px;
+
+    /* A column whose label takes the spare height, so a label that wraps to
+       two lines does not push its number below the others in the row. */
+    display: flex;
+    flex-direction: column;
+}
+
+.owa .metricInfoboxesContainer .owa_metricInfobox > .owa_metricInfoboxLabel {
+    flex: 1 0 auto;
 }
 
 /* A report that asks for a specific box width gets it: goals draws one box per

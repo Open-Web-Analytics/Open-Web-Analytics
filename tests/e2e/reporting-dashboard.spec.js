@@ -735,6 +735,43 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(page.locator('.owa_periodBadge')).not.toHaveCount(0);
     });
 
+    test('a compared report puts the change under each metric box and a second line on the trend', async ({ page }) => {
+        const url = new URL(page.url());
+        url.searchParams.set('owa_compare', 'previous_period');
+        await page.goto(url.toString(), { waitUntil: 'networkidle' });
+
+        const lines = page.locator('.owa_metricInfoboxCompare');
+        await expect(lines.first()).toBeVisible();
+        // The change alone: the dates are in its title.
+        await expect(lines.first()).toHaveText(/^(▲ |▼ )?\d+\.\d%$|^—$/);
+        await expect(lines.first()).toHaveAttribute('title', /\d{4}: /);
+        expect(await lines.count()).toEqual(await page.locator('.owa_metricInfobox').count());
+
+        // The compared line is the same metric, so it is no entry in the legend.
+        await expect(page.locator('.owa_chartLegend').first()).not.toContainText('Compared');
+        // A key names the two periods instead: the period solid, the comparison dashed.
+        await expect(page.locator('.owa_chartKey .owa_chartKeyPeriod').first()).toBeVisible();
+        // Named as the picker names them; the dates are in the title.
+        await expect(page.locator('.owa_chartKey .owa_chartKeyCompare').first()).toHaveText('Previous period');
+        await expect(page.locator('.owa_chartKey .owa_chartKeyCompare').first()).toHaveAttribute('title', /\d{4}$/);
+
+        // A label that wraps does not push its number below the rest of the row.
+        const row = page.locator('.metricInfoboxesContainer').first();
+        await row.locator('.owa_metricInfobox').first().evaluate((box) => {
+            box.style.flex = '0 0 120px';
+            box.style.minWidth = '0';
+            box.querySelector('.owa_metricInfoboxLabel').textContent = 'A metric name long enough to wrap';
+        });
+        const tops = await row.locator('.owa_metricInfobox').evaluateAll((boxes) => {
+            const firstTop = boxes[0].getBoundingClientRect().top;
+            return boxes
+                .filter((b) => Math.abs(b.getBoundingClientRect().top - firstTop) < 2)   // the first line of boxes
+                .map((b) => Math.round(b.querySelector('.owa_metricInfoboxLargeNumber').getBoundingClientRect().top));
+        });
+        expect(tops.length).toBeGreaterThan(1);
+        expect(new Set(tops).size).toBe(1);
+    });
+
     test('server-rendered images resolve to public/, not the denied module tree', async ({ page }) => {
         // Regression: makeImageLink() (owa_template.php) emits the <img> src for
         // server-rendered images (the header logo, browser/referral/document icons,

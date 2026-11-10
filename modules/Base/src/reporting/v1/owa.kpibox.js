@@ -2,6 +2,7 @@
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
+import { formatRange } from './owa.periodpicker.js';
 
 OWA.kpiBox = function( options ) {
 
@@ -42,6 +43,35 @@ OWA.kpiBox = function( options ) {
     this.dom_id = '';
     this.domSelector = '';
 }
+
+/**
+ * The line under a box's number when the report is compared to another
+ * period: the change, up or down. The dates it is against and the
+ * comparison's own value are in the title; the picker and the chart's key
+ * already name the dates.
+ *
+ * A metric with no comparison value (nothing in the compared period) or
+ * nothing to divide by (a zero) shows no percentage.
+ */
+OWA.kpiBox.compareHtml = function ( item, compare ) {
+
+    var range = formatRange( compare.startDate, compare.endDate );
+    var ch    = item.change;
+    var cls   = 'is-flat';
+    var text  = '\u2014';
+
+    if ( ch !== null && ch !== undefined && isFinite( ch ) ) {
+
+        cls  = ch > 0 ? 'is-up' : ( ch < 0 ? 'is-down' : 'is-flat' );
+        text = ( ch > 0 ? '\u25B2 ' : ( ch < 0 ? '\u25BC ' : '' ) ) + ( Math.abs( ch ) * 100 ).toFixed( 1 ) + '%';
+    }
+
+    var was = item.compare_formatted_value === null || item.compare_formatted_value === undefined
+        ? 'no data' : item.compare_formatted_value;
+
+    return '<p class="owa_metricInfoboxCompare" title="' + OWA.util.escapeHtml( range + ': ' + was ) + '">'
+        + '<span class="' + cls + '">' + OWA.util.escapeHtml( text ) + '</span></p>';
+};
 
 OWA.kpiBox.prototype = {
 
@@ -263,6 +293,12 @@ OWA.kpiBox.prototype = {
             html += OWA.util.sprintf('<p class="owa_metricInfoboxLabel">%s</p>', item.label);
             html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>',
                 OWA.util.escapeHtml( OWA.util.metricText( item ) ) );
+
+            if ( resultSet.compare && item.hasOwnProperty( 'compare_value' ) ) {
+
+                html += OWA.kpiBox.compareHtml( item, resultSet.compare );
+            }
+
             html += '</div>';
 
             jQuery('#' + con_id ).append( html );

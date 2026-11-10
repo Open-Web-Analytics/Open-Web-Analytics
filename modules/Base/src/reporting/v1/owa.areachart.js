@@ -2,6 +2,7 @@
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
+import { formatRange } from './owa.periodpicker.js';
 
 OWA.areaChart = function( options ) {
 
@@ -366,7 +367,9 @@ OWA.areaChart.prototype = {
                     }
                 },
                 legend: {
-                    show: this.options.showLegend && dataseries.length > 1,
+                    // The compared period is not a series of its own: it has no entry.
+                    show: this.options.showLegend
+                        && dataseries.filter( function ( s ) { return ! s.isCompare; } ).length > 1,
 
                     /*
                      * BELOW the chart, not floating inside it.
@@ -379,7 +382,8 @@ OWA.areaChart.prototype = {
                      */
                     container: jQuery( '#' + dom_id + ' > .owa_chartLegend' ),
                     noColumns: dataseries.length
-                }
+                },
+                hooks: { drawSeries: [ this.dashLine ] }
             };
 
             this.xType = built.x_type;
@@ -409,7 +413,7 @@ OWA.areaChart.prototype = {
              */
             for ( var c = 0; c < dataseries.length; c++ ) {
 
-                dataseries[c].color = dataseries[c].isTotal
+                dataseries[c].color = dataseries[c].isCompare || dataseries[c].isTotal
                     ? this.options.totalColor
                     : this.options.colors[ ( c - 1 ) % this.options.colors.length ];
             }
@@ -670,10 +674,84 @@ OWA.areaChart.prototype = {
             } );
         }
 
+        var series  = [ this.areaSeries( resultSet.getMetricLabel( y_name ), data ) ];
+        var compare = this.compareSeries( resultSet, x_name, y_name, x_type, xs );
+
+        if ( compare ) {
+
+            series.push( compare );
+        }
+
         return {
-            series: [ this.areaSeries( resultSet.getMetricLabel( y_name ), data ) ],
+            series: series,
             points: data.length,
             x_type: x_type
+        };
+    },
+
+    /**
+     * The compared period as a line over the period's area, or null.
+     *
+     * From resultSet.compare.rows: the comparison's own rows with their
+     * dates already moved onto the period's (CompareMerger), so the two line
+     * up day for day. Each point keeps the date it really is, for the
+     * tooltip.
+     */
+    compareSeries : function ( resultSet, x_name, y_name, x_type, xs ) {
+
+        var rows = resultSet.compare && resultSet.compare.rows;
+
+        /*
+         * A comparison with no rows at all is still a line when the period's
+         * days are known: nothing happened then, which for a count is a line
+         * at zero and for a ratio is no line drawn.
+         */
+        if ( ! rows || ( ! rows.length && ! xs ) ) {
+
+            return null;
+        }
+
+        var that = this;
+        var byX  = {};
+        var when = {};
+
+        rows.forEach( function ( row ) {
+
+            if ( ! row[ x_name ] || ! row[ y_name ] ) {
+
+                return;
+            }
+
+            var x = that.formatValue( x_type, row[ x_name ].value );
+
+            byX[ x ]  = that.formatValue( row[ y_name ].data_type, row[ y_name ].value ) * 1;
+            when[ x ] = row[ x_name ].compare_period_value;
+        } );
+
+        var fill = this.zeroForMissing( resultSet, y_name ) ? 0 : null;
+        var axis = xs || Object.keys( byX ).map( Number ).sort( function ( a, b ) { return a - b; } );
+
+        var data = axis.map( function ( x ) {
+            return [ x, byX.hasOwnProperty( x ) ? byX[ x ] : fill ];
+        } );
+
+        /*
+         * The same metric over other dates, so the same colour, dashed, and no
+         * label: a legend entry would make it read as one more series to add
+         * to the rest.
+         */
+        return {
+            isCompare: true,
+            data: data,
+            // The date each point really is, by x, and the metric: for the tooltip.
+            compareDates: when,
+            tooltipLabel: resultSet.getMetricLabel( y_name ),
+            dashed: data.length > 1,
+            // What the key under the chart calls the two lines.
+            keyLabels: this.compareKeyLabels( resultSet ),
+            lines: { show: true, fill: false, lineWidth: 1.5 },
+            shadowSize: 0,
+            points: data.length === 1 ? { show: true, fill: true, radius: 3 } : undefined
         };
     },
 
@@ -1398,6 +1476,88 @@ OWA.areaChart.prototype = {
         this.plotted = plotted;
 
         this.markLegend();
+
+        this.drawCompareKey( plotted );
+    },
+
+    /**
+     * flot's drawSeries hook: a series marked dashed is stroked in dashes.
+     *
+     * flot 0.8 has no dash option. The hook runs just before each series is
+     * drawn, on the same context, so the dash is set for a dashed series and
+     * cleared for every other one.
+     */
+    dashLine : function ( plot, ctx, series ) {
+
+        if ( typeof ctx.setLineDash !== 'function' ) {
+
+            return;
+        }
+
+        ctx.setLineDash( series.dashed ? [ 5, 4 ] : [] );
+    },
+
+    /**
+     * The period's dates and the comparison's, for the key, or null when the
+     * result set does not say what its period was.
+     */
+    compareKeyLabels : function ( resultSet ) {
+
+        var period  = resultSet.timePeriod;
+        var compare = resultSet.compare;
+
+        if ( ! period || ! period.startDate || ! period.endDate || ! compare.startDate || ! compare.endDate ) {
+
+            return null;
+        }
+
+        // Named as the picker names them (OWA.periodNames); a custom range by its dates.
+        var names = OWA.periodNames || { periods: {}, compares: {} };
+        var entry = function ( name, start, end ) {
+
+            var dates = formatRange( String( start ), String( end ) );
+
+            return { label: name || dates, dates: dates };
+        };
+
+        return [
+            entry( names.periods[ period.period ], period.startDate, period.endDate ),
+            entry( names.compares[ compare.compare ], compare.startDate, compare.endDate )
+        ];
+    },
+
+    /**
+     * Under a compared trend: a solid line and the period's dates, a dashed line
+     * and the comparison's.
+     *
+     * Not a legend of series -- the two lines are one metric over two periods,
+     * so the key names the periods. Written after each draw because flot empties
+     * the legend's container every time it plots.
+     */
+    drawCompareKey : function ( plotted ) {
+
+        var cmp  = plotted.filter( function ( s ) { return s.isCompare; } )[0];
+        var main = plotted.filter( function ( s ) { return ! s.isCompare; } )[0];
+
+        if ( ! cmp || ! main || ! cmp.keyLabels || ( this.flotOptions.legend && this.flotOptions.legend.show ) ) {
+
+            return;
+        }
+
+        var esc  = OWA.util.escapeHtml;
+        var item = function ( cls, color, key ) {
+
+            // A named period has its dates in its title.
+            return '<span class="' + cls + '"' + ( key.label !== key.dates ? ' title="' + esc( key.dates ) + '"' : '' ) + '>'
+                + '<i style="border-top-color:' + esc( String( color ) ) + '"></i>'
+                + esc( key.label ) + '</span>';
+        };
+
+        jQuery( '#' + this.dom_id + ' > .owa_chartLegend' ).html(
+            '<div class="owa_chartKey">'
+            + item( 'owa_chartKeyPeriod', main.color, cmp.keyLabels[0] )
+            + item( 'owa_chartKeyCompare', cmp.color, cmp.keyLabels[1] )
+            + '</div>' );
     },
 
     /**
@@ -1561,13 +1721,20 @@ OWA.areaChart.prototype = {
                     var x = item.datapoint[0].toFixed(0),
                         y = item.datapoint[1].toFixed(0);
                         
-                    if (that.options.xaxis.mode === 'time') {
-                    
+                    // A compared point is labelled with the date it really is.
+                    var real = item.series.compareDates && item.series.compareDates[ item.datapoint[0] ];
+
+                    if ( real ) {
+
+                        x = that.timestampFormatter( that.formatValue( that.xType, String( real ) ) );
+
+                    } else if (that.options.xaxis.mode === 'time') {
+
                         x = that.timestampFormatter(x);
                     }
                     
                     that.showTooltip(item.pageX -75, item.pageY -50,
-                                x+'<BR><B>'+item.series.label + ":</B> " + y);
+                                x+'<BR><B>'+ ( item.series.tooltipLabel || item.series.label ) + ":</B> " + y);
                 }
             } else {
                 jQuery("#tooltip").remove();
