@@ -183,7 +183,6 @@
 .owa_periodTriggerMain { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 14px; }
 .owa_periodBadge { font-size: 12px; font-weight: 600; background: #eef2f7; border-radius: 4px; padding: 1px 6px; color: #374151; }
 .owa_periodTriggerCompare { font-size: 12px; color: var(--owa-period-muted); white-space: nowrap; }
-.owa_periodTriggerCompare i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 2px; background: #fff; border: var(--owa-period-cmp-line); }
 .owa_periodChevron { position: absolute; right: 12px; top: 50%; width: 7px; height: 7px; border-right: 2px solid #777; border-bottom: 2px solid #777; transform: translateY(-70%) rotate(45deg); transition: transform 0.12s ease; }
 .owa_periodTrigger[aria-expanded="true"] .owa_periodChevron { transform: translateY(-20%) rotate(225deg); }
 
@@ -223,7 +222,8 @@
 .owa_periodFields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .owa_periodLabel { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--owa-period-muted); }
 .owa_periodLabel i { width: 10px; height: 10px; border-radius: 2px; background: var(--owa-period-range); border: 1px solid var(--owa-period-blue); }
-.owa_periodLabelCmp i { background: #fff; border: var(--owa-period-cmp-line); }
+/* The comparison's icon is a short dotted line, as its line on the trend is drawn. */
+.owa_periodLabelCmp i { width: 14px; height: 0; border: 0; border-radius: 0; background: none; border-top: 2px dotted var(--owa-period-blue); }
 .owa_periodKind { margin-left: auto; font-size: 9.5px; font-weight: 400; letter-spacing: .07em; text-transform: uppercase; }
 .owa_periodFieldRow { display: flex; align-items: center; gap: 8px; }
 .owa_periodField { display: grid; gap: 1px; flex: 1 1 0; min-width: 0; padding: 4px 10px 6px; background: #fff; border: 1px solid var(--owa-period-line); border-radius: 6px; }
