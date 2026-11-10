@@ -202,18 +202,20 @@
 .owa_periodLeft { border-right: 1px solid var(--owa-period-line); }
 .owa_periodRight {
     display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
-    gap: 10px; padding: 14px 16px 6px; contain: size; min-height: 560px;
+    gap: 10px; padding: 14px 16px 6px; contain: size; min-height: 480px;
 }
 
 .owa_periodList { list-style: none; margin: 0; padding: 6px 0; }
 .owa_periodList li > button { display: flex; align-items: center; width: 100%; min-height: 28px; padding: 3px 18px; background: none; border: 0; text-align: left; }
 .owa_periodList li > button:hover { background: #eef2f7; }
 .owa_periodList li > button[aria-pressed="true"] { background: var(--owa-period-range); color: #0d4f91; font-weight: 600; }
-.owa_periodList .owa_periodCmp > button[aria-pressed="true"] { background: none; color: #0d4f91; outline: var(--owa-period-cmp-line); outline-offset: -3px; }
 .owa_periodGroup { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 18px 2px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--owa-period-muted); }
 .owa_periodGroup small { font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; }
 .owa_periodRule { border-top: 1px solid var(--owa-period-line); margin: 6px 0; }
 .owa_periodSwitchRow { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 40px; padding: 4px 18px; font-weight: 500; }
+/* What the period is compared to: one select under the switch. */
+.owa_periodCmpRow { padding: 0 18px 8px; }
+.owa_periodCmpSelect { width: 100%; padding: 5px 4px; border: 1px solid var(--owa-period-line); border-radius: 6px; background: #fff; font: inherit; font-size: 13px; color: #111827; }
 .owa_periodSwitch { position: relative; flex: none; width: 40px; height: 22px; border: 0; border-radius: 999px; background: #c3cad4; }
 .owa_periodSwitch::after { content: ""; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .12s; }
 .owa_periodSwitch[aria-checked="true"] { background: var(--owa-period-blue); }
@@ -4971,6 +4973,7 @@ li.constraintRow {
     .owa_periodChipsCmp { padding-top: 0; }
     .owa_periodChipsCmp button[aria-pressed="true"] { background: #fff; border: 2px dotted var(--owa-period-blue); color: #0d4f91; }
     .owa_periodPhoneCompare { display: block; }
+
     .owa_periodPhoneCompare .owa_periodSwitchRow { padding: 4px 0; font-size: 16px; }
     .owa_periodField input, .owa_periodField .owa_periodValue { font-size: 16px; }
     .owa_periodKind { font-size: 11px; }

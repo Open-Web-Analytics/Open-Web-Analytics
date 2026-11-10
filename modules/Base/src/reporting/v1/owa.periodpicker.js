@@ -3,8 +3,8 @@
  *
  * A button showing the period, and a panel: the predefined periods in a
  * column on the left (Relative, then Fixed: Custom date range), a Compare
- * switch under them that lists the comparisons, and on the right the date
- * fields above a calendar.
+ * switch under them with a select of the comparisons, and on the right the
+ * date fields above a calendar.
  *
  * A preset's dates come from the server (TimePeriod::getPresets), cut in the
  * installation's timezone. Its fields are read-only; only a Custom date range
@@ -411,8 +411,8 @@ PeriodPicker.prototype = {
     listHtml() {
 
         const d = this.draft;
-        const item = ( act, key, on, label, cls ) =>
-            '<li' + ( cls ? ' class="' + cls + '"' : '' ) + '><button type="button" data-act="' + act + '" data-k="' + key + '" aria-pressed="' + on + '">' + esc( label ) + '</button></li>';
+        const item = ( act, key, on, label ) =>
+            '<li><button type="button" data-act="' + act + '" data-k="' + key + '" aria-pressed="' + on + '">' + esc( label ) + '</button></li>';
 
         let h = '<ul class="owa_periodList"><li class="owa_periodGroup">Relative <small>to today</small></li>';
 
@@ -423,15 +423,24 @@ PeriodPicker.prototype = {
             + '<li class="owa_periodRule" role="separator"></li>'
             + '<li>' + this.switchHtml( 'l' ) + '</li>';
 
+        // One select, not a second list: the list made the panel as tall as both.
         if ( d.cmpOn ) {
 
-            h += '<li class="owa_periodGroup">Relative <small>to the period</small></li>';
-            this.compares.forEach( ( c ) => { h += item( 'cmpKey', c.key, d.cmpKey === c.key, c.label, 'owa_periodCmp' ); } );
-            h += '<li class="owa_periodGroup">Fixed <small>dates you choose</small></li>'
-                + item( 'cmpKey', 'custom', d.cmpKey === 'custom', 'Custom date range', 'owa_periodCmp' );
+            h += '<li class="owa_periodCmpRow">' + this.compareSelectHtml() + '</li>';
         }
 
         return h + '</ul>';
+    },
+
+    /** The comparisons, and Custom date range, as a select under the Compare switch. */
+    compareSelectHtml() {
+
+        const d = this.draft;
+        const option = ( key, label ) => '<option value="' + esc( key ) + '"' + ( d.cmpKey === key ? ' selected' : '' ) + '>' + esc( label ) + '</option>';
+
+        return '<select class="owa_periodCmpSelect" data-cmp-select aria-label="Compared to">'
+            + this.compares.map( ( c ) => option( c.key, c.label ) ).join( '' )
+            + option( 'custom', 'Custom date range' ) + '</select>';
     },
 
     switchHtml( where ) {
@@ -754,10 +763,8 @@ PeriodPicker.prototype = {
                 break;
 
             case 'cmpKey':
-                d.cmpKey = k;
-                this.focus = k === 'custom' ? 'cmp' : 'main';
-                jump = true;
-                break;
+                this.chooseCompare( k );
+                return;
 
             case 'day':
                 this.edge = pickDay( d, calendarTarget( d, this.focus ), el.getAttribute( 'data-d' ), this.edge );
@@ -785,7 +792,27 @@ PeriodPicker.prototype = {
         this.render( jump );
     },
 
+    /** A comparison chosen: its dates, and the calendar starts on them. */
+    chooseCompare( k ) {
+
+        const d = this.draft;
+
+        d.cmpKey      = k;
+        this.focus    = k === 'custom' ? 'cmp' : 'main';
+        this.edge     = 0;
+        this.badInput = '';
+        settle( d, this.presets );
+        this.render( true );
+    },
+
     onChange( e ) {
+
+        if ( e.target.matches && e.target.matches( '[data-cmp-select]' ) && this.draft ) {
+
+            this.chooseCompare( e.target.value );
+
+            return;
+        }
 
         const el = e.target.closest( '[data-in]' );
 
