@@ -154,7 +154,9 @@ export function initialState( config ) {
         preset: known ? config.period : 'custom',
         main:   [ config.startDate, config.endDate ],
         cmpOn:  !! config.compare,
-        cmpKey: config.compare && config.compare !== 'date_range' ? config.compare : ( config.compare ? 'custom' : 'previous_period_dow' ),
+        // Compare turned on starts on the first comparison offered: Previous period.
+        cmpKey: config.compare && config.compare !== 'date_range' ? config.compare
+            : ( config.compare ? 'custom' : ( ( config.compares || [] )[0] || { key: 'previous_period' } ).key ),
         cmp:    [ config.compareStartDate || '', config.compareEndDate || '' ],
     };
 

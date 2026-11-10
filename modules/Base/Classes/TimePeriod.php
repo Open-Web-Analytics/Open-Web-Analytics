@@ -67,13 +67,14 @@ class TimePeriod {
     const FALLBACK_PERIOD = 'last_seven_days';
 
     /**
-     * The comparisons the picker offers, keyed by the `compare` request value.
-     * `date_range` is a comparison with its own compareStartDate and
-     * compareEndDate, the way `period=date_range` is.
+     * The comparisons the picker offers, keyed by the `compare` request value,
+     * in its order; the first is what Compare starts on. `date_range` is a
+     * comparison with its own compareStartDate and compareEndDate, the way
+     * `period=date_range` is.
      */
     const COMPARE_PERIODS = array(
-        'previous_period_dow' => 'Previous period (match day of week)',
         'previous_period'     => 'Previous period',
+        'previous_period_dow' => 'Previous period (match day of week)',
         'previous_year'       => 'Previous year',
         'previous_year_dow'   => 'Previous year (match day of week)',
     );
