@@ -138,7 +138,9 @@ OWA.resultSetExplorer = function(dom_id, options) {
             showLegend: true,
             lineWidth: 2.5,
             // Off where the widget shows a heading of its own.
-            showTitle: true
+            showTitle: true,
+            // The total as a filled area; a card draws a plain line.
+            fill: true
         },
         // A `pie` widget's options; see OWA.shareChart.
         shareChart: {
@@ -730,6 +732,7 @@ OWA.resultSetExplorer.prototype = {
 
         var ac = new OWA.areaChart();
         ac.options.showTitle = this.options.areaChart.showTitle !== false;
+        ac.options.fill      = this.options.areaChart.fill !== false;
         dom_id = dom_id || this.dom_id;
         // set the target dom_id chart should appear in
         ac.setDomId( dom_id );

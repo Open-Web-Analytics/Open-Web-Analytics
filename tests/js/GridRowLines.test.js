@@ -288,6 +288,16 @@ describe( 'the active point follows the pointer', () => {
     } );
 } );
 
+describe( 'a card\'s chart', () => {
+
+    test( 'the total is a filled area on a trend, a plain line on a card', () => {
+        const c = new OWA.areaChart();
+        expect( c.areaSeries( 'Visits', [ [ 1, 2 ], [ 2, 3 ] ] ).lines.fill ).toBe( true );
+        c.options.fill = false;
+        expect( c.areaSeries( 'Visits', [ [ 1, 2 ], [ 2, 3 ] ] ).lines.fill ).toBe( false );
+    } );
+} );
+
 describe( 'the chart\'s title', () => {
 
     const chart = ( plot ) => {

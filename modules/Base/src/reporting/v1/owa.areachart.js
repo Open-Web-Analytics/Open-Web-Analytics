@@ -15,6 +15,8 @@ OWA.areaChart = function( options ) {
         // A title over the chart, beside its controls. Off where the widget
         // already has a heading of its own.
         showTitle: true,
+        // The total filled under its line. Off for a card: a line is enough there.
+        fill: true,
         width:    '99%', // needed for flot resize plugin
         xaxis: {
             mode: 'time'
@@ -1351,7 +1353,7 @@ OWA.areaChart.prototype = {
             label: label,
             isTotal: true,
             data: data,
-            lines: { fill: true, fillColor: this.options.fillColor },
+            lines: { fill: this.options.fill !== false, fillColor: this.options.fillColor },
 
             // A line needs two points. A period of one day -- Today -- drew
             // nothing at all, so its one value is a dot.

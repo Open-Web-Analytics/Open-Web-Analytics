@@ -447,6 +447,10 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <?php // The widget's own heading, or the card's figure, already says what the chart is. ?>
         <?php echo $owa_id; ?>.options.areaChart.showTitle = false;
 <?php endif; ?>
+<?php if ( $owa_isTrendCard ): ?>
+        <?php // A card's chart is the shape behind its figures: a line, not a filled area. ?>
+        <?php echo $owa_id; ?>.options.areaChart.fill = false;
+<?php endif; ?>
 <?php
 ?>
 <?php if ( $owa_chartMetric !== '' ): ?>
