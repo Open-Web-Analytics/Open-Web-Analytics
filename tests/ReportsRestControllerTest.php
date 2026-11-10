@@ -297,6 +297,10 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->assertSame([[2, 1], [6, 3]], array_map(
             fn ($r) => [(int) $r['pageViews']['value'], (int) $r['pageViews']['compare_value']],
             $resp['data']['resultsRows']));
+
+        // A refetch from the result set's own link is still compared.
+        parse_str((string) parse_url($resp['data']['self'], PHP_URL_QUERY), $self);
+        $this->assertSame('previous_period', $self['compare'] ?? null, $resp['data']['self']);
     }
 
     public function testNoComparisonLeavesTheResultAsItWas(): void
