@@ -200,4 +200,134 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             $this->assertSame(422, $resp['status'], "GET /reports/$name");
         }
     }
+
+    /** Page views written straight into a Profile's cube: [ yyyymmdd, path, count ]. */
+    private function seedPageViews(string $siteId, array $rows): void
+    {
+        $property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite($siteId);
+        $id = 990000;
+
+        foreach ($rows as [$day, $path, $count]) {
+            for ($n = 0; $n < $count; $n++) {
+                $event = \OWA\Module\Base\Classes\Cube\Cubes::entityFor($property);
+                $event->setProperties([
+                    'id'         => ++$id,
+                    'event_type' => 'page_view',
+                    'site_id'    => $siteId,
+                    'visitor_id' => 7000 + $id,
+                    'session_id' => 8000 + $id,
+                    'ts'         => strtotime($day . ' 12:00:00') * 1000000 + $id,
+                    'yyyymmdd'   => (int) $day,
+                    'page_path'  => $path,
+                ]);
+                $this->assertTrue((bool) $event->create(), 'seeding the cube failed');
+            }
+        }
+    }
+
+    /**
+     * compare puts the comparison period's numbers beside the period's: in
+     * the aggregates, and on each row matched by its dimension values. The
+     * comparison is restricted to the rows on the page, so /c -- the
+     * comparison's own top page, and not on this page -- is not what /a is
+     * compared with.
+     */
+    public function testAComparisonIsAnsweredBesideThePeriod(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $day  = date('Ymd');
+        $week = date('Ymd', strtotime('-7 days'));
+
+        $this->seedPageViews($site, [
+            [$day, '/a', 3], [$day, '/b', 1],
+            [$week, '/a', 1], [$week, '/b', 2], [$week, '/c', 5],
+        ]);
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'dimensions' => 'pagePath', 'sort' => 'pageViews-', 'resultsPerPage' => 1,
+             'period' => 'date_range', 'startDate' => $day, 'endDate' => $day,
+             'compare' => 'previous_period_dow', 'siteId' => $site]
+        );
+
+        $this->assertSame(201, $resp['status'], $resp['raw']);
+
+        $data = $resp['data'];
+
+        $this->assertSame(['previous_period_dow', $week, $week],
+            [$data['compare']['compare'], $data['compare']['startDate'], $data['compare']['endDate']]);
+
+        $total = $data['aggregates']['pageViews'];
+        $this->assertSame([4, 8], [(int) $total['value'], (int) $total['compare_value']]);
+        $this->assertEqualsWithDelta(-0.5, $total['change'], 1e-9);
+
+        $this->assertCount(1, $data['resultsRows']);
+        $a = $data['resultsRows'][0];
+        $this->assertSame('/a', $a['pagePath']['value']);
+        $this->assertSame([3, 1], [(int) $a['pageViews']['value'], (int) $a['pageViews']['compare_value']]);
+        $this->assertEqualsWithDelta(2.0, $a['pageViews']['change'], 1e-9);
+    }
+
+    public function testATrendIsComparedDayForDay(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $d = fn (int $ago) => date('Ymd', strtotime("-$ago days"));
+
+        // The last two days against the two before them.
+        $this->seedPageViews($site, [
+            [$d(1), '/a', 2], [$d(0), '/a', 6],
+            [$d(3), '/a', 1], [$d(2), '/a', 3],
+        ]);
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'dimensions' => 'date', 'sort' => 'date',
+             'period' => 'date_range', 'startDate' => $d(1), 'endDate' => $d(0),
+             'compare' => 'previous_period', 'siteId' => $site]
+        );
+
+        $this->assertSame(201, $resp['status'], $resp['raw']);
+
+        $this->assertSame([[2, 1], [6, 3]], array_map(
+            fn ($r) => [(int) $r['pageViews']['value'], (int) $r['pageViews']['compare_value']],
+            $resp['data']['resultsRows']));
+
+        // A refetch from the result set's own link is still compared.
+        parse_str((string) parse_url($resp['data']['self'], PHP_URL_QUERY), $self);
+        $this->assertSame('previous_period', $self['compare'] ?? null, $resp['data']['self']);
+    }
+
+    public function testNoComparisonLeavesTheResultAsItWas(): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'period' => 'today', 'siteId' => $this->profile(true)]
+        );
+
+        $this->assertSame(201, $resp['status']);
+        $this->assertNull($resp['data']['compare']);
+        $this->assertArrayNotHasKey('compare_value', $resp['data']['aggregates']['pageViews'] ?? []);
+    }
+
+    public function testAnUnknownComparisonIsRefused(): void
+    {
+        $this->authenticateAs('admin');
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'period' => 'today', 'compare' => 'same_month_last_year', 'siteId' => $this->profile(true)]
+        );
+
+        $this->assertSame(422, $resp['status']);
+    }
 }

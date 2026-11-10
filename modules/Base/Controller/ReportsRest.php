@@ -199,15 +199,110 @@ class ReportsRest extends \OWA\Core\ReportController {
 
         $rsm = $this->resultSetManager();
 
-        return $rsm ? $rsm->getResults() : false;
+        if ( ! $rsm ) {
+
+            return false;
+        }
+
+        return $this->withComparison( $rsm, $rsm->getResults() );
+    }
+
+    /** The most rows a comparison query reads to match a page of rows. */
+    const COMPARE_ROW_LIMIT = 1000;
+
+    /**
+     * The result set with the comparison period's numbers beside its own,
+     * when the request names one (`compare`). See CompareMerger.
+     *
+     * The comparison is the same query over the comparison's dates. A grid is
+     * a page of rows, and the comparison's own top rows need not be the same
+     * values, so its query is restricted to the values on the page (an `in`
+     * constraint per dimension, except a time-axis one, which is matched by
+     * position and is complete for the period anyway).
+     *
+     * @return object the result set, with ->compare when one was asked for
+     */
+    public function withComparison( $rsm, $rs ) {
+
+        $compare = is_object( $rs ) && empty( $rs->request_errors ) && empty( $rs->notReady ) && $rsm->timePeriod
+            ? $rsm->timePeriod->getCompareFromMap( $this->params ) : null;
+
+        if ( ! $compare ) {
+
+            return $rs;
+        }
+
+        $over = array(
+            'period'         => 'date_range',
+            'startDate'      => $compare['startDate'],
+            'endDate'        => $compare['endDate'],
+            'resultsPerPage' => self::COMPARE_ROW_LIMIT,
+            'page'           => 1,
+            'offset'         => null,
+        );
+
+        $dims = (array) $rsm->dimensions;
+
+        /*
+         * The totals from a query of their own, with no dimensions and so no
+         * restriction to the page: a total of the rows on the page is not the
+         * period's total.
+         */
+        $totals = $this->resultSetManager( $over + array( 'dimensions' => '', 'sort' => '' ) )->getResults();
+
+        if ( ! $dims || empty( $rs->resultsRows ) ) {
+
+            return \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $totals, array(),
+                array( $rsm->timePeriod->getStartDate()->getYyyymmdd(), $rsm->timePeriod->getEndDate()->getYyyymmdd() ),
+                array( $compare['startDate'], $compare['endDate'] ), $compare['compare'] );
+        }
+
+        $crsm = $this->resultSetManager( $over );
+
+        foreach ( \OWA\Module\Base\Classes\CompareMerger::restrictable( $dims ) as $dim ) {
+
+            $values = array();
+
+            foreach ( (array) $rs->resultsRows as $row ) {
+
+                $values[] = isset( $row[ $dim ] ) && is_array( $row[ $dim ] ) ? $row[ $dim ]['value'] : null;
+            }
+
+            /*
+             * Not when the request already filters this dimension (one
+             * constraint per name: this would replace it), or when a value is
+             * missing -- IN never matches NULL, and a "(not set)" row would
+             * lose its comparison. The row limit bounds the query instead.
+             */
+            if ( $values && ! $crsm->getConstraint( $dim )
+                    && ! in_array( null, $values, true ) && ! in_array( '', $values, true ) ) {
+
+                $crsm->setConstraint( $dim, array_values( array_unique( $values ) ), 'in' );
+            }
+        }
+
+        $main = array( $rsm->timePeriod->getStartDate()->getYyyymmdd(), $rsm->timePeriod->getEndDate()->getYyyymmdd() );
+
+        $crs = $crsm->getResults();
+        $crs->aggregates = $totals->aggregates;
+
+        return \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $crs, $dims, $main,
+            array( $compare['startDate'], $compare['endDate'] ), $compare['compare'] );
     }
 
     /**
      * The query this request asks for, set up and not yet run.
      *
+     * @param array $overrides request parameters to use instead of the
+     *                         request's own: how the comparison's query is
+     *                         the same query over other dates
      * @return \OWA\Module\Base\Classes\ResultSetManager|false  false without metrics
      */
-    public function resultSetManager() {
+    public function resultSetManager( array $overrides = array() ) {
+
+        $get = function ( $name ) use ( $overrides ) {
+            return array_key_exists( $name, $overrides ) ? $overrides[ $name ] : $this->get( $name );
+        };
 
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
@@ -230,9 +325,9 @@ class ReportsRest extends \OWA\Core\ReportController {
         $rsm->setVocabularyProperty( $this->propertyOfRequest() );
 
         // set dimensions
-        if ( $this->getParam('dimensions') ) {
+        if ( $get('dimensions') ) {
 	        
-            $rsm->setDimensions($rsm->dimensionsStringToArray( $this->getParam('dimensions') ));
+            $rsm->setDimensions($rsm->dimensionsStringToArray( $get('dimensions') ));
         }
 
         if ( $this->getParam('segment') ) {
@@ -247,11 +342,11 @@ class ReportsRest extends \OWA\Core\ReportController {
         }
 
         $rsm->setTimePeriod(
-        	$this->get( 'period' ),
-            $this->get( 'startDate' ),
-            $this->get( 'endDate' ),
-            $this->get( 'startTime' ),
-            $this->get( 'endTime' )
+        	$get( 'period' ),
+            $get( 'startDate' ),
+            $get( 'endDate' ),
+            $get( 'startTime' ),
+            $get( 'endTime' )
         );
 
         // set constraints
@@ -270,28 +365,47 @@ class ReportsRest extends \OWA\Core\ReportController {
             $rsm->setSiteId( $this->get('siteId' ) );
         }
 
+        /*
+         * The comparison travels on the result set's own links (self, next,
+         * previous), so a refetch from one -- a grid's next page, a trend
+         * changed from days to months -- is still compared. Not on the
+         * comparison's own query: that is the one without overrides.
+         */
+        if ( ! $overrides ) {
+
+            foreach ( array( 'compare', 'compareStartDate', 'compareEndDate' ) as $key ) {
+
+                $value = $this->get( $key );
+
+                if ( $value !== null && $value !== '' ) {
+
+                    $rsm->query_params[ $key ] = $value;
+                }
+            }
+        }
+
         // set sort order
-        if ( $this->get('sort') ) {
+        if ( $get('sort') ) {
             
-            $rsm->setSorts($rsm->sortStringToArray( $this->get('sort') ) );
+            $rsm->setSorts($rsm->sortStringToArray( $get('sort') ) );
         }
 
         // set limit
-        if ( $this->get('resultsPerPage') ) {
+        if ( $get('resultsPerPage') ) {
             
-            $rsm->setLimit( $this->get('resultsPerPage') );
+            $rsm->setLimit( $get('resultsPerPage') );
         }
 
         // set page
-        if ( $this->get('page') ) {
+        if ( $get('page') ) {
             
-            $rsm->setPage( $this->get('page') );
+            $rsm->setPage( $get('page') );
         }
 
         // set offset
-        if ( $this->get('offset') ) {
+        if ( $get('offset') ) {
             
-            $rsm->setOffset( $this->get('offset') );
+            $rsm->setOffset( $get('offset') );
         }
 
         return $rsm;

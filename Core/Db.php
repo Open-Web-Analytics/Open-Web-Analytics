@@ -51,6 +51,9 @@ class Db extends \OWA\Core\Base {
         '=~', '!~',
         '=@', '!@',
         'empty', 'notempty',
+        // Internal, like between: a list of values. Not in the REST
+        // constraint syntax (ResultSetManager::CONSTRAINT_OPERATORS).
+        'in',
     ];
 
     /**
@@ -835,6 +838,15 @@ class Db extends \OWA\Core\Base {
 
                     case 'between':
                         $constraint .= sprintf("%s BETWEEN %s AND %s", $v['name'], $this->bindValue( $v['value']['start'] ), $this->bindValue( $v['value']['end'] ) );
+                        break;
+
+                    // Each value bound. An empty list matches nothing rather
+                    // than everything (where() already drops an empty value).
+                    case 'in':
+                        $values = array_values( (array) $v['value'] );
+                        $constraint .= $values
+                            ? sprintf( '%s IN (%s)', $v['name'], implode( ', ', array_map( array( $this, 'bindValue' ), $values ) ) )
+                            : '1 = 0';
                         break;
 
                     case '=~':
