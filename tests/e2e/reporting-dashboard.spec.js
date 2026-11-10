@@ -751,7 +751,9 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(page.locator('.owa_chartLegend').first()).not.toContainText('Compared');
         // A key names the two periods instead: the period solid, the comparison dashed.
         await expect(page.locator('.owa_chartKey .owa_chartKeyPeriod').first()).toBeVisible();
-        await expect(page.locator('.owa_chartKey .owa_chartKeyCompare').first()).toContainText(/\d{4}$/);
+        // Named as the picker names them; the dates are in the title.
+        await expect(page.locator('.owa_chartKey .owa_chartKeyCompare').first()).toHaveText('Previous period');
+        await expect(page.locator('.owa_chartKey .owa_chartKeyCompare').first()).toHaveAttribute('title', /\d{4}$/);
 
         // A label that wraps does not push its number below the rest of the row.
         const row = page.locator('.metricInfoboxesContainer').first();

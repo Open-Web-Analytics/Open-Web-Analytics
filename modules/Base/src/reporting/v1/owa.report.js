@@ -117,6 +117,16 @@ OWA.report.prototype = {
             return;
         }
 
+        /*
+         * What the picker calls each period and comparison, for anything else
+         * on the page that names them: a compared chart's key says "Last 30
+         * days" and "Previous period", as the picker does, not their dates.
+         */
+        OWA.periodNames = { periods: {}, compares: {} };
+
+        ( config.presets || [] ).forEach( function ( p ) { OWA.periodNames.periods[ p.key ] = p.label; } );
+        ( config.compares || [] ).forEach( function ( c ) { OWA.periodNames.compares[ c.key ] = c.label; } );
+
         this.timePeriodControl = new PeriodPicker( el, config || {}, function( params ) {
 
             that.applyPeriodParams( params );

@@ -2258,9 +2258,18 @@ OWA.areaChart.prototype = {
             return null;
         }
 
+        // Named as the picker names them (OWA.periodNames); a custom range by its dates.
+        var names = OWA.periodNames || { periods: {}, compares: {} };
+        var entry = function ( name, start, end ) {
+
+            var dates = formatRange( String( start ), String( end ) );
+
+            return { label: name || dates, dates: dates };
+        };
+
         return [
-            formatRange( String( period.startDate ), String( period.endDate ) ),
-            formatRange( String( compare.startDate ), String( compare.endDate ) )
+            entry( names.periods[ period.period ], period.startDate, period.endDate ),
+            entry( names.compares[ compare.compare ], compare.startDate, compare.endDate )
         ];
     },
 
@@ -2283,10 +2292,12 @@ OWA.areaChart.prototype = {
         }
 
         var esc  = OWA.util.escapeHtml;
-        var item = function ( cls, color, label ) {
+        var item = function ( cls, color, key ) {
 
-            return '<span class="' + cls + '"><i style="border-top-color:' + esc( String( color ) ) + '"></i>'
-                + esc( label ) + '</span>';
+            // A named period has its dates in its title.
+            return '<span class="' + cls + '"' + ( key.label !== key.dates ? ' title="' + esc( key.dates ) + '"' : '' ) + '>'
+                + '<i style="border-top-color:' + esc( String( color ) ) + '"></i>'
+                + esc( key.label ) + '</span>';
         };
 
         jQuery( '#' + this.dom_id + ' > .owa_chartLegend' ).html(
