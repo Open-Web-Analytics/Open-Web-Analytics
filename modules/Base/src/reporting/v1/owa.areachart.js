@@ -1728,13 +1728,20 @@ OWA.areaChart.prototype = {
         var active = this.selected !== null ? this.selected : this.hovered;
 
         var plotted = [];
+        var scaleOnly = [];
 
         this.dataseries.forEach( function ( s, i ) {
 
             var own = s.isCompare ? ( s.compareOf || 0 ) : i;
 
-            // With the grid's rows drawn, a comparison shows with its line.
+            /*
+             * With the grid's rows drawn, a comparison shows with its line.
+             * Hidden, it is still handed to flot, undrawn, so the y axis is
+             * scaled to every series and stays put when one comes and goes.
+             */
             if ( s.isCompare && hover && own !== active ) {
+
+                scaleOnly.push( { data: s.data, lines: { show: false }, points: { show: false }, shadowSize: 0 } );
 
                 return;
             }
@@ -1760,7 +1767,7 @@ OWA.areaChart.prototype = {
             }
         }
 
-        jQuery.plot( jQuery( this.domSelector ), plotted, this.flotOptions );
+        jQuery.plot( jQuery( this.domSelector ), plotted.concat( scaleOnly ), this.flotOptions );
 
         // What was actually handed to flot, so the drawn state is readable and
         // not only visible. The colours here ARE the dimming.

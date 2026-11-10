@@ -872,6 +872,9 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
             const box = el.getBoundingClientRect();
             return { x: box.left + o.left, y: box.top + o.top };
         });
+        const yMax = () => area.evaluate((el) => window.jQuery(el).data('plot').getAxes().yaxis.max);
+        const before = await yMax();
+
         await page.mouse.move(at.x, at.y);
 
         const tip = page.locator('#tooltip');
@@ -885,6 +888,9 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         expect(b.x + b.width).toBeLessThanOrEqual(width);
         // Flipped to the pointer's left, not over it.
         expect(b.x + b.width).toBeLessThan(at.x);
+
+        // The hovered line's comparison is drawn now; the y axis was already scaled to it.
+        expect(await yMax()).toBe(before);
     });
 
     test('compared, each metric cell shows its change under the value', async ({ page }) => {
