@@ -74,9 +74,9 @@ class TimePeriod {
      */
     const COMPARE_PERIODS = array(
         'previous_period'     => 'Previous period',
-        'previous_period_dow' => 'Previous period (match day of week)',
+        'previous_period_dow' => 'Previous period (same weekdays)',
         'previous_year'       => 'Previous year',
-        'previous_year_dow'   => 'Previous year (match day of week)',
+        'previous_year_dow'   => 'Previous year (same weekdays)',
     );
 
     public static function isRetired( $period ) {
