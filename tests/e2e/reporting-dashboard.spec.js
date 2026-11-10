@@ -742,7 +742,9 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
         const lines = page.locator('.owa_metricInfoboxCompare');
         await expect(lines.first()).toBeVisible();
-        await expect(lines.first()).toContainText('vs ');
+        // The change alone: the dates are in its title.
+        await expect(lines.first()).toHaveText(/^(▲ |▼ )?\d+\.\d%$|^—$/);
+        await expect(lines.first()).toHaveAttribute('title', /\d{4}: /);
         expect(await lines.count()).toEqual(await page.locator('.owa_metricInfobox').count());
 
         // The compared line is the same metric, so it is no entry in the legend.

@@ -46,8 +46,9 @@ OWA.kpiBox = function( options ) {
 
 /**
  * The line under a box's number when the report is compared to another
- * period: the change, up or down, and the dates it is against. The
- * comparison's own value is in the title.
+ * period: the change, up or down. The dates it is against and the
+ * comparison's own value are in the title; the picker and the chart's key
+ * already name the dates.
  *
  * A metric with no comparison value (nothing in the compared period) or
  * nothing to divide by (a zero) shows no percentage.
@@ -69,8 +70,7 @@ OWA.kpiBox.compareHtml = function ( item, compare ) {
         ? 'no data' : item.compare_formatted_value;
 
     return '<p class="owa_metricInfoboxCompare" title="' + OWA.util.escapeHtml( range + ': ' + was ) + '">'
-        + '<span class="' + cls + '">' + OWA.util.escapeHtml( text ) + '</span> vs '
-        + OWA.util.escapeHtml( range ) + '</p>';
+        + '<span class="' + cls + '">' + OWA.util.escapeHtml( text ) + '</span></p>';
 };
 
 OWA.kpiBox.prototype = {
