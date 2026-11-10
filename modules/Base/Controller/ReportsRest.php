@@ -365,6 +365,25 @@ class ReportsRest extends \OWA\Core\ReportController {
             $rsm->setSiteId( $this->get('siteId' ) );
         }
 
+        /*
+         * The comparison travels on the result set's own links (self, next,
+         * previous), so a refetch from one -- a grid's next page, a trend
+         * changed from days to months -- is still compared. Not on the
+         * comparison's own query: that is the one without overrides.
+         */
+        if ( ! $overrides ) {
+
+            foreach ( array( 'compare', 'compareStartDate', 'compareEndDate' ) as $key ) {
+
+                $value = $this->get( $key );
+
+                if ( $value !== null && $value !== '' ) {
+
+                    $rsm->query_params[ $key ] = $value;
+                }
+            }
+        }
+
         // set sort order
         if ( $get('sort') ) {
             
