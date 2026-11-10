@@ -204,14 +204,20 @@ describe( 'the control', () => {
         expect( $( '.owa_periodCal' ).classList.contains( 'is-readonly' ) ).toBe( false );
     } );
 
-    test( 'Compare lists the comparisons under the switch and adds two fields', () => {
+    test( 'Compare adds a select of the comparisons under the switch, and two fields', () => {
         make();
         click( $( '.owa_periodTrigger' ) );
-        expect( button( 'Previous year' ) ).toBeUndefined();
+        expect( $( '.owa_periodCmpSelect' ) ).toBeNull();
 
         click( $( '.owa_periodLeft .owa_periodSwitch' ) );
 
-        expect( button( 'Previous year' ) ).toBeDefined();
+        // One select, not a list: a list of them made the panel as tall as both.
+        expect( button( 'Previous year' ) ).toBeUndefined();
+        const select = $( '.owa_periodLeft .owa_periodSwitchRow' ).closest( 'li' ).nextElementSibling.querySelector( 'select' );
+        expect( select ).toBe( $( '.owa_periodCmpSelect' ) );
+        expect( Array.from( select.options ).map( ( o ) => o.textContent ) )
+            .toEqual( expect.arrayContaining( [ 'Previous year', 'Custom date range' ] ) );
+        expect( select.value ).toBe( 'previous_period_dow' );
         expect( $$( '.owa_periodField' ) ).toHaveLength( 4 );
         expect( $$( '.owa_periodKind' ).map( ( k ) => k.textContent ) ).toEqual( [ 'Relative period', 'Relative period' ] );
         expect( $$( '.owa_periodFieldCmp .owa_periodValue' ).map( ( v ) => v.textContent ) ).toEqual( [ 'Sep 15, 2026', 'Oct 12, 2026' ] );
@@ -288,7 +294,8 @@ describe( 'the control', () => {
         click( $( '.owa_periodTrigger' ) );
         click( button( 'Last month' ) );
         click( $( '.owa_periodLeft .owa_periodSwitch' ) );
-        click( button( 'Previous year' ) );
+        $( '.owa_periodCmpSelect' ).value = 'previous_year';
+        $( '.owa_periodCmpSelect' ).dispatchEvent( new Event( 'change', { bubbles: true } ) );
         click( $( '[data-act="apply"]' ) );
 
         expect( applied ).toEqual( [ {

@@ -719,7 +719,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     test('Compare adds a comparison to the URL and to the button', async ({ page }) => {
         await page.locator('.owa_periodTrigger').click();
         await page.locator('.owa_periodLeft .owa_periodSwitch').click();
-        await page.locator('.owa_periodList button', { hasText: 'Previous year' }).first().click();
+        await page.locator('.owa_periodList .owa_periodCmpSelect').selectOption('previous_year');
         await page.locator('.owa_periodFoot [data-act="apply"]').click();
 
         await page.waitForURL(/compare=previous_year/);
