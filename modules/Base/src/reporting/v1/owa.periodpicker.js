@@ -955,7 +955,7 @@ PeriodPicker.prototype = {
  * @param {object} cell     a metric cell with compare_value,
  *                          compare_formatted_value and change (CompareMerger)
  * @param {object} compare  the result set's compare: startDate, endDate
- * @return {{cls: string, text: string, title: string, range: string}}
+ * @return {{cls: string, text: string, title: string}}
  */
 export function describeChange( cell, compare ) {
 
@@ -973,5 +973,5 @@ export function describeChange( cell, compare ) {
     const was = cell.compare_formatted_value === null || cell.compare_formatted_value === undefined
         ? 'no data' : cell.compare_formatted_value;
 
-    return { cls: cls, text: text, title: range + ': ' + was, range: range };
+    return { cls: cls, text: text, title: range + ': ' + was };
 }

@@ -31,11 +31,11 @@ const box = ( cell ) => {
 
 describe( 'a metric box compared to another period', () => {
 
-    test( 'shows the change and the dates; the old value is in the title', () => {
+    test( 'shows the change; the dates and the old value are in the title', () => {
         const p = box( { name: 'visits', value: 150, compare_value: 120, compare_formatted_value: '120', change: 0.25 } );
 
         expect( p.querySelector( '.is-up' ).textContent ).toBe( '▲ 25.0%' );
-        expect( p.textContent ).toMatch( /vs Sep 15.*Oct 12, 2026/ );
+        expect( p.textContent ).toBe( '▲ 25.0%' );
         expect( p.title ).toMatch( /Sep 15.*Oct 12, 2026: 120$/ );
     } );
 
