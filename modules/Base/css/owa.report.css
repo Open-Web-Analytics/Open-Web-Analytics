@@ -1382,14 +1382,23 @@ li.constraintRow {
     margin-left: auto;
 }
 
+/* The grid's Rows per page box, with its own chevron: the browser's sat against
+   the right edge, wherever the padding put the text. */
 .owa .owa_chartGranularity {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    height: 32px;
+    padding: 0 30px 0 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+    font: inherit;
     font-size: 13px;
-    padding: 4px 8px;
-    border: 1px solid #dcdcdc;
-    border-radius: 3px;
-    background: #ffffff;
-    color: #505050;
+    color: #111827;
+    cursor: pointer;
 }
+.owa .owa_chartGranularity:focus { border-color: #1874CD; outline: 1px solid #1874CD; }
 
 /*
  * A trend's legend, under the chart.

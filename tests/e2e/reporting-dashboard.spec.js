@@ -881,8 +881,8 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         const b = await tip.boundingBox();
         // Right of the point, so inside the chart's own column, clear of the nav to its left.
         expect(b.x).toBeGreaterThan(at.x);
-        // Above it: a point on the x axis keeps the axis in view.
-        expect(b.y + b.height).toBeLessThan(at.y);
+        // Below it.
+        expect(b.y).toBeGreaterThan(at.y);
         expect(b.x).toBeGreaterThanOrEqual((await area.boundingBox()).x);
     });
 

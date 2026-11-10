@@ -111,24 +111,23 @@ OWA.areaChart = function( options ) {
 
 /**
  * Where a tooltip w wide and h tall goes beside the pointer: right of it and
- * above, so a point near the x axis does not have its tooltip over the axis.
- * Flipped left or below where that side runs out of the view (the window's
- * scrolled box: left, top, width, height), and never outside it.
+ * below, flipped left or above only where that side runs out of the view (the
+ * window's scrolled box: left, top, width, height), and never outside it.
  */
 OWA.areaChart.besidePointer = function ( pointer, w, h, view ) {
 
     var gap = 12, edge = 8;
     var left = pointer.x + gap;
-    var top  = pointer.y - gap - h;
+    var top  = pointer.y + gap;
 
     if ( left + w > view.left + view.width - edge ) {
 
         left = pointer.x - gap - w;
     }
 
-    if ( top < view.top + edge ) {
+    if ( top + h > view.top + view.height - edge ) {
 
-        top = pointer.y + gap;
+        top = pointer.y - gap - h;
     }
 
     return {
