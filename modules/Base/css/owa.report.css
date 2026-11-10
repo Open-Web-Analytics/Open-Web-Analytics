@@ -1390,6 +1390,12 @@ li.constraintRow {
     font-size: 11px;
 }
 
+/* A compared trend's key: the period solid, the comparison dashed. */
+.owa .owa_chartKey { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; color: #374151; }
+.owa .owa_chartKey span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.owa .owa_chartKey i { width: 18px; height: 0; border-top: 2px solid; }
+.owa .owa_chartKey .owa_chartKeyCompare i { border-top-style: dashed; }
+
 .owa .owa_chartLegend table {
     /* Left, with the chart's y-axis labels, rather than centred under it: a
        centred legend moves sideways every time a series is added or its label
