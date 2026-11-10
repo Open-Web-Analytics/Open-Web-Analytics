@@ -296,6 +296,7 @@ describe( 'the control', () => {
             compare: 'previous_year', compareStartDate: null, compareEndDate: null,
         } ] );
         expect( $( '.owa_periodTriggerCompare' ).textContent ).toMatch( /Oct 1.*31, 2025/ );
+        expect( $( '.owa_periodTriggerCompare i' ) ).toBeNull();
     } );
 
     test( 'Cancel and Escape discard the changes', () => {
