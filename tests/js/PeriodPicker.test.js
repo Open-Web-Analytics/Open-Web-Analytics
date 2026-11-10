@@ -24,9 +24,9 @@ const PRESETS = [
 
 const COMPARES = [
     { key: 'previous_period', label: 'Previous period' },
-    { key: 'previous_period_dow', label: 'Previous period (match day of week)' },
+    { key: 'previous_period_dow', label: 'Previous period (same weekdays)' },
     { key: 'previous_year', label: 'Previous year' },
-    { key: 'previous_year_dow', label: 'Previous year (match day of week)' },
+    { key: 'previous_year_dow', label: 'Previous year (same weekdays)' },
 ];
 
 function config( extra ) {
