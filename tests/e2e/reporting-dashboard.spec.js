@@ -862,6 +862,30 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await expect(page.locator(`.owa_metricInfobox[data-metric="${back}"]`).first()).toHaveClass(/owa_metricInfoboxCharted/);
     });
 
+    test('anywhere over the plot, the nearest day is active and the tooltip follows the pointer', async ({ page }) => {
+        const area = page.locator('.owa_areaChart').first();
+        await expect(page.locator('.owa_chartLegend').first()).toContainText('Chrome');
+        const box = await area.boundingBox();
+
+        // High in the plot, away from every line.
+        await page.mouse.move(box.x + box.width * 0.5, box.y + 20);
+        const tip = page.locator('#tooltip');
+        await expect(tip).toBeVisible();
+        await expect(tip.locator('.owa_chartTip tr').first()).toContainText('Total');
+        const first = await tip.boundingBox();
+        const active = () => tip.locator('.owa_chartTipHead').textContent();
+        const dayA = await active();
+
+        // Further along: the tooltip moved with the pointer and names another day.
+        await page.mouse.move(box.x + box.width * 0.9, box.y + 20);
+        await expect.poll(active).not.toBe(dayA);
+        expect((await tip.boundingBox()).x).not.toBe(first.x);
+
+        // Out of the plot: gone.
+        await page.mouse.move(box.x + box.width * 0.5, box.y - 40);
+        await expect(tip).toHaveCount(0);
+    });
+
     test('the tooltip of the first point is not under the side nav', async ({ page }) => {
         const area = page.locator('.owa_areaChart').first();
         await expect(page.locator('.owa_chartLegend').first()).toContainText('Chrome');

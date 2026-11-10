@@ -378,7 +378,9 @@ OWA.areaChart.prototype = {
                     tickDecimals: null,
                     tickLength: 0
                 },
-                grid: {show: this.options.showGrid, hoverable: true, autoHilight:true, borderWidth:0, borderColor: null,
+                grid: {show: this.options.showGrid, hoverable: true, clickable: true,
+                       // The active point is highlighted here (onHover), not by flot's nearest-point guess.
+                       autoHighlight: false, borderWidth:0, borderColor: null,
                        color: this.options.gridColor, tickColor: this.options.tickColor},
                 series: {
                     points: { show: this.options.showDots, fill: this.options.showDots },
@@ -414,7 +416,7 @@ OWA.areaChart.prototype = {
                     container: jQuery( '#' + dom_id + ' > .owa_chartLegend' ),
                     noColumns: dataseries.length
                 },
-                hooks: { drawSeries: [ this.dashLine ] }
+                hooks: { drawSeries: [ this.dashLine ], drawOverlay: [ this.crosshairHook() ] }
             };
 
             this.xType = built.x_type;
@@ -466,6 +468,7 @@ OWA.areaChart.prototype = {
             this.dataseries = dataseries;
             this.selected   = null;
             this.hovered    = null;
+            this.activeX    = null;
 
             this.draw();
 
@@ -1842,13 +1845,20 @@ OWA.areaChart.prototype = {
      */
     comparedTooltip : function ( x ) {
 
-        var series = this.dataseries || [];
+        var compares = ( this.dataseries || [] ).filter( function ( s ) { return s.isCompare; } );
+
+        return compares.length ? this.pointTooltip( x ) : null;
+    },
+
+    /**
+     * The tooltip at x: the day, then every line's value there. Compared, the
+     * day it is compared to, and each line's value then and its change.
+     */
+    pointTooltip : function ( x ) {
+
+        var series   = this.dataseries || [];
         var compares = series.filter( function ( s ) { return s.isCompare; } );
-
-        if ( ! compares.length ) {
-
-            return null;
-        }
+        var compared = compares.length > 0;
 
         var that = this;
         var esc  = OWA.util.escapeHtml;
@@ -1885,7 +1895,7 @@ OWA.areaChart.prototype = {
             }
         } );
 
-        var head = day( x ) + ( real !== null ? ' vs ' + day( real ) : '' );
+        var head = day( x ) + ( compared && real !== null ? ' vs ' + day( real ) : '' );
 
         var html = '<div class="owa_chartTipHead">' + esc( head ) + '</div><table class="owa_chartTip">';
 
@@ -1909,13 +1919,249 @@ OWA.areaChart.prototype = {
                 change = '<span class="owa_gridChange ' + d.cls + '">' + esc( d.text ) + '</span>';
             }
 
-            html += '<tr><th><i style="background:' + esc( String( s.color ) ) + '"></i><span>' + esc( s.label || '' ) + '</span></th>'
+            html += '<tr><th><i style="background:' + esc( String( s.color ) ) + '"></i><span>' + esc( s.label || s.tooltipLabel || '' ) + '</span></th>'
                 + '<td>' + esc( v === null ? '\u2014' : that.tipNumber( v ) ) + '</td>'
-                + '<td class="owa_chartTipWas">' + ( c ? esc( w === null ? '\u2014' : that.tipNumber( w ) ) : '' ) + '</td>'
-                + '<td>' + change + '</td></tr>';
+                + ( compared
+                    ? '<td class="owa_chartTipWas">' + ( c ? esc( w === null ? '\u2014' : that.tipNumber( w ) ) : '' ) + '</td>'
+                        + '<td>' + change + '</td>'
+                    : '' )
+                + '</tr>';
         } );
 
         return html + '</table>';
+    },
+
+    /** The first line that is not a comparison: the total. */
+    firstLine : function () {
+
+        var series = this.dataseries || [];
+
+        for ( var i = 0; i < series.length; i++ ) {
+
+            if ( ! series[i].isCompare ) {
+
+                return i;
+            }
+        }
+
+        return 0;
+    },
+
+    /** The x of the point nearest to x on the chart's axis, or null. */
+    nearestX : function ( x ) {
+
+        var data = ( this.dataseries && this.dataseries[ this.firstLine() ] || {} ).data || [];
+        var best = null;
+
+        data.forEach( function ( p ) {
+
+            if ( best === null || Math.abs( p[0] - x ) < Math.abs( best - x ) ) {
+
+                best = p[0];
+            }
+        } );
+
+        return best;
+    },
+
+    /**
+     * The pointer moved over the chart.
+     *
+     * Anywhere in the plot, the point nearest the pointer's x is the active
+     * one: on the line the pointer is on, else on the line clicked (selected),
+     * else on the total. A vertical line marks it, and the tooltip follows the
+     * pointer with every line's value there.
+     */
+    onHover : function ( pos, item ) {
+
+        var plot = jQuery( this.domSelector ).data( 'plot' );
+
+        if ( ! plot || ! this.dataseries || ! this.dataseries.length ) {
+
+            return;
+        }
+
+        var o = plot.offset();
+
+        // The plot, and a little either side so its first and last points can be reached.
+        if ( pos.pageX < o.left - 10 || pos.pageX > o.left + plot.width() + 10
+            || pos.pageY < o.top || pos.pageY > o.top + plot.height() ) {
+
+            this.endHover();
+
+            return;
+        }
+
+        var own, x;
+
+        if ( item ) {
+
+            own = item.series.isCompare ? ( item.series.compareOf || 0 ) : this.hoveredLine( item );
+            x   = item.datapoint[0];
+
+        } else {
+
+            own = this.selected !== null && this.selected !== undefined ? this.selected : this.firstLine();
+            x   = this.nearestX( pos.x );
+        }
+
+        if ( x === null ) {
+
+            return;
+        }
+
+        if ( own !== this.hovered ) {
+
+            this.hovered = own;
+
+            // With the grid's rows drawn, a line's comparison shows with it.
+            if ( this.compareOnHover() ) {
+
+                this.draw();
+                plot = jQuery( this.domSelector ).data( 'plot' );
+            }
+        }
+
+        this.activeX = x;
+        this.highlightAt( plot, own, x );
+        this.tipAt( this.pointTooltip( x ), pos.pageX, pos.pageY );
+    },
+
+    /** Mark line own's point at x, and redraw the vertical line. */
+    highlightAt : function ( plot, own, x ) {
+
+        plot.unhighlight();
+
+        plot.getData().forEach( function ( s, si ) {
+
+            if ( s.index !== own || s.isCompare ) {
+
+                return;
+            }
+
+            for ( var j = 0; j < s.data.length; j++ ) {
+
+                if ( s.data[j][0] === x && s.data[j][1] !== null ) {
+
+                    plot.highlight( si, j );
+                }
+            }
+        } );
+
+        plot.triggerRedrawOverlay();
+    },
+
+    /** The tooltip, at the pointer: its contents change only when the point does. */
+    tipAt : function ( html, pageX, pageY ) {
+
+        var $tip = jQuery( '#tooltip' );
+
+        if ( ! $tip.length ) {
+
+            this.showTooltip( pageX, pageY, html, { x: pageX, y: pageY } );
+
+            return;
+        }
+
+        if ( $tip.html() !== html ) {
+
+            $tip.html( html );
+        }
+
+        $tip.css( OWA.areaChart.besidePointer( { x: pageX, y: pageY }, $tip.outerWidth(), $tip.outerHeight(), {
+            left: window.pageXOffset,
+            top: window.pageYOffset,
+            width: document.documentElement.clientWidth,
+            height: document.documentElement.clientHeight
+        } ) );
+    },
+
+    /** The pointer left the plot: no tooltip, no active point. */
+    endHover : function () {
+
+        jQuery( '#tooltip' ).remove();
+
+        var plot = jQuery( this.domSelector ).data( 'plot' );
+
+        if ( this.activeX !== null && this.activeX !== undefined && plot ) {
+
+            this.activeX = null;
+            plot.unhighlight();
+            plot.triggerRedrawOverlay();
+        }
+
+        if ( this.hovered !== null && this.hovered !== undefined ) {
+
+            this.hovered = null;
+
+            if ( this.compareOnHover() ) {
+
+                this.draw();
+            }
+        }
+    },
+
+    /**
+     * A point clicked: its line is the one followed, as a legend click
+     * selects it. Clicking it again puts the total back.
+     */
+    onPointClick : function ( item ) {
+
+        var lines = ( this.dataseries || [] ).filter( function ( s ) { return ! s.isCompare; } );
+
+        if ( ! item || lines.length < 2 ) {
+
+            return;
+        }
+
+        var own = item.series.isCompare ? ( item.series.compareOf || 0 ) : this.hoveredLine( item );
+
+        this.selected = this.selected === own ? null : own;
+        this.hovered  = own;
+        this.draw();
+
+        var plot = jQuery( this.domSelector ).data( 'plot' );
+
+        if ( plot && this.activeX !== null && this.activeX !== undefined ) {
+
+            this.highlightAt( plot, own, this.activeX );
+        }
+    },
+
+    /** flot's drawOverlay hook, bound to this chart. */
+    crosshairHook : function () {
+
+        var that = this;
+
+        return function ( plot, ctx ) { that.drawCrosshair( plot, ctx ); };
+    },
+
+    /** The vertical line at the active x, the height of the plot. */
+    drawCrosshair : function ( plot, ctx ) {
+
+        if ( this.activeX === null || this.activeX === undefined ) {
+
+            return;
+        }
+
+        var o  = plot.getPlotOffset();
+        var cx = o.left + plot.getAxes().xaxis.p2c( this.activeX );
+
+        if ( cx < o.left - 1 || cx > o.left + plot.width() + 1 ) {
+
+            return;
+        }
+
+        cx = Math.round( cx ) + 0.5;
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(55, 65, 81, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo( cx, o.top );
+        ctx.lineTo( cx, o.top + plot.height() );
+        ctx.stroke();
+        ctx.restore();
     },
 
     /**
@@ -2213,80 +2459,9 @@ OWA.areaChart.prototype = {
         jQuery(that.domSelector).css('width', this.getOption('width'));
         jQuery(that.domSelector).css('height', h);
         
-        // binds a tooltip to plot points
-        var previousPoint = null;
-
-        // Leaving the chart puts a hovered line's comparison away again.
-        jQuery(that.domSelector).bind( 'mouseleave', function () {
-
-            jQuery( '#tooltip' ).remove();
-            previousPoint = null;
-
-            if ( that.hovered !== null && that.hovered !== undefined ) {
-
-                that.hovered = null;
-                that.draw();
-            }
-        } );
-
-        jQuery(that.domSelector).bind("plothover", function (event, pos, item) {
-
-            if ( item && that.compareOnHover() ) {
-
-                var own = item.series.isCompare ? ( item.series.compareOf || 0 ) : that.hoveredLine( item );
-
-                if ( own !== that.hovered ) {
-
-                    that.hovered = own;
-                    that.draw();
-                    previousPoint = null;
-                }
-            }
-
-            jQuery("#x").text(pos.x.toFixed(2));
-            jQuery("#y").text(pos.y.toFixed(2));
-            
-            if (item) {
-                if (previousPoint != item.datapoint) {
-                    
-                    previousPoint = item.datapoint;
-                    
-                    jQuery("#tooltip").remove();
-
-                    var compared = that.comparedTooltip( item.datapoint[0] );
-
-                    if ( compared ) {
-
-                        // Beside the pointer, kept in the window: it is taller than the old one.
-                        that.showTooltip( item.pageX, item.pageY, compared, { x: item.pageX, y: item.pageY } );
-
-                        return;
-                    }
-
-                    var x = item.datapoint[0].toFixed(0),
-                        y = item.datapoint[1].toFixed(0);
-                        
-                    // A compared point is labelled with the date it really is.
-                    var real = item.series.compareDates && item.series.compareDates[ item.datapoint[0] ];
-
-                    if ( real ) {
-
-                        x = that.timestampFormatter( that.formatValue( that.xType, String( real ) ) );
-
-                    } else if (that.options.xaxis.mode === 'time') {
-
-                        x = that.timestampFormatter(x);
-                    }
-                    
-                    // Beside the pointer, like the compared one: up and to its left ran under the side nav.
-                    that.showTooltip( item.pageX, item.pageY,
-                                x+'<BR><B>'+ ( item.series.tooltipLabel || item.series.label ) + ":</B> " + y,
-                                { x: item.pageX, y: item.pageY } );
-                }
-            } else {
-                jQuery("#tooltip").remove();
-                previousPoint = null;            
-            }
-        });  
-    }    
+        // The tooltip and the active point follow the pointer; see onHover.
+        jQuery(that.domSelector).bind( 'mouseleave', function () { that.endHover(); } );
+        jQuery(that.domSelector).bind( 'plothover', function ( event, pos, item ) { that.onHover( pos, item ); } );
+        jQuery(that.domSelector).bind( 'plotclick', function ( event, pos, item ) { that.onPointClick( item ); } );
+    }
 }

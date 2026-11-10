@@ -227,6 +227,67 @@ describe( 'the compared tooltip', () => {
     } );
 } );
 
+describe( 'the active point follows the pointer', () => {
+
+    const chart = () => {
+        const c = new OWA.areaChart();
+        c.xType = 'yyyymmdd';
+        c.dataseries = [
+            { label: 'Total', color: '#111', data: [ [ day( '20261102' ), 9 ], [ day( '20261103' ), 4 ] ] },
+            { label: 'Chrome', color: '#222', data: [ [ day( '20261102' ), 6 ], [ day( '20261103' ), 1 ] ] },
+        ];
+        return c;
+    };
+
+    test( 'anywhere along the axis, the nearest day is the active one', () => {
+        expect( chart().nearestX( day( '20261102' ) + 3600e3 ) ).toBe( day( '20261102' ) );
+        expect( chart().nearestX( day( '20261103' ) - 3600e3 ) ).toBe( day( '20261103' ) );
+    } );
+
+    test( 'off every line, the total is the line followed', () => {
+        const c = chart();
+        c.dataseries.unshift( { isCompare: true, compareOf: 1, data: [] } );
+        expect( c.firstLine() ).toBe( 1 );
+    } );
+
+    test( 'uncompared, the tooltip is the day and every line\'s value', () => {
+        document.body.innerHTML = chart().pointTooltip( day( '20261103' ) );
+        expect( document.querySelector( '.owa_chartTipHead' ).textContent ).not.toMatch( / vs / );
+        const cells = [ ...document.querySelectorAll( '.owa_chartTip tr' ) ].map( ( tr ) => [ ...tr.children ].map( ( td ) => td.textContent ) );
+        expect( cells ).toEqual( [ [ 'Total', '4' ], [ 'Chrome', '1' ] ] );
+    } );
+
+    test( 'a vertical line marks the active day, the height of the plot', () => {
+        const c = chart();
+        const calls = [];
+        const ctx = new Proxy( {}, { get: ( t, k ) => ( k in t ? t[k] : ( ...a ) => calls.push( [ k, ...a ] ) ), set: ( t, k, v ) => { t[k] = v; return true; } } );
+        const plot = {
+            getPlotOffset: () => ( { left: 40, top: 10 } ),
+            getAxes: () => ( { xaxis: { p2c: ( x ) => ( x === day( '20261103' ) ? 200 : 0 ) } } ),
+            width: () => 500, height: () => 250,
+        };
+
+        c.drawCrosshair( plot, ctx );
+        expect( calls ).toHaveLength( 0 );
+
+        c.activeX = day( '20261103' );
+        c.drawCrosshair( plot, ctx );
+        expect( calls.filter( ( a ) => a[0] === 'moveTo' || a[0] === 'lineTo' ) ).toEqual( [ [ 'moveTo', 240.5, 10 ], [ 'lineTo', 240.5, 260 ] ] );
+    } );
+
+    test( 'clicking a point follows its line; clicking it again, the total', () => {
+        const c = chart();
+        c.selected = null;
+        c.draw = jest.fn();
+        const item = { series: { index: 1 }, datapoint: [ day( '20261102' ), 6 ] };
+
+        c.onPointClick( item );
+        expect( c.selected ).toBe( 1 );
+        c.onPointClick( item );
+        expect( c.selected ).toBeNull();
+    } );
+} );
+
 describe( 'the chart\'s title', () => {
 
     const chart = ( plot ) => {
