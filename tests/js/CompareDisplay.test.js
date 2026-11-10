@@ -88,6 +88,24 @@ describe( 'a trend compared to another period', () => {
         expect( line.data ).toEqual( [ [ day( '20261102' ), 1 ], [ day( '20261103' ), 7 ], [ day( '20261104' ), 3 ] ] );
         // The tooltip names the day each point really is.
         expect( line.compareDates[ day( '20261103' ) ] ).toBe( '20261027' );
+        // The same metric, so no label of its own: the tooltip names the metric.
+        expect( line.label ).toBeUndefined();
+        expect( line.tooltipLabel ).toBe( 'Page Views' );
+        expect( line.dotted ).toBe( true );
+        expect( built.series.find( ( s ) => ! s.isCompare ).dotted ).toBeUndefined();
+    } );
+
+    test( 'a dotted series is stroked as dots, and the next series is not', () => {
+        const chart = new OWA.areaChart();
+        const ctx   = { dash: null, setLineDash( d ) { this.dash = d; } };
+
+        chart.dotLine( null, ctx, { dotted: true } );
+        expect( ctx.dash ).toEqual( [ 0.1, 4 ] );
+        expect( ctx.lineCap ).toBe( 'round' );
+
+        chart.dotLine( null, ctx, {} );
+        expect( ctx.dash ).toEqual( [] );
+        expect( ctx.lineCap ).toBe( 'butt' );
     } );
 
     test( 'no comparison, no second line', () => {

@@ -745,8 +745,24 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(lines.first()).toContainText('vs ');
         expect(await lines.count()).toEqual(await page.locator('.owa_metricInfobox').count());
 
-        // The trend's legend names the compared line beside the period's.
-        await expect(page.locator('.owa_chartLegend').first()).toContainText('Compared to');
+        // The compared line is the same metric, so it is no entry in the legend.
+        await expect(page.locator('.owa_chartLegend').first()).not.toContainText('Compared');
+
+        // A label that wraps does not push its number below the rest of the row.
+        const row = page.locator('.metricInfoboxesContainer').first();
+        await row.locator('.owa_metricInfobox').first().evaluate((box) => {
+            box.style.flex = '0 0 120px';
+            box.style.minWidth = '0';
+            box.querySelector('.owa_metricInfoboxLabel').textContent = 'A metric name long enough to wrap';
+        });
+        const tops = await row.locator('.owa_metricInfobox').evaluateAll((boxes) => {
+            const firstTop = boxes[0].getBoundingClientRect().top;
+            return boxes
+                .filter((b) => Math.abs(b.getBoundingClientRect().top - firstTop) < 2)   // the first line of boxes
+                .map((b) => Math.round(b.querySelector('.owa_metricInfoboxLargeNumber').getBoundingClientRect().top));
+        });
+        expect(tops.length).toBeGreaterThan(1);
+        expect(new Set(tops).size).toBe(1);
     });
 
     test('server-rendered images resolve to public/, not the denied module tree', async ({ page }) => {

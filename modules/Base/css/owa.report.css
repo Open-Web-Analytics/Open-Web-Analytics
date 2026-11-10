@@ -3008,6 +3008,15 @@ li.constraintRow {
        showing two metrics gets two half-width boxes rather than two narrow ones
        against a wide gap. */
     flex: 1 1 135px;
+
+    /* A column whose label takes the spare height, so a label that wraps to
+       two lines does not push its number below the others in the row. */
+    display: flex;
+    flex-direction: column;
+}
+
+.owa .metricInfoboxesContainer .owa_metricInfobox > .owa_metricInfoboxLabel {
+    flex: 1 0 auto;
 }
 
 /* A report that asks for a specific box width gets it: goals draws one box per

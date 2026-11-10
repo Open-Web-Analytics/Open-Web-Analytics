@@ -46,9 +46,6 @@ OWA.areaChart = function( options ) {
          */
         totalColor: "#1874CD",
 
-        // The compared period's line: the gold the period picker gives it.
-        compareColor: "#b48a12",
-
         /*
          * How many of a dimension's values get their own line.
          *
@@ -369,7 +366,9 @@ OWA.areaChart.prototype = {
                     }
                 },
                 legend: {
-                    show: this.options.showLegend && dataseries.length > 1,
+                    // The compared period is not a series of its own: it has no entry.
+                    show: this.options.showLegend
+                        && dataseries.filter( function ( s ) { return ! s.isCompare; } ).length > 1,
 
                     /*
                      * BELOW the chart, not floating inside it.
@@ -382,7 +381,8 @@ OWA.areaChart.prototype = {
                      */
                     container: jQuery( '#' + dom_id + ' > .owa_chartLegend' ),
                     noColumns: dataseries.length
-                }
+                },
+                hooks: { drawSeries: [ this.dotLine ] }
             };
 
             this.xType = built.x_type;
@@ -412,9 +412,7 @@ OWA.areaChart.prototype = {
              */
             for ( var c = 0; c < dataseries.length; c++ ) {
 
-                dataseries[c].color = dataseries[c].isCompare
-                    ? this.options.compareColor
-                    : dataseries[c].isTotal
+                dataseries[c].color = dataseries[c].isCompare || dataseries[c].isTotal
                     ? this.options.totalColor
                     : this.options.colors[ ( c - 1 ) % this.options.colors.length ];
             }
@@ -736,13 +734,19 @@ OWA.areaChart.prototype = {
             return [ x, byX.hasOwnProperty( x ) ? byX[ x ] : fill ];
         } );
 
+        /*
+         * The same metric over other dates, so the same colour, dotted, and no
+         * label: a legend entry would make it read as one more series to add
+         * to the rest.
+         */
         return {
-            label: 'Compared to',
             isCompare: true,
             data: data,
-            // The date each point really is, by x: for the tooltip.
+            // The date each point really is, by x, and the metric: for the tooltip.
             compareDates: when,
-            lines: { show: true, fill: false, lineWidth: 1.5 },
+            tooltipLabel: resultSet.getMetricLabel( y_name ),
+            dotted: data.length > 1,
+            lines: { show: true, fill: false, lineWidth: 2 },
             shadowSize: 0,
             points: data.length === 1 ? { show: true, fill: true, radius: 3 } : undefined
         };
@@ -1472,6 +1476,24 @@ OWA.areaChart.prototype = {
     },
 
     /**
+     * flot's drawSeries hook: a series marked dotted is stroked as round dots.
+     *
+     * flot 0.8 has no dash option. The hook runs just before each series is
+     * drawn, on the same context, so the dash is set for a dotted series and
+     * cleared for every other one.
+     */
+    dotLine : function ( plot, ctx, series ) {
+
+        if ( typeof ctx.setLineDash !== 'function' ) {
+
+            return;
+        }
+
+        ctx.setLineDash( series.dotted ? [ 0.1, 4 ] : [] );
+        ctx.lineCap = series.dotted ? 'round' : 'butt';
+    },
+
+    /**
      * A colour at partial opacity.
      *
      * flot accepts any CSS colour for a series, so an rgba() string is the
@@ -1645,7 +1667,7 @@ OWA.areaChart.prototype = {
                     }
                     
                     that.showTooltip(item.pageX -75, item.pageY -50,
-                                x+'<BR><B>'+item.series.label + ":</B> " + y);
+                                x+'<BR><B>'+ ( item.series.tooltipLabel || item.series.label ) + ":</B> " + y);
                 }
             } else {
                 jQuery("#tooltip").remove();
