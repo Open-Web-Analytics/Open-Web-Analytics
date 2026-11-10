@@ -3330,11 +3330,12 @@ li.constraintRow {
     min-height: 260px;
 }
 
-/* The boxes share what the row has rather than each taking a fixed slice: the
-   number of metrics belongs to the author, so the width has to follow it. The
-   basis is the inline min-width kpiBox writes -- see metricBoxes.minWidth. */
+/* The boxes are the size a trend's are, 150px, not stretched across the row:
+   a stretched box carried its underline the width of half the report. In a
+   card narrower than the row they shrink, down to the inline min-width kpiBox
+   writes (metricBoxes.minWidth), so four still fit half a row. */
 .owa .owa_trendCardMetrics .owa_metricInfobox {
-    flex: 1 1 auto;
+    flex: 0 1 150px;
 }
 
 /* ---------------------------------------------------------------------------

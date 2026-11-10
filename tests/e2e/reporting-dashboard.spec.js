@@ -171,13 +171,11 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     });
 
     /**
-     * A trend with nothing to break out is the filled area it has always been.
-     *
-     * Sixty-one shipped trends are grouped by date alone. The fill is what
-     * makes one read as an area chart, and it is decided PER SERIES now -- so
-     * the case to protect is that a lone series still gets it.
+     * The dashboard's trend is a card: one series over date alone, drawn as a
+     * line. A card's chart is the shape behind its figures; a trend's is the
+     * filled area (the Browser Types trend below).
      */
-    test('a trend over date alone is a single filled area', async ({ page }) => {
+    test('a trend card over date alone is a single line, not filled', async ({ page }) => {
         const state = await page.evaluate(() => {
             const ac = window.siteTrend.areaChart;
             return {
@@ -190,7 +188,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         });
 
         expect(state.count).toBe(1);
-        expect(state.fill).toBe(true);
+        expect(state.fill).toBe(false);
 
         // No legend and no legend interaction for one line: naming the only
         // series says nothing, and a control that can only turn itself off is
@@ -834,6 +832,13 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         const legend = page.locator('.owa_chartLegend').first();
         await expect(legend).toContainText('Total');
         await expect(legend).toContainText('Chrome');
+
+        // A trend, not a card: its total is a filled area under the lines.
+        const fill = await page.evaluate(() => {
+            const trend = Object.values(window).find((o) => o && o.areaChart && o.areaChart.dom_id === 'site_usage_trend-chart');
+            return trend.areaChart.dataseries[0].lines.fill;
+        });
+        expect(fill).toBe(true);
 
         // A title over it says so, with the day/month control across from it.
         const head = page.locator('.owa_chartHead').first();
