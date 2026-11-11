@@ -47,10 +47,18 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         $url = '';
 
-        // A Pages row's heatmap: one exact page. See openPage().
+        // A row's heatmap: one exact page, or a path and every query string
+        // of it. See openPage().
         if ( (string) $this->get('pagePathPlusQuery') !== '' ) {
 
             $this->openPage( (string) $this->get('pagePathPlusQuery') );
+
+            return;
+        }
+
+        if ( (string) $this->get('pagePath') !== '' && (string) $this->getParam('overlay_params') === '' ) {
+
+            $this->openPage( (string) $this->get('pagePath'), true );
 
             return;
         }
@@ -79,8 +87,11 @@ class OverlayLauncher extends \OWA\Core\Controller {
     }
 
     /**
-     * The heatmap of one page -- a path and its query string, as a Pages row
-     * groups them -- opened on the page itself.
+     * The heatmap of one page -- a path and its query string -- opened on the
+     * page itself; or BY PATH, the clicks of every query string of the path,
+     * opened on the path with none, as a Pages row groups them. A path's
+     * query strings are mostly a link's tracking (a subscriber id, a
+     * campaign) on one page.
      *
      * NOTHING TO LOOK UP. The url is the Profile's domain with the path and the
      * query string; the clicks drawn are constrained to that same
@@ -94,9 +105,10 @@ class OverlayLauncher extends \OWA\Core\Controller {
      * Not for a value carrying a comma, which the constraint list would split;
      * and only for a Property the user can see.
      *
-     * @param string $value pagePathPlusQuery
+     * @param string $value  pagePathPlusQuery, or pagePath when $byPath
+     * @param bool   $byPath every query string of the path
      */
-    private function openPage( $value ) {
+    private function openPage( $value, $byPath = false ) {
 
         $propertyId = (string) $this->get('propertyId');
 
@@ -106,17 +118,18 @@ class OverlayLauncher extends \OWA\Core\Controller {
             return;
         }
 
-        $mark  = strpos( $value, '?' );
+        $mark  = $byPath ? false : strpos( $value, '?' );
         $path  = $mark === false ? $value : substr( $value, 0, $mark );
         $query = $mark === false ? '' : substr( $value, $mark + 1 );
 
-        if ( $path === '' || $path[0] !== '/' || strpos( $value, ',' ) !== false ) {
+        if ( $path === '' || $path[0] !== '/' || strpos( $value, ',' ) !== false
+             || ( $byPath && strpos( $value, '?' ) !== false ) ) {
 
             return;
         }
 
         $period = $this->periodParams();
-        $base   = $this->baseUrlFor( $propertyId, $path, $query, $period );
+        $base   = $this->baseUrlFor( $propertyId, $path, $byPath ? null : $query, $period );
 
         if ( $base === '' ) {
 
@@ -134,7 +147,8 @@ class OverlayLauncher extends \OWA\Core\Controller {
             'propertyId'     => $propertyId,
             'metrics'        => 'eventCount',
             'dimensions'     => self::HEATMAP_DIMENSIONS,
-            'constraints'    => 'pagePathPlusQuery==' . urlencode( $value ) . ',eventName==click',
+            'constraints'    => ( $byPath ? 'pagePath==' : 'pagePathPlusQuery==' ) . urlencode( $value )
+                . ',eventName==click',
             'resultsPerPage' => 1000,
             'format'         => 'json',
         ) + $period, 'constraints' );
@@ -166,6 +180,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      * the Profiles and the dates, which the cube indexes. A domain stored with
      * no scheme is https.
      *
+     * @param string|null $query null for every query string of the path
      * @return string '' when no Profile has a domain
      */
     private function baseUrlFor( $propertyId, $path, $query, array $period ) {
@@ -192,8 +207,9 @@ class OverlayLauncher extends \OWA\Core\Controller {
                     $table, implode( ', ', $quoted ),
                     (int) $tp->startDate->get( 'yyyymmdd' ), (int) $tp->endDate->get( 'yyyymmdd' ),
                     $db->prepare( $path ),
-                    $query === '' ? "(page_query IS NULL OR page_query = '')"
-                                  : sprintf( "page_query = '%s'", $db->prepare( $query ) ) ) );
+                    $query === null ? '1 = 1'
+                        : ( $query === '' ? "(page_query IS NULL OR page_query = '')"
+                                          : sprintf( "page_query = '%s'", $db->prepare( $query ) ) ) ) );
 
                 if ( is_array( $row ) && ! empty( $row['site_id'] ) ) {
 

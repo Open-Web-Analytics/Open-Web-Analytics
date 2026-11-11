@@ -1217,7 +1217,7 @@ final class ReportDefinitionFormatTest extends TestCase
     /**
      * The Pages grid hands each action to the page as a link carrying the
      * report's Property and period, with a placeholder per row value; the
-     * heatmap only for a grid grouped by pagePathPlusQuery first.
+     * path heatmap only for a grid grouped by pagePath first.
      */
     public function testThePagesGridEmitsItsRowActions(): void
     {
@@ -1232,11 +1232,14 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $actions = array_column((array) json_decode($m[1], true), null, 'id');
 
-        $this->assertSame('pagePathPlusQuery', $actions['heatmap']['first']);
-        $this->assertStringContainsString('do=base.overlayLauncher', $actions['heatmap']['href']);
-        $this->assertStringContainsString('pagePathPlusQuery=__OWA_ROW_pagePathPlusQuery__', $actions['heatmap']['href']);
-        $this->assertStringContainsString('period=last_thirty_days', $actions['heatmap']['href']);
-        $this->assertTrue($actions['heatmap']['newWindow']);
+        $this->assertSame('pagePath', $actions['pathHeatmap']['first']);
+        $this->assertSame('Heatmap', $actions['pathHeatmap']['label']);
+        $this->assertStringContainsString('do=base.overlayLauncher', $actions['pathHeatmap']['href']);
+        $this->assertStringContainsString('pagePath=__OWA_ROW_pagePath__', $actions['pathHeatmap']['href']);
+        $this->assertStringContainsString('period=last_thirty_days', $actions['pathHeatmap']['href']);
+        $this->assertTrue($actions['pathHeatmap']['newWindow']);
+        $this->assertSame('pagePathPlusQuery', $actions['heatmap']['first'],
+            'the exact-page heatmap is for the grid regrouped by the path and its query string');
 
         $this->assertSame('', $actions['clicks']['first']);
         $this->assertStringContainsString('reportId=dom-clicks', $actions['clicks']['href']);

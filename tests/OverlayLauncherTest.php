@@ -175,6 +175,29 @@ final class OverlayLauncherTest extends TestCase
         $this->assertStringStartsWith('http://www.example.test/pricing?ref=a#owa_overlay.', $withQuery);
     }
 
+    /**
+     * A row of pagePath: the path with no query string, and the clicks of
+     * every query string of it -- a subscriber id on an email link is still
+     * the same page.
+     */
+    public function testAPathRowOpensThePathWithEveryQueryStringsClicks(): void
+    {
+        $url = $this->launchPath('/pricing');
+
+        $this->assertStringStartsWith('http://www.example.test/pricing#owa_overlay.', $url);
+
+        $params = json_decode(base64_decode(rawurldecode(substr($url, strpos($url, '#owa_overlay.') + 13))), true);
+        parse_str((string) parse_url($params['api_url'], PHP_URL_QUERY), $q);
+
+        $this->assertSame('pagePath==/pricing,eventName==click', $q['constraints'] ?? null);
+        $this->assertTrue(\OWA\Core\OverlayToken::permits($q['overlayToken'] ?? '', 'reports',
+            static fn($name) => (string) ($q[$name] ?? '')), 'the token does not accept its own data request');
+
+        // A path has no query string, and one that says it has is refused.
+        $this->assertSame('', $this->launchPath('/pricing?ref=a'));
+        $this->assertSame('', $this->launchPath('pricing'));
+    }
+
     public function testAPageTheConstraintCannotCarryOpensNothing(): void
     {
         $this->assertSame('', $this->launchPage('/pricing?a=1,2'));
@@ -194,6 +217,19 @@ final class OverlayLauncherTest extends TestCase
             'propertyId'        => (string) self::PROPERTY,
             'period'            => 'last_thirty_days',
             'pagePathPlusQuery' => $value,
+        ));
+
+        $launcher->action();
+
+        return (string) ($launcher->data['url'] ?? '');
+    }
+
+    private function launchPath(string $path): string
+    {
+        $launcher = new \OWA\Module\Base\Controller\OverlayLauncher(array(
+            'propertyId' => (string) self::PROPERTY,
+            'period'     => 'last_thirty_days',
+            'pagePath'   => $path,
         ));
 
         $launcher->action();
