@@ -63,7 +63,7 @@
             "id": "topContent",
             "container": "top-pages",
             "title": "Top Content",
-            "colspan": 4,
+            "colspan": 6,
             "query": {
                 "metrics": "pageViews",
                 "dimensions": "pagePathPlusQuery",
@@ -90,7 +90,7 @@
             "id": "topReferrers",
             "container": "top-referers",
             "title": "Top Referrers",
-            "colspan": 4,
+            "colspan": 6,
             "constraints": [
                 {
                     "dimension": "sessionMedium",
@@ -108,14 +108,13 @@
             }
         },
         {
-            "type": "grid-card",
+            "type": "grid",
             "id": "latestVisits",
             "container": "latest-visits",
             "title": "Most Recent Visits",
-            "colspan": 4,
             "query": {
-                "metrics": "pageViews",
-                "dimensions": "sessionStartTime",
+                "metrics": "pageViewsPerSession",
+                "dimensions": "sessionStartTime,ipAddress,landingPage,sessionSourceMedium,city,country,priorSessionCount",
                 "sort": "sessionStartTime-",
                 "resultsPerPage": 10
             },

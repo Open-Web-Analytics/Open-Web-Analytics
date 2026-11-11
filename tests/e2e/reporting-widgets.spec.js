@@ -801,42 +801,33 @@ test.describe('the report grid gives every widget a usable width', () => {
         await login(page);
         await page.setViewportSize({ width: 1600, height: 1500 });
 
-        const collect = async (reportId, ready) => {
+        await page.goto(
+            `?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_thirty_days',
+            { waitUntil: 'networkidle' }
+        );
 
-            await page.goto(
-                `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}`
-                + '&owa_period=last_thirty_days',
-                { waitUntil: 'networkidle' }
-            );
+        await page.waitForSelector('.owa_widget-pie .owa_shareChart', { timeout: 20_000 });
 
-            await page.waitForSelector(ready, { timeout: 20_000 });
+        const widgets = await page.evaluate(() =>
+            [...document.querySelectorAll('.owa_reportGridItem')].map((el) => {
 
-            return page.evaluate(() =>
-                [...document.querySelectorAll('.owa_reportGridItem')].map((el) => {
+                const cs = getComputedStyle(el);
+                const head = el.querySelector('.owa_reportSectionHeader');
+                const more = el.querySelector('.owa_moreLinks');
 
-                    const cs = getComputedStyle(el);
-                    const head = el.querySelector('.owa_reportSectionHeader');
-                    const more = el.querySelector('.owa_moreLinks');
-
-                    return {
-                        type: (el.className.match(/owa_widget-([a-z-]+)/) || [])[1] || '',
-                        border: cs.borderTopWidth,
-                        background: cs.backgroundColor,
-                        // How far the link's middle is from the heading's: 0 on one line.
-                        linkOffset: head && more
-                            ? Math.abs((head.getBoundingClientRect().top + head.getBoundingClientRect().bottom)
-                                - (more.getBoundingClientRect().top + more.getBoundingClientRect().bottom)) / 2
-                            : null,
-                        linkInHead: !! (head && more && head.contains(more)),
-                    };
-                }));
-        };
-
-        // The dashboard has every kind but a full grid; Latest Visits is one.
-        const widgets = [
-            ...await collect('dashboard', '.owa_widget-pie .owa_shareChart'),
-            ...await collect('latest-visits', '.owa_widget-grid #dimension-grid'),
-        ];
+                return {
+                    type: (el.className.match(/owa_widget-([a-z-]+)/) || [])[1] || '',
+                    border: cs.borderTopWidth,
+                    background: cs.backgroundColor,
+                    // How far the link's middle is from the heading's: 0 on one line.
+                    linkOffset: head && more
+                        ? Math.abs((head.getBoundingClientRect().top + head.getBoundingClientRect().bottom)
+                            - (more.getBoundingClientRect().top + more.getBoundingClientRect().bottom)) / 2
+                        : null,
+                    linkInHead: !! (head && more && head.contains(more)),
+                };
+            }));
 
         // The fixture has to contain each kind or this proves nothing.
         for (const type of ['grid', 'grid-card', 'trend-card', 'pie']) {
