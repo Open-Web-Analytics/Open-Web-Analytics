@@ -210,6 +210,76 @@ test.describe('admin: a settings save keeps the Property and the period', () => 
         expect(param(back, 'period'), back).toBe('last_seven_days');
         expect(param(back, 'propertyId') || param(back, 'siteId'), back).toBeTruthy();
     });
+
+    /**
+     * The settings column linked with the Property alone, and a screen's own
+     * links and form actions with nothing, so the period was gone one click
+     * past the gear and a save landed on the default period. Every screen in
+     * the column, and every link and form on it, keeps both.
+     */
+    test('every settings screen, and every link and form on it, keeps the period', async ({ page }) => {
+        test.setTimeout(240_000);
+        await adminLogin(page);
+
+        await page.goto(`?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_seven_days', { waitUntil: 'networkidle' });
+        await page.goto(await page.locator('#owa_railItem_settings').getAttribute('href'), { waitUntil: 'networkidle' });
+
+        const screens = await page.locator('#owa_navColumn a').evaluateAll((as) =>
+            as.map((a) => ({ label: a.textContent.trim(), href: a.href })));
+        expect(screens.length).toBeGreaterThan(5);
+
+        const losing = [];
+
+        for (const screen of screens) {
+            if (!/[?&]period=last_seven_days(&|$)/.test(screen.href)) {
+                losing.push(`${screen.label}: its column link ${screen.href}`);
+                continue;
+            }
+
+            await page.goto(screen.href, { waitUntil: 'networkidle' });
+
+            losing.push(...await page.evaluate((label) => {
+                const keeps = (u) => /[?&](owa_)?period=last_seven_days(&|$)/.test(u);
+                // The attribute: a field named "action" shadows form.action. No
+                // attribute posts to the screen's own url.
+                const target = (f) => new URL(f.getAttribute('action') || location.href, location.href).href;
+                const forms = [...document.querySelectorAll('.owa_hierarchyContent form')]
+                    .filter((f) => !keeps(target(f)))
+                    .map((f) => `${label}: a form posting to ${target(f)}`);
+                const links = [...document.querySelectorAll('.owa_hierarchyContent a[href*="do="]')]
+                    .filter((a) => !keeps(a.href))
+                    .map((a) => `${label}: "${a.textContent.trim()}" ${a.href}`);
+                return [...forms, ...links];
+            }, screen.label));
+        }
+
+        expect(losing).toEqual([]);
+    });
+
+    /**
+     * The Property's details form posts to a link of its own, which carried
+     * no period. Saved unchanged.
+     */
+    test('saving the Property\'s details lands on them with the same period', async ({ page }) => {
+        await adminLogin(page);
+
+        await page.goto(`?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_seven_days', { waitUntil: 'networkidle' });
+        await page.goto(await page.locator('#owa_railItem_settings').getAttribute('href'), { waitUntil: 'networkidle' });
+
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('#owa_navColumn a[href*="do=base.propertyProfile"]').first().click(),
+        ]);
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('input[type="submit"][value="Save Property"]').click(),
+        ]);
+
+        const q = new URL(page.url()).searchParams;
+        expect(q.get('period') ?? q.get('owa_period'), page.url()).toBe('last_seven_days');
+    });
 });
 
 test.describe('admin: site CRUD', () => {

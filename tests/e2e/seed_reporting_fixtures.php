@@ -1417,13 +1417,21 @@ function teardown(): array
     // CRUD-test leftovers (only present if an add-then-delete test aborted midway).
     try { \OWA\Core\CoreAPI::entityFactory('base.user')->delete(E2E_NEW_USER_ID, 'user_id'); } catch (\Throwable $e) {}
     try {
-        $cs = \OWA\Core\CoreAPI::entityFactory('base.site');
         // Created through the admin UI, so its identifier is minted and cannot
         // be predicted here. The domain is what this cleanup actually knows.
-        $cs->load(E2E_NEW_SITE_DOMAIN, 'domain');
-        if ($cs->get('id')) {
-            $property = $cs->get('property_id');
-            $cs->delete($cs->get('id'), 'id');
+        // Every one of them: a run that failed twice left two, and loading one
+        // by domain took one a run and never the Property they shared.
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom('owa_site');
+        $db->selectColumn('id');
+        $db->selectColumn('property_id');
+        $db->where('domain', E2E_NEW_SITE_DOMAIN);
+        $properties = array();
+        foreach ((array) $db->getAllRows() as $row) {
+            \OWA\Core\CoreAPI::entityFactory('base.site')->delete($row['id'], 'id');
+            $properties[$row['property_id']] = true;
+        }
+        foreach (array_keys($properties) as $property) {
             unseedPropertyIfEmpty($property);
         }
     } catch (\Throwable $e) {}

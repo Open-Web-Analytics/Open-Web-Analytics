@@ -205,6 +205,29 @@ final class NavShellTest extends TestCase
             'the link\'s own params win over the state' );
     }
 
+    /**
+     * On a screen that keeps state in its links (View::keepStateInLinks()), a
+     * link asking for none gets those keys, and one asking for its own keeps
+     * to them. A settings screen's links and form actions are made this way.
+     */
+    public function testAScreenThatKeepsStateGivesItToEveryLink(): void
+    {
+        $t = $this->template();
+        $t->caller_params['link_state'] = array( 'propertyId' => 'p1', 'period' => 'today', 'siteId' => 's1' );
+        $t->caller_params['keep_state'] = array( 'propertyId', 'period' );
+
+        $link = $t->makeLink( array( 'do' => 'base.propertyEdit' ) );
+
+        $this->assertStringContainsString( 'propertyId=p1', $link );
+        $this->assertStringContainsString( 'period=today', $link );
+        $this->assertStringNotContainsString( 'siteId', $link, 'only the keys kept' );
+
+        $this->assertStringNotContainsString( 'period',
+            $t->makeLink( array( 'do' => 'base.users' ), array( 'propertyId' ) ), 'a link asking for its own keys' );
+        $this->assertStringContainsString( 'siteId=s1',
+            $t->makeLink( array( 'do' => 'base.users' ), true ), 'and one asking for all of it' );
+    }
+
     public function testOnASettingsScreenOnlySettingsIsCurrent(): void
     {
         $rail = $this->template()->navRail( $this->nav(), 'p1', array( 'do' => 'base.customReports' ), '', true );
@@ -250,11 +273,15 @@ final class NavShellTest extends TestCase
         $this->assertTrue( $groups[0]['items'][0]['current'] );
     }
 
-    /** The column's entries carry the Property in the link state; one naming its own keeps it. */
-    public function testSettingsEntriesCarryThePropertyInTheLinkState(): void
+    /**
+     * The column's entries carry the Property and the period in the link
+     * state; one naming its own Property keeps it. They carried the Property
+     * alone, so the period was gone one click past the gear.
+     */
+    public function testSettingsEntriesCarryThePropertyAndPeriodInTheLinkState(): void
     {
         $t = $this->template();
-        $t->caller_params['link_state'] = array( 'propertyId' => 'p7' );
+        $t->caller_params['link_state'] = array( 'propertyId' => 'p7', 'period' => 'last_seven_days', 'siteId' => 's-state' );
 
         $groups = $t->settingsColumn( $this->hierarchyNav(), array( 'do' => 'base.myProfile' ) );
         $hrefs  = array_column( array_merge( ...array_column( $groups, 'items' ) ), 'href', 'label' );
@@ -262,6 +289,12 @@ final class NavShellTest extends TestCase
         $this->assertStringContainsString( 'propertyId=p7', $hrefs['User profile'] );
         $this->assertStringContainsString( 'propertyId=p7', $hrefs['General'] );
         $this->assertStringContainsString( 'propertyId=p1', $hrefs['Details'] );
+
+        foreach ( $hrefs as $label => $href ) {
+
+            $this->assertStringContainsString( 'period=last_seven_days', $href, $label );
+            $this->assertStringNotContainsString( 's-state', $href, $label . ': not the Profile' );
+        }
         $this->assertTrue( $groups[0]['items'][0]['current'], 'the extra param does not change which entry is current' );
 
         $groups = $this->template()->settingsColumn( $this->hierarchyNav(), array( 'do' => 'base.myProfile' ) );

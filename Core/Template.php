@@ -556,6 +556,10 @@ class Template extends TemplateEngine {
      * Makes Links, adds state to links optionaly.
      *
      * @param array $params
+     * On a screen that keeps state in its links (View::keepStateInLinks()),
+     * a link asking for none gets those keys.
+     *
+     * @param array $params
      * @param boolean|string[] $add_state true for all of the link state, or the
      *                                    keys of it to add (array( 'propertyId' ))
      * @return string
@@ -563,6 +567,11 @@ class Template extends TemplateEngine {
     function makeLink($params = array(), $add_state = false, $url = '', $xml = false, $add_nonce = false) {
 
         $all_params = array();
+
+        if ( $add_state === false && ! empty( $this->caller_params['keep_state'] ) ) {
+
+            $add_state = $this->caller_params['keep_state'];
+        }
 
         //Loads link state passed by caller
         if ($add_state) {
@@ -1305,7 +1314,7 @@ class Template extends TemplateEngine {
                 $items[] = array(
                     'label'   => (string) $entry['label'],
                     'href'    => $this->makeLink( array_merge( array( 'do' => $entry['do'] ), (array) ( $entry['params'] ?? array() ) ),
-                        array( 'propertyId' ) ),
+                        \OWA\Core\Controller::reportState() ),
                     'current' => self::settingsEntryIsCurrent( $entry, $params ),
                 );
             }
