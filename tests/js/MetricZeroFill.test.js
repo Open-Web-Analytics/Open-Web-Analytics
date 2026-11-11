@@ -19,7 +19,8 @@ require('../../modules/Base/src/reporting/v1/owa.areachart.js');
  *
  * A count over nothing is 0, and the server says so. A ratio over nothing has
  * no value (PLAN 2.11) and reads as a dash. On a trend, a day the cube has no
- * row for is a zero for a count and a gap for a ratio.
+ * row for is a zero, for a ratio as well as a count: a ratio's line broke
+ * there.
  */
 
 describe('a metric\'s value as text', () => {
@@ -70,10 +71,10 @@ describe('a trend over days with no rows', () => {
         ]);
     });
 
-    test('a ratio is a gap, not a zero', () => {
+    test('a ratio is zero on the days it has no row too, so its line is unbroken', () => {
         const built = chart().singleSeries(resultSet([['20261021', 0.5]], 'ratio'), 'date', 'metric');
 
-        expect(built.series[0].data.map((p) => p[1])).toEqual([null, 0.5, null, null, null]);
+        expect(built.series[0].data.map((p) => p[1])).toEqual([0, 0.5, 0, 0, 0]);
     });
 
     test('a breakdown has every day of the period', () => {
