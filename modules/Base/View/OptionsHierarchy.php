@@ -82,6 +82,10 @@ class OptionsHierarchy extends \OWA\Core\View {
 
             $this->_setLinkState( $state );
         }
+
+        // And every other link and form on the screen, so the next screen,
+        // and the one a save lands on, is of the same Property and period.
+        $this->keepStateInLinks( \OWA\Core\Controller::reportState() );
         $this->body->set( 'nav_access_site', self::accessSiteFor(
             (array) $this->get( 'site_hierarchy' ), $propertyId, (string) ( $params['siteId'] ?? '' ) ) );
 

@@ -571,6 +571,24 @@ class View extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * Every link the view's templates make keeps these keys of the link
+     * state, unless it asks for state of its own (Template::makeLink()). A
+     * settings screen keeps the Property and the period this way, in its
+     * links, its tabs and its forms' actions alike.
+     *
+     * @param string[] $keys
+     */
+    function keepStateInLinks( $keys ) {
+
+        $this->body->caller_params['keep_state'] = $keys;
+
+        if ( ! empty( $this->subview ) ) {
+
+            $this->subview->body->caller_params['keep_state'] = $keys;
+        }
+    }
+
     function get( $name ) {
 
         if ( array_key_exists( $name, $this->data ) ) {
