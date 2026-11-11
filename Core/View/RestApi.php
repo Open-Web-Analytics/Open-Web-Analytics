@@ -188,6 +188,8 @@ class RestApi extends \OWA\Core\View {
      * this is for. Hosts are compared in full and case-insensitively; a
      * prefix or suffix match is what lets `evil-example.com` pass as
      * `example.com`, and a subdomain is a separate origin, not a child.
+     * The one exception is `www.`: `www.example.com` and `example.com` are
+     * one site, whichever of the two the Profile names.
      *
      * Pure: no request, no database, no headers. See tests/CorsOriginMatchTest.
      *
@@ -195,6 +197,18 @@ class RestApi extends \OWA\Core\View {
      * @param    array    $sites    site rows as getSitesList() returns them
      * @return    string|null    the Origin to echo back, or null to refuse
      */
+    /**
+     * The host without a leading `www.`, when what is left is still a domain
+     * of two labels or more: `www.example.com` is `example.com`; `www.com`
+     * stays as it is.
+     */
+    private static function withoutWww( $host ) {
+
+        $rest = substr( $host, 4 );
+
+        return strncasecmp( $host, 'www.', 4 ) === 0 && strpos( $rest, '.' ) !== false ? $rest : $host;
+    }
+
     public static function matchAllowedOrigin( $origin, array $sites ) {
 
         if ( ! is_string( $origin ) || $origin === '' ) {
@@ -257,7 +271,7 @@ class RestApi extends \OWA\Core\View {
                 continue;
             }
 
-            if ( strcasecmp( $siteHost, $originHost ) === 0 ) {
+            if ( strcasecmp( self::withoutWww( $siteHost ), self::withoutWww( $originHost ) ) === 0 ) {
 
                 // Echo what the browser actually sent, never the stored form.
                 return $origin;
