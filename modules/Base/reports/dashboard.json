@@ -63,7 +63,7 @@
             "id": "topContent",
             "container": "top-pages",
             "title": "Top Content",
-            "colspan": 6,
+            "colspan": 4,
             "query": {
                 "metrics": "pageViews",
                 "dimensions": "pagePathPlusQuery",
@@ -90,7 +90,7 @@
             "id": "topReferrers",
             "container": "top-referers",
             "title": "Top Referrers",
-            "colspan": 6,
+            "colspan": 4,
             "constraints": [
                 {
                     "dimension": "sessionMedium",
@@ -108,16 +108,23 @@
             }
         },
         {
-            "type": "grid",
+            "type": "grid-card",
             "id": "latestVisits",
             "container": "latest-visits",
-            "title": "Latest Visits",
+            "title": "Most Recent Visits",
+            "colspan": 4,
             "query": {
-                "metrics": "pageViewsPerSession",
-                "dimensions": "ipAddress,landingPage,sessionSourceMedium,city,country,priorSessionCount",
-                "sort": "sessions-",
+                "metrics": "pageViews",
+                "dimensions": "sessionStartTime",
+                "sort": "sessionStartTime-",
                 "resultsPerPage": 10
             },
+            "constraints": [
+                {
+                    "dimension": "sessionStartTime",
+                    "operator": "notEmpty"
+                }
+            ],
             "more": {
                 "reportId": "latest-visits"
             }

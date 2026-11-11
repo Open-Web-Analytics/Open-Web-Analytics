@@ -4,9 +4,9 @@
         "metricImplementations": 42,
         "dimensionNamesNormalized": 0,
         "dimensionEntriesNormalized": 0,
-        "dimensionNamesDenormalized": 95,
-        "dimensionEntriesDenormalized": 95,
-        "accessorDimensionNames": 95
+        "dimensionNamesDenormalized": 96,
+        "dimensionEntriesDenormalized": 96,
+        "accessorDimensionNames": 96
     },
     "metrics": {
         "averageEngagementTimePerPageView": [
@@ -2258,6 +2258,19 @@
                 ]
             }
         },
+        "sessionStartTime": {
+            "base.event": {
+                "name": "sessionStartTime",
+                "entity": "base.event",
+                "column": "session_start_ts",
+                "family": "visit",
+                "label": "Visit Start",
+                "description": "When the session started, to the second, in the configured timezone.",
+                "foreign_key_name": "",
+                "data_type": "datetime",
+                "denormalized": true
+            }
+        },
         "siteId": {
             "base.event": {
                 "name": "siteId",
@@ -3383,6 +3396,17 @@
                 "medium"
             ]
         },
+        "sessionStartTime": {
+            "name": "sessionStartTime",
+            "entity": "base.event",
+            "column": "session_start_ts",
+            "family": "visit",
+            "label": "Visit Start",
+            "description": "When the session started, to the second, in the configured timezone.",
+            "foreign_key_name": "",
+            "data_type": "datetime",
+            "denormalized": true
+        },
         "siteId": {
             "name": "siteId",
             "entity": "base.event",
@@ -3620,7 +3644,8 @@
             ],
             "visit": [
                 "isEngagedSession",
-                "sessionId"
+                "sessionId",
+                "sessionStartTime"
             ],
             "visitor": [
                 "clientId",

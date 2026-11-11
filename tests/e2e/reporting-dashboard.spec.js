@@ -73,10 +73,11 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
     /**
      * Under a full-width Site Metrics: Events, Visitor Types and Channels a third
-     * each on one row, then Top Content and Top Referrers a half each on the next.
-     * Measured at 1280, wide enough that a third is not promoted to a half.
+     * each on one row, then Top Content, Top Referrers and Most Recent Visits a
+     * third each on the next. Measured at 1280, wide enough that a third is not
+     * promoted to a half.
      */
-    test('the dashboard rows are three cards and then two', async ({ page }) => {
+    test('the dashboard rows are three cards and then three', async ({ page }) => {
         await page.setViewportSize({ width: 1280, height: 900 });
         await expect(page.locator('#event-names .owa_gridTable')).toBeVisible({ timeout: 20_000 });
         await expect(page.locator('#top-pages .owa_gridTable')).toBeVisible();
@@ -84,7 +85,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         const box = async (id) => page.locator(`#${id}`).locator('xpath=..').boundingBox();
         const rows = [
             ['event-names', 'visitor-types', 'visitor-mediums'],
-            ['top-pages', 'top-referers'],
+            ['top-pages', 'top-referers', 'latest-visits'],
         ];
         const tops = [];
         for (const ids of rows) {
@@ -97,7 +98,66 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
             tops.push(boxes[0]);
         }
         expect(tops[1].y, 'Top Content is on the row after Events').toBeGreaterThan(tops[0].y + tops[0].height - 2);
-        expect(tops[1].width, 'a half is wider than a third').toBeGreaterThan(tops[0].width * 1.3);
+        expect(Math.abs(tops[1].width - tops[0].width), 'both rows are thirds').toBeLessThan(2);
+    });
+
+    /**
+     * Most Recent Visits: a card of visits by their start, newest first, each
+     * with its page views. The seeded visits start at noon on their day, so a
+     * row here is a day's visits; on real traffic it is one visit.
+     */
+    test('most recent visits lists visits by start, the newest first', async ({ page }) => {
+        const card = page.locator('#latest-visits');
+
+        await expect(card.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+        await expect(card.locator('xpath=..').locator('.owa_reportSectionTitle')).toHaveText('Most Recent Visits');
+
+        const head = await card.locator('.owa_gridTable thead th').allTextContents();
+        expect(head.map((h) => h.trim())).toEqual(['Visit Start', 'Page Views']);
+
+        const starts = await card.locator('tr.owa_gridRow td:first-child').allTextContents();
+        expect(starts.length).toBeGreaterThan(1);
+
+        // "Nov 10, 12:00 PM", with the year only when it is not this one. No
+        // "(not set)" row: events that carry no session start are left out.
+        for (const s of starts) {
+            expect(s.trim()).toMatch(/^[A-Z][a-z]{2} \d{1,2}, (\d{4}, )?\d{1,2}:\d{2} [AP]M$/);
+        }
+
+        const when = starts.map((s) => {
+            const t = s.trim();
+            return Date.parse(/, \d{4}, /.test(t) ? t.replace(/, (\d{1,2}:)/, ' $1') : t.replace(/^(\w+ \d+),/, `$1, ${new Date().getFullYear()}`));
+        });
+        expect(when.every((t) => !Number.isNaN(t)), JSON.stringify(starts)).toBe(true);
+
+        for (let i = 1; i < when.length; i++) {
+            expect(when[i], `${starts[i]} is not after ${starts[i - 1]}`).toBeLessThanOrEqual(when[i - 1]);
+        }
+    });
+
+    /** Its more link is Latest Visits: the same visits, newest first, with their details. */
+    test('most recent visits opens latest visits in the same order', async ({ page }) => {
+        const card = page.locator('#latest-visits');
+
+        await expect(card.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+        const first = (await card.locator('tr.owa_gridRow td:first-child').first().textContent()).trim();
+
+        const more = card.locator('xpath=..').locator('.owa_moreLinks a');
+        await expect(more).toHaveCount(1);
+        expect(await more.getAttribute('href')).toContain('reportId=latest-visits');
+
+        await page.goto(await more.getAttribute('href'), { waitUntil: 'networkidle' });
+
+        const grid = page.locator('#dimension-grid');
+        await expect(grid.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+        // Its first column after the row number.
+        const head = (await grid.locator('.owa_gridTable thead th').allTextContents()).map((h) => h.trim());
+        const col = head.indexOf('Visit Start') + 1;
+        expect(head.filter((h) => h !== '' && h !== 'Row')[0], JSON.stringify(head)).toBe('Visit Start');
+
+        const cells = grid.locator(`tr.owa_gridRow td:nth-child(${col})`);
+        expect((await cells.first().textContent()).trim()).toBe(first);
+        await expect(cells.filter({ hasText: '(not set)' })).toHaveCount(0);
     });
 
     /**

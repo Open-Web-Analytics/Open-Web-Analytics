@@ -1,6 +1,6 @@
 {
     "title": "Latest Visits",
-    "description": "Visits by the visitor's address, landing page, source / medium, location and number of prior sessions.",
+    "description": "Visits, the most recent first: when each started, the visitor's address, landing page, source / medium, location and number of prior sessions.",
     "metrics": "sessions,pageViewsPerSession",
     "widgets": [
         {
@@ -9,10 +9,16 @@
             "container": "dimension-grid",
             "title": "Latest Visits Profile",
             "query": {
-                "dimensions": "ipAddress,landingPage,sessionSourceMedium,city,country,priorSessionCount",
-                "sort": "sessions-",
+                "dimensions": "sessionStartTime,ipAddress,landingPage,sessionSourceMedium,city,country,priorSessionCount",
+                "sort": "sessionStartTime-",
                 "resultsPerPage": 30
-            }
+            },
+            "constraints": [
+                {
+                    "dimension": "sessionStartTime",
+                    "operator": "notEmpty"
+                }
+            ]
         }
     ]
 }

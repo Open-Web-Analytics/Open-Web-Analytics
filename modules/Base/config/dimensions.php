@@ -276,6 +276,12 @@ return array(
                 'data_type' => 'boolean' ),
             'sessionId' => array( 'column' => 'session_id', 'label' => 'Session ID',
                 'family' => 'visit', 'description' => 'The identifier of the session the event belongs to.' ),
+            // The tracker's sts, in epoch seconds: every row of a session
+            // carries the same one, so grouped by it a row is a visit, and
+            // sorted by it the newest visit comes first.
+            'sessionStartTime' => array( 'column' => 'session_start_ts', 'label' => 'Visit Start',
+                'family' => 'visit', 'data_type' => 'datetime',
+                'description' => 'When the session started, to the second, in the configured timezone.' ),
 
             // ---- where -----------------------------------------------------
             'country' => array( 'column' => 'country', 'label' => 'Country',
