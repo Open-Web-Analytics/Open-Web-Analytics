@@ -4954,18 +4954,21 @@ li.constraintRow {
 
     .owa_railLogo img { height: 36px; width: auto; display: block; }
 
+    /* A column: the head and the site control, then the nav in the height
+       left (owa.shell.css). */
     .owa_reportNavRail {
         position: fixed;
         top: 0;
         bottom: 0;
         left: 0;
         z-index: 200;
+        display: flex;
+        flex-direction: column;
         width: 280px;
         max-width: 85vw;
         overflow-y: auto;
         background: #ffffff;
         box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
-        padding-bottom: 20px;
         transform: translateX(-105%);
         transition: transform 0.2s ease;
         visibility: hidden;

@@ -261,8 +261,25 @@
         width: auto;
     }
 
+    /* The rest of the slide-out's height (owa.report.css), with the rail and
+       the column each scrolling on its own, so Settings at the foot of the
+       rail is at the foot of the screen. With the site control open, the
+       nav gives up its height and the slide-out scrolls. */
     .owa_navShell {
-        min-height: calc(100vh - 52px);
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    /* More sections than the rail's height scroll under Settings, which
+       stays at the foot. */
+    .owa_rail {
+        overflow-y: auto;
+    }
+
+    .owa_railEntry.is-foot {
+        position: sticky;
+        bottom: 0;
+        background: #ffffff;
     }
 
     .owa_railFlyout,
@@ -299,10 +316,48 @@
         width: 100%;
     }
 
+    /* The sections as a grid across the top, as many columns of 96px or
+       more as the width has, Settings among them, and the current section's
+       pages under it at the full width. The slide-out scrolls as one. */
+    .owa_navShell {
+        flex-direction: column;
+        flex: none;
+        min-height: 0;
+    }
+
+    .owa_rail {
+        flex: none;
+        width: auto;
+        padding: 8px 12px 12px;
+        border-right: 0;
+        border-bottom: 1px solid #eef0f3;
+        overflow: visible;
+    }
+
+    .owa_railList {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        gap: 4px;
+        height: auto;
+    }
+
+    .owa_railEntry.is-foot {
+        position: static;
+        margin-top: 0;
+    }
+
+    .owa_navShell .owa_railItem {
+        width: 100%;
+        min-height: 64px;
+        justify-content: center;
+    }
+
     .owa_navColumn,
     .owa_navShell.is-collapsed .owa_navColumn {
-        flex: 1 1 auto;
+        flex: none;
         width: auto;
+        border-right: 0;
+        overflow: visible;
     }
 
     /* Type a phone can read, and links a thumb can hit. */
