@@ -616,6 +616,15 @@ class Controller extends \OWA\Core\Base {
 
     }
 
+    /**
+     * The request parameters that say what is being looked at: the Property,
+     * the period or its dates, and the comparison. A settings screen keeps
+     * them in its links and every redirect carries them, so leaving the
+     * reports for Settings and coming back changes neither.
+     */
+    const REPORT_STATE = array( 'propertyId', 'period', 'startDate', 'endDate',
+        'compare', 'compareStartDate', 'compareEndDate' );
+
     function setRedirectAction($do) {
 
         $this->set('view_method', 'redirect');
@@ -649,6 +658,22 @@ class Controller extends \OWA\Core\Base {
 				$new_data[$k] = $param;
 			}
 		}
+
+		/*
+		 * What is being looked at goes with every redirect -- the Property and
+		 * the period -- so a save lands on the screen it came from with the
+		 * same ones, an install-wide setting's included. A controller that
+		 * names another Property, or none (one it has just deleted), sets
+		 * propertyId itself.
+		 */
+		foreach ( self::REPORT_STATE as $key ) {
+
+			if ( ! array_key_exists( $key, $new_data ) && (string) $this->getParam( $key ) !== '' ) {
+
+				$new_data[ $key ] = (string) $this->getParam( $key );
+			}
+		}
+
 		\OWA\Core\CoreAPI::debug('setredirectAction');
 		\OWA\Core\CoreAPI::debug( $new_data);
 		$this->data = $new_data;		

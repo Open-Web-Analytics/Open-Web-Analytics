@@ -1166,10 +1166,11 @@ class Template extends TemplateEngine {
                 'id'      => 'settings',
                 'label'   => 'Settings',
                 'icon'    => 'fas fa-cog',
-                // With the Property, so the settings screens are of the one being looked at.
+                // With the Property and the period, so the settings screens are
+                // of the one being looked at and the way back keeps the period.
                 'href'    => $this->makeLink( array(
                     'do' => $user->isCapable( 'edit_settings' ) ? 'base.optionsGeneral' : 'base.myProfile' ),
-                    array( 'propertyId' ) ),
+                    \OWA\Core\Controller::REPORT_STATE ),
                 'current' => (bool) $inSettings,
                 'items'   => array(),
                 'foot'    => true,

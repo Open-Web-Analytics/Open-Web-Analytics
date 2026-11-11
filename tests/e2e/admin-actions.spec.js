@@ -170,6 +170,48 @@ test.describe('admin: options update (revertible, snapshot + restore)', () => {
     });
 });
 
+test.describe('admin: a settings save keeps the Property and the period', () => {
+
+    /**
+     * An install-wide save came back on the first Property and the default
+     * period: the form posts with both on its url and the redirect left them
+     * behind. Saved unchanged, so the install is as it was.
+     */
+    test('saving the general settings lands on them with the same Property and period', async ({ page }) => {
+        await adminLogin(page);
+
+        await page.goto(`?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
+            + '&owa_period=last_seven_days', { waitUntil: 'networkidle' });
+
+        const param = (url, name) => {
+            const q = new URL(url, page.url()).searchParams;
+            return q.get(name) ?? q.get(`owa_${name}`);
+        };
+
+        const gear = await page.locator('#owa_railItem_settings').getAttribute('href');
+        const propertyId = param(gear, 'propertyId');
+        expect(propertyId, 'the Settings gear names the Property').toBeTruthy();
+        expect(param(gear, 'period'), 'the Settings gear keeps the period').toBe('last_seven_days');
+
+        await page.goto(gear, { waitUntil: 'networkidle' });
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.locator('button[name="action"][value="base.optionsUpdate"]').click(),
+        ]);
+
+        expect(param(page.url(), 'do')).toBe('base.optionsGeneral');
+        expect(param(page.url(), 'propertyId')).toBe(propertyId);
+        expect(param(page.url(), 'period')).toBe('last_seven_days');
+        await expect(page.locator('body')).toContainText('Options saved.');
+
+        // And the way back to the reports is of the same period.
+        const back = await page.locator('#owa_railItem_dashboard, .owa_railItem[href*="reportId=dashboard"]').first()
+            .getAttribute('href');
+        expect(param(back, 'period'), back).toBe('last_seven_days');
+        expect(param(back, 'propertyId') || param(back, 'siteId'), back).toBeTruthy();
+    });
+});
+
 test.describe('admin: site CRUD', () => {
 
     test('add a site, edit its profile, then delete it', async ({ page }) => {

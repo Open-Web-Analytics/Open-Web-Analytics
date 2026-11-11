@@ -25,9 +25,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class RedirectDataFilterTest extends TestCase
 {
-    private function controller()
+    private function controller( array $params = array() )
     {
-        return new class( array() ) extends \OWA\Core\Controller {
+        return new class( $params ) extends \OWA\Core\Controller {
 
             public function action() {
 
@@ -83,5 +83,41 @@ final class RedirectDataFilterTest extends TestCase
         $c->setRedirectAction('base.optionsGeneral');
 
         $this->assertArrayNotHasKey('modules', $c->data);
+    }
+
+    /**
+     * Every save lands back on its screen with the Property being looked at:
+     * an install-wide setting's save went to the first Property.
+     */
+    public function testTheRequestsPropertyGoesWithTheRedirect(): void
+    {
+        $c = $this->controller(array('propertyId' => 'prop-42'));
+
+        $c->setRedirectAction('base.optionsGeneral');
+
+        $this->assertSame('prop-42', $c->data['propertyId'] ?? null);
+    }
+
+    /** A Property the controller names, or none (one it deleted), wins. */
+    public function testAPropertyTheControllerSetsWins(): void
+    {
+        $c = $this->controller(array('propertyId' => 'prop-42'));
+        $c->set('propertyId', 'prop-7');
+        $c->setRedirectAction('base.propertyProfiles');
+        $this->assertSame('prop-7', $c->data['propertyId']);
+
+        $c = $this->controller(array('propertyId' => 'prop-42'));
+        $c->set('propertyId', '');
+        $c->setRedirectAction('base.reportingHome');
+        $this->assertSame('', $c->data['propertyId']);
+    }
+
+    public function testNoPropertyIsAddedWhenTheRequestHasNone(): void
+    {
+        $c = $this->controller();
+
+        $c->setRedirectAction('base.optionsGeneral');
+
+        $this->assertArrayNotHasKey('propertyId', $c->data);
     }
 }

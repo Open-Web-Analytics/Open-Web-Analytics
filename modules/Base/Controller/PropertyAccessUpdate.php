@@ -44,14 +44,12 @@ class PropertyAccessUpdate extends \OWA\Core\AdminController {
             is_array( $checked )  ? $checked  : array()
         );
 
-        $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
         $this->setStatusCode( 3217 );
         $this->setRedirectAction( 'base.propertyAccess' );
     }
 
     function errorAction() {
 
-        $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
         $this->setRedirectAction( 'base.propertyAccess' );
         $this->set( 'error_code', 3218 );
     }
