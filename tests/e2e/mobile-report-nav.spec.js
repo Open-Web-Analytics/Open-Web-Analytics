@@ -22,6 +22,13 @@ async function openReport(page, reportId) {
 }
 
 const rail = (page) => page.locator('#owa_reportNavRail');
+
+// A report, and the settings screen every reader has, whose column is the longest.
+const SCREENS = [
+    { name: 'a report', open: (page) => openReport(page, REPORT) },
+    { name: 'a settings screen', open: (page) => page.goto(
+        `?owa_do=base.myProfile&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' }) },
+];
 const toggle = (page) => page.locator('.owa_reportNavToggle');
 
 async function shot(page, name) {
@@ -138,6 +145,39 @@ test.describe('report nav on a phone', () => {
         await expect(page.locator('#owa_header .owa_logo')).toBeVisible();
     });
 
+    /**
+     * On a phone the sections are a grid, as many across as fit, Settings
+     * among them, with the current section's pages under it at the full
+     * width. As a rail beside the column they were a strip 88px wide, and
+     * Settings, at its foot, was below the fold.
+     */
+    for (const screen of SCREENS) {
+        test(`the sections are a grid with Settings in view, on ${screen.name}`, async ({ page }) => {
+            await screen.open(page);
+
+            await toggle(page).click();
+            await expect(rail(page)).toBeInViewport();
+
+            const tiles = await rail(page).locator('.owa_railItem').evaluateAll((els) =>
+                els.map((el) => { const r = el.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y) }; }));
+            const rows = new Map();
+            tiles.forEach((t) => rows.set(t.y, (rows.get(t.y) || 0) + 1));
+            // As many columns of 96px (and 4px gaps) as the grid's width has: 3 at 390px.
+            const width = await rail(page).locator('.owa_railList').evaluate((el) => el.clientWidth);
+            const across = Math.min(Math.floor((width + 4) / 100), tiles.length);
+            expect(across).toBeGreaterThanOrEqual(3);
+            expect(Math.max(...rows.values()), `tiles per row: ${[...rows.values()]}`).toBe(across);
+
+            await expect(rail(page).locator('#owa_railItem_settings')).toBeInViewport({ ratio: 1 });
+
+            const grid = await rail(page).locator('.owa_rail').boundingBox();
+            const column = await rail(page).locator('.owa_navColumn').boundingBox();
+            expect(column.y, 'the pages are under the sections').toBeGreaterThanOrEqual(grid.y + grid.height - 1);
+            expect(column.width, 'at the full width').toBeGreaterThan(360);
+            await shot(page, `phone-grid-${screen.name.replace(/\W+/g, '-')}`);
+        });
+    }
+
     test('choosing a report goes to it with the nav closed', async ({ page }) => {
         await openReport(page, REPORT);
 
@@ -153,6 +193,39 @@ test.describe('report nav on a phone', () => {
         await expect(rail(page)).not.toBeInViewport();
         await expect(toggle(page)).toHaveAttribute('aria-expanded', 'false');
     });
+});
+
+/**
+ * A phone on its side is past the phone width, so the slide-out is the rail
+ * and column, but it is short: the sections are taller than the screen and
+ * scroll under Settings, which stays at the foot of the rail.
+ */
+test.describe('report nav on a phone on its side', () => {
+
+    test.use({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+
+    test.beforeEach(async ({ page }) => {
+        await login(page);
+    });
+
+    for (const screen of SCREENS) {
+        test(`Settings is at the foot of the rail on ${screen.name}`, async ({ page }) => {
+            await screen.open(page);
+
+            await toggle(page).click();
+            await expect(rail(page)).toBeInViewport();
+
+            const gear = rail(page).locator('#owa_railItem_settings');
+            await expect(gear).toBeInViewport({ ratio: 1 });
+            const box = await gear.boundingBox();
+            expect(390 - (box.y + box.height), 'at the foot of the screen').toBeLessThan(48);
+
+            // Scrolled to the end of the sections, it is still there.
+            await rail(page).locator('.owa_rail').evaluate((el) => { el.scrollTop = el.scrollHeight; });
+            await expect(gear).toBeInViewport({ ratio: 1 });
+            await shot(page, `side-${screen.name.replace(/\W+/g, '-')}`);
+        });
+    }
 });
 
 /**
