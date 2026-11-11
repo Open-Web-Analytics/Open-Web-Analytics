@@ -23,7 +23,7 @@
             "colspan": 6,
             "query": {
                 "metrics": "sessions",
-                "dimensions": "pagePathPlusQuery",
+                "dimensions": "pagePath",
                 "sort": "sessions-"
             },
             "more": {
@@ -31,6 +31,7 @@
             },
             "rowActions": [
                 "heatmap",
+                "pathHeatmap",
                 "clicks",
                 "recordings",
                 "paths"

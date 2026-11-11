@@ -555,9 +555,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * Each action names where it goes -- a report, or the overlay launcher --
      * and which of the row's dimensions fill its parameters. `first` is a
      * dimension the grid must be grouped by FIRST for the action to apply:
-     * a heatmap is of one page, and only a row of pagePathPlusQuery is one
-     * page; a row of pagePath pools every query string's clicks onto one of
-     * them. Modules add theirs through the report_row_actions filter.
+     * a heatmap is of one page, and a row of pagePathPlusQuery is one page;
+     * a row of pagePath has pathHeatmap, which draws every query string's
+     * clicks on the path with none. Modules add theirs through the report_row_actions filter.
      * `description` says what the action opens, for the wiki.
      */
     const ROW_ACTIONS = array(
@@ -567,6 +567,14 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             'action'    => 'base.overlayLauncher',
             'params'    => array( 'pagePathPlusQuery' => 'pagePathPlusQuery' ),
             'first'     => 'pagePathPlusQuery',
+            'newWindow' => true,
+        ),
+        'pathHeatmap' => array(
+            'label'     => 'Heatmap',
+            'description' => 'The page at the path, in a new window, with the clicks of every query string of it drawn over it.',
+            'action'    => 'base.overlayLauncher',
+            'params'    => array( 'pagePath' => 'pagePath' ),
+            'first'     => 'pagePath',
             'newWindow' => true,
         ),
         'clicks' => array(

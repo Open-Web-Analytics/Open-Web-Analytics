@@ -114,16 +114,17 @@ final class CustomReportRewriterTest extends TestCase
     }
 
     /**
-     * A full-report link to Pages survives the rename: v1's pagePath carried
-     * the query string, it becomes pagePathPlusQuery, and Pages groups by
-     * pagePathPlusQuery -- as v1's Pages did.
+     * v1's pagePath carried the query string, so it becomes pagePathPlusQuery;
+     * Pages groups by pagePath, every query string of a path counted as it,
+     * so a full-report link to Pages no longer fits and is dropped, said so.
      */
-    public function testAMoreLinkToPagesFitsTheRenamedDimension(): void
+    public function testAMoreLinkToPagesIsDroppedByTheRename(): void
     {
         $out = $this->rewrite([['type' => 'grid', 'query' => ['metrics' => 'visits', 'dimensions' => 'pagePath'],
             'more' => ['reportId' => 'pages']]]);
 
-        $this->assertSame(['reportId' => 'pages'], $out['definition']['widgets'][0]['more'] ?? null);
+        $this->assertArrayNotHasKey('more', $out['definition']['widgets'][0]);
+        $this->assertStringContainsString('"more" link to report "pages" is removed', implode("\n", $out['changes']));
         $this->assertSame('', \OWA\Module\Base\Classes\CustomReports::validate($out['definition']), 'it renders');
     }
 

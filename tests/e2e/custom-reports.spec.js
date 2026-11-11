@@ -2011,15 +2011,15 @@ test.describe('custom reports', () => {
             await expect(page.locator('#dlgMoreField')).toBeHidden();
 
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
-            await chooseInChosen(page, 'dlgDimensions', 'pagePathPlusQuery');
+            await chooseInChosen(page, 'dlgDimensions', 'pagePath');
 
             await expect(page.locator('#dlgMoreField')).toBeVisible();
 
             const offered = await page.locator('#dlgMoreReport option')
                 .evaluateAll((opts) => opts.map((o) => o.value).filter(Boolean));
 
-            // Pages groups by the page and its query string: a card of those
-            // rows is what it is the full report of.
+            // Pages groups by the page path: a card of paths is what it is
+            // the full report of.
             expect(offered).toContain('pages');
 
             // Reads a pagePath: that is the ROW link's business.
@@ -2032,9 +2032,9 @@ test.describe('custom reports', () => {
         /**
          * Each link, end to end: configured in the modal, stored, and rendered.
          *
-         * Two cards, because no one card can now carry both: the row link into
-         * Page Detail reads a pagePath, and Pages -- grouped by the page and its
-         * query string -- is the full report only of a card grouped that way.
+         * The full-report link here, the row link in the next test: Pages is
+         * the full report of a card grouped by pagePath, and Page Detail reads
+         * one.
          */
         test('a card can carry a full-report link', async ({ page }) => {
             const name = reportName('More');
@@ -2045,7 +2045,7 @@ test.describe('custom reports', () => {
             await onlyWidget(page, 'grid-card', {
                 title: 'Top pages',
                 metrics: ['pageViews'],
-                dimensions: ['pagePathPlusQuery'],
+                dimensions: ['pagePath'],
                 more: 'pages',
             });
 

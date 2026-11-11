@@ -2,12 +2,14 @@ const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, openReportNoTabs } = require('./fixtures');
 
 /**
- * The Pages report groups by page: its path AND its query string, as the Pages
- * and Top Content cards that open it do, so a row on a card is a row in the
- * report. Each page offers its actions behind "Actions" and a chevron beside
- * it: its heatmap, its element clicks, its recordings, the pages either side.
- * The heatmap only while the grid is grouped by the page and its query string
- * first -- grouped by the path alone, a row pools every query string's clicks.
+ * The Pages report groups by page path, every query string of a path counted
+ * as it -- a subscriber id or a campaign on a link is still the same page --
+ * as the Pages and Top Content cards that open it do, so a row on a card is a
+ * row in the report. Each page offers its actions behind "Actions" and a
+ * chevron beside it: its heatmap, its element clicks, its recordings, the
+ * pages either side. Grouped by path, the heatmap draws the clicks of every
+ * query string of the path; regrouped by the path and its query string, it
+ * is the heatmap of that exact page.
  */
 test.describe('pages report', () => {
 
@@ -23,50 +25,59 @@ test.describe('pages report', () => {
         return ids;
     };
 
-    test('groups by the page and its query string, and offers its actions', async ({ page }) => {
+    test('groups by the page path, and offers its actions', async ({ page }) => {
         await openReportNoTabs(page, { reportId: 'pages' });
 
         const headers = await page.locator('.owa_gridTable thead th')
             .evaluateAll((ths) => ths.filter((th) => th.offsetWidth > 0).map((th) => th.innerText.trim()));
 
-        expect(headers, `columns: ${headers.join(' | ')}`).toContain('Page Path + Query String');
+        expect(headers, `columns: ${headers.join(' | ')}`).toContain('Page Path');
+        expect(headers).not.toContain('Page Path + Query String');
 
         const button = page.locator('.owa_gridTable tbody tr.owa_gridRow .owa_gridRowActions').first();
         await expect(button).toHaveText('Actions');
 
         const ids = await actionsOf(page, '/pricing');
-        expect(ids).toEqual(expect.arrayContaining(['heatmap', 'clicks', 'paths']));
+        expect(ids).toEqual(expect.arrayContaining(['pathHeatmap', 'clicks', 'paths']));
+        expect(ids).not.toContain('heatmap');
     });
 
-    test('grouped by the path alone, a page offers no heatmap', async ({ page }) => {
+    test('grouped by the path and its query string, a page offers its own heatmap', async ({ page }) => {
         await openReportNoTabs(page, { reportId: 'pages' });
 
         await page.evaluate(() => {
             const url = new OWA.uri(window.dim.resultSet.self);
-            url.setQueryParam(OWA.util.appNs('dimensions'), 'pagePath');
+            url.setQueryParam(OWA.util.appNs('dimensions'), 'pagePathPlusQuery');
             url.setQueryParam(OWA.util.appNs('sort'), 'pageViews-');
             window.dim.getNewResultSet(url.getSource());
         });
 
-        await expect(page.locator('.owa_gridTable thead th', { hasText: 'Page Path' }).first()).toBeVisible();
-        await expect(page.locator('.owa_gridTable thead th', { hasText: 'Query String' })).toHaveCount(0);
+        await expect(page.locator('.owa_gridTable thead th', { hasText: 'Page Path + Query String' }).first()).toBeVisible();
 
         const ids = await actionsOf(page, '/pricing');
-        expect(ids).toContain('clicks');
-        expect(ids).not.toContain('heatmap');
+        expect(ids).toEqual(expect.arrayContaining(['heatmap', 'clicks']));
+        expect(ids).not.toContain('pathHeatmap');
     });
 
-    test('a page\'s heatmap opens that page', async ({ page }) => {
+    test('a page\'s heatmap opens that path with every query string\'s clicks', async ({ page }) => {
         await openReportNoTabs(page, { reportId: 'pages' });
 
         const row = page.locator('.owa_gridTable tbody tr.owa_gridRow', { hasText: '/pricing' }).first();
         await row.locator('.owa_gridRowActions').click();
-        const href = await page.locator('.owa_gridRowActionsMenu a[data-action="heatmap"]').getAttribute('href');
+        const link = page.locator('.owa_gridRowActionsMenu a[data-action="pathHeatmap"]');
+        await expect(link).toHaveText('Heatmap');
+        const href = await link.getAttribute('href');
 
         const response = await page.request.get(href, { maxRedirects: 0 });
 
         expect(response.status()).toBe(302);
-        expect(response.headers()['location']).toMatch(/^https:\/\/owa-e2e\.example\.test\/pricing#owa_overlay\./);
+
+        const location = response.headers()['location'];
+        expect(location).toMatch(/^https:\/\/owa-e2e\.example\.test\/pricing#owa_overlay\./);
+
+        const overlay = JSON.parse(Buffer.from(decodeURIComponent(location.split('#owa_overlay.')[1]), 'base64').toString());
+        const constraints = new URL(overlay.api_url).searchParams.get('constraints');
+        expect(constraints).toBe('pagePath==/pricing,eventName==click');
     });
 });
 
