@@ -1170,7 +1170,7 @@ class Template extends TemplateEngine {
                 // of the one being looked at and the way back keeps the period.
                 'href'    => $this->makeLink( array(
                     'do' => $user->isCapable( 'edit_settings' ) ? 'base.optionsGeneral' : 'base.myProfile' ),
-                    \OWA\Core\Controller::REPORT_STATE ),
+                    \OWA\Core\Controller::reportState() ),
                 'current' => (bool) $inSettings,
                 'items'   => array(),
                 'foot'    => true,

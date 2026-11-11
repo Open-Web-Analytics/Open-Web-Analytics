@@ -120,4 +120,18 @@ final class RedirectDataFilterTest extends TestCase
 
         $this->assertArrayNotHasKey('propertyId', $c->data);
     }
+
+    /** One list: what a report link carries, less the Profile. */
+    public function testTheRedirectCarriesTheReportLinkStateWithoutTheProfile(): void
+    {
+        $this->assertSame(
+            array_values(array_diff(\OWA\Core\View::LINK_STATE_KEYS, array('siteId'))),
+            \OWA\Core\Controller::reportState());
+
+        $c = $this->controller(array('propertyId' => 'p1', 'siteId' => 's1', 'compare' => 'previous_period'));
+        $c->setRedirectAction('base.optionsGeneral');
+
+        $this->assertSame('previous_period', $c->data['compare'] ?? null);
+        $this->assertArrayNotHasKey('siteId', $c->data);
+    }
 }
