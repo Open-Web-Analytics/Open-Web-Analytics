@@ -63,7 +63,7 @@ class OptionsHierarchy extends \OWA\Core\View {
         // it and the period the reader came with (makeLink()'s add_state).
         $state = array();
 
-        foreach ( \OWA\Core\Controller::REPORT_STATE as $key ) {
+        foreach ( \OWA\Core\Controller::reportState() as $key ) {
 
             $value = \OWA\Core\CoreAPI::getRequestParam( $key );
 

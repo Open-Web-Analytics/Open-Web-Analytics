@@ -617,13 +617,18 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
-     * The request parameters that say what is being looked at: the Property,
-     * the period or its dates, and the comparison. A settings screen keeps
-     * them in its links and every redirect carries them, so leaving the
-     * reports for Settings and coming back changes neither.
+     * What is being looked at, as the request says it: the report link state
+     * (View::LINK_STATE_KEYS) without siteId. A settings screen keeps these in
+     * its links and every redirect carries them, so leaving the reports for
+     * Settings and coming back changes neither. Not siteId, which names a
+     * Profile: one a save may have just deleted.
+     *
+     * @return string[]
      */
-    const REPORT_STATE = array( 'propertyId', 'period', 'startDate', 'endDate',
-        'compare', 'compareStartDate', 'compareEndDate' );
+    public static function reportState() {
+
+        return array_values( array_diff( \OWA\Core\View::LINK_STATE_KEYS, array( 'siteId' ) ) );
+    }
 
     function setRedirectAction($do) {
 
@@ -666,7 +671,7 @@ class Controller extends \OWA\Core\Base {
 		 * names another Property, or none (one it has just deleted), sets
 		 * propertyId itself.
 		 */
-		foreach ( self::REPORT_STATE as $key ) {
+		foreach ( self::reportState() as $key ) {
 
 			if ( ! array_key_exists( $key, $new_data ) && (string) $this->getParam( $key ) !== '' ) {
 
