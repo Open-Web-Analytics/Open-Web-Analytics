@@ -335,8 +335,8 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     });
     /**
      * THE WHOLE CHAIN FROM A PAGES ROW: its Heatmap action, the launcher's
-     * redirect to that exact page, and the overlay it opens there fetching that
-     * page's clicks and painting them.
+     * redirect to the path, and the overlay it opens there fetching the clicks
+     * of every query string of it and painting them.
      */
     test('a Pages row\'s heatmap draws that page\'s clicks', async ({ page }, testInfo) => {
         await login(page);
@@ -345,7 +345,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
 
         const row = page.locator('.owa_gridTable tbody tr.owa_gridRow', { hasText: '/pricing' }).first();
         await row.locator('.owa_gridRowActions').click();
-        const href = await page.locator('.owa_gridRowActionsMenu a[data-action="heatmap"]').getAttribute('href');
+        const href = await page.locator('.owa_gridRowActionsMenu a[data-action="pathHeatmap"]').getAttribute('href');
 
         const location = (await page.request.get(href, { maxRedirects: 0 })).headers()['location'];
         expect(location).toMatch(/^https:\/\/owa-e2e\.example\.test\/pricing#owa_overlay\./);
