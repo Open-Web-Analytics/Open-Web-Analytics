@@ -719,13 +719,13 @@ OWA.areaChart.prototype = {
 
         if ( xs ) {
 
-            var byX  = {};
-            var fill = this.zeroForMissing( resultSet, y_name ) ? 0 : null;
+            var byX = {};
 
             data.forEach( function ( p ) { byX[ p[0] ] = p[1]; } );
 
+            // An interval with no row is zero, whatever the metric: see periodXs().
             data = xs.map( function ( x ) {
-                return [ x, byX.hasOwnProperty( x ) ? byX[ x ] : fill ];
+                return [ x, byX.hasOwnProperty( x ) ? byX[ x ] : 0 ];
             } );
         }
 
@@ -758,8 +758,7 @@ OWA.areaChart.prototype = {
 
         /*
          * A comparison with no rows at all is still a line when the period's
-         * days are known: nothing happened then, which for a count is a line
-         * at zero and for a ratio is no line drawn.
+         * days are known: nothing happened then, a line at zero.
          */
         if ( ! rows || ( ! rows.length && ! xs ) ) {
 
@@ -783,11 +782,10 @@ OWA.areaChart.prototype = {
             when[ x ] = row[ x_name ].compare_period_value;
         } );
 
-        var fill = this.zeroForMissing( resultSet, y_name ) ? 0 : null;
         var axis = xs || Object.keys( byX ).map( Number ).sort( function ( a, b ) { return a - b; } );
 
         var data = axis.map( function ( x ) {
-            return [ x, byX.hasOwnProperty( x ) ? byX[ x ] : fill ];
+            return [ x, byX.hasOwnProperty( x ) ? byX[ x ] : 0 ];
         } );
 
         /*
@@ -845,7 +843,6 @@ OWA.areaChart.prototype = {
         var total = built.series.filter( function ( s ) { return ! s.isCompare; } )[0];
         var totalCompare = built.series.filter( function ( s ) { return s.isCompare; } )[0];
         var xs    = total.data.map( function ( p ) { return p[0]; } );
-        var fill  = this.zeroForMissing( resultSet, y_name ) ? 0 : null;
         var cmpRs = this.rowsResultSet.compare;
 
         var keyOf = function ( values ) {
@@ -891,7 +888,7 @@ OWA.areaChart.prototype = {
 
             return xs.map( function ( x ) {
 
-                return [ x, entry && entry.points.hasOwnProperty( x ) ? entry.points[ x ] : fill ];
+                return [ x, entry && entry.points.hasOwnProperty( x ) ? entry.points[ x ] : 0 ];
             } );
         };
 
@@ -1112,19 +1109,15 @@ OWA.areaChart.prototype = {
             byValue[ key ].total += y;
         }
 
-        // Days nobody visited, too, when they are zero rather than a gap --
-        // see zeroForMissing().
-        if ( this.zeroForMissing( resultSet, y_name ) ) {
+        // Days nobody visited, too, at zero.
+        ( this.periodXs( resultSet, x_name, x_type ) || [] ).forEach( function ( x ) {
 
-            ( this.periodXs( resultSet, x_name, x_type ) || [] ).forEach( function ( x ) {
-
-                if ( ! seen_x[ x ] ) {
-                    seen_x[ x ] = true;
-                    xs.push( x );
-                    totals[ x ] = 0;
-                }
-            } );
-        }
+            if ( ! seen_x[ x ] ) {
+                seen_x[ x ] = true;
+                xs.push( x );
+                totals[ x ] = 0;
+            }
+        } );
 
         xs.sort( function ( a, b ) { return a - b; } );
 
@@ -1362,30 +1355,6 @@ OWA.areaChart.prototype = {
     },
 
     /**
-     * Whether a metric's missing interval is zero.
-     *
-     * The cube writes no row for a day with nothing in it. For a count or a
-     * sum that day IS zero, and leaving it out had flot join the days either
-     * side of it -- a line drawn straight over the absence. A ratio over a
-     * day with no visits has no value at all (PLAN 2.11), so it is a gap
-     * rather than a zero.
-     */
-    zeroForMissing : function ( resultSet, name ) {
-
-        var type = '';
-
-        jQuery.each( ( resultSet && resultSet.relatedMetrics ) || {}, function ( group, list ) {
-            jQuery.each( list || [], function ( i, m ) {
-                if ( m && m.name === name ) {
-                    type = m.metric_type || '';
-                }
-            } );
-        } );
-
-        return [ 'count', 'distinct_count', 'sum', 'boolean_true_count' ].indexOf( type ) !== -1;
-    },
-
-    /**
      * An x axis of hours: time mode, labelled by hourLabel(). The ticks are
      * placed in draw(), where the width is known.
      */
@@ -1425,6 +1394,11 @@ OWA.areaChart.prototype = {
     /**
      * Every interval of the period, in order, as x values -- or null when the
      * period cannot be read or is not what the chart is drawn over.
+     *
+     * The cube writes no row for an interval with nothing in it, and the
+     * chart draws that interval at zero, a ratio's as well as a count's.
+     * Left out, flot joined the intervals either side of it, a line drawn
+     * straight over the absence; left empty, a ratio's line broke there.
      */
     periodXs : function ( resultSet, x_name, x_type ) {
 

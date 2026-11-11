@@ -86,10 +86,14 @@ describe('a day by hour', () => {
         expect(data[23]).toEqual([Date.UTC(2026, 9, 30, 23), 0]);
     });
 
-    test('a ratio is a gap where there is no row', () => {
-        const built = chart().singleSeries(resultSet([['2026103014', 0.5]], day, 'ratio'), 'dateHour', 'metric');
+    test('a ratio is zero in an hour with no row', () => {
+        const data = chart().singleSeries(resultSet([['2026103014', 0.5]], day, 'ratio'), 'dateHour', 'metric')
+            .series[0].data;
 
-        expect(built.series[0].data.filter((p) => p[1] !== null)).toEqual([[Date.UTC(2026, 9, 30, 14), 0.5]]);
+        expect(data).toHaveLength(24);
+        expect(data.filter((p) => p[1] === null)).toEqual([]);
+        expect(data[13]).toEqual([Date.UTC(2026, 9, 30, 13), 0]);
+        expect(data[14]).toEqual([Date.UTC(2026, 9, 30, 14), 0.5]);
     });
 
     test('today stops at the hour it is now', () => {
