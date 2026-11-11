@@ -59,10 +59,28 @@ class OptionsHierarchy extends \OWA\Core\View {
         $this->body->set( 'report_nav', \OWA\Core\ReportController::reportNavigation( $propertyId ) );
         $this->body->set( 'nav_property_id', $propertyId );
 
-        // The settings column and the gear link with it (makeLink()'s add_state).
+        // The settings column, the gear and the rail's report links link with
+        // it and the period the reader came with (makeLink()'s add_state).
+        $state = array();
+
+        foreach ( \OWA\Core\Controller::REPORT_STATE as $key ) {
+
+            $value = \OWA\Core\CoreAPI::getRequestParam( $key );
+
+            if ( is_scalar( $value ) && (string) $value !== '' ) {
+
+                $state[ $key ] = (string) $value;
+            }
+        }
+
         if ( $propertyId !== '' ) {
 
-            $this->_setLinkState( array( 'propertyId' => $propertyId ) );
+            $state['propertyId'] = $propertyId;
+        }
+
+        if ( $state ) {
+
+            $this->_setLinkState( $state );
         }
         $this->body->set( 'nav_access_site', self::accessSiteFor(
             (array) $this->get( 'site_hierarchy' ), $propertyId, (string) ( $params['siteId'] ?? '' ) ) );

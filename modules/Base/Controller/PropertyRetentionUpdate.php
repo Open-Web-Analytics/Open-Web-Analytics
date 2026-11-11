@@ -68,14 +68,12 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
             \OWA\Module\Base\Classes\Retention::enqueueBackfills( array( $owed ) );
         }
 
-        $this->set( 'propertyId', $propertyId );
         $this->setRedirectAction( 'base.propertyRetention' );
         $this->set( 'status_code', 2500 );
     }
 
     function errorAction() {
 
-        $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
         $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
         $this->setRedirectAction( 'base.propertyRetention' );
     }
