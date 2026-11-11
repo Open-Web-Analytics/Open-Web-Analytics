@@ -111,13 +111,19 @@
             "type": "grid",
             "id": "latestVisits",
             "container": "latest-visits",
-            "title": "Latest Visits",
+            "title": "Most Recent Visits",
             "query": {
                 "metrics": "pageViewsPerSession",
-                "dimensions": "ipAddress,landingPage,sessionSourceMedium,city,country,priorSessionCount",
-                "sort": "sessions-",
+                "dimensions": "sessionStartTime,ipAddress,landingPage,sessionSourceMedium,city,country,priorSessionCount",
+                "sort": "sessionStartTime-",
                 "resultsPerPage": 10
             },
+            "constraints": [
+                {
+                    "dimension": "sessionStartTime",
+                    "operator": "notEmpty"
+                }
+            ],
             "more": {
                 "reportId": "latest-visits"
             }

@@ -5,6 +5,17 @@ const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
  * The seeded custom report of metric boxes with no chart above them, found by
  * name on the roster: its id is minted at seed time.
  */
+/**
+ * A visits table's Visit Start cells, asserting it is the first column after
+ * the row number.
+ */
+async function startColumn(grid) {
+    const head = (await grid.locator('.owa_gridTable thead th').allTextContents()).map((h) => h.trim());
+    expect(head.filter((h) => h !== '' && h !== 'Row')[0], JSON.stringify(head)).toBe('Visit Start');
+
+    return grid.locator(`tr.owa_gridRow td:nth-child(${head.indexOf('Visit Start') + 1})`);
+}
+
 async function boxesReport(page) {
 
     await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
@@ -98,6 +109,58 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         }
         expect(tops[1].y, 'Top Content is on the row after Events').toBeGreaterThan(tops[0].y + tops[0].height - 2);
         expect(tops[1].width, 'a half is wider than a third').toBeGreaterThan(tops[0].width * 1.3);
+    });
+
+    /**
+     * Most Recent Visits: the visits, newest first, Visit Start the first column
+     * after the row number. The seeded visits start at noon on their day, so a
+     * row here is a day's visits; on real traffic it is one visit.
+     */
+    test('most recent visits lists visits by start, the newest first', async ({ page }) => {
+        const grid = page.locator('#latest-visits');
+
+        await expect(grid.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+        await expect(grid.locator('xpath=..').locator('.owa_reportSectionTitle')).toHaveText('Most Recent Visits');
+
+        const starts = await (await startColumn(grid)).allTextContents();
+        expect(starts.length).toBeGreaterThan(1);
+
+        // "Nov 10, 12:00 PM", with the year only when it is not this one. No
+        // "(not set)" row: events that carry no session start are left out.
+        for (const s of starts) {
+            expect(s.trim()).toMatch(/^[A-Z][a-z]{2} \d{1,2}, (\d{4}, )?\d{1,2}:\d{2} [AP]M$/);
+        }
+
+        const when = starts.map((s) => {
+            const t = s.trim();
+            return Date.parse(/, \d{4}, /.test(t) ? t.replace(/, (\d{1,2}:)/, ' $1') : t.replace(/^(\w+ \d+),/, `$1, ${new Date().getFullYear()}`));
+        });
+        expect(when.every((t) => !Number.isNaN(t)), JSON.stringify(starts)).toBe(true);
+
+        for (let i = 1; i < when.length; i++) {
+            expect(when[i], `${starts[i]} is not after ${starts[i - 1]}`).toBeLessThanOrEqual(when[i - 1]);
+        }
+    });
+
+    /** Its more link is Latest Visits: the same visits in the same order. */
+    test('most recent visits opens latest visits in the same order', async ({ page }) => {
+        const grid = page.locator('#latest-visits');
+
+        await expect(grid.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+        const first = (await (await startColumn(grid)).first().textContent()).trim();
+
+        const more = grid.locator('xpath=..').locator('.owa_moreLinks a');
+        await expect(more).toHaveCount(1);
+        expect(await more.getAttribute('href')).toContain('reportId=latest-visits');
+
+        await page.goto(await more.getAttribute('href'), { waitUntil: 'networkidle' });
+
+        const report = page.locator('#dimension-grid');
+        await expect(report.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
+
+        const cells = await startColumn(report);
+        expect((await cells.first().textContent()).trim()).toBe(first);
+        await expect(cells.filter({ hasText: '(not set)' })).toHaveCount(0);
     });
 
     /**

@@ -145,6 +145,7 @@ class ResultSetManager extends \OWA\Core\Base {
             'integer'         => array($this, 'numberFormatter'),
             'boolean'         => array($this, 'booleanFormatter'),
             'milliseconds'    => array($this, 'formatMilliseconds'),
+            'datetime'        => array($this, 'formatDateTime'),
             'currency'        => array($this, 'formatCurrency')
         );
         
@@ -1694,6 +1695,29 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return $value;
         }
         return number_format($value);
+    }
+
+    /**
+     * Epoch seconds as a date and time: "Nov 10, 11:04 AM", the year added
+     * when it is not this one.
+     *
+     * In PHP's default zone, which Settings sets from base.timezone at boot:
+     * the zone `date` was written in at ingest. A value that is not a number
+     * is returned as it came.
+     *
+     * @param int|string|null $value epoch seconds
+     * @return string|null
+     */
+    function formatDateTime( $value ) {
+
+        if ( ! is_numeric( $value ) ) {
+
+            return $value;
+        }
+
+        $ts = (int) $value;
+
+        return date( date( 'Y', $ts ) === date( 'Y' ) ? 'M j, g:i A' : 'M j, Y, g:i A', $ts );
     }
 
     function formatSeconds($value) {
