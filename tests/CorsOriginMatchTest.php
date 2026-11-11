@@ -89,6 +89,28 @@ final class CorsOriginMatchTest extends TestCase
         $this->assertNull($this->match('https://sub.example.com', ['https://example.com']));
     }
 
+    /**
+     * `www.` and the bare domain are one site, whichever the Profile names:
+     * a Profile stored as `potusphotobook.com` serving from
+     * `www.potusphotobook.com` refused its own heatmap's clicks.
+     */
+    public function testWwwAndTheBareDomainAreOneSite(): void
+    {
+        $this->assertSame('https://www.example.com', $this->match('https://www.example.com', ['example.com']));
+        $this->assertSame('https://example.com', $this->match('https://example.com', ['http://www.example.com']));
+        $this->assertSame('https://WWW.Example.com', $this->match('https://WWW.Example.com', ['example.com']));
+    }
+
+    /** Only `www.`: another subdomain, or `www.` on a different domain, is still refused. */
+    public function testWwwIsTheOnlySubdomainFolded(): void
+    {
+        $this->assertNull($this->match('https://shop.example.com', ['www.example.com']));
+        $this->assertNull($this->match('https://www.sub.example.com', ['example.com']));
+        $this->assertNull($this->match('https://www.evil-example.com', ['example.com']));
+        $this->assertNull($this->match('https://wwwexample.com', ['example.com']));
+        $this->assertNull($this->match('https://com', ['www.com']));
+    }
+
     public function testHostComparisonIsCaseInsensitive(): void
     {
         $this->assertSame(

@@ -167,8 +167,9 @@ final class NavShellTest extends TestCase
 
     /**
      * Switching the Property and then opening Settings showed the first
-     * Property instead. The gear takes the Property from the link state, and
-     * only that: the period means nothing on a settings screen.
+     * Property instead. The gear takes the Property and the period from the
+     * link state, so coming back from Settings keeps the period, and nothing
+     * else of it.
      */
     public function testTheSettingsGearNamesTheProperty(): void
     {
@@ -179,7 +180,7 @@ final class NavShellTest extends TestCase
 
         $this->assertSame( 'settings', $rail[3]['id'] );
         $this->assertStringContainsString( 'propertyId=prop-42', $rail[3]['href'] );
-        $this->assertStringNotContainsString( 'period', $rail[3]['href'] );
+        $this->assertStringContainsString( 'period=last_seven_days', $rail[3]['href'] );
 
         $rail = $this->template()->navRail( $this->nav(), '', array( 'do' => 'base.report' ) );
 
