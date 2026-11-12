@@ -645,9 +645,24 @@ class OWATracker  {
         var a = this.getAnchorParam( OWA.getSetting('ns') + 'overlay');
 
         if ( a ) {
-            a = Util.base64_decode(Util.urldecode(a));
-            a = Util.urldecode( a );
-            OWA.debug('overlay anchor value: ' + a);
+
+            // A malformed fragment is not an overlay, and must not stop the
+            // tracker starting: a throw here left the visit untracked.
+            try {
+                a = Util.base64_decode(Util.urldecode(a));
+                a = Util.urldecode( a );
+                a = Util.decodeCookieValue( a );
+            } catch ( e ) {
+                OWA.debug( 'Overlay fragment could not be read.' );
+                return;
+            }
+
+            // Only an overlay whose data comes from this OWA server; any other
+            // link is ignored and the page is tracked as usual.
+            if ( ! OWA.overlayParamsAllowed( a ) ) {
+                OWA.debug( 'Overlay fragment ignored: its api_url is not this OWA server.' );
+                return;
+            }
             //var domain = this.getCookieDomain();
 
             // Deliberately NOT written to a cookie. The payload carries a
@@ -658,7 +673,7 @@ class OWATracker  {
             // pause tracker so we dont log anything during an overlay session
             this.pause();
             // start overlay session
-            OWA.startOverlaySession( Util.decodeCookieValue( a ) );
+            OWA.startOverlaySession( a );
         }
     }
 
@@ -1567,7 +1582,20 @@ class OWATracker  {
 
         } else if (targ.tagName == "INPUT") {
 
-            properties.dom_element_text = targ.value;
+            /*
+             * A button's label, and nothing from a field. The value of any
+             * other input is what the visitor typed or chose -- an email
+             * address, a password -- and clicking back into a field to correct
+             * it sent that value with the click.
+             */
+            if ( this.isButtonElement( targ ) ) {
+
+                properties.dom_element_text = targ.value;
+
+            } else if ( String( targ.type || '' ).toLowerCase() === 'image' ) {
+
+                properties.dom_element_text = targ.alt;
+            }
 
         } else if (targ.tagName == "IMG") {
 
@@ -1590,6 +1618,22 @@ class OWATracker  {
         return properties;
     }
 
+    /**
+     * A button, whose value is a label the page set: a <button>, or an input of
+     * type submit, button or reset.
+     */
+    isButtonElement( targ ) {
+
+        if ( targ.tagName === 'BUTTON' ) {
+
+            return true;
+        }
+
+        var type = String( targ.type || '' ).toLowerCase();
+
+        return targ.tagName === 'INPUT' && ( type === 'submit' || type === 'button' || type === 'reset' );
+    }
+
     clickEventHandler(e) {
 
         // hack for IE
@@ -1608,8 +1652,10 @@ class OWATracker  {
         }
         click.set("dom_element_name", dom_name);
 
+        // A button's value is its label. Any other element's value is what
+        // the visitor typed or chose, and is not sent.
         var dom_value = '(not set)';
-        if ( targ.hasAttribute('value') && targ.value.length > 0 ) {
+        if ( this.isButtonElement( targ ) && targ.hasAttribute('value') && targ.value.length > 0 ) {
             dom_value = targ.value;
         }
         click.set("dom_element_value", dom_value);
@@ -1766,14 +1812,11 @@ class OWATracker  {
             return;
         }
 
-        var key_code = e.keyCode? e.keyCode : e.charCode
-        var key_value = String.fromCharCode(key_code);
+        // Which element was typed in, never what was typed: not the key, and
+        // not the field's value.
         var event = new OwaEvent();
         event.setEventType('dom.keypress');
-        event.set('key_value', key_value);
-        event.set('key_code', key_code);
         event.set("dom_element_name", targ.name);
-        event.set("dom_element_value", targ.value);
         event.set("dom_element_id", targ.id);
         event.set("dom_element_tag", String( targ.tagName ).toLowerCase());
         //console.log("Keypress: %s %d", key_value, key_code);
