@@ -49,19 +49,23 @@ describe('domstream capture (event_queue)', () => {
         expect(props.y).toBe(340);
     });
 
-    test('keypressEventHandler enqueues a dom.keypress with the key + target element', () => {
+    test('keypressEventHandler enqueues a dom.keypress with the target element, and not the key', () => {
         const t = newTracker();
         const target = document.createElement('input');
         target.id = 'search-box';
         target.name = 'q';
+        target.value = 'someone@example.test';
         // charCode 65 === 'A'
         t.keypressEventHandler({ charCode: 65, target: target });
 
         expect(t.event_queue).toHaveLength(1);
         const props = t.event_queue[0];
         expect(props.event_type).toBe('dom.keypress');
-        expect(props.key_value).toBe('A');
-        expect(props.key_code).toBe(65);
+        // What was typed is not recorded: not the key, not the field's value.
+        expect(props).not.toHaveProperty('key_value');
+        expect(props).not.toHaveProperty('key_code');
+        expect(props).not.toHaveProperty('dom_element_value');
+        expect(JSON.stringify(props)).not.toContain('someone@example.test');
         expect(props.dom_element_id).toBe('search-box');
         expect(props.dom_element_name).toBe('q');
         expect(props.dom_element_tag).toBe('input');

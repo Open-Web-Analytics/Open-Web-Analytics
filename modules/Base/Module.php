@@ -193,6 +193,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.partitionStatusCli',            'OWA\\Module\\Base\\Controller\\PartitionStatusCli',         'Controller/PartitionStatusCli.php' );
         $this->registerAction( 'base.rederiveDimensionIdsCli',       'OWA\\Module\\Base\\Controller\\RederiveDimensionIdsCli',    'Controller/RederiveDimensionIdsCli.php' );
         $this->registerAction( 'base.backfillVisitorAcquisitionCli', 'OWA\\Module\\Base\\Controller\\BackfillVisitorAcquisitionCli', 'Controller/BackfillVisitorAcquisitionCli.php' );
+        $this->registerAction( 'base.clearFieldValuesCli', 'OWA\\Module\\Base\\Controller\\ClearFieldValuesCli', 'Controller/ClearFieldValuesCli.php' );
         $this->registerAction( 'base.scheduleRunCli',                'OWA\\Module\\Base\\Controller\\ScheduleRunCli',             'Controller/ScheduleRunCli.php' );
         $this->registerAction( 'base.scheduleStatusCli',             'OWA\\Module\\Base\\Controller\\ScheduleStatusCli',          'Controller/ScheduleStatusCli.php' );
         $this->registerAction( 'base.instanceInfoCli',              'OWA\\Module\\Base\\Controller\\InstanceInfoCli',           'Controller/InstanceInfoCli.php' );
@@ -272,6 +273,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('partition-status', 'base.partitionStatusCli');
         $this->registerCliCommand('rederive-dimension-ids', 'base.rederiveDimensionIdsCli');
         $this->registerCliCommand('backfill-visitor-acquisition', 'base.backfillVisitorAcquisitionCli');
+        $this->registerCliCommand('clear-field-values', 'base.clearFieldValuesCli');
         $this->registerCliCommand('partition-init', 'base.partitionInitCli');
         $this->registerCliCommand('partition-drop', 'base.partitionDropCli');
         $this->registerCliCommand('partition-reorganize', 'base.partitionReorganizeCli');

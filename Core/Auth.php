@@ -484,6 +484,19 @@ class Auth extends \OWA\Core\Base {
      *
      * @return boolean
      */
+    /**
+     * The values the old User::generateRandomPassword() gave an account created
+     * without a password (a hash prefix such as "$2y$10"). A login with one is
+     * refused whatever the stored hash says; the account's owner sets a
+     * password through the emailed reset link.
+     */
+    const LEGACY_GENERATED_PASSWORD = '/^(\\$2[aby]?\\$\\d\\d|\\$argon)$/';
+
+    static function isLegacyGeneratedPassword( $password ) {
+
+        return is_string( $password ) && preg_match( self::LEGACY_GENERATED_PASSWORD, $password ) === 1;
+    }
+
     function isUser() {
 
         // get current user
@@ -495,7 +508,7 @@ class Auth extends \OWA\Core\Base {
         if ( $this->credentials['user_id'] === $this->u->get('user_id') ) {
 
             // new_password will only be set when using authByInput
-            if ( isset($this->credentials['new_password']) ) {
+            if ( isset($this->credentials['new_password']) && ! self::isLegacyGeneratedPassword( $this->credentials['new_password'] ) ) {
                 // plain text password matches DB password we can authorize
                 if ( password_verify( $this->credentials['new_password'], $this->u->get('password') ) ) {
                 $this->_is_user = true;

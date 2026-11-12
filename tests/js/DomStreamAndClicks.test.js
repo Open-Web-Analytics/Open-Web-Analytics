@@ -115,6 +115,65 @@ describe('clickEventHandler builds the dom.click event', () => {
         expect(c.click_y).toBe('34');
     });
 
+    /*
+     * A click on a field sends nothing the visitor typed: clicking back into a
+     * field to correct it used to send its value, a password included. A
+     * button's label is still the click's text.
+     */
+    test.each([
+        ['text', 'someone@example.test'],
+        ['email', 'someone@example.test'],
+        ['password', 'hunter2-secret'],
+        ['search', 'private search'],
+        ['hidden', 'a-token'],
+        ['checkbox', 'yes'],
+    ])('a click on an input of type %s does not send its value', (type, value) => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = `<input id="f" type="${type}" value="">`;
+        document.getElementById('f').value = value;
+
+        t.clickEventHandler(clickOn(document.getElementById('f')));
+
+        const c = t.click.getProperties();
+        expect(c.dom_element_tag).toBe('input');
+        expect(JSON.stringify(c)).not.toContain(value);
+    });
+
+    test.each([
+        ['submit', 'Sign up'],
+        ['button', 'Show more'],
+        ['reset', 'Clear'],
+    ])('a click on an input of type %s sends its label', (type, label) => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = `<input id="b" type="${type}" value="${label}">`;
+
+        t.clickEventHandler(clickOn(document.getElementById('b')));
+
+        expect(t.click.getProperties().dom_element_text).toBe(label);
+    });
+
+    test('a click on a <button> still sends its value', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<button id="b" value="plan-pro">Choose</button>';
+
+        t.clickEventHandler(clickOn(document.getElementById('b')));
+
+        expect(t.click.getProperties().dom_element_value).toBe('plan-pro');
+    });
+
+    test('a click on an image input sends its alt text', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<input id="i" type="image" alt="Search" src="x.png">';
+
+        t.clickEventHandler(clickOn(document.getElementById('i')));
+
+        expect(t.click.getProperties().dom_element_text).toBe('Search');
+    });
+
     test('falls back to "(not set)" for absent id/name/value', () => {
         const t = newTracker();
         t.setOption('logClicksAsTheyHappen', false);
