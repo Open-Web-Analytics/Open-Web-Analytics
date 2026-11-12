@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/RestControllerTestCase.php';
+require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Probe subclass: inherits UpdatesApply's constructor (and therefore its
