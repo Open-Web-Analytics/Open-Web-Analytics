@@ -40,6 +40,14 @@ class View extends \OWA\Core\Base {
     const BANNER_SLOT = '<!-- owa:banners -->';
 
     /**
+     * Where a layout with a left column wants the footer: the foot of its
+     * content column. At full width that column is the only part of the page
+     * that scrolls (owa.shell.css), and the footer scrolls with it; below the
+     * column it would be a strip of the window that never scrolls.
+     */
+    const FOOTER_SLOT = '<!-- owa:footer -->';
+
+    /**
      * The request params a report link carries forward (makeLink( ..., true )),
      * besides any state keys the controller adds. A controller building a link
      * on a Template of its own, which has no link state, reads them from here.

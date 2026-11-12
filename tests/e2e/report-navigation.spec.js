@@ -190,7 +190,9 @@ test.describe('the navigation', () => {
     test('the column stays in view as the page scrolls', async ({ page }) => {
         await openReport(page, REPORT.id);
 
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        // The content column is what scrolls at this width, not the window.
+        await page.locator('.owa_contentScroll').evaluate((el) => { el.scrollTop = el.scrollHeight; });
+        expect(await page.locator('.owa_contentScroll').evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
 
         await expect(railItem(page, REPORT.section)).toBeInViewport();
     });

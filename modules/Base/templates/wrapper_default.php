@@ -44,11 +44,25 @@
                 $owa_banners = '';
             }
 
+            /*
+             * The footer, at the foot of the content column on a page that
+             * marks one (View::FOOTER_SLOT), and below the page otherwise.
+             */
+            ob_start();
+            include($view->getTemplatePath('base', 'footer.php'));
+            $owa_footer = ob_get_clean();
+
+            $owa_slot = strpos( $owa_body, \OWA\Core\View::FOOTER_SLOT );
+
+            if ( $owa_slot !== false ) {
+                $owa_body   = substr_replace( $owa_body, $owa_footer, $owa_slot, strlen( \OWA\Core\View::FOOTER_SLOT ) );
+                $owa_footer = '';
+            }
+
             echo $owa_banners;
             echo $owa_body;
+            echo $owa_footer;
         ?>
-
-        <?php include($view->getTemplatePath('base', 'footer.php'));?>
         </div>
     </body>
 

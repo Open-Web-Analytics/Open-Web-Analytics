@@ -1514,7 +1514,12 @@ test.describe('custom reports', () => {
 
             await expect(page.locator('#widgetBudget')).toContainText('drag to reorder');
 
-            // Third dragged onto First takes its place.
+            // Third dragged onto First takes its place. Both in view first: the
+            // page scrolls inside its content column, and a scroll Playwright
+            // makes in the middle of a drag leaves the pointer over the card
+            // beside the one it aimed at.
+            await page.locator('.owa_builderBlock').nth(0).scrollIntoViewIfNeeded();
+            await expect(page.locator('.owa_builderBlock').nth(2)).toBeInViewport();
             await page.locator('.owa_builderBlock').nth(2)
                 .dragTo(page.locator('.owa_builderBlock').nth(0));
 
