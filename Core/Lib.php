@@ -519,6 +519,17 @@ class Lib {
             return $base;
         }
 
+        /*
+         * No control character anywhere. A browser removes a tab or a newline
+         * from inside a URL before it reads it, so "/<tab>/evil.example" passed
+         * every check below as a path and arrived as "//evil.example". A space
+         * is not one: a browser encodes it rather than dropping it.
+         */
+        if ( preg_match( '/[\x00-\x1f\x7f]/', $url ) ) {
+
+            return $base;
+        }
+
         // Backslashes are treated as separators by some browsers, so normalise
         // before looking at the leading characters.
         $probe = str_replace( '\\', '/', $url );
@@ -549,7 +560,12 @@ class Lib {
         // No host means a path relative to this installation.
         if ( empty( $parts['host'] ) ) {
 
-            return $url;
+            /*
+             * A scheme with no host is not a path. From an https page a
+             * browser reads "http:evil.example" as http://evil.example/: the
+             * scheme differs from the page's, so what follows is the host.
+             */
+            return $scheme === '' ? $url : $base;
         }
 
         foreach ( $also_hosts as $host ) {

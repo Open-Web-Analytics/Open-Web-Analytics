@@ -3,7 +3,7 @@
 
 <p>Your User Name is: <?php $view->out( $view->user_id );?></p> 
 
-<p>To login you need to set your password by clicking on the link below.</p>
+<p>To login you need to set your password by clicking on the link below. The link works for <?php echo (int) ( \OWA\Module\Base\Entity\User::INVITE_TTL / 86400 );?> days.</p>
 
 <p><?php echo $view->makeAbsoluteLink(array('do' => 'base.usersPasswordEntry', 'k' => $view->key));?> </p>
 

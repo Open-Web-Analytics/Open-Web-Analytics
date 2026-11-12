@@ -10,6 +10,8 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 
 beforeEach(() => {
     OWA.loadHeatmap = jest.fn();
+    // An overlay starts only when its api_url is on this OWA server.
+    OWA.setSetting('baseUrl', 'https://owa.example/');
 });
 
 test('a registered mode runs with the session params', () => {
@@ -22,7 +24,7 @@ test('a registered mode runs with the session params', () => {
 });
 
 test('the heatmap is a registered mode like any other', () => {
-    OWA.startOverlaySession({ action: 'loadHeatmap' });
+    OWA.startOverlaySession({ action: 'loadHeatmap', api_url: 'https://owa.example/api/' });
 
     expect(OWA.loadHeatmap).toHaveBeenCalledTimes(1);
 });

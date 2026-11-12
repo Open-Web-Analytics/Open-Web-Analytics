@@ -2436,7 +2436,12 @@ class CoreAPI {
         $e->notice($msg);
     }
 
-    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '', $secure = false) {
+    /**
+     * @param bool $httponly Out of reach of the page's scripts. The sign-in
+     *                       cookies are; state the reporting UI reads in the
+     *                       browser cannot be.
+     */
+    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '', $secure = false, $httponly = false) {
 
         if ( $domain ) {
             // sanitizes the domain
@@ -2479,7 +2484,8 @@ class CoreAPI {
                 'path' 		=> '/',
                 'samesite' 	=> 'Lax',
                 'domain' 	=> $domain,
-                'secure' 	=> $secure
+                'secure' 	=> $secure,
+                'httponly'	=> (bool) $httponly,
 	        ];
 	        
 	        setcookie($cookie_name, $cookie_value, $options);

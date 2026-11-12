@@ -78,9 +78,13 @@ class InstallManager extends \OWA\Core\Base {
             // Set user object Params
             if (empty($id)) {
 
+                // The first admin has no invitation to accept: nobody could
+                // send it, and nobody could sign in to send another.
                 if ( ! $password ) {
 
-                    $password = $u->generateRandomPassword();
+                    \OWA\Core\CoreAPI::error( 'The admin account needs a password.' );
+
+                    return false;
                 }
 
                 $ret = $u->createNewUser($user_id, \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE, $password, $email_address, \OWA\Module\Base\Entity\User::ADMIN_USER_REAL_NAME);

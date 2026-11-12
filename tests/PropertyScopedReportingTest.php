@@ -216,6 +216,32 @@ final class PropertyScopedReportingTest extends TestCase
         $this->assertFalse($check(['siteId' => self::OTHER]));
     }
 
+    /**
+     * The custom report and funnel lists require view_site_list, which is not
+     * held per site. Checked against "a Profile of the Property the reader may
+     * see" -- none, for another Property -- it passed anyway, and a viewer of
+     * one Property listed another's reports by naming its id.
+     */
+    public function testTheReportListsAreRefusedForAPropertyTheReaderCannotSee(): void
+    {
+        [$user] = $this->viewer([self::ONE]);
+        $su = $this->serviceUser($user);
+
+        foreach ([\OWA\Module\Base\Controller\CustomReports::class, \OWA\Module\Base\Controller\Visualizations::class] as $class) {
+
+            $check = function (array $params) use ($su, $class): bool {
+                $controller = new $class($params);
+                $m = new ReflectionMethod($controller, 'isCurrentUserCapable');
+                $m->setAccessible(true);
+
+                return $m->invoke($controller, $su);
+            };
+
+            $this->assertTrue($check(['propertyId' => (string) self::PROPERTY]), "$class refused the reader's own Property");
+            $this->assertFalse($check(['propertyId' => (string) self::OTHER_PROPERTY]), "$class opened another Property");
+        }
+    }
+
     public function testPropertyAccessShowsAGrantOnAnyProfile(): void
     {
         [, $id] = $this->viewer([self::TWO]);

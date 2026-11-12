@@ -59,11 +59,21 @@ class Player {
         var params = OWA_instance.getOverlayParams() || {};
         var that   = this;
 
+        if ( ! OWA_instance.isOwaServerUrl( params.api_url ) ) {
+
+            OWA_instance.debug( 'Recording not fetched: the URL is not this OWA server.' );
+
+            return;
+        }
+
         jQuery.ajax( {
             url: params.api_url,
             // A plain cross-origin GET: the credentials ride the query string,
             // so this stays a CORS simple request.
             dataType: 'json',
+            // Never JSONP, whatever the URL: jQuery turns a JSON request whose
+            // URL contains "=?" into a <script> it runs.
+            jsonp: false,
             success: function ( data ) {
                 that.load( data );
             },
@@ -257,9 +267,20 @@ class Player {
         jQuery( '#owa-overlay-status' ).text( msg );
     }
 
+    /**
+     * jGrowl inserts both as HTML, and the message names an element from the
+     * recording -- its tag, id or name -- which whoever sent it chose.
+     */
     showNotification( msg, header ) {
 
-        jQuery.jGrowl( msg, { life: 250, speed: 25, position: 'center', closer: false, pool: 1, header: header } );
+        jQuery.jGrowl( Player.escapeHtml( msg ), { life: 250, speed: 25, position: 'center', closer: false, pool: 1, header: Player.escapeHtml( header ) } );
+    }
+
+    static escapeHtml( s ) {
+
+        return String( s === undefined || s === null ? '' : s ).replace( /[&<>"']/g, ( c ) => (
+            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ c ]
+        ) );
     }
 }
 

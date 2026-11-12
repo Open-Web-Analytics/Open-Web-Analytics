@@ -126,8 +126,20 @@ class ReportController extends \OWA\Core\AdminController {
             return parent::isCurrentUserCapable( $currentUser );
         }
 
-        return (bool) $currentUser->isCapable( $this->getRequiredCapability(),
-            $currentUser->siteIdForProperty( $propertyId ) );
+        $siteId = $currentUser->siteIdForProperty( $propertyId );
+
+        /*
+         * A Property the reader may see no Profile of is refused, whatever the
+         * capability. One not tied to a site -- view_site_list, which the
+         * custom report and funnel lists require -- passed for every Property,
+         * so a viewer of one could list another's reports by its id.
+         */
+        if ( $siteId === '' && ! $currentUser->isAdmin() ) {
+
+            return false;
+        }
+
+        return (bool) $currentUser->isCapable( $this->getRequiredCapability(), $siteId );
     }
 
     /**

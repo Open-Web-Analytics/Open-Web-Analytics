@@ -710,11 +710,23 @@ class Template extends TemplateEngine {
 
         parse_str( 'resource=' . (string) $params[ $resourceKey ], $as_read );
 
+        // What the link will carry for each scoped key: its own value, else
+        // the state makeLink() adds below.
+        $state = $this->getAllStateParams();
+        $scope = array();
+
+        foreach ( \OWA\Core\OverlayToken::SCOPE as $key ) {
+
+            $scope[ $key ] = (string) ( $params[ $key ] ?? $state[ $key ] ?? '' );
+        }
+
         $params['overlayToken'] = \OWA\Core\OverlayToken::mint(
             $cu->getUserData('user_id'),
             $params['do'],
             $resourceKey,
-            (string) ( $as_read['resource'] ?? '' )
+            (string) ( $as_read['resource'] ?? '' ),
+            \OWA\Core\OverlayToken::DEFAULT_TTL,
+            $scope
         );
 
         // add_state MUST be true. It is what carries siteId and the reporting

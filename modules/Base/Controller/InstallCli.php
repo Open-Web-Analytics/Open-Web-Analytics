@@ -36,9 +36,10 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return array(
-            'description' => 'Installs OWA: applies the database schema, creates the admin user and adds the first tracked website. owa-config.php must exist first. The admin user\'s password is set to the database password from owa-config.php.',
+            'description' => 'Installs OWA: applies the database schema, creates the admin user and adds the first tracked website. owa-config.php must exist first.',
             'arguments'   => array(
                 'user_id=<name>'        => 'Required. The admin account\'s user name.',
+                'password=<password>'   => 'Required. The admin account\'s password, at least ' . \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH . ' characters.',
                 'email_address=<email>' => 'Required. The admin account\'s email address, used for password recovery.',
                 'domain=<url>'          => 'Required. The domain of the first website to track.',
                 'description=<text>'    => 'A description of the first website.',
@@ -50,6 +51,28 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     function __construct($params) {
         define('OWA_INSTALLING', true);
         return parent::__construct($params);
+    }
+
+    /**
+     * The admin account's password is required. It used to be set to the
+     * database password from owa-config.php, so whoever could read that file
+     * could sign in as the admin, and changing one meant remembering the other.
+     */
+    public function validate()
+    {
+        $this->addValidation('password_required', $this->getParam('password'), 'required',
+            ['errorMsg' => 'A password for the admin account is required: password=<password>.']);
+        $this->addValidation('password_length', $this->getParam('password'), 'stringLength', [
+            'operator' => '>=',
+            'length'   => \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH,
+            'errorMsg' => sprintf( 'The password must be at least %d characters.', \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
+        ]);
+    }
+
+    /** A refused install prints why, and has done nothing. */
+    function errorAction() {
+
+        $this->setView('base.cli');
     }
 
     function action() {
@@ -72,8 +95,7 @@ class InstallCli extends \OWA\Core\Controller\Cli {
             if ($status === true) {
 
                 //create admin user
-                //owa_coreAPI::debug('password: '.owa_lib::encryptPassword( $this->c->get('base', 'db_password') ) );
-                $im->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->c->get('base', 'db_password') );
+                $im->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
 
                 // create default site
                 $im->createDefaultSite(

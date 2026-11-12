@@ -9,21 +9,6 @@
             <label>User name</label>
             <span class="owa_installCredential"><?php $view->out( $view->u );?></span>
         </div>
-        <?php
-            /*
-             * The password appears ONLY when OWA generated one, which happens
-             * when none was given. The wizard requires one, so on this path the
-             * operator already knows it -- printing it back would leave a live
-             * credential in the page for nothing.
-             */
-        ?>
-        <?php if ( $view->p ): ?>
-        <div class="owa_installField">
-            <label>Password</label>
-            <span class="owa_installCredential"><?php $view->out( $view->p );?></span>
-            <span class="owa_installHint">Generated for you. It is not shown again.</span>
-        </div>
-        <?php endif; ?>
     </div>
     <p>
         <a class="owa-button owa_publicSubmit"

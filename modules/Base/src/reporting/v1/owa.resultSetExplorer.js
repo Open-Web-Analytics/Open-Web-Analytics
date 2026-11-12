@@ -1575,7 +1575,8 @@ OWA.dataGrid.formatters = {
             }
         }
 
-        if ( ! data || ! data.url || ! data.overlay ) {
+        // A web page only: the URL is what a beacon claimed (ReportDomstreams).
+        if ( ! data || ! data.url || ! data.overlay || ! /^https?:\/\//i.test( String( data.url ) ) ) {
             return '';
         }
 

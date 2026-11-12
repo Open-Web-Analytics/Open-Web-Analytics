@@ -84,7 +84,8 @@ class UserManager extends \OWA\Core\Base {
             $u->getByColumn('user_id', $user_params['user_id']);
         }
 
-        $u->set('temp_passkey', $u->generateTempPasskey($user_params['user_id']));
+        // The link that set it cannot set it again.
+        $u->set('temp_passkey', \OWA\Module\Base\Entity\User::spentTempPasskey() );
         $u->set('password', \OWA\Core\Lib::encryptPassword($user_params['password']));
         $ret = $u->update();
 

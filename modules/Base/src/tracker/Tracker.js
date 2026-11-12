@@ -1074,9 +1074,24 @@ class OWATracker  {
         var a = this.getAnchorParam( OWA.getSetting('ns') + 'overlay');
 
         if ( a ) {
-            a = Util.base64_decode(Util.urldecode(a));
-            a = Util.urldecode( a );
-            OWA.debug('overlay anchor value: ' + a);
+
+            // A malformed fragment is not an overlay, and must not stop the
+            // tracker starting: a throw here left the visit untracked.
+            try {
+                a = Util.base64_decode(Util.urldecode(a));
+                a = Util.urldecode( a );
+                a = Util.decodeCookieValue( a );
+            } catch ( e ) {
+                OWA.debug( 'Overlay fragment could not be read.' );
+                return;
+            }
+
+            // Only an overlay whose data comes from this OWA server; any other
+            // link is ignored and the page is tracked as usual.
+            if ( ! OWA.overlayParamsAllowed( a ) ) {
+                OWA.debug( 'Overlay fragment ignored: its api_url is not this OWA server.' );
+                return;
+            }
             //var domain = this.getCookieDomain();
 
             // Deliberately NOT written to a cookie. The payload carries a
@@ -1087,7 +1102,7 @@ class OWATracker  {
             // pause tracker so we dont log anything during an overlay session
             this.pause();
             // start overlay session
-            OWA.startOverlaySession( Util.decodeCookieValue( a ) );
+            OWA.startOverlaySession( a );
         }
     }
 
@@ -2168,7 +2183,22 @@ class OWATracker  {
 
         } else if (targ.tagName == "INPUT") {
 
-            properties.dom_element_text = text( targ.value );
+            /*
+             * A button's label, and nothing from a field. The value of any
+             * other input is what the visitor typed or chose -- an email
+             * address, a password -- and clicking back into a field to correct
+             * it sent that value with the click.
+             */
+            var type = String( targ.type || '' ).toLowerCase();
+
+            if ( type === 'submit' || type === 'button' || type === 'reset' ) {
+
+                properties.dom_element_text = text( targ.value );
+
+            } else if ( type === 'image' ) {
+
+                properties.dom_element_text = text( targ.alt );
+            }
 
         } else if (targ.tagName == "IMG") {
 

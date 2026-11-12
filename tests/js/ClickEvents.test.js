@@ -124,6 +124,56 @@ describe('clickEventHandler builds the click event', () => {
     });
 
     /*
+     * NOR IS IT SENT AS THE CLICK'S TEXT. dom_element_value went, but an input's
+     * value still went out as dom_element_text: clicking back into a field to
+     * correct it sent what was typed, a password included. A button's label is
+     * still the click's text.
+     */
+    test.each([
+        ['text', 'someone@example.test'],
+        ['email', 'someone@example.test'],
+        ['password', 'hunter2-secret'],
+        ['search', 'private search'],
+        ['hidden', 'a-token'],
+        ['checkbox', 'yes'],
+    ])('a click on an input of type %s does not send its value', (type, value) => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = `<input id="f" type="${type}" value="">`;
+        document.getElementById('f').value = value;
+
+        t.clickEventHandler(clickOn(document.getElementById('f')));
+
+        const c = t.click.getProperties();
+        expect(c.dom_element_tag).toBe('input');
+        expect(JSON.stringify(c)).not.toContain(value);
+    });
+
+    test.each([
+        ['submit', 'Sign up'],
+        ['button', 'Show more'],
+        ['reset', 'Clear'],
+    ])('a click on an input of type %s sends its label', (type, label) => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = `<input id="b" type="${type}" value="${label}">`;
+
+        t.clickEventHandler(clickOn(document.getElementById('b')));
+
+        expect(t.click.getProperties().dom_element_text).toBe(label);
+    });
+
+    test('a click on an image input sends its alt text', () => {
+        const t = newTracker();
+        t.setOption('logClicksAsTheyHappen', false);
+        document.body.innerHTML = '<input id="i" type="image" alt="Search" src="x.png">';
+
+        t.clickEventHandler(clickOn(document.getElementById('i')));
+
+        expect(t.click.getProperties().dom_element_text).toBe('Search');
+    });
+
+    /*
      * A CLICK INSIDE A LINK IS A CLICK ON THE LINK. Only a click directly on the
      * <a>, or on an <img> in one, used to carry the URL, so most modern link
      * markup reached the server with no destination: not outbound, not a

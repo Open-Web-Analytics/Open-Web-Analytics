@@ -57,6 +57,17 @@ class OverlayToken {
     const DEFAULT_TTL = 300;
 
     /**
+     * Request parameters a token is also bound to, beside its action and
+     * resource: the Profile and Property, and what it may ask of them.
+     *
+     * It was bound to the constraints alone, so for five minutes it answered
+     * any query with those constraints -- any Property the minting user could
+     * see, any metrics, any dimensions. It sits in the URL fragment on the
+     * tracked site, where any other script on that page can read it.
+     */
+    const SCOPE = array( 'siteId', 'propertyId', 'metrics', 'dimensions' );
+
+    /**
      * Mints a token authorising exactly one action on one resource.
      *
      * The resource is named by the request parameter that carries it, so the
@@ -71,13 +82,21 @@ class OverlayToken {
      * @param    int        $ttl        lifetime in seconds
      * @return    string    a URL-safe token
      */
-    public static function mint( $userId, $action, $resourceKey, $resource, $ttl = self::DEFAULT_TTL ) {
+    public static function mint( $userId, $action, $resourceKey, $resource, $ttl = self::DEFAULT_TTL, array $scope = array() ) {
+
+        $bound = array();
+
+        foreach ( self::SCOPE as $key ) {
+
+            $bound[ $key ] = (string) ( $scope[ $key ] ?? '' );
+        }
 
         $claims = array(
             'user_id'      => (string) $userId,
             'action'       => (string) $action,
             'resource_key' => (string) $resourceKey,
             'resource'     => (string) $resource,
+            'scope'        => $bound,
             'exp'          => time() + (int) $ttl,
         );
 
@@ -128,7 +147,7 @@ class OverlayToken {
             return null;
         }
 
-        foreach ( array( 'user_id', 'action', 'resource_key', 'resource', 'exp' ) as $required ) {
+        foreach ( array( 'user_id', 'action', 'resource_key', 'resource', 'scope', 'exp' ) as $required ) {
 
             if ( ! array_key_exists( $required, $claims ) ) {
 
@@ -179,7 +198,24 @@ class OverlayToken {
             return false;
         }
 
-        return hash_equals( (string) $claims['resource'], $submitted );
+        if ( ! hash_equals( (string) $claims['resource'], $submitted ) ) {
+
+            return false;
+        }
+
+        // Each scoped parameter as the token was made for, absent included: a
+        // token minted without a propertyId does not accept one.
+        foreach ( self::SCOPE as $key ) {
+
+            $bound = (string) ( ( (array) $claims['scope'] )[ $key ] ?? '' );
+
+            if ( ! hash_equals( $bound, (string) call_user_func( $paramReader, $key ) ) ) {
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

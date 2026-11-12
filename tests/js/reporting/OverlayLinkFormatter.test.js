@@ -73,6 +73,21 @@ describe('overlayLink formatter', () => {
         expect(fmt(cell(Object.assign({ label: '<b>x</b>' }, PAYLOAD)))).toContain('>&lt;b&gt;x&lt;/b&gt;</a>');
     });
 
+    /*
+     * The URL is the page a beacon said it was on, and anyone can send one. A
+     * javascript: location opened from the Recordings screen ran in OWA's own
+     * window, so anything but a web page gets no link.
+     */
+    test.each([
+        'javascript:alert(1)',
+        'JavaScript:alert(1)',
+        'data:text/html,<script>1</script>',
+        '//example.test/pricing',
+        'example.test/pricing',
+    ])('a recording of %s gets no link', (url) => {
+        expect(fmt(cell(Object.assign({}, PAYLOAD, { url })))).toBe('');
+    });
+
     test('the href is the recorded page with the overlay on the fragment', () => {
         const html = fmt(cell(PAYLOAD));
 

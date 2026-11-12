@@ -323,8 +323,52 @@ class OWA {
         });
     }
     
+    /**
+     * Whether a URL is on the OWA server this page reports to (baseUrl): the
+     * only place an overlay's data may come from.
+     *
+     * The overlay starts from a link -- #owa_overlay.<params> on any tracked
+     * page -- and anyone can write one. Its api_url was fetched as given, and
+     * jQuery runs the response as a script when the URL asks for JSONP, so a
+     * link could run any script on the tracked site.
+     */
+    isOwaServerUrl(url) {
+
+        var base = this.getSetting('baseUrl');
+
+        if ( ! url || ! base ) {
+
+            return false;
+        }
+
+        try {
+
+            var target = new URL( String( url ), document.location.href );
+
+            return ( target.protocol === 'https:' || target.protocol === 'http:' )
+                && target.origin === new URL( String( base ), document.location.href ).origin;
+
+        } catch ( e ) {
+
+            return false;
+        }
+    }
+
+    /** Whether overlay params may start a session: their api_url is the OWA server's. */
+    overlayParamsAllowed(p) {
+
+        return !! p && typeof p === 'object' && this.isOwaServerUrl( p.api_url );
+    }
+
     startOverlaySession(p) {
-        
+
+        if ( ! this.overlayParamsAllowed( p ) ) {
+
+            this.debug( 'Overlay not started: its api_url is not this OWA server.' );
+
+            return false;
+        }
+
         // set global is overlay actve flag
         this.overlayActive = true;
         
