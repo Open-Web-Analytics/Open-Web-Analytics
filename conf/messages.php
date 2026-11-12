@@ -128,7 +128,7 @@ $_owa_messages = [
     3310 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Password is required.' )],
     3312 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Email address is required.' )],
     3311 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Apply these updates from the command line: <code>php cli.php cmd=update</code>' )],
-    3312 => ['headline' => \OWA\Core\CoreAPI::t( 'Updates are already being applied' ), 'message' => \OWA\Core\CoreAPI::t( 'Another request is applying them. Reload this page in a few minutes.' )],
+    3313 => ['headline' => \OWA\Core\CoreAPI::t( 'Updates are already being applied' ), 'message' => \OWA\Core\CoreAPI::t( 'Another request is applying them. Reload this page in a few minutes.' )],
 
     // Graph related
     3500 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'There is no data for this period.' )],

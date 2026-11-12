@@ -82,7 +82,7 @@ class UpdatesApply extends \OWA\Core\Controller {
 
         if ( ! $lock->acquire( self::LOCK_SECONDS ) ) {
 
-            $this->set( 'error_msg', $this->getMsg( 3312 ) );
+            $this->set( 'error_msg', $this->getMsg( 3313 ) );
             $this->setView( 'base.error' );
             $this->setViewMethod( 'delegate' );
 
