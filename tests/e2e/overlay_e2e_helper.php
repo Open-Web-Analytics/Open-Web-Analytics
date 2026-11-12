@@ -88,6 +88,7 @@ const OVERLAY_CLICK_POINTS = [
  * is what keeps the mint and the request in step.
  */
 const OVERLAY_CONSTRAINTS = 'pagePath==' . OVERLAY_PAGE_PATH . ',eventName==click';
+const OVERLAY_HEATMAP_METRICS = 'eventCount';
 
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
@@ -240,11 +241,23 @@ function provision(): array
          * request parameter is being pinned -- so this is the same guarantee,
          * on the parameter that now exists.
          */
+        /*
+         * A token is also bound to the Profile, metrics and dimensions of the
+         * query, so the heatmap's is minted for the query the launcher builds.
+         */
+        'heatmap_metrics'    => OVERLAY_HEATMAP_METRICS,
+        'heatmap_dimensions' => \OWA\Module\Base\Controller\OverlayLauncher::HEATMAP_DIMENSIONS,
         'heatmap_token'  => \OWA\Core\OverlayToken::mint(
-            $user_id, 'reports', 'constraints', OVERLAY_CONSTRAINTS, 600
+            $user_id, 'reports', 'constraints', OVERLAY_CONSTRAINTS, 600,
+            array(
+                'siteId'     => $site_id,
+                'metrics'    => OVERLAY_HEATMAP_METRICS,
+                'dimensions' => \OWA\Module\Base\Controller\OverlayLauncher::HEATMAP_DIMENSIONS,
+            )
         ),
         'player_token'   => \OWA\Core\OverlayToken::mint(
-            $user_id, 'domstreams', 'recording_id', $recording_id, 600
+            $user_id, 'domstreams', 'recording_id', $recording_id, 600,
+            array( 'siteId' => $site_id )
         ),
     ];
 }

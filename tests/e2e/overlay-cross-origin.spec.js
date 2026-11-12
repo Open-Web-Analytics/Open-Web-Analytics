@@ -81,7 +81,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     test.skip(!SELFHOST,
         'Provisions a site, clicks and a recording; runs only under the self-host e2e runner.');
 
-    /** @type {{site_id:string, page_path:string, constraints:string, recording_id:string, heatmap_token:string, player_token:string, clicks:number, anchored_clicks:number, anchor:string, domstream_module_activated:boolean}} */
+    /** @type {{site_id:string, page_path:string, constraints:string, recording_id:string, heatmap_token:string, heatmap_metrics:string, heatmap_dimensions:string, player_token:string, clicks:number, anchored_clicks:number, anchor:string, domstream_module_activated:boolean}} */
     let fx;
 
     test.beforeAll(() => {
@@ -144,8 +144,8 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
             // An ordinary dimensional query: clicks grouped by coordinate,
             // constrained on the page. There is no clicks report any more.
             apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
-                + '&owa_metrics=eventCount'
-                + '&owa_dimensions=' + encodeURIComponent('clickX,clickY')
+                + '&owa_metrics=' + encodeURIComponent(fx.heatmap_metrics)
+                + '&owa_dimensions=' + encodeURIComponent(fx.heatmap_dimensions)
                 + '&owa_siteId=' + encodeURIComponent(fx.site_id)
                 + '&owa_constraints=' + encodeURIComponent(fx.constraints)
                 + '&owa_overlayToken=' + encodeURIComponent(fx.heatmap_token),
@@ -252,9 +252,8 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
             const { fetches } = await runOverlay(page, testInfo, {
                 action: 'loadHeatmap',
                 apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
-                    + '&owa_metrics=eventCount'
-                    + '&owa_dimensions=' + encodeURIComponent(
-                        'elementAnchor,anchorX,anchorY,clickX,clickY,viewportWidth')
+                    + '&owa_metrics=' + encodeURIComponent(fx.heatmap_metrics)
+                    + '&owa_dimensions=' + encodeURIComponent(fx.heatmap_dimensions)
                     + '&owa_siteId=' + encodeURIComponent(fx.site_id)
                     + '&owa_constraints=' + encodeURIComponent(fx.constraints)
                     + '&owa_overlayToken=' + encodeURIComponent(fx.heatmap_token),
@@ -322,8 +321,8 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         const { fetches } = await runOverlay(page, testInfo, {
             action: 'loadHeatmap',
             apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1'
-                + '&owa_metrics=eventCount'
-                + '&owa_dimensions=' + encodeURIComponent('clickX,clickY')
+                + '&owa_metrics=' + encodeURIComponent(fx.heatmap_metrics)
+                + '&owa_dimensions=' + encodeURIComponent(fx.heatmap_dimensions)
                 + '&owa_siteId=' + encodeURIComponent(fx.site_id)
                 + '&owa_constraints=' + encodeURIComponent('pagePath==/some-other-page')
                 + '&owa_overlayToken=' + encodeURIComponent(fx.heatmap_token),
