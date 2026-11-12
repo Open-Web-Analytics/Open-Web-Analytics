@@ -295,7 +295,7 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         const { fetches } = await runOverlay(page, testInfo, {
             action: 'loadHeatmap',
             apiOnPage: true,
-            apiQuery: 'owa_do=base.reportHeatmap',
+            apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1',
         });
 
         expect(fetches, 'the overlay fetched an API that is not its OWA server').toEqual([]);
