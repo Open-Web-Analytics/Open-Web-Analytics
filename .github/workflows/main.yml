@@ -13,10 +13,13 @@ jobs:
     env:
       VERSION: ${{ github.event.inputs.version }}
     steps:
+    # The branch the workflow is run on: v2 for a 2.x release, or a hotfix
+    # branch cut from an earlier release's base for a patch release. It checked
+    # out master whatever it was run on, so a 2.0.0 run would have packaged 1.x.
     - name: Checkout code
       uses: actions/checkout@v2
       with:
-        ref: master
+        ref: ${{ github.ref }}
     # create a release branch and bump version in appropriate files.
     - name: Create release branch
       run: |
