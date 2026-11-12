@@ -28,6 +28,15 @@ function php(cmd) {
     return JSON.parse(execFileSync('php', [HARNESS, cmd], { encoding: 'utf8' }));
 }
 
+/** The harness's answer when it exits non-zero: assert-cli writes it to stderr before an install. */
+function phpAnswer(cmd) {
+    try {
+        return php(cmd);
+    } catch (e) {
+        return JSON.parse(e.stderr);
+    }
+}
+
 const INFO = php('info');
 
 test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', () => {
@@ -59,7 +68,7 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
         const refused = install([]);
         expect(refused).toMatch(/password for the admin account is required/);
         expect(refused).not.toMatch(/Install Completed/i);
-        expect(php('assert-cli').checks.install_complete).toBe(false);
+        expect(phpAnswer('assert-cli').checks.install_complete).toBe(false);
 
         // Too short is refused the same way.
         expect(install(['password=short'])).toMatch(/at least 6 characters/);
