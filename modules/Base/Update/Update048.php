@@ -38,6 +38,10 @@ class Update048 extends \OWA\Core\Update {
 
     var $schema_version = 48;
 
+    
+
+    var $down_does_not_restore = 'the orphaned conditions it deleted, which no goal could reach.';
+
     var $is_cli_mode_required = false;
 
     function up( $force = false ) {

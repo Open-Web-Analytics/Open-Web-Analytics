@@ -240,6 +240,16 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             $url = explode( '#', $url )[0];
         }
 
+        /*
+         * Played by opening the page it was recorded on, so only a web page is
+         * offered: an http(s) location. No URL, no Play link (OWA.dataGrid's
+         * overlayLink).
+         */
+        if ( ! in_array( strtolower( (string) parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) {
+
+            $url = '';
+        }
+
         return array(
             'overlay' => trim( base64_encode( $template->makeParamString( array(
                 'action'  => 'loadPlayer',

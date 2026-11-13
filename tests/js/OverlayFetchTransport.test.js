@@ -42,6 +42,9 @@ describe('the overlay fetches over CORS, not JSONP', () => {
             return { done: () => {}, fail: () => {} };
         });
 
+        // The heatmap fetches only from this OWA server.
+        OWA.setSetting('baseUrl', 'https://reporting.example.com/owa/');
+
         OWA.overlayParams = {
             action: 'loadHeatmap',
             api_url: 'https://reporting.example.com/owa/api/index.php'
@@ -74,8 +77,9 @@ describe('the overlay fetches over CORS, not JSONP', () => {
         expect(opts).toBeDefined();
         // JSONP would make the response an executable script.
         expect(opts.dataType).not.toBe('jsonp');
-        // and must not request a callback parameter.
-        expect(opts.jsonp).toBeUndefined();
+        // and refuses one outright: jQuery turns a JSON request whose URL
+        // contains "=?" into a <script> it runs, unless jsonp is false.
+        expect(opts.jsonp).toBe(false);
     });
 
     test('the player does not request a JSONP response', async () => {
@@ -83,7 +87,7 @@ describe('the overlay fetches over CORS, not JSONP', () => {
 
         expect(opts).toBeDefined();
         expect(opts.dataType).not.toBe('jsonp');
-        expect(opts.jsonp).toBeUndefined();
+        expect(opts.jsonp).toBe(false);
     });
 
     test('the request goes to the URL the admin interface supplied', async () => {
@@ -99,5 +103,15 @@ describe('the overlay fetches over CORS, not JSONP', () => {
 
         expect(String(opts.url)).not.toMatch(/jsonpCallback/i);
         expect(String(opts.url)).not.toMatch(/callback=/i);
+    });
+
+    test('a next page on another host is not fetched', async () => {
+        const { Heatmap } = await import('../../modules/Base/src/tracker/Heatmap.js');
+        const hm = new Heatmap();
+        hm.clicks = { next: 'https://evil.example/x.js?cb=?' };
+
+        hm.fetchData(2);
+
+        expect(calls).toHaveLength(0);
     });
 });

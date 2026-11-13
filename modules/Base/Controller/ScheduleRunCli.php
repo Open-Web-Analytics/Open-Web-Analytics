@@ -247,6 +247,16 @@ class ScheduleRunCli extends SchedulerCli {
 
                 return;
             }
+
+            $retry_at = $state ? self::retryAfter( $state ) : null;
+
+            if ( $retry_at !== null && time() < $retry_at ) {
+
+                \OWA\Core\CoreAPI::debug( sprintf( 'Job "%s" failed last time; next attempt after %s.',
+                    $name, date( 'c', $retry_at ) ) );
+
+                return;
+            }
         }
 
         if ( $dry_run ) {
@@ -262,6 +272,55 @@ class ScheduleRunCli extends SchedulerCli {
         }
 
         $this->runJob( $name, $job, $state, $slot );
+    }
+
+    /** The longest a failing job waits between attempts. */
+    const RETRY_MAX = 3600;
+
+    /** The shortest: the scheduler's own tick. */
+    const RETRY_MIN = 60;
+
+    /**
+     * When a job whose last run failed may run again, or null when it did not
+     * fail.
+     *
+     * A failed run does not satisfy its occurrence, so the job stays due, and
+     * it ran again on every tick: a daily job that kept failing ran 1,440 times
+     * a day. It now waits as long as it has been failing, between RETRY_MIN
+     * and RETRY_MAX, which doubles the wait with each attempt. A job that has
+     * never succeeded doubles from RETRY_MIN with each failure.
+     *
+     * From the times already kept, so it needs no new column.
+     *
+     * @param object $state the job's state entity
+     * @return int|null unix time
+     */
+    public static function retryAfter( $state ) {
+
+        if ( (string) $state->get( 'last_status' ) !== 'failed' ) {
+
+            return null;
+        }
+
+        $failed_at  = (int) $state->get( 'last_failure_at' );
+        $success_at = (int) $state->get( 'last_success_at' );
+
+        if ( ! $failed_at ) {
+
+            return null;
+        }
+
+        if ( $success_at && $success_at < $failed_at ) {
+
+            $wait = $failed_at - $success_at;
+
+        } else {
+
+            $failures = max( 1, min( 7, (int) $state->get( 'failure_count' ) ) );
+            $wait     = self::RETRY_MIN * ( 2 ** ( $failures - 1 ) );
+        }
+
+        return $failed_at + min( self::RETRY_MAX, max( self::RETRY_MIN, $wait ) );
     }
 
     /**

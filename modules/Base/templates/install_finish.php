@@ -9,21 +9,6 @@
             <label>User name</label>
             <span class="owa_installCredential"><?php $view->out( $view->u );?></span>
         </div>
-        <?php
-            /*
-             * The password appears ONLY when OWA generated one, which happens
-             * when none was given. The wizard requires one, so on this path the
-             * operator already knows it -- printing it back would leave a live
-             * credential in the page for nothing.
-             */
-        ?>
-        <?php if ( $view->p ): ?>
-        <div class="owa_installField">
-            <label>Password</label>
-            <span class="owa_installCredential"><?php $view->out( $view->p );?></span>
-            <span class="owa_installHint">Generated for you. It is not shown again.</span>
-        </div>
-        <?php endif; ?>
     </div>
     <p>
         <a class="owa-button owa_publicSubmit"
@@ -33,9 +18,10 @@
     <div class="status owa-install-cron">
         <b>One more step: add OWA's cron entry.</b>
         <p>
-            OWA runs its scheduled maintenance from a single cron entry: keeping the
-            fact tables' date partitions ahead of incoming data, and anything else you
-            schedule later. Without it that maintenance never runs.
+            OWA builds its reports and runs its maintenance from a single cron entry:
+            building each Property's reporting cube from new events every few minutes,
+            and keeping the date partitions ahead of incoming data. Without it, events
+            are recorded but no report shows them.
         </p>
         <p>Add this to the crontab of the user that owns your OWA files:</p>
         <p><code><?php $view->out( \OWA\Module\Base\Classes\SchedulerHealth::cronLine() ); ?></code></p>

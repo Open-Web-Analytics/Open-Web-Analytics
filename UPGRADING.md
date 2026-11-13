@@ -1,16 +1,19 @@
 # Upgrading OWA
 
-This file lists the deprecated interfaces third-party code still relies on, what
-replaces each one, and when the old path goes away. It exists because OWA's
-recent modernization work replaced several long-standing conventions while
-keeping the old ones working — so nothing breaks on upgrade, but the old paths
-are on a clock.
+This file is for upgrading to 2.0 from 1.x, and within 2.0. It lists what
+behaves differently after the upgrade, the 1.x interfaces 2.0 removed and what
+replaces each one, and what 2.0 itself deprecates.
 
-**Everything listed here still works today.** Each entry is scheduled for removal
-in **v2.0**, and none of it will be removed in a 1.x release.
+**2.0 upgrades from 1.14 only.** Upgrade an older 1.x installation to the latest
+1.14 release first. The move to 2.0 runs a one-time migration of the 1.x history
+from the command line; the wiki's
+[Upgrading from 1.x](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Upgrading-from-1.x)
+page covers it, and
+[Changes from 1.x](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Changes-from-1.x)
+lists the differences area by area.
 
-Audience: authors of third-party modules, site owners with local template
-overrides, and anyone maintaining a custom theme.
+Audience: site owners upgrading an installation, authors of third-party modules,
+site owners with local template overrides, and anyone maintaining a custom theme.
 
 ---
 
@@ -539,6 +542,25 @@ It does not touch the server's `cookie_persistence` setting, which governs only
 the cookies OWA's own admin screens set.
 
 Pinned by `tests/js/StateStoreExpirations.test.js`.
+
+### Tracker command `setPageType`
+
+A page's type and its content group are one dimension in 2.0, which the
+**Page Types** report groups by. `owa_cmds.push(['setPageType', 'article'])`
+sent a `page_type` that 2.0 does not read; it now sets the content group, so a
+1.x snippet's page types reach that report. A page that calls both reports the
+one called last.
+
+**Replace with:**
+
+```js
+owa_cmds.push(['setContentGroup', 'article']);
+```
+
+The 1.x migration carries each page's 1.x page type into the content group of
+its migrated events.
+
+Pinned by `tests/js/TrackerMiscMethods.test.js` and `tests/MigrateRequestsTest.php`.
 
 ---
 

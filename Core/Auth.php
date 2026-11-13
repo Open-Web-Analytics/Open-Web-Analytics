@@ -497,7 +497,9 @@ class Auth extends \OWA\Core\Base {
      */
     function authenticateUserTempPasskey( $key ) {
 
-        $key = \OWA\Module\Base\Classes\Sanitize::cleanMd5( $key );
+        // Only a current key finds its account: an expired one, or one minted
+        // before keys expired, sets nothing (User::TEMP_PASSKEY_PATTERN).
+        $key = \OWA\Module\Base\Entity\User::tempPasskeyIsCurrent( $key ) ? $key : false;
 
         if ( $key ) {
 
@@ -521,11 +523,6 @@ class Auth extends \OWA\Core\Base {
         }
     }
 
-    function generateTempPasskey($seed) {
-
-        return md5($seed.time().rand());
-    }
-
     /**
      * Saves login credentails to persistant browser cookies
      * TODO: refactor to use state facility
@@ -534,8 +531,10 @@ class Auth extends \OWA\Core\Base {
 
         \OWA\Core\CoreAPI::debug('saving user credentials to cookies');
         
-        \OWA\Core\CoreAPI::createCookie( 'u', $this->u->get('user_id'), time()+3600*24*365*10 );
-        \OWA\Core\CoreAPI::createCookie( 'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2 );
+        // HttpOnly: nothing in the browser needs them, and with them a script
+        // injected into any OWA page would have the account.
+        \OWA\Core\CoreAPI::createCookie( 'u', $this->u->get('user_id'), time()+3600*24*365*10, '/', '', false, true );
+        \OWA\Core\CoreAPI::createCookie( 'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2, '/', '', false, true );
     }
 
     /**
@@ -578,6 +577,19 @@ class Auth extends \OWA\Core\Base {
      *
      * @return boolean
      */
+    /**
+     * The values the old User::generateRandomPassword() gave an account created
+     * without a password (a hash prefix). A login with one is refused whatever
+     * the stored hash says; the account's owner sets a password through the
+     * emailed link.
+     */
+    const LEGACY_GENERATED_PASSWORD = '/^(\\$2[aby]?\\$\\d\\d|\\$argon)$/';
+
+    static function isLegacyGeneratedPassword( $password ) {
+
+        return is_string( $password ) && preg_match( self::LEGACY_GENERATED_PASSWORD, $password ) === 1;
+    }
+
     function isUser() {
 
         // get current user
@@ -589,7 +601,7 @@ class Auth extends \OWA\Core\Base {
         if ( $this->credentials['user_id'] === $this->u->get('user_id') ) {
 
             // new_password will only be set when using authByInput
-            if ( isset($this->credentials['new_password']) ) {
+            if ( isset($this->credentials['new_password']) && ! self::isLegacyGeneratedPassword( $this->credentials['new_password'] ) ) {
                 // plain text password matches DB password we can authorize
                 if ( password_verify( $this->credentials['new_password'], $this->u->get('password') ) ) {
                 $this->_is_user = true;

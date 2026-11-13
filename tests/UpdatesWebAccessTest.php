@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/RestControllerTestCase.php';
+require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Probe subclass: inherits UpdatesApply's constructor (and therefore its
@@ -22,6 +23,25 @@ final class UpdatesApplyGateProbe extends \OWA\Module\Base\Controller\UpdatesApp
         self::$reached = true;
 
         return ['view' => 'base.blank'];
+    }
+}
+
+/**
+ * Probe for the lock: the real action(), which takes the lease, with the
+ * updates themselves replaced.
+ */
+final class UpdatesApplyLockProbe extends \OWA\Module\Base\Controller\UpdatesApply
+{
+    public static int $applied = 0;
+
+    protected function applyUpdates()
+    {
+        self::$applied++;
+    }
+
+    public function data(): array
+    {
+        return $this->data;
     }
 }
 
@@ -139,4 +159,46 @@ final class UpdatesWebAccessTest extends RestControllerTestCase
         );
     }
 
+
+    /**
+     * One request at a time applies updates. Anyone can request this, and two
+     * requests -- a reload during a slow update -- applied the same updates
+     * at once. While another holds the lease, a request applies nothing and
+     * says the updates are under way.
+     */
+    public function testOnlyOneRequestAppliesUpdatesAtATime(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'OWA database not reachable; the lease is a row.' );
+        }
+
+        $this->resetCurrentUser();
+        UpdatesApplyLockProbe::$applied = 0;
+
+        $held = new \OWA\Module\Base\Classes\JobLease( \OWA\Module\Base\Controller\UpdatesApply::LOCK );
+        $this->assertTrue( $held->acquire( 60 ), 'the test could not take the lease first' );
+
+        try {
+
+            $busy = new UpdatesApplyLockProbe( array( 'do' => 'base.updatesApply' ) );
+            $busy->action();
+
+            $this->assertSame( 0, UpdatesApplyLockProbe::$applied );
+            $this->assertSame( 'base.error', $busy->data()['view'] ?? null );
+
+        } finally {
+
+            $held->release();
+        }
+
+        $free = new UpdatesApplyLockProbe( array( 'do' => 'base.updatesApply' ) );
+        $free->action();
+
+        $this->assertSame( 1, UpdatesApplyLockProbe::$applied );
+
+        // And it let go: the next request applies them too.
+        ( new UpdatesApplyLockProbe( array( 'do' => 'base.updatesApply' ) ) )->action();
+
+        $this->assertSame( 2, UpdatesApplyLockProbe::$applied );
+    }
 }

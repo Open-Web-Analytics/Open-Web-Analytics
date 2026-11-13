@@ -13,6 +13,8 @@ class PropertyProfile extends \OWA\Core\View {
         $this->body->set_template( 'property_profile.php' );
         $this->body->set( 'property', $this->get( 'property' ) );
         $this->body->set( 'propertyId', $this->get( 'propertyId' ) );
+        // A refused save's values, to show in place of what is stored.
+        $this->body->set( 'posted', $this->get( 'posted' ) );
     }
 }
 

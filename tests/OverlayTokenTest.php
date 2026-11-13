@@ -38,10 +38,11 @@ final class OverlayTokenTest extends TestCase
             'resource_key' => 'document_id',
             'resource'     => 'doc-12345',
             'ttl'          => 300,
+            'scope'        => [],
         ], $overrides);
 
         return \OWA\Core\OverlayToken::mint(
-            $a['user_id'], $a['action'], $a['resource_key'], $a['resource'], $a['ttl']
+            $a['user_id'], $a['action'], $a['resource_key'], $a['resource'], $a['ttl'], $a['scope']
         );
     }
 
@@ -92,6 +93,44 @@ final class OverlayTokenTest extends TestCase
         // Omitting the parameter entirely must not pass unchecked.
         $this->assertFalse(\OWA\Core\OverlayToken::permits(
             $token, 'reports', $this->request([])
+        ));
+    }
+
+    /**
+     * A token answers only the query it was made for: the Profile, the
+     * Property, the metrics and the dimensions on its link, as well as the
+     * constraints. It was bound to the constraints alone, so for five minutes
+     * it answered any query with them -- any Property its user could see, any
+     * metrics -- from the URL fragment of a tracked page, readable by every
+     * other script there.
+     */
+    public function testScopeIsEnforcedOnTheQuery(): void
+    {
+        $scope = ['siteId' => 's-1', 'propertyId' => '111', 'metrics' => 'eventCount', 'dimensions' => 'pagePath'];
+        $token = $this->mint(['scope' => $scope]);
+        $asked = ['document_id' => 'doc-12345'] + $scope;
+
+        $this->assertTrue(\OWA\Core\OverlayToken::permits($token, 'reports', $this->request($asked)));
+
+        foreach ([
+            'another Property'    => ['propertyId' => '222'],
+            'another Profile'     => ['siteId' => 's-2'],
+            'more metrics'        => ['metrics' => 'eventCount,revenue'],
+            'other dimensions'    => ['dimensions' => 'userEmail'],
+            'no Property at all'  => ['propertyId' => ''],
+        ] as $what => $change) {
+
+            $this->assertFalse(
+                \OWA\Core\OverlayToken::permits($token, 'reports', $this->request(array_merge($asked, $change))),
+                "$what was accepted"
+            );
+        }
+
+        // Minted with no Property, a request naming one is refused.
+        $unbound = $this->mint(['scope' => ['metrics' => 'eventCount']]);
+
+        $this->assertFalse(\OWA\Core\OverlayToken::permits(
+            $unbound, 'reports', $this->request(['document_id' => 'doc-12345', 'metrics' => 'eventCount', 'propertyId' => '111'])
         ));
     }
 

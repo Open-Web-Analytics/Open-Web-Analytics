@@ -180,3 +180,26 @@ test.describe('a stale session cookie', () => {
         expect(await onLoginForm(page)).toBe(0);
     });
 });
+
+/**
+ * The sign-in cookies are HttpOnly. owa_p proves who you are until the password
+ * changes, and nothing in the browser reads either cookie, so a script injected
+ * into any OWA page could have taken the account with them.
+ */
+test.describe('the sign-in cookies', () => {
+
+    test('are out of reach of the page\'s scripts', async ({ page, context }) => {
+        await adminLogin(page);
+
+        const cookies = await context.cookies();
+
+        for (const name of ['owa_u', 'owa_p']) {
+            const cookie = cookies.find((c) => c.name === name);
+            expect(cookie, `${name} is set`).toBeDefined();
+            expect(cookie.httpOnly, `${name} is HttpOnly`).toBe(true);
+        }
+
+        const visible = await page.evaluate(() => document.cookie);
+        expect(visible).not.toMatch(/(^|;\s*)owa_[up]=/);
+    });
+});

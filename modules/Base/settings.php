@@ -266,6 +266,9 @@ return array(
         'geolocation_service' => array( 'default' => '', 'description' => 'Which geolocation service resolves locations. Set to maxmind by the Maxmind GeoIP module.' ),
         // Set by Update075 when it renamed goal event definitions to event names, so its
         // down() can give them back the names they had.
+        // Set by Update049 when it switched off goal events it could not migrate, so its
+        // down() can switch them back on.
+        'goals_switched_off_by_049' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'goal_event_names_before_075' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         // Set by Update079 when it made saved funnel steps event steps, so its down()
         // can give each funnel back the definition it had.
@@ -280,7 +283,6 @@ return array(
         'goals' => array( 'storable' => true, 'scopes' => array( 'install', 'profile' ), 'internal' => true ),
         'images_url' => array( 'default' => '', 'internal' => true ),
         'install_complete' => array( 'storable' => true, 'autoload' => true, 'internal' => true ),
-        'is_embedded_admin_user_password_reset' => array( 'storable' => true, 'internal' => true ),
         'link_template' => array( 'default' => '%s?%s', 'description' => 'The sprintf format OWA builds its own links with: the URL, then the query string. Default %s?%s.' ),
         'log_named_users' => array(
             'default'  => true,
@@ -379,7 +381,6 @@ return array(
                 . 'by commas, such as source=src, medium=channel. The roles are source, medium, campaign, '
                 . 'search_terms and ad; a role not named keeps its ns-prefixed name, such as owa_source.',
         ),
-        'numGoals' => array( 'default' => 15, 'description' => 'How many goal slots the funnel visualization offers. Default 15.' ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5', 'description' => 'The URL fetch-notifications reads OWA release notifications from.' ),
         'owa_user_agent' => array( 'default' => 'Open Web Analytics Bot master', 'description' => 'The User-Agent header OWA sends on its own outbound HTTP requests.' ),
         'partition_detail_months' => array( 'default' => 36, 'description' => 'How many recent months of a partitioned table keep their fine-grained partitions before partition-rotate may merge older ones. Default 36.' ),

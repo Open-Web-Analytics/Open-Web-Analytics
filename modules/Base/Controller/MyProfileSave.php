@@ -27,8 +27,8 @@ namespace OWA\Module\Base\Controller;
  */
 class MyProfileSave extends \OWA\Core\AdminController {
 
-    /** Shortest new password accepted, matching base.usersChangePassword. */
-    const MIN_PASSWORD_LENGTH = 6;
+    /** Shortest new password accepted (User::MIN_PASSWORD_LENGTH). */
+    const MIN_PASSWORD_LENGTH = \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH;
 
     function __construct( $params ) {
 

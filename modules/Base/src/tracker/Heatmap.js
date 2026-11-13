@@ -270,12 +270,25 @@ class Heatmap {
         }
         
         OWA_instance.debug( 'fetch data using api url: ' + url);
-        
+
+        // Every page, the next ones included, from the OWA server only: the
+        // next page's URL comes from the response.
+        if ( ! OWA_instance.isOwaServerUrl( url ) ) {
+
+            OWA_instance.debug( 'Heatmap data not fetched: the URL is not this OWA server.' );
+
+            return;
+        }
+
         //closure
         var that = this;
         
         jQuery.ajax({
             url: url,
+
+            // Never JSONP, whatever the URL: jQuery turns a JSON request whose
+            // URL contains "=?" into a <script> it runs.
+            jsonp: false,
            
             // A plain cross-origin GET, not JSONP.
             //

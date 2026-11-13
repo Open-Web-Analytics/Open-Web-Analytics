@@ -20,6 +20,15 @@ if ( typeof window !== 'undefined' && window.owa_baseUrl ) {
 
 (function() {
 
+    // The tracker is already running on this page: a second copy of the bundle
+    // (two tags, or a tag and a plugin) finds the live queue in owa_cmds, and
+    // every command pushed to it has been applied as it arrived.
+    if ( typeof owa_cmds !== 'undefined' && owa_cmds && ! Array.isArray( owa_cmds )
+         && typeof owa_cmds.process === 'function' ) {
+
+        return;
+    }
+
     // execute commands global owa_cmds command queue
     if ( typeof owa_cmds === 'undefined' ) {
         var q = new OwaCommandQueue();
@@ -49,12 +58,10 @@ if ( typeof window !== 'undefined' && window.owa_baseUrl ) {
         window['owa_cmds'] = q;
         window['owa_cmds'].process();
 
-        // The tracker's default features, now the queued commands have set
-        // the options they read (Tracker.startFeatures()).
-        if ( window.OWATracker && typeof window.OWATracker.startFeatures === 'function' ) {
-
-            window.OWATracker.startFeatures();
-        }
+        // Every tracker's default features, now the queued commands have set
+        // the options they read (Tracker.startFeatures()): the default tracker
+        // and any named one the commands created.
+        q.startFeatures();
 
     } else if ( typeof navigator !== 'undefined' && navigator.webdriver === true
         && typeof console !== 'undefined' && console.log ) {

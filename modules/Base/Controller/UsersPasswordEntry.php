@@ -35,12 +35,41 @@ namespace OWA\Module\Base\Controller;
 
 class UsersPasswordEntry extends \OWA\Core\Controller {
 
+    /**
+     * Why a link's key cannot set a password: 2012 when it has expired, 2011
+     * when it is not a key at all; null when it is current. Whether an account
+     * holds it is checked when the form is posted (UsersChangePassword).
+     */
+    public static function keyProblem( $key ) {
+
+        if ( ! \OWA\Module\Base\Entity\User::cleanTempPasskey( $key ) ) {
+
+            return 2011;
+        }
+
+        return \OWA\Module\Base\Entity\User::tempPasskeyIsCurrent( $key ) ? null : 2012;
+    }
+
     function __construct($params) {
 
         return parent::__construct($params);
     }
 
+    /**
+     * The form, for a link that can still set a password. One that cannot is
+     * told so on the login form before anyone types a password into it.
+     */
     function action() {
+
+        $problem = self::keyProblem( $this->getParam('k') );
+
+        if ( $problem ) {
+
+            $this->setRedirectAction('base.loginForm');
+            $this->set('error_code', $problem);
+
+            return;
+        }
 
         $this->set('key', $this->getParam('k'));
         $this->setView('base.usersPasswordEntry');

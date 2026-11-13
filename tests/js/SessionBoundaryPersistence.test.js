@@ -109,7 +109,8 @@ describe('crossing a session boundary', () => {
         t.trackPageView('https://example.com/second');
 
         expect(beacons[0].is_new_session_start).toBe(true);
-        expect(beacons[0].prior_session_id).toBe(first.sid);
+        // The server reads no prior session id, so the tracker sends none.
+        expect(beacons[0].prior_session_id).toBeUndefined();
 
         expect(OWA.getState('s_boundary-site', 'prior_last_req')).toBe(aged.last_req);
 

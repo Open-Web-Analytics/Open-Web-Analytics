@@ -1,29 +1,49 @@
 # How to contribute
 
-I'm really glad you're reading this, because we need volunteer developers to help this project come to fruition.
+Thank you for helping. Bug fixes, tests and documentation are as welcome as
+features.
+
+## Branches
+
+`v2` is where 2.0 development happens, and new work is based on it. `master` is
+the 1.x line, which takes fixes only.
+
+## Setting up
+
+See the README's Development section: `composer install`, then
+`npm install && npm run build`. `vendor/` and the built `public/` tree are not in
+git.
 
 ## Testing
 
-Most of the "code" on this repository of the project is eithe PHP, JavaScript or CSS, Please Test your contributions before submitting them
+Every change comes with tests, and updates the existing tests it affects.
+
+- PHP: `vendor/bin/phpunit`. Tests that need a database skip without one.
+- Tracker and reporting JavaScript: `npx jest`.
+- End to end: `npm run test:e2e:selfhost`, which installs into a scratch database
+  and serves it with PHP's built-in server.
+
+The wiki's [Testing](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Testing)
+page has the details.
 
 ## Submitting changes
 
-Please send a [GitHub Pull Request to Open-Web-Analytics](https://github.com/padams/Open-Web-Analytics/pull/new/master) with a 
-clear list of what you've done (read more about [pull requests](http://help.github.com/pull-requests/)). 
-When you send a pull request, we will love you forever if you include comments. 
-Please follow our coding conventions (below) and make sure all of your commits are atomic (one feature per commit).
+Open a pull request against `v2` with a clear description of what changed and
+why. Keep each pull request to one change, and each commit to one step of it.
 
-Always write a clear log message for your commits. One-line messages are fine for small changes, but bigger changes should look like this:
+Write commit messages as a short summary line, a blank line, then a paragraph
+saying what changed and its effect:
 
-    $ git commit -m "A brief summary of the commit
-    > 
-    > A paragraph describing what changed and its impact."
+    A brief summary of the commit
+
+    A paragraph describing what changed and its impact.
 
 ## Coding conventions
 
-Start reading our code and you'll get the hang of it. We optimize for readability:
+Read the code around a change and follow it. Comments say why, not what.
+Strings shown to people go through the translation helpers.
 
-  * This is open source software. Consider the people who will read your code, and make it look nice for them. It's sort of like driving a car: Perhaps you love doing donuts when you're alone, but with passengers the goal is to make the ride as smooth as possible.
-  
+## Security issues
 
-
+Do not open a public issue or pull request for a vulnerability; see
+[SECURITY.md](SECURITY.md).

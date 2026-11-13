@@ -247,7 +247,9 @@ const E2E_ADMIN_NAME  = 'OWA E2E Admin';
 // user's passkey + starting password on every run, so the test is re-runnable.
 const E2E_PWUSER_ID   = 'owa-e2e-pwchange@example.test';
 const E2E_PWUSER_PASS = 'e2e-PwChange-Old-1!';     // known STARTING password
-const E2E_PWUSER_KEY  = '735512bd84ae1f2635e3e89fb7ecc001'; // md5 temp_passkey the test submits
+// The temp_passkey the test submits: 32 hex, a dot, and the time it expires
+// (User::TEMP_PASSKEY_PATTERN). 2100-01-01, so the seeded link never expires.
+const E2E_PWUSER_KEY  = '735512bd84ae1f2635e3e89fb7ecc001.4102444800';
 const E2E_PWUSER_ROLE = 'analyst';
 const E2E_PWUSER_NAME = 'OWA E2E PwChange';
 

@@ -36,6 +36,7 @@ class OptionsFlushCache extends \OWA\Core\AdminController {
     function __construct($params) {
 
         $this->setRequiredCapability('edit_settings');
+        $this->setNonceRequired();
         return parent::__construct($params);
     }
 

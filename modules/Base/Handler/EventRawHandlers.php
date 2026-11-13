@@ -401,6 +401,28 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * @param object $event
      * @return string|null JSON
      */
+    /** Names and string values converted to UTF-8 (Lib::utf8Encode()), so json_encode() keeps them. */
+    protected static function utf8Params( array $params ) {
+
+        $out = array();
+
+        foreach ( $params as $name => $value ) {
+
+            if ( is_array( $value ) ) {
+
+                $value = self::utf8Params( $value );
+
+            } elseif ( is_string( $value ) ) {
+
+                $value = \OWA\Core\Lib::utf8Encode( $value );
+            }
+
+            $out[ is_string( $name ) ? \OWA\Core\Lib::utf8Encode( $name ) : $name ] = $value;
+        }
+
+        return $out;
+    }
+
     protected function params( $event ) {
 
         $params = array();
@@ -560,7 +582,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * point, keeps it the same size as the value: escaping every non-ASCII
          * character to \uXXXX triples a Japanese page title for no gain.
          */
-        $json = json_encode( $params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+        $json = json_encode( self::utf8Params( $params ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 
         // json_encode returns false on malformed UTF-8. A JSON column refuses
         // an invalid value outright under a strict sql_mode, so the row would
@@ -684,9 +706,57 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $db->endTransaction();
 
+        $this->queueLateRebuilds( $rows );
+
         $this->announce( $event, $rows );
 
         return OWA_EHS_EVENT_HANDLED;
+    }
+
+    /** Seconds a late day's rebuild waits, so a burst of late beacons builds once. */
+    const LATE_REBUILD_DELAY = 300;
+
+    /**
+     * Queue a cube rebuild of each day these rows landed in that the routine
+     * build no longer covers.
+     *
+     * The routine build covers yesterday and today, and a day before that is
+     * not built again once it is settled. A beacon can arrive later than that:
+     * retried for hours, replayed from the dead letters, or sent by a device
+     * whose clock was off. Without this its row sat in raw, never reported,
+     * while the cube's status read green. One job per Property and day; a
+     * pending one absorbs the rest.
+     *
+     * After the commit, as JobQueue::enqueue() asks.
+     */
+    protected function queueLateRebuilds( array $rows ) {
+
+        $before = (int) date( 'Ymd', strtotime( '-1 day' ) );
+        $queued = array();
+
+        foreach ( $rows as $row ) {
+
+            $day = (int) ( $row['yyyymmdd'] ?? 0 );
+
+            if ( ! $day || $day >= $before ) {
+
+                continue;
+            }
+
+            $property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $row['site_id'] ?? '' );
+            $key      = 'cube-late:' . $property . ':' . $day;
+
+            if ( $property === '' || isset( $queued[ $key ] ) ) {
+
+                continue;
+            }
+
+            $queued[ $key ] = true;
+
+            \OWA\Core\CoreAPI::enqueueJob( 'cube-rebuild',
+                array( 'property' => $property, 'from' => (string) $day, 'to' => (string) $day ),
+                $key, self::LATE_REBUILD_DELAY );
+        }
     }
 
     /**
@@ -1176,7 +1246,10 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return null;
         }
 
-        $value = \OWA\Module\Base\Classes\V2Event::strip( (string) $value );
+        // Text that is not UTF-8 fails the insert under a strict sql_mode, so
+        // the beacon was retried before it landed. Converted here, it lands.
+        $value = \OWA\Core\Lib::utf8Encode( (string) $value );
+        $value = \OWA\Module\Base\Classes\V2Event::strip( $value );
 
         if ( trim( $value ) === ''
              || $value === \OWA\Module\Base\Classes\TrackingEventHelpers::ABSENT_VALUE_LABEL

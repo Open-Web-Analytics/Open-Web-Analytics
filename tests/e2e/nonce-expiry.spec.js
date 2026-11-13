@@ -26,8 +26,10 @@ async function submitWithStaleNonce(page) {
     await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
 
     // createNonceFormField() emits <input type="hidden" name="<ns>nonce">, and
-    // ns defaults to 'owa_'.
-    const nonce = page.locator('input[name="nonce"]');
+    // ns defaults to 'owa_'. The page has a second form, Reset, with its own
+    // nonce; this is the one in the form that saves the options.
+    const submit = page.locator('button[name="action"][value="base.optionsUpdate"]');
+    const nonce = page.locator('form').filter({ has: submit }).locator('input[name="nonce"]');
     await expect(nonce, 'the options form should carry a nonce').toHaveCount(1);
 
     // Exactly what an expired or wrong-user nonce looks like to the server.
@@ -37,7 +39,7 @@ async function submitWithStaleNonce(page) {
     // the nonce is a separate hidden field, which is what was just invalidated.
     await Promise.all([
         page.waitForNavigation({ waitUntil: 'networkidle' }),
-        page.locator('button[name="action"][value="base.optionsUpdate"]').click(),
+        submit.click(),
     ]);
 }
 
@@ -113,7 +115,9 @@ test.describe('a stale nonce on an authenticated session', () => {
         ]);
 
         // Back on a working form, with a nonce minted for this session.
-        await expect(page.locator('input[name="nonce"]')).toHaveCount(1);
+        await expect(page.locator('form').filter({
+            has: page.locator('button[name="action"][value="base.optionsUpdate"]'),
+        }).locator('input[name="nonce"]')).toHaveCount(1);
         expect(await onLoginForm(page), 'and still signed in').toBe(0);
     });
 

@@ -182,9 +182,19 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * it actually runs. A boot costs about 66ms, so a day of ticks is roughly 95
  * seconds of CPU.
  *
- * Out of the box exactly one job is registered: partition-rotate, monthly, with
- * NO arguments -- it extends the fact tables' partition lead and merges old
- * periods to stay within the open-file budget, and never deletes anything.
+ * These jobs ship (schedule-status lists them, with their schedules):
+ *
+ *   rebuild-cube             every 5 minutes  builds each Property's reporting cube
+ *   drain-tracker-ingest     every minute     ingests queued tracking events
+ *   apply-custom-dimensions  every 15 minutes applies newly registered dimensions
+ *   rotate-partitions        daily            extends the partition lead and merges
+ *                                             old periods; deletes nothing without keep=
+ *   replay-tracker-ingest    daily            retries dead-lettered tracking events
+ *   prune-job-queue          daily            removes finished queued jobs
+ *   fetch-notifications      daily            fetches OWA's update notices
+ *
+ * The daily and five-minute ones run at a time derived from this
+ * installation, so installs sharing a database do not all start at once.
  *
  * Use OWA_SCHEDULED_JOBS to retune what ships, to add jobs the release does not
  * register, or to turn one off. It is keyed by JOB NAME; 'command' is the CLI
@@ -219,9 +229,9 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //
 //    // The same command a second time, under its own name, with its own
 //    // arguments and cadence.
-//    'rotate-request-table' => array(
+//    'rotate-raw-weekly' => array(
 //        'command'  => 'partition-rotate',
-//        'params'   => array( 'table' => 'owa_request' ),
+//        'params'   => array( 'table' => 'owa_event_raw' ),
 //        'schedule' => '@weekly',
 //    ),
 //

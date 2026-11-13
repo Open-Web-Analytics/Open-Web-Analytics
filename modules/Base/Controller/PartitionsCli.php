@@ -562,7 +562,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     protected function entityFor( $table ) {
 
         $s  = \OWA\Core\CoreAPI::serviceSingleton();
-        $ns = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+        $ns = \OWA\Core\Entity::TABLE_PREFIX;
 
         foreach ( $s->modules['base']->getEntities() as $name ) {
 

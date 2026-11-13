@@ -92,7 +92,7 @@ final class MigrateRequestsTest extends TestCase
     private function visit(): void
     {
         $this->insert('document', ['id' => '101', 'url' => 'https://alice.example/pricing/?plan=pro',
-            'page_title' => 'Pricing']);
+            'page_title' => 'Pricing', 'page_type' => 'Product']);
         $this->insert('referer', ['id' => '201', 'url' => 'https://search.example/results?q=owa']);
         $this->insert('ua', ['id' => '301', 'ua' => 'Mozilla/5.0 (X11) Test', 'browser_type' => 'Chrome']);
         $this->insert('os', ['id' => '401', 'name' => 'Linux']);
@@ -147,6 +147,7 @@ final class MigrateRequestsTest extends TestCase
         $this->assertSame('plan=pro', $entry['page_query']);
         $this->assertSame('alice.example', $entry['host']);
         $this->assertSame('Pricing', $entry['page_title']);
+        $this->assertSame('Product', $entry['content_group'], '1.x\'s page type is the content group');
         $this->assertSame('search.example', $entry['referer_host']);
         $this->assertSame('q=owa', $entry['referer_query']);
 
@@ -437,7 +438,7 @@ final class MigrateRequestsTest extends TestCase
     {
         $this->visit();
         \OWA\Core\CoreAPI::dbSingleton()->query(
-            "UPDATE owa_v1fx_document SET page_title = '(not set)' WHERE id = 101");
+            "UPDATE owa_v1fx_document SET page_title = '(not set)', page_type = '(not set)' WHERE id = 101");
         \OWA\Core\CoreAPI::dbSingleton()->query(
             "UPDATE owa_v1fx_location_dim SET city = '(not set)' WHERE id = 501");
 
@@ -446,6 +447,7 @@ final class MigrateRequestsTest extends TestCase
         $entry = array_values(array_filter($this->rows(), fn ($r) => $r['user_id'] === 'alice'))[0];
 
         $this->assertNull($entry['page_title']);
+        $this->assertNull($entry['content_group']);
         $this->assertNull($entry['city']);
     }
 

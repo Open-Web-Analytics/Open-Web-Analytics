@@ -235,6 +235,12 @@ class Sanitize {
 
         } else {
 
+            // The steps below use /u patterns, which answer null for text that
+            // is not UTF-8: a Latin-1 value was blanked rather than kept.
+            if (is_string($input)) {
+                $input = \OWA\Core\Lib::utf8Encode($input);
+            }
+
             if ($options['hidden_spaces']) {
                 $output = \OWA\Module\Base\Classes\Sanitize::removeHiddenSpaces($input);
             }

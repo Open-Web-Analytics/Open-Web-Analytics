@@ -43,7 +43,7 @@ class PropertyProfile extends \OWA\Core\AdminController {
          * Property gains and loses Profiles from other screens, and a stale
          * number in a destructive confirmation is worse than none.
          */
-        $this->set( 'profileCount', $this->countLiveProfiles( $this->getParam( 'propertyId' ) ) );
+        $this->set( 'profileCount', self::countLiveProfiles( $this->getParam( 'propertyId' ) ) );
         /*
          * The hierarchy wrapper, not base.options: the left column is the site
          * control, because that is what these screens are reached from and what
@@ -67,7 +67,7 @@ class PropertyProfile extends \OWA\Core\AdminController {
     /**
      * Profiles this Property still has, archived ones excluded.
      */
-    private function countLiveProfiles( $propertyId ) {
+    public static function countLiveProfiles( $propertyId ) {
 
         if ( ! $propertyId ) {
 

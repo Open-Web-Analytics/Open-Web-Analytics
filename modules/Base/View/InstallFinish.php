@@ -29,7 +29,6 @@ class InstallFinish extends \OWA\Core\View {
 
         $this->body->set('site_id', $this->get('site_id'));
         $this->body->set('u', $this->get('u'));
-        $this->body->set('p', $this->get('p'));
         // load body template
         $this->body->set_template('install_finish.php');
         $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");

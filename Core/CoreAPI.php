@@ -951,6 +951,22 @@ class CoreAPI {
      */
     public static function isSiteRegistered( $site_id ) {
 
+        return self::siteRegistration( $site_id ) === true;
+    }
+
+    /**
+     * Whether a site id is registered: true, false, or null when the database
+     * could not answer.
+     *
+     * A lookup that fails reads as no row, so an outage made every site look
+     * unregistered and every beacon of it was refused as unknown. Null is not
+     * memoised: the next beacon asks again.
+     *
+     * @param string $site_id
+     * @return bool|null
+     */
+    public static function siteRegistration( $site_id ) {
+
         $site_id = (string) $site_id;
 
         if ( $site_id === '' ) {
@@ -962,6 +978,11 @@ class CoreAPI {
 
             $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
             $site->load( $site->generateId( $site_id ) );
+
+            if ( ! $site->wasPersisted() && ! self::databaseAnswers() ) {
+
+                return null;
+            }
 
             /*
              * An ARCHIVED Profile is not registered.
@@ -980,6 +1001,14 @@ class CoreAPI {
         return self::$registered_sites[ $site_id ];
     }
 
+    /** Whether the database is reachable and runs a query. */
+    private static function databaseAnswers() {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        return $db && $db->isConnectionEstablished() && $db->query( 'SELECT 1' ) !== false;
+    }
+
     /**
      * Test seam: forget which site ids have been checked.
      *
@@ -988,6 +1017,12 @@ class CoreAPI {
     public static function forgetRegisteredSites() {
 
         self::$registered_sites = array();
+    }
+
+    /** Test seam: answer for a site id without asking the database. */
+    public static function rememberSiteRegistration( $site_id, $registered ) {
+
+        self::$registered_sites[ (string) $site_id ] = (bool) $registered;
     }
 
     /**
@@ -2279,9 +2314,10 @@ class CoreAPI {
         // Nothing on this path creates sites -- they come only from the admin
         // UI, cmd=add-site and install -- so nothing legitimate is being
         // refused.
-        $site_id = $event->getSiteId();
+        $site_id    = $event->getSiteId();
+        $registered = \OWA\Core\CoreAPI::siteRegistration( $site_id );
 
-        if ( ! \OWA\Core\CoreAPI::isSiteRegistered( $site_id ) ) {
+        if ( $registered === false ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
                 'Not logging event: site id "%s" is not registered on this installation. '
@@ -2316,6 +2352,13 @@ class CoreAPI {
 
         // As it arrived: processing rewrites the properties, and the retry processes it again.
         $arrived = \OWA\Module\Base\Classes\TrackerIngest::envelope( $event );
+
+        // The database could not say whether the site exists: retry a minute
+        // later, when the drain asks again, rather than refuse it as unknown.
+        if ( $registered === null ) {
+
+            return \OWA\Module\Base\Classes\TrackerIngest::retryLater( $event, $arrived );
+        }
 
         $result = \OWA\Core\CoreAPI::performAction( $processor_action, array( 'event' => $event ) );
 
@@ -2436,7 +2479,12 @@ class CoreAPI {
         $e->notice($msg);
     }
 
-    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '', $secure = false) {
+    /**
+     * @param bool $httponly Out of reach of the page's scripts. The sign-in
+     *                       cookies are; state the reporting UI reads in the
+     *                       browser cannot be.
+     */
+    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '', $secure = false, $httponly = false) {
 
         if ( $domain ) {
             // sanitizes the domain
@@ -2479,7 +2527,8 @@ class CoreAPI {
                 'path' 		=> '/',
                 'samesite' 	=> 'Lax',
                 'domain' 	=> $domain,
-                'secure' 	=> $secure
+                'secure' 	=> $secure,
+                'httponly'	=> (bool) $httponly,
 	        ];
 	        
 	        setcookie($cookie_name, $cookie_value, $options);

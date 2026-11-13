@@ -270,7 +270,8 @@ describe('session-scoped properties do not vary within a session', () => {
          */
         [
             'session_id',
-            'prior_session_id',
+            // prior_session_id was here: no v2 reader takes it, so it left the
+            // wire and the session store.
             // is_new_visitor was here. Removed with the flag: v2 materialises
             // a first_visit EVENT from the request-scoped
             // is_new_visitor_created, and nothing wants a session-scoped

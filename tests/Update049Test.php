@@ -146,6 +146,24 @@ final class Update049Test extends TestCase
             . 'to be a column would change what the author asked for.' );
     }
 
+    /** down() switches back on the goals up() switched off, and only those. */
+    public function testRollingBackSwitchesTheGoalBackOn(): void
+    {
+        \OWA\Core\CoreAPI::persistSetting( 'base', \OWA\Module\Base\Update\Update049::SWITCHED_OFF, array() );
+
+        $off = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
+            array( 'page_type', 'exact', 'attachment' ) ) );
+
+        $this->assertTrue( $this->update->up() );
+        $this->assertSame( 0, (int) $this->reload( $off )->get( 'is_active' ) );
+
+        $this->assertTrue( $this->update->down() );
+
+        $this->assertSame( 1, (int) $this->reload( $off )->get( 'is_active' ) );
+        $this->assertSame( array(), (array) \OWA\Core\CoreAPI::getSetting( 'base',
+            \OWA\Module\Base\Update\Update049::SWITCHED_OFF ) );
+    }
+
     /** A goal whose conditions all translate stays on. */
     public function testAMigratedGoalStaysActive(): void
     {

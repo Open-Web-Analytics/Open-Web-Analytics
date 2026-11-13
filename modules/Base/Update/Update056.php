@@ -37,6 +37,10 @@ class Update056 extends \OWA\Core\Update {
 
     var $schema_version = 56;
 
+    
+
+    var $down_does_not_restore = 'the start conditions, goal groups and setting it removed.';
+
     var $is_cli_mode_required = false;
 
     function up( $force = false ) {

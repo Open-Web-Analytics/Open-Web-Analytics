@@ -100,6 +100,25 @@ test.describe('the built tracker fires beacons on the wire', () => {
         expect(click).toMatch(/[?&]c_x=\d+/);
     });
 
+    test('a click on a field does not send what was typed in it', async ({ page }) => {
+        await page.waitForFunction(() => typeof window.OWATracker !== 'undefined', null, { timeout: 20_000 });
+        await page.evaluate(() => window.OWATracker.trackClicks());
+
+        await page.locator('#typed-field').fill('secret-typed-value');
+
+        const before = beacons.length;
+        await page.locator('#typed-field').click();
+
+        const clicks = () => beacons.slice(before).filter((u) => /[?&]e_t=click/.test(u));
+        await expect.poll(() => clicks().length, { timeout: 20_000 }).toBeGreaterThan(0);
+        const click = clicks()[0];
+
+        expect(click).toMatch(/[?&]el_id=typed-field/);
+        expect(click).toMatch(/[?&]el_tg=input/);
+        expect(decodeURIComponent(click)).not.toContain('secret-typed-value');
+        expect(new URL(click).searchParams.get('el_tx') || '').toBe('');
+    });
+
     test("a clicked link whose href has '#' and '&' still sends a complete beacon", async ({ page }) => {
         // Regression for the value-truncation bug, end to end in a real browser.
         // The link's href ('#sec?a=1&b=2') becomes the click's target_url. With

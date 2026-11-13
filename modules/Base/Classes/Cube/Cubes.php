@@ -64,7 +64,7 @@ class Cubes {
             return '';
         }
 
-        return \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . self::PREFIX . $property_id;
+        return \OWA\Core\Entity::TABLE_PREFIX . self::PREFIX . $property_id;
     }
 
     /**
@@ -75,7 +75,7 @@ class Cubes {
      */
     public static function propertyIdFor( $table ) {
 
-        $prefix = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . self::PREFIX;
+        $prefix = \OWA\Core\Entity::TABLE_PREFIX . self::PREFIX;
 
         if ( strpos( (string) $table, $prefix ) !== 0 ) {
 
@@ -120,7 +120,7 @@ class Cubes {
     public static function existing() {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $prefix = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . self::PREFIX;
+        $prefix = \OWA\Core\Entity::TABLE_PREFIX . self::PREFIX;
         $cubes  = array();
 
         foreach ( (array) $db->get_results( sprintf(
@@ -153,7 +153,7 @@ class Cubes {
     /** @return string  the pre-split cube's table name */
     public static function preSplitTable() {
 
-        return \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . self::PRE_SPLIT;
+        return \OWA\Core\Entity::TABLE_PREFIX . self::PRE_SPLIT;
     }
 
     /** @return \OWA\Module\Base\Entity\Event  the shape bound to it */
