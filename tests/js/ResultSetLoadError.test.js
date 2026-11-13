@@ -45,6 +45,19 @@ describe('a result set request that fails', () => {
 
         expect($('#grid .loader').length).toBe(0);
         expect($('#grid .owa_loadError').text()).toBe('This report could not be loaded. Try again in a moment.');
+        // Announced as it appears.
+        expect($('#grid .owa_loadError').attr('role')).toBe('alert');
+    });
+
+    test('the spinner is a status that says Loading; the image itself says nothing', () => {
+        const explorer = new OWA.resultSetExplorer('grid');
+
+        explorer.load('https://owa.test/api/index.php?do=reports');
+
+        expect($('#grid .loader').attr('role')).toBe('status');
+        expect($('#grid .loader img').attr('alt')).toBe('');
+        expect($('#grid .loader img').attr('src')).toBe('https://owa.test/public/base/i/loader.gif');
+        expect($('#grid .loader').text()).toBe('Loading');
     });
 
     test('a failed requery says so once, and a later answer clears it', () => {

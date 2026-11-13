@@ -322,6 +322,157 @@ describe( 'the control', () => {
         expect( $( '.owa_periodPanel' ) ).toBeNull();
     } );
 
+    describe( 'the keyboard', () => {
+
+        const key = ( node, k ) => node.dispatchEvent( new KeyboardEvent( 'keydown', { key: k, bubbles: true, cancelable: true } ) );
+        const focused = () => document.activeElement;
+
+        test( 'a preset chosen from the keyboard keeps the focus on it as the panel is drawn again', () => {
+            make();
+            click( $( '.owa_periodTrigger' ) );
+
+            const before = button( 'Last month' );
+            before.focus();
+            click( before );
+
+            // A new element, the same control.
+            expect( button( 'Last month' ) ).not.toBe( before );
+            expect( focused() ).toBe( button( 'Last month' ) );
+            expect( focused().getAttribute( 'aria-pressed' ) ).toBe( 'true' );
+        } );
+
+        test( 'the Compare switch and the comparison select keep the focus', () => {
+            make();
+            click( $( '.owa_periodTrigger' ) );
+
+            $( '.owa_periodLeft .owa_periodSwitch' ).focus();
+            click( $( '.owa_periodLeft .owa_periodSwitch' ) );
+            expect( focused() ).toBe( $( '.owa_periodLeft .owa_periodSwitch' ) );
+            expect( focused().getAttribute( 'aria-checked' ) ).toBe( 'true' );
+
+            $( '.owa_periodCmpSelect' ).focus();
+            $( '.owa_periodCmpSelect' ).value = 'previous_year';
+            $( '.owa_periodCmpSelect' ).dispatchEvent( new Event( 'change', { bubbles: true } ) );
+            expect( focused() ).toBe( $( '.owa_periodCmpSelect' ) );
+        } );
+
+        test( 'the month buttons keep the focus, and the first month hands it to Next', () => {
+            make();
+            click( $( '.owa_periodTrigger' ) );
+
+            const prev = () => $( '[data-act="mprev"]' );
+            prev().focus();
+            click( prev() );
+            expect( focused() ).toBe( prev() );
+
+            while ( ! prev().disabled ) {
+                click( prev() );
+            }
+
+            expect( focused() ).toBe( $( '[data-act="mnext"]' ) );
+        } );
+
+        test( 'Enter takes a typed date and leaves the focus in its field', () => {
+            make();
+            click( $( '.owa_periodTrigger' ) );
+            click( button( 'Custom date range' ) );
+
+            const field = $( '[data-in="main0"]' );
+            field.focus();
+            field.value = '10/1/2026';
+            key( field, 'Enter' );
+
+            expect( field.value ).toBe( 'Oct 1, 2026' );
+            expect( focused() ).toBe( field );
+        } );
+
+        test( 'each day is named by its full date and says whether it is in the range', () => {
+            make( { compare: 'previous_period' } );
+            click( $( '.owa_periodTrigger' ) );
+
+            const day = ( ymd ) => $( '[data-d="' + ymd + '"]' );
+
+            expect( day( '20261013' ).getAttribute( 'aria-pressed' ) ).toBe( 'true' );
+            expect( day( '20261020' ).getAttribute( 'aria-pressed' ) ).toBe( 'true' );
+            expect( day( '20261012' ).getAttribute( 'aria-pressed' ) ).toBe( 'false' );
+
+            expect( day( '20261013' ).getAttribute( 'aria-label' ) ).toBe( 'Tuesday, October 13, 2026, start date' );
+            expect( day( '20261109' ).getAttribute( 'aria-label' ) ).toBe( 'Monday, November 9, 2026, end date, today' );
+            expect( day( '20261012' ).getAttribute( 'aria-label' ) ).toBe( 'Monday, October 12, 2026, comparison end date' );
+            expect( day( '20261001' ).getAttribute( 'aria-label' ) ).toBe( 'Thursday, October 1, 2026, in the comparison' );
+        } );
+
+        test( 'a click on a day moves its pressed state with the range', () => {
+            make();
+            click( $( '.owa_periodTrigger' ) );
+            click( button( 'Custom date range' ) );
+
+            click( $( '[data-d="20261002"]' ) );
+
+            expect( $( '[data-d="20261002"]' ).getAttribute( 'aria-pressed' ) ).toBe( 'true' );
+            expect( $( '[data-d="20261002"]' ).getAttribute( 'aria-label' ) ).toMatch( /start date$/ );
+            expect( $( '[data-d="20261012"]' ).getAttribute( 'aria-pressed' ) ).toBe( 'true' );
+            expect( $( '[data-d="20261001"]' ).getAttribute( 'aria-pressed' ) ).toBe( 'false' );
+        } );
+
+        test( 'the calendar is one tab stop, and the arrow keys move between days', () => {
+            make();
+            click( $( '.owa_periodTrigger' ) );
+
+            // A read-only calendar has no tab stop at all.
+            expect( $$( '.owa_periodDay[tabindex="0"]' ) ).toHaveLength( 0 );
+
+            click( button( 'Custom date range' ) );
+
+            const stops = () => $$( '.owa_periodDay[tabindex="0"]' ).map( ( b ) => b.getAttribute( 'data-d' ) );
+            expect( stops() ).toEqual( [ '20261109' ] );
+
+            $( '[data-d="20261109"]' ).focus();
+
+            key( focused(), 'ArrowLeft' );
+            expect( focused().getAttribute( 'data-d' ) ).toBe( '20261108' );
+            expect( stops() ).toEqual( [ '20261108' ] );
+
+            key( focused(), 'ArrowUp' );
+            expect( focused().getAttribute( 'data-d' ) ).toBe( '20261101' );
+
+            key( focused(), 'End' );
+            expect( focused().getAttribute( 'data-d' ) ).toBe( '20261107' );
+
+            // After today: not a day that can be picked, so the focus stays.
+            key( focused(), 'ArrowDown' );
+            expect( focused().getAttribute( 'data-d' ) ).toBe( '20261107' );
+
+            // Into the month before, which becomes the one a phone shows.
+            key( focused(), 'PageUp' );
+            expect( focused().getAttribute( 'data-d' ) ).toBe( '20261007' );
+            expect( $( '.owa_periodMonth.is-page' ).getAttribute( 'data-month' ) ).toBe( '202610' );
+            expect( stops() ).toEqual( [ '20261007' ] );
+
+            key( focused(), 'Home' );
+            expect( focused().getAttribute( 'data-d' ) ).toBe( '20261004' );
+        } );
+
+        test( 'while an end date is picked, the days before the start are not moved to', () => {
+            make();
+            click( $( '.owa_periodTrigger' ) );
+            click( button( 'Custom date range' ) );
+
+            const start = $( '[data-d="20261020"]' );
+            start.focus();
+            click( start );
+
+            expect( focused() ).toBe( start );
+            expect( $$( '.owa_periodDay[tabindex="0"]' ).map( ( b ) => b.getAttribute( 'data-d' ) ) ).toEqual( [ '20261020' ] );
+
+            key( start, 'ArrowLeft' );
+            expect( focused() ).toBe( start );
+
+            key( start, 'ArrowRight' );
+            expect( focused().getAttribute( 'data-d' ) ).toBe( '20261021' );
+        } );
+    } );
+
     test( 'the explanation names the choice in one line', () => {
         make( { compare: 'previous_period' } );
         click( $( '.owa_periodTrigger' ) );

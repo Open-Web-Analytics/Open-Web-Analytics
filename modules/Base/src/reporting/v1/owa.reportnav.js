@@ -5,8 +5,9 @@
  * has the whole width, and slides in over it from the menu button in the
  * header, in the logo's place (header.php). Choosing a report closes it again, as do its
  * close button (the open panel covers the menu button), a tap outside it and
- * Escape. At full width none of this runs: every handler asks
- * the media query first, so the desktop nav is untouched.
+ * Escape. Open, it holds the focus and the page beside it is inert; closed,
+ * the focus goes back to the menu button. At full width none of this runs:
+ * every handler asks the media query first, so the desktop nav is untouched.
  *
  *   <div class="owa_reportNavRail" id="owa_reportNavRail">...</div>
  *   <button class="owa_reportNavToggle" aria-controls="owa_reportNavRail">...</button>  (header.php)
@@ -52,18 +53,74 @@ function setExpanded( rail, expanded ) {
     } );
 }
 
-/** Slide the nav in. */
+/** What the keyboard can reach inside the open nav. */
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Everything beside the open nav, made inert so that neither the keyboard nor
+ * a screen reader leaves it for the page under it: each sibling of the nav
+ * and of every element it sits in, up to <body>. Returns what it set, so only
+ * those are released; an element inert already is left as it is.
+ *
+ * @param {HTMLElement} rail
+ * @return {Element[]}
+ */
+function inertBeside( rail ) {
+
+    const set = [];
+
+    for ( let node = rail; node && node.parentElement && node !== document.body; node = node.parentElement ) {
+
+        Array.from( node.parentElement.children ).forEach( function ( sib ) {
+
+            if ( sib !== node && ! sib.hasAttribute( 'inert' ) ) {
+                sib.setAttribute( 'inert', '' );
+                set.push( sib );
+            }
+        } );
+    }
+
+    return set;
+}
+
+/** Slide the nav in, and move the focus into it. */
 export function open( rail ) {
 
     rail.classList.add( OPEN );
     setExpanded( rail, true );
+
+    if ( ! rail._owaInert ) {
+        rail._owaInert = inertBeside( rail );
+    }
+
+    const first = rail.querySelector( '.owa_reportNavClose' ) || rail.querySelector( FOCUSABLE );
+
+    if ( first ) {
+        first.focus();
+    }
 }
 
-/** Slide it away again. */
+/** Slide it away again; a focus left inside it goes back to the menu button. */
 export function close( rail ) {
+
+    const wasOpen = rail.classList.contains( OPEN );
 
     rail.classList.remove( OPEN );
     setExpanded( rail, false );
+
+    ( rail._owaInert || [] ).forEach( function ( el ) { el.removeAttribute( 'inert' ); } );
+    rail._owaInert = null;
+
+    const active = document.activeElement;
+
+    if ( wasOpen && ( ! active || active === document.body || rail.contains( active ) ) ) {
+
+        const toggle = toggles( rail )[0];
+
+        if ( toggle ) {
+            toggle.focus();
+        }
+    }
 }
 
 /**
