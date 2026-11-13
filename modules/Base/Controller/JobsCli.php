@@ -54,7 +54,9 @@ class JobsCli extends \OWA\Core\Controller\Cli {
                     return $this->refuse( 'Say which job: cmd=jobs-retry id=<id>, or id=all for every failed job.' );
                 }
 
-                \OWA\Core\CoreAPI::notice( sprintf( '%d failed job(s) made due again.', $Q::retry( $id ) ) );
+                $retried = $Q::retry( $id );
+
+                \OWA\Core\CoreAPI::notice( sprintf( '%d failed job%s made due again.', $retried, $retried === 1 ? '' : 's' ) );
 
                 return;
 
@@ -73,7 +75,9 @@ class JobsCli extends \OWA\Core\Controller\Cli {
 
             case 'prune':
 
-                \OWA\Core\CoreAPI::notice( sprintf( '%d finished job(s) pruned.', $Q::prune() ) );
+                $pruned = $Q::prune();
+
+                \OWA\Core\CoreAPI::notice( sprintf( '%d finished job%s pruned.', $pruned, $pruned === 1 ? '' : 's' ) );
 
                 return;
         }

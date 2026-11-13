@@ -93,8 +93,10 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
 
             if ( method_exists( $q, 'pruneArchive' ) ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf( 'Pruned %d archived file(s) of event queue %s.',
-                    (int) $q->pruneArchive( $interval ), $queue_name ) );
+                $pruned = (int) $q->pruneArchive( $interval );
+
+                \OWA\Core\CoreAPI::notice( sprintf( 'Pruned %d archived file%s of event queue %s.',
+                    $pruned, $pruned === 1 ? '' : 's', $queue_name ) );
             }
         }
     }

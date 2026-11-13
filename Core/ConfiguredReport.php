@@ -138,7 +138,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         if ( $unknown ) {
 
-            return sprintf( 'unknown key(s) %s; a report definition may use %s',
+            return sprintf( 'unknown key%s %s; a report definition may use %s', count( $unknown ) === 1 ? '' : 's',
                 implode( ', ', $unknown ), implode( ', ', self::KNOWN_KEYS ) );
         }
 
@@ -558,7 +558,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * a heatmap is of one page, and a row of pagePathPlusQuery is one page;
      * a row of pagePath has pathHeatmap, which draws every query string's
      * clicks on the path with none. Modules add theirs through the report_row_actions filter.
-     * `description` says what the action opens, for the wiki.
+     * `description` says what the action opens, for the wiki. A `label` is
+     * shown translated (OWA.translate()), catalogued from here
+     * (Strings::LABEL_TABLES).
      */
     const ROW_ACTIONS = array(
         'heatmap' => array(

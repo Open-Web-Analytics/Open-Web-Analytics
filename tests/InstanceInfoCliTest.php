@@ -181,7 +181,7 @@ final class InstanceInfoCliTest extends TestCase
 
         $out = $this->report();
 
-        $this->assertMatchesRegularExpression('/owa_event_raw\s+(\d+ partition\(s\)|not partitioned)/', $out);
+        $this->assertMatchesRegularExpression('/owa_event_raw\s+(\d+ partitions?|not partitioned)/', $out);
 
         foreach (\OWA\Module\Base\Classes\Cube\Cubes::existing() as $table) {
             $this->assertStringContainsString($table, $out);
@@ -210,7 +210,7 @@ final class InstanceInfoCliTest extends TestCase
         $out = $this->report();
 
         $this->assertMatchesRegularExpression(
-            '/Declared\s+\d+ setting\(s\) across \d+ module\(s\)/', $out,
+            '/Declared\s+\d+ settings? across \d+ modules?/', $out,
             'the report must say how much is declared');
 
         $this->assertMatchesRegularExpression('/Fetched at boot\s+\d+/', $out,
