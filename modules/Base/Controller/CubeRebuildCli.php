@@ -185,6 +185,20 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
          */
         if ( $locked === count( $properties ) ) {
 
+            /*
+             * A NAMED RANGE IS NOT CONVERGENT WITH THE RUN HOLDING THE LOCK.
+             * That one is building its own range -- the routine one, nearly
+             * always -- so a queued backfill or late-day rebuild that met it
+             * was marked done with its days never built. Failed, it is
+             * retried after the job's back-off.
+             */
+            if ( ! $routine ) {
+
+                return $this->fail( sprintf(
+                    'Another build is running for %s; %d to %d was not built and will be retried.',
+                    $locked === 1 ? 'that cube' : 'every cube in this run', $range['from'], $range['to'] ) );
+            }
+
             return $this->refuse( sprintf(
                 'Another build is already running for %s. Nothing to do -- a build is '
               . 'convergent, so the run in progress produces what this one would.',
