@@ -174,9 +174,47 @@ final class ClearFieldValuesCliTest extends CliControllerTestCase
 
         $this->assertSame( array(
             array( 'event_type' => 'dom.click', 'dom_element_tag' => 'input' ),
-            array( 'event_type' => 'dom.click', 'dom_element_tag' => 'a', 'dom_element_text' => 'Pricing' ),
+            array( 'event_type' => 'dom.click', 'dom_element_tag' => 'a', 'dom_element_text' => 'Pricing', 'dom_element_value' => '' ),
             array( 'event_type' => 'dom.click', 'dom_element_tag' => 'button', 'dom_element_text' => 'Buy', 'dom_element_value' => 'buy' ),
         ), $this->recording( $id ) );
+    }
+
+    public function testAPlaceholderIsNeitherCountedNorCleared(): void
+    {
+        $link  = $this->addClick( 'a', 'Pricing', '(not set)' );
+        $input = $this->addClick( 'input', '(not set)', 'undefined' );
+        $empty = $this->addClick( 'input', '', '' );
+
+        $this->assertSame( 0, $this->runClear( array( 'dry-run' => true ) )['clicks_matched'] );
+
+        $this->runClear();
+
+        $this->assertSame( array( 'text' => 'Pricing', 'value' => '(not set)' ), $this->click( $link ) );
+        $this->assertSame( array( 'text' => '(not set)', 'value' => 'undefined' ), $this->click( $input ) );
+        $this->assertSame( array( 'text' => '', 'value' => '' ), $this->click( $empty ) );
+    }
+
+    public function testOnlyTheColumnHoldingAValueIsCleared(): void
+    {
+        $id = $this->addClick( 'input', 'typed', '(not set)' );
+
+        $this->runClear();
+
+        $this->assertSame( array( 'text' => null, 'value' => '(not set)' ), $this->click( $id ) );
+    }
+
+    public function testARecordingWhoseClicksHoldNoValueIsNotRewritten(): void
+    {
+        $events = array(
+            array( 'event_type' => 'dom.click', 'dom_element_tag' => 'a', 'dom_element_text' => 'Pricing', 'dom_element_value' => '' ),
+            array( 'event_type' => 'dom.click', 'dom_element_tag' => 'input', 'dom_element_text' => '(not set)', 'dom_element_value' => 'undefined' ),
+        );
+        $id = $this->addRecording( $events );
+
+        $data = $this->runClear();
+
+        $this->assertSame( 0, $data['recordings_rewritten'] );
+        $this->assertSame( $events, $this->recording( $id ) );
     }
 
     public function testASecondRunRewritesNothing(): void

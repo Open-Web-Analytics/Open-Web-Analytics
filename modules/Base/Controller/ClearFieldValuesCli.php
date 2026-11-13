@@ -28,6 +28,11 @@ namespace OWA\Module\Base\Controller;
  * A click row does not say which type of <input> was clicked, so the label of an
  * <input type="submit"> is cleared along with what was typed into a text field.
  *
+ * Only real values count. '(not set)', 'undefined' and '' are what 1.x stored
+ * when there was no value, and are left as they are and not counted: on a site
+ * with few forms they are nearly every match, and counting them would report
+ * hundreds of thousands of field values where there are a few hundred.
+ *
  * IT IS SAFE TO RUN AGAIN, AND SAFE TO STOP
  * A cleared row no longer matches, and a recording is only written when
  * something in it changed. Each table is walked by id, so the walk ends however
@@ -42,10 +47,19 @@ class ClearFieldValuesCli extends \OWA\Core\Controller\Cli {
     const STREAM_BATCH = 100;
 
     /** The click rows that still hold a field value. */
-    const CLICK_MATCH = "( ( LOWER( dom_element_tag ) = 'input'
-                            AND dom_element_text IS NOT NULL AND dom_element_text <> '' )
-                       OR ( LOWER( COALESCE( dom_element_tag, '' ) ) <> 'button'
-                            AND dom_element_value IS NOT NULL AND dom_element_value <> '' ) )";
+    /** What 1.x stored when there was no value. Not a field value. */
+    const NO_VALUE = array( '', '(not set)', 'undefined' );
+
+    const NO_VALUE_SQL = "( '', '(not set)', 'undefined' )";
+
+    /** A click on an <input> whose text is a value. */
+    const INPUT_TEXT = "( LOWER( dom_element_tag ) = 'input' AND dom_element_text NOT IN " . self::NO_VALUE_SQL . " )";
+
+    /** A click on anything but a <button> whose value attribute is a value. */
+    const OTHER_VALUE = "( LOWER( COALESCE( dom_element_tag, '' ) ) <> 'button' AND dom_element_value NOT IN " . self::NO_VALUE_SQL . " )";
+
+    /** The click rows that still hold a field value. NOT IN is false for NULL. */
+    const CLICK_MATCH = '( ' . self::INPUT_TEXT . ' OR ' . self::OTHER_VALUE . ' )';
 
     /**
      * The recordings that may hold one. Every click in a stream names
@@ -162,8 +176,8 @@ class ClearFieldValuesCli extends \OWA\Core\Controller\Cli {
 
             $ok = $db->query(
                 "UPDATE owa_click
-                    SET dom_element_text = CASE WHEN LOWER( dom_element_tag ) = 'input' THEN NULL ELSE dom_element_text END,
-                        dom_element_value = CASE WHEN LOWER( COALESCE( dom_element_tag, '' ) ) <> 'button' THEN NULL ELSE dom_element_value END
+                    SET dom_element_text = CASE WHEN " . self::INPUT_TEXT . " THEN NULL ELSE dom_element_text END,
+                        dom_element_value = CASE WHEN " . self::OTHER_VALUE . " THEN NULL ELSE dom_element_value END
                   WHERE id IN ( $in )", $ids );
 
             if ( $ok === false ) {
@@ -238,6 +252,12 @@ class ClearFieldValuesCli extends \OWA\Core\Controller\Cli {
         }
     }
 
+    /** Whether a stored value is what 1.x wrote when there was none. */
+    public static function isNoValue( $value ) {
+
+        return $value === null || in_array( (string) $value, self::NO_VALUE, true );
+    }
+
     /**
      * A recording's events with the field values taken out.
      *
@@ -285,7 +305,9 @@ class ClearFieldValuesCli extends \OWA\Core\Controller\Cli {
 
             foreach ( $drop as $key ) {
 
-                if ( property_exists( $event, $key ) ) {
+                // key_code always goes with a key press: it is the key.
+                if ( property_exists( $event, $key )
+                     && ( $key === 'key_code' || ! self::isNoValue( $event->$key ) ) ) {
 
                     unset( $event->$key );
                     $changed = true;
