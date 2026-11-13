@@ -401,6 +401,28 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * @param object $event
      * @return string|null JSON
      */
+    /** Names and string values converted to UTF-8 (Lib::utf8Encode()), so json_encode() keeps them. */
+    protected static function utf8Params( array $params ) {
+
+        $out = array();
+
+        foreach ( $params as $name => $value ) {
+
+            if ( is_array( $value ) ) {
+
+                $value = self::utf8Params( $value );
+
+            } elseif ( is_string( $value ) ) {
+
+                $value = \OWA\Core\Lib::utf8Encode( $value );
+            }
+
+            $out[ is_string( $name ) ? \OWA\Core\Lib::utf8Encode( $name ) : $name ] = $value;
+        }
+
+        return $out;
+    }
+
     protected function params( $event ) {
 
         $params = array();
@@ -560,7 +582,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * point, keeps it the same size as the value: escaping every non-ASCII
          * character to \uXXXX triples a Japanese page title for no gain.
          */
-        $json = json_encode( $params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+        $json = json_encode( self::utf8Params( $params ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 
         // json_encode returns false on malformed UTF-8. A JSON column refuses
         // an invalid value outright under a strict sql_mode, so the row would
@@ -1176,7 +1198,10 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return null;
         }
 
-        $value = \OWA\Module\Base\Classes\V2Event::strip( (string) $value );
+        // Text that is not UTF-8 fails the insert under a strict sql_mode, so
+        // the beacon was retried before it landed. Converted here, it lands.
+        $value = \OWA\Core\Lib::utf8Encode( (string) $value );
+        $value = \OWA\Module\Base\Classes\V2Event::strip( $value );
 
         if ( trim( $value ) === ''
              || $value === \OWA\Module\Base\Classes\TrackingEventHelpers::ABSENT_VALUE_LABEL

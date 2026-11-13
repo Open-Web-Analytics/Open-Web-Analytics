@@ -641,6 +641,30 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * Text that is not UTF-8 lands converted, on the first attempt.
+     *
+     * A Latin-1 byte failed the insert under a strict sql_mode, so the beacon
+     * went to the retry queue, whose JSON encoding then replaced the character.
+     * Read as Windows-1252, "Caf\xe9" is "Café".
+     */
+    public function testTextThatIsNotUtf8LandsConverted(): void
+    {
+        $row = $this->firePageView([
+            'page_title' => "Caf\xe9 cr\xe8me",
+            'eps_note'   => "\xe9t\xe9",
+        ])['page_view'];
+
+        // Stored as the same text sent in UTF-8 is (string values are HTML-escaped on the way in).
+        $this->assertSame(
+            \OWA\Module\Base\Classes\Sanitize::cleanInput('Café crème', ['remove_html' => true]),
+            $row['page_title']);
+        $this->assertNotNull($row['page_title'], 'the title was blanked, not converted');
+        $this->assertSame(\OWA\Module\Base\Classes\Sanitize::cleanInput('été', ['remove_html' => true]),
+            json_decode((string) $row['params'], true)['note'] ?? null,
+            'a param that is not UTF-8 is converted, not dropped with the rest');
+    }
+
+    /**
      * A display name is a custom USER property, and reaches the visitor store.
      *
      * These two tests asserted it reached `params` as a declared property with

@@ -1036,25 +1036,41 @@ class Lib {
 
     public static function utf8Encode($string) {
 
-        if ( \OWA\Core\Lib::checkForUtf8( $string ) ) {
+        $string = (string) $string;
+
+        // ASCII is UTF-8. checkForUtf8() answers no for it (mb_detect_encoding
+        // calls it ASCII), so it is not the test here.
+        $valid = function_exists( 'mb_check_encoding' )
+            ? mb_check_encoding( $string, 'UTF-8' )
+            : \OWA\Core\Lib::checkForUtf8( $string );
+
+        if ( $valid ) {
+
             return $string;
-        } else {
-            if (function_exists('iconv')) {
-	            
-	            if ( function_exists( 'mb_detect_encoding' ) ) {
-		            
-		            return iconv(mb_detect_encoding( $string ),'UTF-8//TRANSLIT', $string);
-		            
-		        } else {
-			        
-			    	return iconv('UTF-8','UTF-8//TRANSLIT', $string);
-		        }
-	             
-            } else {
-                // at least worth a try (utf8_encode() removed/deprecated; mbstring equivalent)
-                return mb_convert_encoding($string, 'UTF-8', 'ISO-8859-1');
+        }
+
+        /*
+         * Not UTF-8, so read as Windows-1252: the Latin-1 superset browsers and
+         * mail clients send when they are not sending UTF-8, so an "é" stays an
+         * "é". It used to ask mb_detect_encoding(), which answers false for
+         * Latin-1 bytes, and hand that false to iconv() as the source encoding.
+         */
+        if ( function_exists( 'mb_convert_encoding' ) ) {
+
+            return mb_convert_encoding( $string, 'UTF-8', 'Windows-1252' );
+        }
+
+        if ( function_exists( 'iconv' ) ) {
+
+            $converted = @iconv( 'Windows-1252', 'UTF-8//TRANSLIT', $string );
+
+            if ( $converted !== false ) {
+
+                return $converted;
             }
         }
+
+        return preg_replace( '/[\x80-\xFF]/', '?', $string );
     }
 
     public static function checkForUtf8($str) {
