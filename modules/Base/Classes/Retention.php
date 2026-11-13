@@ -24,10 +24,8 @@ namespace OWA\Module\Base\Classes;
  *
  * A CUBE'S WINDOW IS CAPPED AT RAW'S. A cube is built from raw, so a window
  * longer than raw's names months there is nothing to build from; not set means
- * "the same as raw". Months raw has lost to a manual prune (partition-drop
- * only=raw) stay in a cube until the next rotate, which drops a cube's
- * partitions ending on or before raw's first day (rawCoversFrom()); a rebuild
- * in between leaves them as built (CubeRebuildCli).
+ * "the same as raw". A cube can still hold months raw has lost to a manual prune
+ * (partition-drop only=raw): a rebuild leaves those as built (CubeRebuildCli).
  *
  * ONLY SHORTENING RAW DESTROYS ANYTHING. A shorter cube window drops cube
  * partitions that raw can rebuild; a longer one is filled back by queueing a

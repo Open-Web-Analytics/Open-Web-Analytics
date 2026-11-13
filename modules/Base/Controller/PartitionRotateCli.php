@@ -25,8 +25,7 @@ namespace OWA\Module\Base\Controller;
  * raw_retention_months for raw and every other event table, and each
  * Property's cube_retention_months for its cube. Both 0 by default, which
  * keeps everything: the lead is maintained and old periods are merged, never
- * dropped. A cube keeps no day before the first one raw holds (cutoffFor()),
- * and no merge crosses a table's cutoff (Db::planPartitionCompaction()).
+ * dropped. No merge crosses a table's cutoff (Db::planPartitionCompaction()).
  * The visitor store has its own fixed rule instead: a visitor not
  * seen for 14 months, with no event left in raw, is deleted
  * (expireVisitorStore()), so a cube rebuild never loses an acquisition.
@@ -415,10 +414,6 @@ class PartitionRotateCli extends PartitionsCli {
      * The cutoff one table is rotated to: its window from the settings, or the
      * what-if's.
      *
-     * A CUBE FOLLOWS RAW. It keeps no day before the first one raw holds, so
-     * months dropped from raw by hand (partition-drop only=raw) go from every
-     * cube at the next rotate. A shorter cube window still wins.
-     *
      * @param string $table
      * @param array  $whatif from whatIf()
      * @param int    $raw_months the raw window in force for this run
@@ -437,33 +432,8 @@ class PartitionRotateCli extends PartitionsCli {
                 && ( ! isset( $whatif['property'] ) || $whatif['property'] === (string) $property_id )
             ? $whatif['cube'] : null;
 
-        $window = \OWA\Module\Base\Classes\Retention::cutoff(
+        return \OWA\Module\Base\Classes\Retention::cutoff(
             \OWA\Module\Base\Classes\Retention::cubeMonths( $property_id, $raw_months, $cube ) );
-
-        $raw_from = $this->rawCoversFrom();
-
-        return $raw_from ? max( (int) $window, (int) $raw_from ) : $window;
-    }
-
-    /** @var int|null|false rawCoversFrom(), once per run; false = not read yet */
-    protected $raw_covers_from = false;
-
-    /**
-     * The first day raw holds, or null when raw is not partitioned or empty.
-     *
-     * Read once per run, before any table is rotated: raw's own drop in this
-     * run is the window's, which cubeMonths() already caps a cube at.
-     *
-     * @return int|null yyyymmdd
-     */
-    protected function rawCoversFrom() {
-
-        if ( $this->raw_covers_from === false ) {
-
-            $this->raw_covers_from = \OWA\Module\Base\Classes\Retention::rawCoversFrom();
-        }
-
-        return $this->raw_covers_from;
     }
 
     /**

@@ -26,12 +26,10 @@ namespace OWA\Module\Base\Controller;
  *   cmd=partition-drop older-than=12months property=<id>  one Property's cube
  *
  * THE MANUAL PRUNE, not bound by the retention settings (Classes\Retention),
- * which govern the scheduled partition-rotate. only=raw leaves the cubes, until
- * the next rotate drops their partitions ending on or before raw's first day:
- * a cube keeps nothing raw has lost. A rebuild in between leaves those months
- * as built rather than emptying them (CubeRebuildCli). Months dropped from a
- * cube are rebuilt from raw when its window is lengthened, as far back as raw
- * holds.
+ * which govern the scheduled partition-rotate. Raw and cubes are independent:
+ * a cube keeps months dropped from raw, and a rebuild leaves those months as
+ * built rather than emptying them (CubeRebuildCli). Months dropped from a cube
+ * are rebuilt from raw when its window is lengthened, as far back as raw holds.
  */
 class PartitionDropCli extends PartitionsCli {
 

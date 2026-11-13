@@ -264,36 +264,21 @@ final class PartitionCliTest extends CliControllerTestCase
     }
 
     /**
-     * A cube keeps no day before the first one raw holds: months dropped from
-     * raw by hand go from the cube at the next rotate. A shorter cube window
-     * still wins, and raw's own cutoff is its window alone.
+     * A cube's cutoff is its own window, capped at raw's: months dropped from
+     * raw by hand (partition-drop only=raw) stay in the cube.
      */
-    public function testACubeFollowsRawUnlessItsWindowKeepsLess()
+    public function testACubeIsRotatedToItsOwnWindowOnly()
     {
-        $cli = new class([]) extends \OWA\Module\Base\Controller\PartitionRotateCli {
-            public $from = null;
-
-            protected function rawCoversFrom()
-            {
-                return $this->from;
-            }
-        };
-
+        $cli  = new \OWA\Module\Base\Controller\PartitionRotateCli([]);
         $cube = \OWA\Core\Entity::TABLE_PREFIX . \OWA\Module\Base\Classes\Cube\Cubes::PREFIX . '9990000000000000001';
         $raw  = \OWA\Module\Base\Classes\Retention::rawTable();
-        $six  = \OWA\Module\Base\Classes\Retention::cutoff(6);
 
-        $this->assertNull($this->callProtected($cli, 'cutoffFor', [$cube, [], 0]), 'raw holds everything: so does the cube');
-
-        $cli->from = 20200301;
-        $this->assertSame(20200301, $this->callProtected($cli, 'cutoffFor', [$cube, [], 0]));
-        $this->assertNull($this->callProtected($cli, 'cutoffFor', [$raw, [], 0]), 'raw is held to its window only');
-
-        $this->assertSame($six, $this->callProtected($cli, 'cutoffFor', [$cube, ['cube' => 6], 0]), 'a shorter cube window wins');
-
-        $cli->from = (int) date('Ymd', strtotime('-2 months'));
-        $this->assertSame($cli->from, $this->callProtected($cli, 'cutoffFor', [$cube, ['cube' => 6], 0]),
-            'and raw wins over a window reaching further back than raw holds');
+        $this->assertNull($this->callProtected($cli, 'cutoffFor', [$cube, [], 0]), 'no window: the cube keeps everything');
+        $this->assertNull($this->callProtected($cli, 'cutoffFor', [$raw, [], 0]));
+        $this->assertSame(\OWA\Module\Base\Classes\Retention::cutoff(6),
+            $this->callProtected($cli, 'cutoffFor', [$cube, ['cube' => 6], 0]), 'its own window');
+        $this->assertSame(\OWA\Module\Base\Classes\Retention::cutoff(12),
+            $this->callProtected($cli, 'cutoffFor', [$cube, ['cube' => 24], 12]), 'capped at raw\'s');
     }
 
     /**
