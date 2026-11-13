@@ -61,6 +61,8 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
             <TD valign="top" width="*" class="owa_reportContentColumn">
                 <?php // At full width this box scrolls, not the window (owa.shell.css). ?>
                 <div class="owa_contentScroll">
+                <?php // The skip link's target (wrapper_default.php). ?>
+                <main id="owa_main">
                 <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
 
                 <div class="reportSectionContainer">
@@ -127,7 +129,7 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                     <?php if ( ! $view->get( 'hideReportHead' ) ): ?>
                     <div class="owa_reportHead">
                     <div class="owa_reportHeadText">
-                    <div class="owa_reportTitle"><?php $view->out( $view->title );
+                    <h1 class="owa_reportTitle"><?php $view->out( $view->title );
                         ?><?php if ( $owa_hasCount ): ?><span
                             class="owa_titleCount"><?php $view->out( $owa_titleCount ); ?></span><?php
                         endif; ?><span class="titleSuffix"><?php $view->out( $view->get('titleSuffix') );?></span><?php
@@ -154,7 +156,7 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                         // Words about the report, such as Shared, after its controls.
                         foreach ( (array) ( $view->get( 'title_tags' ) ?: array() ) as $owa_tag ): ?><span
                             class="owa_titleTag"><?php $view->out( $owa_tag ); ?></span><?php
-                        endforeach; ?></div>
+                        endforeach; ?></h1>
                     <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
                     <?php
                         /*
@@ -212,6 +214,7 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                     <?php echo $view->subview;?>
 
                 </div>
+                </main>
                 <?php echo \OWA\Core\View::FOOTER_SLOT; // the footer goes here, not across the nav ?>
                 </div>
             </TD>

@@ -13,7 +13,7 @@
  */
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php $view->out( \OWA\Core\Strings::htmlLang() ); ?>">
 
     <head>
         <meta charset="UTF-8" />

@@ -11,7 +11,7 @@
  * that dropped one would look perfect and lock people out.
  */
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, logoOrange } = require('./fixtures');
+const { FIXTURE } = require('./fixtures');
 
 test.describe('the signed-out pages', () => {
 
@@ -60,21 +60,20 @@ test.describe('the signed-out pages', () => {
         // The same button the rest of the application uses.
         const button = page.locator('.owa_publicSubmit');
 
-        const background = await button.evaluate((el) => getComputedStyle(el).backgroundColor);
+        const background = () => button.evaluate((el) => getComputedStyle(el).backgroundColor);
 
-        expect(background).toBe(logoOrange());
+        // The logo's orange darkened until white on it reads at 4.5:1 (owa.css).
+        expect(await background()).toBe('rgb(180, 83, 9)');
 
-        /*
-         * White at rest, blue on hover. It used to go BLACK on hover, which is
-         * not a colour used anywhere else on these screens.
-         */
+        // White at rest and on hover, where the fill darkens.
         expect(await button.evaluate((el) => getComputedStyle(el).color))
             .toBe('rgb(255, 255, 255)');
 
         await button.hover();
 
         expect(await button.evaluate((el) => getComputedStyle(el).color))
-            .toBe('rgb(26, 95, 138)');
+            .toBe('rgb(255, 255, 255)');
+        expect(await background()).toBe('rgb(146, 64, 14)');
     });
 
     /**

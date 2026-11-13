@@ -22,7 +22,7 @@ $owa_operators = array(
     \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_REGEX  => 'Matches Regex',
 );
 ?>
-<div class="panel_headline"><?php echo $view->headline;?></div>
+<h1 class="panel_headline"><?php echo $view->headline;?></h1>
 <div id="panel">
 <div class="owa_panelIntro">Goal events are custom events that are created when OWA observes
 a behavior pattern you specify. A goal event definition names them and says which events count:
@@ -31,16 +31,18 @@ choose the event, then pick a property of it, how to compare it, and what to com
 <form method="post" name="owa_goalEventDefinition">
 
     <div class="setting">
-        <div class="title">Name</div>
+        <?php // Once saved the name is text, not a field: nothing to label. ?>
         <?php if ( ! empty( $view->goalEventDefinitionId ) && ! empty( $owa_ke['name'] ) ):?>
+        <div class="title">Name</div>
         <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Each goal event is stored as an event with this name. It cannot be changed: for another name, create another goal event definition and switch this one off.' ) );?></div>
         <div class="field">
             <code><?php $view->out( $owa_ke['name'] );?></code>
         </div>
         <?php else:?>
+        <label class="title" for="owa_goalName">Name</label>
         <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Each goal event is stored as an event with this name, which reports show: Signup_Completed rather than Goal_3. A letter, then up to 39 letters, digits and underscores. It cannot be changed once the goal event definition is saved.' ) );?></div>
         <div class="field">
-            <input class="owa_largeFormField" type="text" maxlength="40"
+            <input class="owa_largeFormField" type="text" maxlength="40" id="owa_goalName"
                    name="<?php echo $view->getNs();?>name"
                    value="<?php $view->out( $owa_ke['name'] ?? '' );?>">
             <span class="validation_error"><?php $view->out( $view->validation_errors['name'] ?? '' );?></span>
@@ -176,10 +178,10 @@ choose the event, then pick a property of it, how to compare it, and what to com
     </div>
 
     <div class="setting">
-        <div class="title">Value <span class="owa_optional">optional</span></div>
+        <label class="title" for="owa_goalValue">Value <span class="owa_optional">optional</span></label>
         <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'What one goal event is worth, in the Property\'s currency. Left blank, a goal event met by a purchase carries the purchase\'s revenue, and any other carries no value.' ) );?></div>
         <div class="field">
-            <input class="owa_shortFormField" type="text"
+            <input class="owa_shortFormField" type="text" id="owa_goalValue"
                    name="<?php echo $view->getNs();?>value"
                    value="<?php $view->out( isset( $owa_ke['id'] )
                        ? \OWA\Module\Base\Entity\GoalEventDefinition::centsToDecimal( $owa_ke['value'] ?? 0 )
@@ -189,7 +191,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
     </div>
 
     <div class="setting">
-        <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'How often' ) );?></div>
+        <label class="title" for="owa_goalCountMode"><?php $view->out( \OWA\Core\CoreAPI::t( 'How often' ) );?></label>
         <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Once per event adds a goal event for every event that matches. Once per session adds one for the first match in a session, and none for the rest of it.' ) );?></div>
         <div class="field">
             <?php
@@ -204,7 +206,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
                 ? \OWA\Module\Base\Entity\GoalEventDefinition::countModeOf( $owa_ke['count_mode'] ?? '' )
                 : \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT;
             ?>
-            <select name="<?php echo $view->getNs();?>countMode">
+            <select id="owa_goalCountMode" name="<?php echo $view->getNs();?>countMode">
             <?php foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::countModes() as $owa_value => $owa_label ):?>
                 <option value="<?php $view->out( $owa_value );?>" <?php echo $owa_count === $owa_value ? 'selected' : '';?>><?php $view->out( $owa_label );?></option>
             <?php endforeach;?>
@@ -213,7 +215,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
     </div>
 
     <div class="setting">
-        <div class="title">Status</div>
+        <label class="title" for="owa_goalIsActive">Status</label>
         <div class="description">An inactive goal event definition is kept and stops
         counting.</div>
         <div class="field">
@@ -229,7 +231,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
              */
             $owa_active = isset( $owa_ke['id'] ) ? ! empty( $owa_ke['is_active'] ) : true;
             ?>
-            <select name="<?php echo $view->getNs();?>isActive">
+            <select id="owa_goalIsActive" name="<?php echo $view->getNs();?>isActive">
                 <option value="1" <?php echo $owa_active ? 'selected' : '';?>>Active</option>
                 <option value="0" <?php echo $owa_active ? '' : 'selected';?>>Inactive</option>
             </select>

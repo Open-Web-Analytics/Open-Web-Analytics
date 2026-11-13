@@ -9,7 +9,7 @@
  * user, never a partial list.
  */
 ?>
-<DIV class="panel_headline">Property Access Management</DIV>
+<h1 class="panel_headline">Property Access Management</h1>
 <div id="panel">
 <div class="owa_panelIntro">Who can see this Property. A grant gives up to three capabilities: viewing reports, viewing e-commerce reports, and editing the Property. It covers all of the Property's Observation Profiles. Administrators always have access and cannot be changed here.</div>
 <form method="post" name="owa-allowedusersform">

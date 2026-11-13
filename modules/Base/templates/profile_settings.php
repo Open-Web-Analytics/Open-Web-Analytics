@@ -7,7 +7,7 @@
  * that define it. Split out of the old three-form Profile page.
  */
 ?>
-<DIV class="panel_headline">Observation Settings</DIV>
+<h1 class="panel_headline">Observation Settings</h1>
 <div id="panel">
 <div class="owa_panelIntro">What this Observation Profile records and ignores. These settings apply to this Profile only; other Profiles of the same Property can use different ones.</div>
 <form method="post" name="owa_options">

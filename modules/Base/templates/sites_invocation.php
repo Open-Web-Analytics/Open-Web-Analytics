@@ -9,7 +9,7 @@ $status = (array) $view->bundle_status;
 $cache  = (array) $view->bundle_cache;
 $state  = (string) ( $status['state'] ?? '' );
 ?>
-<div class="panel_headline">Tracking Tag</div>
+<h1 class="panel_headline">Tracking Tag</h1>
 <div id="panel">
 <div class="owa-tagScreen">
 

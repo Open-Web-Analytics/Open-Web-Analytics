@@ -1,7 +1,7 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <?php $cu = $view->getCurrentUser(); ?>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="<?php $view->out( \OWA\Core\Strings::htmlLang() ); ?>" xml:lang="<?php $view->out( \OWA\Core\Strings::htmlLang() ); ?>">
 
     <head>
         <title>Open Web Analytics - <?php echo $view->page_title ?? '';?></title>
@@ -16,7 +16,12 @@
         </style>
 
         <div class="owa">
-        <?php include($view->getTemplatePath('base', 'header.php'));?>
+        <?php
+            // Drawn first, as before; printed after the skip link, which needs the body.
+            ob_start();
+            include($view->getTemplatePath('base', 'header.php'));
+            $owa_header = ob_get_clean();
+        ?>
 
         <?php
             /*
@@ -59,6 +64,12 @@
                 $owa_footer = '';
             }
 
+            // A page with a <main id="owa_main"> (report.php, options_hierarchy.php) gets a link to it ahead of the header.
+            if ( strpos( $owa_body, 'id="owa_main"' ) !== false ) {
+                echo '<a class="owa_skipLink" href="#owa_main">Skip to content</a>';
+            }
+
+            echo $owa_header;
             echo $owa_banners;
             echo $owa_body;
             echo $owa_footer;

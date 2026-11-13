@@ -502,8 +502,11 @@ OWA.resultSetExplorer.prototype = {
         this[func[0]].apply(this, args);
     },
 
+    // The spinner is decoration; the status says it in words.
     showLoader: function() {
-        jQuery('#'+this.dom_id).append('<div class="loader"><img class="loading" src="'+OWA.getSetting('baseUrl')+'public/base/i/loader.gif"></div>');
+        jQuery('#'+this.dom_id).append( jQuery( '<div class="loader" role="status"></div>' )
+            .append( jQuery( '<img class="loading" alt="">' ).attr( 'src', OWA.getSetting('baseUrl')+'public/base/i/loader.gif' ) )
+            .append( jQuery( '<span class="owa_srOnly"></span>' ).text( OWA.l( 'Loading' ) ) ) );
     },
 
     hideLoader: function() {
@@ -541,7 +544,7 @@ OWA.resultSetExplorer.prototype = {
             return;
         }
 
-        $box.append( jQuery( '<div class="owa_loadError"></div>' )
+        $box.append( jQuery( '<div class="owa_loadError" role="alert"></div>' )
             .text( OWA.l( 'This report could not be loaded. Try again in a moment.' ) ) );
     },
 

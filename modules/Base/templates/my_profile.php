@@ -11,7 +11,7 @@ $owa_mayEditEmail = (bool) $view->may_edit_email;
 $owa_error        = (string) $view->my_profile_error;
 $owa_minPassword  = (int) $view->min_password_length;
 ?>
-<DIV class="panel_headline">User Profile</DIV>
+<h1 class="panel_headline">User Profile</h1>
 <div id="panel">
 
 <?php if ( $owa_error ): ?>
@@ -42,18 +42,24 @@ $owa_minPassword  = (int) $view->min_password_length;
         </div>
 
         <div class="setting">
-            <div class="title">Name</div>
-            <div class="description">Your name, as other people see it on the users
+            <label class="title" for="owa_myProfileRealName">Name</label>
+            <div class="description" id="owa_myProfileRealNameHint">Your name, as other people see it on the users
             list.</div>
             <div class="field">
-                <input type="text" size="30" maxlength="255" name="real_name"
+                <input type="text" size="30" maxlength="255" name="real_name" id="owa_myProfileRealName"
+                       aria-describedby="owa_myProfileRealNameHint"
                        value="<?php $view->out( $view->real_name ); ?>">
             </div>
         </div>
 
         <div class="setting">
+            <?php // A label only when there is a field: read-only, the address is text. ?>
+            <?php if ( $owa_mayEditEmail ): ?>
+            <label class="title" for="owa_myProfileEmail">Email address</label>
+            <?php else: ?>
             <div class="title">Email address</div>
-            <div class="description">Where password resets are sent.<?php
+            <?php endif; ?>
+            <div class="description" id="owa_myProfileEmailHint">Where password resets are sent.<?php
                 if ( ! $owa_mayEditEmail ): ?> Your role cannot change it; ask an administrator.<?php endif; ?></div>
             <div class="field">
                 <?php
@@ -70,7 +76,8 @@ $owa_minPassword  = (int) $view->min_password_length;
                      */
                 ?>
                 <?php if ( $owa_mayEditEmail ): ?>
-                <input type="email" size="30" maxlength="255" name="email_address"
+                <input type="email" size="30" maxlength="255" name="email_address" id="owa_myProfileEmail"
+                       aria-describedby="owa_myProfileEmailHint"
                        value="<?php $view->out( $view->email_address ); ?>">
                 <?php else: ?>
                 <span class="noedit"><?php $view->out( $view->email_address ); ?></span>
@@ -79,8 +86,8 @@ $owa_minPassword  = (int) $view->min_password_length;
         </div>
 
         <div class="setting">
-            <div class="title">Change password</div>
-            <div class="description">Leave empty to keep your current password. At least
+            <div class="title" id="owa_myProfilePasswordTitle">Change password</div>
+            <div class="description" id="owa_myProfilePasswordHint">Leave empty to keep your current password. At least
             <?php echo (int) $owa_minPassword; ?> characters. Changing it signs you out.</div>
             <div class="field">
                 <?php
@@ -90,13 +97,15 @@ $owa_minPassword  = (int) $view->min_password_length;
                      * filling the new-password fields with the old one.
                      */
                 ?>
-                <div class="owa_passwordFields">
+                <?php // One title over three boxes: the group takes the title, each box its own name. ?>
+                <div class="owa_passwordFields" role="group" aria-labelledby="owa_myProfilePasswordTitle"
+                     aria-describedby="owa_myProfilePasswordHint">
                     <input type="password" size="30" name="current_password"
-                           autocomplete="current-password" placeholder="Current password">
+                           autocomplete="current-password" placeholder="Current password" aria-label="Current password">
                     <input type="password" size="30" name="new_password"
-                           autocomplete="new-password" placeholder="New password">
+                           autocomplete="new-password" placeholder="New password" aria-label="New password">
                     <input type="password" size="30" name="new_password2"
-                           autocomplete="new-password" placeholder="Repeat new password">
+                           autocomplete="new-password" placeholder="Repeat new password" aria-label="Repeat new password">
                 </div>
             </div>
         </div>

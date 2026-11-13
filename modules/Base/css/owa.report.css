@@ -36,6 +36,15 @@
     color:#111827;
 }
 
+/* A widget's title is an <h2> and the page's an <h1>; they keep the look
+   their containers give them, not the browser's heading sizes. */
+.owa_reportSectionTitle {
+    margin:0;
+    font-size:inherit;
+    font-weight:inherit;
+    color:inherit;
+}
+
 .owa_reportHeadline {
     font-weight:bold;
     font-family: Helvetica, Arial, sans-serif;
@@ -512,7 +521,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .owa .refererDetailPanel .snippet {
     font-size:10px;
-    color: #9f9f9f;
+    color: var(--owa-text-muted, #6b7280);
 
 }
 
@@ -741,7 +750,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #9f9f9f;
+    color: var(--owa-text-muted, #6b7280);
 }
 
 .owa .funnelStepName {
@@ -760,7 +769,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     vertical-align: middle;
     font-size: 12px;
     font-weight: normal;
-    color: #9f9f9f;
+    color: var(--owa-text-muted, #6b7280);
 }
 
 /* Paths are long and must not stretch a column: the flex row would then stop
@@ -782,7 +791,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .owa .secondaryText {
 
     font-size:14px;
-    color: #9f9f9f;
+    color: var(--owa-text-muted, #6b7280);
 }
 
 .owa .submit-button {
@@ -961,6 +970,11 @@ li.constraintRow {
 .owa .constraintRow .constraintValueField:focus {
     border-color: #1874CD;
     outline: none;
+}
+
+.owa .constraintRow .constraintValueField:focus-visible {
+    outline: 2px solid var(--owa-focus, #1874CD);
+    outline-offset: 1px;
 }
 
 /*
@@ -1759,7 +1773,7 @@ li.constraintRow {
     height: 32px;
     margin: -6px 0;
     border-radius: 16px;
-    color: #9ca3af;
+    color: var(--owa-text-muted, #6b7280);
     text-decoration: none;
 }
 
@@ -2252,7 +2266,7 @@ li.constraintRow {
     border: 0;
     border-radius: 4px;
     background: transparent;
-    color: #9ca3af;
+    color: var(--owa-text-muted, #6b7280);
     cursor: grab;
 }
 
@@ -3186,7 +3200,7 @@ li.constraintRow {
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 12px;
-    color: #9f9f9f;
+    color: var(--owa-text-muted, #6b7280);
     white-space: nowrap;
     pointer-events: none;
 }
@@ -3480,7 +3494,7 @@ li.constraintRow {
 }
 
 .owa .owa_dimPillRemove {
-    color: #777777;
+    color: var(--owa-text-muted, #6b7280);
     text-decoration: none;
     font-size: 13px;
     line-height: 1;
@@ -3544,6 +3558,17 @@ li.constraintRow {
 
     /* The orange in the logo (modules/Base/i/owa-logo.svg). */
     --owa-accent: #f47a17;
+
+    /* The accent as a fill under white text (.owa-button): 5.0:1 at rest,
+       7.1:1 on hover. White on --owa-accent is 2.75:1. */
+    --owa-accent-fill: #b45309;
+    --owa-accent-fill-hover: #92400e;
+
+    /* Secondary text and quiet controls on white: 4.8:1. */
+    --owa-text-muted: #6b7280;
+
+    /* The keyboard focus ring: 4.7:1 on white. */
+    --owa-focus: #1874CD;
 }
 
 /* ---------------------------------------------------------------------------
@@ -3636,9 +3661,14 @@ li.constraintRow {
     outline: none;
 }
 
+.owa_siteControlSummary:focus-visible {
+    outline: 2px solid var(--owa-focus, #1874CD);
+    outline-offset: 2px;
+}
+
 /* The two tiers, weighted by how specific each is to where you are. */
 .owa_siteControlOrg {
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -3655,7 +3685,7 @@ li.constraintRow {
    there to tell two similarly named Properties apart, not to be read first. */
 .owa_siteControlDomain {
     display: block;
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-xs);
     word-break: break-all;
 }
@@ -3724,7 +3754,7 @@ li.constraintRow {
 }
 
 .owa_siteControlColumnHead {
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -3809,7 +3839,7 @@ li.constraintRow {
    keyboard -- revealed on focus as well as hover, not hover alone. */
 .owa_siteControlEdit {
     flex: 0 0 auto;
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-xs);
     text-decoration: none;
     visibility: hidden;
@@ -3943,7 +3973,7 @@ li.constraintRow {
     display: block;
     position: static;
     left: auto;
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-sm);
     margin-top: 4px;
 }
@@ -3983,7 +4013,7 @@ li.constraintRow {
 }
 
 .owa_hierarchyContent #panel .setting .description {
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-sm);
     line-height: 1.55;
     max-width: 620px;
@@ -4059,7 +4089,8 @@ li.constraintRow {
 .owa_hierarchyContent #panel input[type="password"]:focus,
 .owa_hierarchyContent #panel input[type="number"]:focus {
     border-color: #a0a0a0;
-    outline: none;
+    outline: 2px solid var(--owa-focus, #1874CD);
+    outline-offset: 1px;
 }
 
 /* Grids inside the hierarchy pane.
@@ -4076,7 +4107,7 @@ li.constraintRow {
 
 .owa_hierarchyContent #panel table.management th {
     background-color: #fbfbfb;
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-xs);
     font-weight: bold;
     text-transform: uppercase;
@@ -4106,7 +4137,7 @@ li.constraintRow {
     font-size: var(--owa-text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #bbbbbb;
+    color: var(--owa-text-muted, #6b7280);
     margin-left: 4px;
 }
 
@@ -4124,7 +4155,7 @@ li.constraintRow {
     font-size: var(--owa-text-xs);
     text-transform: none;
     letter-spacing: 0;
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     text-decoration: none;
     white-space: nowrap;
 }
@@ -4250,7 +4281,7 @@ li.constraintRow {
 }
 
 .owa_appPasswordDialog .description {
-    color: #777777;
+    color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-sm);
     margin: 2px 0 6px 0;
 }
@@ -4397,13 +4428,13 @@ li.constraintRow {
 /* The word between two conditions in the list summary. Lowercase and quiet:
    it is punctuation between the parts, not one of them. */
 .owa_goalEventJoin {
-    color: #b5b5b5;
+    color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-xs);
     margin: 0 4px;
 }
 
 .owa_goalEventOperator {
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     margin: 0 3px;
 }
 
@@ -4532,13 +4563,13 @@ li.constraintRow {
 
 .owa .owa_statedValue i {
     margin-right: 7px;
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
 }
 
 /* The sentence under it saying what the kind actually does. Secondary to the
    value, so it is the same treatment .form-instructions gets. */
 .owa .owa_statedValueHint {
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-xs);
     margin-top: 6px;
 }
@@ -4811,7 +4842,7 @@ li.constraintRow {
 }
 
 .owa_realtimeEmpty {
-    color: #999999;
+    color: var(--owa-text-muted, #6b7280);
     font-style: italic;
 }
 

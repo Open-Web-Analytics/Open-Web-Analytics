@@ -196,6 +196,20 @@ final class SettingsFormTest extends TestCase
             'the value in force must be the one shown');
     }
 
+    /** A field's title is the label of its control. */
+    public function testTheTitleLabelsTheControl(): void
+    {
+        $this->config()->registerField(self::MODULE, 'words',
+            array('default' => 'abc', 'storable' => true, 'type' => 'text', 'label' => 'Some Words'));
+
+        $html = \OWA\Module\Base\Classes\SettingsForm::field(self::MODULE, 'words', 'owa_');
+
+        $this->assertStringContainsString(
+            '<label class="title" for="owa-setting-zz_form_test-words">Some Words</label>', $html);
+        $this->assertStringContainsString(
+            'name="owa_config[zz_form_test.words]" value="abc" id="owa-setting-zz_form_test-words"', $html);
+    }
+
     /**
      * Values reach the page from the database, so they are escaped. A stored
      * quote used to end the attribute.

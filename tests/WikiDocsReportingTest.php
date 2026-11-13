@@ -66,6 +66,10 @@ final class WikiDocsReportingTest extends TestCase
         $src = (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.periodpicker.js' )
              . (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
 
+        // Words for the reader (a calendar day's spoken name says "today")
+        // are text, not period keys.
+        $src = preg_replace( "/OWA\\.l\\(\\s*'(?:[^'\\\\]|\\\\.)*'/", 'OWA.l(', $src );
+
         foreach ( array_keys( ( new TimePeriod() )->getPeriodLabels() ) as $period ) {
 
             $this->assertStringNotContainsString( "'$period'", $src, "the picker names $period itself instead of reading the server's list" );

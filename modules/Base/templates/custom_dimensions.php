@@ -14,7 +14,7 @@
  * "registered" and "reportable" would look like a fault.
  */
 ?>
-<DIV class="panel_headline">Custom Dimensions</DIV>
+<h1 class="panel_headline">Custom Dimensions</h1>
 <div id="panel">
 
 <div class="owa_panelIntro">

@@ -43,6 +43,8 @@
         <TD class="layout_subview owa_hierarchyContent" valign="top">
             <?php // At full width this box scrolls, not the window (owa.shell.css). ?>
             <div class="owa_contentScroll">
+            <?php // The skip link's target (wrapper_default.php). ?>
+            <main id="owa_main">
             <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
             <?php
                 /*
@@ -61,6 +63,7 @@
             </nav>
             <?php endif;?>
             <?php echo $view->subview;?>
+            </main>
             <?php echo \OWA\Core\View::FOOTER_SLOT; // the footer goes here, not across the nav ?>
             </div>
         </TD>

@@ -148,3 +148,87 @@ test('a column still hides when storage is refused', () => {
 
     setItem.mockRestore();
 });
+
+describe('the open nav holds the focus', () => {
+
+    function renderPage() {
+        document.body.innerHTML = `
+            <div class="owa">
+                <a class="owa_skipLink" href="#owa_main">Skip to content</a>
+                <div id="owa_header">
+                    <button class="owa_reportNavToggle" aria-controls="owa_reportNavRail" aria-expanded="false"
+                            aria-label="Show the menu"><i></i></button>
+                </div>
+                <table><tbody><tr>
+                    <td class="owa_reportLeftNavColumn">
+                        <div class="owa_reportNavRail" id="owa_reportNavRail">
+                            <button class="owa_reportNavClose" aria-label="Hide the menu"></button>
+                            <a href="?do=base.report&reportId=pages" class="report">Pages</a>
+                        </div>
+                    </td>
+                    <td class="owa_reportContentColumn"><main id="owa_main"><a href="?sort=x" class="under">a link</a></main></td>
+                </tr></tbody></table>
+                <div class="already" inert></div>
+            </div>`;
+
+        return {
+            rail: document.getElementById('owa_reportNavRail'),
+            toggle: document.querySelector('.owa_reportNavToggle'),
+            content: document.querySelector('.owa_reportContentColumn'),
+        };
+    }
+
+    test('opening moves the focus into the nav and makes the page beside it inert', () => {
+        const el = renderPage();
+        el.toggle.focus();
+
+        handleClick(el.toggle, el.rail);
+
+        expect(document.activeElement).toBe(el.rail.querySelector('.owa_reportNavClose'));
+        expect(el.content.hasAttribute('inert')).toBe(true);
+        expect(document.getElementById('owa_header').hasAttribute('inert')).toBe(true);
+        expect(document.querySelector('.owa_skipLink').hasAttribute('inert')).toBe(true);
+
+        // Nothing the nav sits in is inert.
+        for (let node = el.rail; node !== document.body; node = node.parentElement) {
+            expect(node.hasAttribute('inert')).toBe(false);
+        }
+    });
+
+    test('closing gives the focus back to the menu button and the page back to the keyboard', () => {
+        const el = renderPage();
+        open(el.rail);
+
+        handleClick(el.rail.querySelector('.owa_reportNavClose'), el.rail);
+
+        expect(document.activeElement).toBe(el.toggle);
+        expect(document.querySelectorAll('[inert]:not(.already)')).toHaveLength(0);
+        // What was inert before the nav opened stays so.
+        expect(document.querySelector('.already').hasAttribute('inert')).toBe(true);
+    });
+
+    test('a nav closed with the focus elsewhere leaves it there', () => {
+        const el = renderPage();
+        open(el.rail);
+        document.querySelector('.report').blur();
+
+        const outside = document.querySelector('a.under');
+        el.content.removeAttribute('inert');
+        outside.focus();
+
+        close(el.rail);
+
+        expect(document.activeElement).toBe(outside);
+    });
+
+    test('closing a nav that is not open moves no focus', () => {
+        const el = renderPage();
+        const outside = document.querySelector('a.under');
+        outside.focus();
+
+        close(el.rail);
+
+        expect(document.activeElement).toBe(outside);
+        expect(el.content.hasAttribute('inert')).toBe(false);
+    });
+});

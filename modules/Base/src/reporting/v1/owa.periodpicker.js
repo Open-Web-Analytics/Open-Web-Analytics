@@ -16,6 +16,8 @@
  * arithmetic is done on UTC midnights, where every day is 24 hours long.
  */
 
+import { OWA } from './owa.js';
+
 const DAY = 86400000;
 
 /** yyyymmdd -> UTC milliseconds, or NaN. */
@@ -96,13 +98,14 @@ export function compareRange( key, start, end ) {
     return null;
 }
 
-let dateFormat, monthFormat, dayFormat;
+let dateFormat, monthFormat, dayFormat, longFormat;
 
 function formats() {
 
     if ( ! dateFormat ) {
 
         dateFormat  = new Intl.DateTimeFormat( undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' } );
+        longFormat  = new Intl.DateTimeFormat( undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' } );
         monthFormat = new Intl.DateTimeFormat( undefined, { month: 'short', year: 'numeric', timeZone: 'UTC' } );
         dayFormat   = new Intl.DateTimeFormat( undefined, { weekday: 'narrow', timeZone: 'UTC' } );
     }
@@ -114,6 +117,14 @@ export function formatDate( ymd ) {
     formats();
 
     return dateFormat.format( new Date( toTime( ymd ) ) );
+}
+
+/** "Tuesday, October 13, 2026": a calendar day's name for a screen reader. */
+export function formatLongDate( ymd ) {
+
+    formats();
+
+    return longFormat.format( new Date( toTime( ymd ) ) );
 }
 
 /** "Oct 13 – Nov 9, 2026", or one date when the range is a single day. */
@@ -309,6 +320,7 @@ export function PeriodPicker( el, config, onApply ) {
     this.edge     = 0;
     this.badInput = '';
     this.page     = '';
+    this.active   = '';
     this.uid      = 'owaPeriod' + ( ++PeriodPicker.seq );
 
     this.render();
@@ -331,11 +343,16 @@ export function PeriodPicker( el, config, onApply ) {
             this.close();
         }
 
-        // Enter commits a typed date (by leaving the field, which fires change).
+        // Enter commits a typed date, and the field keeps the focus.
         if ( e.key === 'Enter' && e.target.matches && e.target.matches( '[data-in]' ) ) {
 
             e.preventDefault();
-            e.target.blur();
+            this.onChange( e );
+        }
+
+        if ( e.target.matches && e.target.matches( '.owa_periodDay[data-act="day"]' ) ) {
+
+            this.onDayKey( e );
         }
     } );
 }
@@ -364,6 +381,7 @@ PeriodPicker.prototype = {
         this.focus    = 'main';
         this.edge     = 0;
         this.badInput = '';
+        this.active   = '';
 
         document.addEventListener( 'mousedown', this._onDoc );
         document.body.classList.add( 'owa_periodOpen' );
@@ -533,6 +551,7 @@ PeriodPicker.prototype = {
 
         const pageT = Date.UTC( +page.substr( 0, 4 ), +page.substr( 4, 2 ) - 1, 1 );
         const first = Date.UTC( y, m, 1 ), last = Date.UTC( endY, endM, 1 );
+        const roving = target ? this.rovingDay( target, first ) : '';
 
         let h = '<div class="owa_periodCal' + ( target ? '' : ' is-readonly' ) + '">'
             + '<div class="owa_periodCalNav"><button type="button" data-act="mprev" aria-label="Previous month"' + ( pageT <= first ? ' disabled' : '' ) + '>‹</button>'
@@ -559,9 +578,10 @@ PeriodPicker.prototype = {
                 const ymd = key + String( i ).padStart( 2, '0' );
 
                 h += '<button type="button" class="' + this.dayClass( ymd ) + '" data-d="' + ymd + '"'
-                    + ( target ? ' data-act="day"' : ' tabindex="-1" aria-disabled="true"' )
+                    + ( target ? ' data-act="day" tabindex="' + ( ymd === roving ? '0' : '-1' ) + '"' : ' tabindex="-1" aria-disabled="true"' )
                     + ( this.dayDisabled( ymd, target ) ? ' disabled' : '' )
-                    + ' aria-label="' + esc( formatDate( ymd ) ) + '"><span>' + i + '</span></button>';
+                    + ' aria-pressed="' + this.dayPressed( ymd ) + '"'
+                    + ' aria-label="' + esc( this.dayLabel( ymd ) ) + '"><span>' + i + '</span></button>';
             }
 
             h += '</div></div>';
@@ -604,6 +624,132 @@ PeriodPicker.prototype = {
         return cl.join( ' ' );
     },
 
+    /** A day is pressed when it is in the date range. */
+    dayPressed( ymd ) {
+
+        const r = this.draft.main;
+
+        return ymd >= r[0] && ymd <= r[1];
+    },
+
+    /** A day's name: its full date, and where it falls in the range and the comparison. */
+    dayLabel( ymd ) {
+
+        const r = this.draft.main, c = this.draft.cmpOn ? this.draft.cmp : null;
+        const said = [ formatLongDate( ymd ) ];
+
+        if ( ymd === r[0] ) said.push( OWA.l( 'start date', 'calendar day' ) );
+        if ( ymd === r[1] ) said.push( OWA.l( 'end date', 'calendar day' ) );
+
+        if ( c && ymd === c[0] ) said.push( OWA.l( 'comparison start date', 'calendar day' ) );
+        else if ( c && ymd === c[1] ) said.push( OWA.l( 'comparison end date', 'calendar day' ) );
+        else if ( c && ymd > c[0] && ymd < c[1] ) said.push( OWA.l( 'in the comparison', 'calendar day' ) );
+
+        if ( ymd === this.today ) said.push( OWA.l( 'today', 'calendar day' ) );
+
+        return said.join( ', ' );
+    },
+
+    /**
+     * The one day of the calendar in the tab order: the one last clicked or
+     * moved to while it can be picked; else the date the next click sets,
+     * the range's own dates or today -- the first of them that can be picked
+     * and is in the month showing, then the first that can be picked at all.
+     *
+     * @param {string} target  the range being edited
+     * @param {number} first   UTC time of the first month drawn
+     * @return {string} yyyymmdd, or '' when no day can be picked
+     */
+    rovingDay( target, first ) {
+
+        const d = this.draft[ target ];
+        const page = this.page || this.today.substr( 0, 6 );
+        const drawn = ( ymd ) => !! ymd && toTime( ymd ) >= first && ymd <= this.today;
+        const ok = ( ymd ) => drawn( ymd ) && ! this.dayDisabled( ymd, target );
+
+        if ( ok( this.active ) ) {
+
+            return this.active;
+        }
+
+        const want = [ d[ this.edge ], d[0], d[1], this.today ].filter( ok );
+
+        return want.find( ( ymd ) => ymd.substr( 0, 6 ) === page ) || want[0] || '';
+    },
+
+    /** Put the calendar's one tab stop on rovingDay(), without drawing it again. */
+    setRoving( target ) {
+
+        const days = this.el.querySelectorAll( '.owa_periodDay[data-act="day"]' );
+
+        if ( ! days.length ) {
+
+            return;
+        }
+
+        const first = toTime( days[0].getAttribute( 'data-d' ) );
+        const roving = this.rovingDay( target, first );
+
+        days.forEach( ( b ) => b.setAttribute( 'tabindex', b.getAttribute( 'data-d' ) === roving ? '0' : '-1' ) );
+    },
+
+    /**
+     * The arrow keys move between days: a day either side, a week up or down,
+     * Home and End to the week's ends, Page Up and Page Down a month. A day
+     * that cannot be picked is not moved to.
+     */
+    onDayKey( e ) {
+
+        const from = e.target.getAttribute( 'data-d' );
+        const t = toTime( from );
+        const dow = new Date( t ).getUTCDay();
+        let to = null;
+
+        switch ( e.key ) {
+
+            case 'ArrowLeft':  to = addDays( from, -1 ); break;
+            case 'ArrowRight': to = addDays( from, 1 ); break;
+            case 'ArrowUp':    to = addDays( from, -7 ); break;
+            case 'ArrowDown':  to = addDays( from, 7 ); break;
+            case 'Home':       to = addDays( from, -dow ); break;
+            case 'End':        to = addDays( from, 6 - dow ); break;
+            case 'PageUp':
+            case 'PageDown': {
+                const x = new Date( t );
+                const m = x.getUTCMonth() + ( e.key === 'PageUp' ? -1 : 1 );
+                const last = new Date( Date.UTC( x.getUTCFullYear(), m + 1, 0 ) ).getUTCDate();
+                to = toYmd( Date.UTC( x.getUTCFullYear(), m, Math.min( x.getUTCDate(), last ) ) );
+                break;
+            }
+            default:
+                return;
+        }
+
+        e.preventDefault();
+
+        const target = calendarTarget( this.draft, this.focus );
+        let day = this.el.querySelector( '.owa_periodDay[data-d="' + to + '"]' );
+
+        if ( ! day || day.disabled || this.dayDisabled( to, target ) ) {
+
+            return;
+        }
+
+        this.active = to;
+
+        // Another month: on a phone only the page's month shows, so draw it.
+        if ( to.substr( 0, 6 ) !== ( this.page || this.today.substr( 0, 6 ) ) ) {
+
+            this.page = to.substr( 0, 6 );
+            this.render();
+            day = this.el.querySelector( '.owa_periodDay[data-d="' + to + '"]' );
+        }
+
+        this.setRoving( target );
+
+        if ( day ) day.focus();
+    },
+
     whyHtml( target ) {
 
         const d = this.draft;
@@ -638,7 +784,7 @@ PeriodPicker.prototype = {
 
         const target = calendarTarget( this.draft, this.focus );
 
-        return '<div class="owa_periodPanel" id="' + this.uid + '" role="dialog" aria-label="Date range">'
+        return '<div class="owa_periodPanel" id="' + this.uid + '" role="dialog" aria-label="Date range" tabindex="-1">'
             + '<div class="owa_periodSheetHead">Date range<button type="button" data-act="cancel" aria-label="Close">×</button></div>'
             + '<div class="owa_periodBody"><div class="owa_periodLeft">' + this.listHtml() + '</div>'
             + '<div class="owa_periodRight">' + this.chipsHtml( false ) + this.fieldsHtml( target ) + this.calendarHtml( target ) + '</div></div>'
@@ -665,6 +811,8 @@ PeriodPicker.prototype = {
 
             this.page = ( t === 'cmp' ? this.draft.cmp[1] : this.draft.main[1] ).substr( 0, 6 );
         }
+
+        const had = this.focusedControl();
 
         this.el.innerHTML = this.triggerHtml() + ( this.draft ? this.panelHtml() : '' );
 
@@ -704,6 +852,68 @@ PeriodPicker.prototype = {
                 if ( on ) c.scrollLeft = on.offsetLeft - 16;
             }
         } );
+
+        if ( had ) this.restoreFocus( had );
+    },
+
+    /**
+     * The control holding the keyboard focus, as what finds its equivalent
+     * once the panel is drawn again: a selector and which match it was.
+     *
+     * @return {{sel: string, i: number}|null}
+     */
+    focusedControl() {
+
+        const a = document.activeElement;
+
+        if ( ! a || ! this.el.contains( a ) ) {
+
+            return null;
+        }
+
+        let sel = null;
+
+        if ( a.hasAttribute( 'data-d' ) ) {
+
+            sel = '[data-d="' + a.getAttribute( 'data-d' ) + '"]';
+
+        } else if ( a.hasAttribute( 'data-act' ) ) {
+
+            sel = '[data-act="' + a.getAttribute( 'data-act' ) + '"]'
+                + ( a.hasAttribute( 'data-k' ) ? '[data-k="' + a.getAttribute( 'data-k' ) + '"]' : '' );
+
+        } else if ( a.hasAttribute( 'data-in' ) ) {
+
+            sel = '[data-in="' + a.getAttribute( 'data-in' ) + '"]';
+
+        } else if ( a.hasAttribute( 'data-cmp-select' ) ) {
+
+            sel = '[data-cmp-select]';
+        }
+
+        return sel ? { sel: sel, i: Array.from( this.el.querySelectorAll( sel ) ).indexOf( a ) } : null;
+    },
+
+    /**
+     * Focus the control that stands where the focused one stood. One that is
+     * gone or disabled (the first month's Previous) leaves the focus on the
+     * other month button, or on the panel.
+     */
+    restoreFocus( had ) {
+
+        const all = this.el.querySelectorAll( had.sel );
+        let el = all[ had.i ] || all[0] || null;
+
+        if ( ! el || el.disabled ) {
+
+            el = /mprev|mnext/.test( had.sel )
+                ? this.el.querySelector( '.owa_periodCalNav button:not(:disabled)' )
+                : null;
+        }
+
+        el = el || this.el.querySelector( '.owa_periodPanel' );
+
+        if ( el ) el.focus( { preventScroll: true } );
     },
 
     /** Scroll the calendar so the week holding ymd is its bottom row. */
@@ -769,6 +979,7 @@ PeriodPicker.prototype = {
                 return;
 
             case 'day':
+                this.active = el.getAttribute( 'data-d' );
                 this.edge = pickDay( d, calendarTarget( d, this.focus ), el.getAttribute( 'data-d' ), this.edge );
                 this.badInput = '';
                 settle( d, this.presets );
@@ -944,7 +1155,11 @@ PeriodPicker.prototype = {
 
             b.className = this.dayClass( ymd );
             b.disabled  = this.dayDisabled( ymd, target );
+            b.setAttribute( 'aria-pressed', String( this.dayPressed( ymd ) ) );
+            b.setAttribute( 'aria-label', this.dayLabel( ymd ) );
         } );
+
+        this.setRoving( target );
 
         this.el.querySelectorAll( '[data-in]' ).forEach( ( input ) => {
 

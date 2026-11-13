@@ -9,7 +9,7 @@ require_once __DIR__ . '/cube_status_badge.php';
 
 $owa_s = (array) $view->sections;
 ?>
-<div class="panel_headline">System Health</div>
+<h1 class="panel_headline">System Health</h1>
 <div id="panel">
 
 <div class="owa_panelIntro">

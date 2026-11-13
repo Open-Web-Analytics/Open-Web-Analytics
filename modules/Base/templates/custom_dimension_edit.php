@@ -8,7 +8,7 @@
  * with its reason beside the name and what was typed still in the fields.
  */
 ?>
-<div class="panel_headline">New Custom Dimension</div>
+<h1 class="panel_headline">New Custom Dimension</h1>
 <div id="panel">
 
 <div class="owa_panelIntro">
