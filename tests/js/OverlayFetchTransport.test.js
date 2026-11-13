@@ -42,6 +42,9 @@ describe('the overlay fetches over CORS, not JSONP', () => {
             return { done: () => {}, fail: () => {} };
         });
 
+        // The overlay's data comes only from the OWA server the page reports to.
+        OWA.setSetting('baseUrl', 'https://reporting.example.com/owa/');
+
         OWA.overlayParams = {
             action: 'loadHeatmap',
             api_url: 'https://reporting.example.com/owa/api/index.php'
@@ -52,6 +55,7 @@ describe('the overlay fetches over CORS, not JSONP', () => {
     afterEach(() => {
         jest.restoreAllMocks();
         OWA.overlayParams = null;
+        OWA.setSetting('baseUrl', '');
     });
 
     async function heatmapFetch() {
@@ -74,8 +78,9 @@ describe('the overlay fetches over CORS, not JSONP', () => {
         expect(opts).toBeDefined();
         // JSONP would make the response an executable script.
         expect(opts.dataType).not.toBe('jsonp');
-        // and must not request a callback parameter.
-        expect(opts.jsonp).toBeUndefined();
+        // and must not request a callback parameter: jsonp: false, so jQuery
+        // never makes it a JSONP request whatever the URL holds.
+        expect(opts.jsonp).toBe(false);
     });
 
     test('the player does not request a JSONP response', async () => {
@@ -83,7 +88,7 @@ describe('the overlay fetches over CORS, not JSONP', () => {
 
         expect(opts).toBeDefined();
         expect(opts.dataType).not.toBe('jsonp');
-        expect(opts.jsonp).toBeUndefined();
+        expect(opts.jsonp).toBe(false);
     });
 
     test('the request goes to the URL the admin interface supplied', async () => {

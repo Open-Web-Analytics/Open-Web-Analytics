@@ -54,13 +54,25 @@ class Install extends \OWA\Core\Controller {
         return parent::__construct( $params );
     }
 
-    function pre() {
+    /**
+     * Nothing of the installer runs on an installed system: every install
+     * screen and action redirects to the install's public URL instead.
+     *
+     * Done here rather than in pre(), because Controller::doAction() goes on to
+     * action() whatever pre() returns.
+     */
+    function doAction() {
 
         if ( $this->isInstallComplete() ) {
-            
+
             \OWA\Core\CoreAPI::debug( 'Install is already complete. redirecting to public url' );
-            return $this->redirectBrowserToUrl( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) );
+            $this->redirectBrowserToUrl( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) );
+
+            // No view: the redirect is the whole response.
+            return array();
         }
+
+        return parent::doAction();
     }
 
     function installSchema() {

@@ -61,8 +61,19 @@ class Player {
         //closure
         var that = this;
 
+        if ( ! OWA_instance.isOwaServerUrl( url ) ) {
+
+            OWA_instance.debug( 'Recording not fetched: the URL is not this OWA server.' );
+
+            return;
+        }
+
         jQuery.ajax({
             url:  url,
+
+            // Never JSONP, whatever the URL: jQuery turns a JSON request whose
+            // URL contains "=?" into a <script> it runs.
+            jsonp: false,
         
             // A plain cross-origin GET, not JSONP.
             //
@@ -249,25 +260,69 @@ class Player {
         jQuery(window).on('unload',function() {OWA_instance.endOverlaySession()});
     }
 
+    // As text: a recording's element names and ids come from the recorded
+    // page and are never markup.
     setStatus(msg) {
 
-        jQuery('#owa-overlay-status').html(msg);
+        jQuery('#owa-overlay-status').text(msg);
 
     }
 
     showNotification(msg, header) {
-	    
+
         jQuery.jGrowl.defaults.position = 'center';
         jQuery.jGrowl.defaults.closer = false;
         jQuery.jGrowl.defaults.pool = 1;
-        jQuery.jGrowl(msg, {
+        // jGrowl inserts both as HTML.
+        jQuery.jGrowl(Player.escapeHtml(msg), {
             life: 250,
             speed: 25,
             position: "center",
             closer: false,
-            header: header
+            header: Player.escapeHtml(header)
         });
 
+    }
+
+    static escapeHtml(s) {
+
+        return String( s === undefined || s === null ? '' : s ).replace( /[&<>"']/g, function ( c ) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ c ];
+        } );
+    }
+
+    /**
+     * The element a recorded event names: by id, else by name and tag. Looked
+     * up directly rather than through a jQuery selector string, which jQuery
+     * builds into markup when it starts with "<" -- and the tag comes from the
+     * recording.
+     */
+    elementFor(event) {
+
+        var id = event.dom_element_id;
+
+        if ( id && id !== '(not set)' ) {
+
+            return document.getElementById( id );
+        }
+
+        var name = event.dom_element_name;
+
+        if ( name && name !== '(not set)' ) {
+
+            var tag = String( event.dom_element_tag || '' ).toUpperCase();
+            var named = document.getElementsByName( name );
+
+            for ( var i = 0; i < named.length; i++ ) {
+
+                if ( ! tag || named[ i ].tagName === tag ) {
+
+                    return named[ i ];
+                }
+            }
+        }
+
+        return null;
     }
 
     movementEventHandler(e) {
@@ -282,31 +337,30 @@ class Player {
 
     keypressEventHandler(event) {
 
-        if (event.dom_element_id != "" || undefined) {
-            var accessor = '#'+event.dom_element_id;
-        } else if (event.dom_element_name) {
-            var accessor = event.dom_element_tag+"[name="+event.dom_element_name+"]";
-            //console.log("accessor: %s", accessor);
+        var el = this.elementFor( event );
+
+        // A recording made before keys stopped being recorded still carries
+        // them; a newer one says only which element was typed in.
+        if ( el && event.key_value ) {
+
+            el.value = ( el.value || '' ) + event.key_value;
         }
 
-        var element_value = jQuery(accessor).val() || '';
-        element_value += event.key_value;
-        jQuery(accessor).val(element_value);
-        this.showNotification(event.key_value, "Key Press:");
-        this.setStatus("Key Press: " + event.key_value);
+        if ( el ) {
+
+            el.focus();
+        }
+
+        this.showNotification(event.key_value || '', "Key Press:");
+        this.setStatus("Key Press");
     }
 
     clickEventHandler(event) {
 
-        var accessor = '';
-
         if (event.dom_element_id != "" && event.dom_element_id != "(not set)" ) {
-            accessor = '#'+event.dom_element_id;
-            var accessor_msg = accessor;
+            var accessor_msg = '#'+event.dom_element_id;
         } else if (event.dom_element_name != "" && event.dom_element_name != "(not set)" ) {
-            accessor = event.dom_element_tag+"[name="+event.dom_element_name+"]";
-            var accessor_msg = accessor;
-            //console.log("accessor: %s", accessor);
+            var accessor_msg = event.dom_element_tag+"[name="+event.dom_element_name+"]";
         } else if(event.dom_element_class != "" && event.dom_element_class != "(not set)") {
             var accessor_msg = event.dom_element_tag+"."+event.dom_element_class;
         } else {
@@ -323,9 +377,10 @@ class Player {
             node.click();
         } else {
             // Otherwise fallback to getting node by its id or name
-            if (accessor) {
-                jQuery(accessor).click();
-                jQuery(accessor).focus();
+            var el = this.elementFor( event );
+            if (el) {
+                el.click();
+                el.focus();
             }
         }
 

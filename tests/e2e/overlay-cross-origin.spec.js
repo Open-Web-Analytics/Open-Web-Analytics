@@ -96,17 +96,20 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
     });
 
     /**
-     * Loads the tracked-page harness on the localhost origin, pointing the
-     * overlay at the API on the 127.0.0.1 origin.
+     * Loads the tracked-page harness on the localhost origin. Its tracker is
+     * loaded from, and reports to, the OWA install on the 127.0.0.1 origin, as
+     * a tag on a tracked site does, and the overlay is pointed at that install's
+     * API. `apiOnPage` points the overlay at the page's own origin instead, which
+     * is not the OWA server the tracker reports to.
      */
-    async function runOverlay(page, testInfo, { action, apiQuery, extra = '' }) {
+    async function runOverlay(page, testInfo, { action, apiQuery, extra = '', apiOnPage = false }) {
         const apiRoot = installRoot(testInfo.project.use.baseURL);      // 127.0.0.1
         const pageRoot = crossOrigin(apiRoot);                          // localhost
 
-        const apiUrl = apiRoot + 'api/index.php?' + apiQuery;
+        const apiUrl = (apiOnPage ? pageRoot : apiRoot) + 'api/index.php?' + apiQuery;
 
         const harness = pageRoot + 'tests/e2e/overlay_harness.html'
-            + '?base=' + encodeURIComponent(pageRoot)
+            + '?base=' + encodeURIComponent(apiRoot)
             + '&action=' + encodeURIComponent(action)
             + '&api=' + encodeURIComponent(apiUrl)
             + extra;
@@ -123,6 +126,15 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         });
 
         await page.goto(harness, { waitUntil: 'load' });
+
+        if (apiOnPage) {
+            // Nothing is awaited from the overlay: the tracker refuses to start
+            // it. Wait for the tracker to have run, then for the network to settle.
+            await page.waitForFunction(() => !!window.OWATracker, null, { timeout: 15000 });
+            await page.waitForLoadState('networkidle');
+
+            return { fetches: await page.evaluate(() => window.owaOverlayFetches || []), consoleErrors, apiRoot, pageRoot };
+        }
 
         // Wait for the overlay's own XHR to complete.
         await page.waitForFunction(
@@ -277,6 +289,19 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         expect(call.status, 'a token must not work for a page it does not name').toBe(401);
     });
 
+    test('an overlay link naming another server\'s API is not started', async ({ page }, testInfo) => {
+        // An #owa_overlay link's api_url is fetched only when it is on the OWA
+        // server the tracker reports to.
+        const { fetches } = await runOverlay(page, testInfo, {
+            action: 'loadHeatmap',
+            apiOnPage: true,
+            apiQuery: 'owa_do=reports&owa_module=base&owa_version=v1',
+        });
+
+        expect(fetches, 'the overlay fetched an API that is not its OWA server').toEqual([]);
+        await expect(page.locator('#owa_overlay')).toHaveCount(0);
+    });
+
     /**
      * THE WHOLE CHAIN, from the link a reader clicks to the dots on the page.
      *
@@ -296,14 +321,15 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
         const params = JSON.parse(Buffer.from(
             decodeURIComponent(new URL(href).searchParams.get('overlay_params')), 'base64').toString());
 
-        const pageRoot = crossOrigin(installRoot(testInfo.project.use.baseURL));
+        const apiRoot = installRoot(testInfo.project.use.baseURL);
+        const pageRoot = crossOrigin(apiRoot);
 
         await page.route('**/tests/e2e/overlay_harness.html*', (route) =>
             route.fulfill({ status: 200, contentType: 'text/html', body: HARNESS_HTML })
         );
 
         await page.goto(pageRoot + 'tests/e2e/overlay_harness.html'
-            + '?base=' + encodeURIComponent(pageRoot)
+            + '?base=' + encodeURIComponent(apiRoot)
             + '&action=' + encodeURIComponent(params.action)
             + '&api=' + encodeURIComponent(params.api_url), { waitUntil: 'load' });
 

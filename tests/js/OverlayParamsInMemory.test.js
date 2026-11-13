@@ -41,6 +41,8 @@ describe('overlay params are kept in memory', () => {
     beforeEach(() => {
         OWA.overlayParams = null;
         OWA.overlayActive = false;
+        // The OWA server this page reports to; api_url must be on it.
+        OWA.setSetting('baseUrl', 'https://reporting.example.com/owa/');
         document.cookie.split(';').forEach((c) => {
             const name = c.split('=')[0].trim();
             if (name) {
@@ -97,5 +99,41 @@ describe('overlay params are kept in memory', () => {
         OWA.startOverlaySession(second);
 
         expect(OWA.getOverlayParams()).toEqual(second);
+    });
+});
+
+/**
+ * The overlay starts from a link on the tracked page. Its data may come only
+ * from the OWA server the page reports to.
+ */
+describe('an overlay link must point at this OWA server', () => {
+
+    beforeEach(() => {
+        OWA.overlayParams = null;
+        OWA.overlayActive = false;
+        OWA.setSetting('baseUrl', 'https://reporting.example.com/owa/');
+    });
+
+    test.each([
+        ['another host', 'https://evil.example/x.js?cb=?'],
+        ['a lookalike host', 'https://reporting.example.com.evil.example/owa/api/'],
+        ['another port', 'https://reporting.example.com:8443/owa/api/'],
+        ['another scheme', 'http://reporting.example.com/owa/api/'],
+        ['a javascript: URL', 'javascript:alert(1)'],
+        ['no URL', undefined],
+    ])('%s is refused, and no session starts', (_name, url) => {
+        expect(OWA.startOverlaySession({ action: 'loadHeatmap', api_url: url })).toBe(false);
+        expect(OWA.overlayActive).toBe(false);
+        expect(OWA.getOverlayParams()).toBeNull();
+    });
+
+    test('nothing is allowed when the OWA server is not known', () => {
+        OWA.setSetting('baseUrl', '');
+
+        expect(OWA.isOwaServerUrl('https://reporting.example.com/owa/api/')).toBe(false);
+    });
+
+    test('a URL on the OWA server is allowed', () => {
+        expect(OWA.isOwaServerUrl('https://reporting.example.com/owa/api/index.php?owa_do=reports')).toBe(true);
     });
 });

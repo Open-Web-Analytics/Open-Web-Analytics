@@ -108,8 +108,15 @@ class User extends \OWA\Core\Entity {
         return md5($seed.time().rand());
     }
     
+    /**
+     * A password for an account created without one: 24 hex characters from
+     * the CSPRNG.
+     *
+     * Auth::isUser() refuses the values the previous generator gave
+     * (LEGACY_GENERATED_PASSWORD).
+     */
     function generateRandomPassword() {
-        return substr(\OWA\Core\Lib::encryptPassword(microtime()),0,6);
+        return bin2hex( random_bytes( 12 ) );
     }
     
     /**
