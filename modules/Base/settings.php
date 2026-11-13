@@ -421,6 +421,8 @@ return array(
         'modules_url'         => array( 'internal' => true ),
         'rest_api_url'        => array( 'internal' => true ),
         'tracking_mode'       => array( 'internal' => true ),
+        // Set by each entry point (log.php: logger; cli.php: admin_cli), never stored.
+        'instance_role'       => array( 'internal' => true ),
         'ua_regexes_dir'      => array( 'description' => 'The directory update-ua-regexes writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/ua-parser/.' ),
 
         'queue_events' => array( 'default' => false, 'description' => 'The 1.x name for queueing incoming beacons. Read only when queue_tracker_ingest is not set.' ),

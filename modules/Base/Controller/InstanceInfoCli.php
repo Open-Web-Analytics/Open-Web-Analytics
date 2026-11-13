@@ -441,9 +441,11 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         try {
 
-            $intake = \OWA\Module\Base\Classes\TrackerIngest::queue();
-            $main   = $intake->stats();
-            $dlq    = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
+            $intake   = \OWA\Module\Base\Classes\TrackerIngest::queue();
+            $main     = $intake->stats();
+            $dlq      = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
+            $fallback = \OWA\Module\Base\Classes\TrackerIngest::fallback();
+            $kept     = $fallback ? $fallback->stats() : null;
 
         } catch ( \Throwable $t ) {
 
@@ -456,9 +458,25 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         $behind = $main['oldest_age'] !== null && $main['oldest_age'] > 600;
 
-        $rows[] = $this->row( $behind ? self::WARN : self::OK,
-            'Waiting', $main['messages'] === null ? 'unknown' : (string) $main['messages'],
-            "The oldest has waited over ten minutes: check 'php cli.php cmd=schedule-status' for drain-tracker-ingest." );
+        if ( $main['messages'] === null ) {
+
+            $rows[] = $this->row( self::FAIL, 'Waiting', 'unknown',
+                'The queue could not be read' . ( ! empty( $main['error'] ) ? ': ' . $main['error'] : '' )
+                . ". Nothing is drained until it can: 'php cli.php cmd=drain-tracker-ingest' shows the error." );
+
+        } else {
+
+            $rows[] = $this->row( $behind ? self::WARN : self::OK,
+                'Waiting', (string) $main['messages'],
+                "The oldest has waited over ten minutes: check 'php cli.php cmd=schedule-status' for drain-tracker-ingest." );
+        }
+
+        if ( $kept ) {
+
+            $rows[] = $this->row( $kept['messages'] ? self::WARN : self::OK,
+                'Kept in the file queue', (string) (int) $kept['messages'],
+                'Beacons the queue did not take. drain-tracker-ingest forwards them once it answers.' );
+        }
 
         if ( $dlq ) {
 

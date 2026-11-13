@@ -10,12 +10,18 @@ namespace OWA\Module\Base\Controller;
 /**
  * Ingest what the tracker-ingest intake holds (PLAN 2.30.4).
  *
- *   cli.php cmd=drain-tracker-ingest              until empty, or 45 seconds
- *   cli.php cmd=drain-tracker-ingest seconds=600  a longer budget, by hand
+ *   cli.php cmd=drain-tracker-ingest                 until empty, or 45 seconds
+ *   cli.php cmd=drain-tracker-ingest seconds=600     a longer budget, by hand
+ *   cli.php cmd=drain-tracker-ingest forward_only=1  a logging node: forward the file fallback only
  *
- * The scheduler runs it every minute. With tracker_ingest_drain = external the
- * scheduled run refuses, since something outside OWA consumes the queue; a run
- * by hand still drains.
+ * Each run first forwards what the file fallback holds to the intake
+ * (TrackerIngest::forwardFallback()). The scheduler runs it every minute. With
+ * tracker_ingest_drain = external the scheduled run forwards and then refuses
+ * to drain, since something outside OWA consumes the queue; a run by hand
+ * still drains.
+ *
+ * A run fails when the intake could not be read or written -- a missing
+ * permission, an unreachable queue -- rather than finishing with nothing done.
  */
 class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
 
@@ -23,10 +29,11 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return array(
-            'description' => 'Ingests the beacons waiting in the tracker-ingest queue, until it is empty or the time budget runs out. Runs on the scheduler every minute.',
+            'description' => 'Ingests the beacons waiting in the tracker-ingest queue, until it is empty or the time budget runs out. First forwards any beacons the queue refused and the file queue kept. Runs on the scheduler every minute.',
             'arguments'   => array(
-                'seconds=<n>' => 'Time budget in seconds. Defaults to 45.',
-                'scheduled=1' => 'Set by the scheduler. A scheduled run refuses when tracker_ingest_drain is external.',
+                'seconds=<n>'    => 'Time budget in seconds. Defaults to 45.',
+                'forward_only=1' => 'Only forward the beacons the file queue kept to the tracker-ingest queue, without ingesting. For a logging node, from cron.',
+                'scheduled=1'    => 'Set by the scheduler. A scheduled run only forwards when tracker_ingest_drain is external.',
             ),
         );
     }
@@ -43,18 +50,41 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
 
     function action() {
 
-        $I = '\OWA\Module\Base\Classes\TrackerIngest';
+        $I       = '\OWA\Module\Base\Classes\TrackerIngest';
+        $seconds = (int) ( $this->getParam( 'seconds' ) ?: self::BUDGET );
+
+        try {
+
+            $deadline  = time() + max( 1, $seconds );
+            $forwarded = $I::forwardFallback( $deadline );
+
+        } catch ( \Throwable $t ) {
+
+            return $this->fail( 'Tracker ingest: ' . $t->getMessage() );
+        }
+
+        if ( array_sum( $forwarded ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Tracker ingest: %d forwarded from the file queue, %d still waiting there, '
+                . '%d dead-lettered there.', $forwarded['forwarded'], $forwarded['waiting'], $forwarded['dead'] ) );
+        }
+
+        if ( $this->getParam( 'forward_only' ) ) {
+
+            return $forwarded['waiting']
+                ? $this->fail( 'Tracker ingest: the intake did not answer; beacons wait in the file queue.' )
+                : null;
+        }
 
         if ( $this->getParam( 'scheduled' ) && $I::isDrainedExternally() ) {
 
             return $this->refuse( 'tracker_ingest_drain is external: the scheduler does not drain the intake.' );
         }
 
-        $seconds = (int) ( $this->getParam( 'seconds' ) ?: self::BUDGET );
-
         try {
 
-            $counts = $I::drain( time() + max( 1, $seconds ) );
+            $counts = $I::drain( $deadline );
+            $error  = $I::queueError( $I::queue() );
 
         } catch ( \Throwable $t ) {
 
@@ -65,6 +95,11 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
 
             \OWA\Core\CoreAPI::notice( sprintf( 'Tracker ingest: %d ingested, %d to retry, %d dead-lettered.',
                 $counts['ingested'], $counts['released'], $counts['dead'] ) );
+        }
+
+        if ( $error ) {
+
+            return $this->fail( 'Tracker ingest: the intake failed: ' . $error );
         }
     }
 }

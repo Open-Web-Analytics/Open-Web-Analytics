@@ -670,21 +670,23 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerJob( 'drain-tracker-ingest', 'drain-tracker-ingest', '* * * * *', array( 'scheduled' => 1 ),
             'Ingests the beacons waiting in the tracker-ingest queue: every beacon when queueing is on, and '
-          . 'any whose write failed and is waiting to be retried. A minute with nothing waiting costs a few '
-          . 'file checks.' );
+          . 'any whose write failed and is waiting to be retried. First forwards any beacons the AWS SQS queue '
+          . 'refused and the file queue kept. A minute with nothing waiting costs a few file checks.' );
 
         /*
          * Dead letters back to the intake once each, daily (PLAN 2.30.4): a
          * beacon that died in an outage longer than the back-off gets one more
-         * round, and one already replayed stays for cmd=tracker-ingest-replay.
-         * A dead letter older than raw's retention window is removed instead
-         * (TrackerIngest::replay()).
+         * round, and one already replayed is kept for cmd=tracker-ingest-replay:
+         * on disk until it is replayed, on SQS for the queue's fourteen-day
+         * retention. A dead letter older than raw's retention window is removed
+         * instead (TrackerIngest::replay()).
          */
         $this->registerJob( 'replay-tracker-ingest', 'tracker-ingest-replay',
             \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'replay-tracker-ingest' ) ), array( 'scheduled' => 1 ),
             'Gives each beacon in the tracker-ingest dead-letter queue one more try, once: one that failed '
-          . 'during an outage longer than the retries gets ingested after all. One already replayed stays '
-          . 'for cmd=tracker-ingest-replay. One older than raw_retention_months is deleted instead.' );
+          . 'during an outage longer than the retries gets ingested after all. One already replayed is kept '
+          . 'for cmd=tracker-ingest-replay: in the file queue until it is replayed, in AWS SQS for the queue\'s '
+          . 'fourteen-day retention, after which SQS deletes it. One older than raw_retention_months is deleted instead.' );
 
         /*
          * The intake's archived batches (archive_old_events), daily, under
