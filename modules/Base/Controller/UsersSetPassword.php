@@ -51,12 +51,6 @@ class UsersSetPassword extends \OWA\Core\Controller {
             'password' => $event->get('password'),
             'user_id'  => $event->get('user_id')
         ]);
-        // needed for migration away from old embedded install model
-        \OWA\Core\CoreAPI::debug('setting migration flag...'. \OWA\Core\CoreAPI::getSetting('base', 'is_embedded') );
-        if ( $u && \OWA\Core\CoreAPI::getSetting('base', 'is_embedded') ) {
-				\OWA\Core\CoreAPI::debug('setting migration flag...');	
-	        	\OWA\Core\CoreAPI::setSetting('base', 'is_embedded_admin_user_password_reset', true, true);
-		}
 
         // Returned unconditionally below, but only populated when the user
         // loaded. Returning an undefined variable made the failure path hand

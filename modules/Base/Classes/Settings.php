@@ -3029,7 +3029,6 @@ namespace OWA\Module\Base\Classes;
                         'viewer' => array('install_schema', 'view_site_list', 'view_reports'),
                         'everyone' => array('install_schema')
                 ),
-                'numGoals'                            => 15,
                 'enableEcommerceReporting'            => false, // move to site settings
                 'currencyLocal'                        => 'en_US', // move to site settings
                 'currencyISO3'                        => 'USD',   // move to site settings
