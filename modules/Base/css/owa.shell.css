@@ -499,3 +499,14 @@
 @keyframes owa-pull-spin {
     to { transform: rotate(360deg); }
 }
+
+/* With reduced motion, the chevron turns at once and the refresh icon holds still. */
+@media (prefers-reduced-motion: reduce) {
+    .owa_navColumnToggle i {
+        transition: none;
+    }
+
+    .owa_pullRefresh.is-refreshing i {
+        animation: none;
+    }
+}

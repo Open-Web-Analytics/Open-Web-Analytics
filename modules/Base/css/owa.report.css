@@ -5255,3 +5255,13 @@ li.constraintRow {
         width: calc(100vw - 48px);
     }
 }
+
+/* With reduced motion, a switch, a caret and the slide-out nav change at once. */
+@media (prefers-reduced-motion: reduce) {
+    .owa .owa_switchTrack,
+    .owa .owa_switchTrack::after,
+    .owa_siteControlCaret,
+    .owa_reportNavRail {
+        transition: none;
+    }
+}
