@@ -706,9 +706,57 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         $db->endTransaction();
 
+        $this->queueLateRebuilds( $rows );
+
         $this->announce( $event, $rows );
 
         return OWA_EHS_EVENT_HANDLED;
+    }
+
+    /** Seconds a late day's rebuild waits, so a burst of late beacons builds once. */
+    const LATE_REBUILD_DELAY = 300;
+
+    /**
+     * Queue a cube rebuild of each day these rows landed in that the routine
+     * build no longer covers.
+     *
+     * The routine build covers yesterday and today, and a day before that is
+     * not built again once it is settled. A beacon can arrive later than that:
+     * retried for hours, replayed from the dead letters, or sent by a device
+     * whose clock was off. Without this its row sat in raw, never reported,
+     * while the cube's status read green. One job per Property and day; a
+     * pending one absorbs the rest.
+     *
+     * After the commit, as JobQueue::enqueue() asks.
+     */
+    protected function queueLateRebuilds( array $rows ) {
+
+        $before = (int) date( 'Ymd', strtotime( '-1 day' ) );
+        $queued = array();
+
+        foreach ( $rows as $row ) {
+
+            $day = (int) ( $row['yyyymmdd'] ?? 0 );
+
+            if ( ! $day || $day >= $before ) {
+
+                continue;
+            }
+
+            $property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $row['site_id'] ?? '' );
+            $key      = 'cube-late:' . $property . ':' . $day;
+
+            if ( $property === '' || isset( $queued[ $key ] ) ) {
+
+                continue;
+            }
+
+            $queued[ $key ] = true;
+
+            \OWA\Core\CoreAPI::enqueueJob( 'cube-rebuild',
+                array( 'property' => $property, 'from' => (string) $day, 'to' => (string) $day ),
+                $key, self::LATE_REBUILD_DELAY );
+        }
     }
 
     /**
