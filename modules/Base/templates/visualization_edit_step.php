@@ -99,12 +99,12 @@ if ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_picked )
                        name="<?php echo $owa_ns;?>stepConditionValue[<?php echo $owa_stepIndex;?>][]"
                        aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) );?>"
                        value="<?php $view->out( (string) ( $owa_cond['value'] ?? '' ) );?>">
-                <span class="constraintAddButton" role="button" tabindex="0"
-                      title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>"
-                      aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>">+</span>
-                <span class="constraintRemoveButton" role="button" tabindex="0"
-                      title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>"
-                      aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>">X</span>
+                <button type="button" class="constraintAddButton"
+                        title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>"
+                        aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>">+</button>
+                <button type="button" class="constraintRemoveButton"
+                        title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>"
+                        aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>">X</button>
                 <div class="owa_funnelConditionHelp"></div>
             </li>
         <?php endforeach;?>

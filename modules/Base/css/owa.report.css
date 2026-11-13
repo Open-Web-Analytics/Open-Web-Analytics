@@ -986,8 +986,9 @@ li.constraintRow {
  */
 /*
  * The plus and the X are a matched pair, sitting at the end of the row they
- * act on. Glyphs rather than buttons: they are the smallest things in the row,
- * and a third and fourth kind of chrome there is noise.
+ * act on. Drawn as glyphs, not as buttons, though some are <button>s: they
+ * are the smallest things in the row, and a third and fourth kind of chrome
+ * there is noise.
  */
 .owa .constraintRow .constraintAddButton,
 .owa .constraintRow .constraintRemoveButton {
@@ -1001,6 +1002,7 @@ li.constraintRow {
     background: none;
     color: #303030;
     opacity: 0.45;
+    font-family: inherit;
     font-size: 12px;
     line-height: 18px;
     text-align: center;

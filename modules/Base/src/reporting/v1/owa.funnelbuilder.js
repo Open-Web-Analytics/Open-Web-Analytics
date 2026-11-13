@@ -200,14 +200,9 @@ OWA.funnelBuilder = {
 
 $( function () {
 
-    $( document ).on( 'click keypress', LIST_SELECTOR + ' .constraintAddButton',
+    // Buttons: Enter and Space click them.
+    $( document ).on( 'click', LIST_SELECTOR + ' .constraintAddButton',
         function ( event ) {
-
-            // Space and Enter, because these are spans rather than buttons.
-            if ( event.type === 'keypress' && event.which !== 13 && event.which !== 32 ) {
-
-                return;
-            }
 
             event.preventDefault();
 
@@ -216,13 +211,8 @@ $( function () {
             OWA.funnelBuilder.blankCopy( $row ).insertAfter( $row ).trigger( 'owa:rowadded' );
         } );
 
-    $( document ).on( 'click keypress', LIST_SELECTOR + ' .constraintRemoveButton',
+    $( document ).on( 'click', LIST_SELECTOR + ' .constraintRemoveButton',
         function ( event ) {
-
-            if ( event.type === 'keypress' && event.which !== 13 && event.which !== 32 ) {
-
-                return;
-            }
 
             event.preventDefault();
 

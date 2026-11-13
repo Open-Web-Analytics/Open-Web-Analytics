@@ -160,10 +160,12 @@ choose the event, then pick a property of it, how to compare it, and what to com
                         <input class="constraintValueField" type="text" aria-label="Value"
                                name="<?php echo $view->getNs();?>conditionValue[]"
                                value="<?php $view->out( $owa_cond['condition_value'] ?? '' );?>">
-                        <span class="constraintAddButton" role="button" tabindex="0"
-                              title="Add another condition" aria-label="Add another condition">+</span>
-                        <span class="constraintRemoveButton" role="button" tabindex="0"
-                              title="Remove this condition" aria-label="Remove this condition">X</span>
+                        <button type="button" class="constraintAddButton"
+                                title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>"
+                                aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>">+</button>
+                        <button type="button" class="constraintRemoveButton"
+                                title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>"
+                                aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>">X</button>
                         <div class="owa_goalConditionHelp"></div>
                     </li>
                 <?php endforeach;?>
