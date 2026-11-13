@@ -94,8 +94,8 @@ final class SettingsMapTypeTest extends TestCase
     }
 
     /**
-     * Inherited, the control shows the map as pairs, and so do the value the
-     * switch puts back and the note naming what an override replaces.
+     * Inherited, the text shows the map as pairs, and so do the control, the
+     * value the switch puts back and the note naming what an override replaces.
      */
     public function testTheControlShowsTheMapAsPairs(): void
     {
@@ -108,9 +108,29 @@ final class SettingsMapTypeTest extends TestCase
 
             $this->assertStringContainsString(
                 '<input type="text" size="50" name="owa_config[base.campaignKeys]" value="source=src, medium=channel" disabled="disabled"', $html);
-            $this->assertStringContainsString('data-owa-inherited="source=src, medium=channel"', $html);
+            $this->assertStringContainsString('data-owa-inherited="source=src, medium=channel" hidden>', $html);
+            $this->assertMatchesRegularExpression('#data-ui="setting-inherited">source=src, medium=channel</output>#', $html);
             $this->assertStringContainsString('<code>source=src, medium=channel</code>', $html);
             $this->assertStringNotContainsString('Array', $html);
+
+        } finally {
+            $this->config()->set('base', 'campaignKeys', $was);
+        }
+    }
+
+    /** A map holding no pair the setting knows is set, but to nothing: the text says so. */
+    public function testAMapWithNoKnownPairsIsShownAsNotSet(): void
+    {
+        $was = $this->config()->get('base', 'campaignKeys');
+
+        try {
+            $this->config()->set('base', 'campaignKeys', array('not_a_role' => 'x'));
+
+            $html = SettingsForm::scopedField('base', 'campaignKeys', 'profile', '', 'owa_');
+
+            $this->assertMatchesRegularExpression(
+                '#data-ui="setting-inherited"><span class="owa-inherited__none">Not set</span></output>#', $html);
+            $this->assertStringContainsString('>Overrides the install level value of Not set.</div>', $html);
 
         } finally {
             $this->config()->set('base', 'campaignKeys', $was);

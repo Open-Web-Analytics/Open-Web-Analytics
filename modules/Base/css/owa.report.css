@@ -5100,6 +5100,15 @@ li.constraintRow {
        than the screen. */
     .owa_hierarchyContent #panel { padding: 14px; min-width: 0; }
 
+    /* A setting below the install: the value or its control on its own line,
+       the Override switch beneath it as a 44px target. Controls are 16px, as
+       iOS zooms below that. */
+    .owa_hierarchyContent #panel .owa-overridable { flex-direction: column; align-items: stretch; gap: 4px; }
+    .owa_hierarchyContent #panel .owa-overridable__value input,
+    .owa_hierarchyContent #panel .owa-overridable__value select { font-size: 16px; min-height: 44px; width: 100%; }
+    .owa_hierarchyContent #panel .owa-inherited { font-size: 16px; }
+    .owa_hierarchyContent #panel .owa-override { align-self: flex-start; margin-left: 0; min-height: 44px; font-size: 15px; }
+
     /* A data table wider than a phone scrolls inside its own box, as a
        report's tables do inside their widgets, instead of widening the page.
        Every screen's, not only settings': the custom reports roster is on a

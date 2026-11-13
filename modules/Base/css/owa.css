@@ -353,10 +353,22 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .setting .description {border:0px solid #cccccc; font-size:12px; padding: 2px 0 2px 0;}
 .setting .title {font-weight:bold; font-size:16px; padding: 2px 0 2px 0;}
 .setting .field {padding: 2px 0 2px 0;}
-/* A setting below the install: the control, then its Override switch (SettingsForm::scopedField). */
-.setting .owa-overridable {display:flex; flex-wrap:wrap; align-items:center; gap:12px;}
-.setting .owa-overridable select[disabled], .setting .owa-overridable input[disabled] {opacity:.6;}
-.owa-override {display:inline-flex; align-items:center; gap:6px; font-size:var(--owa-text-sm, 12px); cursor:pointer; white-space:nowrap;}
+/*
+ * A setting below the install (SettingsForm::scopedField): the value in force as
+ * text with the level that sets it, or the control while overriding, then the
+ * Override switch, held at the row's right edge so it does not move when the
+ * text and the control swap.
+ */
+.setting .owa-overridable {display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; max-width:620px;}
+.setting .owa-overridable__value {display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; flex:1 1 auto; min-width:0;}
+.setting .owa-overridable [hidden] {display:none;}
+/* Text, not a control: a dashed outline on a light ground. #1f2937 on #f5f6f8 is 13.6:1, #4b5563 7.0:1. */
+.owa-inherited {display:inline-block; max-width:100%; box-sizing:border-box; padding:4px 10px; border:1px dashed #b8bec8; border-radius:4px; background:#f5f6f8; color:#1f2937; font-size:var(--owa-text-md, 13px); line-height:1.4; overflow-wrap:anywhere;}
+.owa-inherited__none {font-style:italic; color:#4b5563;}
+.owa-inherited--long {white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:min(100%, 36em);}
+.owa-inherited--long:hover, .owa-inherited--long:focus {white-space:normal;}
+.owa-inherited:focus-visible {outline:2px solid #1874CD; outline-offset:2px;}
+.owa-override {display:inline-flex; align-items:center; gap:6px; margin-left:auto; font-size:var(--owa-text-sm, 12px); cursor:pointer; white-space:nowrap;}
 .owa-override input {appearance:none; -webkit-appearance:none; width:30px; height:16px; margin:0; border-radius:8px; background:#bbbbbb; position:relative; cursor:pointer; transition:background .15s;}
 .owa-override input::after {content:''; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#ffffff; transition:left .15s;}
 .owa-override input:checked {background:#2a7ae2;}

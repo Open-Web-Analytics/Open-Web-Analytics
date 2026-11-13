@@ -243,12 +243,13 @@ class SettingsForm {
         }
 
         return sprintf(
-            "    <div class=\"setting\" id=\"%s\">\n"
+            "    <div class=\"setting\" id=\"%s\" data-ui=\"setting:%s\">\n"
           . "        <label class=\"title\" for=\"%s\">%s</label>\n"
           . "        <div class=\"description\">%s</div>\n"
           . "        <div class=\"field\">%s</div>\n"
           . "    </div>\n",
             self::esc( $key ),
+            self::esc( $module . '.' . $key ),
             self::esc( $id ),
             self::esc( self::label( $key, $args ) ),
             $description,
@@ -319,13 +320,19 @@ class SettingsForm {
     /**
      * One setting at a level below the install.
      *
-     * INHERITING, the control is disabled and shows the value in force, with a
-     * line beneath naming the level that sets it, and an Override switch beside
-     * it, off. Turning the switch on enables the control
-     * (src/reporting/v1/owa.settingsoverride.js); saving with it on stores the
-     * value at this level, and saving with it off removes any value stored here.
-     * The switch is the whole decision -- a value equal to the inherited one is
-     * still an override when the switch says so.
+     * INHERITING, the value in force is shown as text, as the screen names it
+     * (displayValue()), with the level that sets it beside it and an Override
+     * switch, off. The control is in the page but hidden and disabled, so it
+     * posts nothing. Turning the switch on hides the text and shows the control,
+     * enabled and holding the inherited value; turning it off puts that value
+     * back and hides the control again (src/reporting/v1/owa.settingsoverride.js).
+     * Saving with the switch on stores the value at this level, and saving with
+     * it off removes any value stored here. The switch is the whole decision --
+     * a value equal to the inherited one is still an override when the switch
+     * says so.
+     *
+     * The title labels the control. The text is labelled by the title and
+     * described by the level note, and the switch is named for the setting.
      *
      * With nothing set above -- no stored value and no default -- there is
      * nothing to override, so the field is plain: editable, with no switch and
@@ -385,7 +392,7 @@ class SettingsForm {
             $control = self::control( $module, $key, $args, $ns, false, $value,
                 sprintf( ' id="%s"', self::esc( $id ) ) );
 
-            return $control === '' ? '' : self::settingBlock( $key, $args, $control, '', '', $id );
+            return $control === '' ? '' : self::settingBlock( $module, $key, $args, $control, '', '', $id );
         }
 
         $overriding = $state['own'];
@@ -423,40 +430,84 @@ class SettingsForm {
         if ( $type === 'boolean' ) {
 
             $value = $value ? '1' : '0';
+
+        } elseif ( is_array( $value ) && $type !== 'map' ) {
+
+            // A list is edited as the text it is shown as.
+            $value = implode( ', ', $value );
         }
 
         $control = self::control( $module, $key, $args, $ns, ! $overriding, $value,
-            sprintf( ' id="%s" data-owa-inherited="%s"', self::esc( $id ), self::esc( $inherited ) ) );
+            sprintf( ' id="%s" data-owa-inherited="%s"%s', self::esc( $id ), self::esc( $inherited ),
+                $overriding ? '' : ' hidden' ) );
 
         if ( $control === '' ) {
 
             return '';
         }
 
-        $level  = self::LEVEL_NAMES[ $state['from'] ] ?? $state['from'];
-        $shown  = self::displayValue( $args, $state['inherited'] );
+        $level = self::LEVEL_NAMES[ $state['from'] ] ?? $state['from'];
+        $shown = self::displayValue( $args, $state['inherited'] );
+        $label = self::label( $key, $args );
+
+        if ( $shown === '' ) {
+
+            $text  = sprintf( '<span class="owa-inherited__none">%s</span>', self::esc( \OWA\Core\CoreAPI::t( 'Not set' ) ) );
+            $class = '';
+
+        } else {
+
+            $text  = self::esc( $shown );
+            $class = self::isLongValue( $shown ) ? ' owa-inherited--long' : '';
+        }
+
+        // A long value is cut to one line; focused or hovered it shows in full, so it takes the focus.
+        $text = sprintf(
+            '<output class="owa-inherited%s" id="%s-inherited" aria-labelledby="%s-title" aria-describedby="%s-note-inherit"'
+          . ' aria-live="off" data-ui="setting-inherited"%s%s>%s</output>',
+            $class, self::esc( $id ), self::esc( $id ), self::esc( $id ),
+            $class !== '' ? ' tabindex="0"' : '',
+            $overriding ? ' hidden' : '',
+            $text );
+
+        $inheritNote = sprintf(
+            '<span class="owa-inherit-note" id="%1$s-note-inherit" data-owa-note-inherit="%1$s"%2$s>%3$s</span>',
+            self::esc( $id ),
+            $overriding ? ' hidden' : '',
+            sprintf( self::esc( \OWA\Core\CoreAPI::t( 'Set at the %s level.' ) ), self::esc( $level ) ) );
 
         $switch = sprintf(
             '<label class="owa-override"><input type="checkbox" role="switch" name="%s" value="1"'
-          . ' data-owa-override="%s"%s> Override</label>',
+          . ' data-owa-override="%s" data-ui="setting-override" aria-label="%s" aria-describedby="%s"%s> %s</label>',
             self::esc( sprintf( '%soverride[%s]', $ns, $name ) ), self::esc( $id ),
-            $overriding ? ' checked="checked"' : '' );
+            self::esc( sprintf( \OWA\Core\CoreAPI::t( 'Override %s' ), $label ) ),
+            self::esc( $overriding ? $id . '-note-override' : $id . '-inherited ' . $id . '-note-inherit' ),
+            $overriding ? ' checked="checked"' : '',
+            self::esc( \OWA\Core\CoreAPI::t( 'Override' ) ) );
 
         $notes = sprintf(
-            '<div class="owa-inherit-note" data-owa-note-inherit="%1$s"%2$s>Currently set at the %3$s level.</div>',
-            self::esc( $id ),
-            $overriding ? ' hidden' : '',
-            self::esc( $level ) );
-
-        $notes .= sprintf(
-            '<div class="owa-inherit-note" data-owa-note-override="%1$s"%2$s>Overrides the %3$s '
-          . 'level value of <code>%4$s</code>.</div>',
+            '<div class="owa-inherit-note" id="%1$s-note-override" data-owa-note-override="%1$s"%2$s>%3$s</div>',
             self::esc( $id ),
             $overriding ? '' : ' hidden',
-            self::esc( $level ),
-            self::esc( $shown ) );
+            sprintf( self::esc( \OWA\Core\CoreAPI::t( 'Overrides the %1$s level value of %2$s.' ) ),
+                self::esc( $level ),
+                $shown === '' ? self::esc( \OWA\Core\CoreAPI::t( 'Not set' ) ) : '<code>' . self::esc( $shown ) . '</code>' ) );
 
-        return self::settingBlock( $key, $args, $control . $switch, $notes, 'owa-overridable', $id );
+        return self::settingBlock( $module, $key, $args,
+            '<div class="owa-overridable__value">' . $control . $text . $inheritNote . '</div>' . $switch,
+            $notes, 'owa-overridable', $id );
+    }
+
+    /** Longer than this, an inherited value is shown on one line, cut, until it is focused or hovered. */
+    const LONG_VALUE = 60;
+
+    /**
+     * @param  string $text
+     * @return bool
+     */
+    protected static function isLongValue( $text ) {
+
+        return ( function_exists( 'mb_strlen' ) ? mb_strlen( $text, 'UTF-8' ) : strlen( $text ) ) > self::LONG_VALUE;
     }
 
     /**
@@ -482,24 +533,27 @@ class SettingsForm {
     /**
      * A scoped setting's .setting block.
      *
+     * @param  string $module
      * @param  string $key
      * @param  array  $args
      * @param  string $field  the control, and its switch when it has one
      * @param  string $notes
      * @param  string $class  a further class for the field row
-     * @param  string $for    the control's id, which the title labels
+     * @param  string $for    the control's id, which the title labels; the title's own id is this plus -title
      * @return string
      */
-    protected static function settingBlock( $key, array $args, $field, $notes, $class = '', $for = '' ) {
+    protected static function settingBlock( $module, $key, array $args, $field, $notes, $class = '', $for = '' ) {
 
         return sprintf(
-            "    <div class=\"setting\" id=\"%s\">\n"
-          . "        <label class=\"title\" for=\"%s\">%s</label>\n"
+            "    <div class=\"setting\" id=\"%s\" data-ui=\"setting:%s\">\n"
+          . "        <label class=\"title\" id=\"%s-title\" for=\"%s\">%s</label>\n"
           . "        <div class=\"description\">%s</div>\n"
           . "        <div class=\"field%s\">%s</div>\n"
           . "%s"
           . "    </div>\n",
             self::esc( $key ),
+            self::esc( $module . '.' . $key ),
+            self::esc( $for ),
             self::esc( $for ),
             self::esc( self::label( $key, $args ) ),
             isset( $args['description'] ) ? (string) $args['description'] : '',
@@ -686,8 +740,9 @@ class SettingsForm {
     }
 
     /**
-     * A value as the screen names it: a boolean as On or Off, a select by its
-     * option's label. Empty stays empty, and then there is nothing to override.
+     * A value as the screen names it: a boolean as On or Off, a select or a
+     * timezone by its option's label, a map as its name=value pairs and a list
+     * comma-separated. Empty stays empty; the caller says "Not set".
      *
      * @param  array $args
      * @param  mixed $value
@@ -710,6 +765,11 @@ class SettingsForm {
 
                 return (string) $options[ (string) $value ];
             }
+        }
+
+        if ( $type === 'timezone' && is_string( $value ) ) {
+
+            return str_replace( '_', ' ', $value );
         }
 
         if ( $type === 'map' ) {

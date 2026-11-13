@@ -284,6 +284,56 @@ final class AccessibleMarkupTest extends TestCase
         $this->assertStringContainsString('<div class="title" id="owa_myProfilePasswordTitle">Change password</div>', $html);
     }
 
+    /**
+     * An inheriting setting below the install: the title names the hidden
+     * control and labels the text showing the value in force, the level note
+     * describes that text, and the switch is named for the setting.
+     */
+    public function testAnInheritingSettingIsNamedByItsTitle(): void
+    {
+        $config = \OWA\Core\CoreAPI::configSingleton();
+        $registry = new ReflectionProperty(\OWA\Module\Base\Classes\Settings::class, 'registry');
+        $was = $registry->getValue($config);
+
+        try {
+            $config->registerField('zz_a11y_test', 'zone', array(
+                'type' => 'timezone', 'default' => 'America/Los_Angeles', 'storable' => true,
+                'label' => 'Timezone', 'scopes' => array('install', 'property')));
+
+            $html = \OWA\Module\Base\Classes\SettingsForm::scopedField('zz_a11y_test', 'zone', 'property', '', 'owa_');
+
+            $this->assertSame(array(
+                'owa_config[zz_a11y_test.zone]' => 'Timezone',
+                'owa_override[zz_a11y_test.zone]' => 'Override Timezone',
+            ), $this->controlNames($html));
+
+            $doc = new DOMDocument();
+            libxml_use_internal_errors(true);
+            $doc->loadHTML('<?xml encoding="UTF-8"><body>' . $html . '</body>');
+            libxml_clear_errors();
+
+            $text = (new DOMXPath($doc))->query('//*[@data-ui="setting-inherited"]')->item(0);
+            $this->assertInstanceOf(DOMElement::class, $text);
+
+            $words = function (string $ids) use ($doc): string {
+                return implode(' ', array_map(function ($id) use ($doc) {
+                    $el = $doc->getElementById($id);
+                    return $el ? trim($el->textContent) : '';
+                }, explode(' ', $ids)));
+            };
+
+            $this->assertSame('Timezone', $words($text->getAttribute('aria-labelledby')));
+            $this->assertSame('America/Los Angeles', trim($text->textContent));
+            $this->assertSame('Set at the install level.', $words($text->getAttribute('aria-describedby')));
+
+            $switch = (new DOMXPath($doc))->query('//input[@role="switch"]')->item(0);
+            $this->assertSame('America/Los Angeles Set at the install level.', $words($switch->getAttribute('aria-describedby')));
+
+        } finally {
+            $registry->setValue($config, $was);
+        }
+    }
+
     /** A label keeps the block layout of the div it replaced. */
     public function testALabelIsLaidOutAsTheTitleItReplaced(): void
     {
