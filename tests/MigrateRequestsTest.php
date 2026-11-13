@@ -434,6 +434,25 @@ final class MigrateRequestsTest extends TestCase
         }
     }
 
+    /**
+     * 1.x stored text HTML-escaped; it is migrated as the text it was, so it is
+     * the same value 2.0 records for that page now.
+     */
+    public function testV1EscapedTextIsMigratedAsText(): void
+    {
+        $this->visit();
+        \OWA\Core\CoreAPI::dbSingleton()->query(
+            "UPDATE owa_v1fx_document SET page_title = 'Caf&eacute; &amp; &quot;Bar&quot; &#8211; Tom&#039;s',"
+          . " page_type = 'Q&amp;A' WHERE id = 101");
+
+        $this->migrator()->migrateSite(self::SITE);
+
+        $entry = array_values(array_filter($this->rows(), fn ($r) => $r['user_id'] === 'alice'))[0];
+
+        $this->assertSame('Café & "Bar" – Tom\'s', $entry['page_title']);
+        $this->assertSame('Q&A', $entry['content_group']);
+    }
+
     public function testNotSetInV1BecomesNull(): void
     {
         $this->visit();

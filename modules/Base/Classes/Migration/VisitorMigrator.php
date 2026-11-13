@@ -109,7 +109,7 @@ class VisitorMigrator extends FactMigrator {
                 continue;
             }
 
-            $referer = (string) ( $referers[ (string) ( $r['referer_id'] ?? '' ) ]['url'] ?? '' );
+            $referer = self::v1Text( $referers[ (string) ( $r['referer_id'] ?? '' ) ]['url'] ?? '' );
             $tagged  = self::present( $visitor['first_session_campaign'] ?? null )
                     || self::present( $visitor['first_session_ad'] ?? null );
 
@@ -169,7 +169,7 @@ class VisitorMigrator extends FactMigrator {
 
     private static function value( $v ) {
 
-        return self::present( $v ) ? (string) $v : null;
+        return self::present( $v ) ? self::v1Text( $v ) : null;
     }
 }
 
