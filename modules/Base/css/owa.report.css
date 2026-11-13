@@ -1689,7 +1689,7 @@ li.constraintRow {
 
 .owa .owa_rosterFilter a i,
 .owa .owa_rosterStar.is-on {
-    color: #c99a06;
+    color: #a67c00;
 }
 
 .owa table.owa_customReportRoster {
@@ -1780,7 +1780,7 @@ li.constraintRow {
 .owa .owa_rosterStar:hover,
 .owa .owa_rosterStar:focus {
     background: #f3f5f8;
-    color: #c99a06;
+    color: #a67c00;
 }
 
 .owa .owa_rosterType i {
@@ -1943,7 +1943,7 @@ li.constraintRow {
 
 /* A favorite's star is filled and gold, as on the list and in the column. */
 .owa .owa_titleActionMark .fas.fa-star {
-    color: #c99a06;
+    color: #a67c00;
 }
 
 .owa .owa_titleTag {

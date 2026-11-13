@@ -24,11 +24,19 @@ final class TextContrastTest extends TestCase
         '.inline_h2_grey'                                                             => 'unused',
         '.owa .externalUrl'                                                           => 'unused',
         '.owa_siteControlCaret'                                                       => 'an icon: 4.48:1 is past the 3:1 an icon needs',
-        // The favourite star's gold: a filled glyph beside the outline one, not text.
-        '.owa .owa_rosterFilter a i, .owa .owa_rosterStar.is-on'                      => 'the favourite star',
-        '.owa .owa_rosterStar:hover, .owa .owa_rosterStar:focus'                      => 'the favourite star',
-        '.owa .owa_titleActionMark .fas.fa-star'                                      => 'the favourite star',
-        '.owa_navShell .owa_navColumnIcon.fa-star'                                    => 'the favourite star',
+    );
+
+    /**
+     * Glyphs that are graphical objects, not text, and the grounds each is
+     * drawn on: 3:1 against every one of them (WCAG 1.4.11).
+     */
+    private const GRAPHICS = array(
+        // The favourite star: on the roster's segmented control and its active segment.
+        '.owa .owa_rosterFilter a i, .owa .owa_rosterStar.is-on'                      => array( '#ffffff', '#f3f5f8' ),
+        '.owa .owa_rosterStar:hover, .owa .owa_rosterStar:focus'                      => array( '#f3f5f8' ),
+        '.owa .owa_titleActionMark .fas.fa-star'                                      => array( '#ffffff', '#f3f5f8' ),
+        // In the nav column, at rest, hovered and current.
+        '.owa_navShell .owa_navColumnIcon.fa-star'                                    => array( '#ffffff', '#f3f5f8', '#eef4fb' ),
     );
 
     private static function luminance( string $hex ): float
@@ -98,6 +106,10 @@ final class TextContrastTest extends TestCase
                 continue; // white text sits on a fill, checked below for the button
             }
 
+            if ( array_key_exists( $selector, self::GRAPHICS ) ) {
+                continue; // held to 3:1 below
+            }
+
             if ( self::ratio( $hex, '#ffffff' ) < 4.5 && ! array_key_exists( $selector, self::EXEMPT ) ) {
                 $short[] = sprintf( '%s: %s { color: %s } is %.2f:1', $file, $selector, $hex, self::ratio( $hex, '#ffffff' ) );
             }
@@ -106,14 +118,31 @@ final class TextContrastTest extends TestCase
         $this->assertSame( array(), $short );
     }
 
-    /** The exemptions name rules that exist, so a removed one does not linger here. */
+    /** The exemptions and graphics name rules that exist, so a removed one does not linger here. */
     public function testEveryExemptionIsARule(): void
     {
         $selectors = array_map( function ( $c ) { return $c[1]; }, $this->textColours() );
 
-        foreach ( array_keys( self::EXEMPT ) as $selector ) {
+        foreach ( array_merge( array_keys( self::EXEMPT ), array_keys( self::GRAPHICS ) ) as $selector ) {
             $this->assertContains( $selector, $selectors );
         }
+    }
+
+    public function testAGraphicReadsAtThreeToOneOnEachGroundItIsDrawnOn(): void
+    {
+        $short = array();
+
+        foreach ( $this->textColours() as list( $file, $selector, $hex ) ) {
+
+            foreach ( self::GRAPHICS[ $selector ] ?? array() as $ground ) {
+
+                if ( self::ratio( $hex, $ground ) < 3.0 ) {
+                    $short[] = sprintf( '%s: %s { color: %s } is %.2f:1 on %s', $file, $selector, $hex, self::ratio( $hex, $ground ), $ground );
+                }
+            }
+        }
+
+        $this->assertSame( array(), $short );
     }
 
     /** White on the button reads at 4.5:1 at rest and on hover; the logo keeps its orange. */
