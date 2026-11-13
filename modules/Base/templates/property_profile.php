@@ -137,7 +137,10 @@
                name="<?php echo $view->getNs();?>submit_btn" value="Delete Property"
                data-owa-confirm
                data-owa-confirm-title="Delete this Property?"
-               data-owa-confirm-body="&ldquo;<?php $view->out( $view->property['name'] ?? '' );?>&rdquo; and its <?php echo (int) ( $view->profileCount ?? 0 );?> Observation Profile(s) stop recording and leave reporting. Everything collected is kept, and it can be restored."
+               data-owa-confirm-body="<?php $owa_profiles = (int) ( $view->profileCount ?? 0 ); $view->out( sprintf( \OWA\Core\CoreAPI::tn(
+                   '“%1$s” and its %2$d Observation Profile stop recording and leave reporting. Everything collected is kept, and it can be restored.',
+                   '“%1$s” and its %2$d Observation Profiles stop recording and leave reporting. Everything collected is kept, and it can be restored.',
+                   $owa_profiles ), $view->property['name'] ?? '', $owa_profiles ) );?>"
                data-owa-confirm-proceed="Delete Property">
     </form>
 </div>

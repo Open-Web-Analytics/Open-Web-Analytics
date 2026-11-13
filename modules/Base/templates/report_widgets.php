@@ -828,7 +828,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
         $owa_rowActions[] = array(
             'id'        => $owa_ra['id'],
-            // Translated where it is drawn (OWA.l), like the grid's other labels.
+            // Translated where it is drawn (OWA.translate()).
             'label'     => (string) $owa_ra['label'],
             'href'      => $view->makeLink( $owa_ra_params, true ),
             'params'    => (object) $owa_ra['params'],

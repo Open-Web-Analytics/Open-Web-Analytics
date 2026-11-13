@@ -6,8 +6,9 @@ use OWA\Core\Strings;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * The English catalogue, conf/strings/en.php, is what the code says -- and the
- * user-facing messages are in it.
+ * The English catalogue, conf/strings/en.php, and the keys the reporting
+ * JavaScript uses, conf/strings/script-keys.php, are what the code says -- and
+ * the user-facing messages are in the catalogue.
  *
  * The catalogue is GENERATED (cli.php cmd=strings-extract), so a message added
  * or reworded without regenerating it fails here, and so does a user-facing
@@ -17,14 +18,20 @@ final class StringsCatalogueTest extends TestCase
 {
     public function testTheCatalogueIsWhatTheCodeSays(): void
     {
-        $map = Strings::extract(Strings::sourceRoots(), $problems);
+        $map = Strings::extract(Strings::sourceRoots(), $problems, $scriptKeys);
 
-        $this->assertSame([], $problems, 't() called with something that cannot be catalogued');
+        $this->assertSame([], $problems, 't(), tn(), OWA.l() or OWA.ln() called with something that cannot be catalogued');
 
         $this->assertSame(
             Strings::catalogueSource($map),
             (string) file_get_contents(Strings::path(Strings::SOURCE_LOCALE)),
             'conf/strings/en.php is out of date: run php cli.php cmd=strings-extract'
+        );
+
+        $this->assertSame(
+            Strings::scriptKeysSource($scriptKeys),
+            (string) file_get_contents(Strings::scriptKeysPath()),
+            'conf/strings/script-keys.php is out of date: run php cli.php cmd=strings-extract'
         );
     }
 

@@ -70,7 +70,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
             $view->out( $owa_label ); ?></a>
         <?php endforeach; ?>
     </div>
-    <span class="owa_rosterCount"><?php $view->out( $owa_count === 1 ? '1 report' : $owa_count . ' reports' ); ?></span>
+    <span class="owa_rosterCount"><?php $view->out( sprintf( \OWA\Core\CoreAPI::tn( '%d report', '%d reports', $owa_count ), $owa_count ) ); ?></span>
 </div>
 
 <?php if ( $owa_reports ): ?>

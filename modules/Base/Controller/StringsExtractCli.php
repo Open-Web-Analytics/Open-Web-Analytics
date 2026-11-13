@@ -8,13 +8,16 @@ namespace OWA\Module\Base\Controller;
 //
 
 /**
- * Write the English string catalogue, conf/strings/en.php, from the code.
+ * Write the English string catalogue, conf/strings/en.php, from the code, and
+ * the list of its keys the reporting JavaScript uses, conf/strings/script-keys.php.
  *
- *   cmd=strings-extract            write it
- *   cmd=strings-extract check=1    say whether it is current, write nothing
+ *   cmd=strings-extract            write them
+ *   cmd=strings-extract check=1    say whether they are current, write nothing
  *
- * Every CoreAPI::t() call with a literal string becomes an entry. A call whose
- * text is not a literal cannot be catalogued and is reported. See Core\Strings.
+ * Every CoreAPI::t() and CoreAPI::tn() call with literal strings becomes an
+ * entry, and so does every OWA.l() and OWA.ln() call in a module's src/
+ * JavaScript. A call whose text is not a literal cannot be catalogued and is
+ * reported. See Core\Strings.
  */
 class StringsExtractCli extends \OWA\Core\Controller\Cli {
 
@@ -22,56 +25,55 @@ class StringsExtractCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return array(
-            'description' => 'Writes the English string catalogue, conf/strings/en.php, from the CoreAPI::t() calls in the code, and reports calls whose text is not a literal.',
+            'description' => 'Writes the English string catalogue, conf/strings/en.php, from the CoreAPI::t() and CoreAPI::tn() calls in the code and the OWA.l() and OWA.ln() calls in the reporting JavaScript. Also writes conf/strings/script-keys.php, the keys the JavaScript uses, and reports calls whose text is not a literal.',
             'arguments'   => array(
-                'check=1' => 'Report whether the catalogue is current, and write nothing.',
+                'check=1' => 'Report whether the catalogue and the key list are current, and write nothing.',
             ),
         );
     }
 
     function action() {
 
-        $map    = \OWA\Core\Strings::extract( \OWA\Core\Strings::sourceRoots(), $problems );
-        $file   = \OWA\Core\Strings::path( \OWA\Core\Strings::SOURCE_LOCALE );
-        $source = \OWA\Core\Strings::catalogueSource( $map );
+        $map   = \OWA\Core\Strings::extract( \OWA\Core\Strings::sourceRoots(), $problems, $script_keys );
+        $files = array(
+            \OWA\Core\Strings::path( \OWA\Core\Strings::SOURCE_LOCALE ) => array( \OWA\Core\Strings::catalogueSource( $map ), count( $map ), 'strings' ),
+            \OWA\Core\Strings::scriptKeysPath()                         => array( \OWA\Core\Strings::scriptKeysSource( $script_keys ), count( $script_keys ), 'keys' ),
+        );
 
         foreach ( $problems as $where => $why ) {
 
             $this->e->notice( sprintf( 'Not catalogued: %s: %s.', $where, $why ) );
         }
 
-        $current = is_readable( $file ) && file_get_contents( $file ) === $source;
+        foreach ( $files as $file => list( $source, $count, $what ) ) {
 
-        if ( $this->getParam( 'check' ) ) {
+            if ( is_readable( $file ) && file_get_contents( $file ) === $source ) {
 
-            $this->e->notice( $current
-                ? sprintf( '%s is current: %d strings.', $file, count( $map ) )
-                : sprintf( '%s is out of date. Run cmd=strings-extract.', $file ) );
+                $this->e->notice( sprintf( '%s is current: %d %s.', $file, $count, $what ) );
+                continue;
+            }
 
-            return;
+            if ( $this->getParam( 'check' ) ) {
+
+                $this->e->notice( sprintf( '%s is out of date. Run cmd=strings-extract.', $file ) );
+                continue;
+            }
+
+            if ( ! is_dir( dirname( $file ) ) && ! mkdir( dirname( $file ), 0775, true ) ) {
+
+                $this->e->notice( sprintf( 'Could not create %s.', dirname( $file ) ) );
+
+                return;
+            }
+
+            if ( file_put_contents( $file, $source ) === false ) {
+
+                $this->e->notice( sprintf( 'Could not write %s.', $file ) );
+
+                return;
+            }
+
+            $this->e->notice( sprintf( 'Wrote %s: %d %s.', $file, $count, $what ) );
         }
-
-        if ( $current ) {
-
-            $this->e->notice( sprintf( '%s is current: %d strings.', $file, count( $map ) ) );
-
-            return;
-        }
-
-        if ( ! is_dir( dirname( $file ) ) && ! mkdir( dirname( $file ), 0775, true ) ) {
-
-            $this->e->notice( sprintf( 'Could not create %s.', dirname( $file ) ) );
-
-            return;
-        }
-
-        if ( file_put_contents( $file, $source ) === false ) {
-
-            $this->e->notice( sprintf( 'Could not write %s.', $file ) );
-
-            return;
-        }
-
-        $this->e->notice( sprintf( 'Wrote %s: %d strings.', $file, count( $map ) ) );
     }
 }

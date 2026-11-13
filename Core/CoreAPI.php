@@ -3305,6 +3305,25 @@ class CoreAPI {
         return \OWA\Core\Strings::translate( $text, $context );
     }
 
+    /**
+     * A counted message in the locale in use: the form for $n. Fill in the
+     * count with sprintf():
+     *
+     *   sprintf( \OWA\Core\CoreAPI::tn( '%d report', '%d reports', $n ), $n )
+     *
+     * See Core\Strings.
+     *
+     * @param  string    $singular the English for one, as a string literal
+     * @param  string    $plural   the English for any other count, as a string literal
+     * @param  int|float $n        the count
+     * @param  string    $context  optional, as t()'s
+     * @return string
+     */
+    public static function tn( $singular, $plural, $n, $context = '' ) {
+
+        return \OWA\Core\Strings::translatePlural( $singular, $plural, $n, $context );
+    }
+
     public static function getRequestTimestamp() {
 
         $r = \OWA\Core\CoreAPI::requestContainerSingleton();

@@ -1893,7 +1893,7 @@ OWA.dataGrid.prototype = {
             .prop( 'disabled', ! rs.next )
             .on( 'click', function () { that.emit( 'page_forward' ); } );
 
-        var text = r.start + '–' + r.end + ' ' + OWA.l( 'of' ) + ' ' + r.total + ( r.more ? '+' : '' );
+        var text = OWA.util.sprintf( r.more ? OWA.l( '%1$s–%2$s of %3$s+' ) : OWA.l( '%1$s–%2$s of %3$s' ), r.start, r.end, r.total );
 
         $pager.append( $prev )
               .append( jQuery( '<span class="owa_gridRange" aria-live="polite"></span>' ).text( text ) )
@@ -1911,12 +1911,21 @@ OWA.dataGrid.prototype = {
                   || OWA.dataGrid.OPERATOR_PHRASES[ c.operator ]
                   || c.operator;
 
-        var $text = jQuery( '<span class="owa_gridChipText"></span>' )
-            .text( this.labelOf( rs, c.name ) + ' ' + OWA.l( phrase ) + ( c.value !== '' ? ' ' : '' ) );
+        // The value is drawn in bold where the sentence puts %3$s.
+        var parts = ( c.value !== ''
+            ? OWA.l( '%1$s %2$s %3$s', 'filter chip: field, condition, value' )
+            : OWA.l( '%1$s %2$s', 'filter chip: field, condition' ) ).split( '%3$s' );
+        var label = this.labelOf( rs, c.name );
+        var $text = jQuery( '<span class="owa_gridChipText"></span>' );
 
-        if ( c.value !== '' ) {
-            $text.append( jQuery( '<strong></strong>' ).text( c.value ) );
-        }
+        parts.forEach( function ( part, i ) {
+
+            if ( i > 0 ) {
+                $text.append( jQuery( '<strong></strong>' ).text( c.value ) );
+            }
+
+            $text.append( document.createTextNode( OWA.util.sprintf( part, label, OWA.translate( phrase ) ) ) );
+        } );
 
         var $remove = jQuery( '<button type="button" class="owa_gridChipRemove">'
             + '<i class="fas fa-times" aria-hidden="true"></i></button>' )
@@ -2037,7 +2046,7 @@ OWA.dataGrid.prototype = {
 
             $head.append( jQuery( '<button type="button" class="owa_gridIconButton owa_gridDimRemove">'
                 + '<i class="fas fa-times" aria-hidden="true"></i></button>' )
-                .attr( 'aria-label', OWA.l( 'Remove' ) + ' ' + col.label )
+                .attr( 'aria-label', OWA.util.sprintf( OWA.l( 'Remove %s' ), col.label ) )
                 .on( 'click', function () {
 
                     var shown = lists.shown.slice();
@@ -2166,7 +2175,7 @@ OWA.dataGrid.prototype = {
                     if ( actions.length ) {
 
                         $td.append( jQuery( '<button type="button" class="owa_gridRowActions" aria-haspopup="menu" aria-expanded="false"></button>' )
-                            .attr( 'aria-label', OWA.l( 'Actions for' ) + ' ' + ( cell.formatted_value || cell.value || '' ) )
+                            .attr( 'aria-label', OWA.util.sprintf( OWA.l( 'Actions for %s' ), cell.formatted_value || cell.value || '' ) )
                             .append( jQuery( '<span class="owa_gridRowActionsLabel"></span>' ).text( OWA.l( 'Actions' ) ) )
                             .append( '<i class="fas fa-chevron-down" aria-hidden="true"></i>' )
                             .on( 'click', function () {
@@ -2272,7 +2281,7 @@ OWA.dataGrid.prototype = {
         actions.forEach( function ( a ) {
 
             var $a = jQuery( '<a class="owa_gridPopOption" role="menuitem"></a>' )
-                .attr( 'href', a.href ).attr( 'data-action', a.id ).text( OWA.l( a.label ) );
+                .attr( 'href', a.href ).attr( 'data-action', a.id ).text( OWA.translate( a.label ) );
 
             if ( a.newWindow ) {
                 $a.attr( { target: '_blank', rel: 'noopener' } );
@@ -2435,14 +2444,14 @@ OWA.dataGrid.prototype = {
 
             var $sorts = jQuery( '<div class="owa_gridPopSorts"></div>' );
 
-            [ [ 'asc', 'Sort A to Z' ], [ 'desc', 'Sort Z to A' ] ].forEach( function ( s ) {
+            [ [ 'asc', OWA.l( 'Sort A to Z' ) ], [ 'desc', OWA.l( 'Sort Z to A' ) ] ].forEach( function ( s ) {
 
                 var on = rs.sortColumn === mine && ( rs.sortOrder === 'desc' ) === ( s[0] === 'desc' );
 
                 $sorts.append( jQuery( '<button type="button" class="owa_gridPopOption"></button>' )
                     .toggleClass( 'is-current', on )
                     .attr( 'aria-pressed', on ? 'true' : 'false' )
-                    .text( OWA.l( s[1] ) )
+                    .text( s[1] )
                     .on( 'click', function () { that.emit( 'sort_column_change', [ mine, s[0] ] ); } ) );
             } );
 
@@ -2522,7 +2531,7 @@ OWA.dataGrid.prototype = {
             }
         } );
 
-        var $pop = this.openPopover( $trigger, OWA.l( mine ? 'Change dimension' : 'Add a dimension' ), $box );
+        var $pop = this.openPopover( $trigger, mine ? OWA.l( 'Change dimension' ) : OWA.l( 'Add a dimension' ), $box );
 
         if ( $pop ) {
             $search.trigger( 'focus' );
@@ -2610,7 +2619,7 @@ OWA.dataGrid.prototype = {
 
                 $ops.append( jQuery( '<label class="owa_gridFilterOp"></label>' )
                     .append( jQuery( '<input type="radio">' ).attr( 'name', id + '-op' ).val( c[0] ).prop( 'checked', i === 0 ) )
-                    .append( jQuery( '<span></span>' ).text( OWA.l( c[1] ) ) ) );
+                    .append( jQuery( '<span></span>' ).text( OWA.translate( c[1] ) ) ) );
             } );
 
             sync();

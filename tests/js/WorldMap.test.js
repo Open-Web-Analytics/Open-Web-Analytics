@@ -36,6 +36,7 @@ test('countries with users are shaded in proportion, the rest are not', async ()
     expect(g(slot, 'JP').classList.contains('is-active')).toBe(false);
     expect(g(slot, 'US').querySelector('title').textContent).toBe('United States of America: 4 users');
     expect(g(slot, 'FR').querySelector('title').textContent).toBe('France: 1 user');
+    expect(slot.querySelector('svg').getAttribute('aria-label')).toBe('Active users by country');
 });
 
 test('a country nobody is in any more goes back to the base fill', async () => {
@@ -67,4 +68,25 @@ test('names come from the map, and a code that is not a country names nothing', 
     expect(map.nameOf('US')).toBe('United States of America');
     expect(map.nameOf('ZZ')).toBe('');
     expect(map.nameOf('"]<x')).toBe('');
+});
+
+test('the map is named, and a country titled, in the locale in use', async () => {
+    OWA.config.strings = {
+        'Active users by country': 'Utilisateurs actifs par pays',
+        '%1$s: %2$d user': ['%1$s : %2$d utilisateur', '%1$s : %2$d utilisateurs'],
+    };
+    OWA.config.plural_rule = 'french';
+
+    try {
+        const { map, slot } = await loadedMap();
+
+        map.shade([{ code: 'US', users: 3 }, { code: 'FR', users: 1 }]);
+
+        expect(slot.querySelector('svg').getAttribute('aria-label')).toBe('Utilisateurs actifs par pays');
+        expect(g(slot, 'US').querySelector('title').textContent).toBe('United States of America : 3 utilisateurs');
+        expect(g(slot, 'FR').querySelector('title').textContent).toBe('France : 1 utilisateur');
+    } finally {
+        delete OWA.config.strings;
+        delete OWA.config.plural_rule;
+    }
 });
