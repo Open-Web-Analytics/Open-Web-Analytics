@@ -69,8 +69,8 @@ class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
 
         $passwordLengthConf = [
             'operator'  => '>=',
-            'length'    => 6,
-            'errorMsg'  => 'Your password must be at least 6 characters in length.',
+            'length'    => \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH,
+            'errorMsg'  => sprintf( 'Your password must be at least %d characters in length.', \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
         ];
 
         // 'stringLength' (not 'required') is the validator that actually reads

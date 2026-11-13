@@ -32,6 +32,10 @@ class Update052 extends \OWA\Core\Update {
 
     var $schema_version = 52;
 
+    
+
+    var $down_does_not_restore = 'the browser column\'s values, identical to browser_type: it comes back empty.';
+
     var $is_cli_mode_required = false;
 
     function up( $force = false ) {

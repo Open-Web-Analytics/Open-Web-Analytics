@@ -115,7 +115,11 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endif; ?>
 
 <?php foreach ( $owa_sets as $owa_setKey => $owa_set ): ?>
-<?php $owa_panelId = $owa_setKey === '' ? '' : 'tab_' . $owa_setKey; ?>
+<?php
+    // A set's name, as the page's script and element ids may hold it.
+    $owa_setVar  = preg_replace( '/[^A-Za-z0-9_]/', '_', (string) $owa_setKey );
+    $owa_panelId = $owa_setKey === '' ? '' : 'tab_' . $owa_setVar;
+?>
 <div<?php if ( $owa_panelId ): ?> id="<?php $view->out( $owa_panelId ); ?>"<?php endif; ?> class="owa_reportGrid" data-metric-set="<?php $view->out( $owa_setKey ); ?>">
 <?php $owa_rses = array(); ?>
 <?php
@@ -147,8 +151,16 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * earlier, and only one of them would ever be visible.
      */
     $owa_prefix    = $owa_setKey === '' ? '' : $owa_setKey . '_';
-    $owa_id        = $owa_prefix . (string) ( $owa_w['id'] ?? 'widget' );
-    $owa_container = $owa_prefix . (string) ( $owa_w['container'] ?? ( $owa_w['id'] ?? 'widget' ) );
+    /*
+     * The id is written into the page's script as a variable name, and the
+     * container as a string and an element id. Both come from the report's
+     * definition -- a saved custom report's, written by whoever may edit
+     * reports and shown to everyone it is shared with -- so they are cut to
+     * what a name may hold rather than trusted.
+     */
+    $owa_id        = preg_replace( '/[^A-Za-z0-9_]/', '_', $owa_prefix . (string) ( $owa_w['id'] ?? 'widget' ) );
+    $owa_id        = preg_match( '/^[0-9]/', $owa_id ) ? 'w' . $owa_id : $owa_id;
+    $owa_container = preg_replace( '/[^A-Za-z0-9_-]/', '_', $owa_prefix . (string) ( $owa_w['container'] ?? ( $owa_w['id'] ?? 'widget' ) ) );
     $owa_url       = $owa_id . 'url';
     // A widget's own query wins, so a widget CAN ask for different metrics --
     // none does today, and the report-wide value is what a metric set replaces.
@@ -549,7 +561,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
 <?php if ( ! empty( $owa_w['boxWidth'] ) ): ?>
-        <?php echo $owa_id; ?>.options.metricBoxes.width = '<?php $view->out( $owa_w['boxWidth'], false ); ?>';
+        <?php echo $owa_id; ?>.options.metricBoxes.width = <?php echo json_encode( (string) $owa_w['boxWidth'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
 <?php endif; ?>
         <?php
             // The label sits inside the box; see $owa_ownsTitle above. Encoded
@@ -588,8 +600,8 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-        <?php echo $owa_id; ?>.options.shareChart.metric = '<?php $view->out( $owa_chartMetric, false ); ?>';
-        <?php echo $owa_id; ?>.options.shareChart.dimension = '<?php $view->out( (string) ( $owa_query['dimensions'] ?? '' ), false ); ?>';
+        <?php echo $owa_id; ?>.options.shareChart.metric = <?php echo json_encode( (string) $owa_chartMetric, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
+        <?php echo $owa_id; ?>.options.shareChart.dimension = <?php echo json_encode( (string) ( $owa_query['dimensions'] ?? '' ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
 <?php if ( ! empty( $owa_w['valueLabels'] ) ): ?>
         <?php // Raw value -> label, so a boolean dimension can read New/Repeat rather than No/Yes. ?>
         <?php echo $owa_id; ?>.options.shareChart.valueLabels = <?php echo json_encode( (object) $owa_w['valueLabels'] ); ?>;
@@ -756,7 +768,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['link'] ) ): ?>
         var <?php echo $owa_id; ?>link = '<?php echo $view->makeLink( $owa_w['link']['template'], true ); ?>';
-        <?php echo $owa_id; ?>.addLinkToColumn('<?php $view->out( $owa_w['link']['linkColumn'], false ); ?>', <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>, <?php
+        <?php echo $owa_id; ?>.addLinkToColumn(<?php echo json_encode( (string) $owa_w['link']['linkColumn'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>, <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>, <?php
             // A list, so not makeJson(), which always writes an object.
             echo json_encode( array_values( array_map( 'strval', (array) ( $owa_w['link']['except'] ?? array() ) ) ),
                 JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>);
@@ -858,12 +870,12 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <script>
     // This set, and the widgets whose results belong to it. The tab loads them
     // when it becomes the one being looked at.
-    var owaSet_<?php $view->out( $owa_setKey, false ); ?> = new OWA.report.tab('<?php $view->out( $owa_panelId, false ); ?>');
-    owaSet_<?php $view->out( $owa_setKey, false ); ?>.setLabel('<?php $view->out( $owa_set['label'] ?? $owa_setKey ); ?>');
+    var owaSet_<?php echo $owa_setVar; ?> = new OWA.report.tab('<?php $view->out( $owa_panelId, false ); ?>');
+    owaSet_<?php echo $owa_setVar; ?>.setLabel('<?php $view->out( $owa_set['label'] ?? $owa_setKey ); ?>');
 <?php foreach ( $owa_rses as $owa_rseName => $owa_rseVar ): ?>
-    owaSet_<?php $view->out( $owa_setKey, false ); ?>.addRse('<?php $view->out( $owa_rseName, false ); ?>', <?php echo $owa_rseVar; ?>);
+    owaSet_<?php echo $owa_setVar; ?>.addRse('<?php $view->out( $owa_rseName, false ); ?>', <?php echo $owa_rseVar; ?>);
 <?php endforeach; ?>
-    OWA.items['<?php echo $view->dom_id; ?>'].addTab( owaSet_<?php $view->out( $owa_setKey, false ); ?> );
+    OWA.items['<?php echo $view->dom_id; ?>'].addTab( owaSet_<?php echo $owa_setVar; ?> );
 </script>
 <?php endif; ?>
 <?php endforeach; ?>

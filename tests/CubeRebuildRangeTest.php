@@ -91,6 +91,35 @@ final class CubeRebuildRangeTest extends TestCase
         }
     }
 
+    /**
+     * A run for a NAMED range that meets the lock fails, so the job queue
+     * retries it: the build holding the lock is building its own range, and a
+     * queued backfill or late-day rebuild marked done there never built its
+     * days.
+     */
+    public function testANamedRangeThatMeetsTheLockFailsToBeRetried(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('OWA database not reachable; the build lock is a row.');
+        }
+
+        $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY);
+        $held  = new \OWA\Module\Base\Classes\JobLease('cube-build:' . $table);
+
+        $this->assertTrue($held->acquire(600));
+
+        try {
+            $cli = $this->cli(['dry-run' => 1, 'property' => (string) self::PROPERTY,
+                               'from' => '20260101', 'to' => '20260131']);
+            $cli->action();
+
+            $this->assertSame('failed', $cli->getCliOutcome()['outcome']);
+            $this->assertStringContainsString('will be retried', (string) $cli->getCliOutcome()['message']);
+        } finally {
+            $held->release();
+        }
+    }
+
     /** With nothing holding it, the same run proceeds. */
     public function testABuildProceedsWhenTheCubeIsNotAlreadyBuilding(): void
     {

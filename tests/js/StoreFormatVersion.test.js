@@ -174,7 +174,7 @@ describe('persisted store format version', () => {
         const t = newTracker();
         pageView(t);
         OWA.setState('d', 'sv', 7);
-        OWA.setState('d', 'page_type', 'article');
+        OWA.setState('d', 'page_title', 'Article');
 
         const props = t.collectPageProperties();
 
@@ -185,7 +185,7 @@ describe('persisted store format version', () => {
         expect(props).not.toHaveProperty('cdh');
         // ...while an actual page-scoped property still gets through, so this
         // is testing an exclusion rather than an empty collector.
-        expect(props.page_type).toBe('article');
+        expect(props.page_title).toBe('Article');
     });
 
     test('a collapsed legacy store lands marked by the tracker that merged it', () => {

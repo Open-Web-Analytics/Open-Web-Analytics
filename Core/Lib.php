@@ -519,6 +519,17 @@ class Lib {
             return $base;
         }
 
+        /*
+         * No control character anywhere. A browser removes a tab or a newline
+         * from inside a URL before it reads it, so "/<tab>/evil.example" passed
+         * every check below as a path and arrived as "//evil.example". A space
+         * is not one: a browser encodes it rather than dropping it.
+         */
+        if ( preg_match( '/[\x00-\x1f\x7f]/', $url ) ) {
+
+            return $base;
+        }
+
         // Backslashes are treated as separators by some browsers, so normalise
         // before looking at the leading characters.
         $probe = str_replace( '\\', '/', $url );
@@ -549,7 +560,12 @@ class Lib {
         // No host means a path relative to this installation.
         if ( empty( $parts['host'] ) ) {
 
-            return $url;
+            /*
+             * A scheme with no host is not a path. From an https page a
+             * browser reads "http:evil.example" as http://evil.example/: the
+             * scheme differs from the page's, so what follows is the host.
+             */
+            return $scheme === '' ? $url : $base;
         }
 
         foreach ( $also_hosts as $host ) {
@@ -1020,25 +1036,41 @@ class Lib {
 
     public static function utf8Encode($string) {
 
-        if ( \OWA\Core\Lib::checkForUtf8( $string ) ) {
+        $string = (string) $string;
+
+        // ASCII is UTF-8. checkForUtf8() answers no for it (mb_detect_encoding
+        // calls it ASCII), so it is not the test here.
+        $valid = function_exists( 'mb_check_encoding' )
+            ? mb_check_encoding( $string, 'UTF-8' )
+            : \OWA\Core\Lib::checkForUtf8( $string );
+
+        if ( $valid ) {
+
             return $string;
-        } else {
-            if (function_exists('iconv')) {
-	            
-	            if ( function_exists( 'mb_detect_encoding' ) ) {
-		            
-		            return iconv(mb_detect_encoding( $string ),'UTF-8//TRANSLIT', $string);
-		            
-		        } else {
-			        
-			    	return iconv('UTF-8','UTF-8//TRANSLIT', $string);
-		        }
-	             
-            } else {
-                // at least worth a try (utf8_encode() removed/deprecated; mbstring equivalent)
-                return mb_convert_encoding($string, 'UTF-8', 'ISO-8859-1');
+        }
+
+        /*
+         * Not UTF-8, so read as Windows-1252: the Latin-1 superset browsers and
+         * mail clients send when they are not sending UTF-8, so an "é" stays an
+         * "é". It used to ask mb_detect_encoding(), which answers false for
+         * Latin-1 bytes, and hand that false to iconv() as the source encoding.
+         */
+        if ( function_exists( 'mb_convert_encoding' ) ) {
+
+            return mb_convert_encoding( $string, 'UTF-8', 'Windows-1252' );
+        }
+
+        if ( function_exists( 'iconv' ) ) {
+
+            $converted = @iconv( 'Windows-1252', 'UTF-8//TRANSLIT', $string );
+
+            if ( $converted !== false ) {
+
+                return $converted;
             }
         }
+
+        return preg_replace( '/[\x80-\xFF]/', '?', $string );
     }
 
     public static function checkForUtf8($str) {

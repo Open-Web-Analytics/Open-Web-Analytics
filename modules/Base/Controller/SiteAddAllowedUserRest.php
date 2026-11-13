@@ -21,6 +21,14 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
 
         $this->setRequiredCapability('edit_sites');
 
+        /*
+         * Reached through index.php as well as the REST route, and there a
+         * signed-in admin's cookie was enough: a link they followed could grant
+         * anyone access to any site. The REST route checks its own nonce for a
+         * cookie sign-in, and none for an application password.
+         */
+        $this->setNonceRequired();
+
         parent::__construct($params);
     }
 

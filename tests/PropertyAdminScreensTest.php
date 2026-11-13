@@ -37,6 +37,34 @@ final class PropertyAdminScreensTest extends TestCase
         }
     }
 
+    /**
+     * A refused save shows the form again as it was sent, not what is stored.
+     *
+     * It redirected, and a redirect carries only scalars, so the settings and
+     * their Override switches were dropped and the screen reloaded the stored
+     * Property: one field to correct meant entering every other change again.
+     */
+    public function testARefusedSaveShowsTheFormAsItWasSent(): void
+    {
+        $config   = array( 'base' => array( 'example_setting' => 'typed value' ) );
+        $override = array( 'base' => array( 'example_setting' => '1' ) );
+
+        $controller = new \OWA\Module\Base\Controller\PropertyEdit( array(
+            'name' => 'Typed name', 'propertyType' => 'web', 'domain' => '',
+            'description' => 'Typed description', 'config' => $config, 'override' => $override ) );
+
+        $controller->errorAction();
+        $data = $this->data( $controller );
+
+        $this->assertNotSame( 'redirect', $data['view_method'] ?? null, 'rendered in place, not redirected' );
+        $this->assertSame( 'base.propertyProfile', $data['subview'] ?? null );
+        $this->assertSame( 'Typed name', $data['property']['name'] ?? null );
+        $this->assertSame( 'Typed description', $data['property']['description'] ?? null );
+        $this->assertSame( 'web', $data['property']['property_type'] ?? null );
+        $this->assertSame( array( 'config' => $config, 'override' => $override ), $data['posted'] ?? null );
+        $this->assertSame( 3002, $data['error_code'] ?? null );
+    }
+
     /** Renaming is capability-gated and nonce-protected, like every other mutation. */
     public function testTheRenameIsGuardedLikeOtherMutations(): void
     {

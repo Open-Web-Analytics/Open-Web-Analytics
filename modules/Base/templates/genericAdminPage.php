@@ -3,7 +3,7 @@
 
     <div class="reportSectionContainer">
         <div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>
-        <div class="owa_reportTitle"><?php echo $view->title;?><span class="titleSuffix"><?php echo $view->get('titleSuffix');?></span></div>
+        <div class="owa_reportTitle"><?php $view->out( $view->title );?><span class="titleSuffix"><?php $view->out( $view->get('titleSuffix') );?></span></div>
 
         <div class="clear"></div>
         <?php echo $view->subview;?>

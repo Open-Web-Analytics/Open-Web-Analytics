@@ -26,6 +26,8 @@ final class TrackerIngestTest extends TestCase
 
     protected function setUp(): void
     {
+        \OWA\Core\CoreAPI::rememberSiteRegistration(self::SITE, true);
+
         foreach (array('queue_tracker_ingest', 'queue_incoming_tracking_events', 'queue_events',
                        'tracker_ingest_queue_type', 'tracker_ingest_drain') as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
@@ -47,17 +49,21 @@ final class TrackerIngestTest extends TestCase
         }
 
         TrackerIngest::$queue = null;
+        \OWA\Core\CoreAPI::forgetRegisteredSites();
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $s->setMapValue('event_processors', \OWA\Core\CoreAPI::trackingDispatchName(self::TYPE), null);
         $s->setMapValue('actions', 'test.intakeProcessor', null);
     }
 
+    /** A site the drain's site check answers for without a database (setUp()). */
+    const SITE = 'tracker-ingest-test-site';
+
     private function event(array $properties = array()): Event
     {
         $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $event->setEventType(self::TYPE);
-        $event->setProperties($properties + array('page_url' => 'https://example.test/'));
+        $event->setProperties($properties + array('page_url' => 'https://example.test/', 'site_id' => self::SITE));
 
         return $event;
     }

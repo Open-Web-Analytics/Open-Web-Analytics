@@ -22,6 +22,13 @@ import DEFAULTS from './defaults.json';
  */
 var routeScopeTaken = null;
 
+/*
+ * How many times each SHARED page-scoped value has been set on this page, so
+ * every tracker can tell whether one was set since its own last page view
+ * (endPageScopeOnNewUrl()). Module scope for the same reason as above.
+ */
+var pageScopeSets = {};
+
 class OWATracker  {
 	
 	constructor( options ) {
@@ -106,7 +113,6 @@ class OWATracker  {
 
 		    // Rewritten at each session boundary.
 		    session_id:              { scope: 'session', permanent: false },
-		    prior_session_id:        { scope: 'session', permanent: false },
 		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
 		    /*
@@ -142,7 +148,6 @@ class OWATracker  {
 		    last_req:                { scope: 'page',    permanent: false },
 		    page_location:           { scope: 'page',    permanent: false },
 		    page_title:              { scope: 'page',    permanent: false },
-		    page_type:               { scope: 'page',    permanent: false },
 		    HTTP_REFERER:            { scope: 'page',    permanent: false },
 
 		    // Consumed as applied, never stored.
@@ -214,6 +219,13 @@ class OWATracker  {
 	    this.commandsRun = {};
 	    /** Whether startFeatures() has run. */
 	    this.featuresStarted = false;
+	    this.siteSearchStarted = null;
+	    // The URL of this tracker's last page view, how often each page-scoped
+	    // value had been set by then, and this tracker's own (unshared) set
+	    // counts (endPageScopeOnNewUrl()).
+	    this.pageScopeUrl = null;
+	    this.pageScopeSnapshot = {};
+	    this.pageScopeOwnSets = {};
 	    /**
 	     * Latest click event
 	     */
@@ -1074,9 +1086,24 @@ class OWATracker  {
         var a = this.getAnchorParam( OWA.getSetting('ns') + 'overlay');
 
         if ( a ) {
-            a = Util.base64_decode(Util.urldecode(a));
-            a = Util.urldecode( a );
-            OWA.debug('overlay anchor value: ' + a);
+
+            // A malformed fragment is not an overlay, and must not stop the
+            // tracker starting: a throw here left the visit untracked.
+            try {
+                a = Util.base64_decode(Util.urldecode(a));
+                a = Util.urldecode( a );
+                a = Util.decodeCookieValue( a );
+            } catch ( e ) {
+                OWA.debug( 'Overlay fragment could not be read.' );
+                return;
+            }
+
+            // Only an overlay whose data comes from this OWA server; any other
+            // link is ignored and the page is tracked as usual.
+            if ( ! OWA.overlayParamsAllowed( a ) ) {
+                OWA.debug( 'Overlay fragment ignored: its api_url is not this OWA server.' );
+                return;
+            }
             //var domain = this.getCookieDomain();
 
             // Deliberately NOT written to a cookie. The payload carries a
@@ -1087,7 +1114,7 @@ class OWATracker  {
             // pause tracker so we dont log anything during an overlay session
             this.pause();
             // start overlay session
-            OWA.startOverlaySession( Util.decodeCookieValue( a ) );
+            OWA.startOverlaySession( a );
         }
     }
 
@@ -1193,26 +1220,25 @@ class OWATracker  {
     setPageTitle(title) {
 
         OWA.setState( 'd', 'page_title', String( title ).trim() );
+        this.markPageScopedSet( 'page_title' );
     }
 
     /**
-     * A type for this page, such as `article` or `product`.
+     * A type for this page, such as `article` or `product`: its content group.
      *
-     * Page-scoped, as setPageTitle(). Note there is no DOM fallback for this
-     * one -- unlike page_title, nothing derives a page type -- so the setter is
-     * the only source and losing it to a tracker-private copy loses it
-     * entirely.
+     * @deprecated Use setContentGroup( value ).
      *
-     * With trackRouteChanges() on, the type is dropped at the moment a route
-     * is left, as the title is, and the next route has none until it sets
-     * one.
+     * A page's type and its content group are one dimension in 2.0, which the
+     * Page Types report groups by. This sent page_type, which no 2.0 reader
+     * takes, so a snippet that called it reported nothing; it now sets the
+     * content group. A page that calls both reports the one called last.
      *
      * @command
      * @param {string} type
      */
     setPageType(type) {
 
-        OWA.setState( 'd', 'page_type', String( type ).trim() );
+        this.setContentGroup( type );
     }
 
     /**
@@ -1322,6 +1348,7 @@ class OWATracker  {
     setContentGroup( value ) {
 
         this.setGlobalEventProperty( 'content_group', String( value ).trim() );
+        this.markPageScopedSet( 'content_group' );
     }
 
     /**
@@ -2168,7 +2195,22 @@ class OWATracker  {
 
         } else if (targ.tagName == "INPUT") {
 
-            properties.dom_element_text = text( targ.value );
+            /*
+             * A button's label, and nothing from a field. The value of any
+             * other input is what the visitor typed or chose -- an email
+             * address, a password -- and clicking back into a field to correct
+             * it sent that value with the click.
+             */
+            var type = String( targ.type || '' ).toLowerCase();
+
+            if ( type === 'submit' || type === 'button' || type === 'reset' ) {
+
+                properties.dom_element_text = text( targ.value );
+
+            } else if ( type === 'image' ) {
+
+                properties.dom_element_text = text( targ.alt );
+            }
 
         } else if (targ.tagName == "IMG") {
 
@@ -2993,8 +3035,15 @@ class OWATracker  {
              * This is why getUrlParam()'s cache is keyed on the URL it parsed:
              * filled once and kept, every route change here would have reported
              * the term from whatever screen the visitor landed on first.
+             *
+             * Only when site search was started, and with the parameters it was
+             * started with: a page that disabled it, or never ran it, gets no
+             * search events from its route changes either.
              */
-            that.trackSiteSearch();
+            if ( that.siteSearchStarted ) {
+
+                that.trackSiteSearch( that.siteSearchStarted );
+            }
 
             /*
              * THE ROUTE'S SCROLL starts from where it sits once its page view is
@@ -3086,10 +3135,10 @@ class OWATracker  {
      * The values that describe ONE PAGE, which trackRouteChanges() ends when a
      * route is left.
      *
-     * `shared` is where the value lives. The page title and type are in the
-     * 'd' store, which every tracker on the page reads (setPageTitle()); the
-     * content group is a global event property of one tracker
-     * (setContentGroup()).
+     * `shared` is where the value lives. The page title is in the 'd' store,
+     * which every tracker on the page reads (setPageTitle()); the content group
+     * is a global event property of one tracker (setContentGroup(), which
+     * setPageType() also sets).
      *
      * The rest of 'd' is not here and survives a route change. vps_user_name
      * (setUserName()) names the person, and 'cdh' is the state manager's own
@@ -3099,8 +3148,7 @@ class OWATracker  {
 
         return [
             { name: 'content_group', shared: false },
-            { name: 'page_title',    shared: true },
-            { name: 'page_type',     shared: true }
+            { name: 'page_title',    shared: true }
         ];
     }
 
@@ -3993,8 +4041,7 @@ class OWATracker  {
 
             /*
              * The DATE of the session that just ended, taken from its stored
-             * start time before the boundary discards it -- the same move as
-             * prior_session_id just below, and read for the same reason.
+             * start time before the boundary discards it.
              *
              * A date, like first_session_date, and coarse for the same reason:
              * the anchor is stamped by the visitor's clock, so a date absorbs
@@ -4026,32 +4073,6 @@ class OWATracker  {
             OWA.setState( this.storeName('s'), 'sts', now );
 
 
-            // Persisted read, for the same reason as last_req above: the id of
-            // the session that just ended was written by a previous page load,
-            // so it is in the cookie and not in memory.
-            var prior_session_id = OWA.getPersistedState( this.storeName('s'), 'sid');
-            if ( ! prior_session_id ) {
-                state_store_name = 'ss_' + this.getSiteId();
-                prior_session_id = OWA.getState(state_store_name, 's');
-            }
-            if ( prior_session_id ) {
-
-                /*
-                 * Session state, not a fact about this request: it names the
-                 * session THIS one succeeded, which stays true for as long as
-                 * this session lasts. So it is also still reported on later
-                 * pages of the session, hydrated back out of the cookie --
-                 * where it was only ever on the page load that crossed the
-                 * boundary before.
-                 *
-                 * What matters for ordering is the READ above, not this write:
-                 * the value comes out of a cookie that the announcement below
-                 * is about to erase. The write can go either side, because
-                 * discardPersisted() only erases the cookie and never touches
-                 * memory.
-                 */
-                OWA.setState( this.storeName('s'), 'prior_session_id', prior_session_id );
-            }
         }
 
         /*
@@ -4378,7 +4399,6 @@ class OWATracker  {
             { store: 'v', key: 'user_id', name: 'user_id' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
-            { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
             { store: 's', key: 'psts', name: 'psts' },
             { store: 's', key: 'sts',  name: 'sts' }
         ];
@@ -4810,15 +4830,9 @@ class OWATracker  {
             return;
         }
 
-        var old_sid = OWA.getState( store, 'sid' );
         var old_sts = OWA.getState( store, 'sts' );
 
         OWA.setState( store, 'prior_last_req', latest );
-
-        if ( old_sid ) {
-
-            OWA.setState( store, 'prior_session_id', old_sid );
-        }
 
         if ( old_sts ) {
 
@@ -4854,7 +4868,7 @@ class OWATracker  {
             return;
         }
 
-        [ 'sid', 'sts', 'psts', 'prior_session_id', 'seq' ].forEach( function ( key ) {
+        [ 'sid', 'sts', 'psts', 'seq' ].forEach( function ( key ) {
 
             var value = OWA.getPersistedState( store, key );
 
@@ -5233,6 +5247,8 @@ class OWATracker  {
      */
     trackPageView( url ) {
 
+        this.endPageScopeOnNewUrl( url || this.getCurrentUrl() );
+
         var event = new OwaEvent;
 
         if (url) {
@@ -5264,6 +5280,58 @@ class OWATracker  {
         OWA.doAction( 'tracker.pageView', { tracker: this, event: event } );
 
         return ret;
+    }
+
+    /**
+     * End the page-scoped values (ROUTE_SCOPED_VALUES) of the last page view
+     * when a page view reports another URL and they were not set again since.
+     *
+     * trackRouteChanges() ends them as a route is left. An SPA that sends its
+     * own page views has no such moment, so without this a route that set no
+     * title reported the title and content group of the last route that
+     * did. A value set between the two page views is the new page's and stays,
+     * whichever tracker on the page set it.
+     *
+     * @internal
+     * @param {string} url  the URL this page view reports
+     */
+    endPageScopeOnNewUrl( url ) {
+
+        var that     = this;
+        var previous = this.pageScopeUrl;
+
+        if ( ! this.routeTrackingEnabled && previous && previous !== url ) {
+
+            OWATracker.ROUTE_SCOPED_VALUES.forEach( function ( entry ) {
+
+                if ( that.pageScopedSets( entry ) === ( that.pageScopeSnapshot[ entry.name ] || 0 ) ) {
+
+                    that.deleteRouteScopedValue( entry );
+                }
+            } );
+        }
+
+        this.pageScopeUrl = url;
+
+        OWATracker.ROUTE_SCOPED_VALUES.forEach( function ( entry ) {
+
+            that.pageScopeSnapshot[ entry.name ] = that.pageScopedSets( entry );
+        } );
+    }
+
+    /** @internal Count a set of one of ROUTE_SCOPED_VALUES. */
+    markPageScopedSet( name ) {
+
+        var entry  = OWATracker.ROUTE_SCOPED_VALUES.filter( function ( e ) { return e.name === name; } )[0];
+        var counts = entry && entry.shared ? pageScopeSets : this.pageScopeOwnSets;
+
+        counts[ name ] = ( counts[ name ] || 0 ) + 1;
+    }
+
+    /** @internal How often one of ROUTE_SCOPED_VALUES has been set. */
+    pageScopedSets( entry ) {
+
+        return ( entry.shared ? pageScopeSets : this.pageScopeOwnSets )[ entry.name ] || 0;
     }
 
     /**
@@ -5682,6 +5750,9 @@ class OWATracker  {
 
             return;
         }
+
+        // Route changes search again with these (trackRouteChanges()).
+        this.siteSearchStarted = params;
 
         for ( var i = 0; i < params.length; i++ ) {
 

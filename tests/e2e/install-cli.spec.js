@@ -28,6 +28,15 @@ function php(cmd) {
     return JSON.parse(execFileSync('php', [HARNESS, cmd], { encoding: 'utf8' }));
 }
 
+/** The harness's answer when it exits non-zero: assert-cli writes it to stderr before an install. */
+function phpAnswer(cmd) {
+    try {
+        return php(cmd);
+    } catch (e) {
+        return JSON.parse(e.stderr);
+    }
+}
+
 const INFO = php('info');
 
 test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', () => {
@@ -39,10 +48,9 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
         expect(prepared.db_name).toBe(INFO.scratch_db_cli);
 
         // 2. Run the real CLI installer. cli.php parses key=value args and maps
-        //    cmd=install -> base.installCli. The admin password becomes the
-        //    config's OWA_DB_PASSWORD (so we assert the USER exists, not a pass).
+        //    cmd=install -> base.installCli.
         const repoRoot = path.join(__dirname, '..', '..');
-        const out = execFileSync(
+        const install = (extra) => execFileSync(
             'php',
             [
                 'cli.php',
@@ -50,11 +58,26 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
                 `user_id=${INFO.installcli_admin_id}`,
                 `email_address=${INFO.installcli_admin_id}`,
                 `domain=${INFO.installcli_domain}`,
+                ...extra,
             ],
             { cwd: repoRoot, encoding: 'utf8' }
         );
+
+        // Without a password it refuses, and installs nothing. The admin's
+        // password used to be the database password from owa-config.php.
+        const refused = install([]);
+        expect(refused).toMatch(/password for the admin account is required/);
+        expect(refused).not.toMatch(/Install Completed/i);
+        expect(phpAnswer('assert-cli').checks.install_complete).toBe(false);
+
+        // Too short is refused the same way.
+        expect(install(['password=short'])).toMatch(/at least 6 characters/);
+
+        const out = install(['password=owa-cli-admin-pass']);
         // The installer logs "Install Completed." on success.
         expect(out).toMatch(/Install Completed|Installation complete/i);
+        // ...and the cron line, without which no report shows anything.
+        expect(out).toMatch(/\* \* \* \* \* cd .+ && php cli\.php cmd=schedule-run/);
 
         // 3. Assert the scratch DB really got a working install.
         const result = php('assert-cli');

@@ -95,7 +95,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
         window.location.href = url.toString();
     }
 
-    var recordings = <?php echo json_encode( $owa_table ); ?>;
+    var recordings = <?php echo json_encode( $owa_table, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
 
     if ( recordings && recordings.resultsRows && recordings.resultsRows.length ) {
 

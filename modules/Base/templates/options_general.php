@@ -45,8 +45,16 @@ foreach ( $view->settings_fieldsets as $set ) {
     <?php echo $view->createNonceFormField('base.optionsUpdate');?>
 
     <BUTTON class="owa-button" type="submit" name="<?php echo $view->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
+
+</form>
+
+<?php
+    // A form of its own, so it carries its own action's nonce: a nonce is bound
+    // to one action, and the one above is base.optionsUpdate's.
+?>
+<form method="POST">
+    <?php echo $view->createNonceFormField('base.optionsReset');?>
     <input type="hidden" name="<?php echo $view->getNs();?>module" value="base">
     <BUTTON class="owa-button" type="submit" name="<?php echo $view->getNs();?>action" value="base.optionsReset">Reset Configuration to Default Values</BUTTON>
-
 </form>
 </div>

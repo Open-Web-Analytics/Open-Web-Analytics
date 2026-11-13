@@ -64,7 +64,8 @@ const FIXTURE = {
 
     pwUserId: 'owa-e2e-pwchange@example.test',
     pwOldPassword: 'e2e-PwChange-Old-1!',
-    pwPasskey: '735512bd84ae1f2635e3e89fb7ecc001',
+    // E2E_PWUSER_KEY in the seeder: a key that expires in 2100.
+    pwPasskey: '735512bd84ae1f2635e3e89fb7ecc001.4102444800',
     // Identifiers the CRUD tests CREATE then delete (mirrors E2E_NEW_* in the
     // seeder, which teardown mops up if a test aborts mid-flow).
     newSiteDomain: 'https://owa-e2e-created.example.test',

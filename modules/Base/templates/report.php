@@ -125,10 +125,10 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                     <?php if ( ! $view->get( 'hideReportHead' ) ): ?>
                     <div class="owa_reportHead">
                     <div class="owa_reportHeadText">
-                    <div class="owa_reportTitle"><?php echo $view->title;
+                    <div class="owa_reportTitle"><?php $view->out( $view->title );
                         ?><?php if ( $owa_hasCount ): ?><span
                             class="owa_titleCount"><?php $view->out( $owa_titleCount ); ?></span><?php
-                        endif; ?><span class="titleSuffix"><?php echo $view->get('titleSuffix');?></span><?php
+                        endif; ?><span class="titleSuffix"><?php $view->out( $view->get('titleSuffix') );?></span><?php
                         /*
                          * The label is not drawn, so it has to be said twice:
                          * title for a reader hovering, aria-label for one who

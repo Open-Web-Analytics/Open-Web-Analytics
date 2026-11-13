@@ -62,6 +62,7 @@ const DEFAULT_PORT = '8964';
 // the app-behavior specs log in as the SEPARATELY-seeded fixture users, not this
 // one, so the install admin password is irrelevant to the specs). LOCAL throwaway.
 const INSTALL_ADMIN_ID = 'owa-e2e-selfhost-admin@example.test';
+const INSTALL_ADMIN_PASS = 'owa-e2e-selfhost-admin-pass';
 const INSTALL_DOMAIN    = 'owa-e2e-selfhost.example.test';
 
 // The file queue and error log this run may write to.
@@ -498,6 +499,7 @@ function runInstaller(string $repoRoot): array
         escapeshellarg($repoRoot . 'cli.php'),
         'cmd=install',
         'user_id=' . escapeshellarg(INSTALL_ADMIN_ID),
+        'password=' . escapeshellarg(INSTALL_ADMIN_PASS),
         'email_address=' . escapeshellarg(INSTALL_ADMIN_ID),
         'domain=' . escapeshellarg(INSTALL_DOMAIN),
     ];

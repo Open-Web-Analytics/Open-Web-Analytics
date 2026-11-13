@@ -521,7 +521,8 @@ OWA.resultSetExplorer.prototype = {
     getResultSet : function(url) {
 
         var that = this;
-        jQuery.getJSON(url, '', function (data) {that.hideLoader(); that.loader(data); });
+        jQuery.getJSON(url, '', function (data) {that.hideLoader(); that.loader(data); })
+            .fail( function () { that.hideLoader(); that.showLoadError(); } );
     },
 
     getNewResultSet : function( url ) {
@@ -529,7 +530,31 @@ OWA.resultSetExplorer.prototype = {
         url = url || this.resultSet.self;
 
         var that = this;
-        jQuery.getJSON(url, '', function (data) {that.setResultSet(data);});
+        jQuery.getJSON(url, '', function (data) {that.clearLoadError(); that.setResultSet(data);})
+            .fail( function () { that.showLoadError(); } );
+    },
+
+    /**
+     * Say the request failed, in place of the spinner that would otherwise
+     * stay: a timeout, an error status or a body that is not JSON. Once, and
+     * gone again when a later request answers.
+     */
+    showLoadError : function() {
+
+        var $box = jQuery( '#' + this.dom_id );
+
+        if ( $box.find( '.owa_loadError' ).length ) {
+
+            return;
+        }
+
+        $box.append( jQuery( '<div class="owa_loadError"></div>' )
+            .text( OWA.l( 'This report could not be loaded. Try again in a moment.' ) ) );
+    },
+
+    clearLoadError : function() {
+
+        jQuery( '#' + this.dom_id ).find( '.owa_loadError' ).remove();
     },
 
     setResultSet : function(rs) {
@@ -1575,7 +1600,8 @@ OWA.dataGrid.formatters = {
             }
         }
 
-        if ( ! data || ! data.url || ! data.overlay ) {
+        // A web page only: the URL is what a beacon claimed.
+        if ( ! data || ! data.url || ! data.overlay || ! /^https?:\/\//i.test( String( data.url ) ) ) {
             return '';
         }
 

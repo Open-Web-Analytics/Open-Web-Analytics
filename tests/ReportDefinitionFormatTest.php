@@ -1726,8 +1726,8 @@ final class ReportDefinitionFormatTest extends TestCase
             ),
         ), array() );
 
-        $this->assertStringContainsString( "medium.options.shareChart.dimension = 'medium';", $html );
-        $this->assertStringContainsString( "medium.options.shareChart.metric = 'sessions';", $html );
+        $this->assertStringContainsString( 'medium.options.shareChart.dimension = "medium";', $html );
+        $this->assertStringContainsString( 'medium.options.shareChart.metric = "sessions";', $html );
         $this->assertStringContainsString( "'makeShareChart'", $html );
         $this->assertStringContainsString( 'owa_shareBody', $html );
         $this->assertStringNotContainsString( 'makePieChart', $html );

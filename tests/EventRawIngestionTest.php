@@ -641,6 +641,87 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * A row for a day the routine cube build no longer covers queues a rebuild
+     * of that day, once per Property and day; a row for yesterday or today
+     * queues nothing, since the routine build covers those.
+     */
+    public function testALateRowQueuesARebuildOfItsDay(): void
+    {
+        $property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite($this->site);
+        $this->assertNotSame('', $property, 'the test site has a Property');
+
+        $late  = (int) date('Ymd', strtotime('-5 days'));
+        $today = (int) date('Ymd');
+        $key   = 'cube-late:' . $property . ':' . $late;
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = \OWA\Module\Base\Classes\JobQueue::table();
+
+        $db->query("DELETE FROM $table WHERE dedupe_key LIKE ?", ['cube-late:' . $property . ':%']);
+
+        $handler = new \OWA\Module\Base\Handler\EventRawHandlers;
+        $queue   = new ReflectionMethod($handler, 'queueLateRebuilds');
+        $queue->setAccessible(true);
+
+        try {
+            $queue->invoke($handler, [
+                ['site_id' => $this->site, 'yyyymmdd' => $late],
+                ['site_id' => $this->site, 'yyyymmdd' => $late],
+                ['site_id' => $this->site, 'yyyymmdd' => $today],
+            ]);
+            $queue->invoke($handler, [['site_id' => $this->site, 'yyyymmdd' => $late]]);
+
+            $jobs = (array) $db->get_results("SELECT command, params FROM $table WHERE dedupe_key LIKE ? AND status = 'pending'",
+                ['cube-late:' . $property . ':%']);
+
+            $this->assertCount(1, $jobs, 'one job for the late day, none for today');
+            $this->assertSame('cube-rebuild', $jobs[0]['command']);
+            $this->assertSame(['property' => $property, 'from' => (string) $late, 'to' => (string) $late],
+                json_decode($jobs[0]['params'], true));
+            $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('cube-rebuild', $key));
+        } finally {
+            $db->query("DELETE FROM $table WHERE dedupe_key LIKE ?", ['cube-late:' . $property . ':%']);
+        }
+    }
+
+    /**
+     * Text is stored as it was sent, and escaped where it is shown.
+     *
+     * Ingest HTML-escaped tracking values and stripped anything shaped like a
+     * tag: "a<b and c>d" was stored as "ad", "&" as "&amp;", and a search for
+     * "<script>" as "alert(1)" -- a record of something nobody sent.
+     */
+    public function testTextIsStoredAsItWasSent(): void
+    {
+        $row = $this->firePageView([
+            'page_title' => 'a<b and c>d & "quoted" \'x\' Café',
+            'eps_query'  => '<script>alert(1)</script>',
+        ])['page_view'];
+
+        $this->assertSame('a<b and c>d & "quoted" \'x\' Café', $row['page_title']);
+        $this->assertSame('<script>alert(1)</script>',
+            json_decode((string) $row['params'], true)['query'] ?? null);
+    }
+
+    /**
+     * Text that is not UTF-8 lands converted, on the first attempt.
+     *
+     * A Latin-1 byte failed the insert under a strict sql_mode, so the beacon
+     * went to the retry queue, whose JSON encoding then replaced the character.
+     * Read as Windows-1252, "Caf\xe9" is "Café".
+     */
+    public function testTextThatIsNotUtf8LandsConverted(): void
+    {
+        $row = $this->firePageView([
+            'page_title' => "Caf\xe9 cr\xe8me",
+            'eps_note'   => "\xe9t\xe9",
+        ])['page_view'];
+
+        $this->assertSame('Café crème', $row['page_title'], 'converted, not blanked');
+        $this->assertSame('été', json_decode((string) $row['params'], true)['note'] ?? null,
+            'a param that is not UTF-8 is converted, not dropped with the rest');
+    }
+
+    /**
      * A display name is a custom USER property, and reaches the visitor store.
      *
      * These two tests asserted it reached `params` as a declared property with

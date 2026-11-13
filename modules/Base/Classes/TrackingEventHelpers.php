@@ -1219,11 +1219,11 @@ class TrackingEventHelpers {
                 break;
             case "string":
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanInput( $var, array('remove_html' => true) );
+                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
                 break;
             case "url":
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanUrl( $var );
+                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
                 break;
             case "json":
 
@@ -1234,7 +1234,7 @@ class TrackingEventHelpers {
                 break;
             default:
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanInput( $var, array('remove_html' => true) );
+                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
         }
 
         return $var;
@@ -2884,10 +2884,9 @@ class TrackingEventHelpers {
      * THE CAMPAIGN TAGS ARE ONE LIST. utm_* used to stay, as "the site's own
      * tagging", while owa_source went: so with campaignUtmParams on -- the default
      * -- a utm-tagged visit was a different page in every page report, though
-     * attribution had read the tags exactly like OWA's own. GA omits UTM
-     * parameters from Page path + query string and keeps them in Page location;
-     * so does this. Attribution is unaffected: it parses page_location, which
-     * keeps the whole URL.
+     * attribution had read the tags exactly like OWA's own. Now the tags leave the
+     * page path's query and stay in page_location. Attribution is unaffected: it
+     * parses page_location, which keeps the whole URL.
      *
      * The list is per site and settings change, so what a report shows depends on
      * the list as it was when the row was written. Making a corrected list

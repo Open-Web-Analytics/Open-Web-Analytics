@@ -86,6 +86,7 @@ if [ "$VIA" = "cli" ]; then
     php cli.php \
         cmd=install \
         "user_id=$(info installcli_admin_id)" \
+        "password=owa-scratch-admin-pass" \
         "email_address=$(info installcli_admin_id)" \
         "domain=$(info installcli_domain)" 2>&1 | tail -3
 else

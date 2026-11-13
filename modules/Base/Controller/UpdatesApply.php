@@ -58,13 +58,48 @@ class UpdatesApply extends \OWA\Core\Controller {
      *
      * `php cli.php cmd=update` (base.updatesApplyCli) remains the route for
      * updates that cannot run over the web; updates 005/006/007/010 require it.
+     *
+     * ONE AT A TIME. Anyone can request this, and nothing stopped two requests
+     * applying the same updates at once -- a reload during a slow update was
+     * enough. A lease (JobLease, in owa_job_lock, which a 1.14 schema already
+     * has) lets one request apply them; another is told they are under way.
+     * An update the web may run is bounded; one that is not runs from the
+     * command line, so the lease outlasts any web run, and a request that died
+     * holding it frees it when it expires.
      */
+    const LOCK = 'updates-apply';
+
+    const LOCK_SECONDS = 3600;
+
     function __construct($params) {
 
         parent::__construct($params);
     }
 
     function action() {
+
+        $lock = new \OWA\Module\Base\Classes\JobLease( self::LOCK );
+
+        if ( ! $lock->acquire( self::LOCK_SECONDS ) ) {
+
+            $this->set( 'error_msg', $this->getMsg( 3313 ) );
+            $this->setView( 'base.error' );
+            $this->setViewMethod( 'delegate' );
+
+            return;
+        }
+
+        try {
+
+            $this->applyUpdates();
+
+        } finally {
+
+            $lock->release();
+        }
+    }
+
+    protected function applyUpdates() {
 
         // fetch list of modules that require updates
         $s = \OWA\Core\CoreAPI::serviceSingleton();

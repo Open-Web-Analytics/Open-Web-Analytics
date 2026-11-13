@@ -32,6 +32,8 @@ final class RedirectTargetTest extends TestCase
             'relative'              => ['index.php?owa_do=base.sites'],
             'root relative'         => ['/owa/index.php'],
             'query only'            => ['?owa_do=base.reportDashboard'],
+            // Login decodes its target once more, so a space can arrive.
+            'a decoded space'       => ['index.php?owa_do=base.report&owa_constraints=pagePath==/a b'],
         ];
     }
 
@@ -58,6 +60,13 @@ final class RedirectTargetTest extends TestCase
             'port mismatch'      => ['https://owa.example.test:8443/owa/'],
             'userinfo confusion' => ['https://owa.example.test@example.com/'],
             'empty'              => [''],
+            // A browser drops a tab or newline inside a URL: these are //example.com.
+            'tab between slashes'     => ["/\t/example.com/"],
+            'newline between slashes' => ["/\n/example.com/"],
+            'encoded tab, decoded'    => [urldecode('/%09/example.com/')],
+            // Another scheme than the page's makes what follows the host.
+            'scheme without slashes'  => ['http:example.com'],
+            'https without slashes'   => ['https:example.com/x'],
         ];
     }
 

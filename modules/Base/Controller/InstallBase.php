@@ -51,6 +51,11 @@ class InstallBase extends \OWA\Core\Controller\Install {
         $this->addValidation('timezone', $this->getParam('timezone'), 'required', ['errorMsg' => $this->getMsg(3310)]);
         $this->addValidation('email_address', $this->getParam('email_address'), 'required', ['errorMsg' => $this->getMsg(3310)]);
         $this->addValidation('password', $this->getParam('password'), 'required', ['errorMsg' => $this->getMsg(3310)]);
+        $this->addValidation('password_length', $this->getParam('password'), 'stringLength', [
+            'operator' => '>=',
+            'length'   => \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH,
+            'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The password must be at least %d characters.' ), \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
+        ]);
 
         /*
          * A pasted URL is no longer refused.
@@ -102,7 +107,7 @@ class InstallBase extends \OWA\Core\Controller\Install {
              * twice, the second time as a sub-step nobody asked about.
              */
 
-            $password = $this->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
+            $this->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
 
             $site_id = $this->createDefaultSite( self::domainOnly( $this->getParam('domain') ) );
 
@@ -152,7 +157,6 @@ class InstallBase extends \OWA\Core\Controller\Install {
             $ed = \OWA\Core\CoreAPI::getEventDispatch();
             $event = $ed->eventFactory();
             $event->set('u', $this->getParam('user_id'));
-            $event->set('p', $password);
             $event->set('site_id', $site_id);
             $event->setEventType('install_complete');
             $ed->notify($event);
@@ -160,19 +164,6 @@ class InstallBase extends \OWA\Core\Controller\Install {
             // set view
             $this->set('u', $this->getParam('user_id'));
 
-            /*
-             * The password ONLY when OWA generated it.
-             *
-             * createAdminUser() generates one only when none was supplied, and
-             * this form requires one -- so on the web path this is a password
-             * the operator just chose, and printing it back tells them nothing
-             * while leaving a live credential in the page, in the back-forward
-             * cache, and in any screenshot of the completion screen.
-             *
-             * The CLI installer can be run without one, which is the case that
-             * has to be told; it prints its own.
-             */
-            $this->set( 'p', $this->getParam('password') ? '' : $password );
             $this->set('site_id', $site_id);
             $this->setView('base.install');
             $this->setSubview('base.installFinish');

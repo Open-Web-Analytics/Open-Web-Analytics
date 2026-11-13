@@ -241,6 +241,19 @@ class ResultSetManager extends \OWA\Core\Base {
                     continue;
                 }
 
+                if ( in_array( $constraint['operator'] ?? '', array( '=~', '!~' ), true ) ) {
+
+                    $problem = self::regexProblem( (string) $constraint['value'] );
+
+                    if ( $problem !== null ) {
+
+                        $this->addRequestError( sprintf(
+                            'The "%s" pattern was refused: %s', $constraint['name'], $problem ) );
+
+                        continue;
+                    }
+                }
+
                 /*
                  * A name given twice in one request is two filters, and both
                  * apply: pagePath=@/blog,pagePath!@/blog/tag is the blog without
@@ -273,6 +286,135 @@ class ResultSetManager extends \OWA\Core\Base {
                 }
             }
         }
+    }
+
+    /**
+     * Whether a group that contains a repeat is itself repeated, at any depth:
+     * (a+)+, (a*)*, ((ab)+)+. Escapes and character classes are skipped, since
+     * a + inside [...] or after \\ is a literal.
+     *
+     * @param string $pattern
+     * @return bool
+     */
+    private static function repeatsARepeat( $pattern ) {
+
+        $stack = array( false );   // per open group: does it contain a repeat
+        $len   = strlen( $pattern );
+
+        for ( $i = 0; $i < $len; $i++ ) {
+
+            $c = $pattern[ $i ];
+
+            if ( $c === '\\' ) {
+
+                $i++;
+
+                continue;
+            }
+
+            if ( $c === '[' ) {
+
+                // To the closing ], allowing a ] first in the class and escapes inside it.
+                $i += ( isset( $pattern[ $i + 1 ] ) && $pattern[ $i + 1 ] === '^' ) ? 2 : 1;
+                $i += ( isset( $pattern[ $i ] ) && $pattern[ $i ] === ']' ) ? 1 : 0;
+
+                while ( $i < $len && $pattern[ $i ] !== ']' ) {
+
+                    $i += $pattern[ $i ] === '\\' ? 2 : 1;
+                }
+
+                continue;
+            }
+
+            $repeat = $c === '+' || $c === '*' || $c === '{';
+
+            if ( $c === '(' ) {
+
+                $stack[] = false;
+
+            } elseif ( $c === ')' && count( $stack ) > 1 ) {
+
+                $inner    = array_pop( $stack );
+                $next     = $pattern[ $i + 1 ] ?? '';
+                $repeated = $next === '+' || $next === '*' || $next === '{';
+
+                if ( $inner && $repeated ) {
+
+                    return true;
+                }
+
+                if ( $inner || $repeated ) {
+
+                    $stack[ count( $stack ) - 1 ] = true;
+                }
+
+            } elseif ( $repeat ) {
+
+                $stack[ count( $stack ) - 1 ] = true;
+            }
+        }
+
+        return false;
+    }
+
+    /** The longest a report's query may run, in seconds. */
+    const QUERY_SECONDS = 60;
+
+    /** The longest pattern a =~ or !~ filter may send. */
+    const MAX_REGEX_LENGTH = 256;
+
+    /** The largest repeat bound, as in {n} or {n,m}, a pattern may use. */
+    const MAX_REGEX_BOUND = 100;
+
+    /**
+     * Why a =~ / !~ pattern is refused, or null when it may run.
+     *
+     * The pattern runs in the database, against every row of the period, for
+     * anyone who can view the report. A nested quantifier such as (a+)+ or a
+     * backreference makes the match backtrack exponentially on a row that
+     * almost matches, and MariaDB puts no time limit on a REGEXP. These are
+     * the constructs that do that; the patterns reports use (anchors,
+     * alternation, classes, a bounded repeat) are untouched.
+     *
+     * @param string $pattern
+     * @return string|null
+     */
+    public static function regexProblem( $pattern ) {
+
+        if ( strlen( $pattern ) > self::MAX_REGEX_LENGTH ) {
+
+            return sprintf( 'it is longer than %d characters.', self::MAX_REGEX_LENGTH );
+        }
+
+        // \x01 as the delimiter, so a / in a path pattern needs no escaping.
+        if ( @preg_match( "\x01" . $pattern . "\x01u", '' ) === false ) {
+
+            return 'it is not a valid regular expression.';
+        }
+
+        if ( preg_match( '/\\\\[1-9]/', $pattern ) ) {
+
+            return 'it uses a backreference.';
+        }
+
+        if ( self::repeatsARepeat( $pattern ) ) {
+
+            return 'it repeats a group that itself repeats, such as (a+)+.';
+        }
+
+        if ( preg_match_all( '/\{\s*(\d+)\s*(?:,\s*(\d*)\s*)?\}/', $pattern, $m, PREG_SET_ORDER ) ) {
+
+            foreach ( $m as $bound ) {
+
+                if ( (int) $bound[1] > self::MAX_REGEX_BOUND
+                     || ( isset( $bound[2] ) && $bound[2] !== '' && (int) $bound[2] > self::MAX_REGEX_BOUND ) ) {
+
+                    return sprintf( 'it repeats more than %d times.', self::MAX_REGEX_BOUND );
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -374,7 +516,9 @@ class ResultSetManager extends \OWA\Core\Base {
                 if (strpos($constraint, $operator)) {
 
                     list ($name, $value) = explode($operator, $constraint);
-                    $constraint_array[] = array('name' => $name, 'value' => html_entity_decode($value), 'operator' => $operator);
+                    // As written: stored values are the text that was sent, so a
+                    // filter on "Tom &amp; Jerry" means those characters.
+                    $constraint_array[] = array('name' => $name, 'value' => $value, 'operator' => $operator);
                     break;
                 }
             }
@@ -2224,8 +2368,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $this->page = 1;
         }
 
-        $results = $this->db->getAllRows();
-        
+        // Bounded: the filter, period and dimensions are the viewer's choice.
+        $db      = $this->db;
+        $results = $db->withSelectTimeLimit( self::QUERY_SECONDS, function () use ( $db ) {
+            return $db->getAllRows();
+        } );
+
         return $results;
     }
     

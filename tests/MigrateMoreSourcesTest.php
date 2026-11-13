@@ -456,6 +456,21 @@ final class MigrateMoreSourcesTest extends TestCase
         $this->assertSame(202609, (int) $row['last_seen']);
     }
 
+    /** 1.x stored the tags HTML-escaped; they are migrated as the text they were. */
+    public function testEscapedV1TagsAreMigratedAsText(): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query('UPDATE owa_v1fx_visitor SET first_session_source = ?, first_session_medium = ?,'
+            . ' first_session_campaign = ? WHERE id = ?', ['news &amp; views', 'email', 'caf&eacute;', self::VISITOR]);
+        $this->insert('session', ['id' => self::SESSION, 'site_id' => self::SITE, 'visitor_id' => self::VISITOR,
+            'timestamp' => self::T, 'yyyymmdd' => self::DAY]);
+
+        (new VisitorMigrator(V1Schema::PREFIX))->migrateSite(self::SITE);
+
+        $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            'SELECT acq_source, acq_campaign FROM owa_visitor_acquisition WHERE visitor_id = ?', [self::VISITOR]);
+        $this->assertSame(['news & views', 'café'], [$row['acq_source'], $row['acq_campaign']]);
+    }
+
     public function testATaggedFirstVisitCarriesItsTagsAndAnExistingRowWins(): void
     {
         \OWA\Core\CoreAPI::dbSingleton()->query('UPDATE owa_v1fx_visitor SET first_session_source = ?, first_session_medium = ?,'

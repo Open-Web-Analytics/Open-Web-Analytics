@@ -407,7 +407,7 @@ class Update079 extends \OWA\Core\Update {
     /** A table's name under the install's prefix. */
     private function table( $name ) {
 
-        return \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . $name;
+        return \OWA\Core\Entity::TABLE_PREFIX . $name;
     }
 
     /** A stored definition decoded, as CustomReports::hydrate() reads one. */

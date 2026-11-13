@@ -30,8 +30,9 @@ namespace OWA\Core;
  * @since        owa 1.0.0
  */
 
-// TODO: replace with explicit property declarations; kept for now because the
-// owa_base hierarchy relies on dynamic properties (deprecated in PHP 8.2).
+// The Base hierarchy sets properties it does not declare. PHP 8.2 deprecates
+// that except on a class carrying this attribute, which is PHP's supported way
+// to keep it.
 #[\AllowDynamicProperties]
 class Base {
 

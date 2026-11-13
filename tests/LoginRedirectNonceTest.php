@@ -28,7 +28,7 @@ final class LoginRedirectNonceTest extends TestCase
      * controller that writes to a report is not a report screen.
      */
     private const WRITE_VERBS =
-        '/(Add|Edit|Save|Delete|Dismiss|Update|Apply|Activate|Deactivate|Install|Mark|Create|Revoke)/';
+        '/(Add|Edit|Save|Delete|Dismiss|Update|Apply|Activate|Deactivate|Install|Mark|Create|Revoke|Flush|Reset)/';
 
     public static function setUpBeforeClass(): void
     {
@@ -115,7 +115,8 @@ final class LoginRedirectNonceTest extends TestCase
      * `Save` was added with the custom report builder. It is a write verb in
      * the same sense as the rest -- nothing named Save is read-only -- so it
      * does not blunt anything. `Create` and `Revoke` came with application
-     * passwords, on the same grounds.
+     * passwords, on the same grounds. `Flush` and `Reset` came when the cache
+     * flush and the settings reset, both writes, began to require one.
      */
     public function testOnlyWriteControllersRequireANonce()
     {

@@ -42,8 +42,8 @@ class UsersChangePassword extends \OWA\Core\Controller {
 
         $passwordLengthConf = [
             'operator'  => '>=',
-            'length'    => 6,
-            'errorMsg'  => \OWA\Core\CoreAPI::t( 'The password must be at least 6 characters.' ),
+            'length'    => \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH,
+            'errorMsg'  => sprintf( \OWA\Core\CoreAPI::t( 'The password must be at least %d characters.' ), \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
         ];
 
         // 'stringLength' (not 'required') is the validator that actually reads
@@ -74,7 +74,8 @@ class UsersChangePassword extends \OWA\Core\Controller {
             $this->set('status_code', 3006);
         } else {
             $this->setRedirectAction('base.loginForm');
-            $this->set('error_code', 2011); // can't find key in the db
+            // Expired (2012), or not a key any account holds (2011).
+            $this->set('error_code', \OWA\Module\Base\Controller\UsersPasswordEntry::keyProblem( $this->getParam('k') ) ?: 2011 );
         }
     }
 

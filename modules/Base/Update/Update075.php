@@ -40,6 +40,10 @@ class Update075 extends \OWA\Core\Update {
 
     var $schema_version = 75;
 
+    
+
+    var $down_does_not_restore = 'exactly which rows were flagged before: re-flagging by day, site, visitor, session, time and trigger can flag more, or delete rows written after the upgrade.';
+
     var $is_cli_mode_required = false;
 
     const BATCH = 500;

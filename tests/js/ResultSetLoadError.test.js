@@ -1,0 +1,70 @@
+// The explorer imports jQuery as a namespace and calls it; see DataGrid.test.js.
+jest.mock('jquery', () => {
+    const jq = jest.requireActual('jquery');
+    jq.__esModule = true;
+    return jq;
+});
+
+import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+
+const $ = require('jquery');
+
+global.jQuery = global.$ = $;
+
+require('../../modules/Base/src/reporting/v1/owa.resultSetExplorer.js');
+
+/**
+ * A report request that fails clears the spinner and says so, instead of
+ * leaving the spinner up for good.
+ */
+describe('a result set request that fails', () => {
+
+    let fail;
+
+    beforeEach(() => {
+        document.body.innerHTML = '<div id="grid"></div>';
+        OWA.setSetting('baseUrl', 'https://owa.test/');
+        jest.spyOn($, 'getJSON').mockImplementation(() => {
+            const d = $.Deferred();
+            fail = () => d.reject({ status: 500 }, 'error');
+            return d.promise();
+        });
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    test('takes the spinner down and shows a message', () => {
+        const explorer = new OWA.resultSetExplorer('grid');
+
+        explorer.load('https://owa.test/api/index.php?do=reports');
+        expect($('#grid .loader').length).toBe(1);
+
+        fail();
+
+        expect($('#grid .loader').length).toBe(0);
+        expect($('#grid .owa_loadError').text()).toBe('This report could not be loaded. Try again in a moment.');
+    });
+
+    test('a failed requery says so once, and a later answer clears it', () => {
+        const explorer = new OWA.resultSetExplorer('grid');
+        explorer.resultSet = { self: 'https://owa.test/api/index.php?do=reports' };
+
+        explorer.getNewResultSet();
+        fail();
+        explorer.getNewResultSet();
+        fail();
+
+        expect($('#grid .owa_loadError').length).toBe(1);
+
+        $.getJSON.mockImplementation((u, d, done) => {
+            done({ guid: 'x' });
+            return $.Deferred().resolve().promise();
+        });
+        jest.spyOn(explorer, 'setResultSet').mockImplementation(() => {});
+        explorer.getNewResultSet();
+
+        expect($('#grid .owa_loadError').length).toBe(0);
+    });
+});

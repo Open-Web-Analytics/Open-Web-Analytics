@@ -156,6 +156,15 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean true if the rollback was applied, false if refused or failed
      */
+    /**
+     * What down() cannot put back, in a sentence, for an update whose up()
+     * deletes or merges data. Empty for an exact inverse. Logged when the
+     * rollback starts.
+     *
+     * @var string
+     */
+    var $down_does_not_restore = '';
+
     function rollback() {
 
         $current_version = $this->c->get($this->module_name, 'schema_version');
@@ -163,6 +172,14 @@ class Update extends \OWA\Core\Base {
         // check to see that you are rolling back either an update that was successfully applied or one that might have failed.
         // we dont want people applying rollbacks out of sequence.
         if ($current_version === $this->schema_version || $current_version === $this->schema_version - 1) {
+
+            // Said before it runs, so it reads as a warning rather than a post-mortem.
+            if ( $this->down_does_not_restore ) {
+
+                $this->e->notice(sprintf('Rolling back update %s restores the schema but not: %s',
+                    $this->schema_version, $this->down_does_not_restore));
+            }
+
             $ret = $this->down();
             if ($ret) {
                 // only touch the current schema number if needed

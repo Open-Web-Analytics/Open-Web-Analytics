@@ -149,15 +149,23 @@ final class Chunk {
             return self::refuse( 'no samples' );
         }
 
-        // The endpoint's input filter entity-encodes what it passes through.
-        $raw = html_entity_decode( $raw, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-
         if ( strlen( $raw ) > self::MAX_CHARS ) {
 
             return self::refuse( 'samples too large' );
         }
 
+        /*
+         * Read as sent. Ingest entity-encoded what it passed through, so this
+         * decoded the entities first -- which also turned an "&amp;" that was
+         * part of a sample into "&". A beacon queued under that encoding still
+         * reads: when the text is not JSON, its decoded form is tried.
+         */
         $samples = json_decode( $raw, true );
+
+        if ( $samples === null ) {
+
+            $samples = json_decode( html_entity_decode( $raw, ENT_QUOTES | ENT_HTML5, 'UTF-8' ), true );
+        }
 
         if ( ! is_array( $samples ) || ! $samples || ! array_is_list( $samples ) ) {
 

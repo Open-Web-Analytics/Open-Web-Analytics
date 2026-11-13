@@ -390,6 +390,14 @@ abstract class FactMigrator {
 
             foreach ( $this->events( $r, $refs ) as $event ) {
 
+                foreach ( $event->getProperties() as $name => $value ) {
+
+                    if ( is_string( $value ) ) {
+
+                        $event->set( $name, self::v1Text( $value ) );
+                    }
+                }
+
                 $row = \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $event );
 
                 if ( ! $row ) {
@@ -769,6 +777,9 @@ abstract class FactMigrator {
 
             'page_location'   => $doc['url'] ?? null,
             'page_title'      => $doc['page_title'] ?? null,
+            // 1.x's page type is 2.0's content group: the dimension the Page
+            // Types report groups by, and what the tracker's setPageType() sets.
+            'content_group'   => $doc['page_type'] ?? null,
             'HTTP_REFERER'    => $referer['url'] ?? null,
             'HTTP_USER_AGENT' => $ua['ua'] ?? null,
             'browser_type'    => $ua['browser_type'] ?? null,
@@ -794,6 +805,15 @@ abstract class FactMigrator {
 
             $properties[ 'cv' . $i . '_name' ]  = $r[ 'cv' . $i . '_name' ] ?? null;
             $properties[ 'cv' . $i . '_value' ] = $r[ 'cv' . $i . '_value' ] ?? null;
+        }
+
+        // Decoded before the URL readings below are taken from them (v1Text()).
+        foreach ( $properties as $name => $value ) {
+
+            if ( is_string( $value ) ) {
+
+                $properties[ $name ] = self::v1Text( $value );
+            }
         }
 
         $event->setProperties( $properties );
@@ -910,6 +930,25 @@ abstract class FactMigrator {
      * @param mixed $value
      * @return string|null
      */
+    /**
+     * A 1.x text value as the text it was.
+     *
+     * 1.x stored tracked text HTML-escaped -- "Caf&eacute;", "Tom &amp; Jerry"
+     * -- and 2.0 stores the text as sent and escapes it where it is shown
+     * (Sanitize::cleanTrackingText()). Decoded here, a migrated title is the
+     * same value as the one 2.0 records for that page now, and groups with it.
+     *
+     * @param string $value
+     * @return string
+     */
+    public static function v1Text( $value ) {
+
+        $value = (string) $value;
+
+        return strpos( $value, '&' ) === false
+            ? $value : html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+    }
+
     public static function ipAddress( $value ) {
 
         $value = trim( (string) $value );
@@ -983,7 +1022,7 @@ abstract class FactMigrator {
     protected function resolve( array $rows ) {
 
         $refs = array(
-            'document'     => $this->lookup( 'document', array_column( $rows, 'document_id' ), 'id, url, page_title' ),
+            'document'     => $this->lookup( 'document', array_column( $rows, 'document_id' ), 'id, url, page_title, page_type' ),
             'referer'      => $this->lookup( 'referer', array_column( $rows, 'referer_id' ), 'id, url' ),
             'ua'           => $this->lookup( 'ua', array_column( $rows, 'ua_id' ), 'id, ua, browser_type' ),
             'os'           => $this->lookup( 'os', array_column( $rows, 'os_id' ), 'id, name' ),

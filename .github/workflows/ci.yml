@@ -1,7 +1,9 @@
 name: CI
 on:
+  # v2 as well: a merge into it was tested only as a pull request, never as the
+  # branch it produced.
   push:
-    branches: [ master ]
+    branches: [ master, v2 ]
   pull_request:
 
 # One run per branch. Pushing again while a run is in flight cancels the older

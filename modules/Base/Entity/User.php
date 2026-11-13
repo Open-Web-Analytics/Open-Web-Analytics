@@ -36,6 +36,27 @@ class User extends \OWA\Core\Entity {
     const ADMIN_USER_REAL_NAME = 'default admin';
     const ADMIN_USER_ROLE = 'admin';
 
+    /** The shortest password any screen or command accepts. */
+    const MIN_PASSWORD_LENGTH = 6;
+
+    /**
+     * How long the link in a new account's email can set its password.
+     */
+    const INVITE_TTL = 604800; // 7 days
+
+    /**
+     * How long the link in a password reset email can set a new password.
+     */
+    const RESET_TTL = 86400; // 1 day
+
+    /**
+     * A temp passkey: 32 random hex characters, a dot, and the Unix time it
+     * expires. The link carries the whole key and must match the stored value
+     * exactly, so the expiry in it cannot be changed. A key without one -- every
+     * key minted before keys expired -- is expired.
+     */
+    const TEMP_PASSKEY_PATTERN = '/^([a-f0-9]{32})\\.([0-9]{1,10})$/';
+
     /**
      * Credential fields. These are never part of a response payload.
      */
@@ -83,33 +104,74 @@ class User extends \OWA\Core\Entity {
 
     }
     
+    /**
+     * An account given no password is an invitation: nobody can sign in to it
+     * until its owner sets a password from the link in the new account email,
+     * which works for INVITE_TTL.
+     *
+     * Its stored hash is of random bytes nobody is told. Auth::isUser() refuses
+     * the values the previous generator gave.
+     */
     function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
-    
-        if (!$password) {
-            $password = $this->generateRandomPassword();
+
+        if ( ! $password ) {
+
+            $password = bin2hex( random_bytes( 32 ) );
         }
-        
+
         $this->set('user_id', $user_id);
         $this->set('role', $role);
         $this->set('real_name', $real_name);
         $this->set('email_address', $email_address);
-        $this->set('temp_passkey', $this->generateTempPasskey($user_id));
+        $this->set('temp_passkey', self::newTempPasskey( self::INVITE_TTL ) );
         $this->set('password', \OWA\Core\Lib::encryptPassword($password));
         $this->set('creation_date', time());
         $this->set('last_update_date', time());
-        $this->set('api_key', $this->generateTempPasskey($user_id));
+        $this->set('api_key', self::newApiKey() );
         $ret = $this->create();
-        
+
         return $ret;
     }
-    
-    function generateTempPasskey($seed) {
-        
-        return md5($seed.time().rand());
+
+    /** A temp passkey that sets a password until $ttl seconds from now. */
+    public static function newTempPasskey( int $ttl ): string {
+
+        return bin2hex( random_bytes( 16 ) ) . '.' . ( time() + $ttl );
     }
-    
-    function generateRandomPassword() {
-        return substr(\OWA\Core\Lib::encryptPassword(microtime()),0,6);
+
+    /**
+     * A temp passkey that sets nothing: what an account holds once its password
+     * has been set, so the link that set it cannot be used again.
+     *
+     * Not an empty value: the password change finds its account by key, and an
+     * empty key would find every account that had one.
+     */
+    public static function spentTempPasskey(): string {
+
+        return bin2hex( random_bytes( 16 ) ) . '.0';
+    }
+
+    /**
+     * Whether a temp passkey is well formed and not yet expired. Says nothing
+     * about whether any account holds it.
+     */
+    public static function tempPasskeyIsCurrent( $key ): bool {
+
+        return is_string( $key )
+            && preg_match( self::TEMP_PASSKEY_PATTERN, $key, $m ) === 1
+            && (int) $m[2] > time();
+    }
+
+    /** A well-formed temp passkey, current or not, or false. */
+    public static function cleanTempPasskey( $key ) {
+
+        return is_string( $key ) && preg_match( self::TEMP_PASSKEY_PATTERN, $key ) === 1 ? $key : false;
+    }
+
+    /** A legacy API key: 32 random hex characters. */
+    public static function newApiKey(): string {
+
+        return bin2hex( random_bytes( 16 ) );
     }
     
     /**

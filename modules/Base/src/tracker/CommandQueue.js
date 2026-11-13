@@ -30,7 +30,41 @@ class CommandQueue {
     	OWA.debug('Command Queue object created');
 		this.asyncCmds = [];
 		this.is_paused = false;
+
+		// The names of the trackers this queue created, so each one's
+		// default features start, not only OWATracker's.
+		this.trackers = [];
+		this.featuresStarted = false;
 	}
+
+    /**
+     * Start the default features of every tracker the queue created, and of
+     * any it creates from now on, once the command that created it has run.
+     */
+    startFeatures() {
+
+        this.featuresStarted = true;
+
+        if ( this.trackers.indexOf( 'OWATracker' ) === -1 ) {
+
+            this.trackers.unshift( 'OWATracker' );
+        }
+
+        for ( var i = 0; i < this.trackers.length; i++ ) {
+
+            this.startTrackerFeatures( this.trackers[ i ] );
+        }
+    }
+
+    startTrackerFeatures( obj_name ) {
+
+        var tracker = window[ obj_name ];
+
+        if ( tracker && typeof tracker.startFeatures === 'function' ) {
+
+            tracker.startFeatures();
+        }
+    }
 
     push(cmd, callback) {
 
@@ -40,6 +74,7 @@ class CommandQueue {
 
         var obj_name = '';
         var method = '';
+        var created = null;
         var check = String( cmd[0] ).includes( '.' );
 
         if ( ! check ) {
@@ -129,6 +164,8 @@ class CommandQueue {
 
                 OWA.debug('making global object named: %s', obj_name);
                 window[obj_name] = new OWATracker( identity );
+                this.trackers.push( obj_name );
+                created = obj_name;
             }
 
             /**
@@ -190,6 +227,13 @@ class CommandQueue {
                  * anyway, and everything it already understood still runs.
                  */
                 OWA.debug( 'Skipping unknown command %s.%s', obj_name, method );
+            }
+
+            // A tracker created after the page's queue was processed starts
+            // its features once the command that created it has run.
+            if ( created && this.featuresStarted ) {
+
+                this.startTrackerFeatures( created );
             }
         }
 

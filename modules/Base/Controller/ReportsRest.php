@@ -211,6 +211,20 @@ class ReportsRest extends \OWA\Core\ReportController {
     const COMPARE_ROW_LIMIT = 1000;
 
     /**
+     * The most rows a request may ask for a page of. The query fetches ten
+     * pages ahead to know whether there is a next one, into PHP, so an uncapped
+     * resultsPerPage let any reader of reports pull a table of any size through
+     * a small server. The widgets that need most ask for 1000.
+     */
+    const MAX_RESULTS_PER_PAGE = 1000;
+
+    /** A request's page number or page size as a whole number from 1 to $max. */
+    public static function wholeNumber( $value, int $max = PHP_INT_MAX ): int {
+
+        return max( 1, min( $max, (int) ( is_numeric( $value ) ? $value : 1 ) ) );
+    }
+
+    /**
      * The result set with the comparison period's numbers beside its own,
      * when the request names one (`compare`). See CompareMerger.
      *
@@ -393,22 +407,23 @@ class ReportsRest extends \OWA\Core\ReportController {
             $rsm->setSorts($rsm->sortStringToArray( $get('sort') ) );
         }
 
-        // set limit
+        // set limit: a whole number, at most MAX_RESULTS_PER_PAGE. Text here
+        // reached arithmetic in the result set and ended in a TypeError.
         if ( $get('resultsPerPage') ) {
-            
-            $rsm->setLimit( $get('resultsPerPage') );
+
+            $rsm->setLimit( self::wholeNumber( $get('resultsPerPage'), self::MAX_RESULTS_PER_PAGE ) );
         }
 
         // set page
         if ( $get('page') ) {
-            
-            $rsm->setPage( $get('page') );
+
+            $rsm->setPage( self::wholeNumber( $get('page') ) );
         }
 
         // set offset
         if ( $get('offset') ) {
             
-            $rsm->setOffset( $get('offset') );
+            $rsm->setOffset( max( 0, (int) ( is_numeric( $get('offset') ) ? $get('offset') : 0 ) ) );
         }
 
         return $rsm;

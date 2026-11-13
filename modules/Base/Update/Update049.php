@@ -194,6 +194,11 @@ class Update049 extends \OWA\Core\Update {
                 continue;
             }
 
+            // Kept before the switch, so a run that stops between the two can still be undone.
+            $off   = (array) \OWA\Core\CoreAPI::getSetting( 'base', self::SWITCHED_OFF );
+            $off[] = (string) $goal_event_id;
+            \OWA\Core\CoreAPI::persistSetting( 'base', self::SWITCHED_OFF, array_values( array_unique( $off ) ) );
+
             $goal->set( 'is_active', 0 );
 
             if ( $goal->update() === false ) {
@@ -208,12 +213,40 @@ class Update049 extends \OWA\Core\Update {
         return true;
     }
 
+    /** The goal events up() switched off because no condition of theirs could be migrated. */
+    const SWITCHED_OFF = 'goals_switched_off_by_049';
+
+    var $down_does_not_restore = 'the conditions\' old property names: the map from them is many-to-one.';
+
     function down() {
 
-        $this->e->notice(
-            'Nothing to reverse: the vocabulary map is many-to-one, so there is no '
-            . 'inverse, and applying a guessed one would rewrite conditions that '
-            . 'were authored in the current vocabulary.' );
+        /*
+         * The conditions stay: the vocabulary map is many-to-one, so there is no
+         * inverse, and applying a guessed one would rewrite conditions authored
+         * in the current vocabulary. The goals up() switched off are switched
+         * back on -- they were on before it, and that it recorded.
+         */
+        foreach ( (array) \OWA\Core\CoreAPI::getSetting( 'base', self::SWITCHED_OFF ) as $goal_event_id ) {
+
+            $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
+            $goal->load( $goal_event_id );
+
+            if ( ! $goal->wasPersisted() ) {
+
+                continue;
+            }
+
+            $goal->set( 'is_active', 1 );
+
+            if ( $goal->update() === false ) {
+
+                $this->e->notice( sprintf( 'Switching goal event %s back on failed', $goal_event_id ) );
+
+                return false;
+            }
+        }
+
+        \OWA\Core\CoreAPI::persistSetting( 'base', self::SWITCHED_OFF, array() );
 
         return true;
     }

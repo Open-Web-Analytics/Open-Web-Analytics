@@ -43,6 +43,7 @@ $_owa_messages = [
     2005 => ['headline' => \OWA\Core\CoreAPI::t( 'This form is no longer valid' ), 'message' => \OWA\Core\CoreAPI::t( 'The form expired or was opened under another account. Start again from the previous screen.' )],
     2010 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Logged out.' )],
     2011 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The password reset link is not valid.' )],
+    2012 => ['headline' => \OWA\Core\CoreAPI::t( 'This link has expired' ), 'message' => \OWA\Core\CoreAPI::t( 'A link to set a password works for a limited time. Use "Forgot your password?" to get a new one.' )],
 
     // Options/Configuration related
     2500 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Options saved.' )],
@@ -127,6 +128,7 @@ $_owa_messages = [
     3310 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Password is required.' )],
     3312 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Email address is required.' )],
     3311 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Apply these updates from the command line: <code>php cli.php cmd=update</code>' )],
+    3313 => ['headline' => \OWA\Core\CoreAPI::t( 'Updates are already being applied' ), 'message' => \OWA\Core\CoreAPI::t( 'Another request is applying them. Reload this page in a few minutes.' )],
 
     // Graph related
     3500 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'There is no data for this period.' )],

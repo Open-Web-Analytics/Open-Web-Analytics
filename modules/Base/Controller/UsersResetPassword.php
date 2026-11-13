@@ -42,7 +42,6 @@ class UsersResetPassword extends \OWA\Core\Controller {
     
         $event = $this->getParam('event');
         
-        $auth = \OWA\Core\Auth::get_instance();
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->getByColumn('email_address', $event->get('email_address'));
 
@@ -61,7 +60,7 @@ class UsersResetPassword extends \OWA\Core\Controller {
             return;
         }
 
-        $u->set('temp_passkey', $auth->generateTempPasskey($u->get('user_id')));
+        $u->set('temp_passkey', \OWA\Module\Base\Entity\User::newTempPasskey( \OWA\Module\Base\Entity\User::RESET_TTL ) );
         $status = $u->update();
         $this->e->debug('status: '.$status);
         

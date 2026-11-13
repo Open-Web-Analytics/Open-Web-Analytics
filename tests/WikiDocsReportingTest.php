@@ -177,6 +177,21 @@ final class WikiDocsReportingTest extends TestCase
         }
     }
 
+    /** The limits the page states are the ones regexProblem() and the query time cap apply. */
+    public function testTheRegexLimitsAreTheOnesTheCodeApplies(): void
+    {
+        $md = self::section( 'regex-limits' );
+
+        $this->assertStringContainsString( 'Longer than ' . ResultSetManager::MAX_REGEX_LENGTH . ' characters', $md );
+        $this->assertStringContainsString( 'more than ' . ResultSetManager::MAX_REGEX_BOUND, $md );
+        $this->assertStringContainsString( 'more than ' . ResultSetManager::QUERY_SECONDS . ' seconds', $md );
+
+        foreach ( array( '(a+)+', '(a)\\1', 'a{' . ( ResultSetManager::MAX_REGEX_BOUND + 1 ) . '}' ) as $refused ) {
+            $this->assertNotNull( ResultSetManager::regexProblem( $refused ),
+                "the page names $refused as refused, and the code refuses it" );
+        }
+    }
+
     public function testEveryConstraintOperatorIsListedWithItsMeaning(): void
     {
         $md = self::section( 'constraint-operators' );

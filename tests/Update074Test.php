@@ -9,8 +9,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * down() is not exercised here: it rebuilds every cube on the database the
  * suite runs against. tests/tools/upgrade_cycle_run.sh rolls it back and
- * forward on a scratch install, which is where the round trip is proven --
- * including Update051's up(), which now adds the column by an explicit type.
+ * forward on a scratch install, which is where the round trip is proven.
+ * Update051 no longer adds the column, so on a new upgrade there is nothing to
+ * remove; 074 checks before it drops.
  */
 final class Update074Test extends TestCase
 {

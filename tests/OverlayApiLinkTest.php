@@ -128,5 +128,15 @@ final class OverlayApiLinkTest extends TestCase
         );
 
         $this->assertTrue($permitted, 'the minted token does not permit its own link');
+
+        // The same link pointed at another Property, or asking for more, is not.
+        foreach (['propertyId' => '999', 'siteId' => 'another-site', 'metrics' => 'eventCount,revenue'] as $key => $value) {
+
+            $edited = array_merge($q, [$key => $value]);
+
+            $this->assertFalse(\OWA\Core\OverlayToken::permits(
+                $token, 'reports', static fn($name) => (string) ($edited[$name] ?? '')
+            ), "the token accepted its link with $key changed");
+        }
     }
 }

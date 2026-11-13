@@ -20,8 +20,8 @@ import { OwaEvent } from '../../modules/Base/src/tracker/OwaEvent.js';
  *     as new. Only when there is genuinely no id does it mint a guid and flag
  *     is_new_visitor. The resolved id is persisted and promoted to visitor_id.
  *
- *   - setSessionId(): on a new session it records prior_session_id (from the old
- *     PERSISTED s.sid), announces the decision as 'isSessionizationDone', mints
+ *   - setSessionId(): on a new session it announces the decision as
+ *     'isSessionizationDone', mints
  *     a new session guid and raises is_new_session + isNewSessionFlag. On an
  *     active session it reuses the stored s.sid, which the announcement has by
  *     then hydrated into memory. A fail-safe mints one if somehow still empty.
@@ -224,15 +224,13 @@ describe('setSessionId', () => {
 
         t.setSessionId(eventAt(NOW), null);
 
-        expect(OWA.getState('s_session-site', 'prior_session_id')).toBe('old-session-id');
+        // No v2 reader takes the previous session's id, so none is kept.
+        expect(OWA.getState('s_session-site', 'prior_session_id')).toBeUndefined();
         // A brand new session id replaced the old one.
         expect(OWA.getState('s_session-site', 'sid')).not.toBe('old-session-id');
     });
 
-    test('the prior session id rides the event that started the new session', () => {
-        // It is read out of the cookie moments before the boundary throws that
-        // cookie away, so nothing can recover it afterwards -- which is why it
-        // could not simply be collected from the persisted store like the rest.
+    test('no prior session id rides the event that started the new session', () => {
         const t = newTracker();
         seedPersistedSession({ sid: 'old-sid', last_req: NOW - 5000 });
         OWA.setState('s_session-site', 'last_req', NOW - 5000);
@@ -242,29 +240,7 @@ describe('setSessionId', () => {
         const event = new OwaEvent();
         t.addGlobalPropertiesToEvent(event);
 
-        expect(event.get('prior_session_id')).toBe('old-sid');
-    });
-
-    test('and keeps being reported for the rest of that session', () => {
-        // The behaviour change from moving it into 's': it used to exist only
-        // on the page load that crossed the boundary, because a global event
-        // property dies with the page. A session's predecessor is a fact about
-        // the session, so it now survives into the session's later pages.
-        const t = newTracker();
-        seedPersistedSession({
-            sid: 'current-session',
-            last_req: NOW,
-            prior_session_id: 'the-one-before',
-        });
-        OWA.setState('s_session-site', 'last_req', NOW);
-
-        t.setSessionId(eventAt(NOW), null);
-
-        const event = new OwaEvent();
-        t.addGlobalPropertiesToEvent(event);
-
-        expect(event.get('session_id')).toBe('current-session');
-        expect(event.get('prior_session_id')).toBe('the-one-before');
+        expect(event.get('prior_session_id')).toBeUndefined();
     });
 
     test('reuses the stored session id (no new-session flag) during an active session', () => {
@@ -739,7 +715,6 @@ describe('settling the session store on the sessionization decision', () => {
 
         // The previous session's values are gone...
         expect(OWA.getState('s_session-site', 'source')).toBeFalsy();
-        expect(OWA.getState('s_session-site', 'prior_session_id')).toBe('old-sid');
         // ...and this page load's survived the boundary it was set for.
         expect(OWA.getState('s_session-site', 'cv1')).toBe('plan=pro');
     });
