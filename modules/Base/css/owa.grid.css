@@ -5,6 +5,7 @@
  *                       Go to and the pager
  *   .owa_gridTable      the rows; a Total row first, every second row shaded,
  *                       and a rule after the last dimension column
+ *   .owa_gridShowMore   a card's bar under its rows, in place of a pager
  *   .owa_gridPop        a popover: choosing a dimension, or adding a filter
  *
  * The bar wraps rather than scrolls: in a half-width widget the paging goes
@@ -594,6 +595,82 @@
 .owa_grid .owa_gridPrimary:hover {
     border-color: #0f5596;
     background: #0f5596;
+}
+
+/* ---- a card's Show more: a bar across the card, a chevron in its middle - */
+
+/* The grid fills the card's body, so the bar sits on the card's floor. */
+.owa_grid.is-card {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.owa_grid .owa_gridShowMore,
+.owa_grid .owa_gridShowMoreDone {
+    margin-top: auto;
+    border-top: 1px solid #e5e7eb;
+}
+
+.owa_grid .owa_gridShowMore {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 32px;
+    padding: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #6b7280;
+    font: inherit;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.owa_grid .owa_gridShowMore:hover {
+    background: #f3f5f8;
+    color: #111827;
+}
+
+.owa_grid .owa_gridShowMore:focus-visible {
+    outline: 2px solid var(--owa-focus, #1874CD);
+    outline-offset: -2px;
+}
+
+.owa_grid .owa_gridShowMore[aria-busy="true"] {
+    background: transparent;
+    color: #c7ced8;
+    cursor: progress;
+}
+
+.owa_grid .owa_gridShowMoreDone {
+    margin-bottom: 0;
+    padding: 8px 0;
+    text-align: center;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.owa_grid .owa_gridShowMoreDone:focus {
+    outline: 0;
+}
+
+/* A finger's height on a phone. */
+@media (max-width: 600px), (pointer: coarse) {
+
+    .owa_grid .owa_gridShowMore {
+        min-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .owa_grid .owa_gridShowMore {
+        transition: none;
+    }
 }
 
 /* ---- narrow ------------------------------------------------------------ */

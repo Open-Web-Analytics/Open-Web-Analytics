@@ -91,7 +91,7 @@ function draw(rs, options) {
     $('body').append('<div id="' + id + '"></div>');
     const grid = new OWA.dataGrid(id, Object.assign({ showRowNumbers: true, excludeColumns: [], columnFormatters: {}, showExplorerControls: true }, options || {}));
     const events = [];
-    ['page_forward', 'page_back', 'page_change', 'dimension_list_change', 'sort_column_change', 'constraint_change']
+    ['page_forward', 'page_back', 'page_change', 'show_more', 'dimension_list_change', 'sort_column_change', 'constraint_change']
         .forEach((name) => $('#' + id).on(name, (e, ...args) => events.push([name, ...args])));
     grid.generate(rs);
     return { grid, $root: $('#' + id), events };
@@ -501,6 +501,244 @@ describe('the bar', () => {
         expect($root.find('.owa_gridFilterButton').length).toBe(0);
         expect($root.find('.owa_gridPageSize').length).toBe(0);
         expect($root.find('.owa_gridPager').length).toBe(1);
+    });
+});
+
+/**
+ * A card has no pager. A bar under its rows asks for the same query again from
+ * the first row with as many more rows as the card first showed.
+ */
+describe('a card\'s Show more', () => {
+
+    const CARD = { compact: true, showExplorerControls: false };
+
+    function rows(count) {
+        return Array.from({ length: count }, (_, i) => ({
+            browserType: cell('browserType', 'dimension', 'Browser ' + (i + 1)),
+            sessions: cell('sessions', 'metric', 100 - i),
+        }));
+    }
+
+    // Page one of a card: `shown` rows of `total`, as the server counts them.
+    function card(shown, total, extra) {
+        return resultSet({
+            rows: rows(Math.min(shown, total)),
+            constraints: 'medium==referral',
+            rs: Object.assign({
+                resultsPerPage: shown,
+                resultsReturned: Math.min(shown, total),
+                resultsTotal: total,
+                total_pages: Math.ceil(total / shown),
+                next: total > shown ? 'n' : undefined,
+            }, extra || {}),
+        });
+    }
+
+    const bar = ($root) => $root.find('[data-ui="grid-show-more"]');
+
+    test('a card with more rows has the bar, and no pager or range', () => {
+        const { $root } = draw(card(10, 23), CARD);
+
+        expect($root.find('.owa_gridPager, .owa_gridPrev, .owa_gridNext, .owa_gridRange, .owa_gridPageSize').length).toBe(0);
+        expect(bar($root).length).toBe(1);
+        expect(bar($root).is('button[type="button"]')).toBe(true);
+        expect(bar($root).attr('aria-label')).toBe('Show 10 more rows');
+        expect(bar($root).find('.fa-chevron-down').attr('aria-hidden')).toBe('true');
+    });
+
+    test('the bar is under the rows', () => {
+        const { $root } = draw(card(10, 23), CARD);
+
+        expect($root.find('.owa_grid').children().last().is('[data-ui="grid-show-more"]')).toBe(true);
+    });
+
+    test('the bar names the rows that are left when fewer than a step are', () => {
+        const { $root } = draw(card(10, 11), CARD);
+
+        expect(bar($root).attr('aria-label')).toBe('Show 1 more row');
+    });
+
+    /* Past ten pages the total is a lower bound, so a whole step is coming. */
+    test('a total that is a lower bound still offers a whole step', () => {
+        const { $root } = draw(card(10, 100), CARD);
+
+        expect(bar($root).attr('aria-label')).toBe('Show 10 more rows');
+    });
+
+    test('a card with every row shown has no bar', () => {
+        const { $root } = draw(card(10, 7), CARD);
+
+        expect(bar($root).length).toBe(0);
+        expect($root.find('[data-ui="grid-all-shown"]').length).toBe(0);
+    });
+
+    test('pressing it asks for the rows shown and a step more', () => {
+        const { $root, events } = draw(card(10, 23), CARD);
+
+        bar($root).trigger('click');
+
+        expect(events).toEqual([['show_more', 20]]);
+    });
+
+    test('the request stops at the most rows the server returns', () => {
+        OWA.setSetting('max_results_per_page', 25);
+
+        try {
+            const { $root, events } = draw(card(20, 100), CARD);
+
+            expect(bar($root).attr('aria-label')).toBe('Show 5 more rows');
+            bar($root).trigger('click');
+            expect(events).toEqual([['show_more', 25]]);
+        } finally {
+            OWA.setSetting('max_results_per_page', undefined);
+        }
+    });
+
+    test('while the rows load the bar is busy and a second press does nothing', () => {
+        const { $root, events } = draw(card(10, 23), CARD);
+
+        bar($root).trigger('click');
+        bar($root).trigger('click');
+
+        expect(bar($root).attr('aria-busy')).toBe('true');
+        expect(bar($root).attr('aria-disabled')).toBe('true');
+        expect(events).toEqual([['show_more', 20]]);
+    });
+
+    test('a request that fails leaves the bar to press again', () => {
+        const { $root, events } = draw(card(10, 23), CARD);
+
+        bar($root).trigger('click');
+        $root.trigger('result_set_error');
+
+        expect(bar($root).attr('aria-busy')).toBeUndefined();
+        expect(bar($root).attr('aria-disabled')).toBeUndefined();
+
+        bar($root).trigger('click');
+        expect(events).toEqual([['show_more', 20], ['show_more', 20]]);
+    });
+
+    test('the rows arrive: the step stays the first page size, the bar keeps the focus, and the status says how many', () => {
+        const { $root, events } = draw(card(10, 23), CARD);
+
+        expect($root.children('[data-ui="grid-status"]').attr('aria-live')).toBe('polite');
+        expect($root.children('[data-ui="grid-status"]').text()).toBe('');
+
+        bar($root).trigger('click');
+        $root.trigger('new_result_set', [card(20, 23)]);
+
+        expect($root.find('tr.owa_gridRow').length).toBe(20);
+        expect(bar($root).attr('aria-label')).toBe('Show 3 more rows');
+        expect(bar($root).attr('aria-busy')).toBeUndefined();
+        expect(document.activeElement).toBe(bar($root)[0]);
+        expect($root.children('[data-ui="grid-status"]').text()).toBe('Showing 20 of 23 rows');
+
+        bar($root).trigger('click');
+        expect(events).toEqual([['show_more', 20], ['show_more', 23]]);
+    });
+
+    test('the last rows arrive: the bar becomes a line saying so, which takes the focus', () => {
+        const { $root } = draw(card(10, 23), CARD);
+
+        bar($root).trigger('click');
+        $root.trigger('new_result_set', [card(23, 23)]);
+
+        const $done = $root.find('[data-ui="grid-all-shown"]');
+
+        expect(bar($root).length).toBe(0);
+        expect($done.is('button')).toBe(false);
+        expect($done.text()).toBe('All 23 rows shown');
+        expect(document.activeElement).toBe($done[0]);
+    });
+
+    test('a redraw that was not asked for by the bar moves no focus', () => {
+        const { $root } = draw(card(10, 23), CARD);
+
+        $root.trigger('new_result_set', [card(10, 23, { sortColumn: 'browserType', sortOrder: 'asc' })]);
+
+        expect(bar($root).length).toBe(1);
+        expect(document.activeElement).toBe(document.body);
+    });
+
+    test('a grid that is not a card keeps its pager and has no bar', () => {
+        const { $root } = draw(card(10, 23));
+
+        expect(bar($root).length).toBe(0);
+        expect($root.find('.owa_gridPager').length).toBe(1);
+        expect($root.find('.owa_gridRange').text()).toBe('1–10 of 23');
+    });
+
+    test('the names are translated, in the form the count takes', () => {
+        OWA.config.strings = {
+            'Show %d more row': ['Afficher %d ligne de plus', 'Afficher %d lignes de plus'],
+        };
+        OWA.config.plural_rule = 'french';
+
+        try {
+            expect(bar(draw(card(10, 23), CARD).$root).attr('aria-label')).toBe('Afficher 10 lignes de plus');
+            expect(bar(draw(card(10, 11), CARD).$root).attr('aria-label')).toBe('Afficher 1 ligne de plus');
+        } finally {
+            delete OWA.config.strings;
+            delete OWA.config.plural_rule;
+        }
+    });
+});
+
+/**
+ * The explorer behind a card: a press of Show more requeries the result set's
+ * own URL, so the sort, the filters and the period travel.
+ */
+describe('a card\'s explorer', () => {
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    test('asks for page one with the rows shown and a step more, and keeps the rest of the query', () => {
+        document.body.innerHTML = '<div id="card"></div>';
+        OWA.setSetting('baseUrl', 'https://owa.test/');
+
+        const asked = [];
+
+        jest.spyOn($, 'getJSON').mockImplementation((u, d, done) => {
+            asked.push(u);
+            const q = new OWA.uri(u);
+            const per = parseInt(q.getQueryParam('resultsPerPage'), 10);
+            const total = 23;
+            const shown = Math.min(per, total);
+            done({
+                guid: 'g' + asked.length,
+                self: u,
+                resultsRows: Array.from({ length: shown }, (_, i) => ({
+                    browserType: cell('browserType', 'dimension', 'Browser ' + i),
+                    sessions: cell('sessions', 'metric', 100 - i),
+                })),
+                resultsPerPage: per, resultsReturned: shown, resultsTotal: total, page: 1,
+                total_pages: Math.ceil(total / per), sortColumn: 'sessions', sortOrder: 'desc',
+            });
+            return $.Deferred().resolve().promise();
+        });
+
+        const explorer = new OWA.resultSetExplorer('card');
+        explorer.options.grid.compact = true;
+        explorer.options.grid.showExplorerControls = false;
+        explorer.asyncQueue.push(['refreshGrid']);
+        explorer.load(url({
+            dimensions: 'browserType', metrics: 'sessions', sort: 'sessions-',
+            constraints: 'medium==referral', period: 'last_seven_days', page: 3, resultsPerPage: 10,
+        }));
+
+        $('#card [data-ui="grid-show-more"]').trigger('click');
+
+        const q = new OWA.uri(asked[1]);
+
+        expect(q.getQueryParam('page')).toBe('1');
+        expect(q.getQueryParam('resultsPerPage')).toBe('20');
+        expect(decodeURIComponent(q.getQueryParam('sort'))).toBe('sessions-');
+        expect(decodeURIComponent(q.getQueryParam('constraints'))).toBe('medium==referral');
+        expect(q.getQueryParam('period')).toBe('last_seven_days');
+        expect($('#card tr.owa_gridRow').length).toBe(20);
+        expect($('#card [data-ui="grid-show-more"]').attr('aria-label')).toBe('Show 3 more rows');
     });
 });
 
