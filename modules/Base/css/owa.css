@@ -363,7 +363,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .setting .owa-overridable__value {display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; flex:1 1 auto; min-width:0;}
 .setting .owa-overridable [hidden] {display:none;}
 /* Text, not a control: a dashed outline on a light ground. #1f2937 on #f5f6f8 is 13.6:1, #4b5563 7.0:1. */
-.owa-inherited {display:inline-block; max-width:100%; box-sizing:border-box; padding:4px 10px; border:1px dashed #b8bec8; border-radius:4px; background:#f5f6f8; color:#1f2937; font-size:var(--owa-text-md, 13px); line-height:1.4; overflow-wrap:anywhere;}
+.owa-inherited {display:inline-block; max-width:100%; min-width:0; box-sizing:border-box; padding:4px 10px; border:1px dashed #b8bec8; border-radius:4px; background:#f5f6f8; color:#1f2937; font-size:var(--owa-text-md, 13px); line-height:1.4; overflow-wrap:anywhere;}
 .owa-inherited__none {font-style:italic; color:#4b5563;}
 .owa-inherited--long {white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:min(100%, 36em);}
 .owa-inherited--long:hover, .owa-inherited--long:focus {white-space:normal;}
