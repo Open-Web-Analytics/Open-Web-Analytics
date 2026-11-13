@@ -121,7 +121,8 @@ describe('reporting CSS build integrity', () => {
             // they must stay as authored so they resolve against the css/ dir at runtime.
             expect(css).toContain('url("chosen-sprite.png")');
             expect(css).toContain('images/ui-icons_');
-            expect(css).toContain('../i/'); // owa.report.css funnel/triangle images
+            // owa.report.css no longer points at ../i/: its triangle rules were for
+            // classes nothing used, and went with the images.
         });
 
         test('no stray JS chunk is emitted alongside the stylesheet', () => {

@@ -186,8 +186,8 @@ final class WikiDocsReportingTest extends TestCase
         $this->assertStringContainsString( 'more than ' . ResultSetManager::MAX_REGEX_BOUND, $md );
         $this->assertStringContainsString( 'more than ' . ResultSetManager::QUERY_SECONDS . ' seconds', $md );
 
-        foreach ( array( '(a+)+', '\\1', 'a{' . ( ResultSetManager::MAX_REGEX_BOUND + 1 ) . '}' ) as $refused ) {
-            $this->assertNotNull( ResultSetManager::regexProblem( stripslashes( $refused ) ),
+        foreach ( array( '(a+)+', '(a)\\1', 'a{' . ( ResultSetManager::MAX_REGEX_BOUND + 1 ) . '}' ) as $refused ) {
+            $this->assertNotNull( ResultSetManager::regexProblem( $refused ),
                 "the page names $refused as refused, and the code refuses it" );
         }
     }
