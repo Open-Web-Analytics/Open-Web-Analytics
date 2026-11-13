@@ -59,7 +59,6 @@ final class UpdatesScreenTest extends TestCase
         $view->render( ['modules' => ['base']] );
 
         $file = new \ReflectionProperty( $view->t, 'file' );
-        $file->setAccessible( true );
 
         return basename( (string) $file->getValue( $view->t ) );
     }
@@ -76,7 +75,6 @@ final class UpdatesScreenTest extends TestCase
         $view->render( ['modules' => ['base']] );
 
         $file = new \ReflectionProperty( $view->body, 'file' );
-        $file->setAccessible( true );
 
         $this->assertSame( 'updates.php', basename( (string) $file->getValue( $view->body ) ) );
     }

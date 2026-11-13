@@ -23,7 +23,6 @@ final class EmbeddedSettingRemovedTest extends TestCase
     private function controllerData( \OWA\Core\Controller $controller ): array
     {
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $data->setAccessible( true );
 
         return (array) $data->getValue( $controller );
     }
