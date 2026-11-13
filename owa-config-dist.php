@@ -283,6 +283,14 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 
 /**
+ * LANGUAGE
+ *
+ * The locale of the user interface, read from conf/strings/<locale>.php (e.g. fr, pt_BR).
+ */
+//define('OWA_LOCALE', 'fr');
+
+
+/**
  * MAXMIND GEOIP LICENCE KEY
  *
  * Only relevant if the Maxmind GeoIP module is activated.

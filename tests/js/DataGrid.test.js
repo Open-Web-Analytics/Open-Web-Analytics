@@ -675,3 +675,59 @@ describe('a grid compared to another period', () => {
         expect(draw(resultSet()).$root.find('.owa_gridChange')).toHaveLength(0);
     });
 });
+
+/**
+ * The grid's sentences are whole strings with placeholders (OWA.l), so a
+ * translation can order the words its own way.
+ */
+describe('in a translated locale', () => {
+
+    afterEach(() => {
+        delete OWA.config.strings;
+    });
+
+    test('a chip is one sentence, with the value in bold where the translation puts it', () => {
+        OWA.config.strings = {
+            'filter chip: field, condition, value\x04%1$s %2$s %3$s': '%3$s : %1$s (%2$s)',
+            'filter chip: field, condition\x04%1$s %2$s': '%1$s — %2$s',
+            'contains': 'contient',
+        };
+
+        const { $root } = draw(resultSet({ constraints: 'browserType=@Chro,medium==(not set)' }));
+
+        expect(texts($root.find('.owa_gridChipText'))).toEqual(['Chro : Browser (contient)', 'Medium — is not set']);
+        expect($root.find('.owa_gridChipText strong').first().text()).toBe('Chro');
+    });
+
+    test('the pager reads its range, and a range that may go on, from one string each', () => {
+        OWA.config.strings = {
+            '%1$s–%2$s of %3$s': '%1$s à %2$s sur %3$s',
+            '%1$s–%2$s of %3$s+': '%1$s à %2$s sur plus de %3$s',
+        };
+
+        const paged = resultSet({ rs: { page: 2, resultsPerPage: 25, resultsReturned: 3, resultsTotal: 3, total_pages: 2, previous: 'p' } });
+
+        expect(draw(paged).$root.find('.owa_gridRange').text()).toBe('26 à 28 sur 28');
+
+        expect(OWA.util.sprintf(OWA.l('%1$s–%2$s of %3$s+'), 1, 10, 100)).toBe('1 à 10 sur plus de 100');
+    });
+
+    test('the remove and row-action buttons are named with the value in the sentence', () => {
+        const rs = resultSet({ dimensions: 'browserType,osName', rows: [
+            { browserType: cell('browserType', 'dimension', 'Chrome'), osName: cell('osName', 'dimension', 'Linux'), sessions: cell('sessions', 'metric', 1), bounceRate: cell('bounceRate', 'metric', 0, '0%') },
+        ] });
+        const actions = [{ id: 'clicks', label: 'Element clicks', href: '?x=__OWA_ROW_browserType__', params: { browserType: 'browserType' }, first: '' }];
+
+        expect(draw(rs, { rowActions: actions }).$root.find('.owa_gridDimRemove').attr('aria-label')).toBe('Remove Operating System');
+
+        OWA.config.strings = { 'Remove %s': 'Retirer %s', 'Actions for %s': 'Actions pour %s', 'Element clicks': 'Clics' };
+
+        const { $root } = draw(rs, { rowActions: actions });
+
+        expect($root.find('.owa_gridDimRemove').attr('aria-label')).toBe('Retirer Operating System');
+        expect($root.find('.owa_gridRowActions').first().attr('aria-label')).toBe('Actions pour Chrome');
+
+        $root.find('.owa_gridRowActions').first().trigger('click');
+        expect($('.owa_gridRowActionsMenu a').last().text()).toBe('Clics');
+    });
+});

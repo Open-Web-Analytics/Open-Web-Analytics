@@ -1,0 +1,9 @@
+{
+    "_comment": "Which form each count takes under each plural rule. Read by StringsTest.php (Strings::pluralIndex) and Strings.test.js (OWA.pluralIndex), so the server and the browser pick the same form.",
+    "english": { "0": 1, "1": 0, "2": 1, "-1": 0, "1.5": 0, "11": 1, "21": 1, "101": 1 },
+    "french":  { "0": 0, "1": 0, "1.9": 0, "2": 1, "11": 1, "100": 1 },
+    "none":    { "0": 0, "1": 0, "2": 0, "5": 0, "1000": 0 },
+    "russian": { "0": 2, "1": 0, "2": 1, "4": 1, "5": 2, "11": 2, "12": 2, "14": 2, "21": 0, "22": 1, "25": 2, "101": 0, "111": 2, "112": 2, "122": 1 },
+    "polish":  { "0": 2, "1": 0, "2": 1, "4": 1, "5": 2, "12": 2, "14": 2, "21": 2, "22": 1, "25": 2, "102": 1, "112": 2 },
+    "czech":   { "0": 2, "1": 0, "2": 1, "4": 1, "5": 2, "21": 2, "22": 2, "102": 2 }
+}

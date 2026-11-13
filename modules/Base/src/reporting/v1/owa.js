@@ -75,10 +75,97 @@ var OWA = {
         return this.config[name];
     },
     
-    // localize wrapper
-    l: function (string) {
-        
-        return string;
+    /*
+     * A user-facing string in the locale in use, keyed by its English, as
+     * CoreAPI::t() is on the server (see Core\Strings). Write the English as a
+     * string literal: `cmd=strings-extract` catalogues OWA.l() and OWA.ln()
+     * calls from modules/<module>/src/. A page in a translated locale sets
+     * OWA.config.strings (key => translation) and OWA.config.plural_rule; with
+     * neither, the English is the answer. Fill in placeholders with
+     * OWA.util.sprintf(), which reads PHP's %s, %d and %1$s:
+     *
+     *   OWA.util.sprintf( OWA.l( '%s over time' ), label )
+     */
+    l: function ( text, context ) {
+
+        return OWA.translate( text, context );
+    },
+
+    /*
+     * A counted message: the form for n, as CoreAPI::tn().
+     *
+     *   OWA.util.sprintf( OWA.ln( '%d row', '%d rows', n ), n )
+     */
+    ln: function ( singular, plural, n, context ) {
+
+        return OWA.translatePlural( singular, plural, n, context );
+    },
+
+    /** OWA.l() under a name the extractor does not read, for a string given rather than written. */
+    translate: function ( text, context ) {
+
+        var t = OWA.stringFor( text, context );
+
+        return typeof t === 'string' ? t : String( text );
+    },
+
+    /** OWA.ln() under a name the extractor does not read. */
+    translatePlural: function ( singular, plural, n, context ) {
+
+        var forms = OWA.stringFor( singular, context );
+
+        if ( Array.isArray( forms ) ) {
+
+            var form = forms[ OWA.pluralIndex( n, OWA.config.plural_rule ) ];
+
+            if ( typeof form === 'string' && form !== '' ) {
+                return form;
+            }
+        }
+
+        return OWA.pluralIndex( n, 'english' ) === 0 ? String( singular ) : String( plural );
+    },
+
+    /** The translation of a key, as the server sent it; undefined when there is none. */
+    stringFor: function ( text, context ) {
+
+        var map = OWA.config.strings;
+        var key = context ? context + '\x04' + text : String( text );
+
+        return map && Object.prototype.hasOwnProperty.call( map, key ) ? map[ key ] : undefined;
+    },
+
+    /*
+     * Which form a count takes under a plural rule: Strings::pluralIndex() on
+     * the server, which documents the rules. The count is its absolute value,
+     * truncated to an integer.
+     */
+    pluralIndex: function ( n, rule ) {
+
+        n = Math.abs( Math.trunc( Number( n ) || 0 ) );
+
+        var few = n % 10 >= 2 && n % 10 <= 4 && ( n % 100 < 10 || n % 100 >= 20 );
+
+        switch ( rule ) {
+
+            case 'none':
+                return 0;
+
+            case 'french':
+                return n > 1 ? 1 : 0;
+
+            case 'russian':
+                return n % 10 === 1 && n % 100 !== 11 ? 0 : ( few ? 1 : 2 );
+
+            case 'polish':
+                return n === 1 ? 0 : ( few ? 1 : 2 );
+
+            case 'czech':
+                return n === 1 ? 0 : ( n >= 2 && n <= 4 ? 1 : 2 );
+
+            default:
+                return n === 1 ? 0 : 1;
+        }
     },
     
     initializeStateManager: function() {
