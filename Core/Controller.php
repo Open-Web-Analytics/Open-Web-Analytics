@@ -199,7 +199,7 @@ class Controller extends \OWA\Core\Base {
 
         // check if the schema needs to be updated and force the update
         // not sure this should go here...
-        if ($this->is_admin === true) {
+        if ($this->is_admin === true && $this->needsCurrentSchema()) {
             // do not intercept if its the updatesApply action or a re-install else updates will never apply
             $do = $this->getParam('do');
             
@@ -519,6 +519,18 @@ class Controller extends \OWA\Core\Base {
 
         return $this->v->getErrorMsgs();
 
+    }
+
+    /**
+     * Whether this action refuses to run while updates are pending. A command
+     * that touches nothing the updates change, on a node with no database to
+     * read the schema version from, answers false.
+     *
+     * @return bool
+     */
+    function needsCurrentSchema() {
+
+        return true;
     }
 
     function isAdmin() {

@@ -48,6 +48,17 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
         parent::__construct( $params );
     }
 
+    /**
+     * forward_only on a static-config logging node: it moves beacons from the
+     * file queue to the intake and reads nothing from the database, which such
+     * a node has none of to ask whether updates are pending.
+     */
+    function needsCurrentSchema() {
+
+        return ! ( $this->getParam( 'forward_only' )
+            && \OWA\Core\CoreAPI::getSetting( 'base', 'useStaticConfigOnly' ) );
+    }
+
     function action() {
 
         $I       = '\OWA\Module\Base\Classes\TrackerIngest';
