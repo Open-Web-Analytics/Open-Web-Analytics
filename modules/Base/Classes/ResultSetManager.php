@@ -562,6 +562,15 @@ class ResultSetManager extends \OWA\Core\Base {
             return sprintf( 'it is longer than %d characters.', self::MAX_REGEX_LENGTH );
         }
 
+        // Before compiling: PCRE's own answer to some of these (\C, for one)
+        // depends on the PCRE version, and the reason given should not.
+        $unportable = self::unportableConstruct( $pattern );
+
+        if ( $unportable !== null ) {
+
+            return $unportable;
+        }
+
         // \x01 as the delimiter, so a / in a path pattern needs no escaping.
         if ( @preg_match( "\x01" . $pattern . "\x01u", '' ) === false ) {
 
@@ -571,13 +580,6 @@ class ResultSetManager extends \OWA\Core\Base {
         if ( preg_match( '/\\\\[1-9]/', $pattern ) ) {
 
             return 'it uses a backreference.';
-        }
-
-        $unportable = self::unportableConstruct( $pattern );
-
-        if ( $unportable !== null ) {
-
-            return $unportable;
         }
 
         if ( self::repeatsARepeat( $pattern ) ) {

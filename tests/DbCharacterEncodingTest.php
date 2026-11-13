@@ -201,12 +201,13 @@ final class DbCharacterEncodingTest extends TestCase {
             ) );
         }
 
+        // A collation's name starts with its character set's. MariaDB 10.10+
+        // lists its uca1400 collations without that prefix in
+        // COLLATION_CHARACTER_SET_APPLICABILITY, so a join there finds nothing.
         $row = $db->get_results(
-            'SELECT TABLE_NAME t, CCSA.CHARACTER_SET_NAME c '
-          . 'FROM information_schema.TABLES T '
-          . 'JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY CCSA '
-          . 'ON CCSA.COLLATION_NAME = T.TABLE_COLLATION '
-          . 'WHERE T.TABLE_SCHEMA = DATABASE() AND T.TABLE_NAME LIKE "owa_enc_probe%"' );
+            'SELECT TABLE_NAME t, SUBSTRING_INDEX(TABLE_COLLATION, "_", 1) c '
+          . 'FROM information_schema.TABLES '
+          . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE "owa_enc_probe%"' );
 
         $found = [];
         foreach ( (array) $row as $r ) { $found[ $r['t'] ] = $r['c']; }
