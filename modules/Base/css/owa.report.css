@@ -127,9 +127,6 @@
 #owa_reportSiteFilterSelect {font-size: 12px; width:200px; margin: 0px 20px; 0px 0px;}
 #owa_reportSiteFilterSelect span {font-size: 18px; font-weight: bold; vertical-align: baseline; }
 
-.owa_reportRevealControl, .owa_reportHideControl {width: 15px; background-color: #efefef; text-align: center;}
-.owa_reportRevealControl {background-image: url(../i/15px-TriangleArrow-Down.png); background-repeat: no-repeat; background-position: center;}
-.owa_reportHideControl {background-image: url(../i/15px-TriangleArrow-up.png.gif); background-repeat: no-repeat; background-position: center;}
 /* The date range control, right of the report title. Below 600px it takes the
    whole width instead (see the narrow-screen rules). */
 /* The title and its as-of line on the left; the period picker and the
