@@ -365,8 +365,8 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 /* Text, not a control: a dashed outline on a light ground. #1f2937 on #f5f6f8 is 13.6:1, #4b5563 7.0:1. */
 .owa-inherited {display:inline-block; max-width:100%; min-width:0; box-sizing:border-box; padding:4px 10px; border:1px dashed #b8bec8; border-radius:4px; background:#f5f6f8; color:#1f2937; font-size:var(--owa-text-md, 13px); line-height:1.4; overflow-wrap:anywhere;}
 .owa-inherited__none {font-style:italic; color:#4b5563;}
-.owa-inherited--long {white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:min(100%, 36em);}
-.owa-inherited--long:hover, .owa-inherited--long:focus {white-space:normal;}
+.owa-inherited--long {display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden; max-width:min(100%, 36em);}
+.owa-inherited--long:hover, .owa-inherited--long:focus {display:inline-block; -webkit-line-clamp:unset; line-clamp:none;}
 .owa-inherited:focus-visible {outline:2px solid #1874CD; outline-offset:2px;}
 .owa-override {display:inline-flex; align-items:center; gap:6px; margin-left:auto; font-size:var(--owa-text-sm, 12px); cursor:pointer; white-space:nowrap;}
 .owa-override input {appearance:none; -webkit-appearance:none; width:30px; height:16px; margin:0; border-radius:8px; background:#bbbbbb; position:relative; cursor:pointer; transition:background .15s;}
