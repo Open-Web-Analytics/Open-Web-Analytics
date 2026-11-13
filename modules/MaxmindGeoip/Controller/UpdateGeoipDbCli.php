@@ -356,7 +356,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             return 0;
         }
 
-        foreach ( $headers as $header ) {
+        foreach ( self::finalResponse( $headers ) as $header ) {
 
             if ( stripos( $header, 'Last-Modified:' ) === 0 ) {
 
@@ -386,17 +386,39 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         return is_array( $meta['wrapper_data'] ?? null ) ? $meta['wrapper_data'] : [];
     }
 
+    /**
+     * The status of the last response, the one a followed redirect ended on;
+     * 0 when there is no status line.
+     *
+     * @param string[] $headers
+     * @return int
+     */
     protected function statusFrom( array $headers ) {
 
-        foreach ( $headers as $header ) {
+        $final = self::finalResponse( $headers );
 
-            if ( preg_match( '#^HTTP/\S+\s+(\d{3})#', $header, $m ) ) {
+        return $final && preg_match( '#^HTTP/\S+\s+(\d{3})#', $final[0], $m ) ? (int) $m[1] : 0;
+    }
 
-                return (int) $m[1];
+    /**
+     * The header lines of the last response: from its status line on.
+     *
+     * @param string[] $headers responseHeaders(), every followed redirect included
+     * @return string[]
+     */
+    protected static function finalResponse( array $headers ) {
+
+        $from = null;
+
+        foreach ( array_values( $headers ) as $i => $header ) {
+
+            if ( preg_match( '#^HTTP/\S+\s+\d{3}#', (string) $header ) ) {
+
+                $from = $i;
             }
         }
 
-        return 0;
+        return $from === null ? array() : array_slice( array_values( $headers ), $from );
     }
 
     /**
