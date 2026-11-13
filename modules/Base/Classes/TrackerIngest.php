@@ -394,20 +394,26 @@ class TrackerIngest {
      * back. What is not replayed is released for REPLAY_RECHECK seconds, so
      * this run moves past it.
      *
+     * A dead letter whose event is older than raw_retention_months is deleted,
+     * either way: it holds an event the window says is not kept. With the
+     * setting unset every dead letter stays.
+     *
      * @param  bool $once_only
      * @param  int  $deadline  unix time
-     * @return array counts: replayed, kept (replayed before), unreadable
+     * @return array counts: replayed, kept (replayed before), unreadable, expired
      */
     public static function replay( $once_only, $deadline ) {
 
-        $counts = array( 'replayed' => 0, 'kept' => 0, 'unreadable' => 0 );
-        $main   = self::queue();
-        $dlq    = $main->deadLetterQueue();
+        $counts    = array( 'replayed' => 0, 'kept' => 0, 'unreadable' => 0, 'expired' => 0 );
+        $main      = self::queue();
+        $dlq       = $main->deadLetterQueue();
 
         if ( ! $dlq || $dlq->isProbablyEmpty() ) {
 
             return $counts;
         }
+
+        $keep_from = Retention::rawCutoffTimestamp();
 
         while ( time() < $deadline ) {
 
@@ -420,7 +426,14 @@ class TrackerIngest {
 
             foreach ( $messages as $message ) {
 
-                if ( $message->envelope === null ) {
+                $at = self::eventTime( $message );
+
+                if ( $keep_from !== null && $at !== null && $at < $keep_from ) {
+
+                    $dlq->ack( $message );
+                    $counts['expired']++;
+
+                } elseif ( $message->envelope === null ) {
 
                     $dlq->release( $message, self::REPLAY_RECHECK );
                     $counts['unreadable']++;
@@ -439,6 +452,31 @@ class TrackerIngest {
         }
 
         return $counts;
+    }
+
+    /**
+     * When a message's event happened, in unix seconds: its edge receipt (ts,
+     * microseconds), else when it was queued, else when it was dead-lettered;
+     * null when none is known.
+     *
+     * @return int|null
+     */
+    public static function eventTime( \OWA\Core\IntakeMessage $message ) {
+
+        $envelope = (array) $message->envelope;
+        $ts       = $envelope['properties']['ts'] ?? null;
+
+        if ( is_numeric( $ts ) && $ts > 0 ) {
+
+            return (int) floor( $ts / 1000000 );
+        }
+
+        if ( isset( $envelope['queued_at'] ) && is_numeric( $envelope['queued_at'] ) && $envelope['queued_at'] > 0 ) {
+
+            return (int) $envelope['queued_at'];
+        }
+
+        return $message->dead_at;
     }
 }
 

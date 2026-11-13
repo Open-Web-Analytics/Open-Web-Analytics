@@ -99,6 +99,42 @@ final class DomstreamChunkTest extends TestCase
         }
     }
 
+    /**
+     * The chunk's page_location is filtered as raw's is: a query_string_filters
+     * parameter goes, and a URL naming none is stored exactly as it came.
+     */
+    public function testThePageLocationLosesTheFilteredParameters(): void
+    {
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'query_string_filters');
+
+        \OWA\Core\CoreAPI::setSetting('base', 'query_string_filters', 'token');
+
+        try {
+            $rows = Chunk::fromEvent($this->event(['page_location' => 'https://chunk.test/pricing?token=abc&plan=pro',
+                'samples' => $this->samples([[0, 's', 1]])]));
+
+            $this->assertNotNull($rows, Chunk::refusal());
+            $this->assertSame('https://chunk.test/pricing?plan=pro', $rows['chunk']['page_location']);
+
+            $event = new \OWA\Module\Base\Classes\Event();
+            $event->setProperties(['site_id' => 'chunk-site',
+                'page_location' => 'https://chunk.test/pricing?token=abc&plan=pro']);
+            \OWA\Module\Base\Classes\TrackingEventHelpers::filterStoredUrls($event);
+
+            $this->assertSame($event->get('page_location'), $rows['chunk']['page_location'],
+                'the raw row\'s page_location and the chunk\'s are filtered alike');
+
+            $untouched = 'https://chunk.test/pricing?plan=pro&&x=a+b%20c';
+            $rows = Chunk::fromEvent($this->event(['page_location' => $untouched,
+                'samples' => $this->samples([[0, 's', 1]])]));
+
+            $this->assertSame($untouched, $rows['chunk']['page_location']);
+
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'query_string_filters', $before);
+        }
+    }
+
     public function testTheIdIsTheChunksOwnContent(): void
     {
         $a = Chunk::fromEvent($this->event(['samples' => $this->samples([[0, 's', 1]])]));

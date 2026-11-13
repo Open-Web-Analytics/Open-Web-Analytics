@@ -769,7 +769,8 @@ class Util {
      * 1. A privacy signal, which is a request from the person: Do Not Track or
      *    Global Privacy Control. honorPrivacySignals = false ignores both --
      *    the tracker option of that name, read from the queue before anything
-     *    runs (tracker-dom.js).
+     *    runs (tracker-dom.js). When one is honoured, tracker-dom.js also erases
+     *    the tracker's cookies (eraseTrackerCookies()).
      *
      * 2. WebDriver, which is a statement about the browser. A crawler that runs
      *    JavaScript is the only kind a JavaScript tracker ever sees, and it
@@ -818,6 +819,50 @@ class Util {
         }
 
         return navigator.globalPrivacyControl === true;
+    }
+
+    /**
+     * Expire the tracker's own cookies: the visitor store (ns + 'v'), every
+     * per-site session store (ns + 's_<siteId>'), and the 's', 'b' and 'c'
+     * stores an older tracker may have left. Nothing else named with the ns
+     * prefix is touched.
+     *
+     * Run when a privacy signal is honoured (tracker-dom.js), so a browser
+     * that asked not to be tracked keeps no identifier from an earlier visit.
+     * The tracker has not run, so the domain it would have set them on is not
+     * known: each is expired host-only and on the page's host and every
+     * parent domain, which covers every domain a tracker could have used.
+     */
+    static eraseTrackerCookies () {
+
+        var ns   = OWA.getSetting( 'ns' ) || 'owa_';
+        var jar  = Util.readAllCookies() || {};
+        var host = ( typeof location !== 'undefined' && location.hostname ) ? String( location.hostname )
+            : ( ( typeof document !== 'undefined' && document.domain ) ? String( document.domain ) : '' );
+
+        var domains = [ '' ];
+        var labels  = host === '' ? [] : host.split( '.' );
+
+        for ( var i = 0; i < labels.length; i++ ) {
+
+            // Not the last label alone: no cookie is set on a top-level domain.
+            if ( i > 0 && i === labels.length - 1 ) {
+                break;
+            }
+
+            domains.push( '.' + labels.slice( i ).join( '.' ) );
+        }
+
+        Object.keys( jar ).forEach( function ( name ) {
+
+            if ( name.indexOf( ns ) !== 0 || ! /^(v|b|c|s(_.+)?)$/.test( name.substring( ns.length ) ) ) {
+                return;
+            }
+
+            domains.forEach( function ( domain ) {
+                Util.setCookie( name, '', -1, '/', domain );
+            } );
+        } );
     }
 
     /**

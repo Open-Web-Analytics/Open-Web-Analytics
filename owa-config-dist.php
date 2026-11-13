@@ -184,14 +184,17 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  *
  * These jobs ship (schedule-status lists them, with their schedules):
  *
- *   rebuild-cube             every 5 minutes  builds each Property's reporting cube
- *   drain-tracker-ingest     every minute     ingests queued tracking events
- *   apply-custom-dimensions  every 15 minutes applies newly registered dimensions
- *   rotate-partitions        daily            extends the partition lead and merges
- *                                             old periods; deletes nothing without keep=
- *   replay-tracker-ingest    daily            retries dead-lettered tracking events
- *   prune-job-queue          daily            removes finished queued jobs
- *   fetch-notifications      daily            fetches OWA's update notices
+ *   rebuild-cube                  every 5 minutes  builds each Property's reporting cube
+ *   drain-tracker-ingest          every minute     ingests queued tracking events
+ *   apply-custom-dimensions       every 15 minutes applies newly registered dimensions
+ *   rotate-partitions             daily            extends the partition lead and merges
+ *                                                  old periods; deletes nothing without keep=
+ *   replay-tracker-ingest         daily            retries dead-lettered tracking events;
+ *                                                  deletes those older than raw_retention_months
+ *   prune-tracker-ingest-archive  daily            deletes archived intake batches older than
+ *                                                  raw_retention_months; nothing when unset
+ *   prune-job-queue               daily            removes finished queued jobs
+ *   fetch-notifications           daily            fetches OWA's update notices
  *
  * The daily and five-minute ones run at a time derived from this
  * installation, so installs sharing a database do not all start at once.

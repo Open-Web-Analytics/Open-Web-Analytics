@@ -178,8 +178,9 @@ return array(
          * page_url is v1's name for the page's URL, and v1's server CANONICALISED
          * it in place -- stripping the campaign parameters and the site's
          * query_string_filters -- which is why a second, untouched copy had to
-         * ride alongside it as page_location. v2 stores the evidence exactly as it
-         * arrived and derives page_path and page_query from it, so there is
+         * ride alongside it as page_location. v2 stores the evidence as it
+         * arrived, less only the query_string_filters parameters, and derives
+         * page_path and page_query from it before those are removed, so there is
          * nothing left for the duplicate to protect against.
          *
          * LEGACY since the tracker stopped sending it (it sends page_location

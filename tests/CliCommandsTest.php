@@ -446,6 +446,72 @@ final class CliCommandsTest extends CliControllerTestCase
         }
     }
 
+    /**
+     * Run the scheduled prune against a scratch intake holding archives of two
+     * ages in the main queue and an old one in its dead-letter queue, with
+     * raw_retention_months as given.
+     *
+     * @return string the scratch directory, for the caller to inspect and remove
+     */
+    private function scheduledPrune($months, array $params = []): string
+    {
+        $dir = sys_get_temp_dir() . '/owa-prune-' . bin2hex(random_bytes(4)) . '/';
+        $q   = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $dir]);
+        $q->provision();
+
+        foreach (['archive/old.txt' => 730, 'archive/recent.txt' => 7, 'dead-letter/archive/old.txt' => 730] as $f => $days) {
+            file_put_contents($dir . $f, "x\n");
+            touch($dir . $f, time() - $days * 86400);
+        }
+
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'raw_retention_months');
+        \OWA\Core\CoreAPI::setSetting('base', 'raw_retention_months', $months);
+        \OWA\Module\Base\Classes\TrackerIngest::$queue = $q;
+
+        try {
+            $result = $this->runCommand(
+                \OWA\Module\Base\Controller\PruneEventQueueArchivesCli::class,
+                'pruneEventQueueArchivesCli.php',
+                ['queues' => 'tracker-ingest', 'scheduled' => 1] + $params
+            );
+
+            $this->assertNull($result['view']);
+        } finally {
+            \OWA\Module\Base\Classes\TrackerIngest::$queue = null;
+            \OWA\Core\CoreAPI::setSetting('base', 'raw_retention_months', $before);
+        }
+
+        return $dir;
+    }
+
+    /** Scheduled, with raw_retention_months unset: every archive stays, whatever interval= says. */
+    public function testTheScheduledPruneKeepsEverythingWithoutARetentionWindow(): void
+    {
+        $dir = $this->scheduledPrune(null, ['interval' => 60]);
+
+        try {
+            $this->assertFileExists($dir . 'archive/old.txt');
+            $this->assertFileExists($dir . 'archive/recent.txt');
+            $this->assertFileExists($dir . 'dead-letter/archive/old.txt');
+        } finally {
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
+    }
+
+    /** Scheduled, with a 12-month window: archives older than it go, in both queues; newer ones stay. */
+    public function testTheScheduledPruneDeletesArchivesOlderThanTheRetentionWindow(): void
+    {
+        $dir = $this->scheduledPrune(12);
+
+        try {
+            $this->assertFileDoesNotExist($dir . 'archive/old.txt');
+            $this->assertFileDoesNotExist($dir . 'dead-letter/archive/old.txt');
+            $this->assertFileExists($dir . 'archive/recent.txt');
+        } finally {
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
+    }
+
     // =================================================================
     // reset-secrets  (owa_resetSecretsCliController, cap: edit_settings)
     // Contract-only: actually running it rewrites owa-config.php (rotating
