@@ -390,6 +390,14 @@ abstract class FactMigrator {
 
             foreach ( $this->events( $r, $refs ) as $event ) {
 
+                foreach ( $event->getProperties() as $name => $value ) {
+
+                    if ( is_string( $value ) ) {
+
+                        $event->set( $name, self::v1Text( $value ) );
+                    }
+                }
+
                 $row = \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $event );
 
                 if ( ! $row ) {
@@ -799,6 +807,15 @@ abstract class FactMigrator {
             $properties[ 'cv' . $i . '_value' ] = $r[ 'cv' . $i . '_value' ] ?? null;
         }
 
+        // Decoded before the URL readings below are taken from them (v1Text()).
+        foreach ( $properties as $name => $value ) {
+
+            if ( is_string( $value ) ) {
+
+                $properties[ $name ] = self::v1Text( $value );
+            }
+        }
+
         $event->setProperties( $properties );
 
         // The URL readings, by ingest's own callbacks.
@@ -913,6 +930,25 @@ abstract class FactMigrator {
      * @param mixed $value
      * @return string|null
      */
+    /**
+     * A 1.x text value as the text it was.
+     *
+     * 1.x stored tracked text HTML-escaped -- "Caf&eacute;", "Tom &amp; Jerry"
+     * -- and 2.0 stores the text as sent and escapes it where it is shown
+     * (Sanitize::cleanTrackingText()). Decoded here, a migrated title is the
+     * same value as the one 2.0 records for that page now, and groups with it.
+     *
+     * @param string $value
+     * @return string
+     */
+    public static function v1Text( $value ) {
+
+        $value = (string) $value;
+
+        return strpos( $value, '&' ) === false
+            ? $value : html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+    }
+
     public static function ipAddress( $value ) {
 
         $value = trim( (string) $value );

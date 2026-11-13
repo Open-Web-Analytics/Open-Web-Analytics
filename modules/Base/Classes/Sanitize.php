@@ -273,6 +273,46 @@ class Sanitize {
         }
     }
 
+    /**
+     * A tracking value, kept as the text that was sent.
+     *
+     * Tracking values are plain text -- a page title, a search term, a URL, a
+     * campaign name -- and are stored as such and escaped where they are shown
+     * (each output escapes for its own context). cleanInput() HTML-escaped them
+     * and stripped anything shaped like a tag, so "a<b and c>d" was stored as
+     * "ad", an "é" as "&eacute;", and one title arrived in two spellings that
+     * grouped as two rows.
+     *
+     * What text gets here: valid UTF-8 (Lib::utf8Encode() reads anything else
+     * as Windows-1252) with control characters removed. Tabs and line breaks
+     * stay. Arrays are cleaned value by value; anything not a string is
+     * returned as it is.
+     *
+     * @param mixed $input
+     * @return mixed
+     */
+    public static function cleanTrackingText( $input ) {
+
+        if ( is_array( $input ) ) {
+
+            $output = array();
+
+            foreach ( $input as $k => $v ) {
+
+                $output[ $k ] = self::cleanTrackingText( $v );
+            }
+
+            return $output;
+        }
+
+        if ( ! is_string( $input ) ) {
+
+            return $input;
+        }
+
+        return preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', \OWA\Core\Lib::utf8Encode( $input ) );
+    }
+
     public static function cleanFilename( $str ) {
 
         $str = str_replace("http://", "", $str);

@@ -306,6 +306,15 @@ OWA.areaChart.prototype = {
     /**
      * Main method for displaying an area chart
      */
+    /**
+     * A legend entry's label, as HTML: flot inserts what this returns as
+     * markup, and the label is a tracked value.
+     */
+    legendLabel : function( label ) {
+
+        return OWA.util.escapeHtml( label );
+    },
+
     generate : function( resultSet, series, dom_id ) {
         OWA.debug('generating area chart for ' + dom_id);
         // set dom_id just in case.
@@ -416,7 +425,14 @@ OWA.areaChart.prototype = {
                      * the widget, which puts it under the x-axis labels.
                      */
                     container: jQuery( '#' + dom_id + ' > .owa_chartLegend' ),
-                    noColumns: dataseries.length
+                    noColumns: dataseries.length,
+
+                    /*
+                     * Escaped: flot writes a label into the legend as HTML, and
+                     * a breakdown's labels are tracked values -- a page title,
+                     * a campaign name -- stored as the text that was sent.
+                     */
+                    labelFormatter: this.legendLabel
                 },
                 hooks: { drawSeries: [ this.dashLine ], drawOverlay: [ this.crosshairHook() ] }
             };

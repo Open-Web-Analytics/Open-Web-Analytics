@@ -1219,11 +1219,11 @@ class TrackingEventHelpers {
                 break;
             case "string":
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanInput( $var, array('remove_html' => true) );
+                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
                 break;
             case "url":
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanUrl( $var );
+                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
                 break;
             case "json":
 
@@ -1234,7 +1234,7 @@ class TrackingEventHelpers {
                 break;
             default:
 
-                $var = \OWA\Module\Base\Classes\Sanitize::cleanInput( $var, array('remove_html' => true) );
+                $var = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $var );
         }
 
         return $var;

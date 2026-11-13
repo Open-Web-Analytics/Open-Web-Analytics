@@ -110,7 +110,16 @@ final class DomstreamChunkTest extends TestCase
         $this->assertSame($a['chunk']['id'], $a['payload']['id']);
     }
 
-    /** The endpoint's input filter entity-encodes what it passes through. */
+    /** Samples are read as sent: an "&amp;" inside one is those characters, not "&". */
+    public function testSamplesAreReadAsSent(): void
+    {
+        $samples = Chunk::samples($this->samples([[0, 'k', 'a', 'Tom &amp; Jerry', 'q']]));
+
+        $this->assertNotNull($samples, Chunk::refusal());
+        $this->assertSame('Tom &amp; Jerry', $samples[0][3]);
+    }
+
+    /** A beacon queued while ingest entity-encoded its input still reads. */
     public function testEntityEncodedSamplesAreRead(): void
     {
         $encoded = htmlspecialchars($this->samples([[0, 'k', 'input', 'q', 'q']]), ENT_QUOTES);

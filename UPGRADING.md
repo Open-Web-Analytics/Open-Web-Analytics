@@ -35,6 +35,18 @@ Until it is applied, the admin screens show the update notice. Tracking is
 unaffected, and so are scheduled jobs unless the release also changes the
 schema, which stops them until it is applied.
 
+### Tracked text is stored as it was sent
+
+A page title, search term, URL, campaign name or custom property value is
+stored as the text the tracker sent, and escaped where it is shown. It used to
+be HTML-escaped and stripped of anything shaped like a tag on the way in, so
+"Tom & Jerry" was stored as `Tom &amp; Jerry`, "Café" as `Caf&eacute;`, and
+"a<b and c>d" as `ad`.
+
+**If you read OWA's data from the REST API or the database**, values are now
+plain text: escape them for wherever you put them, as you would any text.
+Values stored before this release keep their escaped form.
+
 ### The tracker honours Global Privacy Control as well as Do Not Track
 
 A browser reporting Global Privacy Control (`navigator.globalPrivacyControl`)
