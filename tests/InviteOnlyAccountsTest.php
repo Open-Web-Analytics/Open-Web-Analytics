@@ -8,12 +8,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * An account created without a password is an invitation, and the links that
  * set a password expire.
  *
- * Every account added on the Users screen or through the REST API got a
- * "generated" password: the first six characters of a password hash, "$2y$10",
- * the same for every one of them. Anyone who knew a user name could sign in to
- * an account whose owner had not yet set a password. The link that set one was
- * an md5 of the time and rand(), and it never expired; a new one was minted
- * after each password change, so every account always held a working link.
+ * Nobody can sign in to an invited account until its owner sets a password
+ * from the emailed link, the previous generator's values are refused, and a
+ * link is random, spent once used, and expires.
  */
 final class InviteOnlyAccountsTest extends TestCase
 {

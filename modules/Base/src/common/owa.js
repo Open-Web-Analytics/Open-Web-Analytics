@@ -327,10 +327,8 @@ class OWA {
      * Whether a URL is on the OWA server this page reports to (baseUrl): the
      * only place an overlay's data may come from.
      *
-     * The overlay starts from a link -- #owa_overlay.<params> on any tracked
-     * page -- and anyone can write one. Its api_url was fetched as given, and
-     * jQuery runs the response as a script when the URL asks for JSONP, so a
-     * link could run any script on the tracked site.
+     * The overlay starts from a link -- #owa_overlay.<params> on a tracked
+     * page -- and its api_url is used only when this is true.
      */
     isOwaServerUrl(url) {
 

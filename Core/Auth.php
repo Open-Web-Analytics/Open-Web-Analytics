@@ -578,12 +578,10 @@ class Auth extends \OWA\Core\Base {
      * @return boolean
      */
     /**
-     * The value the old User::generateRandomPassword() gave every account
-     * created without a password: the first six characters of a password hash,
-     * which are its algorithm and cost ("$2y$10", or "$2y$12" where PHP's
-     * default cost is 12, or "$argon" for an Argon2 default). The same for every
-     * such account, so a login with it is refused whatever the stored hash says.
-     * The account's owner sets a password through the emailed reset link.
+     * The values the old User::generateRandomPassword() gave an account created
+     * without a password (a hash prefix). A login with one is refused whatever
+     * the stored hash says; the account's owner sets a password through the
+     * emailed link.
      */
     const LEGACY_GENERATED_PASSWORD = '/^(\\$2[aby]?\\$\\d\\d|\\$argon)$/';
 

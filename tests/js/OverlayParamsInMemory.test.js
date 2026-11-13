@@ -103,9 +103,8 @@ describe('overlay params are kept in memory', () => {
 });
 
 /**
- * The overlay starts from a link on the tracked page, which anyone can write.
- * Its data may come only from the OWA server the page reports to: a link that
- * pointed it elsewhere could have the page run a script from there.
+ * The overlay starts from a link on the tracked page. Its data may come only
+ * from the OWA server the page reports to.
  */
 describe('an overlay link must point at this OWA server', () => {
 

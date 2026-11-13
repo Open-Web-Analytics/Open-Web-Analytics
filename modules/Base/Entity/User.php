@@ -109,10 +109,8 @@ class User extends \OWA\Core\Entity {
      * until its owner sets a password from the link in the new account email,
      * which works for INVITE_TTL.
      *
-     * Its stored hash is of random bytes nobody is told. It used to be the hash
-     * of a "generated" password that was the first six characters of a hash,
-     * "$2y$10", and so the same for every such account (Auth::isUser() refuses
-     * that value now).
+     * Its stored hash is of random bytes nobody is told. Auth::isUser() refuses
+     * the values the previous generator gave.
      */
     function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
 

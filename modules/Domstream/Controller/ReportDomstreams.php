@@ -242,9 +242,8 @@ class ReportDomstreams extends \OWA\Core\ReportController {
 
         /*
          * Played by opening the page it was recorded on, so only a web page is
-         * offered. The location is what the beacon claimed, and anyone can send
-         * one: a javascript: location opened from this screen ran in OWA's own
-         * window. No URL, no Play link (OWA.dataGrid's overlayLink).
+         * offered: an http(s) location. No URL, no Play link (OWA.dataGrid's
+         * overlayLink).
          */
         if ( ! in_array( strtolower( (string) parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) {
 
