@@ -68,9 +68,7 @@ final class EmbeddedSettingRemovedTest extends TestCase
 
         preg_match_all( '/<input type="hidden" name="([^"]+)" value="([^"]*)"/', $html, $m );
 
-        $ns = $template->getNs();
-
-        $this->assertSame( array( $ns . 'k', $ns . 'action' ), $m[1] );
+        $this->assertSame( array( 'k', 'action' ), $m[1] );
         $this->assertSame( array( $key, 'base.usersChangePassword' ), $m[2] );
     }
 

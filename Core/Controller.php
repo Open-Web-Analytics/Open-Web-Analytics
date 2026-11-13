@@ -741,7 +741,7 @@ class Controller extends \OWA\Core\Base {
 
         $get = '';
 
-        $get .= \OWA\Core\CoreAPI::appNs().'do'.'='.$action.'&';
+        $get .= 'do='.$action.'&';
 
         if ($pass_params === true) {
 
@@ -749,7 +749,7 @@ class Controller extends \OWA\Core\Base {
 
                 if (!in_array($n, $control_params)) {
 
-                    $get .= \OWA\Core\CoreAPI::appNs().$n.'='.$v.'&';
+                    $get .= $n.'='.$v.'&';
 
                 }
             }

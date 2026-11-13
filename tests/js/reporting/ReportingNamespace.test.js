@@ -13,13 +13,12 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * The reporting bundle keeps TWO namespaces, and the whole point is that they
- * are not the same one.
+ * The reporting bundle prefixes cookie names and nothing of its own.
  *
- *   config.ns      'owa_'  -- the WIRE namespace. Cookie names, in a jar shared
- *                             with everything else on the domain.
- *   config.app_ns  ''      -- OWA's OWN admin/reporting URLs, where OWA owns the
- *                             entire query string.
+ *   config.ns  'owa_'  -- the WIRE namespace. Cookie names, in a jar shared
+ *                         with everything else on the domain.
+ *   OWA's OWN admin/reporting URLs carry bare names: OWA owns the entire query
+ *   string.
  *
  * They were a single setting, and that is the trap: OWA.stateManager names its
  * cookies with OWA.getSetting('ns'), while the results explorer builds report
@@ -28,21 +27,17 @@ const path = require('path');
  * state OWA had already stored under the old names -- so the two surfaces are
  * pinned separately here.
  */
-describe('the reporting bundle keeps the wire and app namespaces apart', () => {
+describe('the reporting bundle prefixes cookies and not its own URLs', () => {
 
     afterEach(() => {
         OWA.setOption('ns', 'owa_');
-        OWA.setOption('app_ns', '');
     });
 
-    test('the wire namespace is still owa_ and the app namespace is empty', () => {
+    test('the wire namespace is still owa_, and there is no app namespace', () => {
         expect(OWA.config.ns).toBe('owa_');
-        expect(OWA.config.app_ns).toBe('');
-    });
-
-    test('the two helpers namespace differently', () => {
         expect(OWA.util.ns('v')).toBe('owa_v');
-        expect(OWA.util.appNs('do')).toBe('do');
+        expect('app_ns' in OWA.config).toBe(false);
+        expect(OWA.util.appNs).toBeUndefined();
     });
 
     /**
@@ -55,7 +50,7 @@ describe('the reporting bundle keeps the wire and app namespaces apart', () => {
         sm.set('rs', 'period', 'last_thirty_days', true, 'json', 30);
 
         expect(document.cookie).toContain('owa_rs=');
-        // and not under the app namespace, which would be a bare 'rs='
+        // and not bare
         expect(document.cookie).not.toMatch(/(^|;\s*)rs=/);
     });
 
@@ -80,7 +75,7 @@ describe('the reporting bundle keeps the wire and app namespaces apart', () => {
      * agreed with the server only by coincidence, and stopped agreeing the
      * moment the server's links dropped the prefix.
      */
-    describe('the results explorer builds URLs from the app namespace', () => {
+    describe('the results explorer builds URLs with bare names', () => {
 
         const src = fs.readFileSync(
             path.join(__dirname, '../../../modules/Base/src/reporting/v1/owa.resultSetExplorer.js'),
@@ -101,11 +96,12 @@ describe('the reporting bundle keeps the wire and app namespaces apart', () => {
             expect(src.match(HARDCODED)).toBeNull();
         });
 
-        test('the param names go through appNs', () => {
-            expect(src).toContain("OWA.util.appNs('sort')");
-            expect(src).toContain("OWA.util.appNs('constraints')");
-            expect(src).toContain("OWA.util.appNs('dimensions')");
-            expect(src).toContain("OWA.util.appNs('do')");
+        test('the param names are bare', () => {
+            expect(src).toContain("url.setQueryParam('sort', ");
+            expect(src).toContain("url.setQueryParam('constraints', ");
+            expect(src).toContain("url.getQueryParam('dimensions')");
+            expect(src).toContain("url += 'do=' + method");
+            expect(src).not.toContain('appNs');
         });
     });
 });

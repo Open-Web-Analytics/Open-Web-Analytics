@@ -212,13 +212,11 @@ const FIXTURE = {
  * Log in through the real OWA login form as the given user and land
  * authenticated. Leaves the page on the post-login redirect (base.sites).
  *
- * FIELD NAMES ARE UN-NAMESPACED. Admin form fields are emitted through
- * Template::getNs(), which returns the 'app_ns' setting -- empty since the
- * namespace split, because OWA owns its own admin query string and has nothing
- * to collide with. The wire namespace ('ns', still 'owa_') did not move: it
- * names cookies and tracker params. If app_ns is ever given a value again,
- * every selector in this suite goes stale at once, so the field is checked
- * before it is filled and says so rather than timing out forty times.
+ * FIELD NAMES ARE UN-NAMESPACED: OWA owns its own admin query string and has
+ * nothing to collide with. The wire namespace ('ns', still 'owa_') names
+ * cookies and tracker params. If the form's names ever gain a prefix, every
+ * selector in this suite goes stale at once, so the field is checked before it
+ * is filled and says so rather than timing out forty times.
  *
  * The ENTRY URL below deliberately keeps the legacy '?owa_do=' spelling. The
  * server accepts both, and this is the one place the suite proves that old
@@ -233,9 +231,8 @@ async function loginAs(page, userId, password) {
             [...document.querySelectorAll('form input[name]')].map((i) => i.name)
         );
         throw new Error(
-            'The login form has no un-namespaced user_id field. The admin form '
-            + 'namespace (base.app_ns) has probably moved; every selector in this '
-            + 'suite assumes it is empty. Fields present: ' + JSON.stringify(names)
+            'The login form has no un-namespaced user_id field. Every selector in '
+            + 'this suite assumes bare field names. Fields present: ' + JSON.stringify(names)
         );
     }
 

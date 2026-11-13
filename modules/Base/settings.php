@@ -84,7 +84,6 @@ return array(
                 'Anonymizes the IP addresses of visitors by removing the last octet '
                 . 'from their IP address.',
         ),
-        'app_ns' => array( 'default' => '', 'description' => 'The prefix on the parameter names in OWA\'s own admin and report URLs. Empty by default, so they read do=base.reportingHome.' ),
         'app_passwords_enabled' => array(
             'default'  => true,
             'storable' => true,

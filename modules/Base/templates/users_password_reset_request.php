@@ -18,13 +18,13 @@
         <div class="owa_publicField">
             <label for="owa_resetEmail">Email address</label>
             <input id="owa_resetEmail" type="email" autocomplete="email" autofocus
-                   name="<?php echo $view->getNs();?>email_address" value="">
+                   name="email_address" value="">
         </div>
 
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.passwordResetRequest">
+        <input type="hidden" name="action" value="base.passwordResetRequest">
 
         <input class="owa-button owa_publicSubmit" type="submit"
-               name="<?php echo $view->getNs();?>submit" value="Send reset link">
+               name="submit" value="Send reset link">
     </form>
 
     <div class="owa_publicAside">

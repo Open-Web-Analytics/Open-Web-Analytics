@@ -30,8 +30,6 @@ final class AccessibleMarkupTest extends TestCase
 
                 return 'LINK';
             }
-
-            function getNs() { return \OWA\Core\CoreAPI::appNs(); }
         };
     }
 
@@ -194,8 +192,6 @@ final class AccessibleMarkupTest extends TestCase
     /** @return array<string, array{0: string, 1: array<string, mixed>, 2: array<string, string>}> */
     public static function forms(): array
     {
-        $ns = \OWA\Core\CoreAPI::appNs();
-
         $profile = array(
             'user_id' => 'someone@example.test', 'real_name' => 'Someone',
             'email_address' => 'someone@example.test', 'role' => 'viewer',
@@ -230,24 +226,24 @@ final class AccessibleMarkupTest extends TestCase
                 'real_name' => 'Name', 'current_password' => 'Current password',
                 'new_password' => 'New password', 'new_password2' => 'Repeat new password')),
             'organization_profile' => array('organization_profile.php', array('organization' => array('name' => 'Org')), array(
-                $ns . 'name' => 'Name')),
+                'name' => 'Name')),
             'sites_addoredit, add' => array('sites_addoredit.php', $site, array(
-                $ns . 'propertyId' => 'Property:', $ns . 'name' => 'New Property Name:',
-                $ns . 'streamType' => 'This Profile observes:', $ns . 'domain' => 'Domain:',
-                $ns . 'appId' => 'App ID:', $ns . 'description' => 'Description:')),
+                'propertyId' => 'Property:', 'name' => 'New Property Name:',
+                'streamType' => 'This Profile observes:', 'domain' => 'Domain:',
+                'appId' => 'App ID:', 'description' => 'Description:')),
             'sites_addoredit, edit' => array('sites_addoredit.php', array_merge($site, array(
                 'edit' => true, 'action' => 'base.sitesEdit', 'propertyName' => 'A Property',
                 'site' => array('site_id' => 'x1', 'name' => 'Main', 'domain' => 'example.test'))), array(
-                $ns . 'name' => 'Profile Name:', $ns . 'description' => 'Description:')),
+                'name' => 'Profile Name:', 'description' => 'Description:')),
             'users_addoredit, add' => array('users_addoredit.php', array(
                 'headline' => 'Add user', 'action' => 'base.usersAdd', 'edit' => false,
                 'isAdmin' => false, 'roles' => ['admin', 'viewer'], 'user' => [],
             ), array(
-                $ns . 'user_id' => 'User Name', $ns . 'real_name' => 'Real Name',
-                $ns . 'role' => 'Role', $ns . 'email_address' => 'E-mail Address')),
+                'user_id' => 'User Name', 'real_name' => 'Real Name',
+                'role' => 'Role', 'email_address' => 'E-mail Address')),
             'goal_event_definition_edit, add' => array('goal_event_definition_edit.php', $goal, array(
-                $ns . 'name' => 'Name', $ns . 'value' => 'Value optional',
-                $ns . 'countMode' => 'How often', $ns . 'isActive' => 'Status')),
+                'name' => 'Name', 'value' => 'Value optional',
+                'countMode' => 'How often', 'isActive' => 'Status')),
         );
     }
 

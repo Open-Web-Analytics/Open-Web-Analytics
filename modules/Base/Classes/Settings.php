@@ -2841,18 +2841,14 @@ namespace OWA\Module\Base\Classes;
                  * and the OWA_ environment-variable prefix. Changing it breaks
                  * every existing cookie and every campaign URL in the wild.
                  *
-                 * 'app_ns' is the namespace for OWA's OWN admin and reporting
-                 * URLs and form fields, where OWA owns the whole query string
-                 * and has nothing to collide with. It is empty: those URLs read
-                 * 'do=base.reportingHome', not 'owa_do=base.reportingHome'.
-                 *
-                 * The two were one setting until the surfaces were separated.
+                 * OWA's OWN admin and reporting URLs and form fields carry no
+                 * prefix: OWA owns the whole query string there and has nothing
+                 * to collide with, so they read 'do=base.reportingHome'.
                  * Prefixed admin URLs are still accepted on the way in -- see
                  * RequestContainer -- so existing bookmarks and links keep
-                 * working; only what OWA EMITS changed.
+                 * working.
                  */
                 'ns'                                => 'owa_',
-                'app_ns'                            => '',
                 /*
                  * EMPTY MEANS ns-PREFIXED -- owa_source, owa_medium and so on.
                  * Naming the parameters explicitly is how a site opts into

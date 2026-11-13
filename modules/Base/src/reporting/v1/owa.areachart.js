@@ -1015,11 +1015,11 @@ OWA.areaChart.prototype = {
             } );
         } );
 
-        url.setQueryParam( OWA.util.appNs( 'dimensions' ), [ x ].concat( dims ).join( ',' ) );
-        url.setQueryParam( OWA.util.appNs( 'rowValues' ), JSON.stringify( restrict ) );
-        url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), 1000 );
-        url.removeQueryParam( OWA.util.appNs( 'page' ) );
-        url.removeQueryParam( OWA.util.appNs( 'sort' ) );
+        url.setQueryParam( 'dimensions', [ x ].concat( dims ).join( ',' ) );
+        url.setQueryParam( 'rowValues', JSON.stringify( restrict ) );
+        url.setQueryParam( 'resultsPerPage', 1000 );
+        url.removeQueryParam( 'page' );
+        url.removeQueryParam( 'sort' );
 
         var source = url.getSource();
 
@@ -1600,7 +1600,7 @@ OWA.areaChart.prototype = {
         }
 
         var url  = new OWA.uri( this.explorer.resultSet.self );
-        var key  = OWA.util.appNs( 'dimensions' );
+        var key  = 'dimensions';
         var dims = OWA.util.urldecode( url.getQueryParam( key ) || '' ).split( ',' );
 
         var was = this.xDimension;
@@ -1612,11 +1612,11 @@ OWA.areaChart.prototype = {
         } ).filter( Boolean );
 
         url.setQueryParam( key, swapped.join( ',' ) );
-        url.setQueryParam( OWA.util.appNs( 'sort' ), dimension );
+        url.setQueryParam( 'sort', dimension );
 
         // A different grain is a different number of points, so the page the
         // reader was on no longer means anything.
-        url.removeQueryParam( OWA.util.appNs( 'page' ) );
+        url.removeQueryParam( 'page' );
 
         this.xDimension = dimension;
 
@@ -1674,7 +1674,7 @@ OWA.areaChart.prototype = {
         }
 
         var url  = new OWA.uri( this.explorer.resultSet.self );
-        var key  = OWA.util.appNs( 'dimensions' );
+        var key  = 'dimensions';
 
         var dims = OWA.util.urldecode( url.getQueryParam( key ) || '' )
             .split( ',' )
@@ -1692,7 +1692,7 @@ OWA.areaChart.prototype = {
 
         // A different breakdown is a different number of rows, so the page the
         // reader was on no longer means anything.
-        url.removeQueryParam( OWA.util.appNs( 'page' ) );
+        url.removeQueryParam( 'page' );
 
         /*
          * A broken-out trend is one row per (x, value) pair, and the chart sums
@@ -1702,7 +1702,7 @@ OWA.areaChart.prototype = {
          */
         if ( dimension ) {
 
-            url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), 1000 );
+            url.setQueryParam( 'resultsPerPage', 1000 );
         }
 
         // What generate() reads on the way back in: the refetch arrives as a

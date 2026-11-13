@@ -13,9 +13,9 @@
             <TH><?php if ( $view->edit === true ):?>User Name<?php else:?><label for="owa_userId">User Name</label><?php endif;?></TH>
             <TD>
             <?php if ( $view->edit === true ):?>
-            <input type="hidden" size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->user['user_id'] );?>"><span class="noedit"><?php $view->out( $view->user['user_id'] )?></span>
+            <input type="hidden" size="30" name="user_id" value="<?php $view->out( $view->user['user_id'] );?>"><span class="noedit"><?php $view->out( $view->user['user_id'] )?></span>
             <?php else:?>
-            <input type="text" size="30" id="owa_userId" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->user['user_id'] ?? '' );?>">
+            <input type="text" size="30" id="owa_userId" name="user_id" value="<?php $view->out( $view->user['user_id'] ?? '' );?>">
             <?php endif;?>
             </TD>
         </TR>
@@ -30,12 +30,12 @@
         <?php if ( ! $view->isAdmin ):?>
         <TR>
             <TH><label for="owa_userRealName">Real Name</label></TH>
-            <TD><input type="text" size="30" id="owa_userRealName" name="<?php echo $view->getNs();?>real_name" value="<?php $view->out( $view->getValue( 'real_name', $view->user ) );?>"></TD>
+            <TD><input type="text" size="30" id="owa_userRealName" name="real_name" value="<?php $view->out( $view->getValue( 'real_name', $view->user ) );?>"></TD>
         </TR>
         <TR>
             <TH><label for="owa_userRole">Role</label></TH>
             <TD>
-            <select id="owa_userRole" name="<?php echo $view->getNs();?>role">
+            <select id="owa_userRole" name="role">
                 <?php foreach ($view->roles as $role):?>
                 <option <?php if( isset( $view->user['role'] ) && $view->user['role'] === $role): echo "SELECTED"; endif;?> value="<?php echo $role;?>"><?php echo $role;?></option>
                 <?php endforeach;?>
@@ -47,15 +47,15 @@
         <?php endif;?>
         <TR>
             <TH><label for="owa_userEmail">E-mail Address</label></TH>
-            <TD><input type="text" size="30" id="owa_userEmail" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( $view->user['email_address'] ?? '' );?>"></TD>
+            <TD><input type="text" size="30" id="owa_userEmail" name="email_address" value="<?php $view->out( $view->user['email_address'] ?? '' );?>"></TD>
         </TR>
 
         <TR>
             <TD>
-                <input type="hidden" name="<?php echo $view->getNs();?>id" value="<?php $view->out( $view->user['id'] ?? '' );?>">
+                <input type="hidden" name="id" value="<?php $view->out( $view->user['id'] ?? '' );?>">
                 <?php echo $view->createNonceFormField($view->action);?>
-                <input type="hidden" name="<?php echo $view->getNs();?>action" value="<?php echo $view->action;?>">
-                <input class="owa-button" type="submit" value="Save" name="<?php echo $view->getNs();?>save_button">
+                <input type="hidden" name="action" value="<?php echo $view->action;?>">
+                <input class="owa-button" type="submit" value="Save" name="save_button">
             </TD>
         </TR>
         </form>
