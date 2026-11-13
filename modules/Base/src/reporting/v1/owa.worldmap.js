@@ -12,7 +12,6 @@ OWA.worldMap = function ( slot, options ) {
 
     this.slot  = slot;
     this.url   = options.url;
-    this.label = options.label || 'users';
     this.svg   = null;
     this.rows  = null;
 };
@@ -42,7 +41,7 @@ OWA.worldMap.prototype = {
 
                 svg = document.importNode( svg, true );
                 svg.setAttribute( 'role', 'img' );
-                svg.setAttribute( 'aria-label', 'Active ' + self.label + ' by country' );
+                svg.setAttribute( 'aria-label', OWA.l( 'Active users by country' ) );
 
                 // The names, kept before shade() rewrites each title.
                 svg.querySelectorAll( 'g[data-cc]' ).forEach( function ( g ) {
@@ -80,8 +79,6 @@ OWA.worldMap.prototype = {
      */
     shade: function ( rows ) {
 
-        var label = this.label;
-
         this.rows = rows || [];
 
         if ( ! this.svg ) {
@@ -110,8 +107,9 @@ OWA.worldMap.prototype = {
 
             if ( title ) {
 
-                title.textContent = g.getAttribute( 'data-name' )
-                    + ( n > 0 ? ': ' + n + ' ' + ( n === 1 ? label.replace( /s$/, '' ) : label ) : '' );
+                title.textContent = n > 0
+                    ? OWA.util.sprintf( OWA.ln( '%1$s: %2$d user', '%1$s: %2$d users', n ), g.getAttribute( 'data-name' ), n )
+                    : g.getAttribute( 'data-name' );
             }
         } );
     }

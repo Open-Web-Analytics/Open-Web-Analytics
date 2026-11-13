@@ -8,6 +8,7 @@
  * Apply.
  */
 
+import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
 import {
     PeriodPicker, compareRange, initialState, settle, toParams, calendarTarget,
     pickDay, formatRange, toIso, fromIso, parseDateInput,
@@ -328,5 +329,27 @@ describe( 'the control', () => {
 
         expect( $( '.owa_periodWhy' ).textContent )
             .toBe( 'Last 28 days, counted from today. Compared to previous period. Pick Custom date range to choose dates.' );
+    } );
+} );
+
+describe( 'in a translated locale', () => {
+
+    afterEach( () => {
+        delete OWA.config.strings;
+    } );
+
+    test( 'the button names the comparison with the sentence the locale gives it', () => {
+        document.body.innerHTML = '<div id="pp"></div>';
+
+        const el   = document.getElementById( 'pp' );
+        const make = () => new PeriodPicker( el, config( { compare: 'previous_period' } ), () => {} );
+
+        make();
+        expect( el.querySelector( '.owa_periodTriggerCompare' ).textContent ).toMatch( /^Compare: Sep/ );
+
+        OWA.config.strings = { 'Compare: %s': 'Comparé à %s' };
+        el.innerHTML = '';
+        make();
+        expect( el.querySelector( '.owa_periodTriggerCompare' ).textContent ).toMatch( /^Comparé à Sep/ );
     } );
 } );

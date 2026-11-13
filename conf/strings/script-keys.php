@@ -6,6 +6,7 @@
 // OWA.ln()). A page in a translated locale is sent the translations of these.
 //
 return array(
+    '%1$s: %2$d user',
     '%1$s–%2$s of %3$s',
     '%1$s–%2$s of %3$s+',
     '%s by %s over time',
@@ -13,6 +14,7 @@ return array(
     'A value cannot contain a comma.',
     'Actions',
     'Actions for %s',
+    'Active users by country',
     'Add a dimension',
     'Add a filter',
     'Add another filter',
@@ -20,6 +22,7 @@ return array(
     'Apply',
     'Cancel',
     'Change dimension',
+    'Compare: %s',
     'Condition',
     'Field',
     'Filter',

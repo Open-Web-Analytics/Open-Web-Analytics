@@ -304,15 +304,21 @@ class JobStatus {
 
         if ( $seconds >= 86400 ) {
 
-            return sprintf( '%d day(s)', intdiv( $seconds, 86400 ) );
+            $n = intdiv( $seconds, 86400 );
+
+            return sprintf( \OWA\Core\CoreAPI::tn( '%d day', '%d days', $n ), $n );
         }
 
         if ( $seconds >= 3600 ) {
 
-            return sprintf( '%d hour(s)', intdiv( $seconds, 3600 ) );
+            $n = intdiv( $seconds, 3600 );
+
+            return sprintf( \OWA\Core\CoreAPI::tn( '%d hour', '%d hours', $n ), $n );
         }
 
-        return sprintf( '%d minute(s)', max( 1, intdiv( $seconds, 60 ) ) );
+        $n = max( 1, intdiv( $seconds, 60 ) );
+
+        return sprintf( \OWA\Core\CoreAPI::tn( '%d minute', '%d minutes', $n ), $n );
     }
 }
 

@@ -65,7 +65,8 @@ $owa_s = (array) $view->sections;
         failed <?php $view->out( (string) $owa_q['failed'] ); ?>,
         done in the last week <?php $view->out( (string) $owa_q['done'] ); ?>.
         <?php if ( $owa_q['oldest_due_age'] !== null ): ?>
-            The oldest due job has waited <?php $view->out( (string) intdiv( (int) $owa_q['oldest_due_age'], 60 ) ); ?> minute(s).
+            <?php $owa_wait = intdiv( (int) $owa_q['oldest_due_age'], 60 );
+                  $view->out( sprintf( \OWA\Core\CoreAPI::tn( 'The oldest due job has waited %d minute.', 'The oldest due job has waited %d minutes.', $owa_wait ), $owa_wait ) ); ?>
         <?php endif; ?>
     </div>
         <?php if ( ! empty( $owa_sec['failed'] ) ): ?>

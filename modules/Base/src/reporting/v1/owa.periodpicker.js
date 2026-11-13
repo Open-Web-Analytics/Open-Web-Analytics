@@ -16,6 +16,8 @@
  * arithmetic is done on UTC midnights, where every day is 24 hours long.
  */
 
+import { OWA } from './owa.js';
+
 const DAY = 86400000;
 
 /** yyyymmdd -> UTC milliseconds, or NaN. */
@@ -406,7 +408,7 @@ PeriodPicker.prototype = {
 
         return '<button type="button" class="owa_periodTrigger" data-act="toggle" aria-haspopup="dialog" aria-expanded="' + ( this.draft ? 'true' : 'false' ) + '" aria-controls="' + this.uid + '">'
             + '<span class="owa_periodTriggerMain">' + badge + '<span class="owa_periodTriggerRange">' + esc( formatRange( a.main[0], a.main[1] ) ) + '</span></span>'
-            + ( a.cmpOn && a.cmp[0] ? '<span class="owa_periodTriggerCompare">Compare: ' + esc( formatRange( a.cmp[0], a.cmp[1] ) ) + '</span>' : '' )
+            + ( a.cmpOn && a.cmp[0] ? '<span class="owa_periodTriggerCompare">' + esc( OWA.util.sprintf( OWA.l( 'Compare: %s' ), formatRange( a.cmp[0], a.cmp[1] ) ) ) + '</span>' : '' )
             + '<span class="owa_periodChevron" aria-hidden="true"></span></button>';
     },
 
