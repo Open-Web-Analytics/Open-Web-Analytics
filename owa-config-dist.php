@@ -188,7 +188,9 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  *   drain-tracker-ingest          every minute     ingests queued tracking events
  *   apply-custom-dimensions       every 15 minutes applies newly registered dimensions
  *   rotate-partitions             daily            extends the partition lead and merges
- *                                                  old periods; deletes nothing without keep=
+ *                                                  old periods; deletes what is older than
+ *                                                  raw_retention_months and each Property's
+ *                                                  cube_retention_months; nothing when unset
  *   replay-tracker-ingest         daily            retries dead-lettered tracking events;
  *                                                  deletes those older than raw_retention_months
  *   prune-tracker-ingest-archive  daily            deletes archived intake batches older than
@@ -223,9 +225,10 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 //define('OWA_SCHEDULED_JOBS', array(
 //
-//    // Keep two years of history. NOTHING is deleted unless you ask for it
-//    // here: the shipped job runs with no keep= at all.
-//    'rotate-partitions' => array( 'params' => array( 'keep' => 24 ) ),
+//    // Keep six months of partitions ahead rather than twelve. How much history
+//    // is kept is not a job argument: it is the raw_retention_months and
+//    // cube_retention_months settings, and nothing is deleted while they are unset.
+//    'rotate-partitions' => array( 'params' => array( 'months-ahead' => 6 ) ),
 //
 //    // Drain the tracking intake every five minutes rather than every minute.
 //    'drain-tracker-ingest' => array( 'schedule' => '*/5 * * * *' ),
