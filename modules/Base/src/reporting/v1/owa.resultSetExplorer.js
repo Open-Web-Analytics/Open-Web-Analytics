@@ -1319,6 +1319,40 @@ OWA.dataGrid.OPERATOR_PHRASES = {
     '!@': 'does not contain'
 };
 
+/**
+ * A menu's arrow keys: Down and Up move focus to the next and previous item,
+ * wrapping at the ends; Home and End to the first and last. Escape is the
+ * popover's (openPopover()). Answers whether the key was one of these.
+ *
+ * @param  jQuery $items the menu's items, in order
+ * @param  Event  e      the keydown
+ * @return bool
+ */
+OWA.dataGrid.menuKey = function ( $items, e ) {
+
+    var n = $items.length;
+
+    if ( ! n ) {
+        return false;
+    }
+
+    var at = $items.index( document.activeElement );
+    var next;
+
+    switch ( e.key ) {
+        case 'ArrowDown': next = at < 0 ? 0 : ( at + 1 ) % n; break;
+        case 'ArrowUp':   next = at < 0 ? n - 1 : ( at - 1 + n ) % n; break;
+        case 'Home':      next = 0; break;
+        case 'End':       next = n - 1; break;
+        default:          return false;
+    }
+
+    e.preventDefault();
+    $items.eq( next ).trigger( 'focus' );
+
+    return true;
+};
+
 /** What the Add a filter dialog offers, for a dimension and for a metric. */
 OWA.dataGrid.CONDITIONS = {
     dimension: [
@@ -2288,6 +2322,11 @@ OWA.dataGrid.prototype = {
             }
 
             $menu.append( $a );
+        } );
+
+        $menu.on( 'keydown', function ( e ) {
+
+            OWA.dataGrid.menuKey( $menu.find( '[role="menuitem"]' ), e );
         } );
 
         var $pop = this.openPopover( $trigger, OWA.l( 'Actions' ), $menu );

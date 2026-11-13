@@ -610,6 +610,42 @@ describe('row actions', () => {
         expect(menuOf($root, 0).map((a) => a.id)).toEqual(['clicks']);
     });
 
+    test('the arrow keys, Home and End move through the menu; Escape closes it and returns to its button', () => {
+        const actions = ACTIONS.concat([{ id: 'paths', label: 'Previous and next pages',
+            href: '?do=base.report&reportId=document&pagePath=__OWA_ROW_pagePath__', params: { pagePath: 'pagePath' }, first: '' }]);
+        const { $root } = draw(pages('pagePathPlusQuery', ['/']), { rowActions: actions });
+        const $button = $root.find('.owa_gridRowActions').first();
+
+        $button.trigger('click');
+
+        const $items = $('.owa_gridRowActionsMenu [role="menuitem"]');
+        const focused = () => $items.index(document.activeElement);
+        const key = (k) => $(document.activeElement).trigger($.Event('keydown', { key: k }));
+
+        expect($items).toHaveLength(3);
+        expect(focused()).toBe(0);
+
+        key('ArrowDown');
+        expect(focused()).toBe(1);
+        key('ArrowDown');
+        key('ArrowDown');
+        expect(focused()).toBe(0);
+        key('ArrowUp');
+        expect(focused()).toBe(2);
+        key('Home');
+        expect(focused()).toBe(0);
+        key('End');
+        expect(focused()).toBe(2);
+        key('a');
+        expect(focused()).toBe(2);
+
+        $items.get(2).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+        expect($('.owa_gridRowActionsMenu')).toHaveLength(0);
+        expect(document.activeElement).toBe($button[0]);
+        expect($button.attr('aria-expanded')).toBe('false');
+    });
+
     test('a grid with no actions draws no button', () => {
         const { $root } = draw(pages('pagePathPlusQuery', ['/']));
 
