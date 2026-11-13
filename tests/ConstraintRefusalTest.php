@@ -53,6 +53,19 @@ final class ConstraintRefusalTest extends TestCase
         return array_keys((array) $rsm->getConstraints());
     }
 
+    /**
+     * A filter's value is read as written. It was entity-decoded, to match
+     * values ingest had escaped, so "Tom &amp; Jerry" filtered on "Tom & Jerry".
+     */
+    public function testAConstraintValueIsReadAsWritten(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
+
+        $parsed = $rsm->parseConstraintsString('pageTitle==Tom &amp; Jerry');
+
+        $this->assertSame('Tom &amp; Jerry', $parsed[0]['value'] ?? null);
+    }
+
     public function testAValidDimensionConstraintIsApplied(): void
     {
         $rsm = $this->rsm();

@@ -477,7 +477,9 @@ class ResultSetManager extends \OWA\Core\Base {
                 if (strpos($constraint, $operator)) {
 
                     list ($name, $value) = explode($operator, $constraint);
-                    $constraint_array[] = array('name' => $name, 'value' => html_entity_decode($value), 'operator' => $operator);
+                    // As written: stored values are the text that was sent, so a
+                    // filter on "Tom &amp; Jerry" means those characters.
+                    $constraint_array[] = array('name' => $name, 'value' => $value, 'operator' => $operator);
                     break;
                 }
             }

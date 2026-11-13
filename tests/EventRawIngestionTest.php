@@ -684,6 +684,25 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
+     * Text is stored as it was sent, and escaped where it is shown.
+     *
+     * Ingest HTML-escaped tracking values and stripped anything shaped like a
+     * tag: "a<b and c>d" was stored as "ad", "&" as "&amp;", and a search for
+     * "<script>" as "alert(1)" -- a record of something nobody sent.
+     */
+    public function testTextIsStoredAsItWasSent(): void
+    {
+        $row = $this->firePageView([
+            'page_title' => 'a<b and c>d & "quoted" \'x\' Café',
+            'eps_query'  => '<script>alert(1)</script>',
+        ])['page_view'];
+
+        $this->assertSame('a<b and c>d & "quoted" \'x\' Café', $row['page_title']);
+        $this->assertSame('<script>alert(1)</script>',
+            json_decode((string) $row['params'], true)['query'] ?? null);
+    }
+
+    /**
      * Text that is not UTF-8 lands converted, on the first attempt.
      *
      * A Latin-1 byte failed the insert under a strict sql_mode, so the beacon
@@ -697,13 +716,8 @@ final class EventRawIngestionTest extends IngestionTestCase
             'eps_note'   => "\xe9t\xe9",
         ])['page_view'];
 
-        // Stored as the same text sent in UTF-8 is (string values are HTML-escaped on the way in).
-        $this->assertSame(
-            \OWA\Module\Base\Classes\Sanitize::cleanInput('Café crème', ['remove_html' => true]),
-            $row['page_title']);
-        $this->assertNotNull($row['page_title'], 'the title was blanked, not converted');
-        $this->assertSame(\OWA\Module\Base\Classes\Sanitize::cleanInput('été', ['remove_html' => true]),
-            json_decode((string) $row['params'], true)['note'] ?? null,
+        $this->assertSame('Café crème', $row['page_title'], 'converted, not blanked');
+        $this->assertSame('été', json_decode((string) $row['params'], true)['note'] ?? null,
             'a param that is not UTF-8 is converted, not dropped with the rest');
     }
 
