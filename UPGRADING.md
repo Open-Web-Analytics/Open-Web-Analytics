@@ -409,8 +409,14 @@ The contract is pinned by `tests/ViewScopeCompatTest.php`, and
 | `owa_db_mysql` | `OWA\Core\Db\Mysql` |
 
 In 1.x a compatibility bridge (`owa_compat_aliases.php`) kept the old names
-resolving through `class_alias()`. **v2.0 removes it**: no `owa_*` class name
-resolves, and a module that uses one gets "class not found". `extends owa_module`,
+resolving through `class_alias()`, and 1.x's notes promised it for a full
+major-version window. That window ends at 2.0. **v2.0 removes the bridge**: no
+`owa_*` class name resolves, and a module or integration that uses one, such as
+a WordPress plugin calling `owa_coreAPI::getSetting()`, gets "class not found".
+Use the namespaced class instead, such as `\OWA\Core\CoreAPI::getSetting()`.
+To find the old names before upgrading, run the code on 1.14 with
+`define('OWA_DISABLE_COMPAT_BRIDGE', true);` in `owa-config.php`: only the
+namespaced names resolve there, as on 2.0. `extends owa_module`,
 `owa_coreAPI::getSetting(...)` and `instanceof owa_entity` all need the namespaced
 name. `tests/fixtures/legacy_class_names.json` lists all 406 retired names, and
 `tests/LegacyClassNameContractTest.php` checks none of them resolves.
@@ -475,10 +481,11 @@ still awaiting a retry.
 - **Failed writes are retried** through the intake in either mode, then kept in
   its dead-letter queue: `cmd=tracker-ingest-replay` sends them back.
 - **`queue.php` and the RemoteQueue module**, which forwarded beacons to
-  another install over HTTP, are replaced by the **SQS module**: a logging node
-  queues beacons on AWS SQS and the reporting install drains them. Remove
-  `queue.php` from any web server allowlist, and `OWA_REMOTE_EVENT_QUEUE_ENDPOINT`
-  from `owa-config.php`.
+  another install over HTTP, are removed. Use the tracker-ingest intake: on
+  disk, drained by the install that receives the beacons, or in AWS SQS with
+  the **AWS SQS module**, where a logging node queues beacons and the reporting
+  install drains them. Remove `queue.php` from any web server allowlist, and
+  `OWA_REMOTE_EVENT_QUEUE_ENDPOINT` from `owa-config.php`.
 - **Removed settings:** `queue_max_retry_count`, `queue_max_retry_age`,
   `remote_event_queue_endpoint`, `allowed_queued_event_types`.
 
