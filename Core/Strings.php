@@ -252,6 +252,21 @@ class Strings {
     }
 
     /**
+     * The locale as an HTML lang attribute (BCP 47: pt_BR is pt-BR). A locale
+     * that is not a language tag is English, as load() treats it.
+     *
+     * @param  string|null $locale  the locale in use when null
+     * @return string
+     */
+    public static function htmlLang( $locale = null ) {
+
+        $locale = $locale === null ? self::locale() : (string) $locale;
+
+        return preg_match( '/^[A-Za-z]{2,3}([_-][A-Za-z0-9]{2,8})*$/', $locale )
+            ? str_replace( '_', '-', $locale ) : self::SOURCE_LOCALE;
+    }
+
+    /**
      * Use these translations, and optionally this plural rule, instead of the
      * locale's (tests). Null reloads both.
      */

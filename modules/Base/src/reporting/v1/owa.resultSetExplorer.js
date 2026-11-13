@@ -183,12 +183,6 @@ OWA.resultSetExplorer = function(dom_id, options) {
              */
             showExplorerControls: true
         },
-        template: {
-            template: '',
-            params: '',
-            mode: 'append',
-            dom_id: ''
-        },
         metricBoxes: {
             width: '',
 
@@ -228,8 +222,7 @@ OWA.resultSetExplorer.prototype = {
         grid: 'refreshGrid',
         areaChart: 'makeAreaChart',
         pie: 'makeShareChart',
-        sparkline: 'makeSparkline',
-        template: 'renderTemplate'
+        sparkline: 'makeSparkline'
     },
 
     setDataLoadUrl : function(url) {
@@ -509,8 +502,11 @@ OWA.resultSetExplorer.prototype = {
         this[func[0]].apply(this, args);
     },
 
+    // The spinner is decoration; the status says it in words.
     showLoader: function() {
-        jQuery('#'+this.dom_id).append('<div class="loader"><img class="loading" src="'+OWA.getSetting('baseUrl')+'public/base/i/loader.gif"></div>');
+        jQuery('#'+this.dom_id).append( jQuery( '<div class="loader" role="status"></div>' )
+            .append( jQuery( '<img class="loading" alt="">' ).attr( 'src', OWA.getSetting('baseUrl')+'public/base/i/loader.gif' ) )
+            .append( jQuery( '<span class="owa_srOnly"></span>' ).text( OWA.l( 'Loading' ) ) ) );
     },
 
     hideLoader: function() {
@@ -548,7 +544,7 @@ OWA.resultSetExplorer.prototype = {
             return;
         }
 
-        $box.append( jQuery( '<div class="owa_loadError"></div>' )
+        $box.append( jQuery( '<div class="owa_loadError" role="alert"></div>' )
             .text( OWA.l( 'This report could not be loaded. Try again in a moment.' ) ) );
     },
 
@@ -833,24 +829,6 @@ OWA.resultSetExplorer.prototype = {
         this.registerDataChangeSubscriber( dom_id );
     },
     
-
-    renderTemplate : function(template, params, mode, dom_id) {
-
-        template = template || this.options.template.template;
-        params = params || this.options.template.params;
-        mode = mode || this.options.template.mode;
-        dom_id = dom_id || this.options.template.dom_id || this.dom_id;
-        jQuery.jqotetag('*');
-        //dom_id = dom_id || this.dom_id;
-
-        if (mode === 'append') {
-            jQuery('#' + dom_id).jqoteapp(template, params);
-        } else if (mode === 'prepend') {
-            jQuery('#' + dom_id).jqotepre(template, params);
-        } else if (mode === 'replace') {
-            jQuery('#' + dom_id).jqotesub(template, params);
-        }
-    },
 
     // moved to resultSet
     getSeries : function(value_name, value_name2, filter) {

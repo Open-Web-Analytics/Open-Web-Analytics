@@ -47,7 +47,9 @@ if ( typeof window !== 'undefined' && window.owa_baseUrl ) {
      *   owa_cmds.push(['setOption', 'honorPrivacySignals', false]);
      *
      * Loading the queue sends nothing; when a signal is honoured, owa_cmds is
-     * left as the page's plain array and no command runs.
+     * left as the page's plain array, no command runs, and the tracker's own
+     * cookies are erased (Util.eraseTrackerCookies()). A browser refused only
+     * for being automated keeps its cookies.
      */
     var honorPrivacySignals = q
         ? q.optionFor( 'OWATracker', 'honorPrivacySignals' ) !== false
@@ -62,6 +64,10 @@ if ( typeof window !== 'undefined' && window.owa_baseUrl ) {
         // the options they read (Tracker.startFeatures()): the default tracker
         // and any named one the commands created.
         q.startFeatures();
+
+    } else if ( honorPrivacySignals && OwaUtil.sendsPrivacySignal() ) {
+
+        OwaUtil.eraseTrackerCookies();
 
     } else if ( typeof navigator !== 'undefined' && navigator.webdriver === true
         && typeof console !== 'undefined' && console.log ) {

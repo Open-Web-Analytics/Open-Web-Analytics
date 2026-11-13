@@ -8,7 +8,7 @@
  * the storage. This lists what exists, and says so when that is nothing.
  */
 ?>
-<div class="panel_headline"><?php echo $view->headline;?></div>
+<h1 class="panel_headline"><?php echo $view->headline;?></h1>
 <div id="panel">
 <div class="owa_panelIntro">A goal event definition counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted, or every one of an event of your own. Goal event definitions belong to the <strong>Property</strong>, so they count the same way in all of its Observation Profiles.</div>
 

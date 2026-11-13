@@ -13,7 +13,6 @@ final class FunnelBuilderTest extends TestCase
     private function call( object $o, string $method, array $args = array() )
     {
         $m = new ReflectionMethod( $o, $method );
-        $m->setAccessible( true );
 
         return $m->invokeArgs( $o, $args );
     }
@@ -21,7 +20,6 @@ final class FunnelBuilderTest extends TestCase
     private function setPrivate( object $o, string $class, string $name, $value ): void
     {
         $p = new ReflectionProperty( $class, $name );
-        $p->setAccessible( true );
         $p->setValue( $o, $value );
     }
 

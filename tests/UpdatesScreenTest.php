@@ -35,7 +35,6 @@ final class UpdatesScreenTest extends TestCase
 
         // A redirect is set on the controller rather than returned.
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $data->setAccessible( true );
 
         return $returned ?? (array) $data->getValue( $controller );
     }
@@ -59,25 +58,24 @@ final class UpdatesScreenTest extends TestCase
         $view->render( ['modules' => ['base']] );
 
         $file = new \ReflectionProperty( $view->t, 'file' );
-        $file->setAccessible( true );
 
         return basename( (string) $file->getValue( $view->t ) );
     }
 
     public function testItRendersInTheSignedOutWrapper(): void
     {
-        $embedded = \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' );
+        $this->assertSame( 'wrapper_public.php', $this->wrapperFile(),
+            'The updates page took the signed-in wrapper, whose header it does not load the styles for.' );
+    }
 
-        try {
-            \OWA\Core\CoreAPI::setSetting( 'base', 'is_embedded', null );
-            $this->assertSame( 'wrapper_public.php', $this->wrapperFile(),
-                'The updates page took the signed-in wrapper, whose header it does not load the styles for.' );
+    public function testItRendersTheUpdatesListInsideTheWrapper(): void
+    {
+        $view = new \OWA\Module\Base\View\Updates();
+        $view->render( ['modules' => ['base']] );
 
-            \OWA\Core\CoreAPI::setSetting( 'base', 'is_embedded', true );
-            $this->assertNotSame( 'wrapper_public.php', $this->wrapperFile() );
-        } finally {
-            \OWA\Core\CoreAPI::setSetting( 'base', 'is_embedded', $embedded );
-        }
+        $file = new \ReflectionProperty( $view->body, 'file' );
+
+        $this->assertSame( 'updates.php', basename( (string) $file->getValue( $view->body ) ) );
     }
 
     public function testWithUpdatesPendingItListsTheModules(): void

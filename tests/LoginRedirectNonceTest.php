@@ -77,7 +77,6 @@ final class LoginRedirectNonceTest extends TestCase
         // get() reads request params. Asserting via get() would report NULL for
         // every case and pass this whole file for the wrong reason.
         $prop = new ReflectionProperty($controller, 'data');
-        $prop->setAccessible(true);
         $data = (array) $prop->getValue($controller);
 
         return isset($data['go']) && $data['go'] !== '';

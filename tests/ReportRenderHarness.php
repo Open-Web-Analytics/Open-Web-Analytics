@@ -73,9 +73,7 @@ final class ReportRenderHarness
     /**
      * Whether the code at an offset sits behind a `//` on its own line.
      *
-     * Only line comments: a block comment around a push would be unusual, and
-     * treating `/*` as a comment start would misread the `*` inside a jqote
-     * tag, which every trend title contains.
+     * Only line comments: a block comment around a push would be unusual.
      */
     private static function isCommentedOut( string $html, int $offset ): bool
     {

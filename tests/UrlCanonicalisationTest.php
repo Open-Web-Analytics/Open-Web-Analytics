@@ -9,8 +9,9 @@ use OWA\Module\Base\Classes\V2Event;
 /**
  * What v2 does to a URL, and what it deliberately does not.
  *
- * THE EVIDENCE IS NOT EDITED. page_location is stored exactly as it arrived,
- * because it is what a corrected parse gets re-applied to -- v1 needed
+ * THE EVIDENCE IS NOT EDITED, beyond the parameters query_string_filters
+ * names. page_location is stored as it arrived, because it is what a
+ * corrected parse gets re-applied to -- v1 needed
  * keepCompleteUrl() to stash the URL before its own canonicaliser ate it. The
  * READINGS --
  * page_path, page_query, host -- are what reports group by, and those are
@@ -247,6 +248,36 @@ final class UrlCanonicalisationTest extends TestCase
     {
         $this->assertNull(V2Event::filterQuery(null, ['owa_state']));
         $this->assertNull(V2Event::filterQuery('', ['owa_state']));
+    }
+
+    /** removeUrlParams(): the named pairs go; scheme, host, path, the rest of the query and the fragment stay. */
+    public function testAUrlLosesOnlyTheNamedParameters(): void
+    {
+        $this->assertSame('https://site.test/p?keep=1&r=two+words#top',
+            V2Event::removeUrlParams('https://site.test/p?email=a%40b.test&keep=1&r=two+words#top', ['email']));
+        $this->assertSame('https://site.test/p',
+            V2Event::removeUrlParams('https://site.test/p?email=a%40b.test', ['email']));
+        $this->assertSame('https://site.test/p#top',
+            V2Event::removeUrlParams('https://site.test/p?email=x#top', ['email']));
+    }
+
+    /** A URL none of whose parameters is named is returned byte for byte, empty pairs and all. */
+    public function testAUrlWithNoNamedParameterIsUntouched(): void
+    {
+        foreach (['https://site.test/p?a=1&&b=two%20words&', 'https://site.test/p', 'https://site.test/p?',
+                  'https://site.test/#/route?email=x'] as $url) {
+            $this->assertSame($url, V2Event::removeUrlParams($url, ['email']), $url);
+        }
+
+        $this->assertSame('https://site.test/p?email=x', V2Event::removeUrlParams('https://site.test/p?email=x', []));
+        $this->assertNull(V2Event::removeUrlParams(null, ['email']));
+    }
+
+    public function testAQueryLosesOnlyTheNamedParameters(): void
+    {
+        $this->assertSame('q=shoes', V2Event::removeQueryParams('q=shoes&email=x', ['email']));
+        $this->assertNull(V2Event::removeQueryParams('email=x', ['email']));
+        $this->assertSame('q=shoes&&x=1', V2Event::removeQueryParams('q=shoes&&x=1', ['email']));
     }
 
     /**

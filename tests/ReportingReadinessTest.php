@@ -266,7 +266,6 @@ final class ReportingReadinessTest extends TestCase
         $class = new ReflectionClass($spy);
         $rest  = $class->newInstanceWithoutConstructor();
         $p     = new ReflectionProperty(\OWA\Core\Controller::class, 'params');
-        $p->setAccessible(true);
         $p->setValue($rest, ['siteId' => self::WAITING_SITE, 'metrics' => 'sessions', 'dimensions' => 'date']);
 
         $rest->action();

@@ -96,6 +96,10 @@ final class Chunk {
         $page_view_seq = $event->get( 'page_view_seq' );
         $location      = (string) ( $event->get( 'page_location' ) ?: $event->get( 'page_url' ) );
 
+        // Stored as raw stores the page's: without the query_string_filters parameters.
+        $location = (string) \OWA\Module\Base\Classes\V2Event::removeUrlParams( $location,
+            \OWA\Module\Base\Classes\TrackingEventHelpers::queryStringFilters( $site_id ) );
+
         return array(
             'chunk' => array(
                 'id'             => $id,

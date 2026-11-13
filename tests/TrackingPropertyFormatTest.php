@@ -366,7 +366,6 @@ final class TrackingPropertyFormatTest extends TestCase
         $handler = new \OWA\Module\Base\Handler\EventRawHandlers();
 
         $method = new ReflectionMethod( $handler, 'declaredParams' );
-        $method->setAccessible( true );
 
         foreach ( array( 'purchase', 'click', 'file_download', 'custom_event' ) as $event_name ) {
 

@@ -233,7 +233,6 @@ final class EntityFalsyWriteTest extends TestCase
         $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         $method = new ReflectionMethod($entity, 'numericColumnTypes');
-        $method->setAccessible(true);
         $types = $method->invoke($entity);
 
         $this->assertNotEmpty($types, 'no numeric column types were resolved at all');
@@ -271,7 +270,6 @@ final class EntityFalsyWriteTest extends TestCase
         $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         $method = new ReflectionMethod($entity, 'numericColumnTypes');
-        $method->setAccessible(true);
         $types = $method->invoke($entity);
 
         foreach (['OWA_DTD_BIGINT', 'OWA_DTD_INT', 'OWA_DTD_BOOLEAN'] as $constant) {

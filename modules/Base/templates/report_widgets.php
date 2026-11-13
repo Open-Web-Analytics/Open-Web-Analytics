@@ -385,7 +385,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
     $owa_more = ! empty( $owa_w['more'] );
 ?>
 <?php if ( $owa_showTitle ): ?>
-        <div class="owa_reportSectionHeader"><span class="owa_reportSectionTitle"><?php $view->out( $owa_w['title'] ); ?></span><?php
+        <div class="owa_reportSectionHeader"><h2 class="owa_reportSectionTitle"><?php $view->out( $owa_w['title'] ); ?></h2><?php
             if ( $owa_more ): ?><span class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
                 'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
                 $view->out( $owa_w['more']['label'] ?? 'View Full Report' ); ?></a></span><?php endif; ?></div>

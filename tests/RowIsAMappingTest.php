@@ -244,7 +244,6 @@ final class RowIsAMappingTest extends TestCase
     {
         $handlers = new ReflectionClass( \OWA\Module\Base\Handler\EventRawHandlers::class );
         $row      = $handlers->getMethod( 'row' );
-        $row->setAccessible( true );
 
         // The four the guard refuses a row without, and nothing else: an event
         // assembled in process, with no derived property on it at all.

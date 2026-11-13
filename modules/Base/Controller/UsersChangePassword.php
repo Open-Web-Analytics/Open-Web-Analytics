@@ -53,14 +53,7 @@ class UsersChangePassword extends \OWA\Core\Controller {
     }
 
     function action() {
-		
-		// needed for old style embedded install migration
-		if ( $this->getParam('is_embedded') ) {
-			
-			\OWA\Core\CoreAPI::setSetting('base', 'is_embedded', true);
-		}
-		
-		
+
         $auth = \OWA\Core\Auth::get_instance();
         $status = $auth->authenticateUserTempPasskey($this->getParam('k'));
 

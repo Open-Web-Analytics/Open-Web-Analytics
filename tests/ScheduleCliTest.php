@@ -54,7 +54,6 @@ final class ScheduleCliTest extends CliControllerTestCase
     private function callProtected(object $ctrl, string $method, array $args = [])
     {
         $m = new ReflectionMethod($ctrl, $method);
-        $m->setAccessible(true);
 
         return $m->invokeArgs($ctrl, $args);
     }
@@ -275,10 +274,26 @@ final class ScheduleCliTest extends CliControllerTestCase
         // drain-tracker-ingest is the only thing that ingests a queued beacon
         // and replay-tracker-ingest the only thing that brings a dead letter
         // back without someone running it by hand (PLAN 2.30.4).
+        // prune-tracker-ingest-archive holds the intake's archived batches to
+        // raw_retention_months, and deletes nothing while that is unset.
         $this->assertSame(
-            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'fetch-notifications'],
+            ['rotate-partitions', 'drain-tracker-ingest', 'replay-tracker-ingest', 'prune-tracker-ingest-archive', 'prune-job-queue', 'rebuild-cube', 'apply-custom-dimensions', 'fetch-notifications'],
             array_keys($jobs)
         );
+    }
+
+    /**
+     * The archive prune ships as the scheduled run, which reads the retention
+     * window, never with an interval: an interval would delete archives on an
+     * install that asked to keep everything.
+     */
+    public function testTheArchivePruneShipsBoundToTheRetentionWindow()
+    {
+        $jobs = $this->callProtected($this->runner(), 'jobs');
+
+        $this->assertSame('prune-event-queue-archives', $jobs['prune-tracker-ingest-archive']['command']);
+        $this->assertSame(['scheduled' => 1], $jobs['prune-tracker-ingest-archive']['params']);
+        $this->assertMatchesRegularExpression('/^\d+ \d+ \* \* \*$/', $jobs['prune-tracker-ingest-archive']['schedule']);
     }
 
     /**

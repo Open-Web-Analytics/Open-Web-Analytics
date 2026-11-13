@@ -123,7 +123,6 @@ final class CustomReportPropertyTest extends TestCase
         $saved   = [];
 
         foreach ($fields as $field) {
-            $field->setAccessible(true);
             $saved[$field->getName()] = $field->getValue($current);
         }
 
@@ -212,7 +211,6 @@ final class CustomReportPropertyTest extends TestCase
     private function data($controller): array
     {
         $property = new \ReflectionProperty(\OWA\Core\Controller::class, 'data');
-        $property->setAccessible(true);
 
         return (array) $property->getValue($controller);
     }
@@ -577,7 +575,6 @@ final class CustomReportPropertyTest extends TestCase
         $capable = function (array $params) use ($su): bool {
             $star = new \OWA\Module\Base\Controller\CustomReportMarkFavorite($params);
             $m    = new \ReflectionMethod($star, 'isCurrentUserCapable');
-            $m->setAccessible(true);
 
             return $m->invoke($star, $su);
         };

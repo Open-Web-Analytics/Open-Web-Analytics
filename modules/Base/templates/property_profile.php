@@ -1,5 +1,5 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
+<h1 class="panel_headline"><?php $view->out( $view->headline );?></h1>
 <div id="panel">
 <div class="owa_panelIntro">A Property is what reports are about. Its Observation Profiles collect its data, each under its own tracking id.</div>
 
@@ -7,8 +7,8 @@
         <?php echo $view->createNonceFormField( 'base.propertyEdit' );?>
         <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->property['id'] ?? '' );?>">
 
-        <div class="inline_h3">Name</div>
-        <input class="owa_largeFormField" type="text" size="52" maxlength="70"
+        <label class="inline_h3" for="owa_propertyName">Name</label>
+        <input class="owa_largeFormField" type="text" size="52" maxlength="70" id="owa_propertyName"
                name="<?php echo $view->getNs();?>name" value="<?php $view->out( $view->property['name'] ?? '' );?>">
         <span class="form-instructions">What this Property is called. Profiles are grouped under this name.</span>
         <BR><BR>
@@ -34,15 +34,16 @@
         $owa_isWeb = $owa_type === \OWA\Module\Base\Entity\Property::TYPE_WEB;
         ?>
 
-        <div class="inline_h3">This Property is</div>
         <?php if ( $owa_isNew ):?>
-        <select class="owa_largeFormField" name="<?php echo $view->getNs();?>propertyType">
+        <label class="inline_h3" for="owa_propertyType">This Property is</label>
+        <select class="owa_largeFormField" id="owa_propertyType" name="<?php echo $view->getNs();?>propertyType">
             <option value="<?php $view->out( \OWA\Module\Base\Entity\Property::TYPE_WEB );?>" selected>
                 <?php $view->out( $owa_types[ \OWA\Module\Base\Entity\Property::TYPE_WEB ] );?>
             </option>
         </select>
         <span class="form-instructions">Chosen once: it sets the identifier this Property is known by, and its Observation Profiles are set up against that identifier. Apps arrive with app stream support.</span>
         <?php else:?>
+        <div class="inline_h3">This Property is</div>
         <span class="owa_statedValue"><?php $view->out( $owa_types[ $owa_type ] ?? $owa_type );?></span>
         <?php
             /*
@@ -60,8 +61,8 @@
         <?php endif;?>
         <BR><BR>
 
-        <div class="inline_h3">Domain<?php if ( ! $owa_isWeb ):?> <span class="owa_optional">optional</span><?php endif;?></div>
-        <input class="owa_largeFormField" type="text" size="52" maxlength="70"
+        <label class="inline_h3" for="owa_propertyDomain">Domain<?php if ( ! $owa_isWeb ):?> <span class="owa_optional">optional</span><?php endif;?></label>
+        <input class="owa_largeFormField" type="text" size="52" maxlength="70" id="owa_propertyDomain"
                name="<?php echo $view->getNs();?>domain" value="<?php $view->out( $view->property['domain'] ?? '' );?>">
         <span class="form-instructions">The domain of the website or application being observed.<?php
             if ( $owa_isWeb ):?> Required: it is the origin a tracking request is accepted or
@@ -77,8 +78,8 @@
         ?>
         <BR><BR>
 
-        <div class="inline_h3">Description <span class="owa_optional">optional</span></div>
-        <input class="owa_largeFormField" type="text" size="52"
+        <label class="inline_h3" for="owa_propertyDescription">Description <span class="owa_optional">optional</span></label>
+        <input class="owa_largeFormField" type="text" size="52" id="owa_propertyDescription"
                name="<?php echo $view->getNs();?>description" value="<?php $view->out( $view->property['description'] ?? '' );?>">
         <BR><BR>
 

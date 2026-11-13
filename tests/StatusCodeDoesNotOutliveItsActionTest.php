@@ -29,7 +29,6 @@ final class StatusCodeDoesNotOutliveItsActionTest extends TestCase
         $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
 
         $property = new \ReflectionProperty( $request, 'request_type' );
-        $property->setAccessible( true );
         $property->setValue( $request, $method );
     }
 
@@ -43,7 +42,6 @@ final class StatusCodeDoesNotOutliveItsActionTest extends TestCase
         $controller->doAction();
 
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $data->setAccessible( true );
 
         return ( (array) $data->getValue( $controller ) )['status_code'] ?? null;
     }

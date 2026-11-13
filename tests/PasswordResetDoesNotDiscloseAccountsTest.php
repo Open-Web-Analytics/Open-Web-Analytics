@@ -28,14 +28,12 @@ final class PasswordResetDoesNotDiscloseAccountsTest extends TestCase
         $controller->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $controller );
 
         $this->assertNotEmpty(
             $validator, 'No validator at all -- the format check should still be here.' );
 
         $property = new \ReflectionProperty( $validator, 'validations' );
-        $property->setAccessible( true );
 
         /*
          * The TYPE is the validation object's class, not the entry's name --

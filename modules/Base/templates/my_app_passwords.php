@@ -42,7 +42,7 @@ $owa_password_row = function ( array $owa_row ) use ( $view, $owa_scopes ) {
 <?php
 };
 ?>
-<DIV class="panel_headline">Application Passwords</DIV>
+<h1 class="panel_headline">Application Passwords</h1>
 <div id="panel">
 
 <?php if ( ! $view->enabled ): ?>

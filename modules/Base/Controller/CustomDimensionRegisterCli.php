@@ -155,7 +155,6 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
         $cli   = $class->newInstanceWithoutConstructor();
 
         $params = $class->getProperty( 'params' );
-        $params->setAccessible( true );
         $params->setValue( $cli, array( 'property' => $property_id ) );
 
         $cli->action();

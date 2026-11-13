@@ -1,5 +1,5 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
+<h1 class="panel_headline"><?php $view->out( $view->headline );?></h1>
 <div id="panel">
 <div class="owa_panelIntro">How many months of reporting data &ldquo;<?php $view->out( $view->property['name'] ?? '' );?>&rdquo;
 keeps. Event data is kept for the whole installation, on the instance&rsquo;s Data Retention page; reports can

@@ -27,7 +27,6 @@ final class ErrorLogTest extends TestCase
         $error = new \OWA\Module\Base\Classes\Error();
 
         $p = new ReflectionProperty($error, 'sinks');
-        $p->setAccessible(true);
         $p->setValue($error, [['path' => $path, 'stream' => null]]);
 
         return $error;

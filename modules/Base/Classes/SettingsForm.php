@@ -226,7 +226,9 @@ class SettingsForm {
             return '';
         }
 
-        $control = self::control( $module, $key, $args, $ns, (bool) $constant );
+        $id      = self::controlId( $module, $key );
+        $control = self::control( $module, $key, $args, $ns, (bool) $constant,
+            self::storedValue( $module, $key, $args ), sprintf( ' id="%s"', self::esc( $id ) ) );
 
         if ( $control === '' ) {
 
@@ -242,11 +244,12 @@ class SettingsForm {
 
         return sprintf(
             "    <div class=\"setting\" id=\"%s\">\n"
-          . "        <div class=\"title\">%s</div>\n"
+          . "        <label class=\"title\" for=\"%s\">%s</label>\n"
           . "        <div class=\"description\">%s</div>\n"
           . "        <div class=\"field\">%s</div>\n"
           . "    </div>\n",
             self::esc( $key ),
+            self::esc( $id ),
             self::esc( self::label( $key, $args ) ),
             $description,
             $control );
@@ -363,7 +366,7 @@ class SettingsForm {
 
         $state = self::inheritance( $module, $key, $scopeType, $scopeId );
         $name  = $module . '.' . $key;
-        $id    = 'owa-setting-' . preg_replace( '/[^A-Za-z0-9_-]/', '-', $name );
+        $id    = self::controlId( $module, $key );
 
         /*
          * NOTHING ABOVE TO OVERRIDE -- no stored value and no default -- so a
@@ -382,7 +385,7 @@ class SettingsForm {
             $control = self::control( $module, $key, $args, $ns, false, $value,
                 sprintf( ' id="%s"', self::esc( $id ) ) );
 
-            return $control === '' ? '' : self::settingBlock( $key, $args, $control, '' );
+            return $control === '' ? '' : self::settingBlock( $key, $args, $control, '', '', $id );
         }
 
         $overriding = $state['own'];
@@ -453,7 +456,7 @@ class SettingsForm {
             self::esc( $level ),
             self::esc( $shown ) );
 
-        return self::settingBlock( $key, $args, $control . $switch, $notes, 'owa-overridable' );
+        return self::settingBlock( $key, $args, $control . $switch, $notes, 'owa-overridable', $id );
     }
 
     /**
@@ -484,18 +487,20 @@ class SettingsForm {
      * @param  string $field  the control, and its switch when it has one
      * @param  string $notes
      * @param  string $class  a further class for the field row
+     * @param  string $for    the control's id, which the title labels
      * @return string
      */
-    protected static function settingBlock( $key, array $args, $field, $notes, $class = '' ) {
+    protected static function settingBlock( $key, array $args, $field, $notes, $class = '', $for = '' ) {
 
         return sprintf(
             "    <div class=\"setting\" id=\"%s\">\n"
-          . "        <div class=\"title\">%s</div>\n"
+          . "        <label class=\"title\" for=\"%s\">%s</label>\n"
           . "        <div class=\"description\">%s</div>\n"
           . "        <div class=\"field%s\">%s</div>\n"
           . "%s"
           . "    </div>\n",
             self::esc( $key ),
+            self::esc( $for ),
             self::esc( self::label( $key, $args ) ),
             isset( $args['description'] ) ? (string) $args['description'] : '',
             $class !== '' ? ' ' . $class : '',
@@ -720,6 +725,18 @@ class SettingsForm {
         return (string) $value;
     }
 
+    /** The id of a setting's control, which its title labels. */
+    protected static function controlId( $module, $key ) {
+
+        return 'owa-setting-' . preg_replace( '/[^A-Za-z0-9_-]/', '-', $module . '.' . $key );
+    }
+
+    /** The value a control shows when none is given: the setting's, except a secret's, which is never printed. */
+    protected static function storedValue( $module, $key, array $args ) {
+
+        return empty( $args['secret'] ) ? \OWA\Core\CoreAPI::getSetting( $module, $key ) : '';
+    }
+
     /**
      * The control itself.
      *
@@ -746,9 +763,7 @@ class SettingsForm {
          */
         if ( func_num_args() < 6 ) {
 
-            $value = empty( $args['secret'] )
-                ? \OWA\Core\CoreAPI::getSetting( $module, $key )
-                : '';
+            $value = self::storedValue( $module, $key, $args );
         }
 
         $type = isset( $args['type'] ) ? (string) $args['type'] : 'text';

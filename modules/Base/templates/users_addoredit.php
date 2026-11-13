@@ -1,5 +1,5 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div class="panel_headline"><?php $view->out( $view->headline );?></div>
+<h1 class="panel_headline"><?php $view->out( $view->headline );?></h1>
 <div id="panel">
 <fieldset class="options">
 
@@ -9,12 +9,13 @@
 
         <form method="POST">
         <TR>
-            <TH>User Name</TH>
+            <?php // Editing, the user name is text, not a field: nothing to label. ?>
+            <TH><?php if ( $view->edit === true ):?>User Name<?php else:?><label for="owa_userId">User Name</label><?php endif;?></TH>
             <TD>
             <?php if ( $view->edit === true ):?>
             <input type="hidden" size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->user['user_id'] );?>"><span class="noedit"><?php $view->out( $view->user['user_id'] )?></span>
             <?php else:?>
-            <input type="text" size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->user['user_id'] ?? '' );?>">
+            <input type="text" size="30" id="owa_userId" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->user['user_id'] ?? '' );?>">
             <?php endif;?>
             </TD>
         </TR>
@@ -28,13 +29,13 @@
 
         <?php if ( ! $view->isAdmin ):?>
         <TR>
-            <TH>Real Name</TH>
-            <TD><input type="text" size="30" name="<?php echo $view->getNs();?>real_name" value="<?php $view->out( $view->getValue( 'real_name', $view->user ) );?>"></TD>
+            <TH><label for="owa_userRealName">Real Name</label></TH>
+            <TD><input type="text" size="30" id="owa_userRealName" name="<?php echo $view->getNs();?>real_name" value="<?php $view->out( $view->getValue( 'real_name', $view->user ) );?>"></TD>
         </TR>
         <TR>
-            <TH>Role</TH>
+            <TH><label for="owa_userRole">Role</label></TH>
             <TD>
-            <select name="<?php echo $view->getNs();?>role">
+            <select id="owa_userRole" name="<?php echo $view->getNs();?>role">
                 <?php foreach ($view->roles as $role):?>
                 <option <?php if( isset( $view->user['role'] ) && $view->user['role'] === $role): echo "SELECTED"; endif;?> value="<?php echo $role;?>"><?php echo $role;?></option>
                 <?php endforeach;?>
@@ -45,8 +46,8 @@
 
         <?php endif;?>
         <TR>
-            <TH>E-mail Address</TH>
-            <TD><input type="text"size="30" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( $view->user['email_address'] ?? '' );?>"></TD>
+            <TH><label for="owa_userEmail">E-mail Address</label></TH>
+            <TD><input type="text" size="30" id="owa_userEmail" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( $view->user['email_address'] ?? '' );?>"></TD>
         </TR>
 
         <TR>

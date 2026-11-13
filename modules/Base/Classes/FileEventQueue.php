@@ -24,9 +24,13 @@ namespace OWA\Module\Base\Classes;
  * does the same way -- hiding a message in place for a delay -- the
  * difference stays inside this class.
  *
- * One difference is deliberate: NO RETENTION LIMIT. A beacon not yet ingested
- * is kept, in either queue, until it is ingested, replayed or removed by
- * hand. SQS deletes one after fourteen days at most; a file need not.
+ * One difference is deliberate: NO QUEUE RETENTION LIMIT. A beacon not yet
+ * ingested is kept, in either queue, until it is ingested, replayed or
+ * removed. SQS deletes one after fourteen days at most; a file need not. What
+ * removes one is raw_retention_months: the daily replay deletes a dead letter
+ * whose event is older than that window (TrackerIngest::replay()), and the
+ * daily prune-tracker-ingest-archive deletes archived batches older than it.
+ * With the setting unset, both keep everything.
  *
  * Each queue is a directory (the main one is async_log_dir, its dead-letter
  * queue is dead-letter/ inside it):
@@ -35,7 +39,7 @@ namespace OWA\Module\Base\Classes;
  *   unprocessed/   batches rotated out of events.txt, oldest name first
  *   processing/    a batch a consumer holds, and its .state sidecar
  *   delayed/       messages sent or released with a delay, one file per due minute
- *   archive/       finished batches, when archive_old_events is on
+ *   archive/       finished batches, when archive_old_events is on (pruneArchive())
  *
  * A LINE is {"r": times received before, "e": envelope}, plus "p" once it has
  * been replayed from the dead-letter queue, and in a dead-letter queue "why"

@@ -6,7 +6,7 @@
  * require()-ing it:
  *   - jquery-ui-dist: UMD else-branch `factory( jQuery )`
  *   - chosen-js:      `$ = jQuery` (chosen.jquery.js ~610)
- *   - jquery-sparkline, jquery.flot (core/time/resize/pie), jQote2: `(function($){...})(jQuery)`
+ *   - jquery-sparkline, jquery.flot (core/time): `(function($){...})(jQuery)`
  * (jquery-migrate DOES require('jquery') itself, so it doesn't need this -- but it's
  * harmless to it.)
  *

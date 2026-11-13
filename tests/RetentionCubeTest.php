@@ -128,7 +128,6 @@ final class RetentionCubeTest extends TestCase
         $cli = $ref->newInstanceWithoutConstructor();
 
         $p = new ReflectionProperty(CubeRebuildCli::class, 'params');
-        $p->setAccessible(true);
         $p->setValue($cli, $params);
 
         return $cli;

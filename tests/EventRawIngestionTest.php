@@ -136,7 +136,6 @@ final class EventRawIngestionTest extends IngestionTestCase
         $handler = new \OWA\Module\Base\Handler\EventRawHandlers;
 
         $method = new ReflectionMethod($handler, 'row');
-        $method->setAccessible(true);
 
         $event = new \OWA\Module\Base\Classes\Event;
         $event->setProperties([
@@ -660,7 +659,6 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $handler = new \OWA\Module\Base\Handler\EventRawHandlers;
         $queue   = new ReflectionMethod($handler, 'queueLateRebuilds');
-        $queue->setAccessible(true);
 
         try {
             $queue->invoke($handler, [
@@ -819,6 +817,35 @@ final class EventRawIngestionTest extends IngestionTestCase
         }
     }
 
+    /** log_visitor_pii off keeps the display name and email out of the visitor store, a site's own user property not. */
+    public function testThePiiGateStopsTheDisplayNameAndEmailBeingStored(): void
+    {
+        $before  = \OWA\Core\CoreAPI::getSetting('base', 'log_visitor_pii');
+        $visitor = $this->uniqueGuid();
+
+        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
+
+        try {
+            $this->firePageView([
+                'visitor_id'     => $visitor,
+                'vps_user_name'  => 'Display Name',
+                'email_address'  => 'person@example.test',
+                'vps_plan'       => 'pro',
+            ]);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', $before);
+        }
+
+        $store = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
+        $store->load($visitor, 'visitor_id');
+
+        $properties = json_decode((string) $store->get('properties'), true) ?: array();
+
+        $this->assertArrayNotHasKey('user_name', $properties);
+        $this->assertArrayNotHasKey('user_email', $properties);
+        $this->assertSame('pro', $properties['plan']['v'] ?? null);
+    }
+
     /**
      * Line items nest as a real array, so JSON_TABLE can read one row per item.
      *
@@ -902,8 +929,9 @@ final class EventRawIngestionTest extends IngestionTestCase
      * The host is what the cube pass classifies source and medium from, so it is
      * the reading that has to be there. Beyond that the URL is SOMEBODY ELSE'S,
      * and canonicalising it with this install's directory index pages or filtering it
-     * against this site's parameter list would be a category error -- their
-     * ?q=shoes is the search term, not plumbing to strip.
+     * against OWA's own and the campaign parameters would be a category error --
+     * their ?q=shoes is the search term, not plumbing to strip. Only the names
+     * query_string_filters lists are removed from it (the test below).
      */
     public function testTheReferrerIsReadForItsHostAndQuery(): void
     {
@@ -915,6 +943,68 @@ final class EventRawIngestionTest extends IngestionTestCase
         $this->assertSame('www.example.net', $row['referer_host']);
         $this->assertSame('q=shoes', $row['referer_query'],
             'their parameter survives -- the dropped list is this site\'s, not theirs');
+    }
+
+    /**
+     * Fire a landing page view with query_string_filters set install-wide.
+     *
+     * @return array the rows, keyed by event_type
+     */
+    private function firePageViewFiltered(string $filters, array $override): array
+    {
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'query_string_filters');
+        \OWA\Core\CoreAPI::setSetting('base', 'query_string_filters', $filters);
+
+        try {
+            return $this->firePageView($override);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'query_string_filters', $before);
+        }
+    }
+
+    /**
+     * A query_string_filters parameter is removed from every URL a row stores
+     * whole -- page_location, referer_url, referer_query -- on the landing
+     * page view and the markers materialised beside it, after the campaign
+     * tags have been read: owa_campaign filtered out of the URL is still the
+     * session's campaign.
+     */
+    public function testQueryStringFiltersLeaveEveryStoredUrl(): void
+    {
+        $rows = $this->firePageViewFiltered('email, owa_campaign', [
+            'page_url'      => 'https://owa-test-site/v2/a?owa_campaign=spring&email=a%40b.test&keep=me',
+            'page_location' => 'https://owa-test-site/v2/a?owa_campaign=spring&email=a%40b.test&keep=me',
+            'HTTP_REFERER'  => 'https://www.example.net/x?email=a%40b.test&q=shoes',
+        ]);
+
+        $this->assertArrayHasKey('session_start', $rows);
+
+        foreach (['page_view', 'session_start'] as $type) {
+            $row = $rows[$type];
+
+            $this->assertSame('https://owa-test-site/v2/a?keep=me', $row['page_location'], $type);
+            $this->assertSame('https://www.example.net/x?q=shoes', $row['referer_url'], $type);
+            $this->assertSame('q=shoes', $row['referer_query'], $type);
+            $this->assertSame('keep=me', $row['page_query'], $type);
+            $this->assertSame('spring', $row['tagged_campaign'], $type . ': the tag is read before it is removed');
+        }
+    }
+
+    /** With a filter set, a URL that names none of its parameters is stored byte for byte. */
+    public function testAUrlNamingNoFilteredParameterIsStoredAsItArrived(): void
+    {
+        $page    = 'https://owa-test-site/v2/a?keep=me&&two=a+b%20c';
+        $referer = 'https://www.example.net/x?q=shoes&&page=2';
+
+        $row = $this->firePageViewFiltered('email', [
+            'page_url'      => $page,
+            'page_location' => $page,
+            'HTTP_REFERER'  => $referer,
+        ])['page_view'];
+
+        $this->assertSame($page, $row['page_location']);
+        $this->assertSame($referer, $row['referer_url']);
+        $this->assertSame('q=shoes&&page=2', $row['referer_query']);
     }
 
     /**

@@ -46,7 +46,6 @@ final class ConfigFileLogPathsTest extends TestCase
     private function runSetupPaths(\OWA\Module\Base\Classes\Settings $s): void
     {
         $m = new \ReflectionMethod($s, 'setupPaths');
-        $m->setAccessible(true);
         $m->invoke($s);
     }
 

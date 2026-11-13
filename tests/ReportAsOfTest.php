@@ -140,7 +140,6 @@ final class ReportAsOfTest extends TestCase
         $class = new ReflectionClass(\OWA\Module\Base\Controller\CubeRebuildCli::class);
         $cli   = $class->newInstanceWithoutConstructor();
         $p     = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, ['property' => (string) self::PROPERTY, 'from' => (string) $from, 'to' => (string) $to]);
         $cli->action();
     }

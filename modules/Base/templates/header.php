@@ -78,22 +78,13 @@
         </button>
         <div id="owa_userMenuPanel" class="owa_userMenuPanel" role="menu" hidden>
             <?php
-                /*
-                 * nav_user_menu. An embedded install signs people in through its
-                 * host, so it has no session of its own to end -- the same
-                 * condition that hid the old Logout link.
-                 */
+                /* nav_user_menu. */
                 $owa_user_links = array(
                     array( 'id' => 'profile', 'label' => 'Profile', 'class' => 'owa_myProfileLink',
                            'href' => $view->makeLink( array( 'do' => 'base.myProfile' ), false ) ),
+                    array( 'id' => 'logout', 'label' => 'Logout', 'class' => 'owa_userMenuLogout',
+                           'href' => $view->makeLink( array( 'do' => 'base.logout' ), false ) ),
                 );
-
-                if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ) {
-
-                    $owa_user_links[] = array( 'id' => 'logout', 'label' => 'Logout',
-                        'class' => 'owa_userMenuLogout',
-                        'href'  => $view->makeLink( array( 'do' => 'base.logout' ), false ) );
-                }
             ?>
             <?php foreach ( \OWA\Core\Navigation::links( 'nav_user_menu', $owa_user_links ) as $owa_link ):?>
             <a role="menuitem" class="owa_userMenuItem <?php $view->out( $owa_link['class'] ?? '' );?>"
@@ -346,8 +337,7 @@
          * outside to close -- so the two behave alike.
          */
     ?>
-<?php if ( ! \OWA\Core\CoreAPI::isCurrentUserAuthenticated()
-           && ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ): ?>
+<?php if ( ! \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ): ?>
     <?php
         /*
          * Signed out, the account slot is a way in rather than a menu. Before

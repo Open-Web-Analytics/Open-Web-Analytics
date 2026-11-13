@@ -19,7 +19,6 @@ final class CustomDimensionsTest extends TestCase
     private function validate(array $request, array $existing = [], array $queued = [])
     {
         $m = new ReflectionMethod(Dimensions::class, 'validate');
-        $m->setAccessible(true);
 
         return $m->invoke(null, $request, $existing, $queued);
     }

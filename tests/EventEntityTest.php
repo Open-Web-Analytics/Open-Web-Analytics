@@ -163,12 +163,10 @@ final class EventEntityTest extends TestCase
         $class = new ReflectionClass(\OWA\Module\Base\Controller\PartitionRotateCli::class);
         $cli   = $class->newInstanceWithoutConstructor();
         $p     = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, []);
 
         foreach (['carvePlan' => $spans, 'mergeablePeriods' => $spans] as $method => $arg) {
             $m = new ReflectionMethod($cli, $method);
-            $m->setAccessible(true);
 
             $this->assertSame([], $m->invoke($cli, $arg),
                 "$method should find nothing to do on a freshly created cube");

@@ -87,7 +87,6 @@ final class SqsQueueTest extends TestCase
         $q = new SqsQueue($map + array('name' => 'owa-tracker-ingest-test'));
 
         $ref = new ReflectionProperty($q, 'url');
-        $ref->setAccessible(true);
         $ref->setValue($q, self::MAIN);
 
         $dlq = $q->deadLetterQueue();
@@ -310,7 +309,6 @@ final class SqsQueueTest extends TestCase
     {
         if (!empty($m['MessageAttributes'])) {
             $md5 = new ReflectionMethod(\Aws\Sqs\SqsClient::class, 'calculateMessageAttributesMd5');
-            $md5->setAccessible(true);
             $m['MD5OfMessageAttributes'] = $md5->invoke(null, $m);
         }
 

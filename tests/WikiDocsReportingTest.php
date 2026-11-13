@@ -66,6 +66,10 @@ final class WikiDocsReportingTest extends TestCase
         $src = (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.periodpicker.js' )
              . (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
 
+        // Words for the reader (a calendar day's spoken name says "today")
+        // are text, not period keys.
+        $src = preg_replace( "/OWA\\.l\\(\\s*'(?:[^'\\\\]|\\\\.)*'/", 'OWA.l(', $src );
+
         foreach ( array_keys( ( new TimePeriod() )->getPeriodLabels() ) as $period ) {
 
             $this->assertStringNotContainsString( "'$period'", $src, "the picker names $period itself instead of reading the server's list" );
@@ -186,7 +190,15 @@ final class WikiDocsReportingTest extends TestCase
         $this->assertStringContainsString( 'more than ' . ResultSetManager::MAX_REGEX_BOUND, $md );
         $this->assertStringContainsString( 'more than ' . ResultSetManager::QUERY_SECONDS . ' seconds', $md );
 
-        foreach ( array( '(a+)+', '(a)\\1', 'a{' . ( ResultSetManager::MAX_REGEX_BOUND + 1 ) . '}' ) as $refused ) {
+        foreach ( array( '`[[:<:]]`', '`(?\\|`', '`\\K`', '`(?R)`', '`(?1)`', '`(?&name)`', '`(?(`', '`(*FAIL)`',
+                         '`(?P`', "`(?'name'`", '`\\g`', '`\\k`', '`\\C`', '`\\N`', '`\\o`', '`&&`' ) as $named ) {
+            $this->assertStringContainsString( $named, $md, "the page names $named" );
+        }
+
+        foreach ( array( '(a+)+', '(a)\\1', 'a{' . ( ResultSetManager::MAX_REGEX_BOUND + 1 ) . '}',
+                         '[[:<:]]a', '(?|a)', 'a\\Kb', '(a(?R)?b)', '(a)(?1)', '(?<n>a)(?&n)', '(a)(?(1)b)',
+                         '(*FAIL)', '(?P<n>a)', "(?'n'a)", '(a)\\g1', '(?<n>a)\\k<n>', '\\C', '\\N', '\\o{101}',
+                         '(?U)a', '[a[b]', '[a&&b]' ) as $refused ) {
             $this->assertNotNull( ResultSetManager::regexProblem( $refused ),
                 "the page names $refused as refused, and the code refuses it" );
         }

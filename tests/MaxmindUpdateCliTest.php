@@ -30,7 +30,6 @@ final class MaxmindUpdateCliTest extends TestCase {
         $module = \OWA\Core\CoreAPI::moduleClassFactory( $module_name, 'Module' );
 
         $property = new ReflectionProperty( $module, 'cli_commands' );
-        $property->setAccessible( true );
 
         return (array) $property->getValue( $module );
     }
@@ -82,7 +81,6 @@ final class MaxmindUpdateCliTest extends TestCase {
     private function invoke( $method, ...$args ) {
 
         $m = new ReflectionMethod( \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::class, $method );
-        $m->setAccessible( true );
 
         return $m->invoke( $this->command(), ...$args );
     }

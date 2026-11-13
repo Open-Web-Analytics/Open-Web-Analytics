@@ -677,12 +677,25 @@ class Module extends \OWA\Core\Module {
          * Dead letters back to the intake once each, daily (PLAN 2.30.4): a
          * beacon that died in an outage longer than the back-off gets one more
          * round, and one already replayed stays for cmd=tracker-ingest-replay.
+         * A dead letter older than raw's retention window is removed instead
+         * (TrackerIngest::replay()).
          */
         $this->registerJob( 'replay-tracker-ingest', 'tracker-ingest-replay',
             \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'replay-tracker-ingest' ) ), array( 'scheduled' => 1 ),
             'Gives each beacon in the tracker-ingest dead-letter queue one more try, once: one that failed '
           . 'during an outage longer than the retries gets ingested after all. One already replayed stays '
-          . 'for cmd=tracker-ingest-replay.' );
+          . 'for cmd=tracker-ingest-replay. One older than raw_retention_months is deleted instead.' );
+
+        /*
+         * The intake's archived batches (archive_old_events), daily, under
+         * raw's retention window: a batch is kept as long as the events in it
+         * would be, so with raw_retention_months unset nothing is deleted.
+         * By hand, cmd=prune-event-queue-archives interval= prunes by age.
+         */
+        $this->registerJob( 'prune-tracker-ingest-archive', 'prune-event-queue-archives',
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'prune-tracker-ingest-archive' ) ), array( 'scheduled' => 1 ),
+            'Deletes the tracking intake\'s archived batch files older than raw_retention_months, the window '
+          . 'event data is kept for. Deletes nothing when that is not set.' );
 
         // Finished one-off jobs (PLAN 2.30.5): done after 7 days, failed after 30.
         $this->registerJob(

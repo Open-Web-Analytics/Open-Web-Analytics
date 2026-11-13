@@ -66,18 +66,20 @@ final class StringGuidTest extends TestCase
      */
     public function testTheNaiveSixteenCharacterFormOverflows(): void
     {
-        $negative = 0;
+        $overflows = 0;
         $sample   = $this->corpus(2000);
 
         foreach ($sample as $s) {
-            if ((int) hexdec(substr(sha1(strtolower($s)), 0, 16)) < 0) {
-                $negative++;
+            // hexdec() answers a float once the value passes PHP_INT_MAX: an
+            // id that no longer fits a signed BIGINT.
+            if (is_float(hexdec(substr(sha1(strtolower($s)), 0, 16)))) {
+                $overflows++;
             }
         }
 
         $this->assertGreaterThan(
             count($sample) * 0.3,
-            $negative,
+            $overflows,
             'hexdec() over 16 hex characters is expected to overflow for roughly half of all inputs'
         );
     }

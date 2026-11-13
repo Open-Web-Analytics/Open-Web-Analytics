@@ -397,7 +397,6 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $save->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $save );
         $validator->doValidations();
 
@@ -480,7 +479,6 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $save->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $save );
         $validator->doValidations();
 

@@ -25,7 +25,6 @@ final class ProfileSettingsScreenTest extends TestCase
     private function data( $controller ): array
     {
         $property = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $property->setAccessible( true );
 
         return (array) $property->getValue( $controller );
     }
@@ -239,7 +238,6 @@ final class ProfileSettingsScreenTest extends TestCase
         $c->action();
 
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $data->setAccessible( true );
         $data = (array) $data->getValue( $c );
 
         $this->assertSame( 'base.profileSettings', $data['do'] ?? null );

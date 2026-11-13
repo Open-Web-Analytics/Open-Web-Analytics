@@ -23,7 +23,6 @@ final class FunnelEventStepTest extends TestCase
         $controller = new VisualizationFunnel( $params );
 
         $m = new ReflectionMethod( $controller, 'stepPredicate' );
-        $m->setAccessible( true );
 
         return array( $m->invoke( $controller, $step, 1, VisualizationFunnel::ALIAS ), $controller );
     }

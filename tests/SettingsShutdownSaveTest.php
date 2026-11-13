@@ -135,7 +135,6 @@ final class SettingsShutdownSaveTest extends TestCase
         $settings = (new ReflectionClass(OwaThrowingSettings::class))->newInstanceWithoutConstructor();
 
         $dirty = new ReflectionProperty($settings, 'is_dirty');
-        $dirty->setAccessible(true);
         $dirty->setValue($settings, true);
 
         $log = tempnam(sys_get_temp_dir(), 'owa_settings_log_');

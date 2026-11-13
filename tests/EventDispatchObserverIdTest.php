@@ -32,7 +32,6 @@ final class EventDispatchObserverIdTest extends TestCase
     private function ids( object $dispatch ): array
     {
         $property = new \ReflectionProperty( $dispatch, 'listeners' );
-        $property->setAccessible( true );
 
         return array_keys( (array) $property->getValue( $dispatch ) );
     }
@@ -98,7 +97,6 @@ final class EventDispatchObserverIdTest extends TestCase
             array( 'OWA\\Module\\Base\\Classes\\TrackingEventHelpers', 'lowercaseString' ), 0 );
 
         $byEventType = new \ReflectionProperty( $dispatch, 'listenersByEventType' );
-        $byEventType->setAccessible( true );
 
         $this->assertArrayNotHasKey( 'cv1_name', (array) $byEventType->getValue( $dispatch ),
             'a filter must not be reachable from notify(), which would call it with one '

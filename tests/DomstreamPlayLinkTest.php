@@ -20,7 +20,6 @@ final class DomstreamPlayLinkTest extends TestCase
             ->newInstanceWithoutConstructor();
 
         $m = new ReflectionMethod( $controller, 'playerPayload' );
-        $m->setAccessible( true );
 
         return (string) $m->invoke( $controller, array(
             'recording_id'  => '4921417228',

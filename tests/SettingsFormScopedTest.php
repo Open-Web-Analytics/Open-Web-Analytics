@@ -29,7 +29,6 @@ final class SettingsFormScopedTest extends TestCase
         foreach (array('registry', 'fieldsets') as $property) {
 
             $p = new ReflectionProperty(\OWA\Module\Base\Classes\Settings::class, $property);
-            $p->setAccessible(true);
             $this->snapshot[$property] = $p->getValue($this->config());
         }
 
@@ -58,7 +57,6 @@ final class SettingsFormScopedTest extends TestCase
         foreach ($this->snapshot as $property => $value) {
 
             $p = new ReflectionProperty(\OWA\Module\Base\Classes\Settings::class, $property);
-            $p->setAccessible(true);
             $p->setValue($this->config(), $value);
         }
     }
@@ -100,6 +98,22 @@ final class SettingsFormScopedTest extends TestCase
         $this->assertMatchesRegularExpression('#data-owa-note-inherit="[^"]+">Currently set at the install level\.</div>#', $html,
             'the note beneath names the level that sets it, and shows');
         $this->assertMatchesRegularExpression('#data-owa-note-override="[^"]+" hidden>#', $html);
+    }
+
+    /** The title labels the control, whether it inherits or has nothing above it. */
+    public function testTheTitleLabelsTheControl(): void
+    {
+        $this->requireDb();
+        $this->registerBlank();
+
+        foreach (array('words' => 'Words', 'blank' => 'Blank') as $key => $label) {
+
+            $id = 'owa-setting-zz_scoped_form_test-' . $key;
+            $html = $this->field($key);
+
+            $this->assertStringContainsString('<label class="title" for="' . $id . '">' . $label . '</label>', $html);
+            $this->assertMatchesRegularExpression('#<input type="text"[^>]* id="' . $id . '"#', $html);
+        }
     }
 
     public function testAnOverriddenFieldIsEditableWithItsSwitchOn(): void

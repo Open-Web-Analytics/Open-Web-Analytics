@@ -2275,12 +2275,15 @@ class CoreAPI {
 
         $environmentals = $service->getMap( 'tracking_properties_environmental' );
         $teh->setTrackerProperties( $event, $environmentals );
-		
+
+        // Before anything is queued: log_visitor_pii off keeps the identity fields out of the intake.
+        \OWA\Module\Base\Classes\TrackingEventHelpers::gateVisitorPii( $event );
+
         // do not log if the do not log property is set on the event.
         if ($event->get('do_not_log')) {
             return false;
         }
-        
+
         /*
          * NO ROBOT CHECK HERE. A robot is a spam score now, decided after the
          * property stage (Classes\Spam\Score, from Handler\EventRawHandlers),
@@ -2290,12 +2293,25 @@ class CoreAPI {
          * they refuse out of the queue.
          */
 
-        // check to see if IP should be excluded
-        if ( \OWA\Core\CoreAPI::isIpAddressExcluded( $event->get('ip_address'), $event->get('site_id') ) ) {
-	        
-            \OWA\Core\CoreAPI::debug("Not logging event. IP address found in exclusion list.");
-            
-            return false;
+        /*
+         * Excluded IPs: matched against the address the request came from,
+         * before anonymize_ips masked it, since an exclusion names a full
+         * address; and against the stored one, so a list written with masked
+         * addresses still matches. The full address is read here and not kept.
+         */
+        $addresses = array_unique( array_filter( array(
+            \OWA\Module\Base\Classes\TrackingEventHelpers::requestIp(),
+            (string) $event->get( 'ip_address' ),
+        ), 'strlen' ) );
+
+        foreach ( $addresses as $ip_address ) {
+
+            if ( \OWA\Core\CoreAPI::isIpAddressExcluded( $ip_address, $event->get('site_id') ) ) {
+
+                \OWA\Core\CoreAPI::debug("Not logging event. IP address found in exclusion list.");
+
+                return false;
+            }
         }
 
         // Refuse an event for a site this installation does not have.
@@ -2513,26 +2529,16 @@ class CoreAPI {
 		
 		$secure = \OWA\Core\Lib::isHttps();
 	
-        // PHP 7.3 has a different function signature.
-        // @todo refactor usage to clean up once php 7.3 is min requirment.
-        if (PHP_VERSION_ID < 70300) {
-	        
-	        setcookie($cookie_name, $cookie_value, $expires, $path, $domain, $secure);
-	        
-	    } else {
-		    	
-			$options = [
-		        
-		        'expires' 	=> $expires,
-                'path' 		=> '/',
-                'samesite' 	=> 'Lax',
-                'domain' 	=> $domain,
-                'secure' 	=> $secure,
-                'httponly'	=> (bool) $httponly,
-	        ];
-	        
-	        setcookie($cookie_name, $cookie_value, $options);
-	    }
+        $options = [
+            'expires'  => $expires,
+            'path'     => '/',
+            'samesite' => 'Lax',
+            'domain'   => $domain,
+            'secure'   => $secure,
+            'httponly' => (bool) $httponly,
+        ];
+
+        setcookie($cookie_name, $cookie_value, $options);
     }
 
     public static function deleteCookie($cookie_name, $path = '/', $domain = '') {

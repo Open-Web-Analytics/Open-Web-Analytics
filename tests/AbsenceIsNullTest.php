@@ -31,7 +31,6 @@ final class AbsenceIsNullTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $m = new \ReflectionMethod( $db, '_makeConstraintClause' );
-        $m->setAccessible( true );
 
         return preg_replace( '/\s+/', ' ', trim( $m->invoke( $db, $type,
             array( array( 'name' => $name, 'operator' => $operator, 'value' => $value ) ) ) ) );

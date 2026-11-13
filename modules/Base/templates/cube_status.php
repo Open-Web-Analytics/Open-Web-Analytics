@@ -9,7 +9,7 @@
  */
 require_once __DIR__ . '/cube_status_badge.php';
 ?>
-<div class="panel_headline">Reporting Cubes</div>
+<h1 class="panel_headline">Reporting Cubes</h1>
 <div id="panel">
 
 <div class="owa_panelIntro">

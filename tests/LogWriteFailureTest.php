@@ -19,7 +19,6 @@ final class LogWriteFailureTest extends TestCase
         $error = new \OWA\Module\Base\Classes\Error();
 
         $p = new ReflectionProperty($error, 'sinks');
-        $p->setAccessible(true);
         $p->setValue($error, $sinks);
 
         return $error;

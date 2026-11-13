@@ -821,6 +821,9 @@ abstract class FactMigrator {
         // The URL readings, by ingest's own callbacks.
         $helpers = '\OWA\Module\Base\Classes\TrackingEventHelpers';
 
+        // 1.x's user_name is v2's user_id, and log_visitor_pii decides it as ingest does.
+        $helpers::gateVisitorPii( $event );
+
         $event->set( 'page_path', $helpers::derivePagePath( null, $event ) );
         $event->set( 'page_query', $helpers::derivePageQuery( null, $event ) );
         $event->set( 'host', $helpers::deriveHost( null, $event ) );

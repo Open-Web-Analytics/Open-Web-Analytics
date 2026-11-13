@@ -41,7 +41,6 @@ final class RetentionPagesTest extends TestCase
         }
 
         $nonce = new \ReflectionProperty( \OWA\Core\Controller::class, 'is_nonce_required' );
-        $nonce->setAccessible( true );
 
         foreach ( array( 'base.optionsRetentionUpdate', 'base.propertyRetentionUpdate' ) as $action ) {
             $class = self::ACTIONS[ $action ];
@@ -52,7 +51,6 @@ final class RetentionPagesTest extends TestCase
     public function testTheInstallSaveReturnsToItsOwnPage(): void
     {
         $m = new \ReflectionMethod( \OWA\Module\Base\Controller\OptionsRetentionUpdate::class, 'returnAction' );
-        $m->setAccessible( true );
 
         $this->assertSame( 'base.optionsRetention', $m->invoke( new \OWA\Module\Base\Controller\OptionsRetentionUpdate( array() ) ) );
     }
@@ -150,7 +148,6 @@ final class RetentionPagesTest extends TestCase
     {
         $controller = new \OWA\Module\Base\Controller\PropertyRetention( array() );
         $nav = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
-        $nav->setAccessible( true );
 
         $entries = array_filter( (array) ( $nav->invoke( $controller, '', '7781000000000009' )['Property'] ?? array() ),
             fn ( $e ) => $e['do'] === 'base.propertyRetention' );
@@ -184,7 +181,6 @@ final class RetentionPagesTest extends TestCase
         $controller->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $controller );
 
         if ( ! $validator ) {
@@ -192,7 +188,6 @@ final class RetentionPagesTest extends TestCase
         }
 
         $list = new \ReflectionProperty( $validator, 'validations' );
-        $list->setAccessible( true );
 
         return array_column( (array) $list->getValue( $validator ), 'name' );
     }

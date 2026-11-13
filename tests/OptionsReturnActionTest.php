@@ -27,7 +27,6 @@ final class OptionsReturnActionTest extends TestCase {
     private function returnActionOf( $class ) {
 
         $method = new ReflectionMethod( $class, 'returnAction' );
-        $method->setAccessible( true );
 
         return $method->invoke( ( new ReflectionClass( $class ) )->newInstanceWithoutConstructor() );
     }
@@ -86,11 +85,9 @@ final class OptionsReturnActionTest extends TestCase {
         };
 
         $data = new ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $data->setAccessible( true );
         $data->setValue( $controller, [] );
 
         $params = new ReflectionProperty( \OWA\Core\Controller::class, 'params' );
-        $params->setAccessible( true );
         $params->setValue( $controller, [] );
 
         $controller->action();
@@ -138,7 +135,6 @@ final class OptionsReturnActionTest extends TestCase {
     private function mayWrite( $class, $module ) {
 
         $m = new ReflectionMethod( $class, 'mayWriteModule' );
-        $m->setAccessible( true );
 
         return $m->invoke( ( new ReflectionClass( $class ) )->newInstanceWithoutConstructor(), $module );
     }
@@ -206,7 +202,6 @@ final class OptionsReturnActionTest extends TestCase {
          * stores schema_version, a person must not. That is still the denylist.
          */
         $m = new ReflectionMethod( \OWA\Module\Base\Controller\OptionsUpdate::class, 'isSensitiveSettingKey' );
-        $m->setAccessible( true );
 
         $state = \OWA\Module\Base\Classes\Settings::databaseStateSettings();
         $state_module = array_key_first( $state );

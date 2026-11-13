@@ -47,7 +47,6 @@ trait AjaxRequestTrait
 
         foreach (array('auth_method' => $method, '_is_user' => false) as $name => $value) {
             $p = new \ReflectionProperty($auth, $name);
-            $p->setAccessible(true);
             $p->setValue($auth, $value);
         }
     }

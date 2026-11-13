@@ -377,7 +377,7 @@ final class SettingTierMoveTest extends TestCase
             'isIpAddressExcluded() cannot consult a Profile.' );
 
         $this->assertStringContainsString(
-            "isIpAddressExcluded( \$event->get('ip_address'), \$event->get('site_id') )", $src,
+            "isIpAddressExcluded( \$ip_address, \$event->get('site_id') )", $src,
             'The caller has an event in hand but is not passing its site.' );
     }
 }

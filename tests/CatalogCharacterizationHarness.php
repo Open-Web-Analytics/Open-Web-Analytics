@@ -294,7 +294,6 @@ final class CatalogCharacterizationHarness
 
         $property = $reflection->getProperty( $name );
 
-        $property->setAccessible( true );
 
         return (array) $property->getValue( $service );
     }

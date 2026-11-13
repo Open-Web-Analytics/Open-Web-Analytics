@@ -29,7 +29,7 @@ final class TrackerIngestTest extends TestCase
         \OWA\Core\CoreAPI::rememberSiteRegistration(self::SITE, true);
 
         foreach (array('queue_tracker_ingest', 'queue_incoming_tracking_events', 'queue_events',
-                       'tracker_ingest_queue_type', 'tracker_ingest_drain') as $key) {
+                       'tracker_ingest_queue_type', 'tracker_ingest_drain', 'raw_retention_months') as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
@@ -287,7 +287,7 @@ final class TrackerIngestTest extends TestCase
     {
         [$main, $dlq] = $this->deadLetters();
 
-        $this->assertSame(array('replayed' => 1, 'kept' => 1, 'unreadable' => 1), TrackerIngest::replay(true, time() + 30));
+        $this->assertSame(array('replayed' => 1, 'kept' => 1, 'unreadable' => 1, 'expired' => 0), TrackerIngest::replay(true, time() + 30));
 
         $this->assertCount(1, $main->calls);
         $this->assertSame('send', $main->calls[0][0]);
@@ -307,8 +307,57 @@ final class TrackerIngestTest extends TestCase
     {
         [$main, $dlq] = $this->deadLetters();
 
-        $this->assertSame(array('replayed' => 2, 'kept' => 0, 'unreadable' => 1), TrackerIngest::replay(false, time() + 30));
+        $this->assertSame(array('replayed' => 2, 'kept' => 0, 'unreadable' => 1, 'expired' => 0), TrackerIngest::replay(false, time() + 30));
         $this->assertSame(array('fresh', 'again'), array_map(fn ($c) => $c[1]['properties']['n'], $main->calls));
+    }
+
+    /** Dead letters of events two years old, beside the three of deadLetters(). */
+    private function oldDeadLetters(MemoryIntake $dlq): void
+    {
+        $old = time() - 730 * 86400;
+
+        // Its edge receipt, in microseconds, is the event's time.
+        $by_ts = TrackerIngest::envelope($this->event(array('n' => 'old-ts', 'ts' => $old * 1000000)));
+        $by_ts['queued_at'] = time();
+
+        // Without one, when it was queued.
+        $by_queued = TrackerIngest::envelope($this->event(array('n' => 'old-queued')));
+        $by_queued['queued_at'] = $old;
+
+        $dlq->pending[] = new IntakeMessage('old-ts', $by_ts, 6, '', false, 'Not ingested in 6 attempts.', time());
+        $dlq->pending[] = new IntakeMessage('old-queued', $by_queued, 6, '', true, 'Not ingested in 6 attempts.', time());
+        // One that never decoded, by when it was dead-lettered.
+        $dlq->pending[] = new IntakeMessage('old-bad', null, 1, 'O:9:"owa_event"', false, 'Not a tracker-ingest envelope this version reads.', $old);
+    }
+
+    /** raw_retention_months unset: an old dead letter is replayed or kept like any other. */
+    public function testWithoutARetentionWindowNoDeadLetterIsDeleted(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'raw_retention_months', null);
+        [$main, $dlq] = $this->deadLetters();
+        $this->oldDeadLetters($dlq);
+
+        $this->assertSame(array('replayed' => 2, 'kept' => 2, 'unreadable' => 2, 'expired' => 0), TrackerIngest::replay(true, time() + 30));
+        $this->assertSame(array('fresh', 'old-ts'), array_map(fn ($c) => $c[1]['properties']['n'], $main->calls));
+    }
+
+    /** A 12-month window: dead letters of older events are deleted, replayed or not, by hand or daily; newer ones are not. */
+    public function testADeadLetterOlderThanTheRetentionWindowIsDeleted(): void
+    {
+        foreach (array(true, false) as $once_only) {
+            \OWA\Core\CoreAPI::setSetting('base', 'raw_retention_months', 12);
+            [$main, $dlq] = $this->deadLetters();
+            $this->oldDeadLetters($dlq);
+
+            $counts = TrackerIngest::replay($once_only, time() + 30);
+
+            $this->assertSame(3, $counts['expired']);
+            $this->assertSame(1, $counts['unreadable'], 'the recent unreadable one is kept');
+            $this->assertSame($once_only ? array('fresh') : array('fresh', 'again'),
+                array_map(fn ($c) => $c[1]['properties']['n'], $main->calls), 'no old event is sent back');
+            $this->assertCount($counts['expired'] + $counts['replayed'],
+                array_filter($dlq->calls, fn ($c) => $c[0] === 'ack'), 'deleted, not released');
+        }
     }
 
     public function testAnEmptyDeadLetterQueueIsNotReceivedFrom(): void

@@ -160,7 +160,6 @@ final class PropertyScopedReportingTest extends TestCase
     private function data($controller): array
     {
         $p = new ReflectionProperty(\OWA\Core\Controller::class, 'data');
-        $p->setAccessible(true);
 
         return (array) $p->getValue($controller);
     }
@@ -200,7 +199,6 @@ final class PropertyScopedReportingTest extends TestCase
         $check = function (array $params) use ($su): bool {
             $controller = new \OWA\Core\ConfiguredReport($params);
             $m = new ReflectionMethod($controller, 'isCurrentUserCapable');
-            $m->setAccessible(true);
 
             return $m->invoke($controller, $su);
         };
@@ -232,7 +230,6 @@ final class PropertyScopedReportingTest extends TestCase
             $check = function (array $params) use ($su, $class): bool {
                 $controller = new $class($params);
                 $m = new ReflectionMethod($controller, 'isCurrentUserCapable');
-                $m->setAccessible(true);
 
                 return $m->invoke($controller, $su);
             };
@@ -304,7 +301,6 @@ final class PropertyScopedReportingTest extends TestCase
     public function testTheRestRouteKeepsASiteIdAsAFilter(): void
     {
         $p = new ReflectionProperty(\OWA\Core\ReportController::class, 'filters_by_site');
-        $p->setAccessible(true);
 
         $this->assertTrue($p->getValue(new \OWA\Module\Base\Controller\ReportsRest([])),
             'a client asking the API for one site\'s numbers would get the whole Property\'s');
@@ -314,7 +310,6 @@ final class PropertyScopedReportingTest extends TestCase
     public function testAQueryOfAPropertyIsNotNarrowedToAProfile(): void
     {
         $property = new ReflectionMethod(\OWA\Module\Base\Classes\ResultSetManager::class, 'propertyIdForRequest');
-        $property->setAccessible(true);
 
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
         $rsm->setPropertyId((string) self::PROPERTY);
@@ -356,7 +351,6 @@ final class PropertyScopedReportingTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\OrganizationProfile([]);
 
         $nav = new ReflectionMethod(\OWA\Core\Controller::class, 'getHierarchyNav');
-        $nav->setAccessible(true);
 
         $property = (array) $nav->invoke($controller, '', (string) self::PROPERTY);
 
@@ -376,7 +370,6 @@ final class PropertyScopedReportingTest extends TestCase
     {
         $controller = new \OWA\Module\Base\Controller\GoalEventDefinitions([]);
         $m = new ReflectionMethod(\OWA\Core\Controller::class, 'resolveCurrentPropertyId');
-        $m->setAccessible(true);
 
         $this->assertSame((string) self::OTHER_PROPERTY, $m->invoke($controller, (string) self::OTHER_PROPERTY, self::ONE),
             'a named Property wins over a siteId');
@@ -389,7 +382,6 @@ final class PropertyScopedReportingTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\OrganizationProfile([]);
 
         $nav = new ReflectionMethod(\OWA\Core\Controller::class, 'getHierarchyNav');
-        $nav->setAccessible(true);
 
         // No Profile in context, and a Property whose Profiles this user may not see.
         $params = array_column((array) $nav->invoke($controller, '', '7000000000000099')['Property'], 'params', 'do');
@@ -411,7 +403,6 @@ final class PropertyScopedReportingTest extends TestCase
         $controller->validate();
 
         $v = new ReflectionProperty(\OWA\Core\Controller::class, 'v');
-        $v->setAccessible(true);
         $validator = $v->getValue($controller);
         $validator->doValidations();
 

@@ -14,6 +14,7 @@ namespace OWA\Module\Base\Controller;
  *
  * The scheduler runs it daily as replay-tracker-ingest, replaying only those
  * not replayed before. A dead letter that never decoded is never replayed.
+ * Either way, one whose event is older than raw_retention_months is deleted.
  */
 class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
 
@@ -21,7 +22,7 @@ class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return array(
-            'description' => 'Sends the tracker-ingest dead letters that decode back to the intake. Runs on the scheduler daily as replay-tracker-ingest.',
+            'description' => 'Sends the tracker-ingest dead letters that decode back to the intake, and deletes those older than raw_retention_months. Runs on the scheduler daily as replay-tracker-ingest.',
             'arguments'   => array(
                 'scheduled=1' => 'Set by the scheduler. Replays only dead letters not replayed before.',
             ),
@@ -53,8 +54,9 @@ class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
         if ( array_sum( $counts ) || ! $this->getParam( 'scheduled' ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                'Tracker ingest dead letters: %d replayed, %d replayed before and kept, %d unreadable and kept.',
-                $counts['replayed'], $counts['kept'], $counts['unreadable'] ) );
+                'Tracker ingest dead letters: %d replayed, %d replayed before and kept, %d unreadable and kept, '
+              . '%d older than raw_retention_months and deleted.',
+                $counts['replayed'], $counts['kept'], $counts['unreadable'], $counts['expired'] ) );
         }
     }
 }

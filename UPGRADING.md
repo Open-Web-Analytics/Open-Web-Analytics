@@ -109,12 +109,20 @@ define( 'OWA_DB_SQL_MODE', 'STRICT_ALL_TABLES' ); // the new default, stated exp
 Please report it rather than leaving the override in place: a write that strict
 mode rejects was storing wrong data before, not right data.
 
+### 64-bit PHP and zlib are required
+
+OWA's ids are 64-bit integers, so a 32-bit build of PHP is refused. The `zlib`
+extension is required for session recordings. The install wizard, System Health
+and `cmd=instance-info` check both, along with the database driver.
+
 ### PDO is preferred over mysqli where it is available
 
 `db_type = 'mysql'` now means "MySQL", and OWA reaches it through PDO wherever
 the `pdo_mysql` extension is present, falling back to `mysqli` where it is not.
 **No configuration change is required**, and a host that has `mysqli` but not
-`pdo_mysql` keeps working exactly as before.
+`pdo_mysql` keeps working, provided that `mysqli` is built on mysqlnd, as
+distribution packages are: the driver reads prepared statements with
+`mysqli_stmt_get_result()`.
 
 The reason to move is that PDO carries bound parameters, so values are no longer
 escaped into the statement text. To pin a driver explicitly:

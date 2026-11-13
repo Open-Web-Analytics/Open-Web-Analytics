@@ -1420,10 +1420,16 @@ class TrackingEventHelpers {
         return '';
     }
 
-    static function ipAddressDefault( $value = '', $event = null ) {
+    /**
+     * The address this request came from, as ip_address is chosen and before
+     * anonymize_ips masks it: the first public address in the first of these
+     * headers the request has; '' when there is none.
+     *
+     * @return string
+     */
+    public static function requestIp() {
 
         $ip = '';
-        $chosen_ip = '';
 
         // array of SERVER params that could possibly contain the IP address
         // ordered by probability of relevant match
@@ -1449,7 +1455,12 @@ class TrackingEventHelpers {
              }
         }
 
-        $chosen_ip = self::chooseIp( $ip );
+        return self::chooseIp( $ip );
+    }
+
+    static function ipAddressDefault( $value = '', $event = null ) {
+
+        $chosen_ip = self::requestIp();
 
         // Anonymize IP if needed.
         $site_id = $event ? $event->get('site_id') : '';
@@ -1941,7 +1952,9 @@ class TrackingEventHelpers {
      * a person's devices and equally the thing a privacy switch has to be able to
      * turn off. A custom user property is the site's own decision, made by
      * choosing to send it; user_id is part of the release vocabulary, so the
-     * install gets a say. See gateUserId().
+     * install gets a say. So are the display name and email address the
+     * release's own setUserName() and the 1.x bridge produce. See
+     * gateVisitorPii().
      */
 
     /**
@@ -1992,6 +2005,49 @@ class TrackingEventHelpers {
         }
 
         return $user_id;
+    }
+
+    /**
+     * The properties log_visitor_pii gates: the site's id for the person, and
+     * the display name and email address OWA's own vocabulary carries as user
+     * properties (setUserName(), and a 1.x tracker's user_name and
+     * email_address, which conf/beacon_compat.php renames onto these).
+     */
+    const VISITOR_PII_PROPERTIES = array( 'user_id', 'vps_user_name', 'vps_user_email' );
+
+    /**
+     * Remove VISITOR_PII_PROPERTIES from an event when log_visitor_pii is off.
+     *
+     * AT THE EDGE (CoreAPI::logEvent()), before the event is queued, so
+     * neither the intake nor its dead letters ever hold what the setting
+     * refuses. Asked again at the property stage, for an event queued before
+     * the setting changed, and by the 1.x migration.
+     *
+     * @param  object $event
+     * @return void
+     */
+    public static function gateVisitorPii( $event ) {
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
+
+            return;
+        }
+
+        $names = self::VISITOR_PII_PROPERTIES;
+
+        // The older spellings too: a rename copies the value and leaves the original.
+        foreach ( \OWA\Module\Base\Classes\Beacon\Compat::renames() as $from => $to ) {
+
+            if ( in_array( $to, self::VISITOR_PII_PROPERTIES, true ) ) {
+
+                $names[] = $from;
+            }
+        }
+
+        foreach ( $names as $name ) {
+
+            $event->delete( $name );
+        }
     }
 
     /**
@@ -2089,8 +2145,9 @@ class TrackingEventHelpers {
      * session. Session source is fixed by the session's FIRST EVENT, so no
      * cookie needs to hold a URL.
      *
-     * THE EVIDENCE, NOT THE READING. page_location is stored exactly as it
-     * arrived; page_query has the Profile's dropped parameters removed, so a site
+     * THE EVIDENCE, NOT THE READING. This reads page_location as it arrived,
+     * before filterStoredUrls() removes the query_string_filters parameters from
+     * it; page_query has the Profile's dropped parameters removed, so a site
      * filtering owa_source out of its query strings would lose the very tag this
      * reads.
      *
@@ -2418,8 +2475,8 @@ class TrackingEventHelpers {
      * The page's path, canonicalised.
      *
      * THE READING IS CANONICALISED; THE EVIDENCE IS NOT. page_location is stored
-     * exactly as it arrived, because it is what a corrected parse gets
-     * re-applied to. This is what reports group by, and a reading that varies
+     * as it arrived, less only the query_string_filters parameters, because it
+     * is what a corrected parse gets re-applied to. This is what reports group by, and a reading that varies
      * where the page does not is a broken report -- /store, /store/ and
      * /store/index.html are one page.
      */
@@ -2531,7 +2588,10 @@ class TrackingEventHelpers {
             \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_cookie_domain', 'profile', $site_id ) );
     }
 
-    /** The referrer's query string, unfiltered -- see deriveRefererHost(). */
+    /**
+     * The referrer's query string, as it arrived -- see deriveRefererHost().
+     * filterStoredUrls() then removes the query_string_filters parameters.
+     */
     static function deriveRefererQuery( $value, $event ) {
 
         $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
@@ -2886,7 +2946,8 @@ class TrackingEventHelpers {
      * -- a utm-tagged visit was a different page in every page report, though
      * attribution had read the tags exactly like OWA's own. Now the tags leave the
      * page path's query and stay in page_location. Attribution is unaffected: it
-     * parses page_location, which keeps the whole URL.
+     * parses page_location, which keeps them (filterStoredUrls() removes only
+     * the query_string_filters names, and after the tags have been read).
      *
      * The list is per site and settings change, so what a report shows depends on
      * the list as it was when the row was written. Making a corrected list
@@ -2912,9 +2973,23 @@ class TrackingEventHelpers {
             $drop[] = $ns . $suffix;
         }
 
+        return array_merge( $drop, self::queryStringFilters( $site_id ) );
+    }
+
+    /**
+     * The parameter names query_string_filters lists, at install and Profile
+     * scope.
+     *
+     * @param  string $site_id
+     * @return string[]
+     */
+    public static function queryStringFilters( $site_id ) {
+
+        $names = array();
+
         foreach ( array(
             \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters' ),
-            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', $site_id ),
+            \OWA\Core\CoreAPI::getSetting( 'base', 'query_string_filters', 'profile', (string) $site_id ),
         ) as $configured ) {
 
             if ( ! $configured ) {
@@ -2928,12 +3003,72 @@ class TrackingEventHelpers {
 
                 if ( $name !== '' ) {
 
-                    $drop[] = $name;
+                    $names[] = $name;
                 }
             }
         }
 
-        return $drop;
+        return array_values( array_unique( $names ) );
+    }
+
+    /**
+     * Remove the query_string_filters parameters from the URLs an event
+     * stores whole: page_location, HTTP_REFERER (referer_url) and
+     * referer_query.
+     *
+     * RUN AFTER EVERY DERIVED PROPERTY (ProcessEvent), because those read the
+     * URLs first: the campaign tags, page_path, page_query, host and the
+     * referrer's host and query are taken from what arrived, so a filtered
+     * name that is also a campaign key is still attributed. What is stored,
+     * and what landing_page_location and every other copy of page_location
+     * are made from, is the filtered URL. A URL naming none of the filtered
+     * parameters is stored exactly as it arrived.
+     *
+     * Only the configured names: OWA's own parameters and the campaign tags
+     * stay in page_location, which is the evidence they are read from.
+     *
+     * @param object $event
+     * @return void
+     */
+    public static function filterStoredUrls( $event ) {
+
+        $drop = self::queryStringFilters( (string) $event->getSiteId() );
+
+        if ( ! $drop ) {
+
+            return;
+        }
+
+        foreach ( array( 'page_location', 'HTTP_REFERER' ) as $name ) {
+
+            $url = $event->get( $name );
+
+            if ( is_string( $url ) && $url !== '' ) {
+
+                $filtered = \OWA\Module\Base\Classes\V2Event::removeUrlParams( $url, $drop );
+
+                if ( $filtered !== $url ) {
+
+                    $event->set( $name, $filtered );
+                }
+            }
+        }
+
+        $query = $event->get( 'referer_query' );
+
+        if ( is_string( $query ) && $query !== '' ) {
+
+            $filtered = \OWA\Module\Base\Classes\V2Event::removeQueryParams( $query, $drop );
+
+            if ( $filtered === null ) {
+
+                $event->delete( 'referer_query' );
+
+            } elseif ( $filtered !== $query ) {
+
+                $event->set( 'referer_query', $filtered );
+            }
+        }
     }
 
     /**

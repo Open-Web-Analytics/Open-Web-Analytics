@@ -278,7 +278,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         // The service answers 401 with a body, so the status line is the only
         // thing that distinguishes a bad key from a real download -- writing
         // the body out would leave an error page named as a database.
-        $status = $this->statusFrom( $http_response_header ?? [] );
+        $status = $this->statusFrom( $this->responseHeaders( $in ) );
 
         if ( $status === 401 || $status === 403 ) {
 
@@ -344,7 +344,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             return 0;
         }
 
-        $headers = $http_response_header ?? [];
+        $headers = $this->responseHeaders( $handle );
 
         fclose( $handle );
 
@@ -367,6 +367,23 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         }
 
         return 0;
+    }
+
+    /**
+     * The response header lines of an http:// stream, those of every followed
+     * redirect included, in order.
+     *
+     * Read from the stream itself: PHP 8.5 deprecates the predefined local
+     * variable the http wrapper used to fill.
+     *
+     * @param resource $stream
+     * @return string[]
+     */
+    protected function responseHeaders( $stream ) {
+
+        $meta = stream_get_meta_data( $stream );
+
+        return is_array( $meta['wrapper_data'] ?? null ) ? $meta['wrapper_data'] : [];
     }
 
     protected function statusFrom( array $headers ) {

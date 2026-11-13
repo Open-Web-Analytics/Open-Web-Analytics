@@ -277,7 +277,7 @@
         "note": "Edge receipt in microseconds. owa_event_raw.ts, and an input to the derived event id -- the resolution is what keeps two events of one session apart. Environmental so a request cannot set it and a queue drain cannot restamp it."
     },
     "page_location": {
-        "description": "The full URL of the page, query string included, exactly as the tracker sent it.",
+        "description": "The full URL of the page, query string included, as the tracker sent it, without the parameters named in the query_string_filters setting.",
         "set_by": "client",
         "from": [
             "p_l"
@@ -289,7 +289,7 @@
         "data_type": "url",
         "required": false,
         "callbacks": [],
-        "note": "The complete page URL, query included, with nothing stripped. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. No callbacks on purpose: a filter here would defeat the column. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
+        "note": "The complete page URL, query included. Only the parameters query_string_filters names are removed, by TrackingEventHelpers::filterStoredUrls() after every derived property has read the URL; OWA's own parameters and the campaign tags stay. owa_event_raw.page_location, and the evidence the campaign tags are parsed out of -- page_url is the CANONICAL form and cannot answer that a second time. No callbacks: a callback would run before the derivations that read the URL as it arrived. A tracker cached before this shipped sends only page_url; Classes\\Beacon\\Compat renames it."
     },
     "page_title": {
         "description": "The page's title.",
@@ -424,7 +424,7 @@
         "note": "REQUEST scoped: marks the one request that minted the visitor. The first_visit materializer (Classes\\MaterializedEvents) raises first_visit from it at ingest, on whatever event carries it."
     },
     "HTTP_REFERER": {
-        "description": "The URL of the page that referred the visitor to this page, on every event of the page. Absent when the browser sent none.",
+        "description": "The URL of the page that referred the visitor to this page, on every event of the page, without the parameters named in the query_string_filters setting. Absent when the browser sent none.",
         "set_by": "client",
         "from": [
             "p_r"
@@ -1543,7 +1543,7 @@
         "note": "The referring site’s host, and what the cube pass classifies source and medium from. Empty when the referrer is the page’s own host, the cookie domain or a subdomain of it -- the rule a click uses -- so a session starting from the site’s own page reads as direct rather than as a referral from itself; referer_url keeps the URL. Left alone beyond the host: it is somebody else’s URL, and canonicalising it with THIS install’s directory index pages would be a category error."
     },
     "referer_query": {
-        "description": "The query string of the referring page's URL.",
+        "description": "The query string of the referring page's URL, without the parameters named in the query_string_filters setting.",
         "set_by": "event",
         "from": [
             "HTTP_REFERER"
@@ -1557,7 +1557,7 @@
         "callbacks": [
             "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::deriveRefererQuery"
         ],
-        "note": "The referrer’s query string, unfiltered -- see referer_host."
+        "note": "The referrer’s query string, without the query_string_filters parameters (TrackingEventHelpers::filterStoredUrls()). The cube reads search terms from it, so a search term parameter listed there is not read -- see referer_host."
     },
     "target_host": {
         "description": "The host name of the clicked link's URL.",

@@ -369,6 +369,71 @@ class V2Event {
         return $kept ? implode( '&', $kept ) : null;
     }
 
+    /**
+     * filterQuery(), except that a query string none of whose parameters is
+     * named comes back exactly as it was. filterQuery() also drops empty pairs
+     * ("a=1&&b=2"), which is a reading; a stored value is only edited when a
+     * parameter is actually removed.
+     *
+     * @param string|null $query
+     * @param string[]    $drop
+     * @return string|null  null when nothing is left
+     */
+    public static function removeQueryParams( $query, array $drop ) {
+
+        if ( $query === null || $query === '' ) {
+
+            return $query;
+        }
+
+        $kept   = self::filterQuery( $query, $drop );
+        $before = count( array_filter( explode( '&', (string) $query ), 'strlen' ) );
+        $after  = $kept === null ? 0 : count( explode( '&', $kept ) );
+
+        return $after === $before ? $query : $kept;
+    }
+
+    /**
+     * A URL with named query parameters removed and every other part of it
+     * left as it was: scheme, host, path, the surviving pairs in their order
+     * and encoding, and the fragment. A URL none of whose parameters is named
+     * comes back unchanged.
+     *
+     * The query is what lies between the first '?' and the first '#'; a '?'
+     * inside the fragment is part of the fragment.
+     *
+     * @param string|null $url
+     * @param string[]    $drop  parameter names
+     * @return string|null
+     */
+    public static function removeUrlParams( $url, array $drop ) {
+
+        if ( ! is_string( $url ) || $url === '' || ! $drop ) {
+
+            return $url;
+        }
+
+        $hash = strpos( $url, '#' );
+        $head = $hash === false ? $url : substr( $url, 0, $hash );
+        $tail = $hash === false ? '' : substr( $url, $hash );
+        $mark = strpos( $head, '?' );
+
+        if ( $mark === false ) {
+
+            return $url;
+        }
+
+        $query = substr( $head, $mark + 1 );
+        $kept  = self::removeQueryParams( $query, $drop );
+
+        if ( $kept === $query ) {
+
+            return $url;
+        }
+
+        return substr( $head, 0, $mark ) . ( $kept === null ? '' : '?' . $kept ) . $tail;
+    }
+
 }
 
 ?>

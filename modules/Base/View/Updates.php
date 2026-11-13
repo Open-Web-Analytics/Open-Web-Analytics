@@ -33,13 +33,9 @@ class Updates extends \OWA\Core\View {
         
     function render($data) {
         
-        // The signed-out wrapper unless OWA is embedded: this view may be
-        // rendered before anything else. It tested isset() on a setting with no
-        // default, which is never set, so the page always took the signed-in
-        // wrapper -- its header without the stylesheet that lays the header out.
-        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'is_embedded' ) ) {
-            $this->t->set_template('wrapper_public.php');
-        }
+        // The signed-out wrapper: this view may be rendered before anything
+        // else, including before anyone has signed in.
+        $this->t->set_template('wrapper_public.php');
         
         $this->body->set_template('updates.php');// This is the inner template
         $this->body->set('headline', 'Your database needs to be upgraded...');
