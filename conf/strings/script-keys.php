@@ -22,7 +22,6 @@ return array(
     'Add another filter',
     'Add filter',
     'Add the filter you started, or cancel it.',
-    'All %d row shown',
     'Apply',
     'Cancel',
     'Change dimension',

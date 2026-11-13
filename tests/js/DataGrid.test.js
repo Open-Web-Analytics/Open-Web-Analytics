@@ -86,9 +86,9 @@ function resultSet(overrides = {}) {
 
 let n = 0;
 
-function draw(rs, options) {
+function draw(rs, options, $parent) {
     const id = 'grid' + (++n);
-    $('body').append('<div id="' + id + '"></div>');
+    ($parent || $('body')).append('<div id="' + id + '"></div>');
     const grid = new OWA.dataGrid(id, Object.assign({ showRowNumbers: true, excludeColumns: [], columnFormatters: {}, showExplorerControls: true }, options || {}));
     const events = [];
     ['page_forward', 'page_back', 'page_change', 'show_more', 'dimension_list_change', 'sort_column_change', 'constraint_change']
@@ -637,18 +637,27 @@ describe('a card\'s Show more', () => {
         expect(events).toEqual([['show_more', 20], ['show_more', 23]]);
     });
 
-    test('the last rows arrive: the bar becomes a line saying so, which takes the focus', () => {
+    test('the last rows arrive: the bar goes, the status says so and the grid takes the focus', () => {
         const { $root } = draw(card(10, 23), CARD);
 
         bar($root).trigger('click');
         $root.trigger('new_result_set', [card(23, 23)]);
 
-        const $done = $root.find('[data-ui="grid-all-shown"]');
-
         expect(bar($root).length).toBe(0);
-        expect($done.is('button')).toBe(false);
-        expect($done.text()).toBe('All 23 rows shown');
-        expect(document.activeElement).toBe($done[0]);
+        expect($root.find('.owa_gridShowMoreDone').length).toBe(0);
+        expect($root.children('[data-ui="grid-status"]').text()).toBe('Showing 23 of 23 rows');
+        expect(document.activeElement).toBe($root.find('.owa_grid')[0]);
+    });
+
+    test('with a full-report link at the card foot, the focus goes to it', () => {
+        const $card = $('<div class="card"><div class="body"></div>'
+            + '<p><a href="#full" data-ui="card-full-report">Full report</a></p></div>').appendTo(document.body);
+        const { $root } = draw(card(10, 23), CARD, $card.find('.body'));
+
+        bar($root).trigger('click');
+        $root.trigger('new_result_set', [card(23, 23)]);
+
+        expect(document.activeElement).toBe($card.find('[data-ui="card-full-report"]')[0]);
     });
 
     test('a redraw that was not asked for by the bar moves no focus', () => {

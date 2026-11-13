@@ -118,7 +118,6 @@ return array(
     'Add the filter you started, or cancel it.' => 'Add the filter you started, or cancel it.',
     'Add this line to the crontab of the user that owns the OWA files:' => 'Add this line to the crontab of the user that owns the OWA files:',
     'Admin user added.' => 'Admin user added.',
-    'All %d row shown' => array( 'All %d row shown', 'All %d rows shown' ),
     'Altering %s was refused. Server error 1118 means the cube row is full: de-register a custom dimension first.' => 'Altering %s was refused. Server error 1118 means the cube row is full: de-register a custom dimension first.',
     'An AWS region looks like us-east-1.' => 'An AWS region looks like us-east-1.',
     'An event name starts with a letter and has up to 40 letters, digits and underscores.' => 'An event name starts with a letter and has up to 40 letters, digits and underscores.',

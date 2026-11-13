@@ -2134,20 +2134,21 @@ OWA.dataGrid.prototype = {
             return;
         }
 
-        if ( ! this.moreExpanded ) {
+        // Every row is showing: the bar goes. The focus it held moves to the
+        // card's full-report link, the next thing to do, else to the grid.
+        if ( ! this.moreExpanded || ! waited ) {
             return;
         }
 
-        var $done = jQuery( '<p class="owa_gridShowMoreDone" tabindex="-1" data-ui="grid-all-shown"></p>' )
-            .text( ! m.more && m.total <= m.shown
-                ? OWA.util.sprintf( OWA.ln( 'All %d row shown', 'All %d rows shown', m.total ), m.total )
-                : this.showingText( m ) );
+        this.announce( this.showingText( m ) );
 
-        $grid.append( $done );
+        var $link = $grid.parents().filter( function () {
+            return jQuery( this ).find( '[data-ui="card-full-report"]' ).length > 0;
+        } ).first().find( '[data-ui="card-full-report"]' ).first();
 
-        if ( waited ) {
-            $done[ 0 ].focus( { preventScroll: true } );
-        }
+        var target = $link.length ? $link[ 0 ] : $grid.attr( 'tabindex', '-1' )[ 0 ];
+
+        target.focus( { preventScroll: true } );
     },
 
     /** "Showing 20 of 46 rows", or "of 100+" when the total is a lower bound. */

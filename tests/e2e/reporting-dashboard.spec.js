@@ -1313,7 +1313,6 @@ test.describe('a dashboard card shows more rows from the bar under them', () => 
         const card = page.locator('#top-pages');
         const rows = card.locator('tr.owa_gridRow');
         const more = card.getByRole('button', { name: /^Show \d+ more rows?$/ });
-        const done = card.locator('[data-ui="grid-all-shown"]');
 
         await expect(rows).toHaveCount(1, { timeout: 20_000 });
         await expect(more, 'the fixture has too few pages for a second step').toHaveCount(1);
@@ -1342,12 +1341,14 @@ test.describe('a dashboard card shows more rows from the bar under them', () => 
             await expect(more).toBeFocused();
             await expect(more).not.toHaveAttribute('aria-busy', 'true');
             await page.keyboard.press('Enter');
-            await expect(more.or(done).first()).not.toHaveAttribute('aria-busy', 'true', { timeout: 15_000 });
+            await expect(card.locator('[data-ui="grid-show-more"][aria-busy="true"]')).toHaveCount(0, { timeout: 15_000 });
         }
 
         const n = await rows.count();
 
-        await expect(done).toHaveText(`All ${n} rows shown`);
-        await expect(done).toBeFocused();
+        // Every row is showing: the bar is gone, and the focus is on the link.
+        await expect(more).toHaveCount(0);
+        await expect(card.locator('[data-ui="grid-status"]')).toHaveText(`Showing ${n} of ${n} rows`);
+        await expect(link).toBeFocused();
     });
 });
