@@ -294,7 +294,7 @@ class Event extends EventRaw {
 
         /*
          * THE PROFILE'S NAME, as it was when the row was built: the Profile ID
-         * dimension's readable twin, as GA4 has Stream ID and Stream name. A
+         * dimension's readable twin, as a Property has its id and its name. A
          * rename reaches past rows when their partitions are rebuilt. Nullable:
          * a Profile with no name, or one deleted since, has none. LAST: Update071
          * ADDs it.

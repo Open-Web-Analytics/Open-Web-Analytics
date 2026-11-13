@@ -360,8 +360,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     /**
      * page_query loses every parameter read as a campaign tag -- utm_* with
      * owa_* -- and keeps the site's own; page_location keeps them all, and the
-     * tags are still read from it. As GA's Page path + query string and Page
-     * location.
+     * tags are still read from it.
      */
     public function testPageQueryDropsTheCampaignTagsItReads(): void
     {

@@ -142,7 +142,7 @@ describe('a page left open past the inactivity window', () => {
         expect(sent.slice(1).filter((e) => e.session_id === old)).toHaveLength(0);
     });
 
-    /* The page's campaign tags and referrer ride every event, as GA's do. */
+    /* The page's campaign tags and referrer ride every event. */
     test('the restarting event carries the page\'s own URL and referrer', () => {
         const now = { t: T0 };
         const { t, sent } = pageAt(now);

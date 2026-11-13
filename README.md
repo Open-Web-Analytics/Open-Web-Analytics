@@ -1,6 +1,6 @@
 # Open Web Analytics Server
 
-Open Web Analytics is an open source alternative to commercial web analytics tools such as Google Analytics. This software allows you to stay in control of the data you collect about the user of your websites or applications.
+Open Web Analytics is an open source alternative to commercial web analytics tools. This software allows you to stay in control of the data you collect about the user of your websites or applications.
 
 This repository installs the OWA Server and Javascript tracking client which can easily be added to web pages. 
 

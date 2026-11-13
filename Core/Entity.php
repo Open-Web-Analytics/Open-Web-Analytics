@@ -31,8 +31,9 @@ namespace OWA\Core;
  * @since        owa 1.0.0
  */
 
-// TODO: replace with explicit property declarations; entities set columns as
-// dynamic properties (deprecated in PHP 8.2).
+// Entities set their columns as undeclared properties. PHP 8.2 deprecates that
+// except on a class carrying this attribute, which is PHP's supported way to
+// keep it.
 #[\AllowDynamicProperties]
 class Entity {
 
