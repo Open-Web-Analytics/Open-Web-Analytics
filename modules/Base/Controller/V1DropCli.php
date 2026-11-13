@@ -58,7 +58,7 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
         }
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $prefix = $this->prefix ?? \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );
+        $prefix = $this->prefix ?? \OWA\Core\Entity::TABLE_PREFIX;
         $tables = \OWA\Module\Base\Classes\Migration\V1Tables::present( $db, $prefix );
 
         if ( ! $tables ) {

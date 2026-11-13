@@ -933,7 +933,15 @@ class Entity {
         $this->_tableProperties['alias'] = $alias;
     }
     
-    function setTableName($name, $namespace = 'owa_') {
+    /**
+     * The prefix of every OWA table. Not the `ns` setting, which prefixes
+     * cookies and URL parameters: cubes and a few updates built table names
+     * from it, so an install with another ns looked for its cubes under one
+     * prefix and its raw table under this one.
+     */
+    const TABLE_PREFIX = 'owa_';
+
+    function setTableName($name, $namespace = self::TABLE_PREFIX) {
 
         $this->_tableProperties['alias'] = $name;
         $this->_tableProperties['name'] = $namespace.$name;

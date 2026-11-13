@@ -394,7 +394,7 @@ class Event extends EventRaw {
      */
     public function bindToTable( $alias ) {
 
-        $this->setTableName( $alias, \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) );
+        $this->setTableName( $alias, \OWA\Core\Entity::TABLE_PREFIX );
 
         return $this;
     }

@@ -41,7 +41,7 @@ SQL;
 
     private function table() {
 
-        return $this->table ?: \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . 'app_password';
+        return $this->table ?: \OWA\Core\Entity::TABLE_PREFIX . 'app_password';
     }
 
     function up( $force = false ) {

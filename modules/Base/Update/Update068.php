@@ -52,7 +52,7 @@ SQL;
 
     private function table() {
 
-        return $this->table ?: \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ) . 'queue_item';
+        return $this->table ?: \OWA\Core\Entity::TABLE_PREFIX . 'queue_item';
     }
 
     function up( $force = false ) {

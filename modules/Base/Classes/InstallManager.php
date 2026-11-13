@@ -252,7 +252,7 @@ class InstallManager extends \OWA\Core\Base {
             
             \OWA\Core\CoreAPI::debug('Testing for existence of table: '. $table);
             
-            $check = $db->get_results(sprintf(OWA_SQL_SHOW_TABLE, \OWA\Core\CoreAPI::getSetting('base', 'ns') . $table ) );
+            $check = $db->get_results(sprintf(OWA_SQL_SHOW_TABLE, \OWA\Core\Entity::TABLE_PREFIX . $table ) );
            
             // if a table is missing add it to this array
             if (empty($check)) {
