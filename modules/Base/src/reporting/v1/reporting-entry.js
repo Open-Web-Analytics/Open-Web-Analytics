@@ -31,7 +31,7 @@
  */
 
 // FIRST: publish jQuery on window for the vendor plugins that read a free `jQuery`/`$`
-// at eval time (jquery-ui, chosen, sparkline, flot, jQote2) and for the report
+// at eval time (jquery-ui, chosen, sparkline, flot) and for the report
 // templates' inline <script> blocks. Must precede every vendor import below.
 import './vendor-jquery-global.js';
 
@@ -67,9 +67,6 @@ import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis
  * also covers what this plugin never could -- a widget whose width changed
  * without the window changing, which is most of them on a container-query grid.
  */
-// jQote2 has no npm package -> stays vendored, imported as a side-effect module.
-import './includes/jquery/jQote2/jquery.jqote2.min.js';
-
 // OWA reporting namespace: owa.js defines it (exports OWA + publishes window.OWA), the
 // other six import { OWA } and augment it. Import order is load-bearing -- owa.js first.
 import './owa.js';
