@@ -121,14 +121,14 @@ $state  = (string) ( $status['state'] ?? '' );
             foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
 
                 echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
-                    $set, 'profile', (string) $view->site_id, $view->getNs(), null, true );
+                    $set, 'profile', (string) $view->site_id, '', null, true );
             }
         ?>
 
         <?php echo $view->createNonceFormField( 'base.sitesEditTagSettings' ); ?>
-        <input type="hidden" name="<?php echo $view->getNs(); ?>siteId" value="<?php $view->out( $view->site_id ); ?>">
-        <input type="hidden" name="<?php echo $view->getNs(); ?>action" value="base.sitesEditTagSettings">
-        <input type="submit" name="<?php echo $view->getNs(); ?>submit_btn" value="Save and republish" class="owa-button">
+        <input type="hidden" name="siteId" value="<?php $view->out( $view->site_id ); ?>">
+        <input type="hidden" name="action" value="base.sitesEditTagSettings">
+        <input type="submit" name="submit_btn" value="Save and republish" class="owa-button">
     </form>
 </section>
 

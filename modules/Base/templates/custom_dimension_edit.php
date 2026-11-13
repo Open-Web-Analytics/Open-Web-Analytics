@@ -41,7 +41,7 @@
             Letters, digits and underscores, starting with a letter.</div>
         <div class="field">
             <input class="owa_largeFormField" type="text" id="owa-cd-key"
-                name="<?php echo $view->getNs(); ?>dimensionKey"
+                name="dimensionKey"
                 value="<?php $view->out( $view->submitted['dimensionKey'] ); ?>"
                 autocomplete="off">
             <span class="validation_error"><?php $view->out( $view->validation_errors['dimensionKey'] ?? '' ); ?></span>
@@ -53,7 +53,7 @@
         <div class="description">What reports call it. Defaults to the name.</div>
         <div class="field">
             <input class="owa_largeFormField" type="text" id="owa-cd-label"
-                name="<?php echo $view->getNs(); ?>label"
+                name="label"
                 value="<?php $view->out( $view->submitted['label'] ); ?>">
         </div>
     </div>
@@ -67,7 +67,7 @@
             There is no session scope: a session-scoped value is one a report derives,
             not one a browser carries.</div>
         <div class="field">
-            <select id="owa-cd-scope" name="<?php echo $view->getNs(); ?>scope">
+            <select id="owa-cd-scope" name="scope">
                 <?php foreach ( $view->scopes as $scope ): ?>
                 <option value="<?php $view->out( $scope ); ?>"
                     <?php if ( $view->submitted['scope'] === $scope ): ?>selected<?php endif; ?>>
@@ -84,7 +84,7 @@
             removing the dimension and registering it again. A value that will not
             convert is stored as nothing rather than failing the report.</div>
         <div class="field">
-            <select id="owa-cd-type" name="<?php echo $view->getNs(); ?>dataType">
+            <select id="owa-cd-type" name="dataType">
                 <?php foreach ( $view->types as $type ): ?>
                 <option value="<?php $view->out( $type ); ?>"
                     <?php if ( $view->submitted['dataType'] === $type ): ?>selected<?php endif; ?>>
@@ -99,13 +99,13 @@
         A new dimension is filled in for events from now on. To fill it for earlier events, rebuild the cube for that date range.
     </div>
 
-    <input type="hidden" name="<?php echo $view->getNs(); ?>propertyId"
+    <input type="hidden" name="propertyId"
         value="<?php $view->out( $view->propertyId ); ?>">
-    <input type="hidden" name="<?php echo $view->getNs(); ?>action"
+    <input type="hidden" name="action"
         value="base.customDimensionSave">
     <?php echo $view->createNonceFormField( 'base.customDimensionSave' ); ?>
 
-    <input class="owa-button" type="submit" name="<?php echo $view->getNs(); ?>submit_btn"
+    <input class="owa-button" type="submit" name="submit_btn"
         value="Register Custom Dimension">
 </form>
 

@@ -5,11 +5,11 @@
 
     <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.propertyEdit' ) );?>">
         <?php echo $view->createNonceFormField( 'base.propertyEdit' );?>
-        <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->property['id'] ?? '' );?>">
+        <input type="hidden" name="propertyId" value="<?php $view->out( $view->property['id'] ?? '' );?>">
 
         <label class="inline_h3" for="owa_propertyName">Name</label>
         <input class="owa_largeFormField" type="text" size="52" maxlength="70" id="owa_propertyName"
-               name="<?php echo $view->getNs();?>name" value="<?php $view->out( $view->property['name'] ?? '' );?>">
+               name="name" value="<?php $view->out( $view->property['name'] ?? '' );?>">
         <span class="form-instructions">What this Property is called. Profiles are grouped under this name.</span>
         <BR><BR>
 
@@ -36,7 +36,7 @@
 
         <?php if ( $owa_isNew ):?>
         <label class="inline_h3" for="owa_propertyType">This Property is</label>
-        <select class="owa_largeFormField" id="owa_propertyType" name="<?php echo $view->getNs();?>propertyType">
+        <select class="owa_largeFormField" id="owa_propertyType" name="propertyType">
             <option value="<?php $view->out( \OWA\Module\Base\Entity\Property::TYPE_WEB );?>" selected>
                 <?php $view->out( $owa_types[ \OWA\Module\Base\Entity\Property::TYPE_WEB ] );?>
             </option>
@@ -56,14 +56,14 @@
              * belt to that braces.
              */
         ?>
-        <input type="hidden" name="<?php echo $view->getNs();?>propertyType" value="<?php $view->out( $owa_type );?>">
+        <input type="hidden" name="propertyType" value="<?php $view->out( $owa_type );?>">
         <span class="form-instructions">Chosen when this Property was created. It cannot be changed, because the Property's Observation Profiles are set up against the identifier it sets.</span>
         <?php endif;?>
         <BR><BR>
 
         <label class="inline_h3" for="owa_propertyDomain">Domain<?php if ( ! $owa_isWeb ):?> <span class="owa_optional">optional</span><?php endif;?></label>
         <input class="owa_largeFormField" type="text" size="52" maxlength="70" id="owa_propertyDomain"
-               name="<?php echo $view->getNs();?>domain" value="<?php $view->out( $view->property['domain'] ?? '' );?>">
+               name="domain" value="<?php $view->out( $view->property['domain'] ?? '' );?>">
         <span class="form-instructions">The domain of the website or application being observed.<?php
             if ( $owa_isWeb ):?> Required: it is the origin a tracking request is accepted or
         refused on.<?php endif;?></span>
@@ -80,7 +80,7 @@
 
         <label class="inline_h3" for="owa_propertyDescription">Description <span class="owa_optional">optional</span></label>
         <input class="owa_largeFormField" type="text" size="52" id="owa_propertyDescription"
-               name="<?php echo $view->getNs();?>description" value="<?php $view->out( $view->property['description'] ?? '' );?>">
+               name="description" value="<?php $view->out( $view->property['description'] ?? '' );?>">
         <BR><BR>
 
         <?php
@@ -93,7 +93,7 @@
 
                 echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
                     \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( $owa_set ),
-                    'property', (string) ( $view->property['id'] ?? '' ), $view->getNs(),
+                    'property', (string) ( $view->property['id'] ?? '' ), '',
                     is_array( $view->posted ?? null ) ? $view->posted : null );
             }
 
@@ -101,7 +101,7 @@
             foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
 
                 echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
-                    $set, 'property', (string) ( $view->property['id'] ?? '' ), $view->getNs(),
+                    $set, 'property', (string) ( $view->property['id'] ?? '' ), '',
                     is_array( $view->posted ?? null ) ? $view->posted : null );
             }
         ?>
@@ -131,10 +131,10 @@
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.propertyDelete');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->property['id'] );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.propertyDelete">
+        <input type="hidden" name="propertyId" value="<?php $view->out( $view->property['id'] );?>">
+        <input type="hidden" name="action" value="base.propertyDelete">
         <input class="owa-button owa-button-danger" type="submit"
-               name="<?php echo $view->getNs();?>submit_btn" value="Delete Property"
+               name="submit_btn" value="Delete Property"
                data-owa-confirm
                data-owa-confirm-title="Delete this Property?"
                data-owa-confirm-body="<?php $owa_profiles = (int) ( $view->profileCount ?? 0 ); $view->out( sprintf( \OWA\Core\CoreAPI::tn(

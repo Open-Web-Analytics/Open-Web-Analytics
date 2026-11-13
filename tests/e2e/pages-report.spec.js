@@ -47,8 +47,8 @@ test.describe('pages report', () => {
 
         await page.evaluate(() => {
             const url = new OWA.uri(window.dim.resultSet.self);
-            url.setQueryParam(OWA.util.appNs('dimensions'), 'pagePathPlusQuery');
-            url.setQueryParam(OWA.util.appNs('sort'), 'pageViews-');
+            url.setQueryParam('dimensions', 'pagePathPlusQuery');
+            url.setQueryParam('sort', 'pageViews-');
             window.dim.getNewResultSet(url.getSource());
         });
 

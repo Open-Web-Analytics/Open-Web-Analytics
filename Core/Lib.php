@@ -665,7 +665,7 @@ class Lib {
 
         $get = self::buildRedirectQuery(
             $data,
-            \OWA\Core\CoreAPI::appNs(),
+            '',
             array( 'view_method', 'auth_status' )
         );
 

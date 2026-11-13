@@ -74,14 +74,14 @@
                 <td>
                     <form method="post">
                         <?php echo $view->createNonceFormField( 'base.customDimensionDelete' ); ?>
-                        <input type="hidden" name="<?php echo $view->getNs(); ?>propertyId"
+                        <input type="hidden" name="propertyId"
                             value="<?php $view->out( $view->propertyId ); ?>">
-                        <input type="hidden" name="<?php echo $view->getNs(); ?>dimensionKey"
+                        <input type="hidden" name="dimensionKey"
                             value="<?php $view->out( $dimension['dimension_key'] ); ?>">
-                        <input type="hidden" name="<?php echo $view->getNs(); ?>action"
+                        <input type="hidden" name="action"
                             value="base.customDimensionDelete">
                         <input class="owa-button owa-button-danger" type="submit"
-                            name="<?php echo $view->getNs(); ?>submit_btn" value="Remove"
+                            name="submit_btn" value="Remove"
                             data-owa-confirm
                             data-owa-confirm-title="Remove this custom dimension?"
                             data-owa-confirm-body="&ldquo;<?php $view->out( $dimension['dimension_key'] ); ?>&rdquo; stops being reportable, and its column and the values in it go at the next cube build. The events they were read from are untouched, so registering it again and rebuilding brings them back."

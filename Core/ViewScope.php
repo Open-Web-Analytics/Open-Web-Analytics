@@ -56,7 +56,6 @@ namespace OWA\Core;
  * @method mixed get($name)
  * @method mixed getCurrentUser()
  * @method string configFileConstantFor(string $module, string $key)
- * @method mixed getNs()
  * @method mixed getTemplatePath($module, $file)
  * @method mixed getValue($key, $var)
  * @method mixed headerActions()
@@ -137,7 +136,7 @@ class ViewScope {
     }
 
     /**
-     * Template helpers -- out(), makeLink(), getNs(), makeApiLink(), getValue()
+     * Template helpers -- out(), makeLink(), makeApiLink(), getValue()
      * and friends -- forwarded to the template. `$this` inside those methods is
      * still the Template, so behavior is unchanged.
      */

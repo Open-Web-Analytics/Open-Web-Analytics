@@ -16,8 +16,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *   3. OWA's own admin and reporting URLs and form fields
  *
  * Only (3) has nothing to collide with -- OWA owns that whole query string --
- * so only (3) drops the prefix. It is now the 'app_ns' setting, empty, while
- * 'ns' stays 'owa_' and keeps doing (1) and (2). Conflating them is the trap
+ * so only (3) drops the prefix: OWA emits its own names bare, while 'ns' stays
+ * 'owa_' and keeps doing (1) and (2). Conflating them is the trap
  * this file exists to catch: RequestContainer ran cookies, $_SESSION and query
  * params through the SAME stripParams() call, so a change aimed at links landed
  * on the cookie jar unless the surfaces were held apart deliberately. The param
@@ -330,14 +330,16 @@ final class ParamNamespaceTest extends TestCase
     /* -------------------------------------------------------- emitted markup */
 
     /**
-     * What OWA EMITS. Every admin form field name goes through this one helper,
-     * which is why the whole form surface moves together.
+     * What OWA EMITS carries no prefix, and there is no setting to give it
+     * one. The wire namespace is untouched.
      */
-    public function testGetNsReturnsTheAppNamespace(): void
+    public function testOwasOwnNamesHaveNoPrefixSetting(): void
     {
-        $t = new \OWA\Core\Template('base');
-
-        $this->assertSame('', $t->getNs());
+        $this->assertFalse(\OWA\Core\CoreAPI::configSingleton()->isRegistered('base', 'app_ns'));
+        $this->assertArrayNotHasKey('app_ns', (array) (include OWA_DIR . 'modules/Base/settings.php')['settings']);
+        $this->assertFalse(\OWA\Core\CoreAPI::getSetting('base', 'app_ns'), 'no default either: an unknown setting reads false');
+        $this->assertFalse(method_exists(\OWA\Core\CoreAPI::class, 'appNs'));
+        $this->assertFalse(method_exists(\OWA\Core\Template::class, 'getNs'));
         $this->assertSame(
             'owa_',
             \OWA\Core\CoreAPI::getSetting('base', 'ns'),
@@ -356,7 +358,7 @@ final class ParamNamespaceTest extends TestCase
 
         $field = $t->createNonceFormField('base.sitesDelete');
 
-        $this->assertMatchesRegularExpression('/name="' . preg_quote($t->getNs(), '/') . 'nonce"/', $field);
+        $this->assertMatchesRegularExpression('/name="nonce"/', $field);
 
         // and that name, sent as a param, resolves to the 'nonce' OWA reads.
         preg_match('/name="([^"]+)"/', $field, $m);
@@ -368,10 +370,10 @@ final class ParamNamespaceTest extends TestCase
     }
 
     /**
-     * Link building follows the same namespace as the form fields, so a link
-     * OWA emits is readable by the container OWA builds.
+     * Links carry bare names, as the form fields do, so a link OWA emits is
+     * readable by the container OWA builds.
      */
-    public function testMakeParamStringEmitsTheAppNamespace(): void
+    public function testMakeParamStringEmitsBareNames(): void
     {
         $t = new \OWA\Core\Template('base');
 
