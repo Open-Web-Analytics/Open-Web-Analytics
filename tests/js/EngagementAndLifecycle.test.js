@@ -617,14 +617,14 @@ describe('SPA route changes', () => {
 
         const [before, after] = sent.filter(e => e.event_type === 'newsletter_signup');
         expect(before.page_title).toBe('Guides');
-        expect(before.page_type).toBe('article');
+        expect(before.content_group).toBe('article');
 
         const view = sent.find(e => e.event_type === 'page_view');
         expect(view.page_location).toContain('/title-b');
         expect(view.page_title).toBe('From The Document');
-        expect(view).not.toHaveProperty('page_type');
+        expect(view).not.toHaveProperty('content_group');
         expect(after.page_title).toBe('From The Document');
-        expect(after).not.toHaveProperty('page_type');
+        expect(after).not.toHaveProperty('content_group');
     });
 
     test('the engagement of the route being left keeps that route\'s title and type', () => {
@@ -644,7 +644,7 @@ describe('SPA route changes', () => {
 
         const engagement = sent.find(e => e.event_type === 'user_engagement');
         expect(engagement.page_title).toBe('Guides');
-        expect(engagement.page_type).toBe('article');
+        expect(engagement.content_group).toBe('article');
     });
 
     test('a title and type the next route sets after the pushState ride its page view', () => {
@@ -664,7 +664,7 @@ describe('SPA route changes', () => {
 
         const view = sent.find(e => e.event_type === 'page_view');
         expect(view.page_title).toBe('Pricing');
-        expect(view.page_type).toBe('landing');
+        expect(view.content_group).toBe('landing');
     });
 
     test('leaving and coming back inside the window keeps the page\'s title and type', () => {
@@ -685,7 +685,7 @@ describe('SPA route changes', () => {
         const custom = sent.find(e => e.event_type === 'newsletter_signup');
         expect(sent.filter(e => e.event_type === 'page_view')).toHaveLength(0);
         expect(custom.page_title).toBe('Guides');
-        expect(custom.page_type).toBe('article');
+        expect(custom.content_group).toBe('article');
     });
 
     /*

@@ -769,6 +769,9 @@ abstract class FactMigrator {
 
             'page_location'   => $doc['url'] ?? null,
             'page_title'      => $doc['page_title'] ?? null,
+            // 1.x's page type is 2.0's content group: the dimension the Page
+            // Types report groups by, and what the tracker's setPageType() sets.
+            'content_group'   => $doc['page_type'] ?? null,
             'HTTP_REFERER'    => $referer['url'] ?? null,
             'HTTP_USER_AGENT' => $ua['ua'] ?? null,
             'browser_type'    => $ua['browser_type'] ?? null,
@@ -983,7 +986,7 @@ abstract class FactMigrator {
     protected function resolve( array $rows ) {
 
         $refs = array(
-            'document'     => $this->lookup( 'document', array_column( $rows, 'document_id' ), 'id, url, page_title' ),
+            'document'     => $this->lookup( 'document', array_column( $rows, 'document_id' ), 'id, url, page_title, page_type' ),
             'referer'      => $this->lookup( 'referer', array_column( $rows, 'referer_id' ), 'id, url' ),
             'ua'           => $this->lookup( 'ua', array_column( $rows, 'ua_id' ), 'id, ua, browser_type' ),
             'os'           => $this->lookup( 'os', array_column( $rows, 'os_id' ), 'id, name' ),

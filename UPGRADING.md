@@ -543,6 +543,25 @@ the cookies OWA's own admin screens set.
 
 Pinned by `tests/js/StateStoreExpirations.test.js`.
 
+### Tracker command `setPageType`
+
+A page's type and its content group are one dimension in 2.0, which the
+**Page Types** report groups by. `owa_cmds.push(['setPageType', 'article'])`
+sent a `page_type` that 2.0 does not read; it now sets the content group, so a
+1.x snippet's page types reach that report. A page that calls both reports the
+one called last.
+
+**Replace with:**
+
+```js
+owa_cmds.push(['setContentGroup', 'article']);
+```
+
+The 1.x migration carries each page's 1.x page type into the content group of
+its migrated events.
+
+Pinned by `tests/js/TrackerMiscMethods.test.js` and `tests/MigrateRequestsTest.php`.
+
 ---
 
 ## Reporting a problem

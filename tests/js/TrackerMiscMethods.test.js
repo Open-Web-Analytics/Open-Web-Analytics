@@ -141,11 +141,12 @@ describe('page-property convenience setters', () => {
         expect(t.getGlobalEventProperty('page_title')).toBeFalsy();
     });
 
-    test('setPageType trims and stores it page-scoped', () => {
+    test('setPageType sets the content group, which is what 2.0 reports a page type as', () => {
         const t = newTracker();
         t.setPageType('  article ');
 
-        expect(OWA.getState('d', 'page_type')).toBe('article');
+        expect(t.getGlobalEventProperty('content_group')).toBe('article');
+        expect(OWA.getState('d', 'page_type')).toBeFalsy();
     });
 
     test('setUserName trims and stores it page-scoped, under the vps_ prefix', () => {
@@ -170,7 +171,6 @@ describe('page-property convenience setters', () => {
         // The reason for the move, stated as a test.
         const first = newTracker();
         first.setPageTitle('Pricing');
-        first.setPageType('landing');
         first.setUserName('bob');
 
         const second = newTracker();
@@ -178,7 +178,6 @@ describe('page-property convenience setters', () => {
         second.addGlobalPropertiesToEvent(event);
 
         expect(event.get('page_title')).toBe('Pricing');
-        expect(event.get('page_type')).toBe('landing');
         // Prefixed now: user_name is a custom USER property, and the page store
         // is what keeps it shared across trackers without a cookie.
         expect(event.get('vps_user_name')).toBe('bob');
@@ -331,23 +330,31 @@ describe('page-scoped values and page views an SPA sends itself', () => {
         return sent;
     }
 
-    test('a page view to another URL does not carry the last page\'s title, type or group', () => {
+    test('a page view to another URL does not carry the last page\'s title or group', () => {
         document.title = 'Document title';
         const t = newTracker();
         const sent = views(t);
 
         t.setPageTitle('Route A');
-        t.setPageType('article');
         t.setContentGroup('blog');
         t.trackPageView('https://cv.example/a');
         t.trackPageView('https://cv.example/b');
 
         expect(sent[0].page_title).toBe('Route A');
-        expect(sent[0].page_type).toBe('article');
         expect(sent[0].content_group).toBe('blog');
         expect(sent[1].page_title).toBe('Document title');
-        expect(sent[1].page_type).toBeUndefined();
         expect(sent[1].content_group).toBeUndefined();
+    });
+
+    test('a page type set with the deprecated setPageType() is the content group, and page_type is not sent', () => {
+        const t = newTracker();
+        const sent = views(t);
+
+        t.setPageType('article');
+        t.trackPageView('https://cv.example/a');
+
+        expect(sent[0].content_group).toBe('article');
+        expect(sent[0]).not.toHaveProperty('page_type');
     });
 
     test('a value set between the two page views is the new page\'s', () => {
@@ -370,7 +377,7 @@ describe('page-scoped values and page views an SPA sends itself', () => {
         t.trackPageView('https://cv.example/a');
         t.trackPageView('https://cv.example/a');
 
-        expect(sent[1].page_type).toBe('product');
+        expect(sent[1].content_group).toBe('product');
     });
 
     test('a title one tracker sets for the new page reaches every tracker\'s page view', () => {

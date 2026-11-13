@@ -148,7 +148,6 @@ class OWATracker  {
 		    last_req:                { scope: 'page',    permanent: false },
 		    page_location:           { scope: 'page',    permanent: false },
 		    page_title:              { scope: 'page',    permanent: false },
-		    page_type:               { scope: 'page',    permanent: false },
 		    HTTP_REFERER:            { scope: 'page',    permanent: false },
 
 		    // Consumed as applied, never stored.
@@ -1225,24 +1224,21 @@ class OWATracker  {
     }
 
     /**
-     * A type for this page, such as `article` or `product`.
+     * A type for this page, such as `article` or `product`: its content group.
      *
-     * Page-scoped, as setPageTitle(). Note there is no DOM fallback for this
-     * one -- unlike page_title, nothing derives a page type -- so the setter is
-     * the only source and losing it to a tracker-private copy loses it
-     * entirely.
+     * @deprecated Use setContentGroup( value ).
      *
-     * With trackRouteChanges() on, the type is dropped at the moment a route
-     * is left, as the title is, and the next route has none until it sets
-     * one.
+     * A page's type and its content group are one dimension in 2.0, which the
+     * Page Types report groups by. This sent page_type, which no 2.0 reader
+     * takes, so a snippet that called it reported nothing; it now sets the
+     * content group. A page that calls both reports the one called last.
      *
      * @command
      * @param {string} type
      */
     setPageType(type) {
 
-        OWA.setState( 'd', 'page_type', String( type ).trim() );
-        this.markPageScopedSet( 'page_type' );
+        this.setContentGroup( type );
     }
 
     /**
@@ -3139,10 +3135,10 @@ class OWATracker  {
      * The values that describe ONE PAGE, which trackRouteChanges() ends when a
      * route is left.
      *
-     * `shared` is where the value lives. The page title and type are in the
-     * 'd' store, which every tracker on the page reads (setPageTitle()); the
-     * content group is a global event property of one tracker
-     * (setContentGroup()).
+     * `shared` is where the value lives. The page title is in the 'd' store,
+     * which every tracker on the page reads (setPageTitle()); the content group
+     * is a global event property of one tracker (setContentGroup(), which
+     * setPageType() also sets).
      *
      * The rest of 'd' is not here and survives a route change. vps_user_name
      * (setUserName()) names the person, and 'cdh' is the state manager's own
@@ -3152,8 +3148,7 @@ class OWATracker  {
 
         return [
             { name: 'content_group', shared: false },
-            { name: 'page_title',    shared: true },
-            { name: 'page_type',     shared: true }
+            { name: 'page_title',    shared: true }
         ];
     }
 
@@ -5293,7 +5288,7 @@ class OWATracker  {
      *
      * trackRouteChanges() ends them as a route is left. An SPA that sends its
      * own page views has no such moment, so without this a route that set no
-     * title reported the title, type and content group of the last route that
+     * title reported the title and content group of the last route that
      * did. A value set between the two page views is the new page's and stays,
      * whichever tracker on the page set it.
      *
