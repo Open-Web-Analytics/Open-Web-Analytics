@@ -328,6 +328,12 @@ back. A `log_robots` set in `owa-config.php` is not migrated and is no longer
 read: to keep storing robots, set `spam_threshold` to blank there or on the
 settings screen instead.
 
+### Stored 1.x settings nothing reads
+
+Update085 deletes the stored rows of `is_embedded_admin_user_password_reset`,
+`resolve_hosts` and `fetch_refering_page_info`. No module declares them, so
+their values were ignored. The update's down() puts them back.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0

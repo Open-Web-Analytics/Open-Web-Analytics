@@ -3128,12 +3128,20 @@ class Db extends \OWA\Core\Base {
      *
      * Nothing is ever deleted. The detail window is never touched.
      *
-     * @param string $table_name
-     * @param int    $limit          most partitions this table may have
-     * @param int    $detail_months  periods newer than this are left alone
+     * A RETENTION CUTOFF IS A BOUNDARY no merge crosses. A partition is dropped
+     * whole, so one holding days on both sides of the cutoff keeps the older
+     * ones until its last day ages out: up to a block of years. With a cutoff
+     * in the old tier (see splitAtCutoff()), partitions wholly before it are
+     * left for the drop, one straddling it is split at it, the rest of the
+     * cutoff's year stays as it is, and only whole years after it are merged.
+     *
+     * @param string      $table_name
+     * @param int         $limit          most partitions this table may have
+     * @param int         $detail_months  periods newer than this are left alone
+     * @param string|null $cutoff         yyyymmdd: the first day retention keeps; null keeps everything
      * @return array ['operations','projected','fits','floor','block_years']
      */
-    function planPartitionCompaction( $table_name, $limit, $detail_months = self::PARTITION_DETAIL_MONTHS ) {
+    function planPartitionCompaction( $table_name, $limit, $detail_months = self::PARTITION_DETAIL_MONTHS, $cutoff = null ) {
 
         $spans  = $this->getPartitionSpans( $table_name );
         $result = array(
@@ -3162,12 +3170,28 @@ class Db extends \OWA\Core\Base {
             }
         }
 
-        $kept            = count( $spans ) - count( $old );
-        $result['floor'] = $kept + ( $old ? 1 : 0 );
+        $before_cutoff = array();
+
+        if ( $cutoff !== null && $old ) {
+
+            $split = self::splitAtCutoff( $old, (string) $cutoff );
+
+            $old                  = $split['tail'];
+            $before_cutoff        = $split['operations'];
+            $result['operations'] = $before_cutoff;
+            $result['merges']     = $before_cutoff;
+        }
+
+        // Partitions the drop is about to take are not counted; those a split adds are.
+        $kept = count( $spans ) - count( $old )
+              - ( isset( $split ) ? $split['doomed'] - $split['added'] : 0 );
+
+        $result['projected'] = $kept + count( $old );
+        $result['floor']     = $kept + ( $old ? 1 : 0 );
 
         if ( ! $old ) {
 
-            $result['fits'] = count( $spans ) <= $limit;
+            $result['fits'] = $result['projected'] <= $limit;
 
             return $result;
         }
@@ -3314,10 +3338,104 @@ class Db extends \OWA\Core\Base {
             );
         }
 
+        $result['operations'] = array_merge( $before_cutoff, $result['operations'] );
+
         // Kept for callers that only care about the coarsening case.
         $result['merges'] = $result['operations'];
 
         return $result;
+    }
+
+    /**
+     * The old tier around a retention cutoff.
+     *
+     * A partition ending on or before the cutoff is the drop's, and is left as
+     * it is. One straddling the cutoff and longer than a calendar month -- a
+     * merged block -- is split: everything before the cutoff in one partition,
+     * then calendar months to the next January, then whatever it held after
+     * that in one more, which a later run plans as years. The rest of the
+     * cutoff's year is left as it is, so as the cutoff moves through it the drop
+     * takes a month at a time and nothing is rewritten. A partition within one
+     * month is the finest the old tier gets and is not split, as a monthly table
+     * is not. Whole years from the next January on are the tail, merged as
+     * before.
+     *
+     * @param array  $old     the old tier's spans, ascending
+     * @param string $cutoff  yyyymmdd
+     * @return array tail (spans), operations, doomed (spans the drop takes), added (partitions the split adds)
+     */
+    static function splitAtCutoff( array $old, $cutoff ) {
+
+        $cutoff = (string) $cutoff;
+        $next   = substr( $cutoff, 4 ) === '0101' ? $cutoff : ( (int) substr( $cutoff, 0, 4 ) + 1 ) . '0101';
+        $out    = array( 'tail' => array(), 'operations' => array(), 'doomed' => 0, 'added' => 0 );
+        $names  = array_column( $old, 'name' );
+
+        foreach ( $old as $span ) {
+
+            $start     = (string) $span['start'];
+            $less_than = (string) $span['less_than'];
+
+            if ( $less_than <= $cutoff ) {
+
+                $out['doomed']++;
+
+                continue;
+            }
+
+            if ( $start >= $next ) {
+
+                $out['tail'][] = $span;
+
+                continue;
+            }
+
+            // Inside the cutoff's year, or straddling it within one calendar month: as it is.
+            if ( $start >= $cutoff
+                 || $less_than <= date( 'Ymd', strtotime( substr( $start, 0, 6 ) . '01 +1 month' ) ) ) {
+
+                continue;
+            }
+
+            // Straddling the cutoff, and longer than a month.
+            $ranges = array( 'p' . $start => $cutoff );
+            $day    = $cutoff;
+
+            while ( $day < $less_than && $day < $next ) {
+
+                $month_end = date( 'Ymd', strtotime( substr( $day, 0, 6 ) . '01 +1 month' ) );
+                $end       = min( $month_end, $less_than );
+
+                $ranges[ 'p' . $day ] = $end;
+                $day = $end;
+            }
+
+            if ( $day < $less_than ) {
+
+                $ranges[ 'p' . $day ] = $less_than;
+            }
+
+            // A name another partition already has would make the statement fail.
+            $clash = array_intersect( array_keys( $ranges ), array_diff( $names, array( $span['name'] ) ) );
+
+            if ( $clash ) {
+
+                continue;
+            }
+
+            $out['operations'][] = array(
+                'names'     => array( $span['name'] ),
+                'ranges'    => $ranges,
+                'start'     => $start,
+                'less_than' => $less_than,
+            );
+
+            // The part before the cutoff is the drop's.
+            $out['doomed']++;
+            $out['added'] += count( $ranges ) - 1;
+        }
+
+        return $out;
     }
 
     /**

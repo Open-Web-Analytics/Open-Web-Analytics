@@ -458,6 +458,8 @@ return array(
         'tracker_ingest_drain' => array( 'default' => 'scheduler', 'description' => 'What ingests queued beacons: scheduler (the drain-tracker-ingest job) or external (a consumer outside OWA).' ),
         'report_wrapper' => array( 'default' => 'wrapper_default.php', 'description' => 'The template that wraps OWA\'s admin and report pages. Default wrapper_default.php.' ),
         'request_mode' => array( 'default' => 'web_app', 'internal' => true ),
+        // Set by Update085 when it deleted the rows of 1.x settings nothing reads, so its down() can put them back.
+        'retired_settings_before_085' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'reserved_words' => array( 'default' => array( 'do' => 'action' ), 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ),
         'scheduled_jobs' => array( 'default' => array(), 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ),
         'scheduler_enabled' => array( 'default' => true, 'description' => 'Whether schedule-run runs any job. False stops every scheduled job without touching crontab.' ),

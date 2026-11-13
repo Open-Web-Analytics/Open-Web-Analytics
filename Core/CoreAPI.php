@@ -2496,11 +2496,12 @@ class CoreAPI {
     }
 
     /**
+     * @param string $path     The path the cookie is sent for. Default /.
      * @param bool $httponly Out of reach of the page's scripts. The sign-in
      *                       cookies are; state the reporting UI reads in the
      *                       browser cannot be.
      */
-    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '', $secure = false, $httponly = false) {
+    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '', $secure = false, $httponly = false) {
 
         if ( $domain ) {
             // sanitizes the domain
@@ -2527,18 +2528,35 @@ class CoreAPI {
             $expires = 0;
         }
 		
-		$secure = \OWA\Core\Lib::isHttps();
-	
-        $options = [
-            'expires'  => $expires,
-            'path'     => '/',
+        setcookie($cookie_name, $cookie_value,
+            self::cookieOptions($expires, $path, $domain, \OWA\Core\Lib::isHttps(), $httponly));
+    }
+
+    /**
+     * setcookie()'s options for createCookie().
+     *
+     * SameSite is Lax, as an option of its own. A path written with it on the
+     * end, as 1.x's default was ('/; samesite=Lax'), is read up to the ;.
+     *
+     * @param int    $expires
+     * @param string $path      '' or a path ending at a ; reads as /
+     * @param string $domain
+     * @param bool   $secure
+     * @param bool   $httponly
+     * @return array
+     */
+    public static function cookieOptions($expires, $path, $domain, $secure, $httponly) {
+
+        $path = trim(explode(';', (string) $path)[0]);
+
+        return [
+            'expires'  => (int) $expires,
+            'path'     => $path !== '' ? $path : '/',
             'samesite' => 'Lax',
-            'domain'   => $domain,
-            'secure'   => $secure,
+            'domain'   => (string) $domain,
+            'secure'   => (bool) $secure,
             'httponly' => (bool) $httponly,
         ];
-
-        setcookie($cookie_name, $cookie_value, $options);
     }
 
     public static function deleteCookie($cookie_name, $path = '/', $domain = '') {

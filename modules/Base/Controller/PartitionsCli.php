@@ -424,16 +424,17 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * way back under an open-file budget is to drop history, which turns a
      * resource limit into a data-loss decision.
      *
-     * @param string $table
-     * @param array  $budget  from partitionLimit()
-     * @param bool   $dry_run
+     * @param string      $table
+     * @param array       $budget  from partitionLimit()
+     * @param bool        $dry_run
+     * @param string|null $cutoff  yyyymmdd the table's retention keeps from: no merge crosses it
      * @return int merges performed, or that would be
      */
-    protected function compactTable( $table, $budget, $dry_run ) {
+    protected function compactTable( $table, $budget, $dry_run, $cutoff = null ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $plan = $db->planPartitionCompaction( $table, $budget['limit'], $this->detailMonths() );
+        $plan = $db->planPartitionCompaction( $table, $budget['limit'], $this->detailMonths(), $cutoff );
 
         if ( ! $plan['operations'] ) {
 

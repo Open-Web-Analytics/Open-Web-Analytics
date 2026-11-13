@@ -264,6 +264,24 @@ final class PartitionCliTest extends CliControllerTestCase
     }
 
     /**
+     * A cube's cutoff is its own window, capped at raw's: months dropped from
+     * raw by hand (partition-drop only=raw) stay in the cube.
+     */
+    public function testACubeIsRotatedToItsOwnWindowOnly()
+    {
+        $cli  = new \OWA\Module\Base\Controller\PartitionRotateCli([]);
+        $cube = \OWA\Core\Entity::TABLE_PREFIX . \OWA\Module\Base\Classes\Cube\Cubes::PREFIX . '9990000000000000001';
+        $raw  = \OWA\Module\Base\Classes\Retention::rawTable();
+
+        $this->assertNull($this->callProtected($cli, 'cutoffFor', [$cube, [], 0]), 'no window: the cube keeps everything');
+        $this->assertNull($this->callProtected($cli, 'cutoffFor', [$raw, [], 0]));
+        $this->assertSame(\OWA\Module\Base\Classes\Retention::cutoff(6),
+            $this->callProtected($cli, 'cutoffFor', [$cube, ['cube' => 6], 0]), 'its own window');
+        $this->assertSame(\OWA\Module\Base\Classes\Retention::cutoff(12),
+            $this->callProtected($cli, 'cutoffFor', [$cube, ['cube' => 24], 12]), 'capped at raw\'s');
+    }
+
+    /**
      * An unknown granularity is refused rather than approximated.
      *
      * The load-bearing assertion is isPartitionGranularity() -- the function
