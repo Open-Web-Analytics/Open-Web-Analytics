@@ -76,6 +76,8 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
         const out = install(['password=owa-cli-admin-pass']);
         // The installer logs "Install Completed." on success.
         expect(out).toMatch(/Install Completed|Installation complete/i);
+        // ...and the cron line, without which no report shows anything.
+        expect(out).toMatch(/\* \* \* \* \* cd .+ && php cli\.php cmd=schedule-run/);
 
         // 3. Assert the scratch DB really got a working install.
         const result = php('assert-cli');

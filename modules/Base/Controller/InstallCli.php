@@ -111,6 +111,12 @@ class InstallCli extends \OWA\Core\Controller\Cli {
 
                 if ($save_status === true) {
                     $this->e->notice('Install Completed.');
+
+                    // Without the scheduler no report shows anything: say so where
+                    // the install is run, as the web installer's last page does.
+                    $this->e->notice('Add this to the crontab of the user that owns the OWA files, '
+                        . 'or reports stay empty: ' . \OWA\Module\Base\Classes\SchedulerHealth::cronLine());
+                    $this->e->notice('Then check it with: php cli.php cmd=schedule-status');
                 } else {
                     $this->e->notice('Could not persist Install Complete Flag to the Database');
                 }
