@@ -357,6 +357,180 @@ class ResultSetManager extends \OWA\Core\Base {
         return false;
     }
 
+    /**
+     * Inline flags both engines read: (?i), (?m), (?s), (?x), and turning them off.
+     */
+    const PORTABLE_REGEX_FLAGS = 'imsx-';
+
+    /**
+     * Why a pattern that PCRE accepts would not run the same on every
+     * supported server, or null.
+     *
+     * The pattern is validated with PCRE, which is what MariaDB runs REGEXP
+     * with; MySQL 8 runs it with ICU. Refused: the constructs ICU rejects or
+     * reads differently -- the old [[:<:]] and [[:>:]] word boundaries,
+     * branch reset (?|, \K, recursion and subroutine calls, conditionals,
+     * backtracking verbs (*...), callouts, Python-style (?P...) and
+     * quote-named (?'n') groups, \g and \k references, \C, \N and \o,
+     * inline flags other than i, m, s and x, and a [ or && inside a
+     * character class, which ICU reads as a nested set or an intersection.
+     * Possessive quantifiers, atomic groups, lookaround, named groups
+     * (?<n>...), \Q...\E and POSIX classes such as [[:digit:]] run on both.
+     *
+     * @param string $pattern
+     * @return string|null
+     */
+    private static function unportableConstruct( $pattern ) {
+
+        $len      = strlen( $pattern );
+        $mysql    = ', which MySQL\'s regular expressions do not support.';
+        $in_class = false;
+
+        for ( $i = 0; $i < $len; $i++ ) {
+
+            $c = $pattern[ $i ];
+
+            if ( $c === '\\' ) {
+
+                $next = $pattern[ $i + 1 ] ?? '';
+
+                if ( $next === 'Q' && ! $in_class ) {
+
+                    // Literal to \E, or to the end.
+                    $end = strpos( $pattern, '\\E', $i + 2 );
+                    $i   = $end === false ? $len : $end + 1;
+
+                    continue;
+                }
+
+                if ( $next === 'g' || $next === 'k' ) {
+
+                    return 'it uses a backreference.';
+                }
+
+                if ( in_array( $next, array( 'K', 'C', 'N', 'o' ), true ) ) {
+
+                    return 'it uses \\' . $next . $mysql;
+                }
+
+                $i++;
+
+                continue;
+            }
+
+            if ( $in_class ) {
+
+                if ( $c === '[' && ( $pattern[ $i + 1 ] ?? '' ) === ':' ) {
+
+                    $end  = strpos( $pattern, ':]', $i + 2 );
+                    $name = $end === false ? '' : substr( $pattern, $i + 2, $end - $i - 2 );
+
+                    if ( $name === '<' || $name === '>' ) {
+
+                        return 'it uses [[:<:]] or [[:>:]]' . $mysql . ' Use \\b.';
+                    }
+
+                    if ( $end !== false ) {
+
+                        $i = $end + 1;
+
+                        continue;
+                    }
+                }
+
+                if ( $c === '[' || ( $c === '&' && ( $pattern[ $i + 1 ] ?? '' ) === '&' ) ) {
+
+                    return 'it puts an unescaped [ or && inside a character class, which MySQL reads as a '
+                         . 'nested set or an intersection. Escape it as \\[ or \\&.';
+                }
+
+                // A ] first in the class was stepped over on the way in.
+                if ( $c === ']' ) {
+
+                    $in_class = false;
+                }
+
+                continue;
+            }
+
+            if ( $c === '[' ) {
+
+                $in_class = true;
+
+                // A ] straight after [ or [^ is a literal member, not the end.
+                $i += ( $pattern[ $i + 1 ] ?? '' ) === '^' ? 1 : 0;
+                $i += ( $pattern[ $i + 1 ] ?? '' ) === ']' ? 1 : 0;
+
+                continue;
+            }
+
+            if ( $c !== '(' ) {
+
+                continue;
+            }
+
+            $after = substr( $pattern, $i + 1, 4 );
+
+            if ( $after !== '' && $after[0] === '*' ) {
+
+                return 'it uses a (*...) verb' . $mysql;
+            }
+
+            if ( $after === '' || $after[0] !== '?' ) {
+
+                continue;
+            }
+
+            $kind = $after[1] ?? '';
+
+            if ( $kind === '|' ) {
+
+                return 'it uses a branch reset group (?|...)' . $mysql;
+            }
+
+            if ( $kind === 'R' || $kind === '&' || ctype_digit( $kind )
+                 || ( ( $kind === '+' || $kind === '-' ) && ctype_digit( $after[2] ?? '' ) )
+                 || substr( $after, 1, 2 ) === 'P>' ) {
+
+                return 'it calls a group or the whole pattern recursively' . $mysql;
+            }
+
+            if ( substr( $after, 1, 2 ) === 'P=' ) {
+
+                return 'it uses a backreference.';
+            }
+
+            if ( $kind === '(' ) {
+
+                return 'it uses a conditional group (?(...)...)' . $mysql;
+            }
+
+            if ( $kind === 'P' || $kind === "'" || $kind === 'C' ) {
+
+                return sprintf( 'it uses (?%s%s', $kind, $mysql );
+            }
+
+            if ( in_array( $kind, array( ':', '=', '!', '<', '>', '#' ), true ) ) {
+
+                continue;
+            }
+
+            // Inline flags: (?flags) or (?flags:...).
+            if ( preg_match( '/\G\(\?\^?([A-Za-z-]*)[:)]/', $pattern, $m, 0, $i ) ) {
+
+                $flags = $m[1];
+
+                if ( strspn( $flags, self::PORTABLE_REGEX_FLAGS ) !== strlen( $flags )
+                     || strpos( $m[0], '^' ) !== false ) {
+
+                    return 'it uses inline flags other than i, m, s and x' . $mysql;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /** The longest a report's query may run, in seconds. */
     const QUERY_SECONDS = 60;
 
@@ -375,6 +549,8 @@ class ResultSetManager extends \OWA\Core\Base {
      * almost matches, and MariaDB puts no time limit on a REGEXP. These are
      * the constructs that do that; the patterns reports use (anchors,
      * alternation, classes, a bounded repeat) are untouched.
+     *
+     * So is syntax only one of the two engines runs: see unportableConstruct().
      *
      * @param string $pattern
      * @return string|null
@@ -395,6 +571,13 @@ class ResultSetManager extends \OWA\Core\Base {
         if ( preg_match( '/\\\\[1-9]/', $pattern ) ) {
 
             return 'it uses a backreference.';
+        }
+
+        $unportable = self::unportableConstruct( $pattern );
+
+        if ( $unportable !== null ) {
+
+            return $unportable;
         }
 
         if ( self::repeatsARepeat( $pattern ) ) {
