@@ -70,7 +70,20 @@ class NotifyHandlers extends \OWA\Core\Observer {
 
             if ( $s->wasPersisted() ) {
 
-                $ret = \OWA\Core\CoreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
+                /*
+                 * This runs inside ingest (EventRawHandlers::announce()), after
+                 * the beacon's rows are committed: whatever the mail does, the
+                 * beacon is handled. The mailer logs its own failures.
+                 */
+                try {
+
+                    \OWA\Core\CoreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
+
+                } catch ( \Throwable $t ) {
+
+                    \OWA\Core\CoreAPI::error( sprintf( 'New session announcement for site_id %s not sent: %s',
+                        $siteId, $t->getMessage() ) );
+                }
 
                 return OWA_EHS_EVENT_HANDLED;
 

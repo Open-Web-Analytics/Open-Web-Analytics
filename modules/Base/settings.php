@@ -305,7 +305,7 @@ return array(
          */
         'log_visitor_pii' => array( 'default' => true, 'description' => 'Whether a visitor\'s identity is stored: the user_id an event carries, and the display name and email address set with setUserName() or sent by a 1.x tracker. Off removes them as a beacon arrives, before it is queued, and from events migrated from 1.x.' ),
         'logo_image_path' => array( 'default' => 'base/i/owa-logo.svg', 'description' => 'The logo shown in the header of OWA\'s screens, as a path under public/.' ),
-        'mailer-from' => array( 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host name OWA is served from.' ),
+        'mailer-from' => array( 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host of public_url, or the web server\'s host name when public_url is not set.' ),
         'mailer-fromName' => array( 'default' => 'OWA Server', 'description' => 'The sender name on OWA\'s e-mail. Default OWA Server.' ),
         'mailer-host' => array( 'default' => '', 'description' => 'The SMTP server host, used when mailer-use-smtp is on.' ),
         'mailer-password' => array( 'default' => '', 'description' => 'The password for the SMTP server, used with mailer-username.' ),
@@ -327,7 +327,14 @@ return array(
             'type'     => 'text',
             'label'    => 'Notice E-mail Address',
             'description' =>
-                'This is the e-mail address that new visitor e-mails will be sent to.',
+                'The e-mail address new visit announcements are sent to. Separate several with commas.',
+            /*
+             * Checked on save, because it is read during ingest: an address
+             * the mailer refuses is skipped there (Mailer::addAddress()), and
+             * a value like 'a@x b@y' would be found only in the error log.
+             */
+            'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Notice E-mail Address is an e-mail address, or several separated by commas.' ),
         ),
         'ns' => array( 'default' => 'owa_', 'description' => 'The prefix on OWA\'s cookie names and on the URL parameters it reads from tracked pages, such as owa_source and owa_state. Default owa_. Changing it orphans every existing cookie and campaign link.' ),
 
