@@ -406,6 +406,42 @@ test.describe('the footer', () => {
         await expect(footer).toHaveCSS('text-align', 'right');
     });
 
+    /**
+     * On a page with the left navigation, the footer is at the foot of the
+     * content column, so the navigation's cell runs to the end of the page and
+     * the navigation is not pushed up under the header at the end of a scroll.
+     */
+    for (const [name, url] of [
+        ['a report', `?owa_do=base.report&owa_reportId=pages&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`],
+        ['a settings screen', `?owa_do=base.myProfile&owa_siteId=${FIXTURE.siteId}`],
+    ]) {
+        test(`is in the content column on ${name}, not under the navigation`, async ({ page }) => {
+            await adminLogin(page);
+            await page.goto(url, { waitUntil: 'networkidle' });
+
+            const footer = page.locator('.owa_footer');
+            await expect(footer).toHaveCount(1);
+
+            const where = await footer.evaluate((el) => ({
+                inNavCell: !!el.closest('.owa_reportLeftNavColumn'),
+                inTable: !!el.closest('td'),
+                left: el.getBoundingClientRect().left,
+                rail: document.querySelector('#owa_reportNavRail').getBoundingClientRect().right,
+            }));
+            expect(where.inTable).toBe(true);
+            expect(where.inNavCell).toBe(false);
+            expect(where.left).toBeGreaterThanOrEqual(where.rail - 1);
+        });
+    }
+
+    test('is below the page on a screen without the navigation', async ({ page }) => {
+        await adminLogin(page);
+        await page.goto(`?owa_do=base.error&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });
+
+        await expect(page.locator('.owa_footer')).toHaveCount(1);
+        expect(await page.locator('.owa_footer').evaluate((el) => !!el.closest('td'))).toBe(false);
+    });
+
     test.describe('signed out', () => {
 
         test.use({ storageState: { cookies: [], origins: [] } });

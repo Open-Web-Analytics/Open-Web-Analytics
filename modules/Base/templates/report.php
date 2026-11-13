@@ -58,7 +58,9 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                 </div>
             </TD>
             <?php endif;?>
-            <TD valign="top" width="*">
+            <TD valign="top" width="*" class="owa_reportContentColumn">
+                <?php // At full width this box scrolls, not the window (owa.shell.css). ?>
+                <div class="owa_contentScroll">
                 <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
 
                 <div class="reportSectionContainer">
@@ -209,6 +211,8 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                     <div class="clear"></div>
                     <?php echo $view->subview;?>
 
+                </div>
+                <?php echo \OWA\Core\View::FOOTER_SLOT; // the footer goes here, not across the nav ?>
                 </div>
             </TD>
         </TR>

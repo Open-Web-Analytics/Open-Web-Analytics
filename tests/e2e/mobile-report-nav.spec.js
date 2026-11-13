@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { FIXTURE, login } = require('./fixtures');
+const { FIXTURE, login, adminLogin } = require('./fixtures');
 
 /**
  * The report nav on a phone: hidden behind a menu button so the report has the
@@ -268,4 +268,69 @@ test.describe('report nav at desktop width', () => {
         await expect(page.locator('#owa_navColumn a', { hasText: OTHER.label })).toBeVisible();
         await shot(page, 'desktop');
     });
+
+    /**
+     * The window never scrolls; the content column does. The page is exactly
+     * the window's height, the header is at the top, the navigation fills the
+     * rest of the height with Settings at its foot, and scrolling the content
+     * moves the report and nothing else. Checked on a report and a settings
+     * screen, and in a short window, where the rail is compact rather than the
+     * page taller than the window.
+     */
+    const SCROLL_SCREENS = [
+        ['a report', `?owa_do=base.report&owa_reportId=${REPORT}&owa_siteId=${FIXTURE.siteId}&owa_period=last_thirty_days`],
+        ['a settings screen', '?owa_do=base.optionsGeneral'],
+    ];
+
+    for (const height of [900, 600]) {
+        for (const [name, url] of SCROLL_SCREENS) {
+            test(`only the content scrolls, on ${name} in a window ${height} high`, async ({ page }) => {
+                await page.setViewportSize({ width: 1280, height });
+                await adminLogin(page);
+                await page.goto(url, { waitUntil: 'networkidle' });
+                await page.waitForSelector('#owa_navShell', { state: 'attached', timeout: 20_000 });
+
+                const state = () => page.evaluate(() => {
+                    const box = document.querySelector('.owa_contentScroll');
+                    const top = (s) => document.querySelector(s).getBoundingClientRect().top;
+                    return {
+                        pageHeight: document.documentElement.scrollHeight,
+                        windowScrolled: window.scrollY,
+                        header: top('#owa_header'),
+                        headerBottom: document.querySelector('#owa_header').getBoundingClientRect().bottom,
+                        rail: top('#owa_reportNavRail'),
+                        railBottom: document.querySelector('#owa_reportNavRail').getBoundingClientRect().bottom,
+                        box: top('.owa_contentScroll'),
+                        boxBottom: box.getBoundingClientRect().bottom,
+                        overflow: getComputedStyle(box).overflowY,
+                        first: box.firstElementChild.getBoundingClientRect().top,
+                        boxScrolled: box.scrollTop,
+                    };
+                });
+
+                const before = await state();
+                expect(before.pageHeight, 'the page is no taller than the window').toBeLessThanOrEqual(height);
+                expect(before.overflow).toBe('auto');
+                expect(Math.abs(before.rail - before.headerBottom), 'the nav is right under the header').toBeLessThanOrEqual(1);
+                expect(Math.abs(before.box - before.headerBottom), 'the content is right under the header').toBeLessThanOrEqual(1);
+                expect(Math.abs(before.railBottom - height), 'the nav reaches the bottom of the window').toBeLessThanOrEqual(1);
+                expect(Math.abs(before.boxBottom - height), 'the content reaches the bottom of the window').toBeLessThanOrEqual(1);
+                await expect(rail(page).locator('.owa_railEntry.is-foot')).toBeInViewport({ ratio: 1 });
+
+                // A wheel over the content scrolls the content, not the window.
+                const box = await page.locator('.owa_contentScroll').boundingBox();
+                await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+                await page.mouse.wheel(0, 2000);
+                await expect.poll(async () => (await state()).boxScrolled).toBeGreaterThan(0);
+
+                const after = await state();
+                expect(after.windowScrolled).toBe(0);
+                expect(after.header).toBe(0);
+                expect(after.rail).toBe(before.rail);
+                expect(Math.round(before.first - after.first)).toBe(Math.round(after.boxScrolled));
+                await expect(page.locator('#owa_header .owa_userMenu')).toBeInViewport();
+                await expect(rail(page).locator('.owa_railEntry.is-foot')).toBeInViewport({ ratio: 1 });
+            });
+        }
+    }
 });

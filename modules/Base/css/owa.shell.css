@@ -236,20 +236,71 @@
     transform: rotate(180deg);
 }
 
-/* At full width the navigation stays in view as the page scrolls, and is as
-   tall as the window less the header (#owa_header, 81px), so Settings at the
-   foot of the rail is in view on arrival. */
+/* At full width the window does not scroll. The header is at the top, the
+   navigation under it is as tall as the window less the header, and beside
+   the navigation the content column is a box of the same height that scrolls
+   on its own (.owa_contentScroll, report.php and options_hierarchy.php). The
+   page is then exactly the window's height, so Settings at the foot of the
+   rail is always in view.
+
+   The rail cannot scroll inside itself, since its flyouts would be clipped, so
+   a short window gets a compact rail rather than a page that scrolls. */
 @media (min-width: 901px) {
 
+    :root {
+        --owa-header-height: 81px;
+        --owa-below-header: calc(100vh - var(--owa-header-height));
+    }
+
+    /* Above the content column, so a section's flyout opens over the page. */
     .owa_reportNavRail {
-        position: sticky;
-        top: 0;
+        position: relative;
         z-index: 20;
     }
 
     .owa_navShell {
-        height: calc(100vh - 81px);
-        min-height: 560px;
+        height: var(--owa-below-header);
+    }
+
+    .owa_contentScroll {
+        height: var(--owa-below-header);
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+
+    /* The cells' own padding would make the row taller than the window. A
+       settings screen's spacing moves into its scrolling box, so it scrolls
+       with the page rather than staying as a band at the top and bottom. */
+    .owa .owa_reportLeftNavColumn,
+    .owa .owa_reportContentColumn {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .owa_hierarchyPage > tbody > tr > td.owa_hierarchyContent {
+        padding: 0;
+    }
+
+    .owa_hierarchyContent > .owa_contentScroll {
+        padding: 20px 2px 32px 20px;
+    }
+}
+
+/* A short window: smaller rail items, so the whole rail, Settings included,
+   fits beside a content column that scrolls. */
+@media (min-width: 901px) and (max-height: 720px) {
+
+    .owa_rail {
+        padding: 8px 0;
+    }
+
+    .owa_railList {
+        gap: 0;
+    }
+
+    .owa_navShell .owa_railItem {
+        gap: 2px;
+        padding: 5px 0;
     }
 }
 
