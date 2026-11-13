@@ -415,7 +415,6 @@ return array(
          * catalogue complete enough for the read sweep to need no exceptions.
          */
         'images_absolute_url' => array( 'internal' => true ),
-        'is_embedded'         => array( 'internal' => true ),
         'log_url'             => array( 'internal' => true ),
         'main_url'            => array( 'internal' => true ),
         'modules_url'         => array( 'internal' => true ),

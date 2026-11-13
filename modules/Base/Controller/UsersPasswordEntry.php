@@ -73,9 +73,6 @@ class UsersPasswordEntry extends \OWA\Core\Controller {
 
         $this->set('key', $this->getParam('k'));
         $this->setView('base.usersPasswordEntry');
-        
-        // needed for old style embedded install migration
-         $this->set('is_embedded', $this->getParam('is_embedded'));
     }
 
 

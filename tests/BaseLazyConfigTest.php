@@ -109,10 +109,9 @@ final class BaseLazyConfigTest extends TestCase {
         $this->assertTrue( isset( $obj->c ), 'isset must not report a lazy property as missing' );
         $this->assertTrue( isset( $obj->config ), 'isset must not report a lazy snapshot as missing' );
 
-        // The shape used in modules/Base/View/Updates.php.
-        $obj->config = [ 'is_embedded' => true ];
+        $obj->config = [ 'some_key' => true ];
         $this->assertTrue(
-            isset( $obj->config['is_embedded'] ),
+            isset( $obj->config['some_key'] ),
             'isset() on an offset of a lazy property must still see the offset'
         );
 
