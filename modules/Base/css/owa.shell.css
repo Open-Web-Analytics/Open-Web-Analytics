@@ -114,6 +114,13 @@
     display: block;
 }
 
+/* Escape dismissed it (owa.reportnav.js): hidden until the pointer and the
+   focus have left the entry. */
+.owa_railEntry.is-dismissed:hover > .owa_railFlyout,
+.owa_railEntry.is-dismissed:focus-within > .owa_railFlyout {
+    display: none;
+}
+
 .owa_railFlyoutTitle {
     padding: 6px 12px 8px;
     font-size: 13px;

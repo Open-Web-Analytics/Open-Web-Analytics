@@ -1,4 +1,4 @@
-import { handleClick, open, close, OPEN, setColumnHidden, COLUMN_KEY } from '../../modules/Base/src/reporting/v1/owa.reportnav.js';
+import { handleClick, open, close, OPEN, setColumnHidden, COLUMN_KEY, dismissFlyout, restoreFlyout, DISMISSED } from '../../modules/Base/src/reporting/v1/owa.reportnav.js';
 
 /**
  * The report nav behind a menu button on a narrow screen (owa.reportnav.js):
@@ -230,5 +230,75 @@ describe('the open nav holds the focus', () => {
 
         expect(document.activeElement).toBe(outside);
         expect(el.content.hasAttribute('inert')).toBe(false);
+    });
+});
+
+/**
+ * A section's flyout in the rail shows on hover and on focus; Escape hides
+ * it until the pointer and the focus have left its entry (WCAG 1.4.13).
+ */
+describe('the rail flyouts', () => {
+
+    function renderShell() {
+        document.body.innerHTML = `
+            <div class="owa_navShell" id="owa_navShell"><nav class="owa_rail"><ul class="owa_railList">
+                <li class="owa_railEntry" id="e1"><a class="owa_railItem" href="?s=1">One</a>
+                    <div class="owa_railFlyout"><ul><li><a class="owa_navColumnItem" href="?r=1">Report</a></li></ul></div></li>
+                <li class="owa_railEntry" id="e2"><a class="owa_railItem is-current" href="?s=2">Two</a></li>
+            </ul></nav></div>
+            <a href="?x" class="elsewhere">elsewhere</a>`;
+
+        return {
+            shell: document.getElementById('owa_navShell'),
+            entry: document.getElementById('e1'),
+        };
+    }
+
+    test('Escape with the focus in a flyout hides it and puts the focus on its section', () => {
+        const el = renderShell();
+        el.entry.querySelector('.owa_navColumnItem').focus();
+
+        expect(dismissFlyout(el.shell)).toBe(true);
+        expect(el.entry.classList.contains(DISMISSED)).toBe(true);
+        expect(document.activeElement).toBe(el.entry.querySelector('.owa_railItem'));
+    });
+
+    test('Escape with the focus on a section hides its flyout and leaves the focus there', () => {
+        const el = renderShell();
+        const item = el.entry.querySelector('.owa_railItem');
+        item.focus();
+
+        expect(dismissFlyout(el.shell)).toBe(true);
+        expect(document.activeElement).toBe(item);
+    });
+
+    test('Escape with no flyout showing does nothing', () => {
+        const el = renderShell();
+
+        document.querySelector('.elsewhere').focus();
+        expect(dismissFlyout(el.shell)).toBe(false);
+
+        // The current section has no flyout.
+        document.querySelector('#e2 a').focus();
+        expect(dismissFlyout(el.shell)).toBe(false);
+
+        expect(el.shell.querySelectorAll('.' + DISMISSED)).toHaveLength(0);
+    });
+
+    test('a dismissed flyout shows again once the focus leaves its entry, not while it stays', () => {
+        const el = renderShell();
+        el.entry.classList.add(DISMISSED);
+
+        restoreFlyout(el.entry, el.entry.querySelector('.owa_railItem'));
+        expect(el.entry.classList.contains(DISMISSED)).toBe(true);
+
+        restoreFlyout(el.entry, document.querySelector('.elsewhere'));
+        expect(el.entry.classList.contains(DISMISSED)).toBe(false);
+    });
+
+    test('the dismissed state outranks hover and focus in the stylesheet', () => {
+        const css = require('fs').readFileSync(require('path').join(__dirname, '../../modules/Base/css/owa.shell.css'), 'utf8');
+
+        expect(css).toMatch(/\.owa_railEntry\.is-dismissed:hover > \.owa_railFlyout,\s*\.owa_railEntry\.is-dismissed:focus-within > \.owa_railFlyout \{\s*display: none;/);
     });
 });
