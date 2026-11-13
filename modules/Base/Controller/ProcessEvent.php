@@ -88,6 +88,9 @@ class ProcessEvent extends \OWA\Core\Controller {
          */
         $this->event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::PROPERTY_PRE, $this->event );
 
+        // Done at the edge; again here for an event queued before log_visitor_pii was turned off.
+        \OWA\Module\Base\Classes\TrackingEventHelpers::gateVisitorPii( $this->event );
+
         $properties = $s->getMap( 'tracking_properties_regular' );
 
         // there is no global input sanitization on tracking requests

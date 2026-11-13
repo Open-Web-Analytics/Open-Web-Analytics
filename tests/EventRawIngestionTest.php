@@ -819,6 +819,35 @@ final class EventRawIngestionTest extends IngestionTestCase
         }
     }
 
+    /** log_visitor_pii off keeps the display name and email out of the visitor store, a site's own user property not. */
+    public function testThePiiGateStopsTheDisplayNameAndEmailBeingStored(): void
+    {
+        $before  = \OWA\Core\CoreAPI::getSetting('base', 'log_visitor_pii');
+        $visitor = $this->uniqueGuid();
+
+        \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
+
+        try {
+            $this->firePageView([
+                'visitor_id'     => $visitor,
+                'vps_user_name'  => 'Display Name',
+                'email_address'  => 'person@example.test',
+                'vps_plan'       => 'pro',
+            ]);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', $before);
+        }
+
+        $store = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
+        $store->load($visitor, 'visitor_id');
+
+        $properties = json_decode((string) $store->get('properties'), true) ?: array();
+
+        $this->assertArrayNotHasKey('user_name', $properties);
+        $this->assertArrayNotHasKey('user_email', $properties);
+        $this->assertSame('pro', $properties['plan']['v'] ?? null);
+    }
+
     /**
      * Line items nest as a real array, so JSON_TABLE can read one row per item.
      *

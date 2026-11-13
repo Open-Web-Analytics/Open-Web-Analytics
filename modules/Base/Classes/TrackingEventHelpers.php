@@ -1420,10 +1420,16 @@ class TrackingEventHelpers {
         return '';
     }
 
-    static function ipAddressDefault( $value = '', $event = null ) {
+    /**
+     * The address this request came from, as ip_address is chosen and before
+     * anonymize_ips masks it: the first public address in the first of these
+     * headers the request has; '' when there is none.
+     *
+     * @return string
+     */
+    public static function requestIp() {
 
         $ip = '';
-        $chosen_ip = '';
 
         // array of SERVER params that could possibly contain the IP address
         // ordered by probability of relevant match
@@ -1449,7 +1455,12 @@ class TrackingEventHelpers {
              }
         }
 
-        $chosen_ip = self::chooseIp( $ip );
+        return self::chooseIp( $ip );
+    }
+
+    static function ipAddressDefault( $value = '', $event = null ) {
+
+        $chosen_ip = self::requestIp();
 
         // Anonymize IP if needed.
         $site_id = $event ? $event->get('site_id') : '';
@@ -1941,7 +1952,9 @@ class TrackingEventHelpers {
      * a person's devices and equally the thing a privacy switch has to be able to
      * turn off. A custom user property is the site's own decision, made by
      * choosing to send it; user_id is part of the release vocabulary, so the
-     * install gets a say. See gateUserId().
+     * install gets a say. So are the display name and email address the
+     * release's own setUserName() and the 1.x bridge produce. See
+     * gateVisitorPii().
      */
 
     /**
@@ -1992,6 +2005,49 @@ class TrackingEventHelpers {
         }
 
         return $user_id;
+    }
+
+    /**
+     * The properties log_visitor_pii gates: the site's id for the person, and
+     * the display name and email address OWA's own vocabulary carries as user
+     * properties (setUserName(), and a 1.x tracker's user_name and
+     * email_address, which conf/beacon_compat.php renames onto these).
+     */
+    const VISITOR_PII_PROPERTIES = array( 'user_id', 'vps_user_name', 'vps_user_email' );
+
+    /**
+     * Remove VISITOR_PII_PROPERTIES from an event when log_visitor_pii is off.
+     *
+     * AT THE EDGE (CoreAPI::logEvent()), before the event is queued, so
+     * neither the intake nor its dead letters ever hold what the setting
+     * refuses. Asked again at the property stage, for an event queued before
+     * the setting changed, and by the 1.x migration.
+     *
+     * @param  object $event
+     * @return void
+     */
+    public static function gateVisitorPii( $event ) {
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
+
+            return;
+        }
+
+        $names = self::VISITOR_PII_PROPERTIES;
+
+        // The older spellings too: a rename copies the value and leaves the original.
+        foreach ( \OWA\Module\Base\Classes\Beacon\Compat::renames() as $from => $to ) {
+
+            if ( in_array( $to, self::VISITOR_PII_PROPERTIES, true ) ) {
+
+                $names[] = $from;
+            }
+        }
+
+        foreach ( $names as $name ) {
+
+            $event->delete( $name );
+        }
     }
 
     /**

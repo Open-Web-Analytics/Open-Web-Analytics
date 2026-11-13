@@ -303,7 +303,7 @@ return array(
          * custom user properties now (PLAN.html §2.26.1), so it moves to the one
          * identity field left in the release vocabulary -- see gateUserId().
          */
-        'log_visitor_pii' => array( 'default' => true, 'description' => 'Whether the user_id an event carries is stored. Off removes it before the event is written.' ),
+        'log_visitor_pii' => array( 'default' => true, 'description' => 'Whether a visitor\'s identity is stored: the user_id an event carries, and the display name and email address set with setUserName() or sent by a 1.x tracker. Off removes them as a beacon arrives, before it is queued, and from events migrated from 1.x.' ),
         'logo_image_path' => array( 'default' => 'base/i/owa-logo.svg', 'description' => 'The logo shown in the header of OWA\'s screens, as a path under public/.' ),
         'mailer-from' => array( 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host name OWA is served from.' ),
         'mailer-fromName' => array( 'default' => 'OWA Server', 'description' => 'The sender name on OWA\'s e-mail. Default OWA Server.' ),
