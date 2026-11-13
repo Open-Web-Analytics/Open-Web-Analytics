@@ -132,6 +132,29 @@ class Retention {
     }
 
     /**
+     * The first instant raw's window keeps, as unix time, or null when it
+     * keeps everything.
+     *
+     * For what is not in a table: the tracking intake's archived batches and
+     * its dead letters are kept for as long as the events they hold would be.
+     *
+     * @return int|null
+     */
+    public static function rawCutoffTimestamp() {
+
+        $cutoff = self::cutoff( self::rawMonths() );
+
+        if ( ! $cutoff ) {
+
+            return null;
+        }
+
+        $day = \DateTimeImmutable::createFromFormat( 'Ymd|', (string) $cutoff );
+
+        return $day ? $day->getTimestamp() : null;
+    }
+
+    /**
      * What a window would drop from one table now.
      *
      * @param string $table

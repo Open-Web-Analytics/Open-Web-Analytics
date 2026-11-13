@@ -41,6 +41,7 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
             'arguments'   => array(
                 'queues=<name>[,<name>...]' => 'The queues to prune. Defaults to every registered queue.',
                 'interval=<seconds>'        => 'Age beyond which an archive is deleted. Defaults to 86400.',
+                'scheduled=1'               => 'Set by the scheduler. Deletes only archives older than raw_retention_months, and none when it is not set; interval= is ignored.',
             ),
         );
     }
@@ -56,10 +57,28 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
      *
      * Archived batches older than interval (a day by default), of every
      * registered queue that keeps an archive, or of those named.
+     *
+     * Scheduled (prune-tracker-ingest-archive), the age is raw's retention
+     * window instead: an archived batch is kept as long as the events in it
+     * would be, so with raw_retention_months unset nothing is deleted.
      */
     function action() {
 
-        $interval = (int) ( $this->getParam( 'interval' ) ?: 86400 );
+        if ( $this->getParam( 'scheduled' ) ) {
+
+            $keep_from = \OWA\Module\Base\Classes\Retention::rawCutoffTimestamp();
+
+            if ( $keep_from === null ) {
+
+                return;
+            }
+
+            $interval = max( 0, time() - $keep_from );
+
+        } else {
+
+            $interval = (int) ( $this->getParam( 'interval' ) ?: 86400 );
+        }
 
         $queues = $this->getParam( 'queues' )
             ? explode( ',', (string) $this->getParam( 'queues' ) )
