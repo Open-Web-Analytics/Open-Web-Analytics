@@ -22,6 +22,13 @@ import DEFAULTS from './defaults.json';
  */
 var routeScopeTaken = null;
 
+/*
+ * How many times each SHARED page-scoped value has been set on this page, so
+ * every tracker can tell whether one was set since its own last page view
+ * (endPageScopeOnNewUrl()). Module scope for the same reason as above.
+ */
+var pageScopeSets = {};
+
 class OWATracker  {
 	
 	constructor( options ) {
@@ -214,6 +221,12 @@ class OWATracker  {
 	    /** Whether startFeatures() has run. */
 	    this.featuresStarted = false;
 	    this.siteSearchStarted = null;
+	    // The URL of this tracker's last page view, how often each page-scoped
+	    // value had been set by then, and this tracker's own (unshared) set
+	    // counts (endPageScopeOnNewUrl()).
+	    this.pageScopeUrl = null;
+	    this.pageScopeSnapshot = {};
+	    this.pageScopeOwnSets = {};
 	    /**
 	     * Latest click event
 	     */
@@ -1208,6 +1221,7 @@ class OWATracker  {
     setPageTitle(title) {
 
         OWA.setState( 'd', 'page_title', String( title ).trim() );
+        this.markPageScopedSet( 'page_title' );
     }
 
     /**
@@ -1228,6 +1242,7 @@ class OWATracker  {
     setPageType(type) {
 
         OWA.setState( 'd', 'page_type', String( type ).trim() );
+        this.markPageScopedSet( 'page_type' );
     }
 
     /**
@@ -1337,6 +1352,7 @@ class OWATracker  {
     setContentGroup( value ) {
 
         this.setGlobalEventProperty( 'content_group', String( value ).trim() );
+        this.markPageScopedSet( 'content_group' );
     }
 
     /**
@@ -5236,6 +5252,8 @@ class OWATracker  {
      */
     trackPageView( url ) {
 
+        this.endPageScopeOnNewUrl( url || this.getCurrentUrl() );
+
         var event = new OwaEvent;
 
         if (url) {
@@ -5267,6 +5285,58 @@ class OWATracker  {
         OWA.doAction( 'tracker.pageView', { tracker: this, event: event } );
 
         return ret;
+    }
+
+    /**
+     * End the page-scoped values (ROUTE_SCOPED_VALUES) of the last page view
+     * when a page view reports another URL and they were not set again since.
+     *
+     * trackRouteChanges() ends them as a route is left. An SPA that sends its
+     * own page views has no such moment, so without this a route that set no
+     * title reported the title, type and content group of the last route that
+     * did. A value set between the two page views is the new page's and stays,
+     * whichever tracker on the page set it.
+     *
+     * @internal
+     * @param {string} url  the URL this page view reports
+     */
+    endPageScopeOnNewUrl( url ) {
+
+        var that     = this;
+        var previous = this.pageScopeUrl;
+
+        if ( ! this.routeTrackingEnabled && previous && previous !== url ) {
+
+            OWATracker.ROUTE_SCOPED_VALUES.forEach( function ( entry ) {
+
+                if ( that.pageScopedSets( entry ) === ( that.pageScopeSnapshot[ entry.name ] || 0 ) ) {
+
+                    that.deleteRouteScopedValue( entry );
+                }
+            } );
+        }
+
+        this.pageScopeUrl = url;
+
+        OWATracker.ROUTE_SCOPED_VALUES.forEach( function ( entry ) {
+
+            that.pageScopeSnapshot[ entry.name ] = that.pageScopedSets( entry );
+        } );
+    }
+
+    /** @internal Count a set of one of ROUTE_SCOPED_VALUES. */
+    markPageScopedSet( name ) {
+
+        var entry  = OWATracker.ROUTE_SCOPED_VALUES.filter( function ( e ) { return e.name === name; } )[0];
+        var counts = entry && entry.shared ? pageScopeSets : this.pageScopeOwnSets;
+
+        counts[ name ] = ( counts[ name ] || 0 ) + 1;
+    }
+
+    /** @internal How often one of ROUTE_SCOPED_VALUES has been set. */
+    pageScopedSets( entry ) {
+
+        return ( entry.shared ? pageScopeSets : this.pageScopeOwnSets )[ entry.name ] || 0;
     }
 
     /**

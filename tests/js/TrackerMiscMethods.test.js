@@ -316,3 +316,79 @@ describe('manageState one-shot guard', () => {
         expect(OWA.getState('v', 'vid')).toBe('SENTINEL');
     });
 });
+
+describe('page-scoped values and page views an SPA sends itself', () => {
+
+    /*
+     * trackRouteChanges() ends the page title, type and content group as a route
+     * is left. A site that sends its own page views has no such moment, so a
+     * page view to another URL ends any of them not set again since the last
+     * one.
+     */
+    function views(t) {
+        const sent = [];
+        t.logEvent = (p) => { if (p.event_type === 'page_view') sent.push({ ...p }); };
+        return sent;
+    }
+
+    test('a page view to another URL does not carry the last page\'s title, type or group', () => {
+        document.title = 'Document title';
+        const t = newTracker();
+        const sent = views(t);
+
+        t.setPageTitle('Route A');
+        t.setPageType('article');
+        t.setContentGroup('blog');
+        t.trackPageView('https://cv.example/a');
+        t.trackPageView('https://cv.example/b');
+
+        expect(sent[0].page_title).toBe('Route A');
+        expect(sent[0].page_type).toBe('article');
+        expect(sent[0].content_group).toBe('blog');
+        expect(sent[1].page_title).toBe('Document title');
+        expect(sent[1].page_type).toBeUndefined();
+        expect(sent[1].content_group).toBeUndefined();
+    });
+
+    test('a value set between the two page views is the new page\'s', () => {
+        const t = newTracker();
+        const sent = views(t);
+
+        t.setPageTitle('Route A');
+        t.trackPageView('https://cv.example/a');
+        t.setPageTitle('Route B');
+        t.trackPageView('https://cv.example/b');
+
+        expect(sent[1].page_title).toBe('Route B');
+    });
+
+    test('a second page view of the same URL keeps them', () => {
+        const t = newTracker();
+        const sent = views(t);
+
+        t.setPageType('product');
+        t.trackPageView('https://cv.example/a');
+        t.trackPageView('https://cv.example/a');
+
+        expect(sent[1].page_type).toBe('product');
+    });
+
+    test('a title one tracker sets for the new page reaches every tracker\'s page view', () => {
+        const one = newTracker();
+        const two = new OWATracker({ cookie_domain_set: true, cookie_domain: '.cv.example' });
+        two.setSiteId('misc-site-two');
+        const sentOne = views(one);
+        const sentTwo = views(two);
+
+        one.setPageTitle('Route A');
+        one.trackPageView('https://cv.example/a');
+        two.trackPageView('https://cv.example/a');
+
+        one.setPageTitle('Route B');
+        one.trackPageView('https://cv.example/b');
+        two.trackPageView('https://cv.example/b');
+
+        expect(sentOne[1].page_title).toBe('Route B');
+        expect(sentTwo[1].page_title).toBe('Route B');
+    });
+});
