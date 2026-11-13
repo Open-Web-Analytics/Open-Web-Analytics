@@ -264,6 +264,39 @@ final class PartitionCliTest extends CliControllerTestCase
     }
 
     /**
+     * A cube keeps no day before the first one raw holds: months dropped from
+     * raw by hand go from the cube at the next rotate. A shorter cube window
+     * still wins, and raw's own cutoff is its window alone.
+     */
+    public function testACubeFollowsRawUnlessItsWindowKeepsLess()
+    {
+        $cli = new class([]) extends \OWA\Module\Base\Controller\PartitionRotateCli {
+            public $from = null;
+
+            protected function rawCoversFrom()
+            {
+                return $this->from;
+            }
+        };
+
+        $cube = \OWA\Core\Entity::TABLE_PREFIX . \OWA\Module\Base\Classes\Cube\Cubes::PREFIX . '9990000000000000001';
+        $raw  = \OWA\Module\Base\Classes\Retention::rawTable();
+        $six  = \OWA\Module\Base\Classes\Retention::cutoff(6);
+
+        $this->assertNull($this->callProtected($cli, 'cutoffFor', [$cube, [], 0]), 'raw holds everything: so does the cube');
+
+        $cli->from = 20200301;
+        $this->assertSame(20200301, $this->callProtected($cli, 'cutoffFor', [$cube, [], 0]));
+        $this->assertNull($this->callProtected($cli, 'cutoffFor', [$raw, [], 0]), 'raw is held to its window only');
+
+        $this->assertSame($six, $this->callProtected($cli, 'cutoffFor', [$cube, ['cube' => 6], 0]), 'a shorter cube window wins');
+
+        $cli->from = (int) date('Ymd', strtotime('-2 months'));
+        $this->assertSame($cli->from, $this->callProtected($cli, 'cutoffFor', [$cube, ['cube' => 6], 0]),
+            'and raw wins over a window reaching further back than raw holds');
+    }
+
+    /**
      * An unknown granularity is refused rather than approximated.
      *
      * The load-bearing assertion is isPartitionGranularity() -- the function
