@@ -90,7 +90,7 @@ class Update extends \OWA\Core\Base {
 
         // check for schema version. abort if not present or else updates will get out of sync.
         if (empty($this->schema_version)) {
-            $this->e->notice(sprintf("Aborting %s Update (%s): Schema Version Number is not set.", get_class(), $this->module_name));
+            $this->e->notice(sprintf("Aborting %s Update (%s): Schema Version Number is not set.", static::class, $this->module_name));
             return false;
         }
 
@@ -100,7 +100,7 @@ class Update extends \OWA\Core\Base {
 
         if ( ! $force ) {
             if ($current_version === $this->schema_version) {
-                $this->e->notice(sprintf("Aborting %s Update (%s): Update has already been applied.", get_class(), $this->module_name));
+                $this->e->notice(sprintf("Aborting %s Update (%s): Update has already been applied.", static::class, $this->module_name));
                 return false;
             }
         }

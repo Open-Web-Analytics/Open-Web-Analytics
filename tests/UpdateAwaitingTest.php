@@ -33,7 +33,6 @@ final class UpdateAwaitingTest extends TestCase
     {
         $e = \OWA\Core\CoreAPI::errorSingleton();
         $p = new ReflectionProperty($e, 'sinks');
-        $p->setAccessible(true);
         $was = $p->getValue($e);
         $stream = fopen('php://memory', 'w+');
         $p->setValue($e, [['path' => null, 'stream' => $stream]]);

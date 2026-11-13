@@ -100,7 +100,6 @@ final class CubeRotateTest extends TestCase
         $cli   = $class->newInstanceWithoutConstructor();
 
         $params = $class->getProperty('params');
-        $params->setAccessible(true);
         $params->setValue($cli, []);
 
         return $cli;
@@ -109,7 +108,6 @@ final class CubeRotateTest extends TestCase
     private function call(string $method, array $args)
     {
         $m = new ReflectionMethod(RotateAtDate::class, $method);
-        $m->setAccessible(true);
 
         return $m->invokeArgs($this->cli(), $args);
     }

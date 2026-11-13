@@ -118,7 +118,6 @@ final class QueryErrorVisibilityTest extends TestCase {
         $spy = $this->spy();
 
         $reset = new ReflectionProperty( \OWA\Core\Db::class, 'query_error_count' );
-        $reset->setAccessible( true );
         $reset->setValue( null, 0 );
 
         $original = $db->e;

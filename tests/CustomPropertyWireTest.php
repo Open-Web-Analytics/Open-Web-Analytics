@@ -263,7 +263,6 @@ final class CustomPropertyWireTest extends TestCase
 
         $handlers = new ReflectionClass(EventRawHandlers::class);
         $method   = $handlers->getMethod('params');
-        $method->setAccessible(true);
 
         $json = $method->invoke($handlers->newInstanceWithoutConstructor(), $event);
 

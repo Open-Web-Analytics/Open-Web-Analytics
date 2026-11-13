@@ -45,9 +45,6 @@
     var trend = new OWA.resultSetExplorer('trend-chart');
     trend.setDataLoadUrl(trendurl);
     trend.options.sparkline.metric = 'sessions';
-    <?php if ($view->trendTitle):?>
-    trend.asyncQueue.push(['renderTemplate', '<?php echo $view->trendTitle;?>', {d: trend}, 'replace', 'trend-title']);
-    <?php endif;?>
     trend.asyncQueue.push(['makeAreaChart', [{x: 'date', y: '<?php if ( isset($tab['trendchartmetric'] ) ): echo $tab['trendchartmetric']; else: echo $view->trendChartMetric; endif; ?>'}], 'trend-chart']);
     trend.options.metricBoxes.width = '150px';
     trend.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out($k, false);?>_trend-metrics']);

@@ -319,7 +319,6 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         $m = new ReflectionMethod(
             \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::class, 'installDatabase' );
-        $m->setAccessible( true );
 
         return $m->invoke( $this->controller(), $found, $destination );
     }

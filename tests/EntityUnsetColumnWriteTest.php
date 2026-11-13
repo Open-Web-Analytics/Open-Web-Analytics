@@ -48,7 +48,6 @@ final class EntityUnsetColumnWriteTest extends TestCase
     private function writeValue($entity, string $column)
     {
         $m = new ReflectionMethod($entity, 'writeValue');
-        $m->setAccessible(true);
 
         return $m->invoke($entity, $column);
     }
@@ -134,7 +133,6 @@ final class EntityUnsetColumnWriteTest extends TestCase
         $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         $m = new ReflectionMethod($entity, 'textColumnTypes');
-        $m->setAccessible(true);
         $types = $m->invoke($entity);
 
         $this->assertNotEmpty($types, 'no text column types resolved at all');

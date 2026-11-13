@@ -175,7 +175,6 @@ final class CubeSkipUnchangedTest extends TestCase
         $class = new ReflectionClass(CubeRebuildCli::class);
         $cli   = $class->newInstanceWithoutConstructor();
         $p     = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, $params + ['property' => (string) self::PROPERTY]);
         $cli->action();
     }
@@ -285,7 +284,6 @@ final class CubeSkipUnchangedTest extends TestCase
         $class    = new ReflectionClass(\OWA\Module\Base\Classes\Migration\RequestMigrator::class);
         $migrator = $class->newInstanceWithoutConstructor();
         $write    = $class->getMethod('write');
-        $write->setAccessible(true);
 
         $ts = (time() - 3600) * 1000000;
         $id = \OWA\Module\Base\Classes\V2Event::id(self::SITE, self::VISITOR, 8899000000000001, $ts, 'page_view');

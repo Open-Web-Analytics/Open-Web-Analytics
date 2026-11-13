@@ -179,7 +179,6 @@ final class FormsReportTest extends TestCase
     private function constraints( array $report ): string
     {
         $build = new \ReflectionMethod( \OWA\Core\ConfiguredReport::class, 'buildConstraints' );
-        $build->setAccessible( true );
 
         return $build->invoke( null, $report['settings']['constraints'], array() );
     }

@@ -57,7 +57,7 @@ final class InstanceInfoCliTest extends TestCase
 
         $names = array_column($checks, 'name');
 
-        foreach (['PHP version', 'Database driver', 'Dependencies', 'Built assets'] as $expected) {
+        foreach (['PHP version', '64-bit PHP', 'Database driver', 'PHP extension: zlib', 'Dependencies', 'Built assets'] as $expected) {
             $this->assertContains($expected, $names,
                 $expected . ' must be one of the environment checks');
         }

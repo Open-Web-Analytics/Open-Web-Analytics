@@ -134,7 +134,6 @@ final class NewPropertyFirstProfileTest extends TestCase
     private function data( $controller ): array
     {
         $property = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $property->setAccessible( true );
 
         return (array) $property->getValue( $controller );
     }

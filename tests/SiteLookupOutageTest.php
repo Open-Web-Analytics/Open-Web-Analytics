@@ -38,7 +38,6 @@ final class SiteLookupOutageTest extends TestCase
         $db->close();
 
         $latch = new ReflectionProperty( $db, 'connect_failed' );
-        $latch->setAccessible( true );
         $latch->setValue( $db, true );
     }
 

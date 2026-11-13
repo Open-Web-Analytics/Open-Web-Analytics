@@ -4021,13 +4021,32 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * The engine, character set and row format a table is created with.
+     * The collation a table in this character set is declared with, or null
+     * for the server's default. See OWA_DTD_CHARACTER_ENCODING_UTF8_COLLATION.
+     *
+     * @param string $character_encoding
+     * @return string|null
+     */
+    public function tableCollation( $character_encoding ) {
+
+        if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8_COLLATION' ) ) {
+
+            return null;
+        }
+
+        return strtolower( (string) $character_encoding ) === 'utf8'
+            ? (string) OWA_DTD_CHARACTER_ENCODING_UTF8_COLLATION
+            : null;
+    }
+
+    /**
+     * The engine, character set, collation and row format a table is created with.
      *
      * Every CREATE TABLE goes through this, including the ones that do not
      * start from an entity: a table that names none of these takes the
      * database's defaults, which on an existing install can be latin1.
      *
-     * @param array $options table_type, character_encoding, row_format; each optional
+     * @param array $options table_type, character_encoding, collation, row_format; each optional
      * @return string
      */
     public function tableOptions( array $options = array() ) {
@@ -4059,6 +4078,15 @@ class Db extends \OWA\Core\Base {
         }
 
         $table_options .= sprintf(' ' . OWA_DTD_TABLE_CHARACTER_ENCODING, $options['character_encoding']);
+
+        $collation = array_key_exists( 'collation', $options )
+            ? $options['collation']
+            : $this->tableCollation( (string) $options['character_encoding'] );
+
+        if ( $collation && defined( 'OWA_DTD_TABLE_COLLATION' ) ) {
+
+            $table_options .= sprintf( ' ' . OWA_DTD_TABLE_COLLATION, $collation );
+        }
 
         /*
          * Declared rather than inherited. InnoDB's ~8,126-byte on-page row

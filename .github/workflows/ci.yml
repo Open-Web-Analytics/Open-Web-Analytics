@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.2', '8.3', '8.4']
+        php: ['8.2', '8.3', '8.4', '8.5']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -114,7 +114,9 @@ jobs:
     #
     # And where MariaDB is proven: OWA 2.0 runs on MySQL 8.0.21+ or MariaDB
     # 10.11+ (Classes\DatabaseRequirement), so the database-backed suite runs
-    # on both. PDO is what a MariaDB installation would use.
+    # on the oldest and the newest long-term release of each. PDO is what a
+    # MariaDB installation would use. The oldest servers run the oldest PHP;
+    # MySQL 8.4 runs PHP 8.4.
     strategy:
       fail-fast: false
       matrix:
@@ -122,12 +124,23 @@ jobs:
           - db_driver: mysql
             db_image: mysql:8.0
             db_label: mysql
+            php: '8.2'
           - db_driver: mysqli
             db_image: mysql:8.0
             db_label: mysqli
+            php: '8.2'
           - db_driver: mysql
             db_image: mariadb:10.11
             db_label: MariaDB 10.11
+            php: '8.2'
+          - db_driver: mysql
+            db_image: mysql:8.4
+            db_label: 'MySQL 8.4, PHP 8.4'
+            php: '8.4'
+          - db_driver: mysql
+            db_image: mariadb:11.8
+            db_label: MariaDB 11.8
+            php: '8.2'
     services:
       mysql:
         image: ${{ matrix.db_image }}
@@ -155,7 +168,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           extensions: mbstring, intl, json, mysqli, pdo_mysql, gd
           tools: composer:v2
 
@@ -203,15 +216,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # On MariaDB too: the updates' DDL -- partitions, column adds, indexes -- is
-    # where the two servers are most likely to differ.
+    # where the two servers are most likely to differ. The oldest and the
+    # newest long-term release of each; MySQL 8.4 runs PHP 8.4.
     strategy:
       fail-fast: false
       matrix:
         include:
           - db_image: mysql:8.0
             db_suffix: ''
+            php: '8.2'
           - db_image: mariadb:10.11
             db_suffix: ', MariaDB 10.11'
+            php: '8.2'
+          - db_image: mysql:8.4
+            db_suffix: ', MySQL 8.4, PHP 8.4'
+            php: '8.4'
+          - db_image: mariadb:11.8
+            db_suffix: ', MariaDB 11.8'
+            php: '8.2'
     # THE ONLY JOB IN WHICH THE UPDATES ACTUALLY RUN.
     #
     # Every other environment -- this workflow's unit job, the isolation sweep,
@@ -257,7 +279,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           extensions: mbstring, intl, json, mysqli, pdo_mysql, gd
           tools: composer:v2
 
@@ -296,15 +318,24 @@ jobs:
     name: E2E (self-hosted, php -S + ${{ matrix.db_name }})
     runs-on: ubuntu-latest
     # On MariaDB too: the install, the tracker's writes and every report read,
-    # end to end, on the other server OWA 2.0 supports.
+    # end to end, on the other server OWA 2.0 supports. The oldest and the
+    # newest long-term release of each; MySQL 8.4 runs PHP 8.4.
     strategy:
       fail-fast: false
       matrix:
         include:
           - db_image: mysql:8.0
             db_name: MySQL
+            php: '8.2'
           - db_image: mariadb:10.11
             db_name: MariaDB 10.11
+            php: '8.2'
+          - db_image: mysql:8.4
+            db_name: 'MySQL 8.4, PHP 8.4'
+            php: '8.4'
+          - db_image: mariadb:11.8
+            db_name: MariaDB 11.8
+            php: '8.2'
     # THE ONE THAT ACTUALLY HANGS. Observed between 4m27s and 10m25s when
     # healthy, and three times today it stopped dead inside "Install Playwright
     # Chromium + OS deps" -- a browser download plus apt, neither of ours -- and
@@ -344,7 +375,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           extensions: mbstring, intl, json, mysqli, gd
           tools: composer:v2
 

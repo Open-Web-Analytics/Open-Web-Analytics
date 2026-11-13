@@ -53,7 +53,63 @@ final class RegexConstraintLimitTest extends TestCase
 
     public function testABackreferenceIsRefused(): void
     {
-        $this->assertNotNull($this->problem('(a)\\1'));
+        foreach (array('(a)\\1', '(a)\\g1', '(a)\\g{1}', '(?<n>a)\\k<n>', '(?<n>a)\\k{n}') as $p) {
+            $this->assertSame('it uses a backreference.', $this->problem($p), $p);
+        }
+    }
+
+    /**
+     * PCRE accepts these, so MariaDB would run them; MySQL 8 runs REGEXP with
+     * ICU, which rejects them or reads them differently.
+     */
+    public function testAConstructMysqlCannotRunIsRefused(): void
+    {
+        foreach (array(
+            '[[:<:]]word[[:>:]]'  => '[[:<:]]',
+            '(?|(a)|(b))'         => 'branch reset',
+            'foo\\Kbar'           => '\\K',
+            '(a(?R)?b)'           => 'recursively',
+            '(a)(?1)'             => 'recursively',
+            '(a)(?-1)'            => 'recursively',
+            '(?<n>a)(?&n)'        => 'recursively',
+            '(?<n>a)(?P>n)'       => 'recursively',
+            '(a)(?(1)b|c)'        => 'conditional',
+            'a(*SKIP)(*FAIL)|b'   => 'verb',
+            '(?C1)a'              => '(?C',
+            '(?P<n>a)'            => '(?P',
+            "(?'n'a)"             => "(?'",
+            '\\C'                 => '\\C',
+            '\\N'                 => '\\N',
+            '\\o{101}'            => '\\o',
+            '(?U)a+'              => 'inline flags',
+            '(?n)(a)'             => 'inline flags',
+            '(?^i)a'              => 'inline flags',
+            '[a[b]'               => 'inside a character class',
+            '[a-z&&[aeiou]]'      => 'inside a character class',
+        ) as $p => $named) {
+            $problem = $this->problem($p);
+
+            $this->assertNotNull($problem, $p);
+            $this->assertStringContainsString($named, $problem, $p);
+        }
+    }
+
+    public function testConstructsBothEnginesRunAreAccepted(): void
+    {
+        foreach (array('a++', 'a*+b', '(?>ab|a)c', '(?<=/)blog', '(?<!x)y', 'x(?=y)', '(?<n>a)b',
+                       '\\Qa(b\\E', '[[:digit:]]+', '[^[:space:]]', '(?i)abc', '(?i:abc)', '(?-i:a)',
+                       '[]a]', '[^]a]', '[a\\[b]', 'a&&b', '(?#note)a', '\\bword\\b', '\\p{L}+',
+                       '[(]x[)]') as $p) {
+            $this->assertNull($this->problem($p), $p);
+        }
+    }
+
+    /** A ( or [ that is escaped, inside a class or inside \Q...\E starts nothing. */
+    public function testLiteralBracketsAreNotMistakenForSyntax(): void
+    {
+        foreach (array('\\(\\?\\|', '[(][?][|]', '\\Q(?|\\E', '\\Q[[:<:]]\\E', '[(*]') as $p) {
+            $this->assertNull($this->problem($p), $p);
+        }
     }
 
     public function testAHugeRepeatIsRefused(): void
@@ -75,7 +131,6 @@ final class RegexConstraintLimitTest extends TestCase
         $rsm->setConstraints(array(array('name' => 'pagePath', 'operator' => '=~', 'value' => '(a+)+$')));
 
         $errors = new \ReflectionProperty($rsm, 'request_errors');
-        $errors->setAccessible(true);
 
         $this->assertNotEmpty((array) $errors->getValue($rsm));
     }

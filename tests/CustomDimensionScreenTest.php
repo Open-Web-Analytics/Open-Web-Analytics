@@ -27,7 +27,6 @@ final class CustomDimensionScreenTest extends TestCase
     private function validatedNames( $controller ): array
     {
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $controller );
 
         if ( ! $validator ) {
@@ -35,7 +34,6 @@ final class CustomDimensionScreenTest extends TestCase
         }
 
         $property = new \ReflectionProperty( $validator, 'validations' );
-        $property->setAccessible( true );
 
         $names = [];
 
@@ -50,7 +48,6 @@ final class CustomDimensionScreenTest extends TestCase
     private function validationMessages( $controller ): string
     {
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $controller );
 
         if ( ! $validator ) {
@@ -58,7 +55,6 @@ final class CustomDimensionScreenTest extends TestCase
         }
 
         $property = new \ReflectionProperty( $validator, 'validations' );
-        $property->setAccessible( true );
 
         $messages = [];
 
@@ -117,7 +113,6 @@ final class CustomDimensionScreenTest extends TestCase
                 get_class( $controller ) . ' must be capability-gated' );
 
             $nonce = new \ReflectionProperty( \OWA\Core\Controller::class, 'is_nonce_required' );
-            $nonce->setAccessible( true );
 
             $this->assertTrue( $nonce->getValue( $controller ),
                 get_class( $controller ) . ' must require a nonce' );

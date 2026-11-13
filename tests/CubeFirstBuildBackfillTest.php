@@ -167,7 +167,6 @@ final class CubeFirstBuildBackfillTest extends TestCase
         $cli   = $class->newInstanceWithoutConstructor();
 
         $p = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, $params);
 
         return $cli;
@@ -212,7 +211,6 @@ final class CubeFirstBuildBackfillTest extends TestCase
         $cli = $this->cli([]);
 
         $method = new ReflectionMethod(CubeRebuildCli::class, 'resolveProperties');
-        $method->setAccessible(true);
 
         $range = [
             'from' => (int) date('Ymd', strtotime('-1 day')),

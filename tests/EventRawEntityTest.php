@@ -253,7 +253,6 @@ final class EventRawEntityTest extends TestCase
         // tell "removed" from "defaulted off" -- which is the whole claim.
         $class = new ReflectionClass(\OWA\Module\Base\Classes\Settings::class);
         $method = $class->getMethod('getDefaultSettingsArray');
-        $method->setAccessible(true);
 
         $declared = $method->invoke($class->newInstanceWithoutConstructor());
 

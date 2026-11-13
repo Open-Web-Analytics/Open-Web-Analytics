@@ -29,7 +29,6 @@ final class ReportDefinitionFormatTest extends TestCase
     private static function drawnAsReady( \OWA\Core\ConfiguredReport $controller ): void
     {
         $flag = new \ReflectionProperty( \OWA\Core\ReportController::class, 'reads_reporting_data' );
-        $flag->setAccessible( true );
         $flag->setValue( $controller, false );
     }
 
@@ -1776,7 +1775,6 @@ final class ReportDefinitionFormatTest extends TestCase
     private function resolveSets( array $declared, array $site ): array
     {
         $m = new \ReflectionMethod( \OWA\Core\ConfiguredReport::class, 'resolveMetricSets' );
-        $m->setAccessible( true );
 
         return $m->invoke( null, $declared, $site );
     }

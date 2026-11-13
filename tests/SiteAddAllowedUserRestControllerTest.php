@@ -291,7 +291,6 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
             $ref = new \ReflectionObject($cu);
             if ($ref->hasProperty('is_authenticated')) {
                 $p = $ref->getProperty('is_authenticated');
-                $p->setAccessible(true);
                 $p->setValue($cu, false);
             }
         }

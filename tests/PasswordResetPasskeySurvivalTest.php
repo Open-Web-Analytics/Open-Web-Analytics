@@ -37,7 +37,6 @@ final class PasswordResetPasskeySurvivalTest extends TestCase
         $controller->errorAction();
 
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $data->setAccessible( true );
 
         return (array) $data->getValue( $controller );
     }

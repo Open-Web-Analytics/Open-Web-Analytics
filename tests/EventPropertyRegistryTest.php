@@ -138,7 +138,6 @@ final class EventPropertyRegistryTest extends TestCase
     {
         $handlers = new ReflectionClass(\OWA\Module\Base\Handler\EventRawHandlers::class);
         $method   = $handlers->getMethod('declaredParams');
-        $method->setAccessible(true);
 
         $instance = $handlers->newInstanceWithoutConstructor();
 

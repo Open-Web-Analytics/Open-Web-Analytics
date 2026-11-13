@@ -38,11 +38,9 @@ final class CubeRebuildRangeTest extends TestCase
         $cli   = $class->newInstanceWithoutConstructor();
 
         $property = $class->getProperty('params');
-        $property->setAccessible(true);
         $property->setValue($cli, $params);
 
         $method = $class->getMethod('resolveRange');
-        $method->setAccessible(true);
 
         return $method->invoke($cli);
     }
@@ -177,7 +175,6 @@ final class CubeRebuildRangeTest extends TestCase
         $cli   = $class->newInstanceWithoutConstructor();
 
         $p = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, $params);
 
         return $cli;

@@ -1733,12 +1733,10 @@ final class PartitionOperationsTest extends TestCase
         $class = new ReflectionClass(\OWA\Module\Base\Controller\PartitionRotateCli::class);
         $cli   = $class->newInstanceWithoutConstructor();
         $p     = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, []);
 
         foreach (['carvePlan', 'mergeablePeriods'] as $method) {
             $m = new ReflectionMethod($cli, $method);
-            $m->setAccessible(true);
 
             $this->assertSame([], $m->invoke($cli, $spans),
                 "$method found work to do on a table that was just created correctly");
@@ -1797,13 +1795,11 @@ final class PartitionOperationsTest extends TestCase
         $class = new ReflectionClass(\OWA\Module\Base\Controller\PartitionRotateCli::class);
         $cli   = $class->newInstanceWithoutConstructor();
         $p     = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, []);
 
         $spans = $db->getPartitionSpans($table);
 
         $merge = new ReflectionMethod($cli, 'mergeablePeriods');
-        $merge->setAccessible(true);
 
         $monthly = $merge->invoke($cli, $spans, 'monthly');
         $quarter = $merge->invoke($cli, $spans, 'quarter-month');
@@ -1838,7 +1834,6 @@ final class PartitionOperationsTest extends TestCase
         // Carving is unaffected: the front is still two months deep, and what
         // the merge releases is what the next carve claims.
         $carve = new ReflectionMethod($cli, 'carvePlan');
-        $carve->setAccessible(true);
 
         $this->assertSame(array(), $carve->invoke($cli, $spans),
             'two months of daily already, so nothing is carved until a merge frees room');

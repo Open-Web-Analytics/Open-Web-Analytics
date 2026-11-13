@@ -27,7 +27,7 @@ final class ReportRegistryTest extends TestCase
     /** Report-defining keys: what a report IS, as opposed to request scaffolding. */
     private const DEFINING = array(
         'subview', 'view_method', 'metrics', 'dimensions', 'sort', 'resultsPerPage',
-        'constraints', 'trendChartMetric', 'trendTitle', 'gridTitle',
+        'constraints', 'trendChartMetric', 'gridTitle',
         'excludeColumns', 'dimensionLink', 'dimension', 'title', 'titleSuffix',
     );
 

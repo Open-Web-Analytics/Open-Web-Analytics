@@ -102,7 +102,6 @@ describe('reporting bundle build integrity', () => {
             'jquery-sparkline',
             "'jquery.flot'",                    // flot core
             'jquery.flot/jquery.flot.time.js',
-            'jQote2/jquery.jqote2.min.js',
             './owa.js',
             './owa.report.js',
             './owa.kpibox.js',

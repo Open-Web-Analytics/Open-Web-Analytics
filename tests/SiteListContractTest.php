@@ -247,7 +247,6 @@ final class SiteListContractTest extends TestCase
 
         $view   = new \OWA\Module\Base\View\SitesRest();
         $method = new \ReflectionMethod( $view, 'addPropertyNames' );
-        $method->setAccessible( true );
 
         $emitted = $method->invoke( $view, array( 'contract-probe' => $site ) );
 

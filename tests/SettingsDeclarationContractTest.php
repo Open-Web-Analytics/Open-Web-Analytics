@@ -46,7 +46,6 @@ final class SettingsDeclarationContractTest extends TestCase
     private function literalDefaults(): array
     {
         $m = new ReflectionMethod( $this->settings(), 'getDefaultSettingsArray' );
-        $m->setAccessible( true );
 
         return (array) ( $m->invoke( $this->settings() )['base'] ?? array() );
     }
@@ -350,7 +349,6 @@ final class SettingsDeclarationContractTest extends TestCase
     {
         $call = function ( string $class, string $method ): array {
             $m = new ReflectionMethod( $class, $method );
-            $m->setAccessible( true );
 
             return (array) $m->invoke( null );
         };

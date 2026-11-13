@@ -2513,26 +2513,16 @@ class CoreAPI {
 		
 		$secure = \OWA\Core\Lib::isHttps();
 	
-        // PHP 7.3 has a different function signature.
-        // @todo refactor usage to clean up once php 7.3 is min requirment.
-        if (PHP_VERSION_ID < 70300) {
-	        
-	        setcookie($cookie_name, $cookie_value, $expires, $path, $domain, $secure);
-	        
-	    } else {
-		    	
-			$options = [
-		        
-		        'expires' 	=> $expires,
-                'path' 		=> '/',
-                'samesite' 	=> 'Lax',
-                'domain' 	=> $domain,
-                'secure' 	=> $secure,
-                'httponly'	=> (bool) $httponly,
-	        ];
-	        
-	        setcookie($cookie_name, $cookie_value, $options);
-	    }
+        $options = [
+            'expires'  => $expires,
+            'path'     => '/',
+            'samesite' => 'Lax',
+            'domain'   => $domain,
+            'secure'   => $secure,
+            'httponly' => (bool) $httponly,
+        ];
+
+        setcookie($cookie_name, $cookie_value, $options);
     }
 
     public static function deleteCookie($cookie_name, $path = '/', $domain = '') {

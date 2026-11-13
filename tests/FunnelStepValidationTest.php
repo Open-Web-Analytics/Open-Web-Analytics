@@ -77,7 +77,6 @@ final class FunnelStepValidationTest extends TestCase
         $controller->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $controller );
 
         if ( ! $validator ) {
@@ -114,7 +113,6 @@ final class FunnelStepValidationTest extends TestCase
         $controller->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $controller );
         $validator->doValidations();
 
@@ -359,7 +357,6 @@ final class FunnelStepValidationTest extends TestCase
                     array( 'propertyId' => $mine ) + $this->params( array( $step ), $constraints ) );
                 $controller->validate();
                 $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-                $v->setAccessible( true );
                 $validator = $v->getValue( $controller );
                 $validator->doValidations();
                 return $validator->hasErrors ? (array) $validator->getErrorMsgs() : array();

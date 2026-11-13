@@ -3,7 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * Every CREATE TABLE names its engine, character set and row format through
+ * Every CREATE TABLE names its engine, character set, collation and row format through
  * Db::tableOptions(). A table that names none takes the database's defaults,
  * and on an existing install that can be latin1: the cube's computed table did,
  * and a search term outside Latin-1 then failed the whole build.
@@ -82,7 +82,7 @@ class CreateTableDeclaresOptionsTest extends TestCase
         $this->assertArrayHasKey('modules/Base/Update/Update068.php', $found);
     }
 
-    public function testTheOptionsNameEngineCharsetAndRowFormat(): void
+    public function testTheOptionsNameEngineCharsetCollationAndRowFormat(): void
     {
         require_once __DIR__ . '/bootstrap_owa.php';
 
@@ -96,6 +96,7 @@ class CreateTableDeclaresOptionsTest extends TestCase
 
         $this->assertMatchesRegularExpression('/ENGINE\s*=\s*InnoDB/i', $options);
         $this->assertStringContainsString('CHARACTER SET = ' . OWA_DTD_CHARACTER_ENCODING_UTF8, $options);
+        $this->assertStringContainsString('COLLATE = utf8_general_ci', $options);
         $this->assertMatchesRegularExpression('/ROW_FORMAT\s*=\s*DYNAMIC/i', $options);
     }
 }

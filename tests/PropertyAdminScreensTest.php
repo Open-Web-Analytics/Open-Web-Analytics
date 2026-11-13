@@ -18,7 +18,6 @@ final class PropertyAdminScreensTest extends TestCase
     private function data( $controller ): array
     {
         $property = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $property->setAccessible( true );
 
         return (array) $property->getValue( $controller );
     }
@@ -73,7 +72,6 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertSame( 'edit_sites', $controller->getRequiredCapability() );
 
         $nonce = new \ReflectionProperty( \OWA\Core\Controller::class, 'is_nonce_required' );
-        $nonce->setAccessible( true );
 
         $this->assertTrue(
             $nonce->getValue( $controller ),
@@ -93,13 +91,11 @@ final class PropertyAdminScreensTest extends TestCase
         $controller->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $controller );
 
         $this->assertNotEmpty( $validator, 'Nothing validates the rename at all.' );
 
         $property = new \ReflectionProperty( $validator, 'validations' );
-        $property->setAccessible( true );
 
         $names = array();
 
@@ -120,7 +116,6 @@ final class PropertyAdminScreensTest extends TestCase
     private function validatedNames( $controller ): array
     {
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
         $validator = $v->getValue( $controller );
 
         if ( ! $validator ) {
@@ -129,7 +124,6 @@ final class PropertyAdminScreensTest extends TestCase
         }
 
         $property = new \ReflectionProperty( $validator, 'validations' );
-        $property->setAccessible( true );
 
         $names = array();
 
@@ -284,14 +278,12 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertSame( 'edit_settings', $controller->getRequiredCapability() );
 
         $nonce = new \ReflectionProperty( \OWA\Core\Controller::class, 'is_nonce_required' );
-        $nonce->setAccessible( true );
 
         $this->assertTrue( $nonce->getValue( $controller ) );
 
         $controller->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
-        $v->setAccessible( true );
 
         $this->assertNotEmpty(
             $v->getValue( $controller ),
@@ -518,7 +510,6 @@ final class PropertyAdminScreensTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
-        $method->setAccessible( true );
 
         $profiles = (array) ( $method->invoke( $controller, '', 'p' )['Profiles'] ?? array() );
 
@@ -628,7 +619,6 @@ final class PropertyAdminScreensTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
-        $method->setAccessible( true );
 
         /* With no context at all, only the Organization can be offered: there
            is no Property or Profile to name. */
@@ -663,7 +653,6 @@ final class PropertyAdminScreensTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
-        $method->setAccessible( true );
 
         foreach ( (array) $method->invoke( $controller, '', 'p' ) as $group => $items ) {
 
@@ -711,7 +700,6 @@ final class PropertyAdminScreensTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
-        $method->setAccessible( true );
 
         $nav = (array) $method->invoke( $controller, 'a-site', 'a-property' );
 
@@ -761,7 +749,6 @@ final class PropertyAdminScreensTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\OrganizationProfile( array() );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'resolveCurrentSiteId' );
-        $method->setAccessible( true );
 
         $this->assertNotEmpty(
             $method->invoke( $controller, '' ),
@@ -789,10 +776,8 @@ final class PropertyAdminScreensTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\PropertyProfile( array() );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'resolveCurrentSiteId' );
-        $method->setAccessible( true );
 
         $allowed = new \ReflectionMethod( \OWA\Core\Controller::class, 'getSitesAllowedForCurrentUser' );
-        $allowed->setAccessible( true );
 
         /* Every Profile of each Property -- the requirement is MEMBERSHIP, not
            a particular one, so recording only one per Property would assert
@@ -842,10 +827,8 @@ final class PropertyAdminScreensTest extends TestCase
         }
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'resolveCurrentSiteId' );
-        $method->setAccessible( true );
 
         $allowed = new \ReflectionMethod( \OWA\Core\Controller::class, 'getSitesAllowedForCurrentUser' );
-        $allowed->setAccessible( true );
 
         $byProperty = array();
 
@@ -1187,7 +1170,6 @@ final class PropertyAdminScreensTest extends TestCase
         $controller->action();
 
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $data->setAccessible( true );
 
         $this->assertEmpty(
             ( (array) $data->getValue( $controller ) )['propertyId'] ?? null,
@@ -1249,7 +1231,6 @@ final class PropertyAdminScreensTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\OptionsModules( array() );
 
         $method = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
-        $method->setAccessible( true );
 
         $nav = (array) $method->invoke( $controller, '', '' );
 

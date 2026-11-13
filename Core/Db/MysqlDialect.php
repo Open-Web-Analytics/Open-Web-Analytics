@@ -350,6 +350,16 @@ if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8' ) ) { define('OWA_DTD_CHARACTE
 if ( ! defined( 'OWA_DTD_CONNECTION_ENCODING' ) ) { define('OWA_DTD_CONNECTION_ENCODING', 'utf8mb4'); }
 if ( ! defined( 'OWA_DTD_TABLE_CHARACTER_ENCODING' ) ) { define('OWA_DTD_TABLE_CHARACTER_ENCODING', 'CHARACTER SET = %s'); }
 
+// The collation a utf8 table is declared with: utf8_general_ci, the one every
+// existing OWA table has, because MySQL and MariaDB before 11.5 default utf8 to
+// it. MariaDB 11.5 defaults utf8 to utf8mb3_uca1400_ai_ci, and a table created
+// there without naming a collation -- the cube's computed table is recreated on
+// every build -- would compare its text differently from the older tables and
+// could not be joined to them without an "Illegal mix of collations" error.
+// A table in another character set keeps the server's default collation.
+if ( ! defined( 'OWA_DTD_TABLE_COLLATION' ) ) { define('OWA_DTD_TABLE_COLLATION', 'COLLATE = %s'); }
+if ( ! defined( 'OWA_DTD_CHARACTER_ENCODING_UTF8_COLLATION' ) ) { define('OWA_DTD_CHARACTER_ENCODING_UTF8_COLLATION', 'utf8_general_ci'); }
+
 /*
  * THE ROW FORMAT IS DECLARED, NOT INHERITED.
  *
@@ -537,7 +547,10 @@ trait MysqlDialect
             return false;
         }
 
-        return $this->query( sprintf( 'CREATE DATABASE `%s` CHARACTER SET %s', $name, OWA_DTD_CHARACTER_ENCODING_UTF8 ) ) !== false;
+        $collation = $this->tableCollation( OWA_DTD_CHARACTER_ENCODING_UTF8 );
+
+        return $this->query( sprintf( 'CREATE DATABASE `%s` CHARACTER SET %s%s', $name, OWA_DTD_CHARACTER_ENCODING_UTF8,
+            $collation !== null ? ' COLLATE ' . $collation : '' ) ) !== false;
     }
 
     /**

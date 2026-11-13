@@ -118,7 +118,6 @@ final class UaRegexesFileTest extends TestCase {
         $module = \OWA\Core\CoreAPI::moduleClassFactory( 'base', 'Module' );
 
         $property = new ReflectionProperty( $module, 'cli_commands' );
-        $property->setAccessible( true );
 
         $this->assertArrayHasKey(
             'update-ua-regexes',
@@ -174,7 +173,6 @@ final class UaRegexesFileTest extends TestCase {
     private function whyNotWritable( $dir ) {
 
         $m = new ReflectionMethod( \OWA\Module\Base\Controller\UpdateUaRegexesCli::class, 'whyNotWritable' );
-        $m->setAccessible( true );
 
         return $m->invoke( $this->command(), $dir );
     }

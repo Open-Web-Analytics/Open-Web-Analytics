@@ -730,7 +730,6 @@ final class CustomReportsTest extends TestCase
     public function testSeveralDimensionsFromOneValuePreferTheParametersName(): void
     {
         $m = new ReflectionMethod(CustomReports::class, 'constrainedDimension');
-        $m->setAccessible(true);
 
         $definition = [
             'params'  => ['pagePath' => []],

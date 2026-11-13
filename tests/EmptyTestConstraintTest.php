@@ -20,7 +20,6 @@ final class EmptyTestConstraintTest extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $m = new \ReflectionMethod( $db, '_makeConstraintClause' );
-        $m->setAccessible( true );
 
         return preg_replace( '/\s+/', ' ', trim( $m->invoke( $db, $type,
             array( array( 'name' => $name, 'operator' => $operator, 'value' => '(not set)' ) ) ) ) );
@@ -87,7 +86,6 @@ final class EmptyTestConstraintTest extends TestCase
 
         $tags = function ( $operator ) use ( $db, $rows ) {
             $m = new \ReflectionMethod( $db, '_makeConstraintClause' );
-            $m->setAccessible( true );
             $where = $m->invoke( $db, 'WHERE', array( array(
                 'name' => 't.campaign', 'operator' => $operator, 'value' => '(not set)' ) ) );
             $tags = array_column( (array) $db->get_results( "SELECT t.tag FROM $rows $where" ), 'tag' );
@@ -111,7 +109,6 @@ final class EmptyTestConstraintTest extends TestCase
             \OWA\Core\CoreAPI::dbSingleton() );
 
         $p = new \ReflectionProperty( $rsm, 'errors' );
-        $p->setAccessible( true );
 
         $this->assertNotEmpty( (array) $p->getValue( $rsm ) );
     }

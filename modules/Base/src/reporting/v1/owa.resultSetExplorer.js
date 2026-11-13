@@ -183,12 +183,6 @@ OWA.resultSetExplorer = function(dom_id, options) {
              */
             showExplorerControls: true
         },
-        template: {
-            template: '',
-            params: '',
-            mode: 'append',
-            dom_id: ''
-        },
         metricBoxes: {
             width: '',
 
@@ -228,8 +222,7 @@ OWA.resultSetExplorer.prototype = {
         grid: 'refreshGrid',
         areaChart: 'makeAreaChart',
         pie: 'makeShareChart',
-        sparkline: 'makeSparkline',
-        template: 'renderTemplate'
+        sparkline: 'makeSparkline'
     },
 
     setDataLoadUrl : function(url) {
@@ -833,24 +826,6 @@ OWA.resultSetExplorer.prototype = {
         this.registerDataChangeSubscriber( dom_id );
     },
     
-
-    renderTemplate : function(template, params, mode, dom_id) {
-
-        template = template || this.options.template.template;
-        params = params || this.options.template.params;
-        mode = mode || this.options.template.mode;
-        dom_id = dom_id || this.options.template.dom_id || this.dom_id;
-        jQuery.jqotetag('*');
-        //dom_id = dom_id || this.dom_id;
-
-        if (mode === 'append') {
-            jQuery('#' + dom_id).jqoteapp(template, params);
-        } else if (mode === 'prepend') {
-            jQuery('#' + dom_id).jqotepre(template, params);
-        } else if (mode === 'replace') {
-            jQuery('#' + dom_id).jqotesub(template, params);
-        }
-    },
 
     // moved to resultSet
     getSeries : function(value_name, value_name2, filter) {

@@ -69,7 +69,6 @@ final class Update082Test extends TestCase
         $entity = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
 
         $method = new ReflectionMethod($entity, 'numericColumnTypes');
-        $method->setAccessible(true);
 
         $this->assertContains((string) OWA_DTD_DECIMAL6_1, $method->invoke($entity));
 

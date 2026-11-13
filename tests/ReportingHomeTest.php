@@ -23,7 +23,6 @@ final class ReportingHomeTest extends TestCase
         $controller->action();
 
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $data->setAccessible( true );
 
         return (array) $data->getValue( $controller );
     }
@@ -69,7 +68,6 @@ final class ReportingHomeTest extends TestCase
         $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
 
         $cookies = new \ReflectionProperty( $request, 'cookies' );
-        $cookies->setAccessible( true );
         $original = $cookies->getValue( $request );
 
         try {

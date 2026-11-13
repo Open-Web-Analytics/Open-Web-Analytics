@@ -173,7 +173,6 @@ final class CubeStatusTest extends TestCase
         $cli   = $class->newInstanceWithoutConstructor();
 
         $p = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, ['property' => (string) self::PROPERTY,
                             'from' => (string) $from, 'to' => (string) $to]);
 
@@ -183,7 +182,6 @@ final class CubeStatusTest extends TestCase
     private function invoke(string $method, array $args)
     {
         $m = new ReflectionMethod(Status::class, $method);
-        $m->setAccessible(true);
 
         return $m->invokeArgs(null, $args);
     }

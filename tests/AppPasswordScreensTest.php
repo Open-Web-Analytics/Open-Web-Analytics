@@ -51,7 +51,6 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     private function data($controller): array
     {
         $property = new \ReflectionProperty(\OWA\Core\Controller::class, 'data');
-        $property->setAccessible(true);
 
         return (array) $property->getValue($controller);
     }
@@ -288,7 +287,6 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         $controller = new \OWA\Module\Base\Controller\MyAppPasswords(array());
 
         $method = new \ReflectionMethod(\OWA\Core\Controller::class, 'getHierarchyNav');
-        $method->setAccessible(true);
 
         $nav = (array) $method->invoke($controller, '');
 
