@@ -132,6 +132,44 @@ final class NotificationManagerTest extends TestCase
         $this->assertSame( '', NM::excerpt( "\n\n  \n" ) );
     }
 
+    /** Over-long fields are cut to their columns, so a long release is stored rather than refused. */
+    public function testFieldsAreCutToTheirColumns(): void
+    {
+        $long = NM::storable( array(
+            'title' => str_repeat( "\u{00E9}", 300 ),
+            'body'  => str_repeat( "\u{20AC}", 30000 ),
+            'url'   => 'https://github.com/' . str_repeat( 'a', 300 ),
+        ) );
+
+        $this->assertSame( 255, mb_strlen( $long['title'] ), 'characters, as VARCHAR(255) counts' );
+        $this->assertLessThanOrEqual( 65535, strlen( $long['body'] ), 'bytes, as TEXT counts' );
+        $this->assertGreaterThan( 65530, strlen( $long['body'] ) );
+        $this->assertTrue( mb_check_encoding( $long['body'], 'UTF-8' ), 'not cut inside a character' );
+        $this->assertSame( '', $long['url'], 'a cut URL would point somewhere else' );
+
+        $short = array( 'title' => 'v2.0', 'body' => 'Notes', 'url' => 'https://github.com/x/y' );
+        $this->assertSame( $short, NM::storable( $short ) );
+    }
+
+    /** @return iterable<string, array{string, bool}> */
+    public static function urls(): iterable
+    {
+        yield 'https'           => array( 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/2.0.0', true );
+        yield 'http'            => array( 'http://github.com/x', false );
+        yield 'javascript'      => array( 'javascript:alert(1)', false );
+        yield 'data'            => array( 'data:text/html,x', false );
+        yield 'protocol-relative' => array( '//github.com/x', false );
+        yield 'no host'         => array( 'https:///x', false );
+        yield 'empty'           => array( '', false );
+    }
+
+    /** @dataProvider urls */
+    public function testOnlyHttpsUrlsAreLinked( string $url, bool $linked ): void
+    {
+        $this->assertSame( $linked, NM::isLinkable( $url ) );
+        $this->assertSame( $linked ? $url : '', NM::storable( array( 'url' => $url ) )['url'] );
+    }
+
     /**
      * The tests above this line are pure -- decoded JSON in, items out -- and
      * must keep running everywhere. Everything below writes rows, and CI runs
@@ -498,5 +536,43 @@ final class NotificationManagerTest extends TestCase
     {
         $this->assertFalse( NM::dismiss( '', 'someone' ) );
         $this->assertFalse( NM::dismiss( 'something', '' ) );
+    }
+
+    /** A release past the columns' sizes is stored, cut, and a link that is not https: is dropped. */
+    public function testAnOversizeReleaseIsStoredAndItsUnsafeLinkDropped(): void
+    {
+        $this->requireDb();
+
+        $source = $this->source() . '_oversize';
+        $item   = array( 'source_key' => 'big', 'title' => str_repeat( 't', 400 ),
+                         'body' => str_repeat( 'b', 70000 ), 'url' => 'javascript:alert(1)', 'published_at' => 1000 );
+
+        $this->assertSame( 1, NM::record( array( $item ), $source ) );
+
+        $n = \OWA\Core\CoreAPI::entityFactory( 'base.notification' );
+        $n->load( $n->generateId( $source . 'big' ) );
+
+        $this->assertSame( 255, strlen( (string) $n->get( 'title' ) ) );
+        $this->assertSame( 65535, strlen( (string) $n->get( 'body' ) ) );
+        $this->assertSame( '', (string) $n->get( 'url' ) );
+    }
+
+    /** A row stored before links were checked is not handed to the panel as a link. */
+    public function testAStoredUnsafeLinkIsNotListed(): void
+    {
+        $this->requireDb();
+
+        $source = $this->source() . '_oldrow';
+        NM::record( array( array( 'source_key' => 'old', 'title' => 'Old', 'body' => '',
+                                  'url' => 'https://example.com/ok', 'published_at' => 1000 ) ), $source );
+
+        $n = \OWA\Core\CoreAPI::entityFactory( 'base.notification' );
+        $n->load( $n->generateId( $source . 'old' ) );
+        $n->set( 'url', 'javascript:alert(1)' );
+        $n->update();
+
+        $rows = array_column( NM::undismissedFor( 'owa-test-nobody', NM::MAX_ROWS ), null, 'id' );
+
+        $this->assertSame( '', $rows[ $n->get( 'id' ) ]['url'] );
     }
 }

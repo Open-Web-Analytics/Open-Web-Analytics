@@ -330,9 +330,12 @@ class CoreAPI {
      */
     public static function getSetting($module, $name, $scopeType = '', $scopeId = '', $inherit = true) {
 
-        if ( ! $scopeType || ! $scopeId ) {
+        $s = \OWA\Core\CoreAPI::configSingleton();
 
-            $s = \OWA\Core\CoreAPI::configSingleton();
+        // A static-config node (a logging node) holds no scoped settings: it
+        // reads nothing from the database, so every scope answers the install's.
+        if ( ! $scopeType || ! $scopeId || $s->get( 'base', 'useStaticConfigOnly' ) ) {
+
             return $s->get($module, $name);
         }
 
@@ -853,21 +856,6 @@ class CoreAPI {
         return $setting->delete( $setting->makeId( $scopeType, $scopeId, $module, $name ) );
     }
 
-    /**
-     * The namespace to EMIT on OWA's own admin/reporting URLs and form fields.
-     *
-     * Empty: OWA owns its whole query string there and has nothing to collide
-     * with. Distinct from the WIRE namespace ('ns'), which still prefixes
-     * cookie names and the params OWA reads off a TRACKED page's URL, where the
-     * query string belongs to someone else.
-     *
-     * @return string
-     */
-    public static function appNs() {
-
-        return (string) \OWA\Core\CoreAPI::getSetting('base', 'app_ns');
-    }
-
     public static function setSetting($module, $name, $value, $persist = false) {
 
         $s = \OWA\Core\CoreAPI::configSingleton();
@@ -972,6 +960,13 @@ class CoreAPI {
         if ( $site_id === '' ) {
 
             return false;
+        }
+
+        // A static-config node is a logging node: it has no database to ask,
+        // and the ingest that drains its queue checks the site.
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'useStaticConfigOnly' ) ) {
+
+            return null;
         }
 
         if ( ! array_key_exists( $site_id, self::$registered_sites ) ) {
@@ -2496,11 +2491,12 @@ class CoreAPI {
     }
 
     /**
+     * @param string $path     The path the cookie is sent for. Default /.
      * @param bool $httponly Out of reach of the page's scripts. The sign-in
      *                       cookies are; state the reporting UI reads in the
      *                       browser cannot be.
      */
-    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/; samesite=Lax', $domain = '', $secure = false, $httponly = false) {
+    public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '', $secure = false, $httponly = false) {
 
         if ( $domain ) {
             // sanitizes the domain
@@ -2527,18 +2523,35 @@ class CoreAPI {
             $expires = 0;
         }
 		
-		$secure = \OWA\Core\Lib::isHttps();
-	
-        $options = [
-            'expires'  => $expires,
-            'path'     => '/',
+        setcookie($cookie_name, $cookie_value,
+            self::cookieOptions($expires, $path, $domain, \OWA\Core\Lib::isHttps(), $httponly));
+    }
+
+    /**
+     * setcookie()'s options for createCookie().
+     *
+     * SameSite is Lax, as an option of its own. A path written with it on the
+     * end, as 1.x's default was ('/; samesite=Lax'), is read up to the ;.
+     *
+     * @param int    $expires
+     * @param string $path      '' or a path ending at a ; reads as /
+     * @param string $domain
+     * @param bool   $secure
+     * @param bool   $httponly
+     * @return array
+     */
+    public static function cookieOptions($expires, $path, $domain, $secure, $httponly) {
+
+        $path = trim(explode(';', (string) $path)[0]);
+
+        return [
+            'expires'  => (int) $expires,
+            'path'     => $path !== '' ? $path : '/',
             'samesite' => 'Lax',
-            'domain'   => $domain,
-            'secure'   => $secure,
+            'domain'   => (string) $domain,
+            'secure'   => (bool) $secure,
             'httponly' => (bool) $httponly,
         ];
-
-        setcookie($cookie_name, $cookie_value, $options);
     }
 
     public static function deleteCookie($cookie_name, $path = '/', $domain = '') {

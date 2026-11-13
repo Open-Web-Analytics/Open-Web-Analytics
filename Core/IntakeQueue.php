@@ -90,9 +90,11 @@ interface IntakeQueue {
 
     /**
      * For schedule-status: roughly how many messages it holds, and how old the
-     * oldest is in seconds. Either may be null when the backend cannot say.
+     * oldest is in seconds. Either may be null when the backend cannot say;
+     * messages is null when the queue could not be read, and an `error` key
+     * may say why.
      *
-     * @return array messages, oldest_age
+     * @return array messages, oldest_age, and optionally error
      */
     public function stats();
 }

@@ -63,7 +63,7 @@
  */
 foreach ( $view->settings_fieldsets as $set ) {
 
-    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set, $view->getNs() );
+    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set );
 }
 ?>
 
@@ -72,8 +72,8 @@ foreach ( $view->settings_fieldsets as $set ) {
     <?php // This module's own save action, which returns here afterwards. ?>
     <?php echo $view->createNonceFormField('maxmind_geoip.optionsGeoipUpdate');?>
 
-    <BUTTON class="owa-button" type="submit" name="<?php echo $view->getNs();?>action" value="maxmind_geoip.optionsGeoipUpdate">Update Options</BUTTON>
-    <input type="hidden" name="<?php echo $view->getNs();?>module" value="maxmind_geoip">
+    <BUTTON class="owa-button" type="submit" name="action" value="maxmind_geoip.optionsGeoipUpdate">Update Options</BUTTON>
+    <input type="hidden" name="module" value="maxmind_geoip">
 
 </form>
 </div>

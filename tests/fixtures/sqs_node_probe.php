@@ -3,10 +3,11 @@
  * Boots OWA as a logging node configured only in owa-config.php would be
  * (tests/SqsNodeConfigTest.php), and prints what it found as one JSON line.
  *
- *   php sqs_node_probe.php [static]
+ *   php sqs_node_probe.php [static|url]
  *
  * "static" adds OWA_USE_STATIC_CONFIG_ONLY, so nothing is read from the
- * database.
+ * database. "url" names the queue with OWA_SQS_QUEUE_URL and gives temporary
+ * credentials: OWA_SQS_KEY, OWA_SQS_SECRET and OWA_SQS_TOKEN.
  */
 define( 'OWA_ACTIVE_MODULES', array( 'sqs', 'no_such_module' ) );
 define( 'OWA_SQS_REGION', 'eu-west-2' );
@@ -19,6 +20,13 @@ putenv( 'AWS_ACCOUNT_ID=123456789012' );
 
 if ( ( $argv[1] ?? '' ) === 'static' ) {
     define( 'OWA_USE_STATIC_CONFIG_ONLY', true );
+}
+
+if ( ( $argv[1] ?? '' ) === 'url' ) {
+    define( 'OWA_SQS_QUEUE_URL', 'https://sqs.eu-west-2.amazonaws.com/210987654321/my-own-queue' );
+    define( 'OWA_SQS_KEY', 'ASIAPROBEEXAMPLE' );
+    define( 'OWA_SQS_SECRET', 'probe-secret' );
+    define( 'OWA_SQS_TOKEN', 'probe-session-token' );
 }
 
 chdir( dirname( __DIR__, 2 ) );
@@ -37,4 +45,6 @@ echo 'PROBE ' . json_encode( array(
     // url( false ): built from the credentials' account, so no request is made.
     'url'      => $queue->url( false ),
     'dlq_url'  => $queue->deadLetterQueue()->url( false ),
+    'token'    => \OWA\Module\Sqs\Classes\Sqs::clientArgs( 'eu-west-2' )['credentials']['token'] ?? null,
+    'source'   => \OWA\Module\Sqs\Classes\Sqs::credentialSource(),
 ) ) . "\n";

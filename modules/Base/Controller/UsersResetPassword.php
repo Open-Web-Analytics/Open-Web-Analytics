@@ -60,6 +60,20 @@ class UsersResetPassword extends \OWA\Core\Controller {
             return;
         }
 
+        /*
+         * The request form is unauthenticated, so anyone can ask for any
+         * address as often as they like. One reset email per account per
+         * RESET_RESEND_AFTER: a request inside that keeps the key already sent
+         * and sends nothing. The requester sees the same reply either way.
+         */
+        if ( \OWA\Module\Base\Entity\User::resetMailedRecently( $u->get( 'temp_passkey' ) ) ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Password reset for user %s not sent: one was sent less than %d minutes ago.',
+                $u->get( 'user_id' ), \OWA\Module\Base\Entity\User::RESET_RESEND_AFTER / 60 ) );
+
+            return;
+        }
+
         $u->set('temp_passkey', \OWA\Module\Base\Entity\User::newTempPasskey( \OWA\Module\Base\Entity\User::RESET_TTL ) );
         $status = $u->update();
         $this->e->debug('status: '.$status);

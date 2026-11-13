@@ -116,8 +116,6 @@ final class CountedMessagesTest extends TestCase
 
             function makeLink($params = [], $add_state = false, $url = '', $xml = false, $add_nonce = false) { return 'LINK'; }
 
-            function getNs() { return \OWA\Core\CoreAPI::appNs(); }
-
             function getCurrentUser() {
 
                 return new class { function isCapable($capability) { return true; } };

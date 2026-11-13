@@ -37,14 +37,14 @@
  */
 foreach ( $view->settings_fieldsets as $set ) {
 
-    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set, $view->getNs() );
+    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set );
     echo "<br>\n";
 }
 ?>
 
     <?php echo $view->createNonceFormField('base.optionsUpdate');?>
 
-    <BUTTON class="owa-button" type="submit" name="<?php echo $view->getNs();?>action" value="base.optionsUpdate">Update Configuration</BUTTON>
+    <BUTTON class="owa-button" type="submit" name="action" value="base.optionsUpdate">Update Configuration</BUTTON>
 
 </form>
 
@@ -54,7 +54,7 @@ foreach ( $view->settings_fieldsets as $set ) {
 ?>
 <form method="POST">
     <?php echo $view->createNonceFormField('base.optionsReset');?>
-    <input type="hidden" name="<?php echo $view->getNs();?>module" value="base">
-    <BUTTON class="owa-button" type="submit" name="<?php echo $view->getNs();?>action" value="base.optionsReset">Reset Configuration to Default Values</BUTTON>
+    <input type="hidden" name="module" value="base">
+    <BUTTON class="owa-button" type="submit" name="action" value="base.optionsReset">Reset Configuration to Default Values</BUTTON>
 </form>
 </div>

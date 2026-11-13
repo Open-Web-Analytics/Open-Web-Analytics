@@ -51,7 +51,7 @@ final class InstallTimezoneTest extends TestCase
     public function testTheInstallWizardAsksForATimezone(): void
     {
         $this->assertStringContainsString(
-            'getNs();?>timezone',
+            'name="timezone"',
             $this->installForm(),
             'the install wizard must collect a timezone; it defaulted silently to US Pacific'
         );
@@ -471,7 +471,6 @@ final class InstallTimezoneTest extends TestCase
         $t = new class('base') extends \OWA\Core\Template {
             public $fake_constant = '';
             function configFileConstantFor( $module, $key ) { return $this->fake_constant; }
-            function getNs() { return ''; }
         };
 
         $t->fake_constant = $constant;
@@ -642,7 +641,7 @@ final class InstallTimezoneTest extends TestCase
     {
         $without = "<form method=\"POST\">\n<input name=\"domain\">\n</form>";
 
-        $this->assertStringNotContainsString('getNs();?>timezone', $without);
+        $this->assertStringNotContainsString('name="timezone"', $without);
         $this->assertDoesNotMatchRegularExpression('/not retroactive/i', $without);
     }
 }

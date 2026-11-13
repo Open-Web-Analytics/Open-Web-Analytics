@@ -46,12 +46,8 @@ var OWA = {
 
     config: {
         // Wire namespace: cookie names, and anything shared with the
-        // tracker. NOT for building OWA's own links -- that is app_ns.
+        // tracker. OWA's own links carry no prefix.
         ns: 'owa_',
-        // Namespace for OWA's own admin/reporting URLs. Empty; the server
-        // still accepts the prefixed spelling, so an older cached copy of
-        // this bundle keeps working.
-        app_ns: '',
         baseUrl: '',
         hashCookiesToDomain: true,
         debug: false
@@ -919,19 +915,6 @@ OWA.util =  {
     
     },
     
-    /**
-     * Namespace for OWA's OWN admin and reporting URLs -- empty.
-     *
-     * Distinct from ns(), which is the wire namespace and still prefixes cookie
-     * names. Reporting URLs are built by the server (PaginatedResultSet emits
-     * the resultSet's own 'self', 'next' and 'previous' links) and then read
-     * back apart here, so both ends have to agree on the same namespace.
-     */
-    appNs: function(string) {
-    
-        return OWA.config.app_ns + string;
-    
-    },
     
     nsAll: function(obj) {
     

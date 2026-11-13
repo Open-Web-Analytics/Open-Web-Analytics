@@ -38,7 +38,7 @@ final class SqsQueueTest extends TestCase
     {
         $this->cache = sys_get_temp_dir() . '/owa-sqs-' . bin2hex(random_bytes(4)) . '/';
 
-        foreach (array(array('base', 'cache_dir'), array('sqs', 'region')) as [$m, $k]) {
+        foreach (array(array('base', 'cache_dir'), array('sqs', 'region'), array('base', 'instance_role')) as [$m, $k]) {
             $this->saved["$m.$k"] = \OWA\Core\CoreAPI::getSetting($m, $k);
         }
         \OWA\Core\CoreAPI::setSetting('base', 'cache_dir', $this->cache);
@@ -227,9 +227,11 @@ final class SqsQueueTest extends TestCase
         }
     }
 
-    /** A queue that does not exist yet is created on first use, as the file queue makes its directories. */
+    /** A queue that does not exist yet is created on first use, as the file queue makes its directories: by the CLI. */
     public function testAMissingQueueIsProvisionedOnFirstUse(): void
     {
+        \OWA\Core\CoreAPI::setSetting('base', 'instance_role', 'admin_cli');
+
         $this->answers(
             self::sqsError('AWS.SimpleQueueService.NonExistentQueue'),
             array('QueueUrl' => self::DLQ),
@@ -241,6 +243,45 @@ final class SqsQueueTest extends TestCase
         $this->assertTrue((new SqsQueue(array('name' => 'owa-tracker-ingest-test')))->send(self::envelope('a')));
         $this->assertSame(array('GetQueueUrl', 'CreateQueue', 'GetQueueAttributes', 'CreateQueue', 'SendMessage'),
             array_column($this->sent, 0));
+    }
+
+    /** log.php never creates queues: a missing one is a failed send, and says where queues are made. */
+    public function testLogPhpDoesNotProvisionAMissingQueue(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'instance_role', 'logger');
+
+        $this->answers(self::sqsError('AWS.SimpleQueueService.NonExistentQueue'));
+
+        $q = new SqsQueue(array('name' => 'owa-tracker-ingest-test'));
+
+        $this->assertFalse($q->send(self::envelope('a')));
+        $this->assertSame(array('GetQueueUrl'), array_column($this->sent, 0), 'no CreateQueue');
+        $this->assertStringContainsString('cmd=tracker-ingest-provision', (string) $q->lastError());
+    }
+
+    // ---------------------------------------------------------------------
+    // The client
+    // ---------------------------------------------------------------------
+
+    /** On log.php's path SQS gets seconds, not minutes, and one retry; the CLI waits longer. */
+    public function testTheHttpLimitsFollowTheRequestsRole(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'instance_role', 'logger');
+
+        $args = Sqs::clientArgs('us-east-1');
+        $this->assertSame(array('connect_timeout' => 1, 'timeout' => 3), $args['http']);
+        $this->assertSame(1, $args['retries']);
+
+        $this->answers(array());
+        $this->queue()->send(self::envelope('a'));
+        $this->assertSame(3, $this->sent[0][1]['@http']['timeout'] ?? null, 'the limits reach the request');
+        $this->assertSame(1, $this->sent[0][1]['@http']['connect_timeout'] ?? null);
+
+        \OWA\Core\CoreAPI::setSetting('base', 'instance_role', 'admin_cli');
+
+        $args = Sqs::clientArgs('us-east-1');
+        $this->assertSame(array('connect_timeout' => 5, 'timeout' => 30), $args['http']);
+        $this->assertSame(3, $args['retries']);
     }
 
     // ---------------------------------------------------------------------
@@ -399,7 +440,40 @@ final class SqsQueueTest extends TestCase
 
         $this->assertTrue($q->isProbablyEmpty());
         $this->assertFalse($q->isProbablyEmpty());
-        $this->assertSame(array('messages' => 7, 'oldest_age' => null), $q->stats());
+        $this->assertSame(array('messages' => 7, 'oldest_age' => null, 'error' => null), $q->stats());
+    }
+
+    /** Attributes that cannot be read are not an empty queue: messages is null, and error says why. */
+    public function testStatsSayWhyTheQueueCouldNotBeRead(): void
+    {
+        $this->answers(self::sqsError('AccessDenied'));
+
+        $this->assertSame(array('messages' => null, 'oldest_age' => null, 'error' => 'AccessDenied'), $this->queue()->stats());
+    }
+
+    public function testTheLastErrorCanBeCleared(): void
+    {
+        $this->answers(self::sqsError('AccessDenied'));
+
+        $q = $this->queue();
+        $q->send(self::envelope('a'));
+        $this->assertSame('AccessDenied', $q->lastError());
+
+        $q->clearLastError();
+        $this->assertNull($q->lastError());
+    }
+
+    /** A body past SQS's limit is refused before any request. */
+    public function testAnOversizeEnvelopeIsRefusedWithoutARequest(): void
+    {
+        $q   = $this->queue();
+        $big = self::envelope(str_repeat('x', SqsQueue::MAX_BODY_BYTES));
+
+        $this->assertSame(SqsQueue::MAX_BODY_BYTES, $q->maxMessageBytes());
+        $this->assertLessThanOrEqual(262144 - 1024, SqsQueue::MAX_BODY_BYTES, 'room for the message attributes');
+        $this->assertFalse($q->send($big));
+        $this->assertSame(array(), $this->sent);
+        $this->assertStringContainsString('limit', (string) $q->lastError());
     }
 
     /** A queue nobody can reach is not empty: the drain must not skip a minute it cannot see. */

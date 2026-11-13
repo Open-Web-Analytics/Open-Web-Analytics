@@ -35,7 +35,14 @@ use PHPMailer\PHPMailer\Exception;
  */
 
 class Mailer {
-        
+
+    /**
+     * Seconds PHPMailer waits on the SMTP server, per connect and per reply.
+     * Its own default is 300, and a new-visit announcement is sent while the
+     * beacon that raised it is being ingested.
+     */
+    const TIMEOUT = 10;
+
     var $mailer;
 
     /**
@@ -47,6 +54,7 @@ class Mailer {
     function __construct() {
         
         $this->mailer = new PHPMailer( true );
+        $this->mailer->Timeout = self::TIMEOUT;
 
         $from = \OWA\Core\CoreAPI::getSetting( 'base', 'mailer-from' );
 
@@ -165,34 +173,67 @@ class Mailer {
         return $address;
     }
 
+    /**
+     * Send the message. A failure -- the transport, no valid recipient -- is
+     * logged as an error and returned, never thrown: mail is sent from
+     * requests that must finish whatever happens to it.
+     *
+     * @return bool whether the transport accepted it
+     */
     function sendMail() {
 
-        // send() throws in exception mode (see constructor). Catch it so a
-        // transport failure or a bad recipient logs and returns like any other
-        // mailer failure instead of fataling the request that triggered the mail.
+        $error = null;
+
         try {
 
-            if( ! $this->mailer->send() ) {
-                return \OWA\Core\CoreAPI::debug(sprintf("Mailer Failure. Was not able to send with subject of '%s'. Error Msgs: '%s'", $this->mailer->Subject, $this->mailer->ErrorInfo));
+            if ( $this->mailer->send() ) {
 
-            } else {
-                return \OWA\Core\CoreAPI::debug( sprintf ("Mail sent with the subject of '%s'.", $this->mailer->Subject ) );
+                \OWA\Core\CoreAPI::notice( sprintf( "Mail sent with the subject '%s'.", $this->mailer->Subject ) );
+
+                return true;
             }
+
+            $error = $this->mailer->ErrorInfo;
 
         } catch ( Exception $e ) {
 
-            return \OWA\Core\CoreAPI::debug( sprintf( "Mailer Failure. Was not able to send with subject of '%s'. Error Msgs: '%s'", $this->mailer->Subject, $e->getMessage() ) );
+            $error = $e->getMessage();
         }
+
+        \OWA\Core\CoreAPI::error( sprintf( "Mail with the subject '%s' was not sent: %s", $this->mailer->Subject, $error ) );
+
+        return false;
     }
-    
+
     function send() {
-        
+
         return $this->sendMail();
     }
-    
-    function addAddress( $address, $name ) {
-        
-        $this->mailer->addAddress( $address, $name );
+
+    /**
+     * Add a recipient. An address PHPMailer refuses is logged and skipped.
+     *
+     * @return bool whether it was added
+     */
+    function addAddress( $address, $name = '' ) {
+
+        try {
+
+            if ( $this->mailer->addAddress( (string) $address, (string) $name ) ) {
+
+                return true;
+            }
+
+            $error = $this->mailer->ErrorInfo;
+
+        } catch ( Exception $e ) {
+
+            $error = $e->getMessage();
+        }
+
+        \OWA\Core\CoreAPI::error( sprintf( "Mail recipient '%s' skipped: %s", $address, $error ) );
+
+        return false;
     }
     
     function setFrom( $address, $name ) {

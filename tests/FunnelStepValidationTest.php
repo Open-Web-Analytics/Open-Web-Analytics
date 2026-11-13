@@ -297,6 +297,10 @@ final class FunnelStepValidationTest extends TestCase
                 array( 'stepCondition1_1' => 'Step 1: sideways is not a comparison a condition can make.' ) ),
             'bad regex' => array( array( 'event' => 'page_view', 'conditions' => array( array( 'page_path', 'regex', '([' ) ) ),
                 array( 'stepCondition1_1' => 'Step 1: the regular expression is not valid.' ) ),
+            'a regex a report filter would refuse' => array( array( 'event' => 'page_view', 'conditions' => array( array( 'page_path', 'regex', '^/(a+)+$' ) ) ),
+                array( 'stepCondition1_1' => 'Step 1: the regular expression was refused: it repeats a group that itself repeats, such as (a+)+.' ) ),
+            'a regex MySQL cannot run' => array( array( 'event' => 'page_view', 'conditions' => array( array( 'page_path', 'regex', '[[:<:]]shop' ) ) ),
+                array( 'stepCondition1_1' => 'Step 1: the regular expression was refused: it uses [[:<:]] or [[:>:]], which MySQL\'s regular expressions do not support. Use \\b.' ) ),
             'a custom dimension of no Property' => array( array( 'event' => 'page_view', 'conditions' => array( array( 'cd_plan', 'exact', 'gold' ) ) ),
                 array( 'stepCondition1_1' => 'Step 1: cd_plan is not a property a funnel step can test.' ) ),
         );

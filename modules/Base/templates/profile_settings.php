@@ -21,7 +21,7 @@
         foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'profile_observation' ) as $owa_set ) {
 
             echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
-                $owa_set, 'profile', (string) ( $view->site['site_id'] ?? '' ), $view->getNs(),
+                $owa_set, 'profile', (string) ( $view->site['site_id'] ?? '' ), '',
                 is_array( $view->posted ?? null ) ? $view->posted : null );
         }
     ?>
@@ -29,10 +29,10 @@
     <fieldset name="owa-options" class="options">
 
         <?php echo $view->createNonceFormField('base.sitesEditSettings');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] ?? '' );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>module" value="base">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.sitesEditSettings">
-        <input type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Settings" class="owa-button">
+        <input type="hidden" name="siteId" value="<?php $view->out( $view->site['site_id'] ?? '' );?>">
+        <input type="hidden" name="module" value="base">
+        <input type="hidden" name="action" value="base.sitesEditSettings">
+        <input type="submit" name="submit_btn" value="Save Settings" class="owa-button">
     </fieldset>
 </form>
 </div>

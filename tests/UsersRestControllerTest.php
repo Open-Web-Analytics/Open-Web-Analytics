@@ -142,6 +142,30 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $this->assertTrue($this->userExists($user_id), 'The user should have been persisted.');
     }
 
+    /** The account is made either way; the response says whether its invitation went out. */
+    public function testPostUsersSaysWhenTheInvitationWasNotSent(): void
+    {
+        $this->authenticateAs('admin');
+        $user_id = 'invite-' . $this->tok . '@owatest.example.com';
+        $this->trackForCleanup('base.user', $user_id, 'user_id');
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\AddUserRest::class,
+            'addUserRestController.php',
+            [
+                'user_id'       => $user_id,
+                'email_address' => $user_id,
+                'real_name'     => 'OWA Test Invite ' . $this->tok,
+                'role'          => 'viewer',
+            ]
+        );
+
+        $this->assertSame(201, $resp['status']);
+        $this->assertFalse($resp['data']['invitation_sent'] ?? null,
+            'the mailer points at a closed port (RestControllerTestCase)');
+        $this->assertTrue($this->userExists($user_id));
+    }
+
     public function testPostUsersRejectsInvalidRole(): void
     {
         $this->authenticateAs('admin');
