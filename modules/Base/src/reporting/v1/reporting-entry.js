@@ -94,6 +94,7 @@ import './owa.retention.js';
 import './owa.reportnav.js';
 // The copy button on a code block (Template::codeBlock()).
 import './owa.copy.js';
+import './owa.appmode.js';
 // The add-a-Profile form: shows only the fields the answers make relevant.
 import './owa.profileform.js';
 // The funnel builder's steps, and the + and X of repeatable condition rows: the

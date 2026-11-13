@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-24 -90.0 280 280" width="512" height="512">
+  <!-- The mark of owa-logo.svg, without the wordmark, centred on white for a square app icon. -->
+  <rect x="-24" y="-90.0" width="280" height="280" fill="#FFFFFF"/>
+  <defs><clipPath id="owa-icon-clip"><rect width="232" height="128"/></clipPath></defs>
+  <g clip-path="url(#owa-icon-clip)">
+        <path fill="#F47A17" d="M84.00174 13.99825 C103.33279 33.329193 103.33279 64.670807 84.00174 84.00174 C64.670807 103.332794 33.329193 103.332794 13.998253 84.00174 C-5.3327866 64.670807 -5.3327866 33.329193 13.998253 13.99825 C33.329193 -5.33279 64.670807 -5.33279 84.00174 13.99825 Z"/>
+    <path fill="#F47A17" d="M65.375 95.75 L231.375 95.75 L183.98566 2.19431 L152.62485 60.750061 L125.37537 29.75029 Z"/>
+    <path fill="#F2F2F2" d="M32.5 95.750259 L32.5 32.75 L65.5 32.75 L65.5 95.750259 L58.25 98.000061 L51.5 98.750092 L46.500061 98.750092 L39.749832 98.000275 Z"/>
+    <path fill="#BFBFBF" d="M32.500023 32.75 L53.5 43.749954 L53.499977 103.75 L32.5 95.75 Z"/>
+  </g>
+</svg>

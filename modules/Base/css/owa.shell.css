@@ -448,3 +448,47 @@
     color: #111827;
     font-weight: 600;
 }
+
+/* ---- Home Screen app (owa.appmode.js) ------------------------------------- */
+
+/*
+ * Opened from a phone's Home Screen there is no browser pull-to-refresh, so
+ * the page draws its own. The page's own rubber-band is held in, so the pull
+ * moves the spinner rather than the page.
+ */
+.owa_appMode,
+.owa_appMode body {
+    overscroll-behavior-y: contain;
+}
+
+.owa_pullRefresh {
+    position: fixed;
+    top: env(safe-area-inset-top, 0);
+    left: 50%;
+    z-index: 10000;
+    width: 36px;
+    height: 36px;
+    margin-left: -18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(-48px);
+    pointer-events: none;
+}
+
+.owa_pullRefresh.is-ready {
+    color: #1874CD;
+}
+
+.owa_pullRefresh.is-refreshing i {
+    animation: owa-pull-spin 0.8s linear infinite;
+}
+
+@keyframes owa-pull-spin {
+    to { transform: rotate(360deg); }
+}

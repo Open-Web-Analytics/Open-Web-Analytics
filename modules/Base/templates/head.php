@@ -1,5 +1,19 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <!-- HEAD Elements -->
+<?php
+    /*
+     * Added to a phone's Home Screen, OWA opens as an app: full screen, with
+     * its own name and icon (public/base/i/manifest.json). iOS reads the
+     * apple-* tags; the manifest serves everything else.
+     */
+?>
+<link rel="manifest" href="<?php $view->out( $view->makeImageLink( 'base/i/manifest.json' ) ); ?>">
+<link rel="apple-touch-icon" href="<?php $view->out( $view->makeImageLink( 'base/i/owa-app-icon-180.png' ) ); ?>">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="OWA">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
 <?php if(!empty($view->css)): ?>
 <?php foreach ($view->css as $cssfile): ?>
 <LINK REL=StyleSheet HREF="<?php echo $cssfile['url'];?>" TYPE="text/css">
