@@ -136,3 +136,88 @@ describe( 'coming back to the app', () => {
         expect( reload ).not.toHaveBeenCalled();
     } );
 } );
+
+describe( 'opening the app again', () => {
+
+    const BASE = 'https://owa.example.com/index.php';
+    const DASHBOARD_TODAY = BASE + '?owa_action=base.report&owa_propertyId=7&owa_reportId=dashboard&owa_period=today';
+    const START_PAGE = BASE + '?do=base.report&site_id=&propertyId=7&reportId=dashboard&';
+
+    function memoryStorage() {
+        const items = {};
+        return {
+            getItem: ( k ) => ( k in items ? items[ k ] : null ),
+            setItem: ( k, v ) => { items[ k ] = String( v ); },
+        };
+    }
+
+    // One phone: localStorage outlives the app; sessionStorage lasts one opening.
+    let local;
+    let go;
+
+    function page( href, session ) {
+        return { location: { href: href }, localStorage: local, sessionStorage: session };
+    }
+
+    beforeEach( () => {
+        local = memoryStorage();
+        go = jest.fn();
+    } );
+
+    test( 'a launch at the start page goes back to the last report shown', () => {
+        AppMode.resume( page( DASHBOARD_TODAY, memoryStorage() ), go );
+
+        // The phone closed the app; it opens again at start_url, which redirects here.
+        expect( AppMode.resume( page( START_PAGE, memoryStorage() ), go ) ).toBe( true );
+        expect( go ).toHaveBeenCalledWith( DASHBOARD_TODAY );
+    } );
+
+    test( 'within one opening, a report page without a period is not redirected', () => {
+        const session = memoryStorage();
+        AppMode.resume( page( DASHBOARD_TODAY, session ), go );
+
+        expect( AppMode.resume( page( START_PAGE, session ), go ) ).toBe( false );
+        expect( go ).not.toHaveBeenCalled();
+        expect( local.getItem( AppMode.LAST_VIEW_KEY ) ).toBe( START_PAGE );
+    } );
+
+    test( 'a first page that names a period is kept', () => {
+        AppMode.resume( page( DASHBOARD_TODAY, memoryStorage() ), go );
+        const lastMonth = BASE + '?do=base.report&reportId=pages&period=last_month';
+
+        expect( AppMode.resume( page( lastMonth, memoryStorage() ), go ) ).toBe( false );
+        expect( local.getItem( AppMode.LAST_VIEW_KEY ) ).toBe( lastMonth );
+    } );
+
+    test( 'the sign-in form does not use up the launch', () => {
+        AppMode.resume( page( DASHBOARD_TODAY, memoryStorage() ), go );
+        const session = memoryStorage();
+
+        expect( AppMode.resume( page( BASE + '?do=base.loginForm', session ), go ) ).toBe( false );
+        expect( AppMode.resume( page( START_PAGE, session ), go ) ).toBe( true );
+        expect( go ).toHaveBeenCalledWith( DASHBOARD_TODAY );
+    } );
+
+    test( 'only report pages of this install without a nonce are remembered', () => {
+        const win = page( DASHBOARD_TODAY, memoryStorage() );
+
+        expect( AppMode.isResumable( DASHBOARD_TODAY, win ) ).toBe( true );
+        expect( AppMode.isResumable( BASE + '?do=base.sitesProfile&siteId=1', win ) ).toBe( false );
+        expect( AppMode.isResumable( BASE + '?do=base.reportEdit&nonce=abc', win ) ).toBe( false );
+        expect( AppMode.isResumable( 'https://elsewhere.example/index.php?do=base.report', win ) ).toBe( false );
+    } );
+
+    test( 'no first launch has nothing to go back to', () => {
+        expect( AppMode.resume( page( START_PAGE, memoryStorage() ), go ) ).toBe( false );
+        expect( go ).not.toHaveBeenCalled();
+    } );
+
+    test( 'storage that refuses access leaves the page as it is', () => {
+        const win = { location: { href: START_PAGE } };
+        Object.defineProperty( win, 'localStorage', { get: () => { throw new Error( 'denied' ); } } );
+        win.sessionStorage = memoryStorage();
+
+        expect( AppMode.resume( win, go ) ).toBe( false );
+        expect( go ).not.toHaveBeenCalled();
+    } );
+} );
