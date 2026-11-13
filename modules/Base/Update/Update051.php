@@ -3,34 +3,21 @@
 namespace OWA\Module\Base\Update;
 
 /**
- * The visitor's network host gets a column.
+ * Nothing, now: this gave raw and every cube a remote_host column, and
+ * Update074 takes it away again.
  *
- * There are three hosts on a tracking event and v2 had columns for one of them:
+ * remote_host was the visitor's reverse-DNS host. No dimension read it, and
+ * Update074 removed it from raw and the cubes. Adding it here was a full rebuild
+ * of the raw table (the column add rebuilds it in place) on an installation
+ * upgrading from 1.x, where raw by then holds every migrated row, only for 074
+ * to remove it.
  *
- *   host         the PAGE's hostname, cut from page_location
- *   HTTP_HOST    THIS SERVER's, the Host header the beacon was posted to
- *   remote_host  the VISITOR's, reverse DNS of their address
- *
- * v1 reported the third one as its `host` dimension -- Entity\Host says so in as
- * many words, "the visitor came from some host", and it kept `full_host` beside
- * it for the unreduced name. v2 gave the name `host` to the page's hostname, so
- * the visitor's network had nowhere left to land and was being read off the
- * request on every event and then dropped.
- *
- * USUALLY EMPTY, and that is the web server's decision: Apache fills
- * REMOTE_HOST only with HostnameLookups On, off by default because it costs a DNS
- * round trip per request. A column of NULLs is the honest record of that -- the
- * alternative is a dimension that silently means "the few installs that enabled
- * a lookup".
- *
- * NOT CLI-ONLY. One column on raw and the cube.
- *
- * Update074 drops the column again, so the entity no longer declares it and
- * both directions here spell the type out (see CubeColumn::restoreColumn()).
+ * An installation that already ran this has the column until 074, which
+ * removes it if it is there. Rolled back past 074, the column comes back
+ * empty and stays: an unread nullable column, which is cheaper than the rebuild
+ * this skips.
  */
 class Update051 extends \OWA\Core\Update {
-
-    use CubeColumn;
 
     var $schema_version = 51;
 
@@ -38,12 +25,12 @@ class Update051 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
-        return $this->restoreColumn( 'remote_host', OWA_DTD_VARCHAR255 );
+        return true;
     }
 
     function down() {
 
-        return $this->dropColumns( array( 'remote_host' ) );
+        return true;
     }
 }
 
