@@ -185,7 +185,8 @@
     background: #dbe8f7;
 }
 
-.owa_gridEmpty {
+.owa_gridEmpty,
+.owa_loadError {
     margin: 0;
     padding: 24px 12px;
     color: #6b7280;
