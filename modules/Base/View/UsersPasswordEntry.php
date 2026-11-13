@@ -45,6 +45,5 @@ class UsersPasswordEntry extends \OWA\Core\View {
         $this->body->set_template('users_change_password.php');
         $this->body->set('headline', $this->getMsg(3005));
         $this->body->set('key', $this->get('key'));
-        $this->body->set('is_embedded', $this->get('is_embedded'));
     }
 }

@@ -23,13 +23,9 @@
             /*
              * The passkey from the emailed link is what identifies the account
              * here -- there is no session yet -- so it has to travel with the
-             * form. is_embedded rides along on the migration path that sets it.
+             * form.
              */
         ?>
-        <?php if ( $view->is_embedded ): ?>
-        <input type="hidden" name="<?php echo $view->getNs();?>is_embedded"
-               value="<?php $view->out( $view->is_embedded );?>">
-        <?php endif; ?>
         <input type="hidden" name="<?php echo $view->getNs();?>k" value="<?php $view->out( $view->key );?>">
         <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.usersChangePassword">
 
