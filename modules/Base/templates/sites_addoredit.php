@@ -13,7 +13,7 @@
  * and makes the page look broken rather than merely short.
  */
 ?>
-<DIV class="panel_headline"><?php $view->out( $view->headline );?></DIV>
+<h1 class="panel_headline"><?php $view->out( $view->headline );?></h1>
 <div id="panel">
 <div class="owa_panelIntro">An Observation Profile collects data for a Property under its own tracking id. A Property can have more than one.</div>
 <fieldset>
@@ -60,7 +60,7 @@
          */
         ?>
         <TR>
-            <TH>Property:</TH>
+            <TH><label for="owa_profilePropertyId">Property:</label></TH>
             <TD>
                 <select name="<?php echo $view->getNs();?>propertyId" id="owa_profilePropertyId" class="owa_largeFormField">
                     <option value="">&mdash; a new Property &mdash;</option>
@@ -77,9 +77,9 @@
             </TD>
         </TR>
         <TR id="owa_newPropertyFields">
-            <TH>New Property Name:</TH>
+            <TH><label for="owa_newPropertyName">New Property Name:</label></TH>
             <TD>
-                <input type="text" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
+                <input type="text" id="owa_newPropertyName" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
                 <span class="form-instructions">What the website or product is called. Only
                 used when creating a new Property.</span>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['name'] ?? '' );?></span>
@@ -96,7 +96,7 @@
         $owa_stream = $view->site['stream_type'] ?? \OWA\Module\Base\Entity\Site::STREAM_WEB;
         ?>
         <TR>
-            <TH>This Profile observes:</TH>
+            <TH><label for="owa_streamType">This Profile observes:</label></TH>
             <TD>
                 <select name="<?php echo $view->getNs();?>streamType" id="owa_streamType" class="owa_largeFormField">
                     <option value="web" <?php echo $owa_stream === 'app' ? '' : 'selected';?>>A website</option>
@@ -105,17 +105,17 @@
             </TD>
         </TR>
         <TR id="owa_streamWebFields">
-            <TH>Domain:</TH>
+            <TH><label for="owa_profileDomain">Domain:</label></TH>
             <TD>
-                <input type="text" name="<?php echo $view->getNs();?>domain" size="52" maxlength="70" value="<?php $view->out( $view->site['domain'] ?? '' );?>">
+                <input type="text" id="owa_profileDomain" name="<?php echo $view->getNs();?>domain" size="52" maxlength="70" value="<?php $view->out( $view->site['domain'] ?? '' );?>">
                 <span class="form-instructions">The domain of the website being observed.</span>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['domain'] ?? '' );?></span>
             </TD>
         </TR>
         <TR id="owa_streamAppFields">
-            <TH>App ID:</TH>
+            <TH><label for="owa_profileAppId">App ID:</label></TH>
             <TD>
-                <input type="text" name="<?php echo $view->getNs();?>appId" size="52" maxlength="70" value="<?php $view->out( $view->site['app_id'] ?? '' );?>">
+                <input type="text" id="owa_profileAppId" name="<?php echo $view->getNs();?>appId" size="52" maxlength="70" value="<?php $view->out( $view->site['app_id'] ?? '' );?>">
                 <span class="form-instructions">The bundle id or package name, for example
                 com.example.myapp.</span>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['appId'] ?? '' );?></span>
@@ -124,16 +124,16 @@
         <?php endif;?>
         <?php if ($view->edit == true):?>
         <TR>
-            <TH>Profile Name:</TH>
-            <TD><input type="text" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
+            <TH><label for="owa_profileName">Profile Name:</label></TH>
+            <TD><input type="text" id="owa_profileName" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
 				<span class="form-instructions">Example: Main Profile</span>            
             </TD>
         </TR>
         <?php endif;?>
         <TR>
-            <TH>Description:</TH>
+            <TH><label for="owa_profileDescription">Description:</label></TH>
             <TD>
-                <textarea name="<?php echo $view->getNs();?>description" cols="52" rows="3"><?php $view->out( $view->site['description'] ?? '' );?></textarea>
+                <textarea id="owa_profileDescription" name="<?php echo $view->getNs();?>description" cols="52" rows="3"><?php $view->out( $view->site['description'] ?? '' );?></textarea>
             </TD>
         </TR>
 

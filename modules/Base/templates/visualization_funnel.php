@@ -154,7 +154,7 @@ foreach ( $owa_steps as $owa_s ) {
 </div>
 
 <div class="owa_reportSectionContent">
-    <div class="owa_reportSectionHeader">Funnel Steps</div>
+    <div class="owa_reportSectionHeader"><h2 class="owa_reportSectionTitle">Funnel Steps</h2></div>
     <?php
         /*
          * The same grid every other report draws, fed the steps directly rather

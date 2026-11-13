@@ -1,6 +1,6 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?php $view->out( \OWA\Core\Strings::htmlLang() ); ?>">
 <head>
     <meta charset="UTF-8">
     <title>Open Web Analytics - Overlay</title>

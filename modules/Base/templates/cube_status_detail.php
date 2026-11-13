@@ -11,7 +11,7 @@ require_once __DIR__ . '/cube_status_badge.php';
 
 $owa_c = (array) $view->cube;
 ?>
-<div class="panel_headline">Reporting Cube</div>
+<h1 class="panel_headline">Reporting Cube</h1>
 <div id="panel">
 
 <div class="owa_panelIntro">

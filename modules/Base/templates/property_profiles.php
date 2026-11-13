@@ -4,7 +4,7 @@
  * The Observation Profiles of one Property, each leading to its own screens.
  */
 ?>
-<div class="panel_headline">Observation Profiles</div>
+<h1 class="panel_headline">Observation Profiles</h1>
 <div id="panel">
 <div class="owa_panelIntro">Each Observation Profile collects data for this Property under its own tracking id. Reports combine all of the Property's Profiles; add the Profile Name dimension to a report to see them separately.</div>
 

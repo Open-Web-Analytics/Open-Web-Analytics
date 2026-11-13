@@ -454,7 +454,11 @@
 .owa_grid .owa_gridPopOption:hover,
 .owa_grid .owa_gridPopOption:focus-visible {
     background: #f3f5f8;
-    outline: none;
+}
+
+.owa_grid .owa_gridPopOption:focus-visible {
+    outline: 2px solid var(--owa-focus, #1874CD);
+    outline-offset: -2px;
 }
 
 .owa_grid .owa_gridPopOption.is-current {
@@ -618,7 +622,7 @@
     border: 0;
     border-radius: 4px;
     background: transparent;
-    color: #9ca3af;
+    color: var(--owa-text-muted, #6b7280);
     font: inherit;
     font-size: 12px;
     line-height: 1.2;
@@ -641,8 +645,12 @@
 .owa_grid .owa_gridRowActions:focus-visible,
 .owa_grid .owa_gridRowActions[aria-expanded="true"] {
     background: #eef4fb;
-    color: #1874CD;
-    outline: none;
+    color: #0f5596;
+}
+
+.owa_grid .owa_gridRowActions:focus-visible {
+    outline: 2px solid var(--owa-focus, #1874CD);
+    outline-offset: 1px;
 }
 
 .owa_gridPop.is-menu {

@@ -102,6 +102,22 @@ final class SettingsFormScopedTest extends TestCase
         $this->assertMatchesRegularExpression('#data-owa-note-override="[^"]+" hidden>#', $html);
     }
 
+    /** The title labels the control, whether it inherits or has nothing above it. */
+    public function testTheTitleLabelsTheControl(): void
+    {
+        $this->requireDb();
+        $this->registerBlank();
+
+        foreach (array('words' => 'Words', 'blank' => 'Blank') as $key => $label) {
+
+            $id = 'owa-setting-zz_scoped_form_test-' . $key;
+            $html = $this->field($key);
+
+            $this->assertStringContainsString('<label class="title" for="' . $id . '">' . $label . '</label>', $html);
+            $this->assertMatchesRegularExpression('#<input type="text"[^>]* id="' . $id . '"#', $html);
+        }
+    }
+
     public function testAnOverriddenFieldIsEditableWithItsSwitchOn(): void
     {
         $this->requireDb();
