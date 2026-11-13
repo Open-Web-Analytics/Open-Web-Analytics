@@ -1480,6 +1480,11 @@ li.constraintRow {
     text-decoration: underline;
 }
 
+.owa .owa_chartLegendInteractive .legendLabel:focus-visible {
+    outline: 2px solid #1874cd;
+    outline-offset: 2px;
+}
+
 /*
  * Per CELL, not per row: the legend is one column per series so it reads left
  * to right, which puts every entry in the same single <tr>.
