@@ -13,5 +13,7 @@ receiving security fixes.
 
 ## Reporting a Vulnerability
 
-Please report security issues privately, to security@openwebanalytics.com.
-Please do not open a public issue for a vulnerability.
+Please report security issues privately, through GitHub's
+[private vulnerability reporting](https://github.com/Open-Web-Analytics/Open-Web-Analytics/security/advisories/new)
+for this repository or to security@openwebanalytics.com. Please do not open a
+public issue for a vulnerability.
