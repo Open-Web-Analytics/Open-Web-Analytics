@@ -23,6 +23,7 @@ return array(
     '%1$s: %2$d user' => array( '%1$s: %2$d user', '%1$s: %2$d users' ),
     '%1$s–%2$s of %3$s' => '%1$s–%2$s of %3$s',
     '%1$s–%2$s of %3$s+' => '%1$s–%2$s of %3$s+',
+    '%d beacon the tracker-ingest queue did not take is kept in the file queue. drain-tracker-ingest forwards it once the queue answers.' => array( '%d beacon the tracker-ingest queue did not take is kept in the file queue. drain-tracker-ingest forwards it once the queue answers.', '%d beacons the tracker-ingest queue did not take are kept in the file queue. drain-tracker-ingest forwards them once the queue answers.' ),
     '%d day' => array( '%d day', '%d days' ),
     '%d hour' => array( '%d hour', '%d hours' ),
     '%d minute' => array( '%d minute', '%d minutes' ),

@@ -222,9 +222,10 @@ class SystemHealth {
 
         if ( $kept && $kept['messages'] ) {
 
-            $findings[] = self::finding( 'yellow', 'Kept in the file queue', sprintf(
-                '%d beacon(s) the tracker-ingest queue did not take are kept in the file queue. '
-                . 'drain-tracker-ingest forwards them once the queue answers.', $kept['messages'] ),
+            $findings[] = self::finding( 'yellow', 'Kept in the file queue', sprintf( \OWA\Core\CoreAPI::tn(
+                '%d beacon the tracker-ingest queue did not take is kept in the file queue. drain-tracker-ingest forwards it once the queue answers.',
+                '%d beacons the tracker-ingest queue did not take are kept in the file queue. drain-tracker-ingest forwards them once the queue answers.',
+                (int) $kept['messages'] ), (int) $kept['messages'] ),
                 'php cli.php cmd=drain-tracker-ingest' );
         }
 
