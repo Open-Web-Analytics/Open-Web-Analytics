@@ -47,6 +47,7 @@ class EnvironmentCheck {
         'json'     => 'Encoding stored report definitions and API responses.',
         'mbstring' => 'Handling non-ASCII page titles, URLs and search terms.',
         'pcre'     => 'Matching URLs, goal conditions and constraint values.',
+        'zlib'     => 'Compressing and reading session recordings.',
     );
 
     /**
@@ -67,28 +68,13 @@ class EnvironmentCheck {
                    . 'this virtual host at a newer PHP.', self::MIN_PHP_VERSION ),
             sprintf( 'PHP is %s or later.', self::MIN_PHP_VERSION ) );
 
-        /*
-         * A database driver: PDO with a MySQL driver, or mysqli. Either one is
-         * enough -- Db picks whichever is present -- so this is one check rather
-         * than three, and it says which ones it looked for.
-         */
-        $drivers = array();
+        $checks[] = self::integerSize( PHP_INT_SIZE );
 
-        if ( extension_loaded( 'pdo_mysql' ) ) {
-            $drivers[] = 'pdo_mysql';
-        }
-
-        if ( extension_loaded( 'mysqli' ) ) {
-            $drivers[] = 'mysqli';
-        }
-
-        $checks[] = self::check(
-            'Database driver',
-            $drivers ? implode( ', ', $drivers ) : 'none found',
-            (bool) $drivers,
-            'OWA needs the pdo_mysql or mysqli PHP extension to reach a database. '
-          . 'Install one and restart PHP.',
-            '`pdo_mysql` or `mysqli` is loaded.' );
+        $checks[] = self::databaseDriver(
+            extension_loaded( 'pdo_mysql' ),
+            extension_loaded( 'mysqli' ),
+            function_exists( 'mysqli_stmt_get_result' ),
+            defined( 'OWA_DB_TYPE' ) ? (string) OWA_DB_TYPE : 'mysql' );
 
         foreach ( self::REQUIRED_EXTENSIONS as $extension => $what_for ) {
 
@@ -159,6 +145,86 @@ class EnvironmentCheck {
             'The JavaScript and CSS have been built.' );
 
         return $checks;
+    }
+
+    /**
+     * PHP built with 64-bit integers. Ids are 64-bit values built with shifts
+     * (Core\Lib::wideStringGuid), which a 32-bit build truncates.
+     *
+     * @param int $int_size  PHP_INT_SIZE
+     * @return array
+     */
+    public static function integerSize( $int_size ) {
+
+        return self::check(
+            '64-bit PHP',
+            ( (int) $int_size * 8 ) . '-bit',
+            (int) $int_size === 8,
+            \OWA\Core\CoreAPI::t( 'OWA needs a 64-bit build of PHP. Install a 64-bit PHP and point this virtual host at it.' ),
+            'PHP is a 64-bit build.' );
+    }
+
+    /**
+     * A database driver that can load for the configured OWA_DB_TYPE.
+     *
+     * The default type, mysql, uses pdo_mysql where it is loaded and mysqli
+     * otherwise (CoreAPI::resolveDbDriver). The mysqli driver reads prepared
+     * statements with mysqli_stmt_get_result(), which exists only when mysqli
+     * is built on mysqlnd.
+     *
+     * @param bool   $pdo_mysql  pdo_mysql is loaded
+     * @param bool   $mysqli     mysqli is loaded
+     * @param bool   $mysqlnd    mysqli_stmt_get_result() exists
+     * @param string $db_type    OWA_DB_TYPE, or 'mysql' before there is a config file
+     * @return array
+     */
+    public static function databaseDriver( $pdo_mysql, $mysqli, $mysqlnd, $db_type = 'mysql' ) {
+
+        $found = array();
+
+        if ( $pdo_mysql ) {
+            $found[] = 'pdo_mysql';
+        }
+
+        if ( $mysqli ) {
+            $found[] = $mysqlnd ? 'mysqli' : 'mysqli (without mysqlnd)';
+        }
+
+        $driver = \OWA\Core\CoreAPI::resolveDbDriver( $db_type === '' ? 'mysql' : $db_type, (bool) $pdo_mysql );
+
+        if ( ! $pdo_mysql && ! $mysqli ) {
+
+            $passed = false;
+            $msg    = \OWA\Core\CoreAPI::t( 'OWA needs the pdo_mysql or mysqli PHP extension to reach a database. Install one and restart PHP.' );
+
+        } elseif ( $driver === 'pdo_mysql' ) {
+
+            $passed = (bool) $pdo_mysql;
+            $msg    = \OWA\Core\CoreAPI::t( 'OWA_DB_TYPE asks for PDO, and the pdo_mysql extension is not loaded. Install it and restart PHP.' );
+
+        } elseif ( $driver === 'mysql' && ! $mysqli ) {
+
+            $passed = false;
+            $msg    = \OWA\Core\CoreAPI::t( 'OWA_DB_TYPE asks for mysqli, and the mysqli extension is not loaded. Install it and restart PHP.' );
+
+        } elseif ( $driver === 'mysql' ) {
+
+            $passed = (bool) $mysqlnd;
+            $msg    = \OWA\Core\CoreAPI::t( 'The mysqli extension is built without mysqlnd, which OWA needs. Install pdo_mysql, or a mysqli built with mysqlnd, and restart PHP.' );
+
+        } else {
+
+            // A third-party driver from the plugins/ seam: its needs are its own.
+            $passed = true;
+            $msg    = '';
+        }
+
+        return self::check(
+            'Database driver',
+            $found ? implode( ', ', $found ) : 'none found',
+            $passed,
+            $msg,
+            '`pdo_mysql`, or `mysqli` built with mysqlnd, is loaded.' );
     }
 
     /**

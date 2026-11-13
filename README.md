@@ -23,9 +23,10 @@ This repository installs the OWA Server and Javascript tracking client which can
 
 ## Requirements and Installation
 
-OWA 2.0 needs PHP 8.2 or later, MySQL 8.0.21 or later or MariaDB 10.11 or later,
-and a cron entry for its scheduler: without it, events are recorded but reports
-stay empty. See the
+OWA 2.0 needs a 64-bit build of PHP 8.2 or later with the `pdo_mysql` (or
+`mysqli` built on mysqlnd), `mbstring` and `zlib` extensions, MySQL 8.0.21 or
+later or MariaDB 10.11 or later, and a cron entry for its scheduler: without it,
+events are recorded but reports stay empty. See the
 [technical requirements](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Technical-Requirements)
 before you install, and the
 [installation](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Installation)
