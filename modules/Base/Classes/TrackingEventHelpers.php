@@ -3020,8 +3020,8 @@ class TrackingEventHelpers {
      * URLs first: the campaign tags, page_path, page_query, host and the
      * referrer's host and query are taken from what arrived, so a filtered
      * name that is also a campaign key is still attributed. What is stored,
-     * and what landing_page_location and a domstream's page_location are
-     * copied from, is the filtered URL. A URL naming none of the filtered
+     * and what landing_page_location and every other copy of page_location
+     * are made from, is the filtered URL. A URL naming none of the filtered
      * parameters is stored exactly as it arrived.
      *
      * Only the configured names: OWA's own parameters and the campaign tags
