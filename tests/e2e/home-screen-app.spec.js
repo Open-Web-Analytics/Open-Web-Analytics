@@ -57,23 +57,23 @@ test.describe('the Home Screen app', () => {
             Object.defineProperty(window.navigator, 'standalone', { get: () => true });
         });
 
-        await openDashboard(page, { period: 'yesterday' });
+        await openDashboard(page, { period: 'last_thirty_days' });
 
         // A new tab has its own sessionStorage, as an app the phone closed and
         // opens again does; localStorage is shared, as it is on the phone.
         const relaunched = await context.newPage();
         await relaunched.goto('index.php', { waitUntil: 'networkidle' });
 
-        await expect(relaunched).toHaveURL(/owa_period=yesterday/);
+        await expect(relaunched).toHaveURL(/owa_period=last_thirty_days/);
         await expect(relaunched).toHaveURL(/owa_reportId=dashboard/);
     });
 
     test('in a browser tab, the start page is not redirected', async ({ page, context }) => {
-        await openDashboard(page, { period: 'yesterday' });
+        await openDashboard(page, { period: 'last_thirty_days' });
 
         const second = await context.newPage();
         await second.goto('index.php', { waitUntil: 'networkidle' });
 
-        await expect(second).not.toHaveURL(/period=yesterday/);
+        await expect(second).not.toHaveURL(/period=last_thirty_days/);
     });
 });
