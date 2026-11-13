@@ -398,10 +398,11 @@ return array(
             'type'     => 'text',
             'label'    => 'URL Parameters',
             'description' =>
-                'This setting controls the URL parameters that OWA should ignore when '
-                . 'processing requests. This is useful for avoiding duplicate URLs due '
-                . 'to the use of tracking or others state parameters in your URLs. '
-                . 'Parameter names should be separated by comma.',
+                'URL parameters OWA removes before storing a page\'s URL, its referring URL '
+                . 'and a clicked link\'s URL, and leaves out of the page query string reports '
+                . 'group by. Use it for session, state or personal parameters in your URLs. '
+                . 'Campaign tags are still read from a URL before its parameters are removed. '
+                . 'Applies to events recorded after a change. Parameter names should be separated by comma.',
         ),
         /*
          * COMPUTED AT BOOT, never stored, and declared anyway.

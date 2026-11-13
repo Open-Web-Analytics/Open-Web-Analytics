@@ -139,6 +139,9 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         $teh->setTrackerProperties( $this->event, $derived_properties );
 
+        // After the derivations, which read the URLs as they arrived.
+        \OWA\Module\Base\Classes\TrackingEventHelpers::filterStoredUrls( $this->event );
+
         // re-apply sanitized properties to event.
         $this->event->setProperties( $sanitized_properties );
 
