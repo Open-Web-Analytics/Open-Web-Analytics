@@ -171,7 +171,6 @@ final class CubeCatchUpTest extends TestCase
         $cli   = $class->newInstanceWithoutConstructor();
 
         $p = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, $params);
 
         $cli->action();

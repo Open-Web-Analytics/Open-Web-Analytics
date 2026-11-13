@@ -60,7 +60,6 @@ final class SelectTimeLimitTest extends TestCase
         // The builder is shared: a query another test built and never ran (an
         // ORDER BY, say) would otherwise ride along with this one.
         $params = new ReflectionProperty($this->db, '_sqlParams');
-        $params->setAccessible(true);
         $params->setValue($this->db, array());
 
         $this->db->selectFrom('owa_site');

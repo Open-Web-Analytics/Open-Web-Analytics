@@ -26,7 +26,6 @@ final class RestResponseDtoTest extends TestCase
     private function reduce($data)
     {
         $m = new ReflectionMethod('\OWA\Core\View\RestApi', 'toResponseData');
-        $m->setAccessible(true);
 
         return $m->invoke(null, $data, 0);
     }

@@ -42,7 +42,6 @@ final class ConstraintRefusalTest extends TestCase
     private function errorsOf($rsm): array
     {
         $p = new ReflectionProperty($rsm, 'errors');
-        $p->setAccessible(true);
 
         return (array) $p->getValue($rsm);
     }

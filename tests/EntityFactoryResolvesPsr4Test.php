@@ -36,7 +36,6 @@ final class EntityFactoryResolvesPsr4Test extends TestCase
     public function testEveryEntityNameFollowsTheConvention(): void
     {
         $method = new ReflectionMethod(\OWA\Core\CoreAPI::class, 'namespacedEntityClass');
-        $method->setAccessible(true);
 
         $service  = \OWA\Core\CoreAPI::serviceSingleton();
         $stragglers = array();
@@ -87,7 +86,6 @@ final class EntityFactoryResolvesPsr4Test extends TestCase
     public function testTheConventionResolvesAName(string $registered, ?string $expected): void
     {
         $method = new ReflectionMethod(\OWA\Core\CoreAPI::class, 'namespacedEntityClass');
-        $method->setAccessible(true);
 
         $this->assertSame($expected, $method->invoke(null, $registered));
     }

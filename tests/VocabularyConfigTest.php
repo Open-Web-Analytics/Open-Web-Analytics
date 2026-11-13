@@ -51,7 +51,6 @@ final class VocabularyConfigTest extends TestCase
             ->newInstanceWithoutConstructor();
 
         $p = new ReflectionProperty(\OWA\Core\Module::class, 'path');
-        $p->setAccessible(true);
         $p->setValue($module, $this->dir);
 
         return $module;
@@ -65,7 +64,6 @@ final class VocabularyConfigTest extends TestCase
     private function read($module, string $kind)
     {
         $m = new ReflectionMethod(\OWA\Core\Module::class, 'readVocabulary');
-        $m->setAccessible(true);
 
         return $m->invoke($module, $kind);
     }
@@ -96,7 +94,6 @@ final class VocabularyConfigTest extends TestCase
 
         $r = new ReflectionObject($service);
         $p = $r->getProperty('denormalizedDimensions');
-        $p->setAccessible(true);
 
         $registered = (array) $p->getValue($service);
 
@@ -113,7 +110,6 @@ final class VocabularyConfigTest extends TestCase
             'these are declared in the file and never reached the registry');
 
         $p = $r->getProperty('metrics');
-        $p->setAccessible(true);
 
         $this->assertArrayHasKey('eventCount', (array) $p->getValue($service));
     }
@@ -192,7 +188,6 @@ final class VocabularyConfigTest extends TestCase
                                    'denormalized' => false, 'foreign_key_name' => 'fk' ) ) )");
 
         $m = new ReflectionMethod(\OWA\Core\Module::class, 'registerDimensionsFromConfig');
-        $m->setAccessible(true);
         $m->invoke($module);
 
         $this->assertArrayHasKey('base.event', $module->denormalizedDimensions['zzDefault'],

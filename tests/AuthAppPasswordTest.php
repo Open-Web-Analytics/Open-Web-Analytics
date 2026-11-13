@@ -94,7 +94,6 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         // One Auth per process; a request with no credential never sets the method.
         $auth = \OWA\Core\Auth::get_instance();
         $prop = new \ReflectionProperty($auth, 'auth_method');
-        $prop->setAccessible(true);
         $prop->setValue($auth, '');
 
         $status = $auth->authenticateUser();

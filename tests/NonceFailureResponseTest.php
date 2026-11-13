@@ -48,7 +48,6 @@ final class NonceFailureResponseTest extends TestCase
         // would compare two identical responses.
         $currentUser = \OWA\Core\CoreAPI::getCurrentUser();
         $flag = new ReflectionProperty($currentUser, 'is_authenticated');
-        $flag->setAccessible(true);
         $flag->setValue($currentUser, $authenticated);
 
         /*
@@ -62,7 +61,6 @@ final class NonceFailureResponseTest extends TestCase
         $controller->nonceFailedAction();
 
         $prop = new ReflectionProperty($controller, 'data');
-        $prop->setAccessible(true);
 
         return (array) $prop->getValue($controller);
     }

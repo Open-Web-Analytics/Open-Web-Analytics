@@ -29,7 +29,6 @@ final class SettingsFormScopedTest extends TestCase
         foreach (array('registry', 'fieldsets') as $property) {
 
             $p = new ReflectionProperty(\OWA\Module\Base\Classes\Settings::class, $property);
-            $p->setAccessible(true);
             $this->snapshot[$property] = $p->getValue($this->config());
         }
 
@@ -58,7 +57,6 @@ final class SettingsFormScopedTest extends TestCase
         foreach ($this->snapshot as $property => $value) {
 
             $p = new ReflectionProperty(\OWA\Module\Base\Classes\Settings::class, $property);
-            $p->setAccessible(true);
             $p->setValue($this->config(), $value);
         }
     }

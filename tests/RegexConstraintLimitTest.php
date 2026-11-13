@@ -75,7 +75,6 @@ final class RegexConstraintLimitTest extends TestCase
         $rsm->setConstraints(array(array('name' => 'pagePath', 'operator' => '=~', 'value' => '(a+)+$')));
 
         $errors = new \ReflectionProperty($rsm, 'request_errors');
-        $errors->setAccessible(true);
 
         $this->assertNotEmpty((array) $errors->getValue($rsm));
     }

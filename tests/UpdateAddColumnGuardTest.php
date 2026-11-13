@@ -325,7 +325,6 @@ final class UpdateAddColumnGuardTest extends TestCase
             $update = new \OWA\Module\Base\Update\Update040;
 
             $drop = new ReflectionMethod( '\OWA\Core\Update', 'dropColumnIfPresent' );
-            $drop->setAccessible( true );
 
             $this->assertTrue( (bool) $drop->invoke( $update, $entity, 'archived_date' ),
                 'the first drop failed' );

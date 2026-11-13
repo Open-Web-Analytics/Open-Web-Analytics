@@ -109,7 +109,6 @@ final class DomstreamReportListTest extends TestCase
     private function call(string $method, array $params, ...$args)
     {
         $m = new ReflectionMethod(\OWA\Module\Domstream\Controller\ReportDomstreams::class, $method);
-        $m->setAccessible(true);
 
         return $m->invoke($this->controller($params), ...$args);
     }
@@ -264,7 +263,6 @@ final class DomstreamReportListTest extends TestCase
     public function testLengthsBeyondADayStillRead(): void
     {
         $m = new ReflectionMethod(\OWA\Module\Domstream\Controller\ReportDomstreams::class, 'asClock');
-        $m->setAccessible(true);
 
         $this->assertSame('26:00:00', $m->invoke(null, 93600));
     }

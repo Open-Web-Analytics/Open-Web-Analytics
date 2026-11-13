@@ -116,7 +116,6 @@ final class AddIndexedColumnTest extends TestCase
             $update = new \OWA\Module\Base\Update\Update034;
 
             $again = new ReflectionMethod( '\OWA\Core\Update', 'addColumnIfMissing' );
-            $again->setAccessible( true );
 
             $this->assertTrue( (bool) $again->invoke( $update, $entity, 'report_type' ),
                 'adding an already-present indexed column reported failure' );

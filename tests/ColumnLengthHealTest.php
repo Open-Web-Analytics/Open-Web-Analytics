@@ -104,14 +104,12 @@ final class ColumnLengthHealTest extends TestCase {
         $c = $this->column( OWA_DTD_VARCHAR255 );
 
         $m = new ReflectionMethod( $c, 'maxLength' );
-        $m->setAccessible( true );
 
         $this->assertSame( 255, $m->invoke( $c ),
             'the declared VARCHAR255 type must resolve to its length through the constant' );
 
         $unknown = $this->column( 'SOMETHING_NO_DIALECT_DECLARES' );
         $m2 = new ReflectionMethod( $unknown, 'maxLength' );
-        $m2->setAccessible( true );
 
         $this->assertSame( 0, $m2->invoke( $unknown ),
             'an unrecognised type must report no limit rather than guessing one' );

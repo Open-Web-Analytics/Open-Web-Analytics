@@ -187,7 +187,6 @@ final class CubesTest extends TestCase
         $cli   = $class->newInstanceWithoutConstructor();
 
         $m = new ReflectionMethod($cli, 'entityFor');
-        $m->setAccessible(true);
 
         return $m->invoke($cli, $table);
     }
@@ -228,7 +227,6 @@ final class CubesTest extends TestCase
         $cli   = $class->newInstanceWithoutConstructor();
 
         $m = new ReflectionMethod($cli, 'factTables');
-        $m->setAccessible(true);
 
         $tables = (array) $m->invoke($cli, null);
 

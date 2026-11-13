@@ -42,7 +42,6 @@ final class SettingsRegistryTest extends TestCase
         foreach ( array( 'registry', 'fieldsets' ) as $property ) {
 
             $p = new ReflectionProperty( \OWA\Module\Base\Classes\Settings::class, $property );
-            $p->setAccessible( true );
 
             $this->snapshot[ $property ] = $p->getValue( $this->settings() );
         }
@@ -53,7 +52,6 @@ final class SettingsRegistryTest extends TestCase
         foreach ( $this->snapshot as $property => $value ) {
 
             $p = new ReflectionProperty( \OWA\Module\Base\Classes\Settings::class, $property );
-            $p->setAccessible( true );
             $p->setValue( $this->settings(), $value );
         }
     }
@@ -748,7 +746,6 @@ final class SettingsRegistryTest extends TestCase
 
         $config = \OWA\Core\CoreAPI::configSingleton();
         $p      = new ReflectionProperty( \OWA\Module\Base\Classes\Settings::class, 'fieldsets' );
-        $p->setAccessible( true );
         $before = $p->getValue( $config );
 
         $this->assertArrayHasKey( 'base.tracking', (array) $before );

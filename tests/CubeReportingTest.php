@@ -227,7 +227,6 @@ final class CubeReportingTest extends TestCase
     private function entityFor($rsm, string $name)
     {
         $m = new ReflectionMethod($rsm, 'entityFor');
-        $m->setAccessible(true);
 
         return $m->invoke($rsm, $name);
     }
@@ -377,7 +376,6 @@ final class CubeReportingTest extends TestCase
 
         $r = new ReflectionObject($registry);
         $p = $r->getProperty('denormalizedDimensions');
-        $p->setAccessible(true);
 
         $denormalized = (array) $p->getValue($registry);
 
@@ -804,7 +802,6 @@ final class CubeReportingTest extends TestCase
         ]);
 
         $m = new ReflectionMethod($metric, 'renderCondition');
-        $m->setAccessible(true);
 
         $this->assertStringContainsString("= 'page_view'", $m->invoke($metric),
             'the value must reach the statement without being escaped against a connection');
@@ -823,7 +820,6 @@ final class CubeReportingTest extends TestCase
         ]);
 
         $m = new ReflectionMethod($metric, 'renderCondition');
-        $m->setAccessible(true);
 
         $this->assertSame('', $m->invoke($metric));
 
@@ -843,7 +839,6 @@ final class CubeReportingTest extends TestCase
         ]);
 
         $m = new ReflectionMethod($metric, 'renderCondition');
-        $m->setAccessible(true);
 
         $sql = $m->invoke($metric);
 
@@ -1101,14 +1096,11 @@ final class CubeReportingTest extends TestCase
         $rsm->getResults();
 
         $sorts = new ReflectionMethod($rsm, 'applySorts');
-        $sorts->setAccessible(true);
         $sorts->invoke($rsm);
 
         $db = new ReflectionProperty(\OWA\Module\Base\Classes\ResultSetManager::class, 'db');
-        $db->setAccessible(true);
 
         $params = new ReflectionProperty(\OWA\Core\Db::class, '_sqlParams');
-        $params->setAccessible(true);
 
         $orderBy = (array) ($params->getValue($db->getValue($rsm))['orderby'] ?? []);
 

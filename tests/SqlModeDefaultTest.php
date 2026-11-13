@@ -35,7 +35,6 @@ final class SqlModeDefaultTest extends TestCase
         $db = new $driverClass('h', '3306', 'n', 'u', 'p', true, false);
 
         $m = new \ReflectionMethod($db, 'sessionSqlMode');
-        $m->setAccessible(true);
 
         return $m->invoke($db);
     }

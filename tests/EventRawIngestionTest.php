@@ -136,7 +136,6 @@ final class EventRawIngestionTest extends IngestionTestCase
         $handler = new \OWA\Module\Base\Handler\EventRawHandlers;
 
         $method = new ReflectionMethod($handler, 'row');
-        $method->setAccessible(true);
 
         $event = new \OWA\Module\Base\Classes\Event;
         $event->setProperties([
@@ -660,7 +659,6 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $handler = new \OWA\Module\Base\Handler\EventRawHandlers;
         $queue   = new ReflectionMethod($handler, 'queueLateRebuilds');
-        $queue->setAccessible(true);
 
         try {
             $queue->invoke($handler, [

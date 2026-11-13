@@ -90,7 +90,6 @@ final class CubeReorganizeTest extends TestCase
         $cli   = $class->newInstanceWithoutConstructor();
 
         $p = $class->getProperty('params');
-        $p->setAccessible(true);
         $p->setValue($cli, $params);
 
         return $cli;

@@ -35,7 +35,6 @@ final class UpdatesScreenTest extends TestCase
 
         // A redirect is set on the controller rather than returned.
         $data = new \ReflectionProperty( \OWA\Core\Controller::class, 'data' );
-        $data->setAccessible( true );
 
         return $returned ?? (array) $data->getValue( $controller );
     }
@@ -59,7 +58,6 @@ final class UpdatesScreenTest extends TestCase
         $view->render( ['modules' => ['base']] );
 
         $file = new \ReflectionProperty( $view->t, 'file' );
-        $file->setAccessible( true );
 
         return basename( (string) $file->getValue( $view->t ) );
     }

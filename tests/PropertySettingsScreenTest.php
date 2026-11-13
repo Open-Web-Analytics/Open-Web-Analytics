@@ -28,7 +28,6 @@ final class PropertySettingsScreenTest extends TestCase
     private function sets(): array
     {
         $m = new ReflectionMethod(\OWA\Module\Base\Controller\PropertyEdit::class, 'scopedFieldSets');
-        $m->setAccessible(true);
 
         return (array) $m->invoke(null);
     }

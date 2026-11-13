@@ -22,7 +22,6 @@ final class PartitionCliTest extends CliControllerTestCase
     private function callProtected(object $ctrl, string $method, array $args = [])
     {
         $m = new ReflectionMethod($ctrl, $method);
-        $m->setAccessible(true);
 
         return $m->invokeArgs($ctrl, $args);
     }

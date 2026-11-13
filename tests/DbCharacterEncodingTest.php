@@ -34,7 +34,6 @@ final class DbCharacterEncodingTest extends TestCase {
         $driver = \OWA\Core\CoreAPI::dbSingleton();
 
         $m = new ReflectionMethod( $driver, 'connectionCharacterEncoding' );
-        $m->setAccessible( true );
 
         $this->assertSame(
             (string) OWA_DTD_CONNECTION_ENCODING,
@@ -57,7 +56,6 @@ final class DbCharacterEncodingTest extends TestCase {
         }
 
         $m = new ReflectionMethod( $driver, 'dsn' );
-        $m->setAccessible( true );
 
         $this->assertStringContainsString(
             'charset=' . OWA_DTD_CONNECTION_ENCODING,

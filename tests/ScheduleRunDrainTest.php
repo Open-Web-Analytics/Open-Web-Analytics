@@ -46,7 +46,6 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
     {
         $runner = new \OWA\Module\Base\Controller\ScheduleRunCli(array());
         $m      = new ReflectionMethod($runner, 'drainQueue');
-        $m->setAccessible(true);
 
         ob_start();
         try {

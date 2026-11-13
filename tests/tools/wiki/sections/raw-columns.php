@@ -24,7 +24,6 @@ return static function ( $arg = null ) {
     $in_cube = array_flip( $cube->getColumns() );
 
     $write = new ReflectionMethod( $raw, 'writeValue' );
-    $write->setAccessible( true );
 
     $helpers = '\OWA\Module\Base\Classes\TrackingEventHelpers';
     $filled  = array();

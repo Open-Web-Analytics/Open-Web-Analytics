@@ -153,7 +153,6 @@ final class FunnelCubeCorrectnessTest extends TestCase
         $controller = new \OWA\Module\Base\Controller\VisualizationFunnel(['propertyId' => (string) self::PROPERTY, 'period' => 'today']);
 
         $m = new ReflectionMethod($controller, 'countFunnel');
-        $m->setAccessible(true);
 
         return $m->invoke($controller, $steps, $scope);
     }
@@ -192,7 +191,6 @@ final class FunnelCubeCorrectnessTest extends TestCase
         $update = new \OWA\Module\Base\Update\Update079();
 
         $m = new ReflectionMethod($update, 'goalDefinitions');
-        $m->setAccessible(true);
 
         $definition = ['steps' => [['name' => 'Goal', 'goal_event_definition_id' => $id, 'step_number' => 1]]];
 
