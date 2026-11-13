@@ -4,10 +4,11 @@ const { FIXTURE, adminLogin } = require('./fixtures');
 /**
  * The Override switch on a setting rendered below the install
  * (SettingsForm::scopedField), driven in a real browser on the Property's
- * Details screen: inheriting shows the value disabled with a note naming the
- * level; switching on makes it editable and saving stores it; switching off
- * and saving puts the Property back to inheriting. A setting with nothing set
- * above it is a plain field with no switch.
+ * Details screen: inheriting shows the value as text with a note naming the
+ * level, the control hidden; switching on shows the control, editable and
+ * focused, and saving stores it; switching off and saving puts the Property
+ * back to inheriting. A setting with nothing set above it is a plain field
+ * with no switch.
  *
  * e-commerce reporting is the boolean it drives, and that is a Property
  * setting: a report is of a Property and covers every Profile in it.
@@ -29,11 +30,15 @@ async function propertyScreen(page) {
 }
 
 function controls(page) {
+    const setting = page.locator('[data-ui="setting:base.enableEcommerceReporting"]');
+
     return {
-        field: page.locator('select[name="config[base.enableEcommerceReporting]"]'),
-        sw: page.locator('input[name="override[base.enableEcommerceReporting]"]'),
-        inheritNote: page.locator('[data-owa-note-inherit="owa-setting-base-enableEcommerceReporting"]'),
-        overrideNote: page.locator('[data-owa-note-override="owa-setting-base-enableEcommerceReporting"]'),
+        // Named by the setting's title; found hidden too, which getByLabel is not.
+        field: setting.getByRole('combobox', { name: 'e-commerce Reporting', includeHidden: true }),
+        sw: setting.getByRole('switch', { name: 'Override e-commerce Reporting' }),
+        text: setting.locator('[data-ui="setting-inherited"]'),
+        inheritNote: setting.getByText(/^Set at the .+ level\.$/),
+        overrideNote: setting.getByText(/^Overrides the .+ level value of/),
     };
 }
 
@@ -74,15 +79,22 @@ test('a Property setting inherits until its Override switch is on', async ({ pag
 
     const inherited = await c.field.inputValue();
 
+    await expect(c.field).toBeHidden();
     await expect(c.field).toBeDisabled();
     await expect(c.sw).not.toBeChecked();
+    await expect(c.text).toBeVisible();
+    await expect(c.text).toHaveText(inherited === '1' ? 'On' : 'Off');
     await expect(c.inheritNote).toBeVisible();
-    await expect(c.inheritNote).toHaveText(/^Currently set at the (install|Organization) level\.$/);
+    await expect(c.inheritNote).toHaveText(/^Set at the (install|Organization) level\.$/);
     await expect(c.overrideNote).toBeHidden();
 
     try {
         await c.sw.check();
+        await expect(c.text).toBeHidden();
+        await expect(c.field).toBeVisible();
         await expect(c.field).toBeEnabled();
+        await expect(c.field).toBeFocused();
+        await expect(c.field).toHaveValue(inherited);
         await expect(c.overrideNote).toBeVisible();
         const chosen = inherited === '1' ? '0' : '1';
         await c.field.selectOption(chosen);
@@ -91,8 +103,10 @@ test('a Property setting inherits until its Override switch is on', async ({ pag
         await page.goto(SCREEN, { waitUntil: 'networkidle' });
         c = controls(page);
         await expect(c.sw).toBeChecked();
+        await expect(c.field).toBeVisible();
         await expect(c.field).toBeEnabled();
         await expect(c.field).toHaveValue(chosen);
+        await expect(c.text).toBeHidden();
 
     } finally {
         await page.goto(SCREEN, { waitUntil: 'networkidle' });
@@ -102,6 +116,8 @@ test('a Property setting inherits until its Override switch is on', async ({ pag
             // Switching off puts the inherited value back before the save.
             await expect(c.field).toHaveValue(inherited);
             await expect(c.field).toBeDisabled();
+            await expect(c.field).toBeHidden();
+            await expect(c.text).toBeVisible();
             await save(page);
         }
     }
@@ -111,6 +127,7 @@ test('a Property setting inherits until its Override switch is on', async ({ pag
     await expect(c.sw).not.toBeChecked();
     await expect(c.field).toBeDisabled();
     await expect(c.field).toHaveValue(inherited);
+    await expect(c.text).toBeVisible();
 });
 
 /**
@@ -119,8 +136,10 @@ test('a Property setting inherits until its Override switch is on', async ({ pag
  */
 test('the Tracking Tag screen saves a Profile override', async ({ page }) => {
     const TAG = `?owa_do=base.sitesInvocation&owa_siteId=${FIXTURE.siteId}`;
-    const field = () => page.locator('select[name="config[base.tracker_clicks]"]');
-    const sw = () => page.locator('input[name="override[base.tracker_clicks]"]');
+    const setting = () => page.locator('[data-ui="setting:base.tracker_clicks"]');
+    const field = () => setting().getByRole('combobox', { includeHidden: true });
+    const sw = () => setting().getByRole('switch');
+    const text = () => setting().locator('[data-ui="setting-inherited"]');
     const pills = () => page.locator('.owa-tagStatus .owa-pill');
 
     // Clicks are in their own group, closed on every load.
@@ -142,9 +161,9 @@ test('the Tracking Tag screen saves a Profile override', async ({ page }) => {
     const titles = await groups.locator('.owa-settingsGroup__title').allInnerTexts();
     expect(titles.slice(0, 2)).toEqual(['Page views', 'Clicks and downloads']);
     expect(await groups.evaluateAll((all) => all.filter((d) => d.open).length)).toBe(0);
-    await expect(field()).toBeHidden();
+    await expect(sw()).toBeHidden();
     await openClicks();
-    await expect(field()).toBeVisible();
+    await expect(sw()).toBeVisible();
 
     // The visitor cookie is set per Property, so the Profile screen does not offer it.
     await expect(page.locator('[name="config[base.tracker_visitor_cookie_days]"]')).toHaveCount(0);
@@ -179,4 +198,5 @@ test('the Tracking Tag screen saves a Profile override', async ({ page }) => {
     await expect(sw()).not.toBeChecked();
     await expect(pills()).toContainText(['Clicks']);
     await expect(field()).toBeDisabled();
+    await expect(text()).toBeVisible();
 });
