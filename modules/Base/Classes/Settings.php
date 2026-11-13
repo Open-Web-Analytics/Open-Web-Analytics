@@ -3054,6 +3054,7 @@ namespace OWA\Module\Base\Classes;
                 // re-derived. A new installation never has it.
                 'use_32bit_hash'                    => false,
                 'use_32bit_hash_before_v2'          => false,
+                'goals_switched_off_by_049'         => array(),
                 'goal_event_names_before_075'       => array(),
                 'funnel_steps_before_079'           => array(),
                 'default_page_before_080'           => array(),

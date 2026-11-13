@@ -266,6 +266,9 @@ return array(
         'geolocation_service' => array( 'default' => '', 'description' => 'Which geolocation service resolves locations. Set to maxmind by the Maxmind GeoIP module.' ),
         // Set by Update075 when it renamed goal event definitions to event names, so its
         // down() can give them back the names they had.
+        // Set by Update049 when it switched off goal events it could not migrate, so its
+        // down() can switch them back on.
+        'goals_switched_off_by_049' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'goal_event_names_before_075' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         // Set by Update079 when it made saved funnel steps event steps, so its down()
         // can give each funnel back the definition it had.

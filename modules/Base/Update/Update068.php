@@ -24,6 +24,10 @@ class Update068 extends \OWA\Core\Update {
 
     var $schema_version = 68;
 
+    
+
+    var $down_does_not_restore = 'the queue items in the dropped table: it comes back empty.';
+
     var $is_cli_mode_required = false;
 
     const DDL = <<<'SQL'

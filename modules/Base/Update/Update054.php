@@ -47,6 +47,10 @@ class Update054 extends \OWA\Core\Update {
 
     var $schema_version = 54;
 
+    
+
+    var $down_does_not_restore = 'the values rows stored in the promoted columns: the columns are dropped and their values are not copied back into params.';
+
     var $is_cli_mode_required = false;
 
     /** The keys that stop reaching `params` in this release. */
