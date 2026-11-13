@@ -36,6 +36,13 @@ namespace OWA\Module\Base\Classes;
 class ResultSetManager extends \OWA\Core\Base {
 
     /**
+     * The page size of a query by anything but date or dateHour that names
+     * none: what a Table widget and a REST call without resultsPerPage get,
+     * whatever the period.
+     */
+    const DEFAULT_RESULTS_PER_PAGE = 25;
+
+    /**
      * The params of the caller, either a report or graph
      *
      * @var array
@@ -188,6 +195,9 @@ class ResultSetManager extends \OWA\Core\Base {
                 $this->params['constraints'] = array();
             }
 
+            // How many times each name has come up in this list.
+            $seen = array();
+
             foreach ($array as $constraint) {
 
                 if ( \OWA\Core\Lib::isEmpty( $constraint['value'] ) ) {
@@ -244,7 +254,36 @@ class ResultSetManager extends \OWA\Core\Base {
                     }
                 }
 
-                $this->setConstraint($constraint['name'], $constraint['value'], $constraint['operator']);
+                /*
+                 * A name given twice in one request is two filters, and both
+                 * apply: pagePath=@/blog,pagePath!@/blog/tag is the blog without
+                 * its tag pages. Constraints are kept by name, so the second
+                 * replaced the first and the numbers came out wider than asked,
+                 * with no error -- from filter pills, a saved report, or a
+                 * widget's filter on a dimension its report also filters.
+                 *
+                 * The first keeps the name as its key, so getConstraint() still
+                 * finds it, and replaces one set earlier, as it always has.
+                 */
+                $name = $constraint['name'];
+                $seen[ $name ] = isset( $seen[ $name ] ) ? $seen[ $name ] + 1 : 0;
+
+                if ( $seen[ $name ] === 0 ) {
+
+                    $this->setConstraint( $name, $constraint['value'], $constraint['operator'] );
+
+                } else {
+
+                    $key = $name . '#' . $seen[ $name ];
+
+                    // 'key' keeps it apart in the query too (Db::where()).
+                    $this->params['constraints'][ $key ] = array(
+                        'operator' => $constraint['operator'] ?: '=',
+                        'value'    => $constraint['value'],
+                        'name'     => $name,
+                        'key'      => $key,
+                    );
+                }
             }
         }
     }
@@ -650,7 +689,7 @@ class ResultSetManager extends \OWA\Core\Base {
             $col = $dim['column'];
             $constraint['name'] = $col;
 
-            $db->where($constraint['name'], $constraint['value'], $constraint['operator']);
+            $db->where($constraint['name'], $constraint['value'], $constraint['operator'], $constraint['key'] ?? null);
         }
 
         if ( $this->isMetric( $constraint['name'] ) ) {
@@ -660,7 +699,7 @@ class ResultSetManager extends \OWA\Core\Base {
             // if not calculated
             if ( ! $m->isCalculated() ) {
                 $col = $m->getSelectWithNoAlias();
-                $db->having($col, $constraint['value'], $constraint['operator']);
+                $db->having($col, $constraint['value'], $constraint['operator'], $constraint['key'] ?? null);
             } else {
 
                 $this->addError( \OWA\Core\CoreAPI::t( 'A calculated metric cannot be a constraint.' ) );
@@ -1491,8 +1530,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * days is seven apart and eight long -- and sorted by date the row it cut
      * was today's.
      *
-     * Any other query keeps the day difference, which over one day is 0 and
-     * so no limit at all.
+     * A query by anything else is paginated instead (DEFAULT_RESULTS_PER_PAGE,
+     * computeDimensionalRows()), and does not reach here.
      *
      * @return int|float
      */
@@ -1509,12 +1548,14 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return $days * 24;
         }
 
-        if ( in_array( 'date', $this->dimensions, true ) ) {
+        return $days;
+    }
 
-            return $days;
-        }
+    /** Whether the query is by date or dateHour: one row per day or hour of the period. */
+    function isByDate() {
 
-        return $difference;
+        return in_array( 'date', (array) $this->dimensions, true )
+            || in_array( 'dateHour', (array) $this->dimensions, true );
     }
 
     function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
@@ -2242,7 +2283,19 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
     
     function computeDimensionalRows( $bm ) {
-	    
+
+        /*
+         * A query by anything but date or dateHour that names no page size gets
+         * DEFAULT_RESULTS_PER_PAGE, and pages. It fell to the date range below,
+         * which limits by the period -- one row a day, a sound bound only for a
+         * query BY day -- so a breakdown over the last seven days stopped at
+         * six rows, and said there were no more.
+         */
+        if ( ! $this->getLimit() && ! $this->isByDate() ) {
+
+            $this->setLimit( self::DEFAULT_RESULTS_PER_PAGE );
+        }
+
         // apply dimensional SQL
         $this->applyDimensions();
 

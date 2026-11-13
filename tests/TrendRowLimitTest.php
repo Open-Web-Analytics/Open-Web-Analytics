@@ -195,23 +195,74 @@ final class TrendRowLimitTest extends TestCase
     }
 
     /**
-     * A query by anything but time is not a trend: over one day it has no
-     * limit, so a breakdown pages at the result set's default rather than
-     * being cut to one row per day.
+     * A query by anything but time is not a trend, and is not limited by the
+     * period: with no page size it gets the default page, 25 rows, and pages.
      */
     public function testABreakdownOfOneDayPagesRatherThanStoppingAtOneRow(): void
+    {
+        $rs = $this->breakdown('20260610', '20260610');
+
+        $this->assertCount(14, $rs->getResultsRows(), 'all fourteen paths fit one page');
+        $this->assertSame(\OWA\Module\Base\Classes\ResultSetManager::DEFAULT_RESULTS_PER_PAGE, (int) $rs->resultsPerPage);
+        $this->assertFalse((bool) $rs->more);
+    }
+
+    /**
+     * Over several days it was cut to the day DIFFERENCE: eight paths, one a
+     * day from 20260601 to 20260608, came back as seven, and "no more". Over
+     * the last seven days, the default period, every such table stopped at six.
+     */
+    public function testABreakdownOverSeveralDaysIsNotCutToOneRowADay(): void
+    {
+        $rs = $this->breakdown('20260601', '20260608');
+
+        $this->assertCount(8, $rs->getResultsRows());
+        $this->assertSame(\OWA\Module\Base\Classes\ResultSetManager::DEFAULT_RESULTS_PER_PAGE, (int) $rs->resultsPerPage);
+    }
+
+    /** A page size the query names is the page size it gets. */
+    public function testABreakdownKeepsThePageSizeItAsksFor(): void
+    {
+        $rs = $this->breakdown('20260601', '20260608', 3);
+
+        $this->assertCount(3, $rs->getResultsRows());
+        $this->assertTrue((bool) $rs->more);
+    }
+
+    /**
+     * Two filters on one dimension both apply: the paths containing /p1 but
+     * not /p12, of the fourteen /p8../p21 that day. The second used to replace
+     * the first, and every path but /p12 came back.
+     */
+    public function testTwoFiltersOnOneDimensionBothApply(): void
+    {
+        $rs = $this->breakdown('20260610', '20260610', 0, 'pagePath=@/p1,pagePath!@/p12');
+
+        $paths = array_map(fn ($r) => $r['pagePath']['value'], $rs->getResultsRows());
+        sort($paths);
+
+        $this->assertSame(['/p10', '/p11', '/p13', '/p14', '/p15', '/p16', '/p17', '/p18', '/p19'], $paths);
+    }
+
+    private function breakdown(string $start, string $end, int $perPage = 0, string $constraints = '')
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         $rsm->metrics = $rsm->metricsStringToArray('pageViews');
         $rsm->setDimensions(['pagePath']);
-        $rsm->setTimePeriod('date_range', '20260610', '20260610');
+        $rsm->setTimePeriod('date_range', $start, $end);
+
+        if ($constraints) {
+            $rsm->setConstraints($rsm->constraintsStringToArray($constraints));
+        }
+
         $rsm->setSiteId(self::SITE);
 
-        $rs = $rsm->getResults();
+        if ($perPage) {
+            $rsm->setLimit($perPage);
+        }
 
-        $this->assertCount(10, $rs->getResultsRows());
-        $this->assertTrue((bool) $rs->more, 'fourteen paths, so there is a next page');
+        return $rsm->getResults();
     }
 
     /** The day difference is 1.96 across the change, not 2. */

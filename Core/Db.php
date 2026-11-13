@@ -399,7 +399,13 @@ class Db extends \OWA\Core\Base {
         return $this->selectColumn($name, $as = '');
     }
 
-    function where($name, $value, $operator = '=') {
+    /**
+     * A condition on $name. One per name replaces the last, unless $key sets it
+     * apart: a second condition on the same column (ResultSetManager, a
+     * dimension filtered twice in one request) passes its own key, and both
+     * apply. The clause is built from 'name', never the key.
+     */
+    function where($name, $value, $operator = '=', $key = null) {
 
         if ( ! \OWA\Core\Lib::isEmpty( $value ) ) {
 
@@ -408,11 +414,12 @@ class Db extends \OWA\Core\Base {
                 $value = '';
             }
 
-            $this->_sqlParams['where'][$name] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+            $this->_sqlParams['where'][ $key ?? $name ] = array('name' => $name, 'value' => $value, 'operator' => $operator);
         }
     }
 
-    function having($name, $value, $operator = '=') {
+    /** As where(), for a metric. */
+    function having($name, $value, $operator = '=', $key = null) {
 
         if ( ! \OWA\Core\Lib::isEmpty( $value ) ) {
 
@@ -421,7 +428,7 @@ class Db extends \OWA\Core\Base {
                 $value = '';
             }
 
-            $this->_sqlParams['having'][$name] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+            $this->_sqlParams['having'][ $key ?? $name ] = array('name' => $name, 'value' => $value, 'operator' => $operator);
         }
     }
 
