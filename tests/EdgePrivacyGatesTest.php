@@ -25,9 +25,21 @@ final class EdgePrivacyGatesTest extends TestCase
     /** @var array<string,mixed> */
     private array $saved = array();
 
+    /** @var mixed the request container's server params before this test */
+    private $savedServer;
+
     protected function setUp(): void
     {
         \OWA\Core\CoreAPI::rememberSiteRegistration(self::SITE, true);
+
+        // A browser request from a documentation-range address, whatever the
+        // runner's own environment holds (none, under CLI in CI).
+        $request = \OWA\Core\CoreAPI::requestContainerSingleton();
+        $this->savedServer = $request->server;
+        $request->server = array(
+            'HTTP_USER_AGENT' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+            'REMOTE_ADDR'     => '203.0.113.77',
+        );
 
         foreach (array('queue_tracker_ingest', 'log_visitor_pii', 'anonymize_ips', 'excluded_ips', 'log_named_users') as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
@@ -51,6 +63,7 @@ final class EdgePrivacyGatesTest extends TestCase
 
         TrackerIngest::$queue = null;
         \OWA\Core\CoreAPI::forgetRegisteredSites();
+        \OWA\Core\CoreAPI::requestContainerSingleton()->server = $this->savedServer;
 
         gc_collect_cycles();
         exec('rm -rf ' . escapeshellarg($this->dir));
