@@ -106,7 +106,6 @@ class OWATracker  {
 
 		    // Rewritten at each session boundary.
 		    session_id:              { scope: 'session', permanent: false },
-		    prior_session_id:        { scope: 'session', permanent: false },
 		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
 		    /*
@@ -4031,8 +4030,7 @@ class OWATracker  {
 
             /*
              * The DATE of the session that just ended, taken from its stored
-             * start time before the boundary discards it -- the same move as
-             * prior_session_id just below, and read for the same reason.
+             * start time before the boundary discards it.
              *
              * A date, like first_session_date, and coarse for the same reason:
              * the anchor is stamped by the visitor's clock, so a date absorbs
@@ -4064,32 +4062,6 @@ class OWATracker  {
             OWA.setState( this.storeName('s'), 'sts', now );
 
 
-            // Persisted read, for the same reason as last_req above: the id of
-            // the session that just ended was written by a previous page load,
-            // so it is in the cookie and not in memory.
-            var prior_session_id = OWA.getPersistedState( this.storeName('s'), 'sid');
-            if ( ! prior_session_id ) {
-                state_store_name = 'ss_' + this.getSiteId();
-                prior_session_id = OWA.getState(state_store_name, 's');
-            }
-            if ( prior_session_id ) {
-
-                /*
-                 * Session state, not a fact about this request: it names the
-                 * session THIS one succeeded, which stays true for as long as
-                 * this session lasts. So it is also still reported on later
-                 * pages of the session, hydrated back out of the cookie --
-                 * where it was only ever on the page load that crossed the
-                 * boundary before.
-                 *
-                 * What matters for ordering is the READ above, not this write:
-                 * the value comes out of a cookie that the announcement below
-                 * is about to erase. The write can go either side, because
-                 * discardPersisted() only erases the cookie and never touches
-                 * memory.
-                 */
-                OWA.setState( this.storeName('s'), 'prior_session_id', prior_session_id );
-            }
         }
 
         /*
@@ -4416,7 +4388,6 @@ class OWATracker  {
             { store: 'v', key: 'user_id', name: 'user_id' },
             { store: 'v', key: 'nps',  name: 'nps' },
             { store: 's', key: 'sid',     name: 'session_id' },
-            { store: 's', key: 'prior_session_id', name: 'prior_session_id' },
             { store: 's', key: 'psts', name: 'psts' },
             { store: 's', key: 'sts',  name: 'sts' }
         ];
@@ -4848,15 +4819,9 @@ class OWATracker  {
             return;
         }
 
-        var old_sid = OWA.getState( store, 'sid' );
         var old_sts = OWA.getState( store, 'sts' );
 
         OWA.setState( store, 'prior_last_req', latest );
-
-        if ( old_sid ) {
-
-            OWA.setState( store, 'prior_session_id', old_sid );
-        }
 
         if ( old_sts ) {
 
@@ -4892,7 +4857,7 @@ class OWATracker  {
             return;
         }
 
-        [ 'sid', 'sts', 'psts', 'prior_session_id', 'seq' ].forEach( function ( key ) {
+        [ 'sid', 'sts', 'psts', 'seq' ].forEach( function ( key ) {
 
             var value = OWA.getPersistedState( store, key );
 

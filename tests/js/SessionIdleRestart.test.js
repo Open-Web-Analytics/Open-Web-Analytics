@@ -100,7 +100,7 @@ describe('a page left open past the inactivity window', () => {
         expect(later.event_type).toBe('click');
         expect(later.session_id).not.toBe(view.session_id);
         expect(later.is_new_session_start).toBe(true);
-        expect(later.prior_session_id).toBe(view.session_id);
+        expect(later.prior_session_id).toBeUndefined();
         expect(later.psts).toBe(view.sts);
         expect(later.sts).toBe(T0 + 31 * MINUTE);
         expect(later.nps).toBe(view.nps + 1);
