@@ -229,6 +229,22 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $this->assertContains( 'The regular expression is not valid.', $this->saveErrors( '(' ) );
     }
 
+    /**
+     * A pattern a report filter would refuse is refused on save: the
+     * definition is also compiled to SQL (Classes\EventPredicate).
+     */
+    public function testTheSaveFormRefusesAPatternAReportFilterWould(): void
+    {
+        $this->assertContains( 'The regular expression was refused: it uses a backreference.',
+            $this->saveErrors( '^/(a)\\1$' ) );
+        $this->assertContains( 'The regular expression was refused: it repeats more than 100 times.',
+            $this->saveErrors( '^/x{1,500}$' ) );
+        $this->assertContains( 'The regular expression was refused: it uses a branch reset group (?|...), '
+            . 'which MySQL\'s regular expressions do not support.', $this->saveErrors( '(?|a|b)' ) );
+        $this->assertSame( array(), array_filter( $this->saveErrors( '^/(shop|store)/[0-9]{1,6}$' ),
+            static function ( $m ) { return strpos( $m, 'regular expression' ) !== false; } ) );
+    }
+
     /* ---------------- the name is an event name ---------------- */
 
     /** Update075's renaming: other characters to one underscore, a letter first, 40 at most. */

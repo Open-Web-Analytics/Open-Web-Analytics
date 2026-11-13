@@ -36,6 +36,14 @@ namespace OWA\Module\Base\Classes;
  * the pricing page" would become "from the pricing page" and report a bigger
  * number that looks plausible.
  *
+ * A REGEX CONDITION RUNS IN THE DATABASE, so its pattern passes the check a
+ * report filter's does (ResultSetManager::regexProblem()) or the condition is
+ * refused the same way, naming its property (getError()) and the reason
+ * (getProblem()). The saves refuse such a pattern; this catches one stored
+ * before they did. Refused rather than dropped, for the reason above, and
+ * rather than run: an unportable construct is an SQL error on MySQL, and a
+ * nested repeat backtracks with no time limit on MariaDB.
+ *
  * PAGE PATHS ARE CANONICALISED ON THE READ SIDE, when the caller gives the
  * directory index pages. page_path is stored canonical (V2Event::canonicalPath():
  * a directory index page and a trailing slash collapsed), so a condition typed
@@ -55,6 +63,9 @@ class EventPredicate {
 
     /** Set when compile() returns null: which property could not be expressed. */
     private $error = '';
+
+    /** Set with $error when it was a regex condition's pattern that was refused: why. */
+    private $problem = '';
 
     /** @var array|null  directory index file names, or null to compare paths as written */
     private $indexPages;
@@ -80,6 +91,12 @@ class EventPredicate {
     public function getError() {
 
         return $this->error;
+    }
+
+    /** @return string  why getError()'s condition's pattern was refused; empty when it was the name */
+    public function getProblem() {
+
+        return $this->problem;
     }
 
     /**
@@ -122,7 +139,8 @@ class EventPredicate {
      */
     public function compile( $event, $match, array $conditions, $alias = 'e' ) {
 
-        $this->error = '';
+        $this->error   = '';
+        $this->problem = '';
 
         $event = (string) $event;
 
@@ -154,6 +172,19 @@ class EventPredicate {
                 $this->error = $property;
 
                 return null;
+            }
+
+            if ( $operator === \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_REGEX && $value !== '' ) {
+
+                $problem = ResultSetManager::regexProblem( $value );
+
+                if ( $problem !== null ) {
+
+                    $this->error   = $property;
+                    $this->problem = $problem;
+
+                    return null;
+                }
             }
 
             $column = $alias . '.' . $property;

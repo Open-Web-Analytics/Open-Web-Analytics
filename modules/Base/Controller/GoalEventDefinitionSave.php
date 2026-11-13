@@ -156,6 +156,22 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
                 $this->addValidation( 'conditionValue', '', 'required', array(
                     'errorMsg' => \OWA\Core\CoreAPI::t( 'The regular expression is not valid.' ),
                 ) );
+
+                continue;
+            }
+
+            /*
+             * Ingest matches with PCRE, but the definition is also compiled to
+             * SQL (Classes\EventPredicate, which refuses what this does), so the
+             * pattern passes what a report filter's must.
+             */
+            $refused = $pattern !== '' ? \OWA\Module\Base\Classes\ResultSetManager::regexProblem( $pattern ) : null;
+
+            if ( $refused !== null ) {
+
+                $this->addValidation( 'conditionValue', '', 'required', array(
+                    'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The regular expression was refused: %s' ), $refused ),
+                ) );
             }
         }
 
