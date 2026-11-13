@@ -42,6 +42,25 @@ namespace OWA\Core;
  */
 class Strings {
 
+    /**
+     * Tables of labels that are shown translated (OWA.translate()) but kept
+     * as plain literals, not OWA.l() calls, because other code reads them as
+     * data -- the wiki generator, tests. The extractor catalogues each label
+     * as a key the reporting JavaScript uses:
+     *
+     *   'Class::CONSTANT'  PHP: the value of each 'label' key in the constant
+     *   'OWA.name.NAME'    JavaScript: each value of the object assigned to
+     *                      it, and the last element of each [ value, label ]
+     */
+    const LABEL_TABLES = array(
+        'ConfiguredReport::ROW_ACTIONS',
+        'OWA.dataGrid.EMPTY_TESTS',
+        'OWA.dataGrid.OPERATOR_PHRASES',
+        'OWA.dataGrid.CONDITIONS',
+        'OWA.filterPills.OPERATORS',
+        'OWA.filterPills.EMPTY_TESTS',
+    );
+
     /** gettext's context separator. */
     const CONTEXT_SEPARATOR = "\x04";
 
@@ -329,7 +348,8 @@ class Strings {
      * by a literal context. tn( and OWA.ln( take two literals, the count, then
      * the optional context. A call whose text is not a literal cannot be
      * catalogued, and is reported in $problems; so is a key catalogued once as
-     * a single string and once as a counted one, or with two plurals.
+     * a single string and once as a counted one, or with two plurals. The
+     * labels of LABEL_TABLES are catalogued too, as keys the JavaScript uses.
      *
      * @param  string[] $roots       directories or files
      * @param  array    $problems    file:line => why, filled in
@@ -348,7 +368,9 @@ class Strings {
             $is_js  = substr( $file, -3 ) === '.js';
             $source = (string) file_get_contents( $file );
 
-            foreach ( $is_js ? self::scriptCallsIn( $source ) : self::callsIn( $source ) as $call ) {
+            $labels = $is_js ? self::scriptTableLabelsIn( $source ) : self::tableLabelsIn( $source );
+
+            foreach ( array_merge( $is_js ? self::scriptCallsIn( $source ) : self::callsIn( $source ), $labels ) as $call ) {
 
                 $where = $file . ':' . $call['line'];
 
@@ -371,7 +393,7 @@ class Strings {
 
                 $out[ $key ] = $english;
 
-                if ( $is_js ) {
+                if ( $is_js || $call['function'] === 'label table' ) {
 
                     $script[ $key ] = (string) $key;
                 }
@@ -392,6 +414,176 @@ class Strings {
      * @return array list of { line, function, text|null, plural|null, context|null }
      */
     public static function callsIn( $source ) {
+
+        return self::calls( self::phpTokens( $source ), '.', function ( array $tokens, $i ) {
+
+            if ( ( $tokens[ $i - 1 ][1] ?? null ) !== '::' || ! isset( $tokens[ $i - 2 ] ) ) {
+
+                return false;
+            }
+
+            return in_array( ltrim( $tokens[ $i - 2 ][1], '\\' ), array( 'CoreAPI', 'Strings', 'OWA\\Core\\CoreAPI', 'OWA\\Core\\Strings' ), true );
+
+        }, 't', 'tn' );
+    }
+
+    /**
+     * The labels of the LABEL_TABLES constants a PHP file's class declares:
+     * the value of each 'label' key, where that value is a string literal.
+     *
+     * @param  string        $source
+     * @param  string[]|null $tables  LABEL_TABLES when null
+     * @return array list of { line, function: 'label table', text, plural: null, context: '' }
+     */
+    public static function tableLabelsIn( $source, $tables = null ) {
+
+        $tokens = self::phpTokens( $source );
+        $tables = $tables ?? self::LABEL_TABLES;
+        $n      = count( $tokens );
+        $class  = null;
+        $out    = array();
+
+        for ( $i = 0; $i < $n - 1; $i++ ) {
+
+            $t = $tokens[ $i ];
+
+            if ( $class === null && $t[0] === 'x' && strtolower( $t[1] ) === 'class'
+                && ( $tokens[ $i - 1 ][1] ?? null ) !== '::' && $tokens[ $i + 1 ][0] === 'x' ) {
+
+                $class = $tokens[ $i + 1 ][1];
+                continue;
+            }
+
+            if ( $class === null || $t[0] !== 'x' || strtolower( $t[1] ) !== 'const'
+                || ! in_array( $class . '::' . ( $tokens[ $i + 1 ][1] ?? '' ), $tables, true )
+                || ( $tokens[ $i + 2 ][1] ?? null ) !== '=' ) {
+
+                continue;
+            }
+
+            $open = $i + 3;
+
+            if ( ( $tokens[ $open ][1] ?? null ) === 'array' ) {
+
+                $open++;
+            }
+
+            $close = self::closing( $tokens, $open );
+
+            for ( $j = $open + 1; $j < $close - 2; $j++ ) {
+
+                if ( $tokens[ $j ][0] === 's' && $tokens[ $j ][1] === 'label' && $tokens[ $j + 1 ][1] === '=>'
+                    && $tokens[ $j + 2 ][0] === 's' && in_array( $tokens[ $j + 3 ][1] ?? null, array( ',', ')', ']' ), true ) ) {
+
+                    $out[] = self::tableLabel( $tokens[ $j + 2 ] );
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The labels of the LABEL_TABLES objects a JavaScript file assigns:
+     * each value of the object, and the last element of each array of two or
+     * more, where that is a string literal.
+     *
+     * @param  string        $source
+     * @param  string[]|null $tables  LABEL_TABLES when null
+     * @return array as tableLabelsIn()'s
+     */
+    public static function scriptTableLabelsIn( $source, $tables = null ) {
+
+        $tokens = self::scriptTokens( $source );
+        $tables = $tables ?? self::LABEL_TABLES;
+        $n      = count( $tokens );
+        $out    = array();
+
+        for ( $i = 0; $i < $n; $i++ ) {
+
+            if ( $tokens[ $i ][0] !== 'x' || $tokens[ $i ][1] !== 'OWA' || ( $tokens[ $i - 1 ][1] ?? null ) === '.' ) {
+
+                continue;
+            }
+
+            $name = 'OWA';
+            $j    = $i + 1;
+
+            while ( ( $tokens[ $j ][1] ?? null ) === '.' && isset( $tokens[ $j + 1 ] ) && $tokens[ $j + 1 ][0] === 'x' ) {
+
+                $name .= '.' . $tokens[ $j + 1 ][1];
+                $j    += 2;
+            }
+
+            if ( ! in_array( $name, $tables, true ) || ( $tokens[ $j ][1] ?? null ) !== '='
+                || ! in_array( $tokens[ $j + 1 ][1] ?? null, array( '{', '[' ), true ) ) {
+
+                continue;
+            }
+
+            $close = self::closing( $tokens, $j + 1 );
+
+            for ( $k = $j + 2; $k < $close; $k++ ) {
+
+                if ( $tokens[ $k ][0] !== 's' ) {
+
+                    continue;
+                }
+
+                $before = $tokens[ $k - 1 ][1];
+                $after  = $tokens[ $k + 1 ][1] ?? null;
+
+                if ( $before === ':' || ( $before === ',' && $after === ']' ) ) {
+
+                    $out[] = self::tableLabel( $tokens[ $k ] );
+                }
+            }
+
+            $i = $close;
+        }
+
+        return $out;
+    }
+
+    /** A table's label as a call, for extract(). */
+    private static function tableLabel( array $token ) {
+
+        return array( 'line' => $token[2], 'function' => 'label table', 'text' => $token[1], 'plural' => null, 'context' => '' );
+    }
+
+    /** The index of the bracket that closes the one at $open; the last token when none does. */
+    private static function closing( array $tokens, $open ) {
+
+        $depth = 0;
+        $n     = count( $tokens );
+
+        for ( $j = $open; $j < $n; $j++ ) {
+
+            $t = $tokens[ $j ][0] === 'x' ? $tokens[ $j ][1] : null;
+
+            if ( $t === '(' || $t === '[' || $t === '{' ) {
+
+                $depth++;
+
+            } elseif ( $t === ')' || $t === ']' || $t === '}' ) {
+
+                if ( --$depth === 0 ) {
+
+                    return $j;
+                }
+            }
+        }
+
+        return $n - 1;
+    }
+
+    /**
+     * A PHP source as tokens for calls(): [ 's', value, line ] for a string
+     * literal, [ 'x', text, line ] for anything else; no whitespace or comments.
+     *
+     * @return array
+     */
+    private static function phpTokens( $source ) {
 
         $tokens = array();
 
@@ -419,16 +611,7 @@ class Strings {
             $tokens[] = array( 'x', $open ? '{' : $t[1], $t[2] );
         }
 
-        return self::calls( $tokens, '.', function ( array $tokens, $i ) {
-
-            if ( ( $tokens[ $i - 1 ][1] ?? null ) !== '::' || ! isset( $tokens[ $i - 2 ] ) ) {
-
-                return false;
-            }
-
-            return in_array( ltrim( $tokens[ $i - 2 ][1], '\\' ), array( 'CoreAPI', 'Strings', 'OWA\\Core\\CoreAPI', 'OWA\\Core\\Strings' ), true );
-
-        }, 't', 'tn' );
+        return $tokens;
     }
 
     /**

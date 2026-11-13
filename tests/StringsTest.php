@@ -322,6 +322,77 @@ JS;
         );
     }
 
+    public function testTheExtractorReadsTheLabelsOfANamedPhpTable(): void
+    {
+        $source = <<<'PHP'
+<?php
+namespace Demo;
+use Other\Thing;
+class Report {
+    const ACTIONS = array(
+        'a' => array( 'label' => 'Open it', 'description' => 'Not a label.' ),
+        'b' => array( 'label' => 'Joined ' . 'not read', 'other' => array( 'label' => 'Nested' ) ),
+        'c' => [ 'label' => $notALiteral ],
+    );
+    const OTHER = array( 'x' => array( 'label' => 'Not named' ) );
+    public function f() { return Thing::class; }
+}
+PHP;
+
+        $labels = Strings::tableLabelsIn($source, ['Report::ACTIONS']);
+
+        $this->assertSame(['Open it', 'Nested'], array_column($labels, 'text'));
+        $this->assertSame(6, $labels[0]['line']);
+        $this->assertSame([], Strings::tableLabelsIn($source, ['Other::ACTIONS']));
+    }
+
+    public function testTheExtractorReadsTheLabelsOfANamedScriptTable(): void
+    {
+        $source = <<<'JS'
+OWA.grid.PHRASES = {
+    '==': 'is',
+    '!=': "is not"
+};
+OWA.grid.CHOICES = {
+    dimension: [ [ '=@', 'Contains' ], [ '==', 'Exactly matches' ] ],
+    metric: [ [ '>', 'Greater than' ] ]
+};
+OWA.grid.SIZES = [ 10, 25 ];
+OWA.grid.UNNAMED = { 'a': 'Not named' };
+var x = OWA.grid.PHRASES[ '==' ];
+JS;
+
+        $labels = Strings::scriptTableLabelsIn($source, ['OWA.grid.PHRASES', 'OWA.grid.CHOICES', 'OWA.grid.SIZES']);
+
+        $this->assertSame(['is', 'is not', 'Contains', 'Exactly matches', 'Greater than'], array_column($labels, 'text'));
+        $this->assertSame([2, 3, 6, 6, 7], array_column($labels, 'line'));
+    }
+
+    public function testExtractCataloguesTableLabelsAsKeysTheScriptsUse(): void
+    {
+        $root = sys_get_temp_dir() . '/owa-strings-' . bin2hex(random_bytes(4));
+        mkdir($root . '/modules/Demo/src', 0700, true);
+
+        file_put_contents($root . '/modules/Demo/src/grid.js', "OWA.dataGrid.OPERATOR_PHRASES = { '==': 'is' };
+OWA.l( 'Saved.' );
+");
+        file_put_contents($root . '/modules/Demo/ConfiguredReport.php', "<?php
+class ConfiguredReport {
+    const ROW_ACTIONS = array( 'h' => array( 'label' => 'Heatmap' ) );
+}
+");
+
+        try {
+            $map = Strings::extract([$root . '/modules'], $problems, $keys);
+
+            $this->assertSame([], $problems);
+            $this->assertSame(['Heatmap' => 'Heatmap', 'Saved.' => 'Saved.', 'is' => 'is'], $map);
+            $this->assertSame(['Heatmap', 'Saved.', 'is'], $keys);
+        } finally {
+            exec('rm -rf ' . escapeshellarg($root));
+        }
+    }
+
     /** config_dom.php puts forScript() on OWA.config for OWA.l() to read; in English, nothing. */
     public function testThePageCarriesTheScriptsTranslationsAndRule(): void
     {

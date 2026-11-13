@@ -375,7 +375,7 @@ final class SystemHealthTest extends TestCase
 
             $this->assertSame('green', $finding['level']);
             $this->assertSame('Blocked as spam', $finding['label']);
-            $this->assertSame('3 beacon(s) today and yesterday. By rule: NO_FETCH_METADATA 2, NO_CLIENT_HINTS 1, UA_ROBOT_TOKEN 1.',
+            $this->assertSame('3 beacons today and yesterday. By rule: NO_FETCH_METADATA 2, NO_CLIENT_HINTS 1, UA_ROBOT_TOKEN 1.',
                 $finding['detail']);
 
             $intake = SystemHealth::intake();

@@ -1298,6 +1298,9 @@ OWA.dataGrid.operators = function () {
  * "(not set)" is the label for an empty value, and the server reads
  * `==(not set)` and `!=(not set)` as "is empty" and "has a value". Each key is
  * the whole tail of a clause.
+ *
+ * The labels in this table, OPERATOR_PHRASES and CONDITIONS are catalogued
+ * from here (Strings::LABEL_TABLES) and shown through OWA.translate().
  */
 OWA.dataGrid.EMPTY_TESTS = { '!=(not set)': 'has a value', '==(not set)': 'is not set' };
 
@@ -1317,6 +1320,34 @@ OWA.dataGrid.OPERATOR_PHRASES = {
     '!~': 'does not match',
     '=@': 'contains',
     '!@': 'does not contain'
+};
+
+/**
+ * A <label> holding a control where its sentence puts %s, so a translation
+ * can put the words before the control, after it, or both.
+ *
+ * @param  string text     e.g. "Rows per page %s"
+ * @param  jQuery $control
+ * @return jQuery
+ */
+OWA.dataGrid.labelled = function ( text, $control ) {
+
+    var parts  = String( text ).split( '%s' );
+    var before = parts.shift();
+    var after  = parts.join( '%s' );
+    var $label = jQuery( '<label></label>' );
+
+    if ( before !== '' ) {
+        $label.append( document.createTextNode( before ) );
+    }
+
+    $label.append( $control );
+
+    if ( after !== '' ) {
+        $label.append( document.createTextNode( after ) );
+    }
+
+    return $label;
 };
 
 /**
@@ -1883,8 +1914,8 @@ OWA.dataGrid.prototype = {
                 that.emit( 'page_change', [ 1, parseInt( jQuery( this ).val(), 10 ) ] );
             } );
 
-            $paging.append( jQuery( '<label class="owa_gridPagingItem"></label>' )
-                .text( OWA.l( 'Rows per page' ) + ' ' ).append( $size ) );
+            $paging.append( OWA.dataGrid.labelled( OWA.l( 'Rows per page %s', 'grid label: %s is the page size menu' ), $size )
+                .addClass( 'owa_gridPagingItem' ) );
         }
 
         if ( explore && pages > 1 ) {
@@ -1907,8 +1938,8 @@ OWA.dataGrid.prototype = {
                 if ( e.which === 13 ) { e.preventDefault(); go(); }
             } );
 
-            $paging.append( jQuery( '<label class="owa_gridPagingItem"></label>' )
-                .text( OWA.l( 'Go to' ) + ' ' ).append( $goto ) );
+            $paging.append( OWA.dataGrid.labelled( OWA.l( 'Go to %s', 'grid label: %s is the page number field' ), $goto )
+                .addClass( 'owa_gridPagingItem' ) );
         }
 
         var r = OWA.dataGrid.range( rs );

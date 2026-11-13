@@ -735,6 +735,29 @@ describe('in a translated locale', () => {
         expect($root.find('.owa_gridChipText strong').first().text()).toBe('Chro');
     });
 
+    test('Rows per page and Go to are one sentence each, with the control where the translation puts it', () => {
+        const paged = () => draw(resultSet({ rs: { resultsPerPage: 25, total_pages: 4, next: 'n' } })).$root;
+
+        let $labels = paged().find('label.owa_gridPagingItem');
+
+        expect($labels.eq(0).text().startsWith('Rows per page ')).toBe(true);
+        expect($labels.eq(0).children('select.owa_gridPageSize')).toHaveLength(1);
+        expect($labels.eq(1).contents().first().text()).toBe('Go to ');
+        expect($labels.eq(1).children('input.owa_gridGoTo')).toHaveLength(1);
+
+        OWA.config.strings = {
+            'grid label: %s is the page size menu\x04Rows per page %s': '%s lignes par page',
+            'grid label: %s is the page number field\x04Go to %s': 'Aller à la page %s',
+        };
+
+        $labels = paged().find('label.owa_gridPagingItem');
+
+        const parts = ($label) => $label.contents().map((i, n) => (n.nodeType === 3 ? n.textContent : '<' + n.tagName.toLowerCase() + '>')).get();
+
+        expect(parts($labels.eq(0))).toEqual(['<select>', ' lignes par page']);
+        expect(parts($labels.eq(1))).toEqual(['Aller à la page ', '<input>']);
+    });
+
     test('the pager reads its range, and a range that may go on, from one string each', () => {
         OWA.config.strings = {
             '%1$s–%2$s of %3$s': '%1$s à %2$s sur %3$s',
