@@ -50,6 +50,12 @@ class User extends \OWA\Core\Entity {
     const RESET_TTL = 86400; // 1 day
 
     /**
+     * How long after a password reset email another request for the same
+     * account sends nothing (resetMailedRecently()).
+     */
+    const RESET_RESEND_AFTER = 900; // 15 minutes
+
+    /**
      * A temp passkey: 32 random hex characters, a dot, and the Unix time it
      * expires. The link carries the whole key and must match the stored value
      * exactly, so the expiry in it cannot be changed. A key without one -- every
@@ -160,6 +166,29 @@ class User extends \OWA\Core\Entity {
         return is_string( $key )
             && preg_match( self::TEMP_PASSKEY_PATTERN, $key, $m ) === 1
             && (int) $m[2] > time();
+    }
+
+    /**
+     * Whether a temp passkey is a reset key minted less than
+     * RESET_RESEND_AFTER seconds ago.
+     *
+     * Read from the key's expiry, which is its minting time plus RESET_TTL:
+     * nothing else records when a reset was sent. An invitation key, which
+     * lives INVITE_TTL, reads as recent only in the RESET_RESEND_AFTER seconds
+     * when it has exactly RESET_TTL left.
+     */
+    public static function resetMailedRecently( $key, ?int $now = null ): bool {
+
+        $now ??= time();
+
+        if ( ! is_string( $key ) || preg_match( self::TEMP_PASSKEY_PATTERN, $key, $m ) !== 1 ) {
+
+            return false;
+        }
+
+        $minted = (int) $m[2] - self::RESET_TTL;
+
+        return $minted <= $now && $minted > $now - self::RESET_RESEND_AFTER;
     }
 
     /** A well-formed temp passkey, current or not, or false. */

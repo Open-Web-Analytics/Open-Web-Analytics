@@ -161,14 +161,19 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * above, so a node with the same ones finds the queues the drain install made.
  *
  * Credentials come from the AWS SDK's default chain -- environment, ~/.aws,
- * then the instance or task role -- unless set here. OWA never stores them.
+ * then the instance or task role -- unless set here; OWA_SQS_TOKEN is the
+ * session token of temporary credentials. OWA never stores them.
  * Credentials that carry their account id (AWS_ACCOUNT_ID, or aws_account_id
- * in an AWS profile) save one request per beacon.
+ * in an AWS profile) save one request per beacon. OWA_SQS_QUEUE_URL names
+ * the queue instead of deriving it; its dead-letter queue is the same URL
+ * with -dlq.
  */
 
 //define('OWA_SQS_REGION', 'us-east-1');
 //define('OWA_SQS_KEY', '');
 //define('OWA_SQS_SECRET', '');
+//define('OWA_SQS_TOKEN', '');
+//define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-example');
 
 /**
  * SCHEDULED JOBS

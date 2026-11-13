@@ -12,6 +12,7 @@
             <code><?php $view->out( $view->queue_name ); ?></code> and its dead-letter queue
             <code><?php $view->out( $view->dlq_name ); ?></code>. The names are derived from this
             install's database, so a logging node with the same <code>owa-config.php</code> finds them.
+            <code>OWA_SQS_QUEUE_URL</code> in <code>owa-config.php</code> names the queue instead.
         </div>
     </div>
 
@@ -30,9 +31,12 @@
             <code>define('OWA_TRACKER_INGEST_QUEUE_TYPE', 'sqs');</code><br>
             <code>define('OWA_QUEUE_TRACKER_INGEST', true);</code><br>
             <code>define('OWA_SQS_REGION', '<?php $view->out( (string) $view->region ); ?>');</code><br>
-            Its credentials need <code>sqs:GetQueueUrl</code> and <code>sqs:SendMessage</code>. If they
-            carry the account id (<code>AWS_ACCOUNT_ID</code>, or <code>aws_account_id</code> in its AWS
-            profile), it builds the queue URL itself and makes one request per beacon instead of two.
+            Its credentials need <code>sqs:GetQueueUrl</code>, <code>sqs:GetQueueAttributes</code> and
+            <code>sqs:SendMessage</code>. If they carry the account id (<code>AWS_ACCOUNT_ID</code>, or
+            <code>aws_account_id</code> in its AWS profile), it builds the queue URL itself and makes one
+            request per beacon instead of two. A beacon the queue does not take is kept in the node's file
+            queue; run <code>php cli.php cmd=drain-tracker-ingest forward_only=1</code> from its cron to
+            forward those.
         <?php else: ?>
             <strong>Failed</strong> <?php $view->out( gmdate( 'j M Y H:i', (int) $p['at'] ) ); ?> UTC:
             <?php $view->out( (string) $p['error'] ); ?>

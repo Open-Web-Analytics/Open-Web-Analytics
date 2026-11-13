@@ -79,6 +79,42 @@ class NotificationManager {
      */
     const INITIAL_LIMIT = 3;
 
+    /** title and url are VARCHAR(255): characters. */
+    const MAX_TITLE_CHARS = 255;
+    const MAX_URL_CHARS   = 255;
+
+    /** body is TEXT: 65,535 bytes. */
+    const MAX_BODY_BYTES = 65535;
+
+    /**
+     * An item's fields as they are stored: title cut to its column, body cut
+     * to its column on a character boundary, and url kept only when it is an
+     * https: URL that fits its column -- the panel makes it a link, and a cut
+     * URL points somewhere else.
+     *
+     * Pure, so the limits are testable without a database.
+     *
+     * @param array $item from a from*() transform
+     * @return array{title:string, body:string, url:string}
+     */
+    public static function storable( array $item ) {
+
+        $url = trim( (string) ( $item['url'] ?? '' ) );
+
+        return array(
+            'title' => mb_substr( (string) ( $item['title'] ?? '' ), 0, self::MAX_TITLE_CHARS ),
+            // mb_strcut: at most this many bytes, never half a character.
+            'body'  => mb_strcut( (string) ( $item['body'] ?? '' ), 0, self::MAX_BODY_BYTES ),
+            'url'   => self::isLinkable( $url ) && mb_strlen( $url ) <= self::MAX_URL_CHARS ? $url : '',
+        );
+    }
+
+    /** Whether a URL may be a notification's link: https: only. */
+    public static function isLinkable( $url ) {
+
+        return is_string( $url ) && preg_match( '#^https://[^\s/?\#]+#i', $url ) === 1;
+    }
+
     /**
      * Decoded GitHub releases -> notification items.
      *
@@ -247,18 +283,19 @@ class NotificationManager {
                 continue;
             }
 
-            $n = \OWA\Core\CoreAPI::entityFactory( 'base.notification' );
+            $n      = \OWA\Core\CoreAPI::entityFactory( 'base.notification' );
+            $stored = self::storable( $item );
 
             $n->set( 'id', $n->generateId( $source . $item['source_key'] . $userId ) );
             $n->set( 'source', $source );
             $n->set( 'source_key', (string) $item['source_key'] );
             $n->set( 'type', (string) ( $item['type'] ?? $type ) );
             $n->set( 'user_id', (string) $userId );
-            $n->set( 'title', (string) ( $item['title'] ?? '' ) );
-            $n->set( 'body', (string) ( $item['body'] ?? '' ) );
+            $n->set( 'title', $stored['title'] );
+            $n->set( 'body', $stored['body'] );
             // Derived once, here, rather than on every read.
             $n->set( 'excerpt', self::excerpt( $item['body'] ?? '' ) );
-            $n->set( 'url', (string) ( $item['url'] ?? '' ) );
+            $n->set( 'url', $stored['url'] );
             $n->set( 'published_at', (int) ( $item['published_at'] ?? 0 ) );
             $n->set( 'created_at', time() );
 
@@ -390,6 +427,12 @@ class NotificationManager {
             // Carried on the row: a READ notification stays in the list, it
             // just stops being bold and stops counting.
             $row['read'] = (bool) ( $state && $state['read'] );
+
+            // The panel makes it a link: a row stored before record() checked is checked here.
+            if ( ! self::isLinkable( $row['url'] ?? '' ) ) {
+
+                $row['url'] = '';
+            }
 
             $out[] = $row;
 

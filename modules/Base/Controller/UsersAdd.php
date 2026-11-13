@@ -98,24 +98,26 @@ class UsersAdd extends \OWA\Core\AdminController {
 	        ];
 		}
         
-        // assign user to view for use by CLI and REST controllers that may
-        // extend this
-        $this->set('user', $u_properties );
-		
-		// add temp passkey for use in sending emails.
-		$u_properties['temp_passkey'] = $u->get('temp_passkey');
-		
-        // post account creation event to event queue for
-        // downstream email observers/handlers
-        $ed = \OWA\Core\CoreAPI::getEventDispatch();
-        $ed->log( $u_properties, 'base.new_user_account' );
+        // The invitation: its handler mails the new user the link that sets a
+        // password (UserHandlers), and says on the event whether it was sent.
+        $ed    = \OWA\Core\CoreAPI::getEventDispatch();
+        $event = $ed->makeEvent( 'base.new_user_account' );
+        $event->setProperties( $u_properties + array( 'temp_passkey' => $u->get( 'temp_passkey' ) ) );
+        $ed->notify( $event );
+
+        $sent = $event->get( 'mail_sent' ) === true;
+
+        // For the CLI and REST controllers that extend this.
+        $this->set( 'user', $u_properties + array( 'invitation_sent' => $sent ) );
+        $this->set( 'invitation_sent', $sent );
 	}
-    
+
     function success() {
-		
+
 		unset($this->data['user']);
 		$this->setRedirectAction('base.users');
-        $this->set('status_code', 3000);
+        // 3013: added, and the administrator must pass the invitation on another way.
+        $this->set('status_code', $this->get( 'invitation_sent' ) ? 3000 : 3013);
     }
 
     function errorAction() {

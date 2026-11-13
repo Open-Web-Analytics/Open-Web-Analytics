@@ -65,5 +65,27 @@ final class SqsNodeConfigTest extends TestCase
         $this->assertSame($r['derived'], $r['name'], 'the derived name: nothing names the queue');
         $this->assertSame('https://sqs.eu-west-2.amazonaws.com/123456789012/' . $r['derived'], $r['url']);
         $this->assertSame('https://sqs.eu-west-2.amazonaws.com/123456789012/' . $r['derived'] . '-dlq', $r['dlq_url']);
+        $this->assertNull($r['token'], 'no session token unless one is given');
+    }
+
+    /** OWA_SQS_QUEUE_URL names the queue, and its dead-letter queue is the same URL with -dlq. */
+    public function testTheQueueUrlConstantWinsOverTheDerivedName(): void
+    {
+        $r = $this->probe('url');
+
+        $this->assertSame('my-own-queue', $r['name']);
+        $this->assertSame('my-own-queue', $r['derived'], 'what the settings screen shows');
+        $this->assertSame('https://sqs.eu-west-2.amazonaws.com/210987654321/my-own-queue', $r['url'],
+            'not the credentials\' account: the URL as given');
+        $this->assertSame('https://sqs.eu-west-2.amazonaws.com/210987654321/my-own-queue-dlq', $r['dlq_url']);
+    }
+
+    /** Temporary credentials: the session token goes with the key and secret. */
+    public function testASessionTokenIsPassedWithTheKeyAndSecret(): void
+    {
+        $r = $this->probe('url');
+
+        $this->assertSame('probe-session-token', $r['token']);
+        $this->assertStringContainsString('OWA_SQS_TOKEN', $r['source']);
     }
 }

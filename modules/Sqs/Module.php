@@ -20,13 +20,18 @@ namespace OWA\Module\Sqs;
  *   define('OWA_SQS_REGION', 'us-east-1');
  *
  * The queue's name is derived from the database settings in the same file, so
- * the node finds the queue the drain install made.
+ * the node finds the queue the drain install made; OWA_SQS_QUEUE_URL names it
+ * instead.
  *
  * The queues -- the main one and its dead-letter queue -- are created by the
- * module: on activation, when the region is saved, by
- * cmd=tracker-ingest-provision, and on first use when they are missing.
- * Credentials are never stored: the AWS SDK's default chain, or OWA_SQS_KEY
- * and OWA_SQS_SECRET in owa-config.php.
+ * install that drains them: on activation, when the region is saved, by
+ * cmd=tracker-ingest-provision, and on first use when they are missing. Never
+ * by log.php: a logging node that finds no queue keeps the beacon in its file
+ * queue (async_log_dir), and `php cli.php cmd=drain-tracker-ingest
+ * forward_only=1`, run from its cron, forwards those once the queue answers.
+ * Credentials are never stored: the AWS SDK's default chain, or OWA_SQS_KEY,
+ * OWA_SQS_SECRET and, for temporary credentials, OWA_SQS_TOKEN in
+ * owa-config.php.
  *
  * Replaces the RemoteQueue module, which forwarded beacons over HTTP to
  * another install's queue.php.

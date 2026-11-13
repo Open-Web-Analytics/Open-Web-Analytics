@@ -91,10 +91,17 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
                 ? \OWA\Module\Base\Classes\TrackerIngest::queue()
                 : \OWA\Core\CoreAPI::getEventQueue( $queue_name );
 
-            if ( method_exists( $q, 'pruneArchive' ) ) {
+            // The intake's file fallback (TrackerIngest::fallback()) archives what it forwards.
+            $fallback = $queue_name === \OWA\Module\Base\Classes\TrackerIngest::QUEUE
+                ? \OWA\Module\Base\Classes\TrackerIngest::fallback() : null;
 
-                \OWA\Core\CoreAPI::notice( sprintf( 'Pruned %d archived file(s) of event queue %s.',
-                    (int) $q->pruneArchive( $interval ), $queue_name ) );
+            foreach ( array( $q, $fallback ) as $each ) {
+
+                if ( $each && method_exists( $each, 'pruneArchive' ) ) {
+
+                    \OWA\Core\CoreAPI::notice( sprintf( 'Pruned %d archived file(s) of event queue %s.',
+                        (int) $each->pruneArchive( $interval ), $queue_name ) );
+                }
             }
         }
     }

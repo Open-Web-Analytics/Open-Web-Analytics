@@ -2778,7 +2778,10 @@ namespace OWA\Module\Base\Classes;
          $this->config->set('settings', $settings);
      }
 
-     function setMailerDomain() {
+     /**
+      * @param string|null $public_url  the URL OWA is served from; null reads OWA_PUBLIC_URL
+      */
+     function setMailerDomain( $public_url = null ) {
 
 	     // Only a fallback. This runs from the constructor, BEFORE load() merges
 	     // the stored settings in, so overwriting unconditionally would clobber
@@ -2792,20 +2795,21 @@ namespace OWA\Module\Base\Classes;
 		     return;
 	     }
 
-	     // Fall back to a valid domain: neither SERVER_NAME (CLI/cron have no
-	     // web server context) nor a usable PUBLIC_URL host is guaranteed, and
-	     // mailer-from below reads this unconditionally.
-	     $mailer_domain = 'localhost';
+	     // The host OWA is served from, by its configured public URL: the same
+	     // in every request and in CLI and cron, where SERVER_NAME is unset.
+	     // SERVER_NAME, which the web server sets per virtual host, only when
+	     // there is no public URL; 'localhost' when there is neither.
+	     if ( $public_url === null ) {
 
-	     if ( isset( $_SERVER[ 'SERVER_NAME' ] ) ) {
+		     $public_url = defined( 'OWA_PUBLIC_URL' ) ? (string) OWA_PUBLIC_URL : '';
+	     }
 
-			 $mailer_domain = $_SERVER['SERVER_NAME'];
+	     $mailer_domain = (string) ( parse_url( (string) $public_url, PHP_URL_HOST ) ?: '' );
 
-		 } elseif ( defined( 'PUBLIC_URL' ) ) {
+	     if ( $mailer_domain === '' ) {
 
-			 $parts = parse_url( PUBLIC_URL );
-			 $mailer_domain = $parts['host'] ?? 'localhost';
-		 }
+		     $mailer_domain = ! empty( $_SERVER['SERVER_NAME'] ) ? (string) $_SERVER['SERVER_NAME'] : 'localhost';
+	     }
 
 		 // A dotless domain (e.g. bare 'localhost', or an internal hostname)
 		 // yields 'owa@localhost', which PHPMailer rejects as an invalid From.

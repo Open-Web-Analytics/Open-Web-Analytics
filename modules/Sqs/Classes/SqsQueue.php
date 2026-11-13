@@ -21,13 +21,18 @@ namespace OWA\Module\Sqs\Classes;
  *
  * One difference from the file queue: RETENTION. SQS keeps a message at most
  * fourteen days, and both queues are set to that; the file queue keeps one
- * until it is ingested. schedule-status warns long before it matters.
+ * until it is ingested. A dead letter that is not replayed within fourteen
+ * days is deleted by SQS.
  *
  * A queue's URL holds the account id -- SQS names are unique per account and
- * region -- so it comes from what is known before asking: the install that
- * provisioned it has it in the sqs.provisioned setting, and credentials that
- * carry their account id let it be built locally (Sqs::urlFromCredentials()).
- * Otherwise GetQueueUrl, once per process.
+ * region -- so it comes from what is known before asking: OWA_SQS_QUEUE_URL,
+ * the install that provisioned it has it in the sqs.provisioned setting, and
+ * credentials that carry their account id let it be built locally
+ * (Sqs::urlFromCredentials()). Otherwise GetQueueUrl, once per process.
+ *
+ * Queues are created by the install that drains them, never by log.php: on a
+ * logging node a missing queue is a failed send, and the beacon goes to the
+ * file intake (TrackerIngest::send()).
  */
 class SqsQueue implements \OWA\Core\IntakeQueue {
 
@@ -42,6 +47,12 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
 
     /** How long a received message is hidden by default: longer than a drain runs. */
     const VISIBILITY = 300;
+
+    /**
+     * The largest body sent: SQS's 256 KiB message limit, less room for the
+     * message attributes, which count towards it.
+     */
+    const MAX_BODY_BYTES = 261120;
 
     /** @var string */
     private $name;
@@ -79,6 +90,18 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     public function lastError() {
 
         return $this->last_error;
+    }
+
+    /** Forget the last failure, so lastError() speaks for what follows. */
+    public function clearLastError() {
+
+        $this->last_error = null;
+    }
+
+    /** @return int the largest envelope, JSON-encoded, that send() accepts */
+    public function maxMessageBytes() {
+
+        return self::MAX_BODY_BYTES;
     }
 
     // ---------------------------------------------------------------------
@@ -159,6 +182,13 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         $body = json_encode( $envelope, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
 
         if ( $body === false ) {
+
+            return false;
+        }
+
+        if ( strlen( $body ) > self::MAX_BODY_BYTES ) {
+
+            $this->last_error = sprintf( 'A message of %d bytes is over the %d-byte limit.', strlen( $body ), self::MAX_BODY_BYTES );
 
             return false;
         }
@@ -272,7 +302,17 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return $a !== null && (int) ( $a['ApproximateNumberOfMessages'] ?? 0 ) === 0;
     }
 
-    /** Messages waiting, visible or not; the oldest's age is CloudWatch's to tell, not the API's. */
+    /**
+     * Messages waiting, visible or not: the sum of ApproximateNumberOfMessages,
+     * ...NotVisible and ...Delayed.
+     *
+     * oldest_age is always null. SQS reports the oldest message's age only as
+     * the CloudWatch metric ApproximateAgeOfOldestMessage, not as a queue
+     * attribute, and this module talks to SQS alone; an alarm on that metric
+     * is how a stalled drain is caught.
+     *
+     * When the attributes cannot be read, messages is null and error says why.
+     */
     public function stats() {
 
         $a = $this->attributes( array( 'ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible',
@@ -281,6 +321,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return array(
             'messages'   => $a === null ? null : array_sum( array_map( 'intval', $a ) ),
             'oldest_age' => null,
+            'error'      => $a === null ? (string) ( $this->last_error ?: 'no answer' ) : null,
         );
     }
 
@@ -289,10 +330,10 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     // ---------------------------------------------------------------------
 
     /**
-     * The queue's URL: what provisioning recorded, else built from the
-     * credentials' account id, else GetQueueUrl. A queue
-     * that does not exist yet is provisioned, when $provision allows, as the
-     * file queue makes its directories on first use.
+     * The queue's URL: OWA_SQS_QUEUE_URL, else what provisioning recorded,
+     * else built from the credentials' account id, else GetQueueUrl. A queue
+     * that does not exist yet is provisioned, when $provision allows and this
+     * is not log.php, as the file queue makes its directories on first use.
      *
      * @param  bool $provision
      * @return string|null
@@ -320,12 +361,14 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
             $missing = in_array( $e->getAwsErrorCode(),
                 array( 'AWS.SimpleQueueService.NonExistentQueue', 'QueueDoesNotExist' ), true );
 
-            if ( $missing && $provision && $this->provision() ) {
+            if ( $missing && $provision && ! Sqs::isLogger() && $this->provision() ) {
 
                 return $this->url;
             }
 
-            $this->last_error = $e->getAwsErrorMessage() ?: $e->getMessage();
+            $this->last_error = $missing && Sqs::isLogger()
+                ? 'The queue does not exist. Create it with cmd=tracker-ingest-provision on the install that drains it.'
+                : ( $e->getAwsErrorMessage() ?: $e->getMessage() );
 
             return null;
 
@@ -340,8 +383,15 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return $this->url;
     }
 
-    /** The URL without asking SQS: the provisioning record when it names this queue, else from the credentials. */
+    /** The URL without asking SQS: OWA_SQS_QUEUE_URL, the provisioning record when it names this queue, else from the credentials. */
     private function knownUrl() {
+
+        $configured = Sqs::configuredUrlFor( $this->name );
+
+        if ( $configured !== null ) {
+
+            return $configured;
+        }
 
         $record = (array) \OWA\Core\CoreAPI::getSetting( 'sqs', 'provisioned' );
 

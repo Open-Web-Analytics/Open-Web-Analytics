@@ -330,9 +330,12 @@ class CoreAPI {
      */
     public static function getSetting($module, $name, $scopeType = '', $scopeId = '', $inherit = true) {
 
-        if ( ! $scopeType || ! $scopeId ) {
+        $s = \OWA\Core\CoreAPI::configSingleton();
 
-            $s = \OWA\Core\CoreAPI::configSingleton();
+        // A static-config node (a logging node) holds no scoped settings: it
+        // reads nothing from the database, so every scope answers the install's.
+        if ( ! $scopeType || ! $scopeId || $s->get( 'base', 'useStaticConfigOnly' ) ) {
+
             return $s->get($module, $name);
         }
 
@@ -972,6 +975,13 @@ class CoreAPI {
         if ( $site_id === '' ) {
 
             return false;
+        }
+
+        // A static-config node is a logging node: it has no database to ask,
+        // and the ingest that drains its queue checks the site.
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'useStaticConfigOnly' ) ) {
+
+            return null;
         }
 
         if ( ! array_key_exists( $site_id, self::$registered_sites ) ) {
