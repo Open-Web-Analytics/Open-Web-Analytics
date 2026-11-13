@@ -243,6 +243,26 @@ class TrackerIngest {
 
         \OWA\Module\Base\Classes\Beacon\Compat::applyToQueued( $event );
 
+        /*
+         * The site is checked here as well as at the edge: a beacon queued while
+         * the database could not answer was let through unchecked, and a site
+         * archived since it was queued no longer observes.
+         */
+        $registered = \OWA\Core\CoreAPI::siteRegistration( $event->getSiteId() );
+
+        if ( $registered === null ) {
+
+            return false;
+        }
+
+        if ( $registered === false ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Tracker ingest: site id "%s" is not registered; event dropped.',
+                (string) $event->getSiteId() ) );
+
+            return true;
+        }
+
         $processor = \OWA\Core\CoreAPI::getEventProcessor( $event );
 
         if ( ! $processor ) {
