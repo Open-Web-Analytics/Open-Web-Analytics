@@ -16,6 +16,8 @@
  * arithmetic is done on UTC midnights, where every day is 24 hours long.
  */
 
+import { OWA } from './owa.js';
+
 const DAY = 86400000;
 
 /** yyyymmdd -> UTC milliseconds, or NaN. */
@@ -636,14 +638,14 @@ PeriodPicker.prototype = {
         const r = this.draft.main, c = this.draft.cmpOn ? this.draft.cmp : null;
         const said = [ formatLongDate( ymd ) ];
 
-        if ( ymd === r[0] ) said.push( 'start date' );
-        if ( ymd === r[1] ) said.push( 'end date' );
+        if ( ymd === r[0] ) said.push( OWA.l( 'start date', 'calendar day' ) );
+        if ( ymd === r[1] ) said.push( OWA.l( 'end date', 'calendar day' ) );
 
-        if ( c && ymd === c[0] ) said.push( 'comparison start date' );
-        else if ( c && ymd === c[1] ) said.push( 'comparison end date' );
-        else if ( c && ymd > c[0] && ymd < c[1] ) said.push( 'in the comparison' );
+        if ( c && ymd === c[0] ) said.push( OWA.l( 'comparison start date', 'calendar day' ) );
+        else if ( c && ymd === c[1] ) said.push( OWA.l( 'comparison end date', 'calendar day' ) );
+        else if ( c && ymd > c[0] && ymd < c[1] ) said.push( OWA.l( 'in the comparison', 'calendar day' ) );
 
-        if ( ymd === this.today ) said.push( 'today' );
+        if ( ymd === this.today ) said.push( OWA.l( 'today', 'calendar day' ) );
 
         return said.join( ', ' );
     },
