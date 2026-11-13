@@ -1006,6 +1006,39 @@ describe('site search', () => {
         expect(searches.map((e) => e.search_term)).toEqual(['first', 'second']);
     });
 
+    test('a route change raises nothing when site search was never started', () => {
+        jest.useFakeTimers();
+        const t = newTracker();
+        const sent = captureSends(t);
+        history.replaceState({}, '', '/start');
+
+        // trackSiteSearch is off: disabled, or simply not run.
+        t.trackRouteChanges();
+
+        history.pushState({}, '', '/search?q=second');
+        jest.advanceTimersByTime(OWATracker.ROUTE_SETTLE_MSEC);
+        jest.useRealTimers();
+
+        expect(sent.filter((e) => e.event_type === 'view_search_results')).toEqual([]);
+        expect(sent.filter((e) => e.event_type === 'page_view').length).toBeGreaterThan(0);
+    });
+
+    test('a route change searches with the parameters site search was started with', () => {
+        jest.useFakeTimers();
+        const t = newTracker();
+        const sent = captureSends(t);
+        history.replaceState({}, '', '/start');
+
+        t.trackRouteChanges();
+        t.trackSiteSearch(['term']);
+
+        history.pushState({}, '', '/results?term=custom');
+        jest.advanceTimersByTime(OWATracker.ROUTE_SETTLE_MSEC);
+        jest.useRealTimers();
+
+        expect(sent.filter((e) => e.event_type === 'view_search_results').map((e) => e.search_term)).toEqual(['custom']);
+    });
+
     /*
      * THE TERM IS READ THE WAY A FORM SUBMITS IT. getUrlParam()'s parser left
      * `+` and `%26` encoded, read the fragment, lower-cased names, took the last

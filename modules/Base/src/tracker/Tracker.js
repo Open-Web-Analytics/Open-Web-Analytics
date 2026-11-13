@@ -214,6 +214,7 @@ class OWATracker  {
 	    this.commandsRun = {};
 	    /** Whether startFeatures() has run. */
 	    this.featuresStarted = false;
+	    this.siteSearchStarted = null;
 	    /**
 	     * Latest click event
 	     */
@@ -3023,8 +3024,15 @@ class OWATracker  {
              * This is why getUrlParam()'s cache is keyed on the URL it parsed:
              * filled once and kept, every route change here would have reported
              * the term from whatever screen the visitor landed on first.
+             *
+             * Only when site search was started, and with the parameters it was
+             * started with: a page that disabled it, or never ran it, gets no
+             * search events from its route changes either.
              */
-            that.trackSiteSearch();
+            if ( that.siteSearchStarted ) {
+
+                that.trackSiteSearch( that.siteSearchStarted );
+            }
 
             /*
              * THE ROUTE'S SCROLL starts from where it sits once its page view is
@@ -5712,6 +5720,9 @@ class OWATracker  {
 
             return;
         }
+
+        // Route changes search again with these (trackRouteChanges()).
+        this.siteSearchStarted = params;
 
         for ( var i = 0; i < params.length; i++ ) {
 
