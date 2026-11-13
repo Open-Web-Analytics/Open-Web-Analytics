@@ -2065,9 +2065,11 @@ test.describe('custom reports', () => {
 
             await expect(card.locator('tr.owa_gridRow').first()).toBeVisible({ timeout: 20_000 });
 
-            // The link below the widget, with the wording the shipped summary
-            // widgets use.
-            const more = card.locator('.owa_moreLinks a');
+            // The link at the card's foot, with the wording the builder gives
+            // it when the author gives none.
+            const more = card.getByRole('link', { name: 'View Full Report' });
+
+            await expect(card.locator('[data-ui="card-full-report"]')).toHaveCount(1);
 
             await expect(more).toHaveCount(1);
             await expect(more).toContainText('View Full Report');

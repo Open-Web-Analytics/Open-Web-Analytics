@@ -180,7 +180,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
         await expect(names.locator('xpath=..').locator('.owa_reportSectionTitle')).toHaveText('Events');
 
-        const more = names.locator('xpath=..').locator('.owa_moreLinks a');
+        const more = names.locator('xpath=..').locator('[data-ui="card-full-report"]');
         await expect(more).toHaveCount(1);
         expect(await more.getAttribute('href')).toContain('reportId=events');
     });
@@ -1285,5 +1285,69 @@ test.describe('report freshness', () => {
         await page.waitForTimeout(16_000);
 
         expect(requests.length, 'no widget refreshed itself').toBe(loaded);
+    });
+});
+
+/**
+ * A card grows by a step of rows from the bar under them, and its full-report
+ * link is at its foot. The fixture has fewer pages than a card's ten rows, so
+ * the Top Content card is asked for one at a time.
+ */
+test.describe('a dashboard card shows more rows from the bar under them', () => {
+
+    test('each press adds a step; the last one leaves a line saying so', async ({ page }) => {
+        await login(page);
+
+        await page.route(/[?&]do=reports(&|$)/, (route) => {
+            const url = route.request().url();
+
+            if (/[?&]dimensions=pagePath(&|$)/.test(url) && /[?&]resultsPerPage=10(&|$)/.test(url)) {
+                return route.continue({ url: url.replace(/([?&]resultsPerPage=)10(?=&|$)/, (m, name) => name + '1') });
+            }
+
+            return route.continue();
+        });
+
+        await openDashboard(page);
+
+        const card = page.locator('#top-pages');
+        const rows = card.locator('tr.owa_gridRow');
+        const more = card.getByRole('button', { name: /^Show \d+ more rows?$/ });
+        const done = card.locator('[data-ui="grid-all-shown"]');
+
+        await expect(rows).toHaveCount(1, { timeout: 20_000 });
+        await expect(more, 'the fixture has too few pages for a second step').toHaveCount(1);
+        await expect(more).toHaveAttribute('data-ui', 'grid-show-more');
+        await expect(card.locator('.owa_gridPager')).toHaveCount(0);
+
+        // The full-report link is under the bar.
+        const link = card.locator('xpath=..').locator('[data-ui="card-full-report"]');
+        await expect(link).toHaveAttribute('href', /reportId=pages(&|$)/);
+        const bar = await more.boundingBox();
+        expect((await link.boundingBox()).y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
+
+        // The same query from the first row, one more row, the sort kept.
+        const asked = page.waitForRequest((r) => /[?&]resultsPerPage=2(&|$)/.test(r.url())
+            && /[?&]page=1(&|$)/.test(r.url()) && /[?&]sort=pageViews-/.test(r.url()));
+        await more.focus();
+        await page.keyboard.press('Enter');
+        await asked;
+
+        await expect(rows).toHaveCount(2, { timeout: 15_000 });
+        await expect(more, 'the fixture has too few pages for a third step').toHaveCount(1);
+        await expect(card.locator('[data-ui="grid-status"]')).toHaveText(/^Showing 2 of \d+ rows$/);
+
+        // The bar keeps the focus while there is more; pressed until there is not.
+        for (let i = 0; i < 20 && await more.count(); i++) {
+            await expect(more).toBeFocused();
+            await expect(more).not.toHaveAttribute('aria-busy', 'true');
+            await page.keyboard.press('Enter');
+            await expect(more.or(done).first()).not.toHaveAttribute('aria-busy', 'true', { timeout: 15_000 });
+        }
+
+        const n = await rows.count();
+
+        await expect(done).toHaveText(`All ${n} rows shown`);
+        await expect(done).toBeFocused();
     });
 });

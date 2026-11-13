@@ -180,6 +180,7 @@ return array(
     'Field' => 'Field',
     'Fill in all required fields.' => 'Fill in all required fields.',
     'Filter' => 'Filter',
+    'Full report' => 'Full report',
     'Give the application password a name.' => 'Give the application password a name.',
     'Goal event definition deleted.' => 'Goal event definition deleted.',
     'Goal event definition saved.' => 'Goal event definition saved.',
