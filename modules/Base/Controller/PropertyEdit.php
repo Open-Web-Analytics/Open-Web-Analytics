@@ -223,10 +223,57 @@ class PropertyEdit extends \OWA\Core\AdminController {
             : \OWA\Module\Base\Entity\Property::TYPE_WEB;
     }
 
+    /**
+     * The form again, as it was sent, with the reasons it was refused.
+     *
+     * It redirected to base.propertyProfile, and a redirect carries only
+     * scalar values, so the settings and their Override switches were lost and
+     * the screen reloaded what was stored: correcting one field meant entering
+     * every other change again. Rendered here, as SitesEditSettings does.
+     */
     function errorAction() {
 
-        $this->setRedirectAction( 'base.propertyProfile' );
-        $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
+        $propertyId = $this->getParam( 'propertyId' );
+        $property   = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
+
+        if ( $propertyId ) {
+
+            $property->load( $propertyId );
+        }
+
+        $shown = $property->_getProperties();
+
+        foreach ( array( 'name' => 'name', 'domain' => 'domain', 'description' => 'description',
+                         'propertyType' => 'property_type' ) as $param => $column ) {
+
+            if ( $this->getParam( $param ) !== null ) {
+
+                $shown[ $column ] = (string) $this->getParam( $param );
+            }
+        }
+
+        // A new Property's kind is chosen on the form, so the one asked for is shown.
+        if ( ! $propertyId ) {
+
+            $shown['property_type'] = $this->requestedType();
+        }
+
+        $this->set( 'property', $shown );
+        $this->set( 'propertyId', $propertyId );
+        $this->set( 'profileCount', \OWA\Module\Base\Controller\PropertyProfile::countLiveProfiles( $propertyId ) );
+        $this->set( 'posted', array(
+            'config'   => (array) $this->getParam( 'config' ),
+            'override' => (array) $this->getParam( 'override' ),
+        ) );
+
+        $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ), $propertyId );
+
+        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
+        $this->set( 'error_code', 3002 );
+        $this->setView( 'base.optionsHierarchy' );
+        $this->setSubview( 'base.propertyProfile' );
     }
 }
 
