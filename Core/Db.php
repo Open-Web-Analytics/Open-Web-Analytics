@@ -28,6 +28,13 @@ namespace OWA\Core;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * The query methods every driver implements (Db\Mysql, Db\Pdo); declared
+ * here so code holding a Db can call them.
+ *
+ * @method mixed      query( string $sql, array $params = array() )
+ * @method array|null get_row( string $sql, array $params = array() )
+ * @method array|null get_results( string $sql, array $params = array() )
  */
 class Db extends \OWA\Core\Base {
 
