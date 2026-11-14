@@ -432,12 +432,15 @@ final class CronTest extends TestCase
             '10 * * * *'    => 'hourly, at 10 past',
             '0 4 * * *'     => 'daily at 04:00',
             '30 2 1 * *'    => 'monthly, on day 1 at 02:30',
+            '7 3 * * 2'     => 'weekly, on Tuesday at 03:07',
+            '0 0 * * 0'     => 'weekly, on Sunday at 00:00',
         ] as $expr => $words) {
             $this->assertSame($words, \OWA\Core\Cron::describe($expr), $expr);
         }
 
         // Anything unusual is shown as itself rather than mis-described.
         $this->assertSame('0 4 * * 1-5', \OWA\Core\Cron::describe('0 4 * * 1-5'));
+        $this->assertSame('0 4 * * 7', \OWA\Core\Cron::describe('0 4 * * 7'), 'not a weekday this parser reads');
         $this->assertSame('1,2,10 * * * *', \OWA\Core\Cron::describe('1,2,10 * * * *'), 'an uneven list is not a step');
     }
 
@@ -497,5 +500,43 @@ final class CronTest extends TestCase
 
         $this->assertGreaterThan( 300, count( $seen ),
             '500 installs landing on few times would still be a spike' );
+    }
+
+    /** weeklySpreadFor(): the same properties as the daily spread, and a weekday. */
+    public function testWeeklySpreadGivesDifferentInstallsDifferentTimes(): void
+    {
+        $a = \OWA\Core\Cron::weeklySpreadFor( 'https://a.example/owa/' );
+        $b = \OWA\Core\Cron::weeklySpreadFor( 'https://b.example/owa/' );
+
+        $this->assertNotSame( $a, $b );
+        $this->assertNotSame( '0 0 * * 0', $a, '@weekly is the herd the spread avoids' );
+        $this->assertSame( $a, \OWA\Core\Cron::weeklySpreadFor( 'https://a.example/owa/' ), 'stable for one install' );
+        $this->assertMatchesRegularExpression( '/^\d+ \d+ \* \* [0-6]$/', $a );
+        $this->assertIsArray( \OWA\Core\Cron::parse( $a ) );
+    }
+
+    public function testTheWeeklySpreadActuallySpreads(): void
+    {
+        $seen = array();
+        $days = array();
+
+        for ( $i = 0; $i < 500; $i++ ) {
+            $expr          = \OWA\Core\Cron::weeklySpreadFor( "install-$i" );
+            $seen[ $expr ] = true;
+            $days[ substr( $expr, -1 ) ] = true;
+        }
+
+        $this->assertGreaterThan( 450, count( $seen ), '10,080 possible times in a week' );
+        $this->assertCount( 7, $days, 'every weekday is used' );
+    }
+
+    /** Due once a week, at the derived time. */
+    public function testAWeeklySpreadIsDueOnceAWeek(): void
+    {
+        $parsed = \OWA\Core\Cron::parse( \OWA\Core\Cron::weeklySpreadFor( 'seed' ) );
+        $first  = \OWA\Core\Cron::nextAfter( $parsed, 1789000000, 'UTC' );
+        $second = \OWA\Core\Cron::nextAfter( $parsed, $first, 'UTC' );
+
+        $this->assertSame( 7 * 86400, $second - $first );
     }
 }
