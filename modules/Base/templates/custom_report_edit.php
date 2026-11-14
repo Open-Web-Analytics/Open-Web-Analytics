@@ -175,7 +175,7 @@ $owa_max        = (int) $view->get('max_widgets');
      * a trend's breakdown cannot be a date -- and Cancel puts the old type back.
      */
 ?>
-<div id="typeDialog" class="owa_typeDialog" style="display:none;">
+<div id="typeDialog" class="owa_typeDialog" data-ui="dialog:widget-type" style="display:none;">
     <ul class="owa_typeChoices owa_typeChoicesTwo">
     <?php foreach ( $owa_types as $owa_key => $owa_label ): ?>
         <li>
@@ -1948,14 +1948,13 @@ $owa_max        = (int) $view->get('max_widgets');
      * The gallery: a jQuery UI dialog, as New on the list is. Choosing a type
      * adds the widget and opens its panel.
      */
-    jQuery( '#typeDialog' ).dialog( {
+    jQuery( '#typeDialog' ).dialog( jQuery.extend( {
         autoOpen: false,
         modal: true,
-        width: Math.min( 760, jQuery( window ).width() - 32 ),
         title: TEXT.addWidget,
         appendTo: '.owa',
         dialogClass: 'owa_typeDialogFrame'
-    } );
+    }, OWA.dialogFit( 760 ) ) );
 
     // The panel.
 

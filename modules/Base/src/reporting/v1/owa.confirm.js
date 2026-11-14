@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import { OWA } from './owa.js';
+import { dialogFit } from './owa.dialog.js';
 
 /**
  * The confirmation an irreversible action gets before it runs.
@@ -70,6 +71,7 @@ OWA.confirmAction = function ( options, onProceed ) {
     var $dialog = $( '<div>' )
         .addClass( 'owa_confirmDialog' )
         .attr( 'id', 'owa_confirmDialog' )
+        .attr( 'data-ui', 'dialog:confirm' )
         .attr( 'title', opts.title );
 
     var paragraphs = $.isArray( opts.paragraphs ) && opts.paragraphs.length ? opts.paragraphs : [ opts.body ];
@@ -79,11 +81,10 @@ OWA.confirmAction = function ( options, onProceed ) {
         $( '<p>' ).addClass( 'owa_confirmBody' ).text( text ).appendTo( $dialog );
     } );
 
-    $dialog.appendTo( 'body' ).dialog( {
+    $dialog.appendTo( 'body' ).dialog( $.extend( {
         modal: true,
         resizable: false,
         draggable: false,
-        width: 440,
         dialogClass: 'owa_confirmDialogFrame',
         // Cancel is FIRST in the DOM and focused, so the default answer to a
         // destructive question -- Enter, Escape, a stray click -- is "no".
@@ -109,7 +110,7 @@ OWA.confirmAction = function ( options, onProceed ) {
         close: function () {
             $( this ).dialog( 'destroy' ).remove();
         }
-    } );
+    }, dialogFit( 440 ) ) );
 
     $( '.owa_confirmCancel' ).trigger( 'focus' );
 };

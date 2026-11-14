@@ -1,5 +1,6 @@
 import $ from 'jquery';
 import { OWA } from './owa.js';
+import { dialogFit } from './owa.dialog.js';
 
 /**
  * The Add dialog on the Application Passwords screen (my_app_passwords.php).
@@ -144,12 +145,11 @@ function openAddDialog() {
         create();
     } );
 
-    $dialog.prop( 'hidden', false ).dialog( {
+    // Wide enough to show a whole token.
+    $dialog.prop( 'hidden', false ).dialog( $.extend( {
         modal: true,
         resizable: false,
         draggable: false,
-        // Wide enough to show a whole token, within a phone's screen.
-        width: Math.min( 560, window.innerWidth - 32 ),
         dialogClass: 'owa_confirmDialogFrame owa_appPasswordDialogFrame',
         buttons: createButtons,
         close: function () {
@@ -158,7 +158,7 @@ function openAddDialog() {
             $dialog.find( '.owa_appPasswordToken' ).val( '' );
             $dialog.dialog( 'destroy' ).prop( 'hidden', true );
         }
-    } );
+    }, dialogFit( 560 ) ) );
 
     $form.find( '[name="name"]' ).trigger( 'focus' );
 }

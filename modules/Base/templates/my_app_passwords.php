@@ -82,7 +82,7 @@ $owa_password_row = function ( array $owa_row ) use ( $view, $owa_scopes ) {
     <?php $owa_password_row( $owa_empty_row ); ?>
 </template>
 
-<div id="owa_appPasswordDialog" class="owa_appPasswordDialog" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add an application password' ) ); ?>" hidden>
+<div id="owa_appPasswordDialog" class="owa_appPasswordDialog" data-ui="dialog:app-password" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add an application password' ) ); ?>" hidden>
 
     <form method="post" class="owa_appPasswordForm" novalidate
           action="<?php echo $view->makeLink( array( 'do' => 'base.myAppPasswordCreateAjax' ) ); ?>">
