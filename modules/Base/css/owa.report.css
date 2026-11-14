@@ -3083,6 +3083,11 @@ li.constraintRow {
        two lines does not push its number below the others in the row. */
     display: flex;
     flex-direction: column;
+
+    /* kpiBox writes these per box: the width a caller asked for, and the
+       narrowest a box may get. */
+    min-width: var(--owa-kpi-min-width, 110px);
+    width: var(--owa-kpi-width, auto);
 }
 
 .owa .metricInfoboxesContainer .owa_metricInfobox > .owa_metricInfoboxLabel {
@@ -3092,7 +3097,7 @@ li.constraintRow {
 /* A report that asks for a specific box width gets it: goals draws one box per
    configured goal and sizes them so a row of them stays readable. An explicit
    width means "this wide", not "share the row". */
-.owa .metricInfoboxesContainer .owa_metricInfobox[style*="width:"]:not([style*="width:auto"]) {
+.owa .metricInfoboxesContainer .owa_metricInfobox.owa_metricInfoboxFixed {
     flex: 0 0 auto;
 }
 
@@ -3279,14 +3284,64 @@ li.constraintRow {
        open: at 32px the fifth went behind the arrow by 22px. */
     gap: 24px;
 
-    overflow-x: hidden;
-    scroll-behavior: smooth;
+    /* A native scroller: a finger, a trackpad and the arrows all move it,
+       and it comes to rest at the start of a box. The scroll bar is not
+       drawn: the arrows (a mouse) and the part of the next box showing at the
+       edge (a touch screen) say there is more. */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    /* The boxes' offsetLeft is measured against the row (kpiBox nextStop). */
+    position: relative;
+}
+
+.owa .owa_metricCarousel .metricInfoboxesContainer::-webkit-scrollbar {
+    display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .owa .owa_metricCarousel .metricInfoboxesContainer {
+        scroll-behavior: smooth;
+    }
 }
 
 /* The boxes stop sharing the row once it scrolls: a box that shrank to fit
    would be defeating the scrolling. */
 .owa .owa_metricCarousel .metricInfoboxesContainer .owa_metricInfobox {
     flex-shrink: 0;
+    scroll-snap-align: start;
+}
+
+/* The edge a box runs past fades to white, on whichever side it is. */
+.owa .owa_metricCarousel::before,
+.owa .owa_metricCarousel::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    width: 24px;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.owa .owa_metricCarousel::before {
+    left: 0;
+    background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0));
+}
+
+.owa .owa_metricCarousel::after {
+    right: 0;
+    background: linear-gradient(to left, #ffffff, rgba(255, 255, 255, 0));
+}
+
+.owa .owa_metricCarousel.owa_canScrollBack::before,
+.owa .owa_metricCarousel.owa_canScrollForward::after {
+    opacity: 1;
 }
 
 /* OVER the row, not beside it.
@@ -3307,22 +3362,21 @@ li.constraintRow {
     transform: translateY(-50%);
     z-index: 2;
 
-    width: 18px;
-    padding: 6px 0;
-    border: 0;
-
-    /* A FADE, not a button on top of the words.
-     *
-     * It floats over the first or last box, so an opaque bordered control
-     * chops a label in half and reads as damage. A white ground with a wide
-     * white glow blanks the few pixels around the chevron instead, so the row
-     * reads as continuing underneath and running out of view -- which is what
-     * is actually happening. */
+    /* A round control on the faded edge: the fade keeps it from reading as a
+       button stamped on top of a label, and the dark chevron on white
+       (10:1) is what says it can be pressed. */
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 50%;
     background-color: #ffffff;
-    box-shadow: 0 0 10px 7px #ffffff;
+    box-shadow: 0 1px 3px rgba(17, 24, 39, 0.16), 0 0 8px 6px #ffffff;
 
-    color: #707070;
-    font-size: 17px;
+    color: #374151;
+    font-size: 14px;
     line-height: 1;
     cursor: pointer;
 }
@@ -3335,11 +3389,57 @@ li.constraintRow {
    direction that does not exist is still a control offered. */
 .owa .owa_metricCarousel.owa_canScrollBack .owa_metricCarouselPrev,
 .owa .owa_metricCarousel.owa_canScrollForward .owa_metricCarouselNext {
-    display: block;
+    display: flex;
 }
 
 .owa .owa_metricCarouselArrow:hover {
+    border-color: #1874CD;
     color: #1874CD;
+}
+
+.owa .owa_metricCarouselArrow:focus-visible {
+    outline: 2px solid #1874CD;
+    outline-offset: 2px;
+}
+
+/*
+ * A phone: a box is sized by the row, about 2.4 to a row, so two whole boxes
+ * show with part of a third at the edge. That part is what says the row
+ * scrolls. The boxes grow to fill a row they all fit, and a number wider than
+ * its share widens its box rather than running into the next.
+ */
+@media (max-width: 600px) {
+
+    .owa .owa_metricCarousel .metricInfoboxesContainer {
+        gap: 16px;
+    }
+
+    .owa .owa_metricCarousel .metricInfoboxesContainer .owa_metricInfobox,
+    .owa .owa_metricCarousel .metricInfoboxesContainer .owa_metricInfobox.owa_metricInfoboxFixed {
+        flex: 1 0 calc((100% - 32px) / 2.4);
+        width: auto;
+        min-width: min-content;
+    }
+}
+
+/* With a mouse, a box comes to rest clear of the back arrow, which sits on
+   the end of the box before it. */
+@media (pointer: fine) {
+
+    .owa .owa_metricCarousel .metricInfoboxesContainer {
+        scroll-padding-left: 40px;
+    }
+}
+
+/* A touch screen swipes the row; the arrows are for a mouse. A box comes to
+   rest at the left edge, so that edge does not fade over its name. */
+@media (pointer: coarse) {
+
+    .owa .owa_metricCarousel.owa_canScrollBack .owa_metricCarouselPrev,
+    .owa .owa_metricCarousel.owa_canScrollForward .owa_metricCarouselNext,
+    .owa .owa_metricCarousel.owa_canScrollBack::before {
+        display: none;
+    }
 }
 
 /* ---------------------------------------------------------------------------

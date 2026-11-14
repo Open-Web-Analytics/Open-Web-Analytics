@@ -5,8 +5,8 @@ const { FIXTURE, adminLogin, login, ui } = require('./fixtures');
  * The admin and reporting screens used with a finger, upright and sideways:
  * nothing wider than the screen, dialogs wholly on it, a roster's actions in
  * reach, fields that do not make iOS zoom, 44px targets, the period sheet in
- * landscape, a trend whose legend wraps instead of scrolling the widget, and
- * a metric's description opened by a tap.
+ * landscape, a trend whose legend wraps instead of scrolling the widget, a row
+ * of metric boxes that swipes, and a metric's description opened by a tap.
  *
  * Elements are found by role and label, then by data-ui; never by a styling
  * class (CONTRIBUTING.md).
@@ -51,6 +51,31 @@ async function pastTheEdge(page) {
 
         return { over: document.documentElement.scrollWidth - vw, first: out.slice(-3) };
     });
+}
+
+/** A finger dragging `dx` pixels sideways across `locator` (negative: towards the left). */
+async function swipe(page, locator, dx) {
+    await locator.scrollIntoViewIfNeeded();
+    const box = await locator.boundingBox();
+    const y = Math.round(box.y + box.height / 2);
+    const x = Math.round(box.x + box.width * 0.75);
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type, at) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: at === null ? [] : [{ x: at, y }] });
+
+    await touch('touchStart', x);
+    for (let i = 1; i <= 10; i++) {
+        await touch('touchMove', Math.round(x + (dx * i) / 10));
+    }
+    await touch('touchEnd', null);
+    await cdp.detach();
+}
+
+/** The dashboard's first row of metric boxes, its boxes drawn. */
+async function metricRow(page) {
+    await page.goto(report('dashboard'), { waitUntil: 'networkidle' });
+    const row = ui(page, 'kpi-row').first();
+    await expect(row.locator('[data-ui^="kpi:"]').first()).toBeVisible({ timeout: 20_000 });
+    return row;
 }
 
 /** Height and width of a control, as drawn. */
@@ -209,6 +234,28 @@ for (const [name, device] of [['phone', PHONE], ['phone held sideways', LANDSCAP
             }
         });
 
+        /*
+         * The row of metric boxes over a trend scrolls under a finger. A swipe
+         * chooses no box, and a touch screen has no arrows over the boxes.
+         */
+        test('the metric boxes swipe sideways, and a swipe charts nothing', async ({ page }) => {
+            const row = await metricRow(page);
+            const chart = page.locator('[data-ui^="chart:"]').first();
+            await expect(chart).toHaveAttribute('aria-label', /./, { timeout: 20_000 });
+            const charted = await chart.getAttribute('aria-label');
+
+            expect(await row.evaluate((el) => el.scrollWidth - el.clientWidth),
+                'the dashboard\'s boxes fit, so the swipe proves nothing').toBeGreaterThan(10);
+
+            await expect(ui(page, 'kpi-next').first()).toBeHidden();
+            await expect(ui(page, 'kpi-prev').first()).toBeHidden();
+
+            await swipe(page, row, -200);
+            await expect.poll(() => row.evaluate((el) => el.scrollLeft)).toBeGreaterThan(20);
+
+            expect(await chart.getAttribute('aria-label'), 'the swipe charted a box').toBe(charted);
+        });
+
         test('a notification\'s Dismiss is shown, a 44px target', async ({ page }) => {
             await page.goto(report('dashboard'), { waitUntil: 'networkidle' });
             await page.locator('#owa_notificationToggle').click();
@@ -280,6 +327,35 @@ test.describe('on a phone', () => {
         const lead = await ui(scroll, 'grid-row').first().getByRole('cell').first().boundingBox();
         expect(lead.x).toBeGreaterThanOrEqual(0);
         expect(lead.x).toBeLessThan(40);
+    });
+
+    /*
+     * About 2.4 boxes to a row: two whole ones and part of the next at the
+     * edge, which is what says the row goes on.
+     */
+    test('a metric box shows in part at the row\'s edge, and a tap still charts a box', async ({ page }) => {
+        await adminLogin(page);
+        const row = await metricRow(page);
+
+        const edge = await row.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            return [...el.querySelectorAll('[data-ui^="kpi:"]')].map((b) => {
+                const x = b.getBoundingClientRect();
+                return { whole: x.left >= r.left - 1 && x.right <= r.right + 1, shown: Math.min(x.right, r.right) - Math.max(x.left, r.left) };
+            });
+        });
+
+        expect(edge.filter((b) => b.whole).length, 'two whole boxes').toBeGreaterThanOrEqual(2);
+        const part = edge.find((b) => !b.whole && b.shown > 0);
+        expect(part, 'no box shows in part at the edge').toBeTruthy();
+        expect(part.shown, 'the part of the next box is too thin to see').toBeGreaterThanOrEqual(30);
+
+        const chart = page.locator('[data-ui^="chart:"]').first();
+        await expect(chart).toHaveAttribute('aria-label', /./, { timeout: 20_000 });
+        const before = await chart.getAttribute('aria-label');
+
+        await row.locator('[data-ui^="kpi:"]').nth(1).tap();
+        await expect.poll(() => chart.getAttribute('aria-label')).not.toBe(before);
     });
 
     /*
