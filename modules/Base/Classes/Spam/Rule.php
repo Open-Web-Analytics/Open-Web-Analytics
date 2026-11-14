@@ -16,7 +16,8 @@ namespace OWA\Module\Base\Classes\Spam;
  * that is often wrong for real visitors gets few points rather than none.
  *
  * TO ADD A RULE: a class under Classes\Spam\Rules extending this one, with NAME
- * (upper case, as it appears in owa_event_raw.spam_rules and owa_spam_block),
+ * (as it appears in owa_event_raw.spam_rules and owa_spam_block: NAME_PATTERN,
+ * unique among the rules that run),
  * SET and POINTS, and test(); then list it under its set in RuleSets::SETS, or
  * add it through the spam_rule_sets filter from a module.
  *
@@ -26,6 +27,13 @@ namespace OWA\Module\Base\Classes\Spam;
  * event: lower-case names, '' for a header the request did not carry.
  */
 abstract class Rule {
+
+    /**
+     * What a NAME may be: upper case, digits and underscores, starting with a
+     * letter, and no longer than owa_spam_block.rule (64). spam_rules is
+     * `NAME=points` entries separated by spaces, so a name holds neither.
+     */
+    const NAME_PATTERN = '/^[A-Z][A-Z0-9_]{0,63}$/';
 
     /** The rule's name. */
     const NAME = '';

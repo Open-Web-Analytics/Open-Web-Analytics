@@ -98,8 +98,10 @@ class RuleSets {
     /**
      * The rules a level runs, as instances.
      *
-     * A class that is not a Rule is skipped with a notice rather than run: a
-     * module's mistake here would otherwise stop every beacon.
+     * A class that is not a Rule, a rule whose NAME is not Rule::NAME_PATTERN,
+     * and a second rule of a name already taken are skipped with a notice
+     * rather than run: a module's mistake here would otherwise stop every
+     * beacon, or count one rule's beacons under another's name.
      *
      * @param  string $level
      * @return Rule[]
@@ -112,7 +114,8 @@ class RuleSets {
 
             foreach ( (array) $classes as $class ) {
 
-                if ( ! is_string( $class ) || ! class_exists( $class ) || ! is_subclass_of( $class, Rule::class ) ) {
+                if ( ! is_string( $class ) || ! class_exists( $class ) || ! is_subclass_of( $class, Rule::class )
+                    || ( new \ReflectionClass( $class ) )->isAbstract() ) {
 
                     \OWA\Core\CoreAPI::notice( sprintf( 'Spam rule set %s names %s, which is not a spam rule.',
                         (string) $set, is_string( $class ) ? $class : gettype( $class ) ) );
@@ -120,11 +123,29 @@ class RuleSets {
                     continue;
                 }
 
-                $rules[] = new $class();
+                $rule = new $class();
+                $name = $rule->name();
+
+                if ( ! preg_match( Rule::NAME_PATTERN, $name ) ) {
+
+                    \OWA\Core\CoreAPI::notice( sprintf( 'Spam rule %s has the name "%s", which is not a rule name.', $class, $name ) );
+
+                    continue;
+                }
+
+                if ( isset( $rules[ $name ] ) ) {
+
+                    \OWA\Core\CoreAPI::notice( sprintf( 'Spam rule %s has the name %s, which %s already has.',
+                        $class, $name, get_class( $rules[ $name ] ) ) );
+
+                    continue;
+                }
+
+                $rules[ $name ] = $rule;
             }
         }
 
-        return $rules;
+        return array_values( $rules );
     }
 }
 

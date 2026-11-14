@@ -140,6 +140,57 @@ final class SpamScoreTest extends TestCase
         $this->assertSame('TEST_SMALL=2.5', Score::of($this->quiet(), 'normal')['rules']);
     }
 
+    /** A name spam_rules or owa_spam_block cannot hold is skipped. */
+    public function testARuleWithoutARuleNameIsSkipped(): void
+    {
+        self::$adjust = array('add' => array('test' => array(
+            SpamScoreTestRuleLongName::class, SpamScoreTestRuleSpacedName::class, SpamScoreTestRuleNoName::class,
+            SpamScoreTestRuleAbstract::class, SpamScoreTestRuleSmall::class)));
+
+        $this->assertSame('TEST_SMALL=2.5', Score::of($this->quiet(), 'normal')['rules']);
+    }
+
+    /** A second rule of a name already taken is skipped: the first keeps it. */
+    public function testASecondRuleOfANameIsSkipped(): void
+    {
+        self::$adjust = array('add' => array(
+            'test' => array(SpamScoreTestRuleSmall::class),
+            'other' => array(SpamScoreTestRuleSmallAgain::class, SpamScoreTestRuleLarge::class),
+        ));
+
+        $verdict = Score::of($this->quiet(), 'normal');
+
+        $this->assertSame(array('TEST_LARGE' => 4.0, 'TEST_SMALL' => 2.5), $verdict['fired']);
+        $this->assertSame(6.5, $verdict['score']);
+    }
+
+    /** A rule that throws is not met, and the rest still score the beacon. */
+    public function testARuleThatThrowsIsNotMet(): void
+    {
+        self::$adjust = array('add' => array('test' => array(
+            SpamScoreTestRuleThrows::class, SpamScoreTestRuleSmall::class)));
+
+        $verdict = Score::of($this->quiet(), 'normal');
+
+        $this->assertSame(array('TEST_SMALL' => 2.5), $verdict['fired']);
+    }
+
+    /** Every shipped rule's name is one a module's would have to be. */
+    public function testEveryShippedRuleHasARuleName(): void
+    {
+        $names = array();
+
+        foreach (RuleSets::SETS as $classes) {
+            foreach ($classes as $class) {
+                $this->assertMatchesRegularExpression(\OWA\Module\Base\Classes\Spam\Rule::NAME_PATTERN, $class::NAME, $class);
+                $names[] = $class::NAME;
+            }
+        }
+
+        $this->assertSame(count($names), count(array_unique($names)), 'no two shipped rules share a name');
+        $this->assertCount(count($names), RuleSets::rules('strict'), 'strict runs every shipped rule');
+    }
+
     public function testNothingFiredIsZeroAndEmpty(): void
     {
         $verdict = Score::of($this->quiet(), 'strict');
@@ -333,4 +384,53 @@ final class SpamScoreTestRuleSilent extends \OWA\Module\Base\Classes\Spam\Rule
     const POINTS = 9.0;
 
     public function test($event, array $headers) { return false; }
+}
+
+final class SpamScoreTestRuleSmallAgain extends \OWA\Module\Base\Classes\Spam\Rule
+{
+    const NAME = 'TEST_SMALL';
+    const SET = 'other';
+    const POINTS = 7.0;
+
+    public function test($event, array $headers) { return true; }
+}
+
+final class SpamScoreTestRuleLongName extends \OWA\Module\Base\Classes\Spam\Rule
+{
+    const NAME = 'TEST_A_NAME_LONGER_THAN_THE_SIXTY_FOUR_CHARACTERS_OWA_SPAM_BLOCK_HOLDS';
+    const SET = 'test';
+    const POINTS = 1.0;
+
+    public function test($event, array $headers) { return true; }
+}
+
+final class SpamScoreTestRuleSpacedName extends \OWA\Module\Base\Classes\Spam\Rule
+{
+    const NAME = 'TEST SPACED';
+    const SET = 'test';
+    const POINTS = 1.0;
+
+    public function test($event, array $headers) { return true; }
+}
+
+final class SpamScoreTestRuleNoName extends \OWA\Module\Base\Classes\Spam\Rule
+{
+    const SET = 'test';
+    const POINTS = 1.0;
+
+    public function test($event, array $headers) { return true; }
+}
+
+abstract class SpamScoreTestRuleAbstract extends \OWA\Module\Base\Classes\Spam\Rule
+{
+    const NAME = 'TEST_ABSTRACT';
+}
+
+final class SpamScoreTestRuleThrows extends \OWA\Module\Base\Classes\Spam\Rule
+{
+    const NAME = 'TEST_THROWS';
+    const SET = 'test';
+    const POINTS = 9.0;
+
+    public function test($event, array $headers) { throw new \RuntimeException('broken'); }
 }
