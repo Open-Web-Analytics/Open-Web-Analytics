@@ -1237,6 +1237,7 @@ return array(
     'Sort' => 'Sort',
     'Sort A to Z' => 'Sort A to Z',
     'Sort Z to A' => 'Sort Z to A',
+    'Sort by %s' => 'Sort by %s',
     'Sort direction' => 'Sort direction',
     'Source' => 'Source',
     'Source / Medium' => 'Source / Medium',

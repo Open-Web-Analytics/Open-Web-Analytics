@@ -926,7 +926,11 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
         // Sorting the grid by another metric charts that one.
         const back = metrics.find((m) => m !== pick);
-        await grid.locator(`thead th[data-column="${back}"] button`).first().click();
+        // A heading with a description sorts from its arrow; one without, from its name.
+        const backHead = grid.locator(`thead th[data-column="${back}"]`);
+        const backArrow = backHead.getByRole('button', { name: /^Sort by / });
+        await backHead.hover();
+        await ((await backArrow.count()) ? backArrow : backHead.getByRole('button').first()).click();
         await expect(grid.locator(`thead th[data-column="${back}"]`)).toHaveAttribute('aria-sort', 'descending');
         await expect(page.locator(`.owa_metricInfobox[data-metric="${back}"]`).first()).toHaveClass(/owa_metricInfoboxCharted/);
     });

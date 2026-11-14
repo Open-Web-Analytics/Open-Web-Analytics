@@ -315,7 +315,8 @@
 }
 
 /* A heading that sorts. */
-.owa_grid .owa_gridSort {
+.owa_grid .owa_gridSort,
+.owa_grid .owa_gridHeadLabel {
     display: inline-flex;
     align-items: flex-start;
     gap: 4px;
@@ -339,15 +340,54 @@
     line-height: 20px;
 }
 
-.owa_grid th.is-sorted .owa_gridSort {
+.owa_grid th.is-sorted .owa_gridSort,
+.owa_grid th.is-sorted .owa_gridHeadLabel {
     color: #1874CD;
     font-weight: 600;
 }
 
-/* A dotted rule under a heading that has a description to show on hover. */
-.owa_gridSortLabel.has-description {
-    padding-bottom: 1px;
-    border-bottom: 1px dotted #9ca3af;
+/* A heading with a description: its name opens the description
+   (owa.metricinfo.js) and the arrow after it sorts. The arrow's place is
+   kept when it is hidden, so a heading does not move when it shows. */
+.owa_grid .owa_gridHeadDescribed {
+    display: inline-flex;
+    align-items: flex-start;
+}
+
+.owa_grid .owa_gridSortArrow {
+    position: relative;
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 20px;
+    cursor: pointer;
+    visibility: hidden;
+}
+
+.owa_grid th:hover .owa_gridSortArrow,
+.owa_grid th:focus-within .owa_gridSortArrow,
+.owa_grid th.is-describing .owa_gridSortArrow,
+.owa_grid th.is-sorted .owa_gridSortArrow {
+    visibility: visible;
+}
+
+.owa_grid th.is-sorted .owa_gridSortArrow {
+    color: #0d4f91;
+}
+
+.owa_grid .owa_gridSortArrow:hover {
+    color: #1874CD;
+}
+
+.owa_grid .owa_gridSortArrow:focus-visible {
+    outline: 2px solid #1874CD;
+    outline-offset: 1px;
 }
 
 .owa_gridDimHead {
@@ -688,7 +728,8 @@
 
     .owa_grid .owa_gridShowMore,
     .owa_grid .owa_gridButton,
-    .owa_grid .owa_gridSort {
+    .owa_grid .owa_gridSort,
+    .owa_grid .owa_gridHeadLabel {
         min-height: 44px;
     }
 
@@ -696,9 +737,30 @@
         height: auto;
     }
 
-    .owa_grid .owa_gridSort {
+    .owa_grid .owa_gridSort,
+    .owa_grid .owa_gridHeadLabel {
         align-items: center;
         padding-top: 0;
+    }
+
+    .owa_grid .owa_gridHeadDescribed {
+        align-items: center;
+    }
+
+    /* 44px tall, and 44px wide over the cell's 12px padding to its right and
+       the end of the name to its left, so the column is no wider for it. */
+    .owa_grid .owa_gridSortArrow {
+        min-height: 44px;
+        margin-top: 0;
+    }
+
+    .owa_grid .owa_gridSortArrow::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -12px;
+        width: 44px;
     }
 
     .owa_grid .owa_gridIconButton,

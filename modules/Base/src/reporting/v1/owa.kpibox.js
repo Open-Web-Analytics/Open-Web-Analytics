@@ -3,6 +3,7 @@
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
 import { describeChange } from './owa.periodpicker.js';
+import { describeMetric, metricDescription } from './owa.metricinfo.js';
 
 OWA.kpiBox = function( options ) {
 
@@ -244,10 +245,10 @@ OWA.kpiBox.prototype = {
         jQuery('#' + dom_id).append( OWA.util.sprintf(
               '<div class="owa_metricCarousel">'
             + '<button type="button" class="owa_metricCarouselArrow owa_metricCarouselPrev" '
-            + 'aria-label="%2$s">&lsaquo;</button>'
-            + '<div id="%1$s" class="metricInfoboxesContainer" style="width:auto;"></div>'
+            + 'aria-label="%2$s" data-ui="kpi-prev"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>'
+            + '<div id="%1$s" class="metricInfoboxesContainer" data-ui="kpi-row"></div>'
             + '<button type="button" class="owa_metricCarouselArrow owa_metricCarouselNext" '
-            + 'aria-label="%3$s">&rsaquo;</button>'
+            + 'aria-label="%3$s" data-ui="kpi-next"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>'
             + '</div><div style="clear:both;"></div>', con_id,
             OWA.util.escapeHtml( OWA.l( 'Show earlier metrics' ) ), OWA.util.escapeHtml( OWA.l( 'Show later metrics' ) ) ) );
         //jQuery('#' + dom_id).append('<div style="clear:both;"></div>');
@@ -275,11 +276,22 @@ OWA.kpiBox.prototype = {
              * but only recoverable by taking the string apart -- and both
              * ends of it contain hyphens. Anything that wants to know which
              * metric a box shows reads this.
+             *
+             * The sizes are custom properties rather than min-width and
+             * width, so the stylesheet decides where they apply: a phone
+             * sizes the boxes by the row instead (owa.report.css).
              */
             var html = OWA.util.sprintf(
-                '<div id ="%s" class="owa_metricInfobox" data-metric="%s" data-ui="kpi:%s" style="min-width:%s;width:%s">',
-                item.dom_id, item.name, OWA.util.escapeHtml( item.name ), this.options.minWidth, width );
-            html += OWA.util.sprintf('<p class="owa_metricInfoboxLabel">%s</p>', item.label);
+                '<div id ="%s" class="owa_metricInfobox%s" data-metric="%s" data-ui="kpi:%s" style="--owa-kpi-min-width:%s;--owa-kpi-width:%s">',
+                item.dom_id, width === 'auto' ? '' : ' owa_metricInfoboxFixed', item.name,
+                OWA.util.escapeHtml( item.name ), this.options.minWidth, width );
+            var description = metricDescription( resultSet, item.name );
+
+            // A name with a description is the button that opens it
+            // (owa.metricinfo.js); the rest of the box charts the metric.
+            html += OWA.util.sprintf( description
+                ? '<p class="owa_metricInfoboxLabel"><button type="button">%s</button></p>'
+                : '<p class="owa_metricInfoboxLabel">%s</p>', item.label );
             html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>',
                 OWA.util.escapeHtml( OWA.util.metricText( item ) ) );
 
@@ -291,6 +303,11 @@ OWA.kpiBox.prototype = {
             html += '</div>';
 
             jQuery('#' + con_id ).append( html );
+
+            if ( description ) {
+
+                describeMetric( jQuery( '#' + item.dom_id + ' > .owa_metricInfoboxLabel > button' )[0], description );
+            }
 
             if ( this.options.showSparklines ) {
 
@@ -320,14 +337,13 @@ OWA.kpiBox.prototype = {
      * changes the panel's height, and leaves the fifth metric alone on a line
      * where it reads as a different kind of thing from the four above.
      *
-     * The arrows are shown only when there is somewhere to go, and each is
-     * disabled at its own end -- a control that cannot do anything should not
-     * look like it can.
+     * The row is a native scroller: a finger swipes it, a trackpad scrolls it,
+     * and it snaps to the start of a box (owa.report.css). The arrows are for a
+     * mouse; a touch screen hides them and shows part of the next box instead.
      *
-     * Re-evaluated on WIDTH CHANGE, because that is the whole point: the same
-     * five boxes need arrows in a quarter-row widget and none in a full-width
-     * one, and a widget changes width without the window doing anything (see
-     * OWA.onWidthChange).
+     * Which ends hide a box is read from the scroller itself, on every scroll
+     * and whenever the row or a box changes size -- an arrow, a swipe, a
+     * keyboard or a widget changing width all move it.
      */
     makeCarousel : function ( dom_id, con_id ) {
 
@@ -347,62 +363,152 @@ OWA.kpiBox.prototype = {
             return;
         }
 
-        /*
-         * AN ARROW PER SIDE, shown only where something is actually hidden.
-         *
-         * Not one "this scrolls" state with the dead arrow greyed out: at the
-         * start of the row there is nothing to the left, so a back arrow --
-         * however faint -- is a control offered for a direction that does not
-         * exist. The two ends are independent questions and are asked
-         * separately.
-         *
-         * A pixel of slack on each: scrollWidth, clientWidth and scrollLeft
-         * disagree by sub-pixel amounts on a flex row, and a half-pixel is not
-         * a hidden metric.
-         */
         var update = function () {
 
-            var hiddenLeft  = track.scrollLeft > 1;
-            var hiddenRight = track.scrollLeft < track.scrollWidth - track.clientWidth - 1;
+            var ends = OWA.kpiBox.hiddenEnds( track.scrollLeft, track.scrollWidth, track.clientWidth );
 
             jQuery( carousel )
-                .toggleClass( 'owa_canScrollBack', hiddenLeft )
-                .toggleClass( 'owa_canScrollForward', hiddenRight );
+                .toggleClass( 'owa_canScrollBack', ends.back )
+                .toggleClass( 'owa_canScrollForward', ends.forward );
 
             /*
              * Hidden from the keyboard too, not just from view. An arrow that
              * is display:none is already unreachable by tab, but a button that
              * cannot act should say so however it is reached.
              */
-            prev.disabled = ! hiddenLeft;
-            next.disabled = ! hiddenRight;
+            prev.disabled = ! ends.back;
+            next.disabled = ! ends.forward;
         };
 
         var step = function ( direction ) {
 
-            var box = track.querySelector( '.owa_metricInfobox' );
+            var starts = Array.prototype.map.call(
+                track.querySelectorAll( '.owa_metricInfobox' ),
+                function ( box ) { return box.offsetLeft; } );
 
-            // One box at a time, so a click always lands on a boundary rather
-            // than halfway through a number.
-            var by = box ? box.getBoundingClientRect().width + 8 : 120;
+            // The room left for the back arrow, and the scroll behaviour
+            // (smooth, unless the reader asked for less motion), are the
+            // stylesheet's.
+            var pad = parseFloat( window.getComputedStyle( track ).scrollPaddingLeft ) || 0;
 
-            track.scrollLeft += direction * by;
-
-            // scroll-behavior is smooth, so the ends are not known yet.
-            setTimeout( update, 400 );
+            track.scrollLeft = OWA.kpiBox.nextStop(
+                starts, track.scrollLeft, direction, track.scrollWidth - track.clientWidth, pad );
         };
 
         jQuery( prev ).on( 'click', function () { step( -1 ); } );
         jQuery( next ).on( 'click', function () { step( 1 ); } );
-        jQuery( track ).on( 'scroll', update );
+        track.addEventListener( 'scroll', update, { passive: true } );
+
+        /*
+         * A swipe is not a tap. A finger that scrolled the row and lifted over
+         * a box must not choose that box, so a click after the row moved more
+         * than a few pixels since the press stops here, before the box's own
+         * handler sees it.
+         */
+        var pressedAt = null;
+
+        track.addEventListener( 'pointerdown', function () {
+
+            pressedAt = track.scrollLeft;
+        }, true );
+
+        track.addEventListener( 'click', function ( e ) {
+
+            if ( pressedAt !== null && Math.abs( track.scrollLeft - pressedAt ) > OWA.kpiBox.SWIPE_SLOP ) {
+
+                e.stopPropagation();
+                e.preventDefault();
+            }
+
+            pressedAt = null;
+        }, true );
 
         if ( this.unwatchWidth ) {
 
             this.unwatchWidth();
         }
 
-        this.unwatchWidth = OWA.onWidthChange( dom_id, update );
+        if ( typeof ResizeObserver !== 'undefined' ) {
+
+            var ro = new ResizeObserver( function () { update(); } );
+
+            ro.observe( track );
+
+            Array.prototype.forEach.call( track.querySelectorAll( '.owa_metricInfobox' ), function ( box ) {
+
+                ro.observe( box );
+            } );
+
+            this.unwatchWidth = function () { ro.disconnect(); };
+
+        } else {
+
+            this.unwatchWidth = OWA.onWidthChange( dom_id, update );
+        }
 
         update();
     }
-}
+};
+
+/** Pixels the row may move under a press and it still counts as a tap. */
+OWA.kpiBox.SWIPE_SLOP = 8;
+
+/**
+ * Whether boxes are hidden past each end of the row.
+ *
+ * The two ends are independent questions: at the start nothing is to the left,
+ * so there is no back arrow -- not a greyed one. A pixel of slack on each, as
+ * scrollWidth, clientWidth and scrollLeft disagree by sub-pixel amounts on a
+ * flex row. The magnitude of scrollLeft, which is negative in a right-to-left
+ * page.
+ *
+ * @return object {back: bool, forward: bool}
+ */
+OWA.kpiBox.hiddenEnds = function ( scrollLeft, scrollWidth, clientWidth ) {
+
+    var at   = Math.abs( scrollLeft );
+    var over = scrollWidth - clientWidth;
+
+    return {
+        back: over > 1 && at > 1,
+        forward: over > 1 && at < over - 1
+    };
+};
+
+/**
+ * Where an arrow scrolls the row to: the next box past the left edge going
+ * forward, or the last one before it going back, so a click always lands on a
+ * boundary rather than halfway through a number. A box lands `pad` in from
+ * the edge, where the snap puts it, clear of the back arrow. Never past
+ * either end.
+ *
+ * @param array  starts     each box's left edge in the row, in order
+ * @param number at         the row's scroll position
+ * @param int    direction  1 forward, -1 back
+ * @param number max        the furthest the row scrolls
+ * @param number pad        the row's scroll-padding-left
+ * @return number
+ */
+OWA.kpiBox.nextStop = function ( starts, at, direction, max, pad ) {
+
+    var first = starts.length ? starts[ 0 ] : 0;
+    var stop  = direction > 0 ? max : 0;
+
+    pad = pad || 0;
+
+    for ( var i = 0; i < starts.length; i++ ) {
+
+        var x = starts[ i ] - first - pad;
+
+        if ( direction > 0 && x > at + 1 ) {
+            stop = x;
+            break;
+        }
+
+        if ( direction < 0 && x < at - 1 ) {
+            stop = x;
+        }
+    }
+
+    return Math.max( 0, Math.min( max, stop ) );
+};

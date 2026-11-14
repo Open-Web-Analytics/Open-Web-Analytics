@@ -123,6 +123,7 @@ return array(
     'Site Usage',
     'Sort A to Z',
     'Sort Z to A',
+    'Sort by %s',
     'Source',
     'Start date',
     'The application password could not be created.',
