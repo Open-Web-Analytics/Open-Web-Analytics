@@ -48,7 +48,7 @@ final class AuthAppPasswordTest extends RestControllerTestCase
             \OWA\Core\CoreAPI::setSetting('base', $name, $value);
         }
 
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'rest');
 
         foreach ($this->users as $user_id) {
             AppPasswords::revokeAllForUser($user_id);
@@ -238,7 +238,7 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     public function testOutsideTheRestApiTheHeaderIsIgnored(): void
     {
         list(, $made) = $this->userWithPassword();
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
 
         $result = $this->authenticate(self::bearer($made['token']));
 

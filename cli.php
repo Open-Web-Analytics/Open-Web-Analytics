@@ -67,12 +67,11 @@ if (empty($params)) {
 // Initialize owa
 $config = [
 
-    'instance_role' => 'admin_cli'
+    'request_type' => 'cli'
 ];
 
 $owa = new owa( $config );
 
-$owa->setSetting('base', 'request_mode', 'cli');
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     // setting CLI mode to true
@@ -88,7 +87,12 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
         $cmd = $s->getCliCommandClass($params['cmd']);
 
-        if ($cmd) {
+        // A command runs only on the roles it names (Controller\Cli::serverRoles()).
+        $refused = $cmd ? \OWA\Core\ServerRole::current()->commandProblem($params['cmd'], $cmd) : null;
+
+        if ($refused) {
+            \OWA\Core\ServerRole::refuse('cli', array('status' => 404, 'message' => $refused));
+        } elseif ($cmd) {
             $params['do'] = $cmd;
             echo $owa->handleRequest($params);
         } else {

@@ -35,7 +35,7 @@ require_once(OWA_DIR.'owa.php');
 
 $config = [
 
-    'instance_role' => 'admin_web'
+    'request_type' => 'ui'
 ];
 
 $owa = new owa( $config );

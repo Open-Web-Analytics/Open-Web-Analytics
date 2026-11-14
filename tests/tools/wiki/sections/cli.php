@@ -60,6 +60,11 @@ return function ( $arg = null ) {
             $out .= "Requires the `{$c['capability']}` capability.\n\n";
         }
 
+        // full runs every command; the section names the other roles it runs on.
+        $roles = array_values( array_diff( $c['roles'], array( \OWA\Core\ServerRole::FULL ) ) );
+        $out  .= sprintf( "Runs on server roles: %s.\n\n",
+            implode( ', ', array_map( fn ( $r ) => "`$r`", array_merge( array( \OWA\Core\ServerRole::FULL ), $roles ) ) ) );
+
         // Base is always active; any other module's commands exist only while it is.
         if ( $c['module'] !== 'base' ) {
             $out .= "Available while the `{$c['module']}` module is active.\n\n";

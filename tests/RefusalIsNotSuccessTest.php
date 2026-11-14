@@ -29,7 +29,7 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
     protected function tearDown(): void
     {
         \OWA\Core\Auth::get_instance()->auth_method = $this->authMethod;
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'rest');
         http_response_code(200);
 
         parent::tearDown();
@@ -55,7 +55,7 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
     /** @dataProvider webWrites */
     public function testAWebWriteWithoutANonceShowsTheRefusal(string $class, int $successCode): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
         $this->authenticateAs('admin');
 
         $controller = new $class($this->newUserParams());
@@ -77,7 +77,7 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
 
     public function testNoUserIsAddedWithoutANonce(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
         $this->authenticateAs('admin');
 
         $params = $this->newUserParams();
@@ -89,7 +89,7 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
     /** The control: with a valid nonce the same request adds the user and says so. */
     public function testWithANonceTheUserIsAdded(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
         $this->authenticateAs('admin');
 
         $params = $this->newUserParams();
@@ -115,7 +115,7 @@ final class RefusalIsNotSuccessTest extends RestControllerTestCase
     /** A cookie-signed REST create with no nonce is a 401, not a 201. */
     public function testACookieRestCreateWithoutANonceIsUnauthorised(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'rest');
         $this->authenticateAs('admin');
         \OWA\Core\Auth::get_instance()->auth_method = 'cookies';
 

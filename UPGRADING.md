@@ -334,6 +334,42 @@ Update085 deletes the stored rows of `is_embedded_admin_user_password_reset`,
 `resolve_hosts` and `fetch_refering_page_info`. No module declares them, so
 their values were ignored. The update's down() puts them back.
 
+### Server roles: `OWA_SERVER_ROLE`
+
+A server's role says which requests it serves. With nothing set it is `full`,
+which serves everything and runs the scheduler, as 1.x did. To split an install
+across servers, set a role on each; `owa-config-dist.php` shows the minimal
+configuration of each.
+
+| Role | Serves | Scheduler | Database |
+|---|---|---|---|
+| `full` (default) | log.php, index.php, api/, the CLI, install.php | yes | yes |
+| `collector` | log.php, and `cmd=drain-tracker-ingest forward_only=1` | no | none: every beacon is queued, and a queue other than the file queue is required (`OWA_SQS_QUEUE_URL`) |
+| `worker` | the CLI, every command | yes | yes |
+| `console` | index.php, and the CLI commands for users, app passwords, sites, modules, the cache and `schedule-status` | no | yes |
+| `api` | api/ | no | yes |
+
+A comma list combines roles (`console,api`). `cmd=server-check` and
+`cmd=instance-info` run on every role. A request the role does not serve
+answers 404; a CLI command not marked for it is refused. An unknown role, a
+missing database setting or key on a role that needs them, a collector with no
+queue, or two queue backends at once stop every request, with one line in the
+error log. `php cli.php cmd=server-check` prints the role and what is missing.
+
+| 1.x / earlier 2.0 constant | 2.0 |
+|---|---|
+| `OWA_QUEUE_EVENTS` (1.x) | `OWA_QUEUE_TRACKING_EVENTS`. The 1.x name is still read while the new one is not set; System Health and `cmd=server-check` ask for the rename. |
+| `OWA_USE_STATIC_CONFIG_ONLY` (1.x) | `OWA_SERVER_ROLE`, `collector` for a server that only receives beacons. The 1.x switch is still read, and still only stops stored settings being read at boot: it does not make a server a collector. System Health and `cmd=server-check` ask for the role. |
+| `OWA_SCHEDULER_ENABLED` | Removed. The role decides: `full` and `worker` run the scheduler. |
+| `OWA_QUEUE_TRACKER_INGEST` | Removed: `OWA_QUEUE_TRACKING_EVENTS`. |
+| `OWA_TRACKER_INGEST_QUEUE_TYPE` | Removed. The queue is the file queue unless a queue module's own constant is set: `OWA_SQS_QUEUE_URL` makes it AWS SQS. |
+| `OWA_TRACKER_INGEST_DRAIN` | Removed. The servers whose role runs the scheduler drain the queue. |
+| `OWA_ACTIVE_MODULES` | Removed. A module with a constant of its own is active while that constant is set, on any server, and the Modules screen cannot turn it off: `OWA_SQS_QUEUE_URL` for the AWS SQS module. Other modules are switched on in the Modules screen. |
+| `OWA_SQS_REGION` | Optional: the region is read from `OWA_SQS_QUEUE_URL`. It still overrides. |
+| `OWA_DB_TYPE` | Optional: defaults to `mysql`. |
+
+The stored 1.x setting `queue_incoming_tracking_events` is no longer read.
+
 ---
 
 ## Deprecated in 1.10.0, removed in v2.0
@@ -480,17 +516,17 @@ still awaiting a retry.
 **What replaces them.**
 
 - **The tracking intake**, `tracker-ingest`. Turn queueing on with
-  `define('OWA_QUEUE_TRACKER_INGEST', true);` (`OWA_QUEUE_EVENTS` and the
-  stored `queue_incoming_tracking_events` are still read while it is unset).
+  `define('OWA_QUEUE_TRACKING_EVENTS', true);` (`OWA_QUEUE_EVENTS` is still
+  read while it is not set).
   The shipped `drain-tracker-ingest` job ingests what is queued every minute;
   `cmd=processEventQueue` and `cmd=flush-processed-events` are gone.
 - **Failed writes are retried** through the intake in either mode, then kept in
   its dead-letter queue: `cmd=tracker-ingest-replay` sends them back.
 - **`queue.php` and the RemoteQueue module**, which forwarded beacons to
   another install over HTTP, are removed. Use the tracker-ingest intake: on
-  disk, drained by the install that receives the beacons, or in AWS SQS with
-  the **AWS SQS module**, where a logging node queues beacons and the reporting
-  install drains them. Remove `queue.php` from any web server allowlist, and
+  disk, drained by the install that receives the beacons, or in AWS SQS
+  (`OWA_SQS_QUEUE_URL`), where a `collector` queues beacons and a `worker`
+  drains them (see Server roles above). Remove `queue.php` from any web server allowlist, and
   `OWA_REMOTE_EVENT_QUEUE_ENDPOINT` from `owa-config.php`.
 - **Removed settings:** `queue_max_retry_count`, `queue_max_retry_age`,
   `remote_event_queue_endpoint`, `allowed_queued_event_types`.

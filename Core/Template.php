@@ -509,11 +509,11 @@ class Template extends TemplateEngine {
      * and the tracker has a base URL -- but the tracker's base URL is where it
      * *logs*, which need not be where reporting lives. OWA supports split
      * deployment deliberately: setEndpoint(), setLoggerEndpoint() and
-     * setApiEndpoint() are independently settable, the SQS module lets a
-     * logging node queue events for another install to drain, and
-     * OWA_USE_STATIC_CONFIG_ONLY exists for a logging-only node
-     * that never touches the reporting database. The admin interface can be on
-     * an entirely different domain from the collector.
+     * setApiEndpoint() are independently settable, and OWA_SERVER_ROLE splits
+     * an install across servers: a collector receives beacons and queues them
+     * on SQS for a worker to drain, and never touches the reporting database.
+     * The admin interface can be on an entirely different domain from the
+     * collector.
      *
      * The reporting origin is the only party that knows where reporting lives,
      * and it is already the party minting this link, so the API URL and the

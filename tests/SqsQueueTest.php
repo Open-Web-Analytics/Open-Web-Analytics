@@ -38,7 +38,7 @@ final class SqsQueueTest extends TestCase
     {
         $this->cache = sys_get_temp_dir() . '/owa-sqs-' . bin2hex(random_bytes(4)) . '/';
 
-        foreach (array(array('base', 'cache_dir'), array('sqs', 'region'), array('base', 'instance_role')) as [$m, $k]) {
+        foreach (array(array('base', 'cache_dir'), array('sqs', 'region'), array('base', 'request_type')) as [$m, $k]) {
             $this->saved["$m.$k"] = \OWA\Core\CoreAPI::getSetting($m, $k);
         }
         \OWA\Core\CoreAPI::setSetting('base', 'cache_dir', $this->cache);
@@ -230,7 +230,7 @@ final class SqsQueueTest extends TestCase
     /** A queue that does not exist yet is created on first use, as the file queue makes its directories: by the CLI. */
     public function testAMissingQueueIsProvisionedOnFirstUse(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'instance_role', 'admin_cli');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'cli');
 
         $this->answers(
             self::sqsError('AWS.SimpleQueueService.NonExistentQueue'),
@@ -248,7 +248,7 @@ final class SqsQueueTest extends TestCase
     /** log.php never creates queues: a missing one is a failed send, and says where queues are made. */
     public function testLogPhpDoesNotProvisionAMissingQueue(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'instance_role', 'logger');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'tracking');
 
         $this->answers(self::sqsError('AWS.SimpleQueueService.NonExistentQueue'));
 
@@ -266,7 +266,7 @@ final class SqsQueueTest extends TestCase
     /** On log.php's path SQS gets seconds, not minutes, and one retry; the CLI waits longer. */
     public function testTheHttpLimitsFollowTheRequestsRole(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'instance_role', 'logger');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'tracking');
 
         $args = Sqs::clientArgs('us-east-1');
         $this->assertSame(array('connect_timeout' => 1, 'timeout' => 3), $args['http']);
@@ -277,7 +277,7 @@ final class SqsQueueTest extends TestCase
         $this->assertSame(3, $this->sent[0][1]['@http']['timeout'] ?? null, 'the limits reach the request');
         $this->assertSame(1, $this->sent[0][1]['@http']['connect_timeout'] ?? null);
 
-        \OWA\Core\CoreAPI::setSetting('base', 'instance_role', 'admin_cli');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'cli');
 
         $args = Sqs::clientArgs('us-east-1');
         $this->assertSame(array('connect_timeout' => 5, 'timeout' => 30), $args['http']);

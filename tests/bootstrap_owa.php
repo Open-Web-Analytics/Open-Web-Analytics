@@ -4,7 +4,7 @@
  * (the "beacon-contract" ingestion tests). Pure-helper tests like
  * OwaLibTest do NOT use this — they load owa_lib standalone.
  *
- * Boots OWA once in the same 'logger' role that log.php uses, so
+ * Boots OWA once in the same 'tracking' request type that log.php uses, so
  * \OWA\Core\CoreAPI::logEvent() runs the real ingestion pipeline synchronously
  * (queue_events defaults to false) down to the fact-table INSERT.
  *
@@ -36,7 +36,7 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
     // Instantiate in the same role as log.php's beacon endpoint.
     $GLOBALS['owa_test_instance'] = new owa([
         'tracking_mode' => true,
-        'instance_role' => 'logger',
+        'request_type' => 'tracking',
     ]);
 
     owa_test_pause_scheduler();

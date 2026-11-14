@@ -10,7 +10,7 @@
  * mid-process, and the PHPUnit runner has already booted OWA once as a singleton
  * against the live config. So the only honest way to observe a FRESH boot under
  * a given define is to spawn a clean PHP process. This probe is that process: it
- * optionally defines the switch, boots OWA in the same 'logger' role log.php
+ * optionally defines the switch, boots OWA in the same 'tracking' request type log.php
  * uses, and reports whether the DB connection was opened during boot.
  *
  * SIGNAL
@@ -51,7 +51,7 @@ if ($static) {
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
 
-new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
+new owa(['tracking_mode' => true, 'request_type' => 'tracking']);
 
 $db = \OWA\Core\CoreAPI::dbSingleton();
 

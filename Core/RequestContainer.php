@@ -266,7 +266,7 @@ class RequestContainer {
          * embedded in someone else's request -- WordPress's own 'action' param
          * is exactly the collision the namespace was invented for. So bare
          * names are accepted only for entry points that own their whole query
-         * string, and a caller that sets no instance_role -- which is every
+         * string, and a caller that sets no request_type -- which is every
          * embedded integration -- keeps the prefixed-only behaviour.
          */
         $ns_len = strlen( (string) $ns );

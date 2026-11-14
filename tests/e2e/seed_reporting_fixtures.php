@@ -289,7 +289,7 @@ $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '203.0.113.10';
 
 require_once($owa_root . 'owa.php');
 require_once(dirname(__DIR__) . '/DomstreamFixtures.php');
-new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
+new owa(['tracking_mode' => true, 'request_type' => 'tracking']);
 
 // If the live install has new-session announcements enabled (announce_visitors +
 // notice_email), seeding a fixture pageview fires base.new_session and its notify

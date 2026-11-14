@@ -76,15 +76,15 @@ final class UpdatesWebAccessTest extends RestControllerTestCase
         parent::setUp();
 
         // The nonce check only engages for the web app; the REST base sets
-        // 'rest_api', which takes a different branch entirely.
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+        // 'rest', which takes a different branch entirely.
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
 
         UpdatesApplyGateProbe::reset();
     }
 
     protected function tearDown(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'rest');
 
         parent::tearDown();
     }

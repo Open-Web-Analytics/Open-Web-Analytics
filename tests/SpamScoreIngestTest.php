@@ -55,7 +55,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
 
         Blocks::$table = 'owa_' . self::TABLE;
 
-        foreach (array('spam_detection', 'spam_threshold', 'queue_tracker_ingest') as $key) {
+        foreach (array('spam_detection', 'spam_threshold', 'queue_tracking_events') as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
@@ -234,7 +234,7 @@ final class SpamScoreIngestTest extends IngestionTestCase
     {
         $this->queueDir = sys_get_temp_dir() . '/owa-spam-queue-' . bin2hex(random_bytes(4)) . '/';
         TrackerIngest::$queue = new \OWA\Module\Base\Classes\FileEventQueue(array('path' => $this->queueDir));
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', true);
 
         $stored = $this->beacon(true);
         $this->assertTrue((bool) $this->fireEvent('base.page_request', $stored));

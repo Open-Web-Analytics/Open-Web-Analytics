@@ -25,7 +25,8 @@ class OptionsSqs extends \OWA\Core\AdminController {
         $this->set( 'credential_source', $S::credentialSource() );
         $this->set( 'region', $S::region() );
         $this->set( 'provisioned', \OWA\Core\CoreAPI::getSetting( 'sqs', 'provisioned' ) ?: null );
-        $this->set( 'in_use', \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_ingest_queue_type' ) === 'sqs' );
+        $this->set( 'in_use', \OWA\Module\Base\Classes\TrackerIngest::backend() === 'sqs' );
+        $this->set( 'queued', \OWA\Module\Base\Classes\TrackerIngest::isQueued() );
 
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );

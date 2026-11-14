@@ -202,7 +202,7 @@ return array(
         'db_password' => array( 'default' => '', 'secret' => true, 'description' => 'The database user\'s password.' ),
         'db_port' => array( 'default' => 3306, 'description' => 'The port the database server listens on. Default 3306.' ),
         'db_supported_types' => array( 'default' => array( 'mysql' => 'MySQL / MariaDB' ), 'internal' => true ),
-        'db_type' => array( 'default' => '', 'description' => 'The database driver: mysql (PDO where available, otherwise mysqli), mysqli or pdo_mysql.' ),
+        'db_type' => array( 'default' => 'mysql', 'description' => 'The database driver: mysql (PDO where available, otherwise mysqli), mysqli or pdo_mysql. Default mysql.' ),
         'db_user' => array( 'default' => '', 'description' => 'The user name OWA connects to the database as.' ),
         'default_cache_expiration_period' => array( 'default' => 604800, 'description' => 'How long a parsed user agent stays in the object cache, in seconds. Default 604800 (7 days).' ),
         // The default_page rows Update080 removed, and the install row it wrote, for its down().
@@ -427,32 +427,15 @@ return array(
         'modules_url'         => array( 'internal' => true ),
         'rest_api_url'        => array( 'internal' => true ),
         'tracking_mode'       => array( 'internal' => true ),
-        // Set by each entry point (log.php: logger; cli.php: admin_cli), never stored.
-        'instance_role'       => array( 'internal' => true ),
+        // Set by each entry point (Core\RequestType: log.php tracking, cli.php cli), never stored.
+        'request_type'        => array( 'default' => 'ui', 'internal' => true ),
         'ua_regexes_dir'      => array( 'description' => 'The directory update-ua-regexes writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/ua-parser/.' ),
 
-        'queue_events' => array( 'default' => false, 'description' => 'The 1.x name for queueing incoming beacons. Read only when queue_tracker_ingest is not set.' ),
-
         /*
-         * NO DEFAULT, because the code has none -- and storable because
-         * queue_e2e_helper and the queue itself persist it at runtime.
-         *
-         * Missing from the first version of this file. It is not in
-         * getDefaultSettingsArray(), so generating from there did not find it,
-         * and it was not stored on the machine the file was generated on
-         * either. The e2e queue suite caught it: the helper persisted it, the
-         * value was never read back because an undeclared key of a declared
-         * module is not fetched, and every beacon went straight to the facts
-         * instead of the queue.
+         * The tracking intake (PLAN 2.30.3), OWA_QUEUE_TRACKING_EVENTS.
+         * Storable because the e2e queue suite persists it; no screen offers it.
          */
-        'queue_incoming_tracking_events' => array( 'storable' => true, 'autoload' => true, 'description' => 'A stored 1.x name for queueing incoming beacons. Read only when queue_tracker_ingest is not set.' ),
-
-        /*
-         * The tracking intake (PLAN 2.30.3). queue_tracker_ingest defaults to
-         * NULL, not false: null is "not set", which is when the 1.x names
-         * above are read (Classes\TrackerIngest::isQueued()).
-         */
-        'queue_tracker_ingest' => array( 'default' => null, 'storable' => true, 'autoload' => true, 'description' => 'Whether log.php queues each beacon for the drain-tracker-ingest job instead of writing it at once. Not set falls back to the 1.x names queue_events and queue_incoming_tracking_events.' ),
+        'queue_tracking_events' => array( 'default' => false, 'storable' => true, 'autoload' => true, 'description' => 'Whether log.php queues each beacon for the drain-tracker-ingest job instead of writing it as it arrives. A collector always queues. The queue is the file queue unless a queue module is configured, such as AWS SQS by OWA_SQS_QUEUE_URL.' ),
 
         /*
          * The built tracker that last applied an update (Module::isUpToDate()):
@@ -462,15 +445,14 @@ return array(
          * schema_version: an install with none from 1.x has an update pending.
          */
         'tracker_build' => array( 'storable' => true, 'autoload' => true, 'internal' => true ),
-        'tracker_ingest_queue_type' => array( 'default' => 'file', 'description' => 'Where queued beacons wait: file, or sqs with the AWS SQS module active.' ),
-        'tracker_ingest_drain' => array( 'default' => 'scheduler', 'description' => 'What ingests queued beacons: scheduler (the drain-tracker-ingest job) or external (a consumer outside OWA).' ),
         'report_wrapper' => array( 'default' => 'wrapper_default.php', 'description' => 'The template that wraps OWA\'s admin and report pages. Default wrapper_default.php.' ),
-        'request_mode' => array( 'default' => 'web_app', 'internal' => true ),
         // Set by Update085 when it deleted the rows of 1.x settings nothing reads, so its down() can put them back.
         'retired_settings_before_085' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'reserved_words' => array( 'default' => array( 'do' => 'action' ), 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ),
         'scheduled_jobs' => array( 'default' => array(), 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ),
-        'scheduler_enabled' => array( 'default' => true, 'description' => 'Whether schedule-run runs any job. False stops every scheduled job without touching crontab.' ),
+        'server_role' => array( 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything; the default), collector (receives beacons and queues them, with no database), worker (the CLI and the scheduler), console (the admin and report screens) or api (the REST API). A comma list combines roles, such as console,api.' ),
+        // Set by the 1.x OWA_USE_STATIC_CONFIG_ONLY: stored settings are not read at boot.
+        'skip_stored_settings' => array( 'default' => false, 'internal' => true ),
         'session_length' => array( 'default' => 1800, 'description' => 'How long a visitor can be inactive before their next event starts a new session, in seconds. Default 1800 (30 minutes).' ),
         'site_id' => array( 'default' => '' ),
         'source_param' => array( 'default' => 'source' ),
@@ -675,7 +657,6 @@ return array(
             'pattern'  => '/^$|^\\.?[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Tracker Cookie Domain is a domain name, such as example.com.' ),
         ),
-        'useStaticConfigOnly' => array( 'default' => false, 'description' => 'When true, OWA does not load stored settings from the database at boot and runs on code defaults plus the config file. For a node that only logs beacons.' ),
         'use_32bit_hash' => array( 'default' => false, 'storable' => true, 'internal' => true ),
         // Set by Update034 when it re-keyed an installation that arrived still
         // deriving 32-bit ids, so its down() can put them back.

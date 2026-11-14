@@ -50,10 +50,10 @@ final class LoginRedirectNonceTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'public_url', 'https://owa.example.test/owa/');
 
         // notAuthenticatedAction() answers a REST request with a 401 body and
-        // never sets 'go' at all. request_mode is global, so a REST test running
+        // never sets 'go' at all. request_type is global, so a REST test running
         // earlier in the suite would otherwise send these down that branch and
         // make the assertions meaningless.
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'admin_web');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
     }
 
     /** Run notAuthenticatedAction() on a controller and report whether 'go' was set. */

@@ -49,7 +49,7 @@ class Cli extends \OWA\Core\AdminController {
      */
     function __construct($params) {
 
-        if ( \OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'cli' ) {
+        if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::CLI ) ) {
 
             return parent::__construct($params);
 
@@ -58,6 +58,20 @@ class Cli extends \OWA\Core\AdminController {
             \OWA\Core\CoreAPI::notice("Controller not called from CLI");
             exit;
         }
+    }
+
+    /**
+     * The server roles this command runs under (Core\ServerRole); cli.php
+     * refuses it on any other. full runs every command. A command a
+     * collector, console or api server may run names that role.
+     *
+     * Static, like usage(): cli.php asks before the controller is built.
+     *
+     * @return string[]
+     */
+    public static function serverRoles() {
+
+        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER );
     }
 
     /**
