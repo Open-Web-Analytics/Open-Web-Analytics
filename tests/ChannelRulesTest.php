@@ -166,7 +166,7 @@ final class ChannelRulesTest extends TestCase
     /** The channel list is the configured rules' names, in order, then Unassigned. */
     public function testTheChannelListIsTheRulesInOrder(): void
     {
-        $names = array_column(include OWA_CONF_DIR . 'channels.php', 'channel');
+        $names = array_column(include \OWA\Core\Env::confDir() . 'channels.php', 'channel');
 
         $this->assertSame(array_merge($names, ['Unassigned']), ChannelStep::channels());
         $this->assertSame(['Direct', 'Cross-network'], array_slice($names, 0, 2));
@@ -219,7 +219,7 @@ final class ChannelRulesTest extends TestCase
             rmdir($dir);
         }
 
-        $this->assertSame(include OWA_CONF_DIR . 'channels.php', ChannelStep::definitions($dir),
+        $this->assertSame(include \OWA\Core\Env::confDir() . 'channels.php', ChannelStep::definitions($dir),
             'without one, the shipped rules');
     }
 

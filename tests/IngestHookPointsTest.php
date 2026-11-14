@@ -66,7 +66,7 @@ final class IngestHookPointsTest extends TestCase
 
         foreach ( self::SITES as $point => $file ) {
 
-            $source = (string) file_get_contents( OWA_DIR . $file );
+            $source = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $file );
 
             // The constant's NAME, not its value: the call sites use
             // Ingest::TRACKING_EVENTS_PRE_SAVE so they stay greppable.

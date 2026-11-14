@@ -268,7 +268,7 @@ final class ArchiveNotDeleteTest extends TestCase
 
         foreach ( $paths as $path ) {
 
-            $src = (string) file_get_contents( OWA_DIR . $path );
+            $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $path );
 
             $this->assertDoesNotMatchRegularExpression(
                 '/archived_date[^\n]*IS\s+NULL/i', $src,
@@ -290,13 +290,13 @@ final class ArchiveNotDeleteTest extends TestCase
     public function testTheCascadeRunsDownwardOnly(): void
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/PropertyDelete.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Controller/PropertyDelete.php' );
 
         $this->assertStringContainsString( "where( 'property_id', \$propertyId )", $src,
             'Deleting a Property does not reach its Profiles.' );
 
         $profileDelete = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/SitesDelete.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Controller/SitesDelete.php' );
 
         // Quoted whole: the redirect names base.propertyProfiles, which is a screen.
         $this->assertStringNotContainsString( "'base.property'", $profileDelete,
@@ -323,7 +323,7 @@ final class ArchiveNotDeleteTest extends TestCase
      */
     public function testTheHierarchyKeepsAnEmptyPropertyForAnAdmin(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . 'Core/Controller.php' );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/Controller.php' );
 
         $this->assertStringContainsString( "return \$p['profiles'] || \$seesEveryProfile;", $src,
             'A Property with no Profiles is dropped unconditionally, so it cannot be '
@@ -344,7 +344,7 @@ final class ArchiveNotDeleteTest extends TestCase
         foreach ( $paths as $path => $what ) {
 
             $this->assertStringContainsString(
-                'isArchived()', (string) file_get_contents( OWA_DIR . $path ),
+                'isArchived()', (string) file_get_contents( \OWA\Core\Env::root() . '/' . $path ),
                 "An archived Profile is still visible through $what." );
         }
     }

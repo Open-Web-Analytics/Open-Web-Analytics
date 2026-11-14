@@ -73,7 +73,7 @@ final class SettingTierMoveTest extends TestCase
 
     private function source( string $path ): string
     {
-        return (string) file_get_contents( OWA_DIR . $path );
+        return (string) file_get_contents( \OWA\Core\Env::root() . '/' . $path );
     }
 
     /* ------------------------------------------------------------------ *

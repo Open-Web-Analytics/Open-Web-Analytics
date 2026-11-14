@@ -154,7 +154,7 @@ final class AbsenceIsNullTest extends TestCase
     /** @dataProvider writers */
     public function testTheWritePathNoLongerStoresTheLiteral( string $file ): void
     {
-        $src = (string) file_get_contents( OWA_DIR . $file );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $file );
 
         $this->assertStringNotContainsString( "set('page_title', '(not set)')", $src,
             "$file still stores the label instead of leaving the column unset" );

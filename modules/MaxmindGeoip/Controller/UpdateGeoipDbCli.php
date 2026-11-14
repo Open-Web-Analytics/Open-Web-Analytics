@@ -251,7 +251,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      */
     protected function dataDir() {
 
-        return defined( 'OWA_MAXMIND_DATA_DIR' ) ? OWA_MAXMIND_DATA_DIR : OWA_DATA_DIR . 'maxmind/';
+        return \OWA\Module\MaxmindGeoip\Classes\Maxmind::dataDir();
     }
 
     /**

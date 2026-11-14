@@ -49,7 +49,7 @@ final class ReportsRestPagingInputTest extends TestCase
         ob_start();
 
         try {
-            include OWA_DIR . 'modules/Base/templates/config_dom.php';
+            include \OWA\Core\Env::root() . '/modules/Base/templates/config_dom.php';
         } finally {
             $js = (string) ob_get_clean();
         }
@@ -59,6 +59,6 @@ final class ReportsRestPagingInputTest extends TestCase
             $js );
 
         $this->assertStringContainsString( "OWA.getSetting( 'max_results_per_page' )",
-            (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.resultSetExplorer.js' ) );
+            (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.resultSetExplorer.js' ) );
     }
 }

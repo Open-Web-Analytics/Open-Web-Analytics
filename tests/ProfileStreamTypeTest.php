@@ -182,7 +182,7 @@ final class ProfileStreamTypeTest extends TestCase
     /** Only web Profiles can grant a CORS origin -- a bundle id is not a host. */
     public function testOnlyWebProfilesContributeCorsOrigins(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . 'Core/View/RestApi.php' );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/View/RestApi.php' );
 
         $this->assertStringContainsString( "\$streamType !== 'web'", $src,
             'An app Profile\'s identifier is parsed as a host for CORS matching.' );

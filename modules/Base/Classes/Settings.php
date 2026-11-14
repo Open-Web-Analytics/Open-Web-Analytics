@@ -357,21 +357,21 @@ namespace OWA\Module\Base\Classes;
 
      function applyConfigConstants() {
 
-         if(!defined('OWA_DATA_DIR')){
-            define('OWA_DATA_DIR', OWA_DIR.'owa-data/');
-
+        /*
+         * WHERE OWA WRITES (Env::dataDir(), Env::cacheDir()). Optional: the
+         * data directory defaults to owa-data/ in the OWA directory, and the
+         * cache directory to caches/ in the data directory, wherever that is.
+         */
+        if ( defined( 'OWA_DATA_DIR' ) && (string) OWA_DATA_DIR !== '' ) {
+            $this->setFromConfigConstant( 'base', 'data_dir', \OWA\Core\Env::withSlash( OWA_DATA_DIR ), 'OWA_DATA_DIR');
+        } else {
+            $this->set( 'base', 'data_dir', \OWA\Core\Env::defaultDataDir() );
         }
 
-        if (defined('OWA_DATA_DIR')) {
-            $this->setFromConfigConstant( 'base', 'data_dir', OWA_DATA_DIR, 'OWA_DATA_DIR');
-        }
-
-        if(!defined('OWA_CACHE_DIR')){
-            define('OWA_CACHE_DIR', OWA_DATA_DIR.'caches/');
-         }
-
-         if (defined('OWA_CACHE_DIR')) {
-            $this->setFromConfigConstant( 'base', 'cache_dir', OWA_CACHE_DIR, 'OWA_CACHE_DIR');
+        if ( defined( 'OWA_CACHE_DIR' ) && (string) OWA_CACHE_DIR !== '' ) {
+            $this->setFromConfigConstant( 'base', 'cache_dir', \OWA\Core\Env::withSlash( OWA_CACHE_DIR ), 'OWA_CACHE_DIR');
+        } else {
+            $this->set( 'base', 'cache_dir', $this->get( 'base', 'data_dir' ) . 'caches/' );
         }
 
         /* FACT-TABLE PARTITIONING */
@@ -2308,7 +2308,7 @@ namespace OWA\Module\Base\Classes;
       * Distinct from registeredField() being non-empty, and the distinction is
       * load-bearing: a setting can be declared with NOTHING -- static, no
       * default, no chrome -- which is exactly what a config-file-only setting
-      * whose default is derived from OWA_DIR looks like. Reading the empty
+      * whose default is derived from the install's location looks like. Reading the empty
       * array as "not registered" made those unconstrained, so persistSetting()
       * would have accepted a stored db_class_dir. Caught by the contract test
       * the moment the baked-in paths were removed.
@@ -2887,11 +2887,10 @@ namespace OWA\Module\Base\Classes;
                 'spam_threshold'                    => 5.0,
                 'clean_query_string'                => true,
                 'query_string_filters'                => '', // move to site settings
-                'async_log_dir'                        => '', //OWA_DATA_DIR . 'logs/',
+                'async_log_dir'                        => '', // setupPaths(): logs/ in the data directory
                 'notice_email'                        => '',
-                'error_log_file'                    => '', //OWA_DATA_DIR . 'logs/errors.txt',
+                'error_log_file'                    => '', // setupPaths(): a file in logs/ in the data directory
                 'ua-regexes'                        => '',
-                'plugin_dir'                        => OWA_BASE_DIR . '/plugins/',
                 'public_path'                        => '',
                 'geolocation_lookup'                => false,
                 'geolocation_service'                => '',
@@ -2905,7 +2904,7 @@ namespace OWA\Module\Base\Classes;
                 'assets_url'                        => '',
                 'tracking_url'                      => '',
                 'link_template'                        => '%s?%s', // main_url?key=value....
-                'owa_user_agent'                    => 'Open Web Analytics Bot '.OWA_VERSION,
+                'owa_user_agent'                    => 'Open Web Analytics Bot ' . \OWA\Core\Env::version(),
                 'owa_news_url'                        => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5',
                 'timezone'                            => 'America/Los_Angeles',
                 'wiki_url'                            => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki',
@@ -2958,7 +2957,6 @@ namespace OWA\Module\Base\Classes;
                 'log_visitor_pii'                    => true,
                 'excluded_ips'                        => '',
                 'anonymize_ips'                        => false,
-                'theme'                                => '',
                 'reserved_words'                    => array('do' => 'action'),
                 'start_page'                        => 'base.reportingHome',
                 // A page path's last segment named here is dropped: /store/index.html is /store.
@@ -3056,7 +3054,7 @@ namespace OWA\Module\Base\Classes;
                 'server_role'                       => 'full',
                 'skip_stored_settings'              => false,
                 'db_supported_types'				=> ['mysql' => 'MySQL / MariaDB'],
-                'config_file'                       => OWA_DIR . 'owa-config.php'
+                'config_file'                       => \OWA\Core\Env::root() . '/owa-config.php'
             )
         );
 
@@ -3096,7 +3094,7 @@ namespace OWA\Module\Base\Classes;
         $public_path = $this->get('base', 'public_path');
 
         if (empty($public_path)) {
-            $public_path = OWA_PATH.'/public/';
+            $public_path = \OWA\Core\Env::root() . '/public/';
             $this->set('base','public_path', $public_path);
         }
 
@@ -3142,13 +3140,13 @@ namespace OWA\Module\Base\Classes;
             $this->set(
                 'base',
                 'error_log_file',
-                OWA_DATA_DIR . 'logs/errors_' . \OWA\Core\CoreAPI::generateInstanceSpecificHash() . '.txt'
+                $this->get( 'base', 'data_dir' ) . 'logs/errors_' . \OWA\Core\CoreAPI::generateInstanceSpecificHash() . '.txt'
             );
         }
 
         if ( ! $this->get( 'base', 'async_log_dir' ) ) {
 
-            $this->set( 'base', 'async_log_dir', OWA_DATA_DIR . 'logs/' );
+            $this->set( 'base', 'async_log_dir', $this->get( 'base', 'data_dir' ) . 'logs/' );
         }
 
         \OWA\Core\CoreAPI::debug('check for http host');
@@ -3218,13 +3216,13 @@ namespace OWA\Module\Base\Classes;
             return true;
          }
 
-         if (!file_exists(OWA_DIR.'owa-config-dist.php')) {
+         if (!file_exists(\OWA\Core\Env::root() . '/owa-config-dist.php')) {
              $errorMsg = "We can't find the configuration file template. Are you sure you installed OWA's files correctly? Exiting.";
              \OWA\Core\CoreAPI::error($errorMsg);
              throw new \Exception($errorMsg);
          }
 
-         $configFileTemplate = file(OWA_DIR . 'owa-config-dist.php');
+         $configFileTemplate = file(\OWA\Core\Env::root() . '/owa-config-dist.php');
          \OWA\Core\CoreAPI::debug('found sample config file.');
 
          $handle = fopen($file, 'w');

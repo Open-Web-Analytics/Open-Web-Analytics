@@ -30,7 +30,7 @@ final class InstallTimezoneTest extends TestCase
     private function installForm(): string
     {
         return (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/install_defaults_entry.php'
+            \OWA\Core\Env::root() . '/modules/Base/templates/install_defaults_entry.php'
         );
     }
 
@@ -78,7 +78,7 @@ final class InstallTimezoneTest extends TestCase
     public function testTheInstallerPersistsTheChosenTimezone(): void
     {
         $controller = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/InstallBase.php'
+            \OWA\Core\Env::root() . '/modules/Base/Controller/InstallBase.php'
         );
 
         $this->assertStringContainsString(
@@ -97,7 +97,7 @@ final class InstallTimezoneTest extends TestCase
     public function testAnUnknownTimezoneIsRefusedRatherThanStored(): void
     {
         $controller = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/InstallBase.php'
+            \OWA\Core\Env::root() . '/modules/Base/Controller/InstallBase.php'
         );
 
         $this->assertStringContainsString(
@@ -136,7 +136,7 @@ final class InstallTimezoneTest extends TestCase
     public function testAConfigConstantSuppliesTheTimezone(): void
     {
         $settings = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Classes/Settings.php'
+            \OWA\Core\Env::root() . '/modules/Base/Classes/Settings.php'
         );
 
         $this->assertStringContainsString("defined('OWA_TIMEZONE')", $settings);
@@ -152,7 +152,7 @@ final class InstallTimezoneTest extends TestCase
     public function testAnUnrecognisedConstantIsIgnoredRatherThanApplied(): void
     {
         $settings = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Classes/Settings.php'
+            \OWA\Core\Env::root() . '/modules/Base/Classes/Settings.php'
         );
 
         // The guard and the assignment must be in the SAME statement, or the
@@ -178,7 +178,7 @@ final class InstallTimezoneTest extends TestCase
      */
     public function testTheDistConfigDocumentsItAndSaysItWins(): void
     {
-        $dist = (string) file_get_contents( OWA_DIR . 'owa-config-dist.php' );
+        $dist = (string) file_get_contents( \OWA\Core\Env::root() . '/owa-config-dist.php' );
 
         $this->assertStringContainsString("OWA_TIMEZONE", $dist);
         $this->assertMatchesRegularExpression('/not retroactive/i', $dist);
@@ -269,7 +269,7 @@ final class InstallTimezoneTest extends TestCase
     public function testTheOptionsFormRefusesAConstantGovernedSetting(): void
     {
         $controller = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/OptionsUpdate.php'
+            \OWA\Core\Env::root() . '/modules/Base/Controller/OptionsUpdate.php'
         );
 
         // Scoped to the governing-constant branch ONLY. A wider window catches
@@ -295,7 +295,7 @@ final class InstallTimezoneTest extends TestCase
     public function testTheRefusalNamesTheConstant(): void
     {
         $controller = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/OptionsUpdate.php'
+            \OWA\Core\Env::root() . '/modules/Base/Controller/OptionsUpdate.php'
         );
 
         $this->assertStringContainsString('$governing_constant', $controller);
@@ -339,7 +339,7 @@ final class InstallTimezoneTest extends TestCase
          */
         $this->assertStringNotContainsString(
             'configFileConstantFor',
-            php_strip_whitespace(OWA_DIR . 'modules/Base/templates/options_general.php'),
+            php_strip_whitespace(\OWA\Core\Env::root() . '/modules/Base/templates/options_general.php'),
             'the check belongs to the renderer, so it applies to every field');
     }
 
@@ -426,7 +426,7 @@ final class InstallTimezoneTest extends TestCase
     public function testLoadAppliesTheStripperBeforeMergingTheDatabase(): void
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Classes/Settings.php'
+            \OWA\Core\Env::root() . '/modules/Base/Classes/Settings.php'
         );
 
         // Wide enough to reach the merge, which sits ~2.7k into load(). A window
@@ -554,7 +554,7 @@ final class InstallTimezoneTest extends TestCase
     public function testTheInstallerDoesNotStoreAConstantGovernedTimezone(): void
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/InstallBase.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Controller/InstallBase.php' );
 
         $this->assertMatchesRegularExpression(
             "/configFileConstantFor\(\s*'base',\s*'timezone'\s*\)/", $src,
@@ -609,7 +609,7 @@ final class InstallTimezoneTest extends TestCase
          * undefined. Order-dependent by construction; this makes it not.
          */
         $load = static function ( string $file ) {
-            require OWA_DIR . 'conf/' . $file;
+            require \OWA\Core\Env::root() . '/conf/' . $file;
             return get_defined_vars();
         };
 

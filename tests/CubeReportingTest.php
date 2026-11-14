@@ -205,7 +205,7 @@ final class CubeReportingTest extends TestCase
      */
     private static function declaredDimensions(): array
     {
-        $declaration = include OWA_DIR . 'modules/Base/config/dimensions.php';
+        $declaration = include \OWA\Core\Env::root() . '/modules/Base/config/dimensions.php';
 
         return (array) $declaration['dimensions'];
     }

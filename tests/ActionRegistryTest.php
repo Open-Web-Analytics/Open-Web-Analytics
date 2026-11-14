@@ -63,7 +63,7 @@ final class ActionRegistryTest extends TestCase
     {
         $out = [];
 
-        foreach (glob(OWA_BASE_DIR . '/modules/Base/Controller/*.php') as $file) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/Base/Controller/*.php') as $file) {
             $short = basename($file, '.php');
 
             if (in_array($short, $this->exempt(), true)) {
@@ -187,6 +187,30 @@ final class ActionRegistryTest extends TestCase
 
         $this->assertSame([], $broken,
             'REST routes point at a class or file that does not exist: ' . implode(', ', $broken));
+    }
+
+    /**
+     * registerAction()'s file is relative to the registering module's own
+     * directory, as registerImplementation()'s is, and empty when none is given.
+     */
+    public function testARegisteredActionsFileIsInItsOwnModule(): void
+    {
+        $missing = [];
+
+        foreach ($this->actionMap() as $name => $meta) {
+
+            $file = (string) ($meta['file'] ?? '');
+
+            if ($file !== '' && ! file_exists($file)) {
+                $missing[] = $name . ' -> ' . $file;
+            }
+        }
+
+        $this->assertSame([], $missing);
+
+        $base = $this->actionMap()['base.addSiteRest'] ?? null;
+        $this->assertNotNull($base);
+        $this->assertSame(\OWA\Core\Env::modulesDir() . 'Base/Controller/AddSiteRest.php', $base['file']);
     }
 
     public function testARegisteredActionResolvesWithoutTheLegacyPath(): void

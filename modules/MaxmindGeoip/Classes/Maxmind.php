@@ -22,10 +22,6 @@ namespace OWA\Module\MaxmindGeoip\Classes;
 use MaxMind\Db\Reader;
 
 
-if ( ! defined( 'OWA_MAXMIND_DATA_DIR' ) ) {
-    define('OWA_MAXMIND_DATA_DIR', OWA_DATA_DIR.'maxmind/');
-}
-
 /**
  * Maxmind Geolocation Wrapper
  * 
@@ -89,6 +85,17 @@ class Maxmind extends \OWA\Core\Location {
         return in_array( $configured, self::EDITIONS, true ) ? $configured : 'GeoLite2-City';
     }
 
+    /**
+     * Where the GeoIP databases are: OWA_MAXMIND_DATA_DIR from owa-config.php,
+     * else maxmind/ in the data directory.
+     */
+    public static function dataDir() {
+
+        return defined( 'OWA_MAXMIND_DATA_DIR' ) && (string) OWA_MAXMIND_DATA_DIR !== ''
+            ? \OWA\Core\Env::withSlash( OWA_MAXMIND_DATA_DIR )
+            : \OWA\Core\Env::dataDir() . 'maxmind/';
+    }
+
     function isDbReady() {
 
         // getLocation() reads city, subdivision and country behind isset()
@@ -96,14 +103,14 @@ class Maxmind extends \OWA\Core\Location {
         // rather than failing.
         $this->db_file_name = self::edition() . '.mmdb';
 
-        $this->db_file_path = OWA_MAXMIND_DATA_DIR.$this->db_file_name;
+        $this->db_file_path = self::dataDir() . $this->db_file_name;
 
         if ( file_exists( $this->db_file_path ) ) {
 
             $this->db_file_present = true;
         } else {
 
-            \OWA\Core\CoreAPI::notice('Maxmind DB file could is not present at: ' . OWA_MAXMIND_DATA_DIR);
+            \OWA\Core\CoreAPI::notice('Maxmind DB file could is not present at: ' . self::dataDir());
         }
 
         return $this->db_file_present;

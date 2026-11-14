@@ -38,14 +38,14 @@ class TrackerBundle {
     /** The bundle format; part of the header, so a change republishes every bundle. */
     const FORMAT = 1;
 
-    /** Where bundles are written, under OWA_DIR. */
+    /** Where bundles are written, under the root. */
     const DIR = 'public/tracker/';
 
-    /** The built tracker's directory, under OWA_DIR. */
+    /** The built tracker's directory, under the root. */
     const DIST = 'public/base/dist/';
 
     /**
-     * The build's manifest, under OWA_DIR: outside the served tree (nothing a
+     * The build's manifest, under the root: outside the served tree (nothing a
      * browser loads needs it), shipped with the code and replaced with it, and
      * gitignored -- the build writes it beside nothing it could drift from.
      */
@@ -55,24 +55,24 @@ class TrackerBundle {
     /** A site id that may be a file name. */
     const SITE_ID_PATTERN = '/^[A-Za-z0-9_-]{1,64}$/';
 
-    /** Absolute directories in place of OWA_DIR's, for tests. Null in use. */
+    /** Absolute directories in place of the root's, for tests. Null in use. */
     public static $distDir = null;
     public static $buildDir = null;
     public static $outDir  = null;
 
     private static function distDir() {
 
-        return self::$distDir ?? OWA_DIR . self::DIST;
+        return self::$distDir ?? \OWA\Core\Env::root() . '/' . self::DIST;
     }
 
     private static function buildDir() {
 
-        return self::$buildDir ?? OWA_DIR . self::BUILD;
+        return self::$buildDir ?? \OWA\Core\Env::root() . '/' . self::BUILD;
     }
 
     private static function outDir() {
 
-        return self::$outDir ?? OWA_DIR . self::DIR;
+        return self::$outDir ?? \OWA\Core\Env::root() . '/' . self::DIR;
     }
 
     /**

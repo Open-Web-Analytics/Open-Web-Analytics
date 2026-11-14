@@ -30,7 +30,7 @@ function owa_wiki_all_modules() {
         $active[]         = \OWA\Core\Lib::moduleDirName( $name );
     }
 
-    foreach ( glob( OWA_DIR . 'modules/*/Module.php' ) as $file ) {
+    foreach ( glob( \OWA\Core\Env::root() . '/modules/*/Module.php' ) as $file ) {
 
         $dir = basename( dirname( $file ) );
 

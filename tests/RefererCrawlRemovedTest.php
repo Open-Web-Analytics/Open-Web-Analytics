@@ -27,7 +27,7 @@ final class RefererCrawlRemovedTest extends TestCase
     /** @dataProvider goneProvider */
     public function testTheCrawlerIsGone( string $needle, string $file, string $why ): void
     {
-        $path = OWA_DIR . $file;
+        $path = \OWA\Core\Env::root() . '/' . $file;
 
         $this->assertFileExists( $path );
 
@@ -58,10 +58,10 @@ final class RefererCrawlRemovedTest extends TestCase
             'modules/Base/View/CrawlReferralCli.php',
         ) as $file ) {
 
-            $this->assertFileDoesNotExist( OWA_DIR . $file );
+            $this->assertFileDoesNotExist( \OWA\Core\Env::root() . '/' . $file );
         }
 
-        $module = (string) file_get_contents( OWA_DIR . 'modules/Base/Module.php' );
+        $module = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/Module.php' );
 
         $this->assertStringNotContainsString( 'update-referral', $module,
             'the CLI command is still registered, so it resolves to a missing class' );
@@ -81,7 +81,7 @@ final class RefererCrawlRemovedTest extends TestCase
         $callers = array();
 
         $dirs = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator( OWA_DIR . 'modules' ) );
+            new RecursiveDirectoryIterator( \OWA\Core\Env::root() . '/modules' ) );
 
         foreach ( $dirs as $file ) {
 
@@ -91,7 +91,7 @@ final class RefererCrawlRemovedTest extends TestCase
 
             if ( strpos( (string) file_get_contents( $file->getPathname() ), 'crawlReferer' ) !== false ) {
 
-                $callers[] = str_replace( OWA_DIR, '', $file->getPathname() );
+                $callers[] = str_replace( \OWA\Core\Env::root() . '/', '', $file->getPathname() );
             }
         }
 

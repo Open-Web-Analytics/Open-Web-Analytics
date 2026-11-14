@@ -535,7 +535,7 @@ class SystemHealth {
         $role = \OWA\Core\ServerRole::current();
 
         $facts = array(
-            'OWA'     => (string) OWA_VERSION,
+            'OWA'     => \OWA\Core\Env::version(),
             'Server role' => sprintf( '%s (serves %s%s)', $role->name(), implode( ', ', $role->requestTypes() ),
                 $role->runsScheduler() ? '; runs the scheduler' : '' ),
             'PHP'     => PHP_VERSION . ' (' . PHP_SAPI . ')',

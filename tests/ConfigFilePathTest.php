@@ -8,7 +8,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * One source for the config file's path.
  *
  * `isConfigFilePresent()` consulted the `config_file` setting while
- * `loadConfigFile()` built OWA_DIR.'owa-config.php' itself, and
+ * `loadConfigFile()` built the root's owa-config.php path itself, and
  * `createConfigFile()` built it a third time. So the presence check, the loader
  * and the installer could each be talking about a different file -- an install
  * that writes one config and reads another looks like a config that "did not
@@ -23,7 +23,7 @@ final class ConfigFilePathTest extends TestCase
     private function settingsSource(): string
     {
         return (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Classes/Settings.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Classes/Settings.php' );
     }
 
     public function testTheSettingIsWhatTheLoaderAndTheInstallerBothRead(): void
@@ -46,7 +46,7 @@ final class ConfigFilePathTest extends TestCase
         $code = preg_replace( '~/\*.*?\*/|//[^\n]*~s', '', $src );
 
         $this->assertSame( 1, preg_match_all(
-            "/OWA_DIR\s*\.\s*'owa-config\.php'/", $code ),
+            "~Env::root\(\)\s*\.\s*'/owa-config\.php'~", $code ),
             'only the `config_file` default may name the file; every other use '
             . 'must go through the setting' );
     }
@@ -55,7 +55,7 @@ final class ConfigFilePathTest extends TestCase
     public function testTheDefaultIsTheOrdinaryLocation(): void
     {
         $this->assertSame(
-            OWA_DIR . 'owa-config.php',
+            \OWA\Core\Env::root() . '/owa-config.php',
             \OWA\Core\CoreAPI::getSetting( 'base', 'config_file' ) );
     }
 

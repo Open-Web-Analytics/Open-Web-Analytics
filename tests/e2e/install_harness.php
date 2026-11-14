@@ -9,7 +9,7 @@
  *   1. DB connection comes ONLY from define()d OWA_DB_* constants in
  *      owa-config.php -- there is no getenv() seam (settings.php applyConfigConstants).
  *   2. owa_settings::createConfigFile() hard-codes its target as
- *      OWA_DIR.'owa-config.php' AND refuses to overwrite an existing one. The CLI
+ *      the root's owa-config.php AND refuses to overwrite an existing one. The CLI
  *      installer additionally REQUIRES the config file to already exist.
  *
  * So an install test has no side-by-side option: it must physically move the

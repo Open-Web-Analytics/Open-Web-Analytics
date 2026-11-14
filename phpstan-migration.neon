@@ -45,7 +45,7 @@ parameters:
     # rather than in the generated baseline:
     #
     #   Settings.php:123   inside if ( $this->isConfigFilePresent() )
-    #   Settings.php:872   inside if ( file_exists(OWA_DIR.'owa-config.php') )
+    #   Settings.php:872   inside if ( file_exists(Env::root() . '/owa-config.php') )
     #   Settings.php:930   immediately after the file is written (fclose+chmod above)
     #
     # owa-config.php is created by the installer and is already in excludePaths

@@ -38,7 +38,7 @@ final class TrackingPropertyOrderTest extends TestCase
     /** @return array callback name => properties it reads off the event */
     private function callbackReads(): array
     {
-        $source = file_get_contents( OWA_DIR . 'modules/Base/Classes/TrackingEventHelpers.php' );
+        $source = file_get_contents( \OWA\Core\Env::root() . '/modules/Base/Classes/TrackingEventHelpers.php' );
 
         preg_match_all( '/static function (\w+)\s*\([^)]*\)\s*\{(.*?)\n    \}/s', $source, $matches,
             PREG_SET_ORDER );

@@ -252,7 +252,7 @@ final class ReportMetricDimensionContractTest extends TestCase
          * Two names per report is the conservative claim: every report names
          * at least one metric and one dimension.
          */
-        $reports = glob(OWA_DIR . 'modules/*/reports/*.json');
+        $reports = glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json');
 
         $this->assertGreaterThanOrEqual(count($reports), count($scopes),
             'fewer scopes than report definitions -- scope discovery has stopped '
@@ -288,9 +288,9 @@ final class ReportMetricDimensionContractTest extends TestCase
         $bad = [];
         $seen = 0;
 
-        foreach (glob(OWA_DIR . 'modules/*/reports/*.json') as $file) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json') as $file) {
 
-            $label = str_replace(OWA_DIR, '', $file);
+            $label = str_replace(\OWA\Core\Env::root() . '/', '', $file);
 
             foreach ($this->constraintNames(json_decode(file_get_contents($file), true), $rsm) as $name) {
                 $seen++;
@@ -347,13 +347,13 @@ final class ReportMetricDimensionContractTest extends TestCase
     {
         $bad = [];
 
-        foreach (glob(OWA_DIR . 'modules/*/reports/*.json') as $file) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json') as $file) {
 
             $json = json_decode(file_get_contents($file), true);
 
             array_walk_recursive($json, function ($value, $key) use (&$bad, $file) {
                 if ($key === 'constraints' && is_string($value) && preg_match('/!=null(,|$)/i', $value)) {
-                    $bad[] = str_replace(OWA_DIR, '', $file) . ": $value";
+                    $bad[] = str_replace(\OWA\Core\Env::root() . '/', '', $file) . ": $value";
                 }
             });
 
@@ -365,7 +365,7 @@ final class ReportMetricDimensionContractTest extends TestCase
                     if ($key === 'constraints' && is_array($value)) {
                         foreach ($value as $c) {
                             if (($c['operator'] ?? '') === '!=' && strtolower((string) ($c['value'] ?? '')) === 'null') {
-                                $bad[] = str_replace(OWA_DIR, '', $file) . ': ' . $c['dimension'] . '!=null';
+                                $bad[] = str_replace(\OWA\Core\Env::root() . '/', '', $file) . ': ' . $c['dimension'] . '!=null';
                             }
                         }
                     } else {

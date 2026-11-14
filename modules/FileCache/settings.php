@@ -6,9 +6,9 @@
  * Read from disk before any module object exists -- see
  * Core\Module::settingsRegistry() for why that is forced rather than chosen.
  *
- * It reads no settings at all. Where the cache files go is OWA_CACHE_DIR, or a
- * cache_dir passed in at construction -- see Classes/FileCache.php. Neither is
- * a stored setting.
+ * It reads no settings of its own. Where the cache files go is base.cache_dir
+ * (Core\Env::cacheDir(), set by OWA_CACHE_DIR), or a cache_dir passed in at
+ * construction -- see Classes/FileCache.php. Neither is a stored setting.
  *
  * Declaring nothing is not the same as saying nothing. Without this file the
  * module is undeclared, and the boot query falls back to loading EVERY row it

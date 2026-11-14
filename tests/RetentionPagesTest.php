@@ -120,7 +120,7 @@ final class RetentionPagesTest extends TestCase
      */
     public function testANumberFieldIsWideEnoughForWhatBlankMeans(): void
     {
-        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+        $css = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/owa.report.css' );
 
         $this->assertMatchesRegularExpression(
             '/#panel input\[type="number"\]\[placeholder\] \{\s*width: (\d+)em;/', $css );
@@ -129,7 +129,7 @@ final class RetentionPagesTest extends TestCase
 
         $blanks = array();
 
-        foreach ( (array) glob( OWA_DIR . 'modules/*/settings.php' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/settings.php' ) as $file ) {
 
             preg_match_all( "/'blank'\s*=>\s*'([^']*)'/", (string) file_get_contents( $file ), $found );
             $blanks = array_merge( $blanks, $found[1] );

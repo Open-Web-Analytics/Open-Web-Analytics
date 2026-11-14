@@ -16,7 +16,7 @@ final class EnvironmentCheckTest extends TestCase
 {
     private static function named(string $name): array
     {
-        foreach (EnvironmentCheck::all(OWA_DIR . 'owa-config.php') as $check) {
+        foreach (EnvironmentCheck::all(\OWA\Core\Env::root() . '/owa-config.php') as $check) {
             if ($check['name'] === $name) {
                 return $check;
             }

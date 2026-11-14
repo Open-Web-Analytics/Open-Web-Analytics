@@ -99,7 +99,7 @@ final class ReportingHomeTest extends TestCase
     /** It is written where the answer is known: when a report renders. */
     public function testThePropertyIsRememberedWhenAReportRenders(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . 'Core/ReportController.php' );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/ReportController.php' );
 
         $this->assertStringContainsString(
             'ReportingHome::LAST_PROPERTY_COOKIE', $src,
@@ -113,15 +113,15 @@ final class ReportingHomeTest extends TestCase
     /** Nothing points at the retired roster. */
     public function testTheRosterIsGone(): void
     {
-        $this->assertFileDoesNotExist( OWA_DIR . 'modules/Base/Controller/Sites.php' );
-        $this->assertFileDoesNotExist( OWA_DIR . 'modules/Base/templates/sites.php' );
+        $this->assertFileDoesNotExist( \OWA\Core\Env::root() . '/modules/Base/Controller/Sites.php' );
+        $this->assertFileDoesNotExist( \OWA\Core\Env::root() . '/modules/Base/templates/sites.php' );
 
         $this->assertSame(
             'base.reportingHome',
             \OWA\Core\CoreAPI::getSetting( 'base', 'start_page' ),
             'The start page still names the retired roster, so login lands on a 404.' );
 
-        $header = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/header.php' );
+        $header = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/header.php' );
 
         $this->assertStringNotContainsString( "'base.sites'", $header );
     }

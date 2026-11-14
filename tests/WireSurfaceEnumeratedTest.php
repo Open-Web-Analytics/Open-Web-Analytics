@@ -37,7 +37,7 @@ final class WireSurfaceEnumeratedTest extends TestCase
     private function emitted(): array
     {
         $contracts = json_decode(
-            (string) file_get_contents( OWA_DIR . 'tests/fixtures/beacon_contracts.json' ),
+            (string) file_get_contents( \OWA\Core\Env::root() . '/tests/fixtures/beacon_contracts.json' ),
             true );
 
         $this->assertIsArray( $contracts, 'the beacon contract fixture is unreadable' );

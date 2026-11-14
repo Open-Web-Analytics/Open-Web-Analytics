@@ -25,7 +25,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class BaseDeclarationPresentTest extends TestCase
 {
-    private const FILE = OWA_DIR . 'modules/Base/settings.php';
+    private const FILE = __DIR__ . '/../modules/Base/settings.php';
 
     public function testTheFileExists(): void
     {

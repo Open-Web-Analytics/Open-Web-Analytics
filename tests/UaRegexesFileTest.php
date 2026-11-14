@@ -34,7 +34,7 @@ final class UaRegexesFileTest extends TestCase {
 
     protected function setUp(): void {
 
-        $this->dir  = OWA_DATA_DIR . 'ua-parser/';
+        $this->dir  = \OWA\Core\Env::dataDir() . 'ua-parser/';
         $this->file = $this->dir . 'regexes.php';
     }
 

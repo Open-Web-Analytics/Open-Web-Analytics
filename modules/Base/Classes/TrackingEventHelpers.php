@@ -200,7 +200,7 @@ class TrackingEventHelpers {
 
         if ( self::$property_config === null ) {
 
-            $path = OWA_DIR . 'modules/Base/config/tracking_properties.json';
+            $path = \OWA\Core\Env::modulesDir() . 'Base/config/tracking_properties.json';
             $config = json_decode( file_get_contents( $path ), true );
 
             if ( ! is_array( $config ) ) {
@@ -649,7 +649,7 @@ class TrackingEventHelpers {
             return self::$event_config;
         }
 
-        $path = OWA_DIR . 'modules/Base/config/tracking_events.php';
+        $path = \OWA\Core\Env::modulesDir() . 'Base/config/tracking_events.php';
 
         $declared = file_exists( $path ) ? include $path : null;
 

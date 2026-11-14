@@ -28,7 +28,7 @@ final class WikiDocsDataAdminTest extends TestCase
     public function testEveryEnvironmentCheckIsInTheTableWithWhatPasses(): void
     {
         $md     = self::section( 'environment-checks' );
-        $checks = EnvironmentCheck::all( OWA_DIR . 'owa-config.php' );
+        $checks = EnvironmentCheck::all( \OWA\Core\Env::root() . '/owa-config.php' );
 
         $this->assertNotEmpty( $checks );
 
@@ -93,7 +93,7 @@ final class WikiDocsDataAdminTest extends TestCase
     /** Auth reads the methods from the constant the section documents. */
     public function testAuthReadsTheReadOnlyMethodsFromTheConstant(): void
     {
-        $source = (string) file_get_contents( OWA_DIR . 'Core/Auth.php' );
+        $source = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/Auth.php' );
 
         $this->assertStringContainsString( 'AppPasswords::READ_METHODS', $source );
         $this->assertStringNotContainsString( "array( 'GET', 'HEAD' )", $source );

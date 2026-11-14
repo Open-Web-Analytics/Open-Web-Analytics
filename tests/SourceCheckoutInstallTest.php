@@ -34,11 +34,12 @@ use PHPUnit\Framework\TestCase;
  *      the view forwarded only $view->errors, so ANY failing check was a fatal.
  *
  * HOW IT IS RUN
- * OWA_PATH is pre-defined to a directory of symlinks holding everything the
- * real tree has EXCEPT vendor/ and public/. owa_env.php derives every other
- * path from OWA_PATH and only falls back to __DIR__ when it is not already
- * defined, so the installer boots believing it lives somewhere with no
- * dependencies and no built assets -- without copying the tree or touching it.
+ * From a fake root holding everything the real tree has EXCEPT vendor/ and
+ * public/. The root is where Core/Env.php and owa_env.php are, and PHP resolves
+ * an included file's symlinks, so those two places are copies: Core/ and the
+ * top-level PHP files. Everything else is a symlink to the real tree. The
+ * installer boots believing it lives somewhere with no dependencies and no
+ * built assets, without touching the tree.
  */
 final class SourceCheckoutInstallTest extends TestCase
 {
@@ -81,7 +82,16 @@ final class SourceCheckoutInstallTest extends TestCase
                 continue;
             }
 
-            symlink( $this->root() . '/' . $entry, $this->fake . '/' . $entry );
+            $from = $this->root() . '/' . $entry;
+
+            if ( $entry === 'Core' || substr( $entry, -4 ) === '.php' ) {
+
+                exec( 'cp -R ' . escapeshellarg( $from ) . ' ' . escapeshellarg( $this->fake . '/' . $entry ) );
+
+            } else {
+
+                symlink( $from, $this->fake . '/' . $entry );
+            }
         }
 
         // The pieces the installer must find, whatever else the tree holds.
@@ -110,7 +120,6 @@ final class SourceCheckoutInstallTest extends TestCase
     private function runInstaller( string $do ): string
     {
         $script = sprintf(
-            'define("OWA_PATH", %s);' .
             '$_GET["do"] = %s;' .
             '$_SERVER["REQUEST_METHOD"] = "GET";' .
             '$_SERVER["SCRIPT_NAME"] = "/install.php";' .
@@ -119,9 +128,8 @@ final class SourceCheckoutInstallTest extends TestCase
             '$_SERVER["SERVER_PORT"] = "80";' .
             '$_SERVER["REQUEST_URI"] = "/install.php";' .
             'include %s;',
-            var_export( $this->fake, true ),
             var_export( $do, true ),
-            var_export( $this->root() . '/install.php', true )
+            var_export( $this->fake . '/install.php', true )
         );
 
         return (string) shell_exec(

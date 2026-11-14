@@ -168,7 +168,7 @@ final class ScrollDepthReportTest extends TestCase
     private function report(): array
     {
         $definition = json_decode( (string) file_get_contents(
-            OWA_DIR . 'modules/Base/reports/scroll-depth.json' ), true );
+            \OWA\Core\Env::root() . '/modules/Base/reports/scroll-depth.json' ), true );
 
         $this->assertIsArray( $definition, 'reports/scroll-depth.json did not parse' );
 

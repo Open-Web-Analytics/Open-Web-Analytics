@@ -148,7 +148,7 @@ class Browscap extends \OWA\Core\Base {
             return $configured;
         }
 
-        $dir = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: OWA_DATA_DIR . 'ua-parser/';
+        $dir = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: \OWA\Core\Env::dataDir() . 'ua-parser/';
 
         $maintained = $dir . 'regexes.php';
 

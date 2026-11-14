@@ -81,8 +81,8 @@ track.</p>
                 // render in the same process would find both undefined and the
                 // page would come out with an empty picker. Re-assigning two
                 // arrays is cheap; silently losing 285 options is not.
-                require(OWA_DIR.'conf/country2Timezones.php');
-                require(OWA_DIR.'conf/countryCodes2Names.php');
+                require(\OWA\Core\Env::confDir() . 'country2Timezones.php');
+                require(\OWA\Core\Env::confDir() . 'countryCodes2Names.php');
 
                 // Falls back to the CONFIGURED default, not to empty. 'defaults'
                 // is only populated when this form re-renders after a validation

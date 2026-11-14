@@ -209,11 +209,11 @@ final class ProfileSettingsScreenTest extends TestCase
     /** The view hands the refused post to the template, which passes it to each fieldset. */
     public function testTheScreenPassesThePostToItsFields(): void
     {
-        $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/ProfileSettings.php' );
+        $view = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/View/ProfileSettings.php' );
 
         $this->assertMatchesRegularExpression( '#body->set\(\s*\'posted\',\s*\$this->get\(\s*\'posted\'\s*\)\s*\)#', $view );
         $this->assertStringContainsString( '$view->posted',
-            (string) file_get_contents( OWA_DIR . 'modules/Base/templates/profile_settings.php' ) );
+            (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/profile_settings.php' ) );
     }
 
     /**
@@ -412,7 +412,7 @@ final class ProfileSettingsScreenTest extends TestCase
         foreach ( array( 'modules/Base/templates/profile_settings.php',
                          'modules/Base/Controller/SitesEditSettings.php' ) as $file ) {
 
-            $code = (string) file_get_contents( OWA_DIR . $file );
+            $code = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $file );
 
             $this->assertMatchesRegularExpression( "#groupFieldSets\(\s*'profile_observation'\s*\)#", $code, $file );
             $this->assertStringNotContainsString( "registeredFieldSet( 'base.profileObservation' )", $code,

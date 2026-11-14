@@ -155,7 +155,7 @@ final class SiteSearchReportTest extends TestCase
     private function report(): array
     {
         $definition = json_decode( (string) file_get_contents(
-            OWA_DIR . 'modules/Base/reports/site-search.json' ), true );
+            \OWA\Core\Env::root() . '/modules/Base/reports/site-search.json' ), true );
 
         $this->assertIsArray( $definition, 'reports/site-search.json did not parse' );
 

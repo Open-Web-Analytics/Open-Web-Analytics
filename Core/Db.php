@@ -953,7 +953,7 @@ class Db extends \OWA\Core\Base {
      * every browser two identities and roughly quadrupling the cardinality of
      * the user-agent dimension.
      *
-     * A third-party driver at plugins/db/ that reaches this is not escaping its
+     * A third-party driver that reaches this is not escaping its
      * values, which is a defect worth hearing about immediately rather than
      * discovering later.
      *

@@ -183,7 +183,7 @@ final class EventPropertyRegistryTest extends TestCase
              * entry's position; every entry declares `set_by` now.
              */
             $declared = json_decode(
-                (string) file_get_contents(OWA_DIR . 'modules/Base/config/tracking_properties.json'), true);
+                (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json'), true);
 
             $all = array_keys((array) $declared);
         }
@@ -269,7 +269,7 @@ final class EventPropertyRegistryTest extends TestCase
             'every other first-class event is still a trigger');
 
         foreach (['GoalEventDefinitionEdit', 'GoalEventDefinitionSave'] as $controller) {
-            $source = (string) file_get_contents(OWA_DIR . "modules/Base/Controller/$controller.php");
+            $source = (string) file_get_contents(\OWA\Core\Env::root() . "/modules/Base/Controller/$controller.php");
 
             $this->assertStringNotContainsString('TrackingEventHelpers::eventNames()', $source,
                 "$controller offers or accepts a trigger from the full event list");

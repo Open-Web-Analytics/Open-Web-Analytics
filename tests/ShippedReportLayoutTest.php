@@ -18,7 +18,7 @@ final class ShippedReportLayoutTest extends TestCase
     {
         $out = array();
 
-        foreach ( (array) glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $out[ basename( $file, '.json' ) ] = json_decode( (string) file_get_contents( $file ), true );
         }

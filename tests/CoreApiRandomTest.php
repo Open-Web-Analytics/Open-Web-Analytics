@@ -16,7 +16,7 @@ final class CoreApiRandomTest extends TestCase
     public function testTheFirstCallRaisesNoDeprecation(): void
     {
         $code = 'error_reporting( E_ALL ); ini_set( "display_errors", "stderr" );'
-              . ' require ' . var_export( OWA_DIR . 'Core/CoreAPI.php', true ) . ';'
+              . ' require ' . var_export( \OWA\Core\Env::root() . '/Core/CoreAPI.php', true ) . ';'
               . ' echo \OWA\Core\CoreAPI::random( 0, 9 );';
 
         $out = shell_exec( escapeshellarg( PHP_BINARY ) . ' -r ' . escapeshellarg( $code ) . ' 2>&1' );

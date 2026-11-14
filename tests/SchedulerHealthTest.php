@@ -197,7 +197,7 @@ final class SchedulerHealthTest extends CliControllerTestCase
 
         $this->assertStringStartsWith('* * * * *', $line, 'every minute: the schedules decide the rest');
         $this->assertStringContainsString('cmd=schedule-run', $line);
-        $this->assertStringContainsString(rtrim(OWA_DIR, '/'), $line, 'a real path, not a placeholder');
+        $this->assertStringContainsString(\OWA\Core\Env::root(), $line, 'a real path, not a placeholder');
         $this->assertStringNotContainsString('/path/to', $line);
     }
 
@@ -232,7 +232,7 @@ final class SchedulerHealthTest extends CliControllerTestCase
             \OWA\Module\Base\Classes\SchedulerHealth::forget();
 
             ob_start();
-            include OWA_BASE_MODULE_DIR . 'templates/scheduler_nag.php';
+            include \OWA\Core\Env::modulesDir() . 'Base/templates/scheduler_nag.php';
             $html = ob_get_clean();
 
             if ($capable) {
@@ -273,7 +273,7 @@ final class SchedulerHealthTest extends CliControllerTestCase
         \OWA\Module\Base\Classes\SchedulerHealth::forget();
 
         ob_start();
-        include OWA_BASE_MODULE_DIR . 'templates/scheduler_nag.php';
+        include \OWA\Core\Env::modulesDir() . 'Base/templates/scheduler_nag.php';
         $html = ob_get_clean();
 
         // The only markup should be ours; nothing interpolated raw.

@@ -336,7 +336,7 @@ final class ParamNamespaceTest extends TestCase
     public function testOwasOwnNamesHaveNoPrefixSetting(): void
     {
         $this->assertFalse(\OWA\Core\CoreAPI::configSingleton()->isRegistered('base', 'app_ns'));
-        $this->assertArrayNotHasKey('app_ns', (array) (include OWA_DIR . 'modules/Base/settings.php')['settings']);
+        $this->assertArrayNotHasKey('app_ns', (array) (include \OWA\Core\Env::root() . '/modules/Base/settings.php')['settings']);
         $this->assertFalse(\OWA\Core\CoreAPI::getSetting('base', 'app_ns'), 'no default either: an unknown setting reads false');
         $this->assertFalse(method_exists(\OWA\Core\CoreAPI::class, 'appNs'));
         $this->assertFalse(method_exists(\OWA\Core\Template::class, 'getNs'));

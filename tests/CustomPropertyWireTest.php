@@ -110,7 +110,7 @@ final class CustomPropertyWireTest extends TestCase
     /** The prefixes agree across the tracker and ingest, or the wire is broken. */
     public function testTheTrackerAndIngestAgreeOnThePrefixes(): void
     {
-        $tracker = file_get_contents(OWA_DIR . 'modules/Base/src/tracker/Tracker.js');
+        $tracker = file_get_contents(\OWA\Core\Env::root() . '/modules/Base/src/tracker/Tracker.js');
 
         foreach ([EventRawHandlers::EVENT_PROPERTY_PREFIX,
                   EventRawHandlers::EVENT_PROPERTY_NUMBER_PREFIX,

@@ -1403,7 +1403,6 @@ class Entity {
      * @return     integer
      */
     function generateId($string) {
-        //require_once(OWA_DIR.'owa_lib.php');
         return \OWA\Core\Lib::setStringGuid($string);
     }
 

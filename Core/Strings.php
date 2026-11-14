@@ -298,13 +298,13 @@ class Strings {
     /** Where a locale's catalogue lives. */
     public static function path( $locale ) {
 
-        return OWA_DIR . 'conf/strings/' . $locale . '.php';
+        return \OWA\Core\Env::confDir() . 'strings/' . $locale . '.php';
     }
 
     /** Where the list of keys the reporting JavaScript uses lives. Not a locale's name. */
     public static function scriptKeysPath() {
 
-        return OWA_DIR . 'conf/strings/script-keys.php';
+        return \OWA\Core\Env::confDir() . 'strings/script-keys.php';
     }
 
     /**
@@ -1059,7 +1059,7 @@ class Strings {
     /** Where the code that calls t() and OWA.l() lives. */
     public static function sourceRoots() {
 
-        return array( OWA_DIR . 'Core', OWA_DIR . 'modules', OWA_DIR . 'conf/messages.php' );
+        return array( \OWA\Core\Env::root() . '/Core', \OWA\Core\Env::root() . '/modules', \OWA\Core\Env::confDir() . 'messages.php' );
     }
 
     /**

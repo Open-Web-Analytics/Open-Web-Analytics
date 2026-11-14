@@ -9,16 +9,16 @@ use PHPUnit\Framework\TestCase;
  * directory it happens to be invoked from.
  *
  * WHY IT MATTERS
- * The entry points open with require_once('owa_env.php'), and PHP resolves a
- * relative include against include_path FIRST -- which begins with '.', the
+ * An entry point that opened with require_once('owa_env.php') would have PHP
+ * resolve that relative include against include_path FIRST -- which begins with '.', the
  * current working directory. On a machine with more than one OWA installation
  * that is a live hazard: running
  *
  *     php /var/www/installA/cli.php cmd=...
  *
- * while sitting in installB's directory loads installB's owa_env.php, so
- * OWA_PATH points at installB and the command silently operates on the WRONG
- * installation -- wrong database, wrong config, no error. The failure is
+ * while sitting in installB's directory loads installB's owa_env.php and its
+ * autoloader, so installB's classes -- and Core\Env::root() -- answer, and the
+ * command silently operates on the WRONG installation -- wrong database, wrong config, no error. The failure is
  * invisible because the command runs perfectly; it just runs somewhere else.
  *
  * Anchoring the include to __DIR__ removes the ambiguity: an entry point always
@@ -26,9 +26,9 @@ use PHPUnit\Framework\TestCase;
  */
 final class EntryPointBootstrapTest extends TestCase
 {
-    /** Every PHP entry point in the OWA root that bootstraps the environment. */
+    /** Every PHP entry point that bootstraps the environment. */
     private const ENTRY_POINTS = [
-        'cli.php', 'index.php', 'install.php', 'log.php', 'owa.php',
+        'cli.php', 'index.php', 'install.php', 'log.php', 'owa.php', 'api/index.php', 'Core/Caller.php',
     ];
 
     private function root(): string
@@ -37,8 +37,9 @@ final class EntryPointBootstrapTest extends TestCase
     }
 
     /**
-     * The static half: no entry point may reach for owa_env.php by a bare
-     * relative name, whether or not a decoy is around to prove it today.
+     * The static half: each entry point reaches owa.php or owa_env.php from its
+     * own __DIR__ and by no other path, whether or not a decoy is around to
+     * prove it today.
      *
      * @dataProvider entryPoints
      */
@@ -51,17 +52,26 @@ final class EntryPointBootstrapTest extends TestCase
         $src = (string) file_get_contents($path);
 
         $this->assertMatchesRegularExpression(
-            '/(require|include)(_once)?\s*\(\s*__DIR__\s*\.\s*[\'"]\/owa_env\.php[\'"]\s*\)/',
+            '/(require|include)(_once)?\s*\(?\s*__DIR__\s*\.\s*[\'"]\/(\.\.\/)?(owa_env|owa)\.php[\'"]\s*\)?/',
             $src,
-            $file . ' must include owa_env.php relative to __DIR__.'
+            $file . ' must include owa.php or owa_env.php relative to __DIR__.'
         );
 
-        $this->assertDoesNotMatchRegularExpression(
-            '/(require|include)(_once)?\s*\(\s*[\'"]owa_env\.php[\'"]\s*\)/',
-            $src,
-            $file . ' includes owa_env.php by a bare relative name, so the current working '
-            . 'directory decides which installation boots.'
-        );
+        // Code only: the licence header says "required by applicable law".
+        $code = '';
+        foreach (token_get_all($src) as $t) {
+            $code .= is_array($t) ? (in_array($t[0], [T_COMMENT, T_DOC_COMMENT], true) ? '' : $t[1]) : $t;
+        }
+
+        preg_match_all('/\b(?:require|include)(?:_once)?\s*\(?\s*([^;]*?(?:owa_env|owa)\.php[\'"])\s*\)?\s*;/', $code, $m);
+
+        $this->assertNotEmpty($m[1]);
+
+        foreach ($m[1] as $target) {
+            $this->assertMatchesRegularExpression('/^__DIR__\s*\./', $target,
+                $file . ' includes ' . $target . ' by something other than __DIR__, so the current '
+                . 'working directory or a constant decides which installation boots.');
+        }
     }
 
     /** @return array<int, array<int, string>> */

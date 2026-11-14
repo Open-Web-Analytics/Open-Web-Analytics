@@ -13,7 +13,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers;
 
 return function () {
 
-    $declared = include OWA_DIR . 'modules/Base/config/tracking_events.php';
+    $declared = include \OWA\Core\Env::root() . '/modules/Base/config/tracking_events.php';
     $names    = TrackingEventHelpers::eventNames();
 
     if ( ! $names ) {

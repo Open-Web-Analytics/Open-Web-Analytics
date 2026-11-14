@@ -22,7 +22,7 @@ final class WikiDocsTrackingTest extends TestCase
     private static function generate( string $section ): string
     {
         $cmd = escapeshellarg( PHP_BINARY ) . ' -d display_startup_errors=0 '
-             . escapeshellarg( OWA_DIR . 'tests/tools/wiki/generate.php' ) . ' '
+             . escapeshellarg( \OWA\Core\Env::root() . '/tests/tools/wiki/generate.php' ) . ' '
              . escapeshellarg( $section ) . ' 2>&1';
 
         exec( $cmd, $lines, $status );
@@ -45,7 +45,7 @@ final class WikiDocsTrackingTest extends TestCase
     {
         $out = array();
 
-        foreach ( glob( OWA_MODULES_DIR . '*/Module.php' ) as $path ) {
+        foreach ( glob( \OWA\Core\Env::modulesDir() . '*/Module.php' ) as $path ) {
 
             $class = 'OWA\\Module\\' . basename( dirname( $path ) ) . '\\Module';
 
@@ -139,7 +139,7 @@ final class WikiDocsTrackingTest extends TestCase
      */
     public function testEveryPluginThatReservesNamesIsALazyManifestEntry(): void
     {
-        foreach ( glob( OWA_MODULES_DIR . '*/src/tracker/*.js' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::modulesDir() . '*/src/tracker/*.js' ) as $file ) {
 
             $module = basename( dirname( $file, 3 ) );
 
@@ -147,7 +147,7 @@ final class WikiDocsTrackingTest extends TestCase
                 continue;
             }
 
-            $manifest = json_decode( (string) @file_get_contents( OWA_MODULES_DIR . $module . '/build.manifest.json' ), true );
+            $manifest = json_decode( (string) @file_get_contents( \OWA\Core\Env::modulesDir() . $module . '/build.manifest.json' ), true );
             $entries  = array();
 
             foreach ( (array) ( $manifest['contributes_lazy'] ?? array() ) as $plugins ) {

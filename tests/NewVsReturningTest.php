@@ -26,7 +26,7 @@ final class NewVsReturningTest extends TestCase
     /** The dimension vocabulary as the FILE declares it. */
     private function declared(): array
     {
-        $declaration = include OWA_DIR . 'modules/Base/config/dimensions.php';
+        $declaration = include \OWA\Core\Env::root() . '/modules/Base/config/dimensions.php';
 
         return (array) $declaration['dimensions'];
     }
@@ -83,7 +83,7 @@ final class NewVsReturningTest extends TestCase
     /** And no shipped report asks for one. */
     public function testNoShippedReportNamesThem(): void
     {
-        $files = glob(OWA_DIR . 'modules/*/reports/*.json');
+        $files = glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json');
 
         $this->assertNotEmpty($files, 'no report configs found; this assertion would be vacuous');
 
@@ -111,7 +111,7 @@ final class NewVsReturningTest extends TestCase
     public function testTheDashboardPieGroupsByTheLabelWithNoFoldingMap(): void
     {
         $dashboard = json_decode(
-            (string) file_get_contents(OWA_DIR . 'modules/Base/reports/dashboard.json'), true);
+            (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/reports/dashboard.json'), true);
 
         $widget = null;
 
@@ -149,7 +149,7 @@ final class NewVsReturningTest extends TestCase
         $this->assertArrayHasKey('exits', $service->metrics,
             'exits must exist for the dimensions to be removable');
 
-        $declaration = include OWA_DIR . 'modules/Base/config/metrics.php';
+        $declaration = include \OWA\Core\Env::root() . '/modules/Base/config/metrics.php';
         $metrics     = (array) $declaration['metrics'];
 
         $this->assertSame(array('column' => 'is_exit', 'value' => 1),
@@ -168,7 +168,7 @@ final class NewVsReturningTest extends TestCase
     /** And no shipped report groups by one. */
     public function testNoShippedReportGroupsByAnExitPage(): void
     {
-        $files = glob(OWA_DIR . 'modules/*/reports/*.json');
+        $files = glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json');
 
         $this->assertNotEmpty($files, 'no report configs found; this assertion would be vacuous');
 

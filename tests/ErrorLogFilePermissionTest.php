@@ -41,7 +41,7 @@ final class ErrorLogFilePermissionTest extends TestCase
 
         // isSafeLogPath() constrains where the logger will write, so stay inside
         // the data directory the real setting uses.
-        $this->path = OWA_DATA_DIR . 'logs/errors_test_' . bin2hex(random_bytes(4)) . '.txt';
+        $this->path = \OWA\Core\Env::dataDir() . 'logs/errors_test_' . bin2hex(random_bytes(4)) . '.txt';
 
         $this->previous = \OWA\Core\CoreAPI::getSetting('base', 'error_log_file');
         \OWA\Core\CoreAPI::setSetting('base', 'error_log_file', $this->path);

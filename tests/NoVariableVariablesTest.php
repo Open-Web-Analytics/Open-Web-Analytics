@@ -37,7 +37,7 @@ final class NoVariableVariablesTest extends TestCase
         $files = [];
 
         foreach ($roots as $root) {
-            $dir = new RecursiveDirectoryIterator(OWA_DIR . $root, FilesystemIterator::SKIP_DOTS);
+            $dir = new RecursiveDirectoryIterator(\OWA\Core\Env::root() . '/' . $root, FilesystemIterator::SKIP_DOTS);
 
             foreach (new RecursiveIteratorIterator($dir) as $file) {
                 $path = $file->getPathname();
@@ -82,7 +82,7 @@ final class NoVariableVariablesTest extends TestCase
                 if (is_array($next) && $next[0] === T_VARIABLE) {
                     $offenders[] = sprintf(
                         '%s:%d  $%s',
-                        str_replace(OWA_DIR, '', $path),
+                        str_replace(\OWA\Core\Env::root() . '/', '', $path),
                         $next[2],
                         $next[1]
                     );

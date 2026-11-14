@@ -56,7 +56,7 @@ final class StringsCatalogueTest extends TestCase
         $scriptKeys = include Strings::scriptKeysPath();
 
         foreach ($where as $table => $file) {
-            $source = (string) file_get_contents(OWA_DIR . $file);
+            $source = (string) file_get_contents(\OWA\Core\Env::root() . '/' . $file);
             $labels = substr($file, -3) === '.js'
                 ? Strings::scriptTableLabelsIn($source, [$table])
                 : Strings::tableLabelsIn($source, [$table]);
@@ -71,7 +71,7 @@ final class StringsCatalogueTest extends TestCase
         // The PHP table's labels are its row actions' labels, every one.
         $this->assertSame(
             array_values(array_column(\OWA\Core\ConfiguredReport::ROW_ACTIONS, 'label')),
-            array_column(Strings::tableLabelsIn((string) file_get_contents(OWA_DIR . 'Core/ConfiguredReport.php')), 'text'));
+            array_column(Strings::tableLabelsIn((string) file_get_contents(\OWA\Core\Env::root() . '/Core/ConfiguredReport.php')), 'text'));
     }
 
     /**
@@ -88,12 +88,12 @@ final class StringsCatalogueTest extends TestCase
     public static function messageSites(): array
     {
         $files = array_merge(
-            glob(OWA_DIR . 'modules/*/Controller/*.php'),
-            glob(OWA_DIR . 'Core/Validation/*.php'),
-            [OWA_DIR . 'conf/messages.php', OWA_DIR . 'modules/Base/settings.php',
-             OWA_DIR . 'modules/Base/Classes/CustomReports.php', OWA_DIR . 'modules/Base/Classes/Cube/Dimensions.php',
-             OWA_DIR . 'modules/Base/Classes/Cube/Status.php', OWA_DIR . 'modules/Base/Classes/SchedulerHealth.php',
-             OWA_DIR . 'modules/Base/Classes/InstallDatabase.php']
+            glob(\OWA\Core\Env::root() . '/modules/*/Controller/*.php'),
+            glob(\OWA\Core\Env::root() . '/Core/Validation/*.php'),
+            [\OWA\Core\Env::root() . '/conf/messages.php', \OWA\Core\Env::root() . '/modules/Base/settings.php',
+             \OWA\Core\Env::root() . '/modules/Base/Classes/CustomReports.php', \OWA\Core\Env::root() . '/modules/Base/Classes/Cube/Dimensions.php',
+             \OWA\Core\Env::root() . '/modules/Base/Classes/Cube/Status.php', \OWA\Core\Env::root() . '/modules/Base/Classes/SchedulerHealth.php',
+             \OWA\Core\Env::root() . '/modules/Base/Classes/InstallDatabase.php']
         );
 
         $out = [];
@@ -101,7 +101,7 @@ final class StringsCatalogueTest extends TestCase
         foreach ($files as $file) {
             // CLI output is for operators and is out of the catalogue's scope.
             if (substr($file, -7) !== 'Cli.php') {
-                $out[str_replace(OWA_DIR, '', $file)] = [$file];
+                $out[str_replace(\OWA\Core\Env::root() . '/', '', $file)] = [$file];
             }
         }
 

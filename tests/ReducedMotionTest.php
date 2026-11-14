@@ -18,7 +18,7 @@ final class ReducedMotionTest extends TestCase
     {
         $out = array();
 
-        foreach ( glob( OWA_DIR . 'modules/Base/css/*.css' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/Base/css/*.css' ) as $file ) {
             $out[ basename( $file ) ] = array( $file );
         }
 

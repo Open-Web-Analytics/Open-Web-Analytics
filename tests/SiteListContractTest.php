@@ -181,14 +181,14 @@ final class SiteListContractTest extends TestCase
          * Pinned by reading the templates, because the coupling is invisible
          * from PHP: nothing references the control's field names.
          */
-        $template = file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
+        $template = file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/site_control.php' );
 
         $this->assertStringContainsString(
             '\'propertyId\' => $owa_p[\'id\']', $template,
             'The site control no longer navigates by Property, so choosing one cannot '
             . 'change what the report is of.' );
 
-        $roster = file_get_contents( OWA_DIR . 'modules/Base/templates/property_profiles.php' );
+        $roster = file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/property_profiles.php' );
 
         $this->assertStringContainsString(
             '$owa_prof[\'site_id\']', $roster,

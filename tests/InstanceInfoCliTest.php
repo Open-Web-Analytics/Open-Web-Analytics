@@ -51,7 +51,7 @@ final class InstanceInfoCliTest extends TestCase
     public function testEnvironmentChecksAnswerWithoutADatabase(): void
     {
         $checks = \OWA\Module\Base\Classes\EnvironmentCheck::all(
-            OWA_DIR . 'owa-config.php');
+            \OWA\Core\Env::root() . '/owa-config.php');
 
         $this->assertNotEmpty($checks);
 
@@ -86,7 +86,7 @@ final class InstanceInfoCliTest extends TestCase
     public function testTheInstallerReadsTheSharedEnvironmentChecks(): void
     {
         $source = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/InstallCheckEnv.php');
+            \OWA\Core\Env::root() . '/modules/Base/Controller/InstallCheckEnv.php');
 
         $this->assertStringContainsString('EnvironmentCheck::all(', $source,
             'the installer must ask EnvironmentCheck rather than rebuild the list');
@@ -94,13 +94,13 @@ final class InstanceInfoCliTest extends TestCase
         $this->assertStringNotContainsString('extension_loaded(', $source,
             'the installer is testing extensions itself again');
 
-        $this->assertStringNotContainsString("is_dir( OWA_VENDOR_DIR )", $source,
+        $this->assertStringNotContainsString("vendorDir()", $source,
             'the installer is testing for vendor/ itself again');
     }
 
     public function testTheCommandIsRegistered(): void
     {
-        $source = (string) file_get_contents(OWA_DIR . 'modules/Base/Module.php');
+        $source = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/Module.php');
 
         $this->assertStringContainsString("registerCliCommand('instance-info'", $source);
     }
@@ -260,7 +260,7 @@ final class InstanceInfoCliTest extends TestCase
     public function testAMissingSchemaVersionIsAWarningForEveryModule(): void
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/InstanceInfoCli.php');
+            \OWA\Core\Env::root() . '/modules/Base/Controller/InstanceInfoCli.php');
 
         $this->assertStringContainsString('active, but never installed', $src);
 
@@ -293,7 +293,7 @@ final class InstanceInfoCliTest extends TestCase
     public function testItOnlyReads(): void
     {
         $source = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/InstanceInfoCli.php');
+            \OWA\Core\Env::root() . '/modules/Base/Controller/InstanceInfoCli.php');
 
         /*
          * Match SQL STATEMENTS, not words. A plain search for "UPDATE " fails

@@ -17,7 +17,7 @@ final class WikiDocsReportingRegistryTest extends TestCase
     private static function generate( string $section ): string
     {
         $cmd = escapeshellarg( PHP_BINARY ) . ' -d display_startup_errors=0 '
-             . escapeshellarg( OWA_DIR . 'tests/tools/wiki/generate.php' ) . ' '
+             . escapeshellarg( \OWA\Core\Env::root() . '/tests/tools/wiki/generate.php' ) . ' '
              . escapeshellarg( $section ) . ' 2>/dev/null';
 
         exec( $cmd, $lines, $status );
@@ -105,7 +105,7 @@ final class WikiDocsReportingRegistryTest extends TestCase
     public function testDescriptionForAnswersEveryTrackingProperty(): void
     {
         $helpers = '\\OWA\\Module\\Base\\Classes\\TrackingEventHelpers';
-        $config  = json_decode( file_get_contents( OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
+        $config  = json_decode( file_get_contents( \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json' ), true );
 
         self::assertNotEmpty( $config );
 

@@ -118,8 +118,8 @@ final class TrackerBundleTest extends TestCase
     /** The Profile's defaults are the tracker's: both read defaults.json. */
     public function testTheProfilesDefaultsAreTheTrackers(): void
     {
-        $settings = (require OWA_DIR . 'modules/Base/settings.php')['settings'];
-        $json     = json_decode(file_get_contents(OWA_DIR . TrackerDefaults::FILE), true);
+        $settings = (require \OWA\Core\Env::root() . '/modules/Base/settings.php')['settings'];
+        $json     = json_decode(file_get_contents(\OWA\Core\Env::root() . '/' . TrackerDefaults::FILE), true);
 
         foreach (TrackerBundle::FEATURE_SETTINGS as $setting => $command) {
             $this->assertSame(in_array($command, $json['features'], true), $settings[$setting]['default'], $setting);

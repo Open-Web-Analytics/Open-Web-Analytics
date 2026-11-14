@@ -138,8 +138,8 @@ final class DomstreamModuleTest extends TestCase
      */
     public function testRecordingIsOffByDefault(): void
     {
-        $settings = (require OWA_DIR . 'modules/Domstream/settings.php')['settings'];
-        $defaults = json_decode(file_get_contents(OWA_DIR . 'modules/Base/src/tracker/defaults.json'), true);
+        $settings = (require \OWA\Core\Env::root() . '/modules/Domstream/settings.php')['settings'];
+        $defaults = json_decode(file_get_contents(\OWA\Core\Env::root() . '/modules/Base/src/tracker/defaults.json'), true);
 
         $this->assertFalse($settings['record']['default']);
         $this->assertNotContains('trackDomStream', $defaults['features']);

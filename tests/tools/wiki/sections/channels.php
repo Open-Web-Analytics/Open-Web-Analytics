@@ -53,7 +53,7 @@ return function () {
 
     $out = "| Order | Channel | When |\n|---|---|---|\n";
 
-    foreach ( ChannelStep::definitions( OWA_CONF_DIR ) as $i => $rule ) {
+    foreach ( ChannelStep::definitions( \OWA\Core\Env::confDir() ) as $i => $rule ) {
 
         $out .= sprintf( "| %d | %s | %s |\n", $i + 1, $rule['channel'],
             str_replace( '|', '\\|', $render( $rule ) ) );

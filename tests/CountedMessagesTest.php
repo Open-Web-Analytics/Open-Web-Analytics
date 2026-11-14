@@ -92,16 +92,16 @@ final class CountedMessagesTest extends TestCase
     public static function sourcesWithCounts(): array
     {
         $files = array_merge(
-            glob(OWA_DIR . 'modules/*/Controller/*.php'),
-            glob(OWA_DIR . 'Core/*.php'),
-            glob(OWA_DIR . 'Core/*/*.php'),
-            [OWA_DIR . 'modules/Base/Classes/SystemHealth.php']
+            glob(\OWA\Core\Env::root() . '/modules/*/Controller/*.php'),
+            glob(\OWA\Core\Env::root() . '/Core/*.php'),
+            glob(\OWA\Core\Env::root() . '/Core/*/*.php'),
+            [\OWA\Core\Env::root() . '/modules/Base/Classes/SystemHealth.php']
         );
 
         $out = [];
 
         foreach ($files as $file) {
-            $out[str_replace(OWA_DIR, '', $file)] = [$file];
+            $out[str_replace(\OWA\Core\Env::root() . '/', '', $file)] = [$file];
         }
 
         return $out;

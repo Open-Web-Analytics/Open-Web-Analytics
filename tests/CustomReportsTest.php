@@ -877,7 +877,7 @@ final class CustomReportsTest extends TestCase
         $targets = CustomReports::moreTargetsByDimension();
         $missed  = array();
 
-        foreach (glob(OWA_DIR . 'modules/*/reports/*.json') as $file) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json') as $file) {
 
             $definition = json_decode((string) file_get_contents($file), true);
 
@@ -927,7 +927,7 @@ final class CustomReportsTest extends TestCase
         $dangling = array();
         $checked  = 0;
 
-        foreach (glob(OWA_DIR . 'modules/*/reports/*.json') as $file) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json') as $file) {
 
             $definition = json_decode((string) file_get_contents($file), true);
 
@@ -1380,7 +1380,7 @@ final class CustomReportsTest extends TestCase
     /** The builder is handed the same list, not a copy of it. */
     public function testTheBuilderReadsTheTimeDimensionsFromTheRegistry(): void
     {
-        $template = file_get_contents(OWA_DIR . 'modules/Base/templates/custom_report_edit.php');
+        $template = file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/custom_report_edit.php');
 
         $this->assertStringContainsString(
             'var TIME_DIMENSIONS = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::timeDimensions() ); ?>;',
@@ -1427,9 +1427,9 @@ final class CustomReportsTest extends TestCase
     public function testTheBuilderViewForwardsEverythingItsControllerSets(): void
     {
         $controller = file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/CustomReportEdit.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Controller/CustomReportEdit.php' );
         $view = file_get_contents(
-            OWA_DIR . 'modules/Base/View/CustomReportEdit.php' );
+            \OWA\Core\Env::root() . '/modules/Base/View/CustomReportEdit.php' );
 
         /*
          * SINGLE-quoted, and it matters. In a double-quoted PHP string

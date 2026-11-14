@@ -210,8 +210,8 @@ final class DispatchNameSeparationTest extends TestCase
         $offenders = array();
 
         $files = array_merge(
-            (array) glob( OWA_DIR . 'modules/*/Module.php' ),
-            (array) glob( OWA_DIR . 'modules/*/Classes/*.php' ),
+            (array) glob( \OWA\Core\Env::root() . '/modules/*/Module.php' ),
+            (array) glob( \OWA\Core\Env::root() . '/modules/*/Classes/*.php' ),
             (array) glob( __DIR__ . '/*Test.php' ) );
 
         foreach ( $files as $file ) {

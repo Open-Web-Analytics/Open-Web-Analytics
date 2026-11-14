@@ -317,7 +317,7 @@ final class FreshInstallHierarchyTest extends TestCase
             'The two keys collide, so this test cannot tell them apart.' );
 
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Classes/SiteManager.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Classes/SiteManager.php' );
 
         $this->assertStringNotContainsString(
             'generateId( self::DEFAULT_ORGANIZATION_NAME )', $src,

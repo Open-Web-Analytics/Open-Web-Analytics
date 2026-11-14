@@ -15,7 +15,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class ReportGridTest extends TestCase
 {
-    private const CSS = OWA_DIR . 'modules/Base/css/owa.report.css';
+    private const CSS = __DIR__ . '/../modules/Base/css/owa.report.css';
 
     /**
      * The stylesheet with its comments removed.

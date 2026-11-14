@@ -196,7 +196,7 @@ class SchedulerHealth {
      */
     public static function cronLine() {
 
-        return '* * * * * cd ' . rtrim( OWA_DIR, '/' ) . ' && php cli.php cmd=schedule-run';
+        return '* * * * * cd ' . \OWA\Core\Env::root() . ' && php cli.php cmd=schedule-run';
     }
 
     /**

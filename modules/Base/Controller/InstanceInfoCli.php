@@ -131,8 +131,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         $role = \OWA\Core\ServerRole::current();
 
         $rows = array(
-            $this->fact( 'Version',   OWA_VERSION ),
-            $this->fact( 'Location',  OWA_DIR ),
+            $this->fact( 'Version',   \OWA\Core\Env::version() ),
+            $this->fact( 'Location',  \OWA\Core\Env::root() . '/' ),
             $this->fact( 'Server role', sprintf( '%s (serves %s)', $role->name(), implode( ', ', $role->requestTypes() ) ) ),
             $this->fact( 'Public URL', $url ),
             $this->fact( 'Database',  $role->hasDatabase() ? $this->databaseName() : '(none: this role has no database)' ),
@@ -420,7 +420,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         $rows = array();
 
-        $dir  = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: OWA_DATA_DIR . 'ua-parser/';
+        $dir  = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: \OWA\Core\Env::dataDir() . 'ua-parser/';
         $file = $dir . 'regexes.php';
 
         if ( file_exists( $file ) ) {
@@ -675,7 +675,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             return null;
         }
 
-        $file = OWA_DATA_DIR . 'maxmind/GeoLite2-City.mmdb';
+        $file = \OWA\Module\MaxmindGeoip\Classes\Maxmind::dataDir() . 'GeoLite2-City.mmdb';
 
         if ( ! file_exists( $file ) ) {
 
