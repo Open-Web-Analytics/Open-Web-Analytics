@@ -86,6 +86,17 @@ if ( ! defined( 'OWA_ACTIVE_MODULES' )
 
 require_once __DIR__ . '/../../../owa.php';
 
+/*
+ * The wiki is written in English: labels and descriptions the server
+ * translates (Core\Strings) are read in the source locale, whatever
+ * OWA_LOCALE the install sets. Before boot, which translates them as it
+ * registers them. Only when run as a script, as above.
+ */
+if ( realpath( $_SERVER['SCRIPT_FILENAME'] ?? '' ) === realpath( __FILE__ ) ) {
+
+    \OWA\Core\Strings::useLocale( \OWA\Core\Strings::SOURCE_LOCALE );
+}
+
 function owa_wiki_boot() {
 
     static $owa;

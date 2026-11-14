@@ -54,11 +54,46 @@ class Strings {
      */
     const LABEL_TABLES = array(
         'ConfiguredReport::ROW_ACTIONS',
+        'MetricSets::SETS',
         'OWA.dataGrid.EMPTY_TESTS',
         'OWA.dataGrid.OPERATOR_PHRASES',
         'OWA.dataGrid.CONDITIONS',
         'OWA.filterPills.OPERATORS',
         'OWA.filterPills.EMPTY_TESTS',
+    );
+
+    /**
+     * The keys of a metric or dimension in a module's config/metrics.php and
+     * config/dimensions.php that are shown translated. Core\Module translates
+     * them as it reads the file; the extractor catalogues each string literal
+     * given to one.
+     */
+    const VOCABULARY_KEYS = array( 'label', 'description' );
+
+    /**
+     * The keys of a report definition (a module's reports/*.json) that are
+     * shown translated, and of each of its widgets. ConfiguredReport::
+     * translated() translates them; the extractor catalogues them.
+     */
+    const REPORT_KEYS = array( 'title', 'titleSuffix', 'description' );
+
+    const REPORT_WIDGET_KEYS = array( 'title' );
+
+    /**
+     * Constants whose string values are labels the server translates
+     * (Strings::translate()) where it shows them, but which stay plain
+     * literals because other code reads them as data -- the wiki generator,
+     * tests. The extractor catalogues each value: the constant itself when it
+     * is a string, else every value of the array (not its keys).
+     */
+    const VALUE_TABLES = array(
+        'CustomReports::WIDGET_TYPES',
+        'CustomReports::WIDGET_TYPE_HINTS',
+        'CustomReports::WIDTHS',
+        'CustomReports::HEIGHTS',
+        'CustomReports::MORE_LABEL',
+        'CustomReports::VISUALIZATION_TYPES',
+        'CustomReports::VISUALIZATION_TYPE_HINTS',
     );
 
     /** gettext's context separator. */
@@ -90,6 +125,9 @@ class Strings {
 
     /** @var string|null the plural rule set by useTranslations() (tests) */
     private static $plural_rule = null;
+
+    /** @var string|null the locale set by useLocale() (tests) */
+    private static $locale = null;
 
     /**
      * The text in the locale in use; the English when there is no translation.
@@ -266,6 +304,11 @@ class Strings {
      */
     public static function locale() {
 
+        if ( self::$locale !== null ) {
+
+            return self::$locale;
+        }
+
         return defined( 'OWA_LOCALE' ) && is_string( OWA_LOCALE ) && OWA_LOCALE !== ''
             ? OWA_LOCALE : self::SOURCE_LOCALE;
     }
@@ -293,6 +336,118 @@ class Strings {
 
         self::$translations = $translations === null ? null : (array) $translations;
         self::$plural_rule  = $translations === null ? null : $plural_rule;
+    }
+
+    /**
+     * Use this locale instead of OWA_LOCALE (tests). Null goes back to it.
+     * Translations are not reloaded: see useTranslations().
+     */
+    public static function useLocale( $locale ) {
+
+        self::$locale = $locale === null ? null : (string) $locale;
+    }
+
+    /**
+     * A moment as a reader of the locale in use writes it.
+     *
+     * English is what $english, a date() format, gives -- the same in every
+     * build. Any other locale, where the intl extension is loaded, is the
+     * locale's own pattern for $skeleton, an ICU skeleton (the fields wanted,
+     * in no order: 'dMMMy' is a day, an abbreviated month and a year); without
+     * intl it is the English.
+     *
+     * @param  int    $timestamp
+     * @param  string $skeleton  ICU fields, e.g. 'dMMMy', 'EEEdMMMHHmm'
+     * @param  string $english   the date() format for English, e.g. 'j M Y'
+     * @param  string|null $timezone  date_default_timezone_get() when null
+     * @return string
+     */
+    public static function formatDate( $timestamp, $skeleton, $english, $timezone = null ) {
+
+        $timestamp = (int) $timestamp;
+        $timezone  = $timezone ?? date_default_timezone_get();
+        $locale    = self::locale();
+
+        if ( self::isSourceLocale( $locale ) || ! class_exists( '\IntlDateFormatter' ) ) {
+
+            return ( new \DateTimeImmutable( '@' . $timestamp ) )->setTimezone( new \DateTimeZone( $timezone ) )->format( $english );
+        }
+
+        $pattern = $skeleton;
+
+        if ( class_exists( '\IntlDatePatternGenerator' ) ) {
+
+            $best    = ( new \IntlDatePatternGenerator( $locale ) )->getBestPattern( $skeleton );
+            $pattern = is_string( $best ) && $best !== '' ? $best : $skeleton;
+        }
+
+        $formatter = new \IntlDateFormatter( $locale, \IntlDateFormatter::NONE, \IntlDateFormatter::NONE,
+            $timezone, \IntlDateFormatter::GREGORIAN, $pattern );
+        $out       = $formatter->format( $timestamp );
+
+        return is_string( $out ) ? $out : date( $english, $timestamp );
+    }
+
+    /**
+     * A number as a reader of the locale in use writes it: English groups
+     * thousands with "," and marks decimals with "."; another locale, where
+     * the intl extension is loaded, uses its own separators. For display
+     * only -- an API answers the number itself.
+     *
+     * @param  int|float $number
+     * @param  int       $decimals  digits after the decimal mark
+     * @return string
+     */
+    public static function formatNumber( $number, $decimals = 0 ) {
+
+        $locale = self::locale();
+
+        if ( self::isSourceLocale( $locale ) || ! class_exists( '\NumberFormatter' ) ) {
+
+            return number_format( (float) $number, (int) $decimals );
+        }
+
+        $formatter = new \NumberFormatter( $locale, \NumberFormatter::DECIMAL );
+        $formatter->setAttribute( \NumberFormatter::MIN_FRACTION_DIGITS, (int) $decimals );
+        $formatter->setAttribute( \NumberFormatter::MAX_FRACTION_DIGITS, (int) $decimals );
+        // Halves round up, as number_format() rounds the English.
+        $formatter->setAttribute( \NumberFormatter::ROUNDING_MODE, \NumberFormatter::ROUND_HALFUP );
+        $out = $formatter->format( $decimals > 0 ? (float) $number : round( (float) $number ) );
+
+        return is_string( $out ) ? $out : number_format( (float) $number, (int) $decimals );
+    }
+
+    /**
+     * A fraction as a percentage, as a reader of the locale in use writes it:
+     * 0.1234 is "12.34%" in English. For display only, as formatNumber().
+     *
+     * @param  int|float $fraction
+     * @param  int       $decimals  digits after the decimal mark
+     * @return string
+     */
+    public static function formatPercent( $fraction, $decimals = 2 ) {
+
+        $locale = self::locale();
+
+        if ( self::isSourceLocale( $locale ) || ! class_exists( '\NumberFormatter' ) ) {
+
+            return number_format( (float) $fraction * 100, (int) $decimals ) . '%';
+        }
+
+        $formatter = new \NumberFormatter( $locale, \NumberFormatter::PERCENT );
+        $formatter->setAttribute( \NumberFormatter::MIN_FRACTION_DIGITS, (int) $decimals );
+        $formatter->setAttribute( \NumberFormatter::MAX_FRACTION_DIGITS, (int) $decimals );
+        // Halves round up, as number_format() rounds the English.
+        $formatter->setAttribute( \NumberFormatter::ROUNDING_MODE, \NumberFormatter::ROUND_HALFUP );
+        $out = $formatter->format( (float) $fraction );
+
+        return is_string( $out ) ? $out : number_format( (float) $fraction * 100, (int) $decimals ) . '%';
+    }
+
+    /** Whether a locale is the source's own: English as the code writes it. */
+    private static function isSourceLocale( $locale ) {
+
+        return $locale === self::SOURCE_LOCALE || ! preg_match( '/^[A-Za-z]{2,3}([_-][A-Za-z0-9]{2,8})*$/', (string) $locale );
     }
 
     /** Where a locale's catalogue lives. */
@@ -349,7 +504,9 @@ class Strings {
      * the optional context. A call whose text is not a literal cannot be
      * catalogued, and is reported in $problems; so is a key catalogued once as
      * a single string and once as a counted one, or with two plurals. The
-     * labels of LABEL_TABLES are catalogued too, as keys the JavaScript uses.
+     * labels of LABEL_TABLES are catalogued too, as keys the JavaScript uses;
+     * so are the VOCABULARY_KEYS of the metric and dimension config files and
+     * the REPORT_KEYS of the report definitions, which the server translates.
      *
      * @param  string[] $roots       directories or files
      * @param  array    $problems    file:line => why, filled in
@@ -368,15 +525,32 @@ class Strings {
             $is_js  = substr( $file, -3 ) === '.js';
             $source = (string) file_get_contents( $file );
 
-            $labels = $is_js ? self::scriptTableLabelsIn( $source ) : self::tableLabelsIn( $source );
+            if ( substr( $file, -5 ) === '.json' ) {
 
-            foreach ( array_merge( $is_js ? self::scriptCallsIn( $source ) : self::callsIn( $source ), $labels ) as $call ) {
+                $is_js  = false;
+                $labels = self::reportLabelsIn( $source );
+
+            } elseif ( preg_match( self::VOCABULARY_FILES, $file ) ) {
+
+                $labels = self::vocabularyLabelsIn( $source );
+
+            } else {
+
+                $labels = $is_js ? self::scriptTableLabelsIn( $source )
+                    : array_merge( self::tableLabelsIn( $source ), self::valueTablesIn( $source ) );
+            }
+
+            $calls = substr( $file, -5 ) === '.json' ? array() : ( $is_js ? self::scriptCallsIn( $source ) : self::callsIn( $source ) );
+
+            foreach ( array_merge( $calls, $labels ) as $call ) {
 
                 $where = $file . ':' . $call['line'];
 
                 if ( $call['text'] === null ) {
 
-                    $problems[ $where ] = sprintf( '%s() is given something other than a string literal', $call['function'] );
+                    $problems[ $where ] = strpos( $call['function'], 'vocabulary ' ) === 0
+                        ? sprintf( '%s is given something other than a string literal', substr( $call['function'], 11 ) )
+                        : sprintf( '%s() is given something other than a string literal', $call['function'] );
                     continue;
                 }
 
@@ -545,10 +719,160 @@ class Strings {
         return $out;
     }
 
+    /**
+     * The values of the VALUE_TABLES constants a PHP file's class declares:
+     * a string constant's literal, or each string literal that is an array
+     * element's value.
+     *
+     * @param  string        $source
+     * @param  string[]|null $tables  VALUE_TABLES when null
+     * @return array list of { line, function: 'value table', text, plural: null, context: '' }
+     */
+    public static function valueTablesIn( $source, $tables = null ) {
+
+        $tokens = self::phpTokens( $source );
+        $tables = $tables ?? self::VALUE_TABLES;
+        $n      = count( $tokens );
+        $class  = null;
+        $out    = array();
+
+        for ( $i = 0; $i < $n - 2; $i++ ) {
+
+            $t = $tokens[ $i ];
+
+            if ( $class === null && $t[0] === 'x' && strtolower( $t[1] ) === 'class'
+                && ( $tokens[ $i - 1 ][1] ?? null ) !== '::' && $tokens[ $i + 1 ][0] === 'x' ) {
+
+                $class = $tokens[ $i + 1 ][1];
+                continue;
+            }
+
+            if ( $class === null || $t[0] !== 'x' || strtolower( $t[1] ) !== 'const'
+                || ! in_array( $class . '::' . $tokens[ $i + 1 ][1], $tables, true ) || $tokens[ $i + 2 ][1] !== '=' ) {
+
+                continue;
+            }
+
+            $value = $tokens[ $i + 3 ] ?? null;
+
+            if ( $value && $value[0] === 's' ) {
+
+                $out[] = array( 'line' => $value[2], 'function' => 'value table', 'text' => $value[1], 'plural' => null, 'context' => '' );
+                continue;
+            }
+
+            $open  = $i + 3 + ( ( $value[1] ?? null ) === 'array' ? 1 : 0 );
+            $close = self::closing( $tokens, $open );
+
+            for ( $j = $open + 1; $j < $close; $j++ ) {
+
+                $before = $tokens[ $j - 1 ][1];
+                $after  = $tokens[ $j + 1 ][1] ?? null;
+
+                if ( $tokens[ $j ][0] === 's' && ( $before === '=>' || $before === ',' || $j === $open + 1 )
+                    && $after !== '=>' ) {
+
+                    $out[] = array( 'line' => $tokens[ $j ][2], 'function' => 'value table', 'text' => $tokens[ $j ][1], 'plural' => null, 'context' => '' );
+                }
+            }
+        }
+
+        return $out;
+    }
+
     /** A table's label as a call, for extract(). */
     private static function tableLabel( array $token ) {
 
         return array( 'line' => $token[2], 'function' => 'label table', 'text' => $token[1], 'plural' => null, 'context' => '' );
+    }
+
+    /** The metric and dimension vocabularies Core\Module reads, by path. */
+    const VOCABULARY_FILES = '#/modules/[^/]+/config/(metrics|dimensions)\.php$#';
+
+    /**
+     * The strings of a metric or dimension vocabulary file that are shown
+     * translated: the value of each VOCABULARY_KEYS key that is a string
+     * literal, or literals joined with `.`. A value that is not is reported.
+     *
+     * @return array list of { line, function: 'vocabulary', text|null, plural: null, context: '' }
+     */
+    public static function vocabularyLabelsIn( $source ) {
+
+        $tokens = self::phpTokens( $source );
+        $out    = array();
+
+        foreach ( $tokens as $i => $t ) {
+
+            if ( $t[0] !== 's' || ! in_array( $t[1], self::VOCABULARY_KEYS, true ) || ( $tokens[ $i + 1 ][1] ?? null ) !== '=>' ) {
+
+                continue;
+            }
+
+            list( $text, $j ) = self::literal( $tokens, $i + 2, '.' );
+
+            $out[] = array(
+                'line'     => $t[2],
+                'function' => 'vocabulary ' . $t[1],
+                'text'     => in_array( $tokens[ $j ][1] ?? null, array( ',', ')', ']' ), true ) ? $text : null,
+                'plural'   => null,
+                'context'  => '',
+            );
+        }
+
+        return $out;
+    }
+
+    /**
+     * The strings of a report definition (JSON) that are shown translated:
+     * REPORT_KEYS of the report and REPORT_WIDGET_KEYS of each widget. A
+     * definition that is not JSON gives none.
+     *
+     * @return array list of { line, function: 'report definition', text, plural: null, context: '' }
+     */
+    public static function reportLabelsIn( $source ) {
+
+        $definition = json_decode( (string) $source, true );
+
+        if ( ! is_array( $definition ) ) {
+
+            return array();
+        }
+
+        $texts = array();
+
+        foreach ( self::REPORT_KEYS as $key ) {
+
+            $texts[] = $definition[ $key ] ?? null;
+        }
+
+        foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+
+            foreach ( self::REPORT_WIDGET_KEYS as $key ) {
+
+                $texts[] = is_array( $widget ) ? ( $widget[ $key ] ?? null ) : null;
+            }
+        }
+
+        $out = array();
+
+        foreach ( $texts as $text ) {
+
+            if ( ! is_string( $text ) || trim( $text ) === '' ) {
+
+                continue;
+            }
+
+            $at    = strpos( (string) $source, json_encode( $text, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) );
+            $out[] = array(
+                'line'     => $at === false ? 1 : substr_count( (string) $source, "\n", 0, $at ) + 1,
+                'function' => 'report definition',
+                'text'     => $text,
+                'plural'   => null,
+                'context'  => '',
+            );
+        }
+
+        return $out;
     }
 
     /** The index of the bracket that closes the one at $open; the last token when none does. */
@@ -1015,7 +1339,7 @@ class Strings {
         }, $body );
     }
 
-    /** @return string[] the .php files under $roots, and the .js files under a module's src/ */
+    /** @return string[] the .php files under $roots, the .js files under a module's src/ and its report definitions */
     private static function sourceFiles( array $roots ) {
 
         $files = array();
@@ -1044,7 +1368,8 @@ class Strings {
                     continue;
                 }
 
-                if ( substr( $path, -4 ) === '.php' || ( substr( $path, -3 ) === '.js' && preg_match( '#/modules/[^/]+/src/#', $path ) ) ) {
+                if ( substr( $path, -4 ) === '.php' || ( substr( $path, -3 ) === '.js' && preg_match( '#/modules/[^/]+/src/#', $path ) )
+                     || ( substr( $path, -5 ) === '.json' && preg_match( '#/modules/[^/]+/reports/[^/]+\.json$#', $path ) ) ) {
 
                     $files[] = $path;
                 }
