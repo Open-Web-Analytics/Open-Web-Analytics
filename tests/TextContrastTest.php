@@ -19,6 +19,7 @@ final class TextContrastTest extends TestCase
         '.owa .owa_editor .owa_button:disabled, .owa .owa_widgetPanel .owa_button:disabled' => 'a disabled control',
         '.owa_grid .owa_gridPopOption:disabled'                                       => 'a disabled control',
         '.owa_grid .owa_gridIconButton:disabled'                                      => 'a disabled control',
+        '.owa_grid .owa_gridShowMore[aria-busy="true"]'                               => 'a disabled control (aria-disabled while its rows load)',
         '.owa_visitInfobox'                                                           => 'on a dark ground (#505050), not white; unused',
         '.owa_visitInfoboxTitle'                                                      => 'on a dark ground (#505050), not white; unused',
         '.inline_h2_grey'                                                             => 'unused',
