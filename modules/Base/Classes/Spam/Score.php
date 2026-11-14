@@ -75,7 +75,20 @@ class Score {
 
         foreach ( RuleSets::rules( $level ) as $rule ) {
 
-            if ( $rule->test( $event, $headers ) ) {
+            // A rule that fails is a rule not met: one module's bug does not
+            // lose the beacon.
+            try {
+
+                $met = $rule->test( $event, $headers );
+
+            } catch ( \Throwable $e ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf( 'Spam rule %s failed: %s', $rule->name(), $e->getMessage() ) );
+
+                continue;
+            }
+
+            if ( $met ) {
 
                 $fired[ $rule->name() ] = $rule->points();
             }
