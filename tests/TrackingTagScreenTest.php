@@ -68,6 +68,7 @@ final class TrackingTagScreenTest extends TestCase
         $this->assertStringContainsString(htmlspecialchars('<script>var owaClassic = 1;</script>', ENT_QUOTES), $html);
         $this->assertStringContainsString('value="Save and republish"', $html);
         $this->assertStringContainsString('name="config[base.tracker_clicks]"', $html, 'the settings form is rendered');
+        $this->assertStringContainsString('name="config[base.tracker_honor_privacy_signals]"', $html);
 
         // The example is a command the tracker cannot do for itself.
         $this->assertStringContainsString('setContentGroup', $html);
@@ -85,7 +86,8 @@ final class TrackingTagScreenTest extends TestCase
 
         preg_match_all('#<details class="owa-settingsGroup" id="([^"]+)"( open)?>#', $html, $m);
         $this->assertContains('base.trackingClicks', $m[1]);
-        $this->assertGreaterThanOrEqual(7, count($m[1]), "Base's seven, and any a module adds");
+        $this->assertContains('base.trackingPrivacy', $m[1]);
+        $this->assertGreaterThanOrEqual(8, count($m[1]), "Base's eight, and any a module adds");
         $this->assertSame([''], array_values(array_unique($m[2])), 'none open');
 
         $this->assertMatchesRegularExpression(

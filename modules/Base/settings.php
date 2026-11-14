@@ -675,6 +675,17 @@ return array(
             'pattern'  => '/^$|^\\.?[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Tracker Cookie Domain is a domain name, such as example.com.' ),
         ),
+        'tracker_honor_privacy_signals' => array(
+            'default'  => true,
+            'storable' => true,
+            'scopes'   => array( 'install', 'property', 'profile' ),
+            'type'     => 'boolean',
+            'label'    => 'Honor Privacy Signals',
+            'description' => 'Leaves a browser that sends Do Not Track or Global Privacy Control untracked, '
+                . 'and erases OWA&rsquo;s cookies in it. Off, those browsers are tracked like any other. '
+                . 'In some jurisdictions honoring Global Privacy Control is a legal requirement, so '
+                . 'turning this off is the site owner&rsquo;s decision.',
+        ),
         'useStaticConfigOnly' => array( 'default' => false, 'description' => 'When true, OWA does not load stored settings from the database at boot and runs on code defaults plus the config file. For a node that only logs beacons.' ),
         'use_32bit_hash' => array( 'default' => false, 'storable' => true, 'internal' => true ),
         // Set by Update034 when it re-keyed an installation that arrived still

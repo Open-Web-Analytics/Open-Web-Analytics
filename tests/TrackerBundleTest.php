@@ -49,7 +49,7 @@ final class TrackerBundleTest extends TestCase
         // The whole tree, dotfiles and subdirectories too, even when clearing a setting throws.
         try {
             if (owa_test_db_available()) {
-                foreach (array('tracker_clicks', 'tracker_session_cookie_days', 'tracker_url_fragments') as $key) {
+                foreach (array('tracker_clicks', 'tracker_session_cookie_days', 'tracker_url_fragments', 'tracker_honor_privacy_signals') as $key) {
                     \OWA\Core\CoreAPI::clearScopedSetting('profile', self::SITE, 'base', $key);
                 }
             }
@@ -401,6 +401,86 @@ final class TrackerBundleTest extends TestCase
         $this->assertSame(
             rtrim((string) \OWA\Core\CoreAPI::getSetting('base', 'public_url'), '/') . '/public/tracker/' . self::SITE . '.js',
             TrackerBundle::url(self::SITE));
+    }
+
+    private const NOT_HONORED = array('setOption', 'honorPrivacySignals', false);
+
+    /**
+     * Honoring privacy signals is the tracker's own default, so the bundle says
+     * nothing about it until a level turns it off; then it is an option, ahead
+     * of the page's commands, and the classic tag carries the same line.
+     */
+    public function testPrivacySignalsAreAnOptionOnlyWhenNotHonored(): void
+    {
+        $this->requireDb();
+
+        $honored = TrackerBundle::config(self::SITE);
+        $this->assertNotContains(self::NOT_HONORED, $honored['options'], 'honored by default: nothing to send');
+        $this->assertNotContains('honorPrivacySignals', array_column($honored['options'], 1));
+
+        $this->assertTrue((bool) \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'base', 'tracker_honor_privacy_signals', false));
+
+        $off = TrackerBundle::config(self::SITE);
+        $this->assertContains(self::NOT_HONORED, $off['options']);
+        $this->assertNotContains(self::NOT_HONORED, $off['features'], 'an option, so it is queued before the page\'s commands');
+        $this->assertContains('owa_cmds.push(["setOption","honorPrivacySignals",false]);', TrackerBundle::commandLines(self::SITE));
+
+        $manifest = TrackerBundle::buildManifest();
+        $this->assertNotSame(TrackerBundle::header($honored, $manifest), TrackerBundle::header($off, $manifest),
+            'a new header, so publish-trackers republishes the bundle');
+
+        $preamble = TrackerBundle::preamble($off);
+        $this->assertStringContainsString('["setOption","honorPrivacySignals",false]', $preamble);
+        $this->assertStringContainsString('w.owa_cmds=o.concat(p,f)', $preamble, 'the options lead the queue');
+    }
+
+    /** The Profile's value wins over its Property's, and a Profile that sets none inherits it. */
+    public function testAProfileOverridesItsPropertyOnPrivacySignals(): void
+    {
+        $this->requireDb();
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom(\OWA\Core\CoreAPI::entityFactory('base.site')->getTableName());
+        $db->selectColumn('site_id, property_id');
+
+        $site_id = $property_id = '';
+        foreach ((array) $db->getAllRows() as $row) {
+            if (!empty($row['property_id'])) {
+                $site_id     = (string) $row['site_id'];
+                $property_id = (string) $row['property_id'];
+                break;
+            }
+        }
+
+        if ($site_id === '') {
+            $this->markTestSkipped('needs a Profile with a Property');
+        }
+
+        $key  = 'tracker_honor_privacy_signals';
+        $held = array(
+            'property' => array($property_id, \OWA\Core\CoreAPI::getScopedSettingRow('property', $property_id, 'base', $key)),
+            'profile'  => array($site_id, \OWA\Core\CoreAPI::getScopedSettingRow('profile', $site_id, 'base', $key)),
+        );
+
+        try {
+            \OWA\Core\CoreAPI::clearScopedSetting('profile', $site_id, 'base', $key);
+            $this->assertTrue((bool) \OWA\Core\CoreAPI::setScopedSetting('property', $property_id, 'base', $key, false));
+
+            $this->assertContains(self::NOT_HONORED, TrackerBundle::config($site_id)['options'], 'inherited from the Property');
+
+            $this->assertTrue((bool) \OWA\Core\CoreAPI::setScopedSetting('profile', $site_id, 'base', $key, true));
+
+            $this->assertNotContains(self::NOT_HONORED, TrackerBundle::config($site_id)['options'], 'the Profile\'s own value wins');
+
+        } finally {
+            foreach ($held as $type => list($id, $row)) {
+                \OWA\Core\CoreAPI::clearScopedSetting($type, $id, 'base', $key);
+
+                if ($row !== null) {
+                    \OWA\Core\CoreAPI::setScopedSetting($type, $id, 'base', $key, $row);
+                }
+            }
+        }
     }
 
     public function testAListSettingIsSplitOnCommas(): void
