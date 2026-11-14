@@ -6,7 +6,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * On a phone or a touch screen, the controls a finger hits are 44px or more,
- * and every field is 16px so iOS does not zoom the page when it takes focus.
+ * and every field is at least 16px so iOS does not zoom the page when it
+ * takes focus.
  *
  * Read from the stylesheets: the rules inside a media block that applies at a
  * phone's width or to a coarse pointer, or where there is no hover.
@@ -39,7 +40,7 @@ final class TouchTargetTest extends TestCase
         '.owa_periodDay'                                            => array( 'height' ),
     );
 
-    /** Selectors whose type must be 16px in a touch block (iOS zooms a field below that). */
+    /** Selectors whose type must be 16px or more in a touch block (iOS zooms a field below that). */
     private const SIXTEEN = array(
         '.owa_grid .owa_gridPageSize',
         '.owa .owa_chartGranularity',
@@ -99,6 +100,12 @@ final class TouchTargetTest extends TestCase
     private static function px( string $body, string $property ): ?float
     {
         return preg_match( '/(?<![-\w])' . preg_quote( $property, '/' ) . '\s*:\s*([\d.]+)px/', $body, $m ) ? (float) $m[1] : null;
+    }
+
+    /** A font size's px floor: `max(16px, 0.8125rem)` is never under 16px. */
+    private static function fontFloor( string $body ): ?float
+    {
+        return preg_match( '/(?<![-\w])font-size\s*:\s*max\(\s*([\d.]+)px\s*,/', $body, $m ) ? (float) $m[1] : null;
     }
 
     /** @return array<string, array{0: string, 1: list<string>}> */
@@ -167,7 +174,7 @@ final class TouchTargetTest extends TestCase
         $this->assertSame( array(), $short );
     }
 
-    public function testFieldsAreSixteenPixelsOnAPhone(): void
+    public function testFieldsAreAtLeastSixteenPixelsOnAPhone(): void
     {
         $sizes = array();
 
@@ -175,7 +182,7 @@ final class TouchTargetTest extends TestCase
 
             foreach ( $rule['selectors'] as $selector ) {
 
-                if ( ( $px = self::px( $rule['body'], 'font-size' ) ) !== null ) {
+                if ( ( $px = self::fontFloor( $rule['body'] ) ) !== null ) {
                     $sizes[ $selector ] = max( $sizes[ $selector ] ?? 0, $px );
                 }
             }

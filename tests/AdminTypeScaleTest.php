@@ -5,8 +5,10 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * The admin screens' type scale: five sizes declared once, on :root in
- * owa.report.css, and referred to by role.
+ * The type scale: one base, the root's font size, a percentage so the
+ * browser's text size setting multiplies it, raised on a phone. Every text
+ * size in OWA's stylesheets is in rem; the admin screens' five are declared
+ * once, on :root in owa.report.css, and referred to by role.
  */
 final class AdminTypeScaleTest extends TestCase
 {
@@ -15,18 +17,59 @@ final class AdminTypeScaleTest extends TestCase
         return (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/css/' . $file);
     }
 
-    /** @return array<string,int> */
+    private const STYLESHEETS = array('owa.css', 'owa.admin.css', 'owa.report.css', 'owa.grid.css', 'owa.shell.css', 'owa.widgets.css');
+
+    /** @return array<string,float> each size in px at a 16px root */
     private function scale(): array
     {
         preg_match('/:root \{([^}]*)\}/', $this->css('owa.report.css'), $root);
-        preg_match_all('/--owa-text-([a-z]+):\s*(\d+)px/', $root[1] ?? '', $m, PREG_SET_ORDER);
+        preg_match_all('/--owa-text-([a-z]+):\s*([\d.]+)rem/', $root[1] ?? '', $m, PREG_SET_ORDER);
 
         $out = array();
         foreach ($m as $token) {
-            $out[$token[1]] = (int) $token[2];
+            $out[$token[1]] = (float) $token[2] * 16;
         }
 
         return $out;
+    }
+
+    /** At the default root a desktop renders as it did in px: 18, 15, 13, 12 and 11. */
+    public function testTheScaleIsTheDesktopPixelsAtTheDefaultRoot(): void
+    {
+        $this->assertSame(array('xl' => 18.0, 'lg' => 15.0, 'md' => 13.0, 'sm' => 12.0, 'xs' => 11.0), $this->scale());
+        $this->assertMatchesRegularExpression('/\bbody \{[^}]*font-size:\s*0\.75rem/', $this->css('owa.css'));
+    }
+
+    public function testTheRootIsAPercentageRaisedOnAPhone(): void
+    {
+        $css = $this->css('owa.css');
+
+        $this->assertMatchesRegularExpression('/^html \{ font-size: 100%; \}/m', $css);
+        $this->assertSame(1, preg_match('/@media \(max-width: 600px\) \{\s*html \{ font-size: ([\d.]+)%; \}/', $css, $m));
+        $this->assertGreaterThan(100, (float) $m[1]);
+    }
+
+    /**
+     * No text size is in px, so none is deaf to the root. A px value inside
+     * max() is a floor, as a phone's 16px fields are.
+     */
+    public function testNoTextSizeIsInPixels(): void
+    {
+        $fixed = array();
+
+        foreach (self::STYLESHEETS as $file) {
+            $css = preg_replace('#/\*.*?\*/#s', '', $this->css($file));
+
+            preg_match_all('/(?<![-\w])font-size:\s*([^;}]+)/', $css, $m);
+
+            foreach ($m[1] as $value) {
+                if (preg_match('/\dpx/', $value) && ! preg_match('/^max\(\s*[\d.]+px\s*,\s*[\d.]+rem\s*\)/', trim($value))) {
+                    $fixed[] = "$file: font-size: " . trim($value);
+                }
+            }
+        }
+
+        $this->assertSame(array(), $fixed);
     }
 
     private function roleOf(string $css, string $selector): ?string

@@ -17,7 +17,7 @@
    half-width widget is narrow on a wide screen. */
 .owa_grid {
     container-type: inline-size;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #1f2937;
 }
 
@@ -48,7 +48,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 20px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #4b5563;
     white-space: nowrap;
 }
@@ -77,7 +77,7 @@
     border-radius: 8px;
     background: #ffffff;
     font: inherit;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #111827;
     cursor: pointer;
     white-space: nowrap;
@@ -130,7 +130,7 @@
     border-radius: 8px;
     background: #ffffff;
     font: inherit;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #111827;
     box-sizing: border-box;
 }
@@ -160,7 +160,7 @@
     border-radius: 16px;
     background: #eef4fb;
     color: #0f4f8f;
-    font-size: 13px;
+    font-size: 0.8125rem;
     box-sizing: border-box;
 }
 
@@ -246,7 +246,7 @@
     padding: 12px;
     border-bottom: 1px solid #e5e7eb;
     vertical-align: top;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
     color: #6b7280;
     text-align: right;
@@ -324,7 +324,7 @@
     border: 0;
     background: transparent;
     font: inherit;
-    line-height: 20px;
+    line-height: 1.25rem;
     color: inherit;
     text-align: inherit;
     white-space: normal;
@@ -336,7 +336,7 @@
 }
 
 .owa_grid .owa_gridSort .fas {
-    line-height: 20px;
+    line-height: 1.25rem;
 }
 
 .owa_grid th.is-sorted .owa_gridSort {
@@ -361,7 +361,7 @@
 }
 
 .owa_grid .owa_gridDimButton .fas {
-    font-size: 11px;
+    font-size: 0.6875rem;
     color: #6b7280;
 }
 
@@ -435,7 +435,7 @@
     background: #ffffff;
     box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
     box-sizing: border-box;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #111827;
     text-align: left;
 }
@@ -447,7 +447,7 @@
     border: 1px solid #d1d5db;
     border-radius: 8px;
     font: inherit;
-    font-size: 14px;
+    font-size: 0.875rem;
     box-sizing: border-box;
 }
 
@@ -469,7 +469,7 @@
 
 .owa_gridPopHeading {
     margin: 12px 10px 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #6b7280;
 }
@@ -484,7 +484,7 @@
     border-radius: 8px;
     background: transparent;
     font: inherit;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #1f2937;
     text-align: left;
     cursor: pointer;
@@ -514,7 +514,7 @@
 
 .owa_gridPopNote {
     margin-left: auto;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: normal;
 }
 
@@ -531,7 +531,7 @@
 
 .owa_gridPopTitle {
     margin-bottom: 16px;
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: 600;
 }
 
@@ -539,7 +539,7 @@
     display: block;
     margin: 16px 0 6px;
     padding: 0;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #4b5563;
 }
@@ -557,7 +557,7 @@
     border-radius: 8px;
     background: #ffffff;
     font: inherit;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #111827;
     box-sizing: border-box;
 }
@@ -583,7 +583,7 @@
     margin: 0;
     padding: 6px 8px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: normal;
     cursor: pointer;
 }
@@ -601,7 +601,7 @@
 
 .owa_gridPopHint {
     margin: 12px 0 0;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.5;
     color: #6b7280;
 }
@@ -716,7 +716,7 @@
     .owa_grid .owa_gridPageSize,
     .owa_grid .owa_gridGoTo {
         height: 44px;
-        font-size: 16px;
+        font-size: max(16px, 0.8125rem);
     }
 
     .owa_grid .owa_gridRowActions {
@@ -796,7 +796,7 @@
     background: transparent;
     color: var(--owa-text-muted, #6b7280);
     font: inherit;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.2;
     vertical-align: middle;
     cursor: pointer;
@@ -804,7 +804,7 @@
 }
 
 .owa_grid .owa_gridRowActions .fas {
-    font-size: 9px;
+    font-size: 0.5625rem;
 }
 
 /* The dotted rule the grid draws under a heading with more to show. */

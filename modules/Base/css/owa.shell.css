@@ -67,15 +67,15 @@
     padding: 10px 0;
     border-radius: 10px;
     color: #4b5563;
-    font-size: 11px;
+    font-size: 0.6875rem;
     line-height: 1.25;
     text-align: center;
     text-decoration: none;
 }
 
 .owa_railIcon {
-    font-size: 18px;
-    line-height: 20px;
+    font-size: 1.125rem;
+    line-height: 1.25rem;
 }
 
 .owa_navShell .owa_railItem:hover,
@@ -123,7 +123,7 @@
 
 .owa_railFlyoutTitle {
     padding: 6px 12px 8px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: #111827;
 }
@@ -146,9 +146,9 @@
 }
 
 .owa_navColumnTitle {
-    font-size: 17px;
+    font-size: 1.0625rem;
     font-weight: 600;
-    line-height: 24px;
+    line-height: 1.5rem;
     color: #111827;
 }
 
@@ -165,7 +165,7 @@
     border-radius: 16px;
     background: transparent;
     color: #4b5563;
-    font-size: 14px;
+    font-size: 0.875rem;
     cursor: pointer;
 }
 
@@ -180,7 +180,7 @@
 
 .owa_navColumnHeading {
     margin: 20px 12px 6px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #6b7280;
 }
@@ -193,7 +193,7 @@
     display: block;
     padding: 8px 12px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 1.3;
     color: #374151;
     text-decoration: none;
@@ -441,11 +441,8 @@
         overflow: visible;
     }
 
-    /* Type a phone can read, and links a thumb can hit. */
-    .owa_navShell .owa_railItem { font-size: 12px; }
-    .owa_navColumnTitle { font-size: 19px; }
-    .owa_navColumnHeading { font-size: 13px; }
-    .owa_navShell .owa_navColumnItem { padding: 12px; min-height: 44px; box-sizing: border-box; font-size: 16px; }
+    /* Links a thumb can hit. */
+    .owa_navShell .owa_navColumnItem { padding: 12px; min-height: 44px; box-sizing: border-box; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -464,7 +461,7 @@
     margin-bottom: -1px;
     padding: 0 0 12px;
     border-bottom: 2px solid transparent;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #4b5563;
     text-decoration: none;
 }
