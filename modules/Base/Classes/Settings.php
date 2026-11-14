@@ -2902,7 +2902,6 @@ namespace OWA\Module\Base\Classes;
                 'public_url'                        => '',
                 'base_url'                            => '',
                 'action_url'                        => '',
-                'images_url'                        => '',
                 'assets_url'                        => '',
                 'tracking_url'                      => '',
                 'link_template'                        => '%s?%s', // main_url?key=value....
@@ -3113,7 +3112,7 @@ namespace OWA\Module\Base\Classes;
         // image emitted via makeImageLink) live in a dedicated public/ tree, physically
         // separated from the source they are built from so the deny-all .htaccess can
         // allow public/** wholesale without exposing PHP source, templates, or config.
-        // setJs()/setCss() (assets_url) and makeImageLink() (images_url) all resolve
+        // setJs()/setCss() and makeImageLink() (assetsUrl()) all resolve
         // here, NOT modules_url -- which no longer serves anything to the browser. The
         // tracker family (owa.tracker/vendors/heatmap/player) now lives here too, under
         // public/base/dist/; old embeds hardcoding modules/base/dist/owa.tracker.js are
@@ -3122,15 +3121,8 @@ namespace OWA\Module\Base\Classes;
         // (see .htaccess and src/tracker/tracker-dom.js).
         //
         // OWA_ASSETS_URL serves the same tree from elsewhere (a CDN), and
-        // OWA_TRACKING_URL is where log.php is reached; each defaults to the
-        // public URL's.
-        $assets_url = self::withSlash( (string) $this->get( 'base', 'assets_url' ) ) ?: $public_url.'public/';
-        $this->set('base','assets_url', $assets_url);
-        $this->set('base','images_url', $assets_url);
-        $this->set('base','images_absolute_url', $assets_url);
-        $tracking_url = self::withSlash( (string) $this->get( 'base', 'tracking_url' ) ) ?: $public_url;
-        $this->set('base','tracking_url', $tracking_url);
-        $this->set('base','log_url',$tracking_url.'log.php');
+        // OWA_TRACKING_URL is where log.php is reached: assetsUrl() and
+        // trackingUrl(), derived from the public URL when they are not set.
         $this->set('base','rest_api_url',$public_url.'api/index.php');
 
         // Fill these only when nothing has already named a path.
@@ -3165,6 +3157,32 @@ namespace OWA\Module\Base\Classes;
 
             $this->setCookieDomain();
         }
+     }
+
+     /**
+      * Where log.php is reached: OWA_TRACKING_URL, else the public URL.
+      *
+      * Derived when read, never stored, so it follows a public_url set after
+      * boot (the installer sets one).
+      *
+      * @return string ending in a slash
+      */
+     public function trackingUrl() {
+
+         return self::withSlash( (string) $this->get( 'base', 'tracking_url' ) )
+             ?: self::withSlash( (string) $this->get( 'base', 'public_url' ) );
+     }
+
+     /**
+      * Where public/ is served from: OWA_ASSETS_URL, else the public URL's
+      * public/. Derived when read, like trackingUrl().
+      *
+      * @return string ending in a slash
+      */
+     public function assetsUrl() {
+
+         return self::withSlash( (string) $this->get( 'base', 'assets_url' ) )
+             ?: self::withSlash( (string) $this->get( 'base', 'public_url' ) ) . 'public/';
      }
 
      /**

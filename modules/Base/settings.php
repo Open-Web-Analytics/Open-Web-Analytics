@@ -280,7 +280,6 @@ return array(
          * SettingsRegistryTest::testNothingStoredAtAScopeBecomesUnwritableThere).
          */
         'goals' => array( 'storable' => true, 'scopes' => array( 'install', 'profile' ), 'internal' => true ),
-        'images_url' => array( 'default' => '', 'internal' => true ),
         'install_complete' => array( 'storable' => true, 'autoload' => true, 'internal' => true ),
         'link_template' => array( 'default' => '%s?%s', 'description' => 'The sprintf format OWA builds its own links with: the URL, then the query string. Default %s?%s.' ),
         'log_named_users' => array(
@@ -421,8 +420,6 @@ return array(
          * says that deliberately rather than by omission, and keeps the
          * catalogue complete enough for the read sweep to need no exceptions.
          */
-        'images_absolute_url' => array( 'internal' => true ),
-        'log_url'             => array( 'internal' => true ),
         'main_url'            => array( 'internal' => true ),
         'modules_url'         => array( 'internal' => true ),
         'rest_api_url'        => array( 'internal' => true ),

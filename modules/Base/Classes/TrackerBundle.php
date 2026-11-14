@@ -105,13 +105,13 @@ class TrackerBundle {
     /** @return string where log.php is reached (OWA_TRACKING_URL), ending in a slash */
     public static function trackingUrl() {
 
-        return rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_url' ), '/' ) . '/';
+        return \OWA\Core\CoreAPI::configSingleton()->trackingUrl();
     }
 
     /** @return string where public/ is served from (OWA_ASSETS_URL), ending in a slash */
     public static function assetsUrl() {
 
-        return rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'assets_url' ), '/' ) . '/';
+        return \OWA\Core\CoreAPI::configSingleton()->assetsUrl();
     }
 
     /**

@@ -31,8 +31,8 @@ final class HomeScreenAppTest extends TestCase
     /** Its start_url and scope resolve against its own URL, so it stays on the public URL when OWA_ASSETS_URL is a CDN. */
     public function testTheManifestIsServedFromThePublicUrlNotTheAssetsUrl(): void
     {
-        $saved = \OWA\Core\CoreAPI::getSetting( 'base', 'images_url' );
-        \OWA\Core\CoreAPI::setSetting( 'base', 'images_url', 'https://cdn.example.test/owa/' );
+        $saved = \OWA\Core\CoreAPI::getSetting( 'base', 'assets_url' );
+        \OWA\Core\CoreAPI::setSetting( 'base', 'assets_url', 'https://cdn.example.test/owa/' );
 
         try {
             $head   = $this->head();
@@ -42,7 +42,7 @@ final class HomeScreenAppTest extends TestCase
             $this->assertStringContainsString( '<link rel="apple-touch-icon" href="https://cdn.example.test/owa/base/i/owa-app-icon-180.png">', $head,
                 'the icon is an image like any other' );
         } finally {
-            \OWA\Core\CoreAPI::setSetting( 'base', 'images_url', $saved );
+            \OWA\Core\CoreAPI::setSetting( 'base', 'assets_url', $saved );
         }
     }
 

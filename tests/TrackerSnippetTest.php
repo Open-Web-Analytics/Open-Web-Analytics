@@ -188,8 +188,9 @@ final class TrackerSnippetTest extends TestCase
     }
 
     /**
-     * Sets tracking_url and assets_url for one test, as setupPaths() would
-     * from OWA_TRACKING_URL and OWA_ASSETS_URL, and puts them back.
+     * Sets tracking_url and assets_url for one test, as OWA_TRACKING_URL and
+     * OWA_ASSETS_URL would (null: not set, so derived from public_url), and
+     * puts them back.
      */
     private function withUrls(?string $tracking, ?string $assets, callable $test): void
     {
@@ -198,10 +199,8 @@ final class TrackerSnippetTest extends TestCase
             'assets_url'   => \OWA\Core\CoreAPI::getSetting( 'base', 'assets_url' ),
         );
 
-        $public = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), '/' ) . '/';
-
-        \OWA\Core\CoreAPI::setSetting( 'base', 'tracking_url', $tracking ?? $public );
-        \OWA\Core\CoreAPI::setSetting( 'base', 'assets_url', $assets ?? $public . 'public/' );
+        \OWA\Core\CoreAPI::setSetting( 'base', 'tracking_url', $tracking ?? '' );
+        \OWA\Core\CoreAPI::setSetting( 'base', 'assets_url', $assets ?? '' );
 
         try {
             $test();

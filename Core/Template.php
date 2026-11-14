@@ -604,15 +604,9 @@ class Template extends TemplateEngine {
 
         // Server-rendered images live in the public/ asset tree (the build copies
         // base/i/ -> public/base/i/), NOT the module source tree -- modules_url is
-        // denied by the deny-all .htaccess. images_url/images_absolute_url both
-        // resolve to public/ (settings.php setupPaths()).
-        if ($absolute === true) {
-            $url = \OWA\Core\CoreAPI::getSetting('base', 'images_absolute_url');
-        } else {
-            $url = \OWA\Core\CoreAPI::getSetting('base', 'images_url');
-        }
-
-        return $url.$path;
+        // denied by the deny-all .htaccess. Absolute or not, it is the assets
+        // URL (Settings::assetsUrl(), OWA_ASSETS_URL), which is absolute.
+        return \OWA\Core\CoreAPI::configSingleton()->assetsUrl().$path;
 
     }
 

@@ -7,15 +7,14 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * The three URLs an install is reached at: OWA_PUBLIC_URL (screens, API,
  * links), OWA_TRACKING_URL (log.php) and OWA_ASSETS_URL (public/, a CDN). The
- * last two default to the first's, and setupPaths() derives log_url and the
- * image URLs from them.
- *
- * setupPaths() is private and runs during construction, so these drive the
- * real method by reflection on a fresh Settings (see ConfigFileLogPathsTest).
+ * last two are Settings::trackingUrl() and assetsUrl(): the constant when it
+ * is set, else derived from public_url when read, so they follow a public_url
+ * set after boot.
  */
 final class UrlSettingsTest extends TestCase
 {
-    private function paths(array $set): \OWA\Module\Base\Classes\Settings
+    /** A fresh Settings, so nothing here disturbs the booted one. */
+    private function settings(array $set): \OWA\Module\Base\Classes\Settings
     {
         $s = new \OWA\Module\Base\Classes\Settings();
 
@@ -23,39 +22,81 @@ final class UrlSettingsTest extends TestCase
             $s->set('base', $key, $value);
         }
 
-        (new \ReflectionMethod($s, 'setupPaths'))->invoke($s);
-
         return $s;
     }
 
-    public function testByDefaultEverythingIsUnderThePublicUrl(): void
+    public function testByDefaultBothAreUnderThePublicUrl(): void
     {
-        $s = $this->paths(array('public_url' => 'https://owa.example.test/'));
+        $s = $this->settings(array('public_url' => 'https://owa.example.test/'));
 
-        $this->assertSame('https://owa.example.test/', $s->get('base', 'tracking_url'));
-        $this->assertSame('https://owa.example.test/log.php', $s->get('base', 'log_url'));
-        $this->assertSame('https://owa.example.test/public/', $s->get('base', 'assets_url'));
-        $this->assertSame('https://owa.example.test/public/', $s->get('base', 'images_url'));
-        $this->assertSame('https://owa.example.test/api/index.php', $s->get('base', 'rest_api_url'), 'the API stays on the public URL');
+        $this->assertSame('https://owa.example.test/', $s->trackingUrl());
+        $this->assertSame('https://owa.example.test/public/', $s->assetsUrl());
+    }
+
+    /** Derived when read: a public_url set later (the installer, a test) is followed by both. */
+    public function testBothFollowAPublicUrlSetAfterBoot(): void
+    {
+        $s = $this->settings(array('public_url' => 'https://owa.example.test/'));
+        $s->trackingUrl();
+        $s->assetsUrl();
+
+        $s->set('base', 'public_url', 'https://elsewhere.example.test/owa');
+
+        $this->assertSame('https://elsewhere.example.test/owa/', $s->trackingUrl());
+        $this->assertSame('https://elsewhere.example.test/owa/public/', $s->assetsUrl());
+    }
+
+    /** And the booted install's, through the singleton every reader uses. */
+    public function testTheBootedInstallFollowsItsPublicUrl(): void
+    {
+        $c     = \OWA\Core\CoreAPI::configSingleton();
+        $saved = array();
+
+        foreach (array('public_url', 'tracking_url', 'assets_url') as $key) {
+            $saved[$key] = $c->get('base', $key);
+        }
+
+        try {
+            $c->set('base', 'tracking_url', '');
+            $c->set('base', 'assets_url', '');
+            $c->set('base', 'public_url', 'https://owa.example.test/owa/');
+
+            $this->assertSame('https://owa.example.test/owa/', $c->trackingUrl());
+            $this->assertSame('https://owa.example.test/owa/public/', $c->assetsUrl());
+            $this->assertSame('https://owa.example.test/owa/public/tracker/zz-url-test.js',
+                \OWA\Module\Base\Classes\TrackerBundle::url('zz-url-test'));
+            $this->assertSame('https://owa.example.test/owa/public/base/i/x.png', (new \OWA\Core\Template())->makeImageLink('base/i/x.png'));
+        } finally {
+            foreach ($saved as $key => $value) {
+                $c->set('base', $key, $value);
+            }
+        }
     }
 
     public function testATrackingUrlIsWhereLogPhpIs(): void
     {
-        $s = $this->paths(array('public_url' => 'https://owa.example.test/', 'tracking_url' => 'https://t.example.test'));
+        $s = $this->settings(array('public_url' => 'https://owa.example.test/', 'tracking_url' => 'https://t.example.test'));
 
-        $this->assertSame('https://t.example.test/', $s->get('base', 'tracking_url'), 'a slash is added');
-        $this->assertSame('https://t.example.test/log.php', $s->get('base', 'log_url'));
-        $this->assertSame('https://owa.example.test/public/', $s->get('base', 'assets_url'));
+        $this->assertSame('https://t.example.test/', $s->trackingUrl(), 'a slash is added');
+        $this->assertSame('https://owa.example.test/public/', $s->assetsUrl());
     }
 
     public function testAnAssetsUrlServesPublic(): void
     {
-        $s = $this->paths(array('public_url' => 'https://owa.example.test/', 'assets_url' => 'https://cdn.example.test/owa//'));
+        $s = $this->settings(array('public_url' => 'https://owa.example.test/', 'assets_url' => 'https://cdn.example.test/owa//'));
 
-        $this->assertSame('https://cdn.example.test/owa/', $s->get('base', 'assets_url'));
-        $this->assertSame('https://cdn.example.test/owa/', $s->get('base', 'images_url'));
-        $this->assertSame('https://cdn.example.test/owa/', $s->get('base', 'images_absolute_url'));
-        $this->assertSame('https://owa.example.test/log.php', $s->get('base', 'log_url'));
+        $this->assertSame('https://cdn.example.test/owa/', $s->assetsUrl());
+        $this->assertSame('https://owa.example.test/', $s->trackingUrl());
+    }
+
+    /** setupPaths() stores no derived value, so nothing can go stale. */
+    public function testBootStoresNoDerivedUrl(): void
+    {
+        $s = $this->settings(array('public_url' => 'https://owa.example.test/'));
+        (new \ReflectionMethod($s, 'setupPaths'))->invoke($s);
+
+        $this->assertSame('', (string) $s->get('base', 'tracking_url'));
+        $this->assertSame('', (string) $s->get('base', 'assets_url'));
     }
 
     /** Both are governed by their constants: applyConfigConstants() names them, so the wiki lists them. */
