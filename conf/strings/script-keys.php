@@ -24,6 +24,7 @@ return array(
     'A filter value cannot contain a comma.',
     'A shorter event-data window deletes older event data at the next maintenance run, and it cannot be recovered.',
     'A value cannot contain a comma.',
+    'About %s',
     'Actions',
     'Actions for %s',
     'Active users by country',

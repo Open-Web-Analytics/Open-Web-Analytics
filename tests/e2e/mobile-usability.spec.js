@@ -5,7 +5,8 @@ const { FIXTURE, adminLogin, login, ui } = require('./fixtures');
  * The admin and reporting screens used with a finger, upright and sideways:
  * nothing wider than the screen, dialogs wholly on it, a roster's actions in
  * reach, fields that do not make iOS zoom, 44px targets, the period sheet in
- * landscape, and a trend whose legend wraps instead of scrolling the widget.
+ * landscape, a trend whose legend wraps instead of scrolling the widget, and
+ * a metric's description opened by a tap.
  *
  * Elements are found by role and label, then by data-ui; never by a styling
  * class (CONTRIBUTING.md).
@@ -161,7 +162,7 @@ for (const [name, device] of [['phone', PHONE], ['phone held sideways', LANDSCAP
 
             const controls = {
                 'row actions': ui(grid, 'grid-row-actions').first(),
-                'sort heading': grid.locator('thead').getByRole('button', { name: /Sessions/ }),
+                'sort heading': grid.locator('thead').getByRole('button', { name: 'Sessions', exact: true }),
                 'rows per page': grid.getByRole('combobox', { name: 'Rows per page' }),
                 'previous page': grid.getByRole('button', { name: 'Previous page' }),
                 'next page': grid.getByRole('button', { name: 'Next page' }),
@@ -279,6 +280,45 @@ test.describe('on a phone', () => {
         const lead = await ui(scroll, 'grid-row').first().getByRole('cell').first().boundingBox();
         expect(lead.x).toBeGreaterThanOrEqual(0);
         expect(lead.x).toBeLessThan(40);
+    });
+
+    /*
+     * A heading's description is behind its own button, opened by a tap: it
+     * shows on the screen and the column's sort stays as it was.
+     */
+    test('a heading\'s (i) shows the description on the screen and does not sort', async ({ page }) => {
+        await adminLogin(page);
+        await page.goto(report('pages'), { waitUntil: 'networkidle' });
+
+        const grid = ui(page, 'grid').last();
+        await expect(ui(grid, 'grid-row').first()).toBeVisible({ timeout: 20_000 });
+
+        const heading = grid.getByRole('columnheader').filter({ has: page.getByRole('button', { name: /^About / }) }).first();
+        const info = heading.getByRole('button', { name: /^About / });
+        const sort = await heading.getAttribute('aria-sort');
+
+        await info.scrollIntoViewIfNeeded();
+        const s = await size(info);
+        expect(s.w).toBeGreaterThanOrEqual(44);
+        expect(s.h).toBeGreaterThanOrEqual(44);
+
+        await info.tap();
+
+        const text = ui(page, 'metric-info-text');
+        await expect(text).toBeVisible();
+        await expect(text).not.toBeEmpty();
+        await expect(info).toHaveAttribute('aria-expanded', 'true');
+
+        const box = await text.boundingBox();
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(PHONE.viewport.width);
+
+        await page.waitForTimeout(500);
+        expect(await heading.getAttribute('aria-sort'), 'the (i) sorted the column').toBe(sort);
+
+        await page.getByRole('heading', { level: 1 }).first().tap();
+        await expect(text).toBeHidden();
+        await expect(info).toHaveAttribute('aria-expanded', 'false');
     });
 
     test('refused a page, a signed-in user still has the menu', async ({ page }) => {

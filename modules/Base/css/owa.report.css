@@ -3343,6 +3343,72 @@ li.constraintRow {
 }
 
 /* ---------------------------------------------------------------------------
+ * A metric's description
+ *
+ * An (i) button after a metric's name, on a grid heading or a metric box,
+ * opens its description in a box under it (owa.metricinfo.js). A press, not a
+ * hover, so a touch screen shows it too.
+ * ------------------------------------------------------------------------- */
+
+.owa_metricInfoToggle {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin: 0 0 0 2px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.owa_metricInfoToggle:hover,
+.owa_metricInfoToggle[aria-expanded="true"] {
+    color: #1874CD;
+}
+
+.owa_metricInfoToggle:focus-visible {
+    outline: 2px solid #1874CD;
+    outline-offset: 1px;
+}
+
+/* Placed against the window by owa.metricinfo.js, so a row or table that
+   scrolls sideways does not cut it off; never wider than the window less
+   8px each side. */
+.owa_metricInfoPop {
+    position: fixed;
+    z-index: 1000;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: min(280px, calc(100vw - 16px));
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(17, 24, 39, 0.14);
+    color: #111827;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: normal;
+    text-align: left;
+    white-space: normal;
+    cursor: auto;
+}
+
+.owa_metricInfoPop:empty {
+    opacity: 0;
+}
+
+/* ---------------------------------------------------------------------------
  * Trend card
  *
  * A trend at half a row, reading top down from the number: the totals first,
@@ -5174,6 +5240,9 @@ li.constraintRow {
 @media (max-width: 600px), (pointer: coarse) {
 
     .owa .owa_metricCarouselArrow { width: 44px; min-height: 44px; }
+
+    /* 44px without making the line it sits on taller. */
+    .owa_metricInfoToggle { width: 44px; height: 44px; margin: -12px -12px -12px -6px; }
 
     .owa .owa_chartGranularity { height: 44px; font-size: 16px; }
 

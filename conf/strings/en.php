@@ -188,6 +188,7 @@ return array(
     'API Key' => 'API Key',
     'AWS Region' => 'AWS Region',
     'AWS SQS' => 'AWS SQS',
+    'About %s' => 'About %s',
     'Access' => 'Access',
     'Account: %s' => 'Account: %s',
     'Action needed' => 'Action needed',

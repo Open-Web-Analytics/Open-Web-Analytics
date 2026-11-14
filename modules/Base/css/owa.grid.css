@@ -344,10 +344,15 @@
     font-weight: 600;
 }
 
-/* A dotted rule under a heading that has a description to show on hover. */
-.owa_gridSortLabel.has-description {
-    padding-bottom: 1px;
-    border-bottom: 1px dotted #9ca3af;
+/* A heading with a description: the sort button, then the (i) that opens
+   the description (owa.metricinfo.js). */
+.owa_grid .owa_gridHeadWithInfo {
+    display: inline-flex;
+    align-items: flex-start;
+}
+
+.owa_grid .owa_gridHeadWithInfo .owa_metricInfoToggle {
+    margin-top: 6px;
 }
 
 .owa_gridDimHead {
@@ -699,6 +704,14 @@
     .owa_grid .owa_gridSort {
         align-items: center;
         padding-top: 0;
+    }
+
+    .owa_grid .owa_gridHeadWithInfo {
+        align-items: center;
+    }
+
+    .owa_grid .owa_gridHeadWithInfo .owa_metricInfoToggle {
+        margin: 0 -12px 0 -6px;
     }
 
     .owa_grid .owa_gridIconButton,

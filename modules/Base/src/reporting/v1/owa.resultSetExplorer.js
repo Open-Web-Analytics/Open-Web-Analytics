@@ -32,6 +32,7 @@
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
 import { dialogFit } from './owa.dialog.js';
+import { metricInfoButton } from './owa.metricinfo.js';
 import { describeChange } from './owa.periodpicker.js';
 
 OWA.resultSet = function( attributes ) {
@@ -956,9 +957,10 @@ OWA.resultSetExplorer.prototype = {
 
         jQuery( '#' + dom_id )
             .off( 'click.owaChartMetric' )
-            .on( 'click.owaChartMetric', '.owa_metricInfobox', function () {
+            .on( 'click.owaChartMetric', '.owa_metricInfobox', function ( e ) {
 
-                if ( ! that.areaChart ) {
+                // A box's description button opens its description, nothing more.
+                if ( ! that.areaChart || jQuery( e.target ).closest( '.owa_metricInfoToggle, .owa_metricInfoPop' ).length ) {
 
                     return;
                 }
@@ -2317,11 +2319,6 @@ OWA.dataGrid.prototype = {
 
         $button.append( $label );
 
-        if ( meta && meta.description ) {
-            $label.addClass( 'has-description' );
-            $button.attr( 'title', meta.description );
-        }
-
         /*
          * A metric sorts largest first, a dimension A to Z; a second click on
          * the sorted column turns it round.
@@ -2335,7 +2332,15 @@ OWA.dataGrid.prototype = {
             that.emit( 'sort_column_change', [ col.name, order ] );
         } );
 
-        return $button;
+        if ( ! meta || ! meta.description ) {
+            return $button;
+        }
+
+        // The description has its own control beside the sort button
+        // (owa.metricinfo.js), so a tap on the name still sorts.
+        return jQuery( '<span class="owa_gridHeadWithInfo"></span>' )
+            .append( $button )
+            .append( metricInfoButton( col.label, meta.description ) );
     },
 
     dimensionHeading : function ( rs, col, slot, lists, last ) {
