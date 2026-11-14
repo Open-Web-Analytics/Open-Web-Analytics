@@ -21,7 +21,9 @@ Every change comes with tests, and updates the existing tests it affects.
 - PHP: `vendor/bin/phpunit`. Tests that need a database skip without one.
 - Tracker and reporting JavaScript: `npx jest`.
 - End to end: `npm run test:e2e:selfhost`, which installs into a scratch database
-  and serves it with PHP's built-in server.
+  and serves it with PHP's built-in server. Find elements by role or label
+  first (`getByRole`, `getByLabel`), then by `data-ui="part:name"`
+  (`ui(page, 'kpi:visits')` in `tests/e2e/fixtures.js`); never by a styling class.
 
 The wiki's [Testing](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/Testing)
 page has the details.
