@@ -369,7 +369,7 @@ test.describe('every configured report renders in a browser', () => {
              */
             const more = page.locator('#referring-sites')
                 .locator('xpath=ancestor::*[contains(@class,"owa_widget-grid-card")][1]')
-                .locator('.owa_moreLinks a');
+                .locator('[data-ui="card-full-report"]');
 
             await expect(more).toHaveAttribute( 'href', /reportId=referring-sites/ );
         });
@@ -795,7 +795,8 @@ test.describe('the report grid gives every widget a usable width', () => {
 
     /**
      * A widget is a section of the page, not a panel: no border, no background
-     * of its own, and its full-report link on its heading's line.
+     * of its own, and its full-report link on its heading's line -- a card's
+     * at its foot, under its rows.
      */
     test('widgets are sections, with no panel round them', async ({ page }) => {
         await login(page);
@@ -815,6 +816,7 @@ test.describe('the report grid gives every widget a usable width', () => {
                 const cs = getComputedStyle(el);
                 const head = el.querySelector('.owa_reportSectionHeader');
                 const more = el.querySelector('.owa_moreLinks');
+                const body = el.querySelector('.owa_widgetBody');
 
                 return {
                     type: (el.className.match(/owa_widget-([a-z-]+)/) || [])[1] || '',
@@ -826,6 +828,8 @@ test.describe('the report grid gives every widget a usable width', () => {
                             - (more.getBoundingClientRect().top + more.getBoundingClientRect().bottom)) / 2
                         : null,
                     linkInHead: !! (head && more && head.contains(more)),
+                    linkUnderBody: !! (body && more
+                        && more.getBoundingClientRect().top >= body.getBoundingClientRect().bottom - 1),
                 };
             }));
 
@@ -839,13 +843,20 @@ test.describe('the report grid gives every widget a usable width', () => {
             expect(w.background, `${w.type} has a background`).toBe('rgba(0, 0, 0, 0)');
         }
 
-        const linked = widgets.filter((w) => w.linkOffset !== null);
+        const linked = widgets.filter((w) => w.linkOffset !== null && w.type !== 'grid-card');
+        const cards = widgets.filter((w) => w.linkOffset !== null && w.type === 'grid-card');
 
-        expect(linked.length).toBeGreaterThanOrEqual(2);
+        expect(linked.length).toBeGreaterThanOrEqual(1);
+        expect(cards.length).toBeGreaterThanOrEqual(1);
 
         for (const w of linked) {
             expect(w.linkInHead, `${w.type}'s full-report link is not in its heading`).toBe(true);
             expect(w.linkOffset, `${w.type}'s full-report link is off the heading's line`).toBeLessThan(6);
+        }
+
+        for (const w of cards) {
+            expect(w.linkInHead, 'a card\'s full-report link is in its heading').toBe(false);
+            expect(w.linkUnderBody, 'a card\'s full-report link is not under its rows').toBe(true);
         }
     });
 
@@ -1127,7 +1138,7 @@ test.describe('the visitors overview', () => {
         for (const [id, reportId] of cards) {
             await expect(page.locator(`#${id} tr.owa_gridRow`).first(), `${id} drew no rows`)
                 .toBeVisible({ timeout: 20_000 });
-            await expect(item(id).locator('.owa_moreLinks a')).toHaveAttribute('href', new RegExp(`reportId=${reportId}(&|$)`));
+            await expect(item(id).locator('[data-ui="card-full-report"]')).toHaveAttribute('href', new RegExp(`reportId=${reportId}(&|$)`));
         }
 
         // 1440 leaves the grid over 940px, so a third is still a third.

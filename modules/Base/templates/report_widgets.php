@@ -381,12 +381,17 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * A property of the widget rather than a sibling report-links widget,
      * because it describes THIS widget. As a sibling it could be reordered
      * away from the grid it refers to and mean nothing.
+     *
+     * A card's is always at its foot, under the Show more bar: the rows grow
+     * down to it (OWA.dataGrid showMore()).
      */
     $owa_more = ! empty( $owa_w['more'] );
+    $owa_moreAtFoot = $owa_more
+        && ( ( $owa_w['type'] ?? '' ) === 'grid-card' || ! $owa_showTitle );
 ?>
 <?php if ( $owa_showTitle ): ?>
         <div class="owa_reportSectionHeader"><h2 class="owa_reportSectionTitle"><?php $view->out( $owa_w['title'] ); ?></h2><?php
-            if ( $owa_more ): ?><span class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
+            if ( $owa_more && ! $owa_moreAtFoot ): ?><span class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
                 'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
                 $view->out( $owa_w['more']['label'] ?? 'View Full Report' ); ?></a></span><?php endif; ?></div>
 <?php endif; ?>
@@ -734,10 +739,10 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
             /*
              * The BODY of the widget, named so the panel can push its footer
              * down. The explorer renders its control bar, its table and its
-             * pager into this element, so it is the part that should take up
-             * the slack when the panel is taller than the rows in it -- which
-             * is what puts the pager on the panel's floor instead of floating
-             * under the last row.
+             * pager (a card's Show more bar) into this element, so it is the
+             * part that should take up the slack when the panel is taller than
+             * the rows in it. That puts a card's bar on the panel's floor
+             * instead of under its last row.
              */
         ?>
         <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody"></div>
@@ -851,7 +856,11 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
 <?php endif; ?>
 
-<?php if ( $owa_more && ! $owa_showTitle ): ?>
+<?php if ( $owa_moreAtFoot && ( $owa_w['type'] ?? '' ) === 'grid-card' ): ?>
+        <div class="owa_moreLinks owa_cardFoot"><a data-ui="card-full-report" href="<?php echo $view->makeLink( array(
+            'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
+            $view->out( $owa_w['more']['label'] ?? \OWA\Core\CoreAPI::t( 'Full report' ) ); ?></a></div>
+<?php elseif ( $owa_moreAtFoot ): ?>
         <div class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
             'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
             $view->out( $owa_w['more']['label'] ?? 'View Full Report' ); ?></a></div>
