@@ -778,18 +778,31 @@ class Controller extends \OWA\Core\Base {
         $this->set( 'error_msg', $msg );
     }
 
+    /**
+     * The page for a signed-in user without the capability this one needs.
+     *
+     * What was refused goes in the banner's detail line, under the message.
+     * In the web UI the page keeps the menu, its report links of the first
+     * Profile the user may see, so there is a way on from it.
+     */
     function authenticatedButNotCapableAction($additionalMessage = '') {
         if ( empty($additionalMessage) ) {
-            $siteIdMsg = $this->getCurrentSiteId();
-            if ( empty ($siteIdMsg) ) {
-                $siteIdMsg = 'No access to any site for the permission "'.$this->getRequiredCapability().'"';
-            }
-            $additionalMessage = $siteIdMsg;
+            $siteId = $this->getCurrentSiteId();
+            $additionalMessage = $siteId
+                ? sprintf( \OWA\Core\CoreAPI::t( 'Profile: %s' ), $siteId )
+                : sprintf( \OWA\Core\CoreAPI::t( 'No access to any Profile for the permission “%s”.' ), $this->getRequiredCapability() );
         }
         $msg = $this->getMsg(2003);
-        $msg['message'] .= $additionalMessage;
+        $msg['detail'] = $additionalMessage;
         $this->setView('base.error');
         $this->set('error_msg', $msg);
+
+        if ( \OWA\Core\RequestType::isWebApp() ) {
+            $navSite = (string) $this->resolveCurrentSiteId();
+            $this->set( 'nav_access_site', $navSite );
+            $this->set( 'nav_property_id', $navSite !== ''
+                ? (string) \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $navSite ) : '' );
+        }
     }
 
     /**

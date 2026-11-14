@@ -29,6 +29,7 @@ jQuery( function () {
 <div class="error">
     <?php if (isset($view->error_msg['headline'])) : ?><b><?php $view->out( $view->error_msg['headline'] ); ?>!</b><?php endif; ?>
     <?php if (isset($view->error_msg['message'])) : $view->out( $view->error_msg['message'] ); endif; ?>
+    <?php if ( ! empty( $view->error_msg['detail'] ) ) : ?><span class="owa_errorDetail"><?php $view->out( $view->error_msg['detail'] ); ?></span><?php endif; ?>
 </div>
 <?php endif;?>
 

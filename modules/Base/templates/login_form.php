@@ -7,7 +7,7 @@
 
         <div class="owa_publicField">
             <label for="owa_loginUserId"><?php $view->out( \OWA\Core\CoreAPI::t( 'User name' ) ); ?></label>
-            <input id="owa_loginUserId" type="text" autocomplete="username" autofocus
+            <input id="owa_loginUserId" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" autofocus
                    name="user_id"
                    value="<?php $view->out( $view->user_id ); ?>">
         </div>

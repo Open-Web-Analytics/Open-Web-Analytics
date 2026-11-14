@@ -15,7 +15,7 @@
             <?php if ( $view->edit === true ):?>
             <input type="hidden" size="30" name="user_id" value="<?php $view->out( $view->user['user_id'] );?>"><span class="noedit"><?php $view->out( $view->user['user_id'] )?></span>
             <?php else:?>
-            <input type="text" size="30" id="owa_userId" name="user_id" value="<?php $view->out( $view->user['user_id'] ?? '' );?>">
+            <input type="text" size="30" id="owa_userId" name="user_id" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" value="<?php $view->out( $view->user['user_id'] ?? '' );?>">
             <?php endif;?>
             </TD>
         </TR>
@@ -30,7 +30,7 @@
         <?php if ( ! $view->isAdmin ):?>
         <TR>
             <TH><label for="owa_userRealName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Real Name' ) );?></label></TH>
-            <TD><input type="text" size="30" id="owa_userRealName" name="real_name" value="<?php $view->out( $view->getValue( 'real_name', $view->user ) );?>"></TD>
+            <TD><input type="text" size="30" id="owa_userRealName" name="real_name" autocomplete="off" value="<?php $view->out( $view->getValue( 'real_name', $view->user ) );?>"></TD>
         </TR>
         <TR>
             <TH><label for="owa_userRole"><?php $view->out( \OWA\Core\CoreAPI::t( 'Role' ) );?></label></TH>
@@ -47,7 +47,7 @@
         <?php endif;?>
         <TR>
             <TH><label for="owa_userEmail"><?php $view->out( \OWA\Core\CoreAPI::t( 'E-mail Address' ) );?></label></TH>
-            <TD><input type="text" size="30" id="owa_userEmail" name="email_address" value="<?php $view->out( $view->user['email_address'] ?? '' );?>"></TD>
+            <TD><input type="email" size="30" id="owa_userEmail" name="email_address" autocomplete="email" autocapitalize="none" spellcheck="false" value="<?php $view->out( $view->user['email_address'] ?? '' );?>"></TD>
         </TR>
 
         <TR>

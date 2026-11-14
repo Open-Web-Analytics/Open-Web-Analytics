@@ -87,7 +87,7 @@
 .owa_navShell .owa_railItem.is-current,
 .owa_navShell .owa_railItem.is-current:hover {
     background: #eef4fb;
-    color: #1874CD;
+    color: #0f5596;
     font-weight: 600;
 }
 
@@ -207,7 +207,7 @@
 .owa_navShell .owa_navColumnItem.is-current,
 .owa_navShell .owa_navColumnItem.is-current:hover {
     background: #eef4fb;
-    color: #1874CD;
+    color: #0f5596;
     font-weight: 600;
 }
 
@@ -365,6 +365,29 @@
     .owa_navShell.is-collapsed .owa_navColumnBody {
         display: block;
     }
+}
+
+/* A phone held sideways: a shorter head, site control and rail items, so
+   more of the menu shows above the fold. */
+@media (max-width: 900px) and (max-height: 500px) {
+
+    .owa_reportNavRailHead { padding: 0 8px; }
+
+    .owa_railLogo img { height: 28px; }
+
+    .owa_siteControlSummary { padding-top: 4px; padding-bottom: 4px; }
+
+    .owa_rail { padding: 4px 0; }
+
+    .owa_railList { gap: 0; }
+
+    .owa_navShell .owa_railItem { gap: 2px; padding: 5px 0; }
+
+    .owa_navColumn,
+    .owa_navShell.is-collapsed .owa_navColumn { padding-top: 8px; }
+
+    .owa_navColumnHead,
+    .owa_navShell.is-collapsed .owa_navColumnHead { padding-bottom: 4px; }
 }
 
 @media (max-width: 600px) {

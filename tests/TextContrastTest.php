@@ -40,6 +40,18 @@ final class TextContrastTest extends TestCase
         '.owa_navShell .owa_navColumnIcon.fa-star'                                    => array( '#ffffff', '#f3f5f8', '#eef4fb' ),
     );
 
+    /**
+     * Text drawn on a tinted ground, and the grounds: 4.5:1 against each. The
+     * check on white above does not see these.
+     */
+    private const ON_GROUND = array(
+        // A date field's label, on the field and on a read-only field's grey.
+        '.owa_periodField span'                                                       => array( '#ffffff', '#f3f4f6' ),
+        // The current section and page in the menu, on their light blue.
+        '.owa_navShell .owa_railItem.is-current, .owa_navShell .owa_railItem.is-current:hover' => array( '#eef4fb' ),
+        '.owa_navShell .owa_navColumnItem.is-current, .owa_navShell .owa_navColumnItem.is-current:hover' => array( '#eef4fb' ),
+    );
+
     private static function luminance( string $hex ): float
     {
         $hex = ltrim( $hex, '#' );
@@ -144,6 +156,28 @@ final class TextContrastTest extends TestCase
         }
 
         $this->assertSame( array(), $short );
+    }
+
+    public function testTextOnATintedGroundReadsAtFourAndAHalfToOne(): void
+    {
+        $short = array();
+        $seen  = array();
+
+        foreach ( $this->textColours() as list( $file, $selector, $hex ) ) {
+
+            foreach ( self::ON_GROUND[ $selector ] ?? array() as $ground ) {
+
+                $seen[ $selector ] = true;
+
+                if ( self::ratio( $hex, $ground ) < 4.5 ) {
+                    $short[] = sprintf( '%s: %s { color: %s } is %.2f:1 on %s', $file, $selector, $hex, self::ratio( $hex, $ground ), $ground );
+                }
+            }
+        }
+
+        $this->assertSame( array(), $short );
+        $this->assertSame( array_keys( self::ON_GROUND ), array_keys( array_intersect_key( self::ON_GROUND, $seen ) ),
+            'every selector named here is a rule with a colour' );
     }
 
     /** White on the button reads at 4.5:1 at rest and on hover; the logo keeps its orange. */

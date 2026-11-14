@@ -25,14 +25,14 @@ $owa_s = (array) $view->sections;
     <legend><?php $view->out( $owa_sec['title'] ); ?> <?php echo owa_cube_status_badge( $owa_sec['level'] ); ?></legend>
 
     <?php if ( in_array( $owa_key, array( 'data', 'install' ), true ) && ! empty( $owa_sec['facts'] ) ): ?>
-    <table class="management">
+    <table class="management owa_numericTable">
         <?php foreach ( $owa_sec['facts'] as $owa_label => $owa_value ): ?>
         <tr><td style="width:1%"><b><?php $view->out( $owa_label ); ?></b></td><td><?php if ( $owa_key === 'install' ): ?><code><?php $view->out( $owa_value ); ?></code><?php else: ?><?php $view->out( $owa_value ); ?><?php endif; ?></td></tr>
         <?php endforeach; ?>
     </table>
     <?php endif; ?>
 
-    <table class="management">
+    <table class="management owa_numericTable">
     <?php foreach ( (array) $owa_sec['findings'] as $owa_f ): ?>
         <tr>
             <td style="width:1%"><?php echo owa_cube_status_badge( $owa_f['level'] ); ?></td>
@@ -45,7 +45,7 @@ $owa_s = (array) $view->sections;
     </table>
 
     <?php if ( $owa_key === 'jobs' && ! empty( $owa_sec['rows'] ) ): ?>
-    <table class="management">
+    <table class="management owa_numericTable">
         <tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Job' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Schedule' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Last run' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Outcome' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Next' ) ); ?></th></tr>
         <?php foreach ( $owa_sec['rows'] as $owa_r ): ?>
         <tr>
@@ -71,7 +71,7 @@ $owa_s = (array) $view->sections;
         <?php endif; ?>
     </div>
         <?php if ( ! empty( $owa_sec['failed'] ) ): ?>
-        <table class="management">
+        <table class="management owa_numericTable">
             <tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Failed job' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Command' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Attempts' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Error' ) ); ?></th></tr>
             <?php foreach ( $owa_sec['failed'] as $owa_j ): ?>
             <tr>
@@ -86,7 +86,7 @@ $owa_s = (array) $view->sections;
     <?php endif; ?>
 
     <?php if ( $owa_key === 'bundles' && ! empty( $owa_sec['rows'] ) ): ?>
-    <table class="management">
+    <table class="management owa_numericTable">
         <tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Profile' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Bundle' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Published' ) ); ?></th></tr>
         <?php foreach ( $owa_sec['rows'] as $owa_b ): ?>
         <tr>

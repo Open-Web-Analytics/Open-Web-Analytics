@@ -237,7 +237,8 @@
 .owa_periodKind { margin-left: auto; font-size: 9.5px; font-weight: 400; letter-spacing: .07em; text-transform: uppercase; }
 .owa_periodFieldRow { display: flex; align-items: center; gap: 8px; }
 .owa_periodField { display: grid; gap: 1px; flex: 1 1 0; min-width: 0; padding: 4px 10px 6px; background: #fff; border: 1px solid var(--owa-period-line); border-radius: 6px; }
-.owa_periodField span { font-size: 11px; color: var(--owa-period-muted); }
+/* Darker than the muted grey: it sits on the read-only field's grey too. */
+.owa_periodField span { font-size: 12px; color: #4b5563; }
 .owa_periodField input { width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
 .owa_periodField input:focus { outline: none; }
 /* Focused, or the field the next day clicked sets: the same outline. */
@@ -1425,7 +1426,13 @@ li.constraintRow {
  */
 .owa .owa_chartLegend {
     margin-top: 6px;
-    font-size: 11px;
+    font-size: 12px;
+}
+
+/* The axis labels flot writes as text over the plot (flot measures them, so
+   the plot leaves room for this size). */
+.owa .owa_areaChart .flot-tick-label {
+    font-size: 12px;
 }
 
 /* A compared chart's tooltip: the day against its comparison day, then each line. */
@@ -1462,6 +1469,8 @@ li.constraintRow {
     padding: 2px 10px 2px 3px;
     vertical-align: middle;
     border: 0;
+    /* flot sets font-size:smaller on its table; the entries keep 12px. */
+    font-size: 12px;
 }
 
 .owa .owa_chartLegend .legendColorBox div {
@@ -1488,8 +1497,8 @@ li.constraintRow {
 }
 
 /*
- * Per CELL, not per row: the legend is one column per series so it reads left
- * to right, which puts every entry in the same single <tr>.
+ * Per CELL, not per row: the legend reads left to right, several entries to
+ * a row.
  */
 .owa .owa_chartLegend .legendLabel.owa_seriesSelected {
     font-weight: bold;
@@ -3874,13 +3883,15 @@ li.constraintRow {
 }
 
 /* Edit is a secondary action: quiet until wanted, but always reachable by
-   keyboard -- revealed on focus as well as hover, not hover alone. */
+   keyboard -- revealed on focus as well as hover, not hover alone. Faded out
+   rather than visibility:hidden, which would also take it out of the tab
+   order. */
 .owa_siteControlEdit {
     flex: 0 0 auto;
     color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-xs);
     text-decoration: none;
-    visibility: hidden;
+    opacity: 0;
     /*
      * ABOVE the stretched select, or the row's own link would swallow it --
      * "edit" sits inside the area that picks the Property, and a secondary
@@ -3891,10 +3902,28 @@ li.constraintRow {
 }
 
 .owa_siteControlItem:hover .owa_siteControlEdit,
+.owa_siteControlItem:focus-within .owa_siteControlEdit,
 .owa_siteControlEdit:focus {
-    visibility: visible;
+    opacity: 1;
     color: #666666;
     text-decoration: underline;
+}
+
+/* No hover to reveal it (a touch screen, or a phone's width): always shown,
+   as a 44px target. */
+@media (hover: none), (pointer: coarse), (max-width: 600px) {
+
+    .owa_siteControlEdit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 44px;
+        min-height: 44px;
+        margin: -12px -12px -12px 0;
+        opacity: 1;
+        color: #4b5563;
+        text-decoration: underline;
+    }
 }
 
 /* A Property's Observation Profiles roster: each row's own screens. */
@@ -4013,7 +4042,14 @@ li.constraintRow {
     left: auto;
     color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-sm);
+    line-height: 1.4;
+    max-width: 70ch;
     margin-top: 4px;
+}
+
+/* Counts and sizes line up by digit. */
+.owa table.owa_numericTable td {
+    font-variant-numeric: tabular-nums;
 }
 
 /*
@@ -4054,7 +4090,7 @@ li.constraintRow {
     color: var(--owa-text-muted, #6b7280);
     font-size: var(--owa-text-sm);
     line-height: 1.55;
-    max-width: 620px;
+    max-width: 70ch;
 }
 
 .owa_hierarchyContent #panel .setting .field {
@@ -4726,6 +4762,7 @@ li.constraintRow {
 .owa_realtimeHint {
     color: #666666;
     font-size: 12px;
+    line-height: 1.4;
     margin: 0 0 12px 0;
 }
 
@@ -4767,6 +4804,7 @@ li.constraintRow {
     font-size: 32px;
     font-weight: bold;
     color: #505050;
+    font-variant-numeric: tabular-nums;
 }
 
 .owa_realtimePerMinute {
@@ -4877,6 +4915,7 @@ li.constraintRow {
 .owa_realtimeTable .n {
     text-align: right;
     width: 70px;
+    font-variant-numeric: tabular-nums;
 }
 
 .owa_realtimeEmpty {
@@ -4926,6 +4965,17 @@ li.constraintRow {
 }
 
 @media (max-width: 600px) {
+    /* One column: each box and card the width of the screen. */
+    .owa_realtimeKpi,
+    .owa_realtimePerMinute {
+        flex: 1 1 100%;
+        box-sizing: border-box;
+    }
+
+    .owa_realtimeGrid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .owa_realtimeEvents li {
         grid-template-columns: 70px minmax(0, 1fr);
     }
@@ -5069,24 +5119,15 @@ li.constraintRow {
     .owa_siteControlColumn:last-child { border-bottom: 0; }
 }
 
-@media (max-width: 600px) {
+/*
+ * The period picker as a full-screen sheet with one scroll: the presets as
+ * chips over the date fields, the Compare switch and its chips, the compare
+ * fields, then a calendar that pages a month at a time. Controls are 44px or
+ * taller; inputs are 16px, as iOS zooms below that. A phone held sideways
+ * gets the sheet too: 390px is too short for the desktop panel's two months.
+ */
+@media (max-width: 600px), (max-height: 500px) {
 
-    .owa_reportHead { margin-bottom: 24px; }
-
-    /* The menu takes the whole screen: beside a sliver of page it was 280px of
-       menu next to something too narrow to read. */
-    .owa_reportNavRail { width: 100%; max-width: none; box-shadow: none; }
-
-    /*
-     * The period picker as a full-screen sheet with one scroll: the presets
-     * as chips over the date fields, the Compare switch and its chips, the
-     * compare fields, then a calendar that pages a month at a time. Controls
-     * are 44px or taller; inputs are 16px, as iOS zooms below that.
-     */
-    .owa_reportHeadControls, .owa_reportPeriod { width: 100%; }
-    .owa_periodTrigger { width: 100%; justify-items: start; text-align: left; min-height: 48px; padding: 8px 36px 8px 12px; }
-    .owa_periodTriggerMain { flex-wrap: wrap; white-space: normal; font-size: 16px; }
-    .owa_periodTriggerCompare { font-size: 13px; white-space: normal; }
     body.owa_periodOpen { overflow: hidden; }
     .owa_periodPanel {
         position: fixed; inset: 0; z-index: 1000; width: auto; max-width: none;
@@ -5107,6 +5148,8 @@ li.constraintRow {
 
     .owa_periodPhoneCompare .owa_periodSwitchRow { padding: 4px 0; font-size: 16px; }
     .owa_periodField input, .owa_periodField .owa_periodValue { font-size: 16px; }
+    /* The field's box is the target; the input inside it has no border. */
+    .owa_periodField input { min-height: 0; }
     .owa_periodKind { font-size: 11px; }
     .owa_periodCal { grid-template-rows: auto auto auto; padding: 6px 8px 8px; border: 1px solid var(--owa-period-line); border-radius: 10px; }
     .owa_periodCalNav { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; font-size: 16px; font-weight: 600; }
@@ -5122,6 +5165,55 @@ li.constraintRow {
     .owa_periodWhy { font-size: 13px; }
     .owa_periodButtons { width: 100%; }
     .owa_periodBtn { flex: 1 1 0; min-height: 44px; font-size: 16px; }
+}
+
+/*
+ * A finger's target on a phone or a touch screen: 44px. The grid's own
+ * controls are in owa.grid.css, the header's in owa.admin.css.
+ */
+@media (max-width: 600px), (pointer: coarse) {
+
+    .owa .owa_metricCarouselArrow { width: 44px; min-height: 44px; }
+
+    .owa .owa_chartGranularity { height: 44px; font-size: 16px; }
+
+    .owa .ui-tabs .ui-tabs-nav .ui-tabs-anchor { display: inline-flex; align-items: center; min-height: 44px; padding-bottom: 0; }
+
+    .owa .owa_reportSectionHeader .owa_moreLinks a { display: inline-flex; align-items: center; min-height: 44px; }
+
+    .owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button { min-height: 44px; }
+
+    .owa_typeDialogFrame .ui-dialog-titlebar-close { width: 44px; height: 44px; margin-top: -22px; border-radius: 22px; }
+}
+
+/* A dialog's buttons wrap under each other rather than past its edge. */
+@media (max-width: 600px) {
+
+    .owa_confirmDialogFrame .ui-dialog-buttonset { float: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+
+    .owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button { margin: 0; }
+}
+
+/* A short window: the filter dialog's content scrolls inside it rather than
+   running past its foot. */
+@media (max-height: 500px) {
+
+    .owa .owa_filterDialogFrame .ui-dialog-content { overflow: auto; }
+}
+
+@media (max-width: 600px) {
+
+    .owa_reportHead { margin-bottom: 24px; }
+
+    /* The period's trigger across the screen, its range free to wrap. */
+    .owa_reportHeadControls, .owa_reportPeriod { width: 100%; }
+    .owa_periodTrigger { width: 100%; justify-items: start; text-align: left; min-height: 48px; padding: 8px 36px 8px 12px; }
+    .owa_periodTriggerMain { flex-wrap: wrap; white-space: normal; font-size: 16px; }
+    .owa_periodTriggerCompare { font-size: 13px; white-space: normal; }
+
+    /* The menu takes the whole screen: beside a sliver of page it was 280px of
+       menu next to something too narrow to read. */
+    .owa_reportNavRail { width: 100%; max-width: none; box-shadow: none; }
 
     .owa_siteControl {
         --owa-text-xs: 13px;
@@ -5152,6 +5244,37 @@ li.constraintRow {
        Every screen's, not only settings': the custom reports roster is on a
        report page, and its width is its data (an owner's address, a time). */
     .owa table.management { display: block; max-width: 100%; overflow-x: auto; }
+
+    /* A roster with actions (users, goal event definitions): each row a card,
+       a cell's column name above its value (data-label), and the row's
+       actions as 44px buttons at its foot -- off the side of a scrolling
+       table they were out of reach. */
+    .owa table.management.owa_cardTable,
+    #panel table.management.owa_cardTable { display: block; overflow-x: visible; border: 0; }
+
+    .owa table.management.owa_cardTable thead,
+    #panel table.management.owa_cardTable thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    .owa table.management.owa_cardTable tbody,
+    .owa table.management.owa_cardTable td,
+    #panel table.management.owa_cardTable tbody,
+    #panel table.management.owa_cardTable td { display: block; }
+
+    .owa table.management.owa_cardTable tr,
+    #panel table.management.owa_cardTable tr { display: block; margin: 0 0 12px; padding: 6px 0; border: 1px solid #d0d7de; border-radius: 8px; }
+
+    .owa table.management.owa_cardTable td,
+    #panel table.management.owa_cardTable td { padding: 6px 12px; border: 0; background: none; font-size: 15px; overflow-wrap: anywhere; }
+
+    .owa table.management.owa_cardTable td[data-label]::before,
+    #panel table.management.owa_cardTable td[data-label]::before { content: attr(data-label); display: block; color: #57606a; font-size: 12px; font-weight: 600; }
+
+    .owa table.management.owa_cardTable td.owa_rowActions,
+    #panel table.management.owa_cardTable td.owa_rowActions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .owa .owa_rowActions a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid #d0d7de; border-radius: 6px; text-decoration: none; }
+
+    .owa .owa_rowActionSep { display: none; }
 
     /* A form laid out as a table, a label in each row's TH: the field column
        was clipped at the card's edge. Stacked, the label above its field. */
