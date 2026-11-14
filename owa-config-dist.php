@@ -43,17 +43,19 @@
  *                define('OWA_SERVER_ROLE', 'collector');
  *                define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest');
  *
- *              and no database settings. Credentials as in AWS SQS below. Run
- *              from its cron, to forward beacons the queue did not take:
+ *              and no database settings or public URL. Credentials as in AWS
+ *              SQS below. Run from its cron, to forward beacons the queue did
+ *              not take:
  *
  *                * * * * * cd /path/to/owa && php cli.php cmd=drain-tracker-ingest forward_only=1
  *
  *   worker     the CLI and the scheduler: drains the queue, builds the cubes,
- *              rotates partitions. The database settings and keys below; with
- *              collectors, the same OWA_SQS_QUEUE_URL. Its crontab runs
- *              cmd=schedule-run (see SCHEDULED JOBS).
- *   console    the admin and report screens. The database settings and keys.
- *   api        the REST API. The database settings and keys.
+ *              rotates partitions. The database settings, keys and public URL
+ *              below; with collectors, the same OWA_SQS_QUEUE_URL. Its crontab
+ *              runs cmd=schedule-run (see SCHEDULED JOBS).
+ *   console    the admin and report screens. The database settings, keys and
+ *              public URL.
+ *   api        the REST API. The database settings, keys and public URL.
  *
  * A comma list combines roles: 'console,api'. A request the role does not serve
  * is answered with a 404 (a CLI command with a refusal), and a missing setting
@@ -114,10 +116,48 @@ define('OWA_AUTH_SALT', 'yourauthsaltgoeshere');
  * PUBLIC URL
  *
  * Define the URL of OWA's base directory e.g. http://www.domain.com/path/to/owa/
- * Don't forget the slash at the end.
+ * Don't forget the slash at the end. Every role but collector needs it: links,
+ * mail, the published tracking bundles and signed API requests are built from it.
  */
  
 define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
+
+/**
+ * TRACKING AND ASSETS URLS
+ *
+ *   OWA_PUBLIC_URL    the screens, the REST API, links and mail. Required.
+ *   OWA_TRACKING_URL  where browsers reach log.php, such as a collector:
+ *                     https://t.example.com/. Default: OWA_PUBLIC_URL.
+ *   OWA_ASSETS_URL    where the built files under public/ are served from,
+ *                     such as a CDN: the report screens' scripts, styles, fonts
+ *                     and images, the tracker and its chunks, and the Profiles'
+ *                     tracking bundles (public/tracker/<id>.js).
+ *                     Default: OWA_PUBLIC_URL followed by public/.
+ *
+ * Tracking tags and bundles send beacons to OWA_TRACKING_URL and load the
+ * tracker from OWA_ASSETS_URL; changing either republishes the bundles
+ * (cmd=publish-trackers, or the scheduler). Set them on the servers that build
+ * pages and bundles (full, console, worker); a collector needs neither.
+ *
+ * A CDN, best first:
+ *
+ *   1. In front of OWA's own hostname. Same origin, nothing else to set: leave
+ *      OWA_ASSETS_URL unset.
+ *   2. On a hostname of its own, set as OWA_ASSETS_URL. That is another origin,
+ *      a CNAME included: the CDN must send Access-Control-Allow-Origin for the
+ *      web fonts (and anything a script fetches). Plain <script> and
+ *      <link rel="stylesheet"> loads, the tracker's lazy chunks among them, work
+ *      across origins without it.
+ *
+ * Either way: public/tracker/ bundles keep fixed URLs (tags embed
+ * tracker/<id>.js), so give that path a short cache time or purge it when the
+ * bundles are published. Everything else is versioned (?version=) and can be
+ * cached long. The server holding public/, where publish-trackers writes, must
+ * be the CDN's origin, or share public/tracker/ with it.
+ */
+
+//define('OWA_TRACKING_URL', 'https://t.example.com/');
+//define('OWA_ASSETS_URL', 'https://cdn.example.com/owa/');
 
 /**
  * DEBUG

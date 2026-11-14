@@ -161,6 +161,31 @@ final class ServerCheckCliTest extends TestCase
         $this->assertStringContainsString('deleting failed: not authorized to perform sqs:DeleteMessage', $trip['message']);
     }
 
+    /** With OWA_TRACKING_URL, a collector requests its own log.php through it. */
+    public function testTheTrackingUrlMustAnswerWithLogPhpsImage(): void
+    {
+        $asked = array();
+
+        ServerCheckCli::$fetch = function ($url) use (&$asked) {
+            $asked[] = $url;
+
+            return count($asked) === 1 ? array(200, 'image/gif') : array(403, 'text/html');
+        };
+
+        try {
+            $ok = $this->check()->trackingUrlCheck('https://t.example.test/log.php');
+            $no = $this->check()->trackingUrlCheck('https://t.example.test/log.php');
+        } finally {
+            ServerCheckCli::$fetch = null;
+        }
+
+        $this->assertSame(array('https://t.example.test/log.php', 'https://t.example.test/log.php'), $asked);
+        $this->assertTrue($ok['ok']);
+        $this->assertSame('ok: https://t.example.test/log.php answers.', $ok['message']);
+        $this->assertFalse($no['ok']);
+        $this->assertSame('https://t.example.test/log.php answered HTTP 403 (text/html), not log.php\'s image.', $no['message']);
+    }
+
     public function testItRunsOnEveryRoleAndAFailureExitsOne(): void
     {
         $this->assertSame(\OWA\Core\ServerRole::ALL, ServerCheckCli::serverRoles());

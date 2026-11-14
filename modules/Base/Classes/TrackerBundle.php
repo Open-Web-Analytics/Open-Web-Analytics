@@ -92,8 +92,26 @@ class TrackerBundle {
      */
     public static function url( $site_id ) {
 
-        return rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), '/' )
-            . '/' . self::DIR . $site_id . '.js';
+        // DIR is under public/, which assets_url serves (OWA_ASSETS_URL, a CDN).
+        return self::assetsUrl() . substr( self::DIR, strlen( 'public/' ) ) . $site_id . '.js';
+    }
+
+    /** @return string the public URL, ending in a slash */
+    public static function publicUrl() {
+
+        return rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), '/' ) . '/';
+    }
+
+    /** @return string where log.php is reached (OWA_TRACKING_URL), ending in a slash */
+    public static function trackingUrl() {
+
+        return rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_url' ), '/' ) . '/';
+    }
+
+    /** @return string where public/ is served from (OWA_ASSETS_URL), ending in a slash */
+    public static function assetsUrl() {
+
+        return rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'assets_url' ), '/' ) . '/';
     }
 
     /**
@@ -139,6 +157,15 @@ class TrackerBundle {
 
         $options = array(
             array( 'setSiteId', (string) $site_id ),
+        );
+
+        // Beacons go to log.php under the public URL unless OWA_TRACKING_URL says where.
+        if ( self::trackingUrl() !== self::publicUrl() ) {
+
+            $options[] = array( 'setLoggerEndpoint', self::trackingUrl() );
+        }
+
+        $options = array_merge( $options, array(
             // The install's, so the tracker's session window is the cube's.
             array( 'setOption', 'sessionLength', (int) \OWA\Core\CoreAPI::getSetting( 'base', 'session_length' ) ),
             array( 'setOption', 'stateStoreExpirations', array(
@@ -148,7 +175,7 @@ class TrackerBundle {
             array( 'setSearchQueryParams', self::listOf( $get( 'tracker_site_search_params' ) ) ),
             array( 'setOption', 'scrollThresholds', array_map( 'intval', self::listOf( $get( 'tracker_scroll_thresholds' ) ) ) ),
             array( 'setOption', 'downloadExtensions', array_map( 'strtolower', self::listOf( $get( 'tracker_download_extensions' ) ) ) ),
-        );
+        ) );
 
         $domain = trim( (string) $get( 'tracker_cookie_domain' ) );
 
@@ -287,7 +314,8 @@ class TrackerBundle {
 
         return sprintf( '/* owa-bundle %d config=%s build=%s */',
             self::FORMAT,
-            hash( 'sha256', json_encode( array( $config, (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) ) ) ),
+            // The URLs it was made for: a changed public, tracking or assets URL republishes it.
+            hash( 'sha256', json_encode( array( $config, self::publicUrl(), self::trackingUrl(), self::assetsUrl() ) ) ),
             self::manifestHash( $manifest ) );
     }
 
@@ -417,12 +445,15 @@ class TrackerBundle {
             return json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP );
         };
 
-        $base = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), '/' ) . '/';
+        $base = self::publicUrl();
 
+        // owa_assetsUrl: where the tracker's chunks load from (tracker-dom.js).
         return '(function(w){'
              . 'var o=' . $json( $config['options'] ) . ',f=' . $json( $config['features'] ) . ',p=w.owa_cmds||[],i;'
              . 'if(!w.owa_baseUrl){w.owa_baseUrl=' . $json( $base ) . ';'
              . 'if(w.location&&w.location.protocol==="https:"){w.owa_baseUrl=w.owa_baseSecUrl||w.owa_baseUrl.replace(/^http:/,"https:");}}'
+             . 'if(!w.owa_assetsUrl){w.owa_assetsUrl=' . $json( self::assetsUrl() ) . ';'
+             . 'if(w.location&&w.location.protocol==="https:"){w.owa_assetsUrl=w.owa_assetsUrl.replace(/^http:/,"https:");}}'
              . 'if(!Array.isArray(p)){o.concat(f).forEach(function(c){p.push(c);});return;}'
              . 'for(i=0;i<p.length;i++){if(p[i]&&p[i][0]==="trackPageView"){'
              . 'f=f.filter(function(c){return c[0]!=="trackPageView";});break;}}'

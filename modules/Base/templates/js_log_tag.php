@@ -38,7 +38,29 @@
  * unused one costs a connection, never correctness.
  */
 $owa_wraps_in_script = ! ( isset($view->options) && $view->getValue( 'no_script_wrapper', $view->options ) );
-$owa_tracker_host = parse_url( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), PHP_URL_HOST );
+
+/*
+ * The tracker loads from the assets URL (OWA_ASSETS_URL, a CDN) and beacons go
+ * to the tracking URL (OWA_TRACKING_URL); both default to the public URL's. One
+ * hint per distinct origin. owa_assetsUrl is written only when it is not the
+ * public URL's public/, which the loader otherwise derives from owa_baseUrl;
+ * the tracking URL reaches the tracker as setLoggerEndpoint in profile_cmds.
+ */
+$owa_public_url  = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
+$owa_assets_url  = \OWA\Module\Base\Classes\TrackerBundle::assetsUrl();
+$owa_assets_own  = $owa_assets_url !== rtrim( $owa_public_url, '/' ) . '/public/';
+$owa_origins     = array();
+
+foreach ( array( $owa_assets_url, \OWA\Module\Base\Classes\TrackerBundle::trackingUrl() ) as $owa_url ) {
+
+    $owa_host = parse_url( $owa_url, PHP_URL_HOST );
+
+    if ( $owa_host ) {
+
+        $owa_port = parse_url( $owa_url, PHP_URL_PORT );
+        $owa_origins[ '//' . $owa_host . ( $owa_port ? ':' . $owa_port : '' ) ] = true;
+    }
+}
 
 /*
  * Only when this template is producing HTML. With no_script_wrapper the caller
@@ -46,19 +68,21 @@ $owa_tracker_host = parse_url( \OWA\Core\CoreAPI::getSetting( 'base', 'public_ur
  * tag emitted there is not a hint -- it is a syntax error that takes the whole
  * block down, tracker included.
  */
-if ( $owa_tracker_host && $owa_wraps_in_script ) {
-    $owa_tracker_port = parse_url( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), PHP_URL_PORT );
-    $owa_tracker_origin = '//' . $owa_tracker_host . ( $owa_tracker_port ? ':' . $owa_tracker_port : '' );
+if ( $owa_wraps_in_script ) {
+    foreach ( array_keys( $owa_origins ) as $owa_tracker_origin ) {
 ?>
 <link rel="preconnect" href="<?php $view->out( $owa_tracker_origin ); ?>">
 <link rel="dns-prefetch" href="<?php $view->out( $owa_tracker_origin ); ?>">
-<?php } ?>
+<?php } } ?>
 <?php if ( isset($view->options) && ! $view->getValue( 'no_script_wrapper', $view->options ) ) { ?>
 <!-- Start Open Web Analytics Tracker -->
 <script>
 //<![CDATA[
 <?php } ?>
-var owa_baseUrl = '<?php $view->out( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) ); ?>';
+var owa_baseUrl = '<?php $view->out( $owa_public_url ); ?>';
+<?php if ( $owa_assets_own ) { ?>
+var owa_assetsUrl = '<?php $view->out( $owa_assets_url ); ?>';
+<?php } ?>
 var owa_cmds = owa_cmds || [];
 <?php if ( isset($view->options) && $view->getValue('apiEndpoint', $view->options ) ) { ?>
 owa_cmds.push(['setApiEndpoint', '<?php echo $view->options['apiEndpoint'];?>']);
@@ -81,7 +105,12 @@ foreach ($view->cmds as $cmd) {
 (function() {
     var _owa = document.createElement('script'); _owa.async = true;
     owa_baseUrl = ('https:' == document.location.protocol ? window.owa_baseSecUrl || owa_baseUrl.replace(/http:/, 'https:') : owa_baseUrl );
+<?php if ( $owa_assets_own ) { ?>
+    owa_assetsUrl = ('https:' == document.location.protocol ? owa_assetsUrl.replace(/^http:/, 'https:') : owa_assetsUrl );
+    _owa.src = owa_assetsUrl + 'base/dist/owa.tracker.js';
+<?php } else { ?>
     _owa.src = owa_baseUrl + 'public/base/dist/owa.tracker.js';
+<?php } ?>
     var _owa_p = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
     _owa_p.appendChild(_owa);
 }());

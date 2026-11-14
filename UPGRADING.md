@@ -367,8 +367,37 @@ error log. `php cli.php cmd=server-check` prints the role and what is missing.
 | `OWA_ACTIVE_MODULES` | Removed. A module with a constant of its own is active while that constant is set, on any server, and the Modules screen cannot turn it off: `OWA_SQS_QUEUE_URL` for the AWS SQS module. Other modules are switched on in the Modules screen. |
 | `OWA_SQS_REGION` | Optional: the region is read from `OWA_SQS_QUEUE_URL`. It still overrides. |
 | `OWA_DB_TYPE` | Optional: defaults to `mysql`. |
+| `OWA_PUBLIC_URL` | Required on every role but `collector`. |
+| `OWA_TRACKING_URL`, `OWA_ASSETS_URL` | New, optional: see below. |
 
 The stored 1.x setting `queue_incoming_tracking_events` is no longer read.
+
+### Tracking and assets URLs
+
+`OWA_PUBLIC_URL` is required on every role but `collector`. Two optional URLs
+split where browsers reach OWA:
+
+| Constant | What is reached there | Default |
+|---|---|---|
+| `OWA_PUBLIC_URL` | The screens, the REST API, links in mail, signed API requests | none: required |
+| `OWA_TRACKING_URL` | log.php: tracking tags and bundles send beacons there | `OWA_PUBLIC_URL` |
+| `OWA_ASSETS_URL` | The built files under `public/`: report scripts, styles, fonts and images, the tracker and its chunks, the Profiles' bundles (`public/tracker/<id>.js`) | `OWA_PUBLIC_URL` + `public/` |
+
+Changing the tracking or assets URL makes every Profile's bundle stale, and the
+next publish rewrites it. Set them on the servers that build pages and bundles
+(full, console, worker).
+
+**A CDN.** First choice: put the CDN in front of OWA's own hostname and leave
+`OWA_ASSETS_URL` unset; it is the same origin, so nothing else is needed. A
+separate assets hostname (a CNAME is still a different origin) needs the CDN to
+send `Access-Control-Allow-Origin` for the web fonts and anything fetched by
+script; plain `<script>` and `<link rel="stylesheet">` loads, the tracker's lazy
+chunks among them, work across origins without it. Either way, the bundles in
+`public/tracker/` keep fixed URLs (tags embed `tracker/<id>.js`): give that path
+a short cache time or purge it on publish. Everything else is versioned
+(`?version=`) and can be cached long. In a split deployment the server holding
+`public/`, where `publish-trackers` writes, must be the CDN's origin or share
+`public/tracker/` with it.
 
 ---
 

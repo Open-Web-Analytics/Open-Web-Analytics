@@ -505,7 +505,7 @@ OWA.resultSetExplorer.prototype = {
     // The spinner is decoration; the status says it in words.
     showLoader: function() {
         jQuery('#'+this.dom_id).append( jQuery( '<div class="loader" role="status"></div>' )
-            .append( jQuery( '<img class="loading" alt="">' ).attr( 'src', OWA.getSetting('baseUrl')+'public/base/i/loader.gif' ) )
+            .append( jQuery( '<img class="loading" alt="">' ).attr( 'src', ( OWA.getSetting('images_url') || OWA.getSetting('baseUrl') + 'public/' ) + 'base/i/loader.gif' ) )
             .append( jQuery( '<span class="owa_srOnly"></span>' ).text( OWA.l( 'Loading' ) ) ) );
     },
 

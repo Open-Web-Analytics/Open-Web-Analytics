@@ -28,6 +28,24 @@ final class HomeScreenAppTest extends TestCase
         $this->assertStringContainsString( '<meta name="apple-mobile-web-app-title" content="OWA">', $head );
     }
 
+    /** Its start_url and scope resolve against its own URL, so it stays on the public URL when OWA_ASSETS_URL is a CDN. */
+    public function testTheManifestIsServedFromThePublicUrlNotTheAssetsUrl(): void
+    {
+        $saved = \OWA\Core\CoreAPI::getSetting( 'base', 'images_url' );
+        \OWA\Core\CoreAPI::setSetting( 'base', 'images_url', 'https://cdn.example.test/owa/' );
+
+        try {
+            $head   = $this->head();
+            $public = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ), '/' );
+
+            $this->assertStringContainsString( '<link rel="manifest" href="' . $public . '/public/base/i/manifest.json">', $head );
+            $this->assertStringContainsString( '<link rel="apple-touch-icon" href="https://cdn.example.test/owa/base/i/owa-app-icon-180.png">', $head,
+                'the icon is an image like any other' );
+        } finally {
+            \OWA\Core\CoreAPI::setSetting( 'base', 'images_url', $saved );
+        }
+    }
+
     public function testTheManifestOpensTheInstallAsAnApp(): void
     {
         $dir      = dirname( __DIR__ ) . '/modules/Base/i/';

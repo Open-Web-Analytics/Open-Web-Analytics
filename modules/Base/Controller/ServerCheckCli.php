@@ -18,7 +18,9 @@ namespace OWA\Module\Base\Controller;
  * On a collector with a queue backend it also sends a test message to the
  * queue, receives it and deletes it. A message it receives that is not its own
  * is released at once for the drain. The test message is not a tracker
- * envelope, so a drain that takes it first dead-letters it.
+ * envelope, so a drain that takes it first dead-letters it. With
+ * OWA_TRACKING_URL set, a collector also requests its own log.php through it,
+ * with no event, which logs nothing.
  *
  * Fails (exit 1) when something is missing or the round trip did not complete.
  */
@@ -30,6 +32,9 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
     /** A check that fails exits 1, for a deploy script or a monitor. */
     protected $exit_on_failure = true;
 
+    /** @var callable|null fn( $url ) => [ status, content type ]. TESTS ONLY. */
+    public static $fetch = null;
+
     /** See \OWA\Core\Controller\Cli::serverRoles(). A diagnostic: every server can check itself. */
     public static function serverRoles() {
 
@@ -40,7 +45,7 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
     public static function usage() {
 
         return array(
-            'description' => 'Prints this server\'s role, what it serves, the tracking queue backend and anything owa-config.php is missing for the role. On a collector, sends a test message to the queue and receives and deletes it. Exits 1 when something is missing or the test fails.',
+            'description' => 'Prints this server\'s role, what it serves, the tracking queue backend and anything owa-config.php is missing for the role. On a collector, sends a test message to the queue and receives and deletes it, and with OWA_TRACKING_URL set requests its own log.php through it. Exits 1 when something is missing or a test fails.',
             'arguments'   => array(),
         );
     }
@@ -91,12 +96,80 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
             $failed   = $failed || ! $trip['ok'];
         }
 
+        if ( ! $problems && $role->is( \OWA\Core\ServerRole::COLLECTOR )
+             && (string) ( $defined['OWA_TRACKING_URL'] ?? '' ) !== '' ) {
+
+            $reach   = $this->trackingUrlCheck( \OWA\Module\Base\Classes\TrackerBundle::trackingUrl() . 'log.php' );
+            $lines[] = 'Tracking URL:     ' . $reach['message'];
+            $failed  = $failed || ! $reach['ok'];
+        }
+
         $this->write( $lines );
 
         if ( $failed ) {
 
             return $this->fail( 'Server check failed: see above.' );
         }
+    }
+
+    /**
+     * Request log.php at the tracking URL, with no event: it answers with its
+     * 1x1 GIF and logs nothing.
+     *
+     * @param string $url
+     * @return array{ok: bool, message: string}
+     */
+    public function trackingUrlCheck( $url ) {
+
+        list( $status, $type ) = self::$fetch ? call_user_func( self::$fetch, $url ) : self::fetch( $url );
+
+        if ( (int) $status === 200 && stripos( (string) $type, 'image/gif' ) === 0 ) {
+
+            return array( 'ok' => true, 'message' => sprintf( 'ok: %s answers.', $url ) );
+        }
+
+        return array( 'ok' => false, 'message' => sprintf( '%s answered %s%s, not log.php\'s image.', $url,
+            $status ? 'HTTP ' . (int) $status : 'nothing', $type ? ' (' . $type . ')' : '' ) );
+    }
+
+    /** @return array{0: int, 1: string} the status and content type of a GET, 0 and '' when it failed */
+    private static function fetch( $url ) {
+
+        $context = stream_context_create( array( 'http' => array(
+            'method'        => 'GET',
+            'timeout'       => 10,
+            'ignore_errors' => true,
+            'header'        => "User-Agent: Open Web Analytics server-check\r\n",
+        ) ) );
+
+        $body    = @file_get_contents( $url, false, $context );
+        $headers = function_exists( 'http_get_last_response_headers' )
+            ? (array) http_get_last_response_headers()
+            : (array) $http_response_header;
+
+        if ( $body === false && ! $headers ) {
+
+            return array( 0, '' );
+        }
+
+        $status = 0;
+        $type   = '';
+
+        foreach ( $headers as $header ) {
+
+            if ( preg_match( '#^HTTP/\S+\s+(\d{3})#', $header, $m ) ) {
+
+                // After a redirect, the last status is the answer.
+                $status = (int) $m[1];
+                $type   = '';
+
+            } elseif ( stripos( $header, 'Content-Type:' ) === 0 ) {
+
+                $type = trim( substr( $header, 13 ) );
+            }
+        }
+
+        return array( $status, $type );
     }
 
     /**

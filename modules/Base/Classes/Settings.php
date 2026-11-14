@@ -517,6 +517,19 @@ namespace OWA\Module\Base\Classes;
         }
 
         /*
+         * Where log.php is reached, and where the built static files are
+         * served from (a CDN). Each defaults to one under the public URL
+         * (setupPaths()), and is normalised to end in a slash there.
+         */
+        if (defined('OWA_TRACKING_URL') && OWA_TRACKING_URL) {
+            $this->setFromConfigConstant( 'base', 'tracking_url', (string) OWA_TRACKING_URL, 'OWA_TRACKING_URL');
+        }
+
+        if (defined('OWA_ASSETS_URL') && OWA_ASSETS_URL) {
+            $this->setFromConfigConstant( 'base', 'assets_url', (string) OWA_ASSETS_URL, 'OWA_ASSETS_URL');
+        }
+
+        /*
          * THE TRACKING INTAKE: queue each beacon for the drain-tracker-ingest
          * job rather than writing it in the request. OWA_QUEUE_EVENTS is the
          * 1.x name, read only while the new one is not set.
@@ -2891,6 +2904,7 @@ namespace OWA\Module\Base\Classes;
                 'action_url'                        => '',
                 'images_url'                        => '',
                 'assets_url'                        => '',
+                'tracking_url'                      => '',
                 'link_template'                        => '%s?%s', // main_url?key=value....
                 'owa_user_agent'                    => 'Open Web Analytics Bot '.OWA_VERSION,
                 'owa_news_url'                        => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5',
@@ -3106,11 +3120,17 @@ namespace OWA\Module\Base\Classes;
         // 301'd here, and the tracker pins its own chunk publicPath to owa_baseUrl +
         // 'public/base/dist/' so the async chunks resolve correctly through the redirect
         // (see .htaccess and src/tracker/tracker-dom.js).
-        $assets_url = $public_url.'public/';
+        //
+        // OWA_ASSETS_URL serves the same tree from elsewhere (a CDN), and
+        // OWA_TRACKING_URL is where log.php is reached; each defaults to the
+        // public URL's.
+        $assets_url = self::withSlash( (string) $this->get( 'base', 'assets_url' ) ) ?: $public_url.'public/';
         $this->set('base','assets_url', $assets_url);
         $this->set('base','images_url', $assets_url);
         $this->set('base','images_absolute_url', $assets_url);
-        $this->set('base','log_url',$public_url.'log.php');
+        $tracking_url = self::withSlash( (string) $this->get( 'base', 'tracking_url' ) ) ?: $public_url;
+        $this->set('base','tracking_url', $tracking_url);
+        $this->set('base','log_url',$tracking_url.'log.php');
         $this->set('base','rest_api_url',$public_url.'api/index.php');
 
         // Fill these only when nothing has already named a path.
@@ -3145,6 +3165,17 @@ namespace OWA\Module\Base\Classes;
 
             $this->setCookieDomain();
         }
+     }
+
+     /**
+      * A URL ending in exactly one slash; '' stays ''.
+      *
+      * @param string $url
+      * @return string
+      */
+     private static function withSlash( $url ) {
+
+         return $url === '' ? '' : rtrim( $url, '/' ) . '/';
      }
 
      /**

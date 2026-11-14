@@ -66,6 +66,13 @@ final class ServerRole {
     );
 
     /**
+     * What a role with a database also needs, not empty: absolute links,
+     * mail, the published tracking bundles and signed REST requests are built
+     * from it. A collector builds none of them.
+     */
+    const URL_CONSTANTS = array( 'OWA_PUBLIC_URL' );
+
+    /**
      * Constants that are no longer read, and what replaced them. The 1.x
      * names still have an effect (Settings::applyConfigConstants()); the
      * others were never released.
@@ -271,6 +278,14 @@ final class ServerRole {
         if ( $this->hasDatabase() ) {
 
             $missing = array_values( array_diff( self::DATABASE_CONSTANTS, array_keys( $defined ) ) );
+
+            foreach ( self::URL_CONSTANTS as $constant ) {
+
+                if ( (string) ( $defined[ $constant ] ?? '' ) === '' ) {
+
+                    $missing[] = $constant;
+                }
+            }
 
             if ( $missing ) {
 

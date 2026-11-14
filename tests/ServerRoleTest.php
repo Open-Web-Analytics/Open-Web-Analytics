@@ -110,6 +110,27 @@ final class ServerRoleTest extends TestCase
             (new ServerRole('worker'))->configProblems($defined, array()));
     }
 
+    /** OWA_PUBLIC_URL, not empty, on every role with a database; a collector builds no links. */
+    public function testARoleWithADatabaseNeedsThePublicUrl(): void
+    {
+        foreach (array(array(), array('OWA_PUBLIC_URL' => '')) as $variant) {
+
+            $defined = array_merge(self::DATABASE, $variant);
+
+            if (!$variant) {
+                unset($defined['OWA_PUBLIC_URL']);
+            }
+
+            foreach (array('full', 'worker', 'console', 'api') as $value) {
+                $this->assertSame(array("Role $value needs OWA_PUBLIC_URL in owa-config.php."),
+                    (new ServerRole($value))->configProblems($defined, array()), $value);
+            }
+        }
+
+        $this->assertSame(array(), (new ServerRole('collector'))->configProblems(
+            array('OWA_PUBLIC_URL' => ''), array('sqs' => 'OWA_SQS_QUEUE_URL')));
+    }
+
     public function testACollectorNeedsAQueueBackendAndNoDatabase(): void
     {
         $collector = new ServerRole('collector');

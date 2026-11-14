@@ -108,7 +108,7 @@ return array(
                 . 'Turn off only on a development install without TLS.',
         ),
         'archive_old_events' => array( 'default' => true, 'description' => 'Whether the file event queue moves a processed batch file to its archive directory instead of deleting it. On by default.' ),
-        'assets_url' => array( 'default' => '', 'internal' => true ),
+        'assets_url' => array( 'default' => '', 'description' => 'Where the built static files under public/ are served from, set by OWA_ASSETS_URL: the report screens\' scripts, styles, fonts and images, the tracker and its chunks, and the Profiles\' tracking bundles. Empty is the public URL followed by public/.' ),
         'async_log_dir' => array( 'default' => '', 'description' => 'The directory the file event queue writes its batch files to. Empty uses owa-data/logs/.' ),
         'base_url' => array( 'default' => '' ),
         'cacheType' => array( 'default' => '', 'description' => 'Which object cache backend is in use: file or memcached. Set by the File Cache or Memcached Cache module when it is active; empty means none.' ),
@@ -427,6 +427,7 @@ return array(
         'modules_url'         => array( 'internal' => true ),
         'rest_api_url'        => array( 'internal' => true ),
         'tracking_mode'       => array( 'internal' => true ),
+        'tracking_url'        => array( 'default' => '', 'description' => 'Where log.php is reached, ending in a slash, set by OWA_TRACKING_URL: the tracking tags and bundles send beacons there. Empty is the public URL.' ),
         // Set by each entry point (Core\RequestType: log.php tracking, cli.php cli), never stored.
         'request_type'        => array( 'default' => 'ui', 'internal' => true ),
         'ua_regexes_dir'      => array( 'description' => 'The directory update-ua-regexes writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/ua-parser/.' ),
