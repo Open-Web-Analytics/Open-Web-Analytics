@@ -66,7 +66,9 @@
 
             // A page with a <main id="owa_main"> (report.php, options_hierarchy.php) gets a link to it ahead of the header.
             if ( strpos( $owa_body, 'id="owa_main"' ) !== false ) {
-                echo '<a class="owa_skipLink" href="#owa_main">Skip to content</a>';
+                echo '<a class="owa_skipLink" href="#owa_main">';
+                $view->out( \OWA\Core\CoreAPI::t( 'Skip to content' ) );
+                echo '</a>';
             }
 
             echo $owa_header;

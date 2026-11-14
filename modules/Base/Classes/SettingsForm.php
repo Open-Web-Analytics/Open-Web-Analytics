@@ -153,7 +153,7 @@ class SettingsForm {
      * One fieldset, as HTML.
      *
      * @param  array  $set    from Settings::registeredFieldSets()
-     * @param  string $ns     the request namespace, from View::getNs()
+     * @param  string $ns     a prefix for each field's name; OWA's own forms use none
      * @return string
      */
     public static function fieldSet( array $set, $ns = '' ) {

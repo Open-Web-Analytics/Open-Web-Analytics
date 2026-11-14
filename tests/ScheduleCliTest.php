@@ -177,7 +177,8 @@ final class ScheduleCliTest extends CliControllerTestCase
             $q->deadLetter($q->receive(10, 300)[0], 'gave up');
 
             $lines = implode("\n", $this->callProtected($this->statusCli(), 'describeIntake'));
-            $this->assertStringContainsString('1 beacon(s) in the dead-letter queue', $lines);
+            $this->assertStringContainsString('1 beacon in the dead-letter queue, the oldest', $lines);
+            $this->assertStringContainsString('Fix the cause, then replay it;', $lines);
             $this->assertStringContainsString('cmd=tracker-ingest-replay', $lines);
 
             $q->send($envelope);
@@ -1085,6 +1086,20 @@ final class ScheduleCliTest extends CliControllerTestCase
                 "the documented example names '$command', which is not a registered command"
             );
         }
+
+        // partition-rotate refuses keep=: retention is a setting.
+        $this->assertDoesNotMatchRegularExpression("/'keep'|keep=/", $body,
+            'the template shows keep=, which partition-rotate refuses');
+
+        // Every argument the example gives a rotate is one partition-rotate takes.
+        preg_match_all("/'params'\s*=>\s*array\(([^)]*)\)/", $body, $p);
+        preg_match_all("/'([a-z-]+)'\s*=>/", implode(' ', $p[1]), $k);
+        $takes = array_map(static function ($a) {
+            return preg_replace('/^--|=.*$/', '', $a);
+        }, array_keys(\OWA\Module\Base\Controller\PartitionRotateCli::usage()['arguments']));
+
+        $this->assertNotEmpty($k[1]);
+        $this->assertSame([], array_values(array_diff($k[1], $takes)), 'arguments partition-rotate does not take');
     }
 
     /**

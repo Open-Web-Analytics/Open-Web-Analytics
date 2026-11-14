@@ -905,6 +905,59 @@ final class PartitionOperationsTest extends TestCase
     }
 
     /**
+     * No merge crosses the retention cutoff, so the drop reaches it.
+     *
+     * Merged into a year, the days before the cutoff stayed until the year's
+     * last day aged out. With the cutoff, the year straddling it is split there
+     * and the drop takes everything before it.
+     */
+    public function testCompactionNeverMergesAcrossTheRetentionCutoff()
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $t = $this->makeTable();
+
+        $start = date('Ymd', strtotime(date('Ym') . '01 -120 months'));
+        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
+            $start, date('Ymd', strtotime(\OWA\Core\Db::partitionLeadBoundary() . ' -1 day')), 'monthly'));
+
+        for ($m = -120; $m <= 0; $m++) {
+            $db->query(sprintf('INSERT INTO %s VALUES (%d,%s)', $t, $m + 200,
+                date('Ymd', strtotime(date('Ym') . "01 $m months +13 days"))));
+        }
+
+        // Merged as before: years.
+        foreach ($db->planPartitionCompaction($t, 400, 36)['operations'] as $op) {
+            $this->assertTrue($db->reshapePartitions($t, $op['names'], $op['ranges']));
+        }
+
+        // Mid-month and mid-year, inside the old tier.
+        $cutoff = date('Ymd', strtotime(date('Y', strtotime('-5 years')) . '0710'));
+        $kept   = (int) $db->get_row("SELECT COUNT(*) AS n FROM $t WHERE yyyymmdd >= $cutoff")['n'];
+
+        $plan = $db->planPartitionCompaction($t, 400, 36, $cutoff);
+        $this->assertNotEmpty($plan['operations'], 'the year holding the cutoff is split');
+
+        foreach ($plan['operations'] as $op) {
+            $this->assertTrue($db->reshapePartitions($t, $op['names'], $op['ranges']));
+        }
+
+        $this->assertContains($cutoff, array_column($db->getPartitionSpans($t), 'less_than'), 'split at the cutoff');
+
+        foreach ($db->getDroppablePartitions($t, $cutoff)['drop'] as $name) {
+            $this->assertTrue((bool) $db->dropPartition($t, $name));
+        }
+
+        $this->assertGreaterThanOrEqual((int) $cutoff, (int) $db->get_row("SELECT MIN(yyyymmdd) AS d FROM $t")['d'],
+            'nothing before the cutoff outlives the drop');
+        $this->assertSame($kept, (int) $db->get_row("SELECT COUNT(*) AS n FROM $t")['n'], 'nothing after it is lost');
+        $this->assertSame($plan['projected'], count($db->getPartitionSpans($t)), 'the plan predicts the outcome');
+
+        $next = date('Ymd', strtotime($cutoff . ' +1 day'));
+        $this->assertSame([], $db->planPartitionCompaction($t, 400, 36, $cutoff)['operations'], 'done once');
+        $this->assertSame([], $db->planPartitionCompaction($t, 400, 36, $next)['operations'], 'not again the next day');
+    }
+
+    /**
      * An unreachable budget must not collapse all of history into one partition.
      *
      * That would fit no better and would leave a table whose entire past ages

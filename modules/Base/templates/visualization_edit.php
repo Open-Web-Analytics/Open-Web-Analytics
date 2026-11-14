@@ -45,12 +45,12 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
       data-not-carried-help="<?php $view->out( \OWA\Core\CoreAPI::t( 'A %s event does not carry this property.' ) );?>">
 
     <?php echo $view->createNonceFormField( 'base.visualizationSave' );?>
-    <input type="hidden" name="<?php echo $view->getNs();?>visualizationId" value="<?php $view->out( $view->visualizationId ?? '' );?>">
-    <input type="hidden" name="<?php echo $view->getNs();?>visualizationType" value="<?php $view->out( $owa_type );?>">
+    <input type="hidden" name="visualizationId" value="<?php $view->out( $view->visualizationId ?? '' );?>">
+    <input type="hidden" name="visualizationType" value="<?php $view->out( $owa_type );?>">
     <?php // The saved funnel opens on this Property, as a saved report does. ?>
     <input type="hidden" name="propertyId" value="<?php $view->out( $view->get( 'propertyId' ) );?>">
     <?php // The filter, written by the script from its pills. ?>
-    <input type="hidden" name="<?php echo $view->getNs();?>constraints" id="owa_funnelConstraints"
+    <input type="hidden" name="constraints" id="owa_funnelConstraints"
            value="<?php $view->out( (string) $view->constraints );?>">
 
     <div class="owa_editorHead">
@@ -60,7 +60,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
                 <span class="owa_builderRequired">Required</span>
             </div>
             <input type="text" id="owa_funnelName" maxlength="255"
-                   name="<?php echo $view->getNs();?>name"
+                   name="name"
                    placeholder="Untitled funnel"
                    value="<?php $view->out( $owa_v['name'] ?? '' );?>">
             <?php if ( ! empty( $owa_errors['name'] ) ):?>
@@ -71,7 +71,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
         <?php // Listing, not access: anyone with the link can open it either way. ?>
         <label class="owa_switch" for="owa_funnelShared">
             <input type="checkbox" role="switch" id="owa_funnelShared" value="1"
-                   name="<?php echo $view->getNs();?>isShared"
+                   name="isShared"
                    aria-describedby="owa_funnelSharedHint"
                    <?php echo ! empty( $owa_v['is_shared'] ) ? 'checked="checked"' : '';?>>
             <span class="owa_switchTrack" aria-hidden="true"></span>
@@ -85,7 +85,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
                     'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $owa_id ), true )
                 : $view->makeLink( array( 'do' => 'base.customReports' ), true );?>">Cancel</a>
             <input class="owa_button is-primary" type="submit" id="owa_visualizationSubmit"
-                   name="<?php echo $view->getNs();?>submit_btn" value="Save funnel">
+                   name="submit_btn" value="Save funnel">
         </div>
     </div>
 
@@ -168,11 +168,11 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
 <div class="owa_editorFoot">
     <form method="post" action="<?php echo $view->makeLink( array( 'do' => 'base.customReportDelete' ) );?>">
         <?php echo $view->createNonceFormField( 'base.customReportDelete' );?>
-        <input type="hidden" name="<?php echo $view->getNs();?>customReportId" value="<?php $view->out( $owa_id );?>">
+        <input type="hidden" name="customReportId" value="<?php $view->out( $owa_id );?>">
         <?php // A roster with no Property has no navigation, so the Property goes along. ?>
         <input type="hidden" name="propertyId" value="<?php $view->out( $view->get( 'propertyId' ) );?>">
         <input class="owa_builderDelete" type="submit"
-               name="<?php echo $view->getNs();?>submit_btn" value="Delete this funnel"
+               name="submit_btn" value="Delete this funnel"
                data-owa-confirm
                data-owa-confirm-title="Delete this funnel?"
                data-owa-confirm-body="&ldquo;<?php $view->out( $owa_v['name'] ?? '' );?>&rdquo; disappears from the list. Nothing it counted is removed."
@@ -355,8 +355,8 @@ jQuery( function () {
         }
 
         var url = PREVIEW_URL
-            + '&' + OWA.util.appNs( 'steps' ) + '=' + encodeURIComponent( JSON.stringify( steps ) )
-            + '&' + OWA.util.appNs( 'funnelFilter' ) + '=' + encodeURIComponent( filters.get() );
+            + '&' + 'steps' + '=' + encodeURIComponent( JSON.stringify( steps ) )
+            + '&' + 'funnelFilter' + '=' + encodeURIComponent( filters.get() );
 
         // Nothing it counts has changed.
         if ( url === previewAsked ) {
@@ -500,7 +500,7 @@ jQuery( function () {
             syncRows();
             refresh();
         } )
-        .on( 'click keypress', '.owa_funnelConditions .constraintRemoveButton', function () {
+        .on( 'click', '.owa_funnelConditions .constraintRemoveButton', function () {
             window.setTimeout( refresh, 0 );
         } )
         .on( 'click', '.owa_funnelStepRemove', function () {

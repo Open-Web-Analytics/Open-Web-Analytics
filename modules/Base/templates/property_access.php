@@ -40,12 +40,12 @@
                         <input type="checkbox" checked disabled title="Administrators always have access">
                     <?php else: ?>
                         <input type="checkbox"
-                            name="<?php echo $view->getNs();?>allowed_users[]"
+                            name="allowed_users[]"
                             value="<?php $view->out( $user['id'] );?>"
                             id="owa-user-<?php $view->out( $user['id'] );?>"
                             <?php if ( $isAllowed ): ?>checked<?php endif;?>>
                         <input type="hidden"
-                            name="<?php echo $view->getNs();?>rendered_users[]"
+                            name="rendered_users[]"
                             value="<?php $view->out( $user['id'] );?>">
                     <?php endif;?>
                 </td>
@@ -61,10 +61,10 @@
 
         <br>
         <?php echo $view->createNonceFormField('base.propertyAccessUpdate');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->propertyId );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>module" value="base">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.propertyAccessUpdate">
-        <input type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Users" class="owa-button">
+        <input type="hidden" name="propertyId" value="<?php $view->out( $view->propertyId );?>">
+        <input type="hidden" name="module" value="base">
+        <input type="hidden" name="action" value="base.propertyAccessUpdate">
+        <input type="submit" name="submit_btn" value="Save Users" class="owa-button">
 
         <?php endif;?>
 

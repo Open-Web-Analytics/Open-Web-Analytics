@@ -161,14 +161,19 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * above, so a node with the same ones finds the queues the drain install made.
  *
  * Credentials come from the AWS SDK's default chain -- environment, ~/.aws,
- * then the instance or task role -- unless set here. OWA never stores them.
+ * then the instance or task role -- unless set here; OWA_SQS_TOKEN is the
+ * session token of temporary credentials. OWA never stores them.
  * Credentials that carry their account id (AWS_ACCOUNT_ID, or aws_account_id
- * in an AWS profile) save one request per beacon.
+ * in an AWS profile) save one request per beacon. OWA_SQS_QUEUE_URL names
+ * the queue instead of deriving it; its dead-letter queue is the same URL
+ * with -dlq.
  */
 
 //define('OWA_SQS_REGION', 'us-east-1');
 //define('OWA_SQS_KEY', '');
 //define('OWA_SQS_SECRET', '');
+//define('OWA_SQS_TOKEN', '');
+//define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-example');
 
 /**
  * SCHEDULED JOBS
@@ -188,7 +193,9 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  *   drain-tracker-ingest          every minute     ingests queued tracking events
  *   apply-custom-dimensions       every 15 minutes applies newly registered dimensions
  *   rotate-partitions             daily            extends the partition lead and merges
- *                                                  old periods; deletes nothing without keep=
+ *                                                  old periods; deletes what is older than
+ *                                                  raw_retention_months and each Property's
+ *                                                  cube_retention_months; nothing when unset
  *   replay-tracker-ingest         daily            retries dead-lettered tracking events;
  *                                                  deletes those older than raw_retention_months
  *   prune-tracker-ingest-archive  daily            deletes archived intake batches older than
@@ -223,9 +230,10 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 //define('OWA_SCHEDULED_JOBS', array(
 //
-//    // Keep two years of history. NOTHING is deleted unless you ask for it
-//    // here: the shipped job runs with no keep= at all.
-//    'rotate-partitions' => array( 'params' => array( 'keep' => 24 ) ),
+//    // Keep six months of partitions ahead rather than twelve. How much history
+//    // is kept is not a job argument: it is the raw_retention_months and
+//    // cube_retention_months settings, and nothing is deleted while they are unset.
+//    'rotate-partitions' => array( 'params' => array( 'months-ahead' => 6 ) ),
 //
 //    // Drain the tracking intake every five minutes rather than every minute.
 //    'drain-tracker-ingest' => array( 'schedule' => '*/5 * * * *' ),

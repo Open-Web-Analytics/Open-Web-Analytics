@@ -370,13 +370,12 @@ class PaginatedResultSet {
     function buildQueryString($params, $seperator = '&') {
 
         $new = array();
-        // OWA's own API URLs, so the app namespace -- which is empty. The
-        // wire namespace still governs cookies and tracker params.
-        $ns = \OWA\Core\CoreAPI::appNs();
+        // OWA's own API URLs carry no prefix. The wire namespace ('ns') still
+        // governs cookies and tracker params.
         foreach ($params as $k => $v) {
             
             if ($v) {
-                $new[$ns.$k] = $v;
+                $new[$k] = $v;
             }
         }
 

@@ -14,7 +14,9 @@ namespace OWA\Module\Base\Controller;
  *
  * The scheduler runs it daily as replay-tracker-ingest, replaying only those
  * not replayed before. A dead letter that never decoded is never replayed.
- * Either way, one whose event is older than raw_retention_months is deleted.
+ * Either way, one whose event is older than raw_retention_months is deleted,
+ * and on SQS one older than the queue's fourteen-day retention is deleted by
+ * SQS.
  */
 class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
 
@@ -41,14 +43,23 @@ class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
 
     function action() {
 
+        $I = '\OWA\Module\Base\Classes\TrackerIngest';
+
         try {
 
-            $counts = \OWA\Module\Base\Classes\TrackerIngest::replay(
-                (bool) $this->getParam( 'scheduled' ), time() + self::BUDGET );
+            $counts = $I::replay( (bool) $this->getParam( 'scheduled' ), time() + self::BUDGET );
+            $main   = $I::queue();
+            $dlq    = $main->deadLetterQueue();
+            $error  = $I::queueError( $main ) ?: ( $dlq ? $I::queueError( $dlq ) : null );
 
         } catch ( \Throwable $t ) {
 
             return $this->fail( 'Tracker ingest: ' . $t->getMessage() );
+        }
+
+        if ( $error ) {
+
+            return $this->fail( 'Tracker ingest dead letters: the queue failed: ' . $error );
         }
 
         if ( array_sum( $counts ) || ! $this->getParam( 'scheduled' ) ) {

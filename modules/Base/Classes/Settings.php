@@ -2778,7 +2778,10 @@ namespace OWA\Module\Base\Classes;
          $this->config->set('settings', $settings);
      }
 
-     function setMailerDomain() {
+     /**
+      * @param string|null $public_url  the URL OWA is served from; null reads OWA_PUBLIC_URL
+      */
+     function setMailerDomain( $public_url = null ) {
 
 	     // Only a fallback. This runs from the constructor, BEFORE load() merges
 	     // the stored settings in, so overwriting unconditionally would clobber
@@ -2792,20 +2795,21 @@ namespace OWA\Module\Base\Classes;
 		     return;
 	     }
 
-	     // Fall back to a valid domain: neither SERVER_NAME (CLI/cron have no
-	     // web server context) nor a usable PUBLIC_URL host is guaranteed, and
-	     // mailer-from below reads this unconditionally.
-	     $mailer_domain = 'localhost';
+	     // The host OWA is served from, by its configured public URL: the same
+	     // in every request and in CLI and cron, where SERVER_NAME is unset.
+	     // SERVER_NAME, which the web server sets per virtual host, only when
+	     // there is no public URL; 'localhost' when there is neither.
+	     if ( $public_url === null ) {
 
-	     if ( isset( $_SERVER[ 'SERVER_NAME' ] ) ) {
+		     $public_url = defined( 'OWA_PUBLIC_URL' ) ? (string) OWA_PUBLIC_URL : '';
+	     }
 
-			 $mailer_domain = $_SERVER['SERVER_NAME'];
+	     $mailer_domain = (string) ( parse_url( (string) $public_url, PHP_URL_HOST ) ?: '' );
 
-		 } elseif ( defined( 'PUBLIC_URL' ) ) {
+	     if ( $mailer_domain === '' ) {
 
-			 $parts = parse_url( PUBLIC_URL );
-			 $mailer_domain = $parts['host'] ?? 'localhost';
-		 }
+		     $mailer_domain = ! empty( $_SERVER['SERVER_NAME'] ) ? (string) $_SERVER['SERVER_NAME'] : 'localhost';
+	     }
 
 		 // A dotless domain (e.g. bare 'localhost', or an internal hostname)
 		 // yields 'owa@localhost', which PHPMailer rejects as an invalid From.
@@ -2837,18 +2841,14 @@ namespace OWA\Module\Base\Classes;
                  * and the OWA_ environment-variable prefix. Changing it breaks
                  * every existing cookie and every campaign URL in the wild.
                  *
-                 * 'app_ns' is the namespace for OWA's OWN admin and reporting
-                 * URLs and form fields, where OWA owns the whole query string
-                 * and has nothing to collide with. It is empty: those URLs read
-                 * 'do=base.reportingHome', not 'owa_do=base.reportingHome'.
-                 *
-                 * The two were one setting until the surfaces were separated.
+                 * OWA's OWN admin and reporting URLs and form fields carry no
+                 * prefix: OWA owns the whole query string there and has nothing
+                 * to collide with, so they read 'do=base.reportingHome'.
                  * Prefixed admin URLs are still accepted on the way in -- see
                  * RequestContainer -- so existing bookmarks and links keep
-                 * working; only what OWA EMITS changed.
+                 * working.
                  */
                 'ns'                                => 'owa_',
-                'app_ns'                            => '',
                 /*
                  * EMPTY MEANS ns-PREFIXED -- owa_source, owa_medium and so on.
                  * Naming the parameters explicitly is how a site opts into
@@ -3058,6 +3058,7 @@ namespace OWA\Module\Base\Classes;
                 'funnel_steps_before_079'           => array(),
                 'default_page_before_080'           => array(),
                 'log_robots_before_084'             => array(),
+                'retired_settings_before_085'       => array(),
                 'v1_tables_dropped'                 => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.

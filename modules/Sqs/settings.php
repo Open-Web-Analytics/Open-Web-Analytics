@@ -10,8 +10,9 @@
  * adds those to every module, from mechanicalSettings().
  *
  * No credentials and no queue name. Credentials come from the AWS SDK's
- * default chain, or OWA_SQS_KEY / OWA_SQS_SECRET in owa-config.php, never the
- * database; the queue names are derived (Classes\Sqs::queueName()).
+ * default chain, or OWA_SQS_KEY / OWA_SQS_SECRET / OWA_SQS_TOKEN in
+ * owa-config.php, never the database; the queue names are derived, or
+ * OWA_SQS_QUEUE_URL names the queue (Classes\Sqs::queueName()).
  */
 return array(
 
@@ -21,9 +22,9 @@ return array(
 
         /*
          * Read on log.php's path when the intake is sqs, so eager. No
-         * default: unset, the SDK's own region chain (AWS_REGION, ~/.aws)
-         * decides, which is what a logging node with OWA_SQS_REGION in its
-         * owa-config.php relies on.
+         * default. OWA_SQS_REGION wins over it; unset, AWS_REGION or
+         * AWS_DEFAULT_REGION in the environment is used (Classes\Sqs::region()).
+         * The region in an AWS profile is not read.
          */
         'region' => array(
             'storable'    => true,

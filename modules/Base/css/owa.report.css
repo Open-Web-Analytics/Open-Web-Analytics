@@ -986,8 +986,9 @@ li.constraintRow {
  */
 /*
  * The plus and the X are a matched pair, sitting at the end of the row they
- * act on. Glyphs rather than buttons: they are the smallest things in the row,
- * and a third and fourth kind of chrome there is noise.
+ * act on. Drawn as glyphs, not as buttons, though some are <button>s: they
+ * are the smallest things in the row, and a third and fourth kind of chrome
+ * there is noise.
  */
 .owa .constraintRow .constraintAddButton,
 .owa .constraintRow .constraintRemoveButton {
@@ -1001,6 +1002,7 @@ li.constraintRow {
     background: none;
     color: #303030;
     opacity: 0.45;
+    font-family: inherit;
     font-size: 12px;
     line-height: 18px;
     text-align: center;
@@ -1480,6 +1482,11 @@ li.constraintRow {
     text-decoration: underline;
 }
 
+.owa .owa_chartLegendInteractive .legendLabel:focus-visible {
+    outline: 2px solid #1874cd;
+    outline-offset: 2px;
+}
+
 /*
  * Per CELL, not per row: the legend is one column per series so it reads left
  * to right, which puts every entry in the same single <tr>.
@@ -1689,7 +1696,7 @@ li.constraintRow {
 
 .owa .owa_rosterFilter a i,
 .owa .owa_rosterStar.is-on {
-    color: #c99a06;
+    color: #a67c00;
 }
 
 .owa table.owa_customReportRoster {
@@ -1780,7 +1787,7 @@ li.constraintRow {
 .owa .owa_rosterStar:hover,
 .owa .owa_rosterStar:focus {
     background: #f3f5f8;
-    color: #c99a06;
+    color: #a67c00;
 }
 
 .owa .owa_rosterType i {
@@ -1943,7 +1950,7 @@ li.constraintRow {
 
 /* A favorite's star is filled and gold, as on the list and in the column. */
 .owa .owa_titleActionMark .fas.fa-star {
-    color: #c99a06;
+    color: #a67c00;
 }
 
 .owa .owa_titleTag {
@@ -5257,5 +5264,15 @@ li.constraintRow {
     .owa .owa_funnelConditions .constraintRow .chosen-container .chosen-drop {
         min-width: 0;
         width: calc(100vw - 48px);
+    }
+}
+
+/* With reduced motion, a switch, a caret and the slide-out nav change at once. */
+@media (prefers-reduced-motion: reduce) {
+    .owa .owa_switchTrack,
+    .owa .owa_switchTrack::after,
+    .owa_siteControlCaret,
+    .owa_reportNavRail {
+        transition: none;
     }
 }

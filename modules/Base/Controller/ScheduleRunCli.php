@@ -590,7 +590,7 @@ class ScheduleRunCli extends SchedulerCli {
             $pruned++;
         }
 
-        \OWA\Core\CoreAPI::notice( sprintf( '%d orphaned job(s) pruned.', $pruned ) );
+        \OWA\Core\CoreAPI::notice( sprintf( '%d orphaned job%s pruned.', $pruned, $pruned === 1 ? '' : 's' ) );
     }
 
     /**

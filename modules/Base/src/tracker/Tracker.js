@@ -1994,18 +1994,16 @@ class OWATracker  {
 
           var data = {};
 
-        // The APP namespace, not the wire one -- and it is empty.
-        //
-        // These params go to log.php, whose query string the tracker writes and
-        // OWA reads; nothing else puts a param on it, so there is nothing for
-        // the prefix to protect against. The wire namespace still governs the
-        // names OWA puts in a TRACKED PAGE's URL or cookie jar (owa_state,
-        // owa_overlay, the cookies) and the campaignKeys a site owner writes
-        // into their own marketing links -- those really are shared namespaces.
+        // No prefix on these names. They go to log.php, whose query string the
+        // tracker writes and OWA reads; nothing else puts a param on it, so
+        // there is nothing for a prefix to protect against. The wire namespace
+        // still governs the names OWA puts in a TRACKED PAGE's URL or cookie
+        // jar (owa_state, owa_overlay, the cookies) and the campaignKeys a site
+        // owner writes into their own marketing links -- those really are
+        // shared namespaces.
         //
         // Old trackers cached on customer sites keep sending the prefixed
         // spelling; RequestContainer reads both.
-        var ns = OWA.getSetting('app_ns');
 
            //assemble query string
         for ( var param in properties ) {
@@ -2014,13 +2012,6 @@ class OWATracker  {
 
             if ( properties.hasOwnProperty( param ) ) {
 
-                  /*
-                   * Built by concatenation rather than a format string. These
-                   * three used to run the namespace through sprintf as PART of
-                   * the format -- Util.sprintf( ns + '%s[%s]', ... ) -- so a '%'
-                   * anywhere in the configured namespace would have been read as
-                   * a specifier and eaten the argument after it.
-                   */
                   if ( Array.isArray( properties[param] ) ) {
 
                     var n = properties[param].length;
@@ -2029,16 +2020,16 @@ class OWATracker  {
                         if ( Util.is_object( properties[param][i] ) ) {
                             for ( var o_param in properties[param][i] ) {
 
-                                data[ ns + param + '[' + i + '][' + o_param + ']' ] = properties[ param ][ i ][ o_param ];
+                                data[ param + '[' + i + '][' + o_param + ']' ] = properties[ param ][ i ][ o_param ];
                             }
                         } else {
                             // what the heck is it then. assume string
-                            data[ ns + param + '[' + i + ']' ] = properties[ param ][ i ];
+                            data[ param + '[' + i + ']' ] = properties[ param ][ i ];
                         }
                     }
                 // assume it's a string
                 } else {
-                    data[ ns + param ] = properties[ param ];
+                    data[ param ] = properties[ param ];
                 }
             }
         }

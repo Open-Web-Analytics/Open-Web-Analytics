@@ -111,10 +111,29 @@ OWA.sparkline.prototype = {
          if ( ! data) {
             data = [0,0,0];
         }
-        var selector = this.domSelector;
-        jQuery('#' + dom_id ).append('<p class="sparkline"></p>');
+        jQuery( '#' + dom_id ).append( jQuery( '<p class="sparkline" role="img"></p>' )
+            .attr( 'aria-label', this.summary( data ) ) );
 
         this.loadFromArray(data);
+    },
+
+    /** The line in words, for a reader who cannot see it: its lowest and highest value. */
+    summary : function ( data ) {
+
+        var ys = jQuery.map( data, function ( v ) {
+            var n = Number( v );
+            return isFinite( n ) ? n : null;
+        } );
+
+        var num = function ( n ) {
+            var parts = String( Math.round( n * 100 ) / 100 ).split( '.' );
+            parts[0] = parts[0].replace( /\B(?=(\d{3})+(?!\d))/g, ',' );
+            return parts.join( '.' );
+        };
+
+        return ys.length
+            ? OWA.util.sprintf( OWA.l( 'Trend: lowest %1$s, highest %2$s' ), num( Math.min.apply( null, ys ) ), num( Math.max.apply( null, ys ) ) )
+            : OWA.l( 'Trend' );
     },
 
     render: function() {

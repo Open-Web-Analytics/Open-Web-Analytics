@@ -11,11 +11,11 @@ never reach further back than it.</div>
           data-owa-retention-preview="<?php $view->out( $view->makeApiLink( array(
               'do' => 'retentionPreview', 'module' => 'base', 'version' => 'v1' ) ) ); ?>">
         <?php echo $view->createNonceFormField( 'base.propertyRetentionUpdate' );?>
-        <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->property['id'] ?? '' );?>">
+        <input type="hidden" name="propertyId" value="<?php $view->out( $view->property['id'] ?? '' );?>">
         <?php
             echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
                 \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyRetention' ),
-                'property', (string) ( $view->property['id'] ?? '' ), $view->getNs() );
+                'property', (string) ( $view->property['id'] ?? '' ) );
         ?>
         <input class="owa-button" type="submit" value="Save">
     </form>

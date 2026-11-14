@@ -243,9 +243,9 @@ class RequestContainer {
         /*
          * Resolve every param to its un-namespaced name.
          *
-         * OWA emits its own admin and reporting URLs without the prefix now
-         * (see the 'app_ns' setting), but every bookmark, saved report link and
-         * third-party API caller in existence still spells them 'owa_do=...'.
+         * OWA emits its own admin and reporting URLs without the prefix, but every
+         * bookmark, saved report link and third-party API caller in existence
+         * still spells them 'owa_do=...'.
          * Both are read. Where the two spellings of the SAME name collide, the
          * namespaced value wins: it is the older contract, so a stray bare param
          * can never displace one a caller deliberately namespaced.

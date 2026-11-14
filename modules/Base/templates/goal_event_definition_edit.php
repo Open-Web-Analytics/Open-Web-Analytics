@@ -43,7 +43,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
         <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Each goal event is stored as an event with this name, which reports show: Signup_Completed rather than Goal_3. A letter, then up to 39 letters, digits and underscores. It cannot be changed once the goal event definition is saved.' ) );?></div>
         <div class="field">
             <input class="owa_largeFormField" type="text" maxlength="40" id="owa_goalName"
-                   name="<?php echo $view->getNs();?>name"
+                   name="name"
                    value="<?php $view->out( $owa_ke['name'] ?? '' );?>">
             <span class="validation_error"><?php $view->out( $view->validation_errors['name'] ?? '' );?></span>
         </div>
@@ -91,7 +91,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
 
                     $owa_other = \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM;
                     ?>
-                    <select class="owa_goalTrigger" name="<?php echo $view->getNs();?>triggerEvent"
+                    <select class="owa_goalTrigger" name="triggerEvent"
                             aria-label="The event this goal counts">
                         <optgroup label="OWA events">
                         <?php foreach ( (array) $view->triggerEvents as $owa_event ):?>
@@ -115,11 +115,11 @@ choose the event, then pick a property of it, how to compare it, and what to com
                         </optgroup>
                     </select>
                     <input class="owa_goalCustomTrigger" type="text" maxlength="40"
-                           name="<?php echo $view->getNs();?>customTriggerEvent"
+                           name="customTriggerEvent"
                            value="<?php $view->out( (string) $view->customTriggerEvent );?>"
                            placeholder="newsletter_signup" aria-label="The name of your event">
                     event where
-                    <select class="owa_goalMatch" name="<?php echo $view->getNs();?>conditionMatch"
+                    <select class="owa_goalMatch" name="conditionMatch"
                             aria-label="How many conditions must match">
                         <option value="all" <?php echo ( $owa_ke['condition_match'] ?? 'all' ) !== 'any' ? 'selected' : '';?>>all</option>
                         <option value="any" <?php echo ( $owa_ke['condition_match'] ?? '' ) === 'any' ? 'selected' : '';?>>any</option>
@@ -135,7 +135,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
                         data-saved-property="<?php $view->out( in_array( (string) ( $owa_cond['condition_property'] ?? '' ),
                             (array) $view->savedProperties, true ) ? $owa_cond['condition_property'] : '' );?>">
                         <span class="constraintDimensionPicker">
-                            <select class="dim-list owa_goalProperty" name="<?php echo $view->getNs();?>conditionProperty[]"
+                            <select class="dim-list owa_goalProperty" name="conditionProperty[]"
                                     aria-label="Property">
                             <?php foreach ( (array) $view->conditionProperties as $owa_prop ):?>
                                 <option value="<?php $view->out( $owa_prop['name'] );?>"
@@ -147,7 +147,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
                             </select>
                         </span>
                         <span class="constraintOperatorPicker">
-                            <select class="operator-list" name="<?php echo $view->getNs();?>conditionOperator[]"
+                            <select class="operator-list" name="conditionOperator[]"
                                     aria-label="Comparison">
                             <?php foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::operators() as $owa_value => $owa_label ):?>
                                 <option value="<?php $view->out( $owa_value );?>"
@@ -158,12 +158,14 @@ choose the event, then pick a property of it, how to compare it, and what to com
                             </select>
                         </span>
                         <input class="constraintValueField" type="text" aria-label="Value"
-                               name="<?php echo $view->getNs();?>conditionValue[]"
+                               name="conditionValue[]"
                                value="<?php $view->out( $owa_cond['condition_value'] ?? '' );?>">
-                        <span class="constraintAddButton" role="button" tabindex="0"
-                              title="Add another condition" aria-label="Add another condition">+</span>
-                        <span class="constraintRemoveButton" role="button" tabindex="0"
-                              title="Remove this condition" aria-label="Remove this condition">X</span>
+                        <button type="button" class="constraintAddButton"
+                                title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>"
+                                aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add another condition' ) );?>">+</button>
+                        <button type="button" class="constraintRemoveButton"
+                                title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>"
+                                aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this condition' ) );?>">X</button>
                         <div class="owa_goalConditionHelp"></div>
                     </li>
                 <?php endforeach;?>
@@ -182,7 +184,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
         <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'What one goal event is worth, in the Property\'s currency. Left blank, a goal event met by a purchase carries the purchase\'s revenue, and any other carries no value.' ) );?></div>
         <div class="field">
             <input class="owa_shortFormField" type="text" id="owa_goalValue"
-                   name="<?php echo $view->getNs();?>value"
+                   name="value"
                    value="<?php $view->out( isset( $owa_ke['id'] )
                        ? \OWA\Module\Base\Entity\GoalEventDefinition::centsToDecimal( $owa_ke['value'] ?? 0 )
                        : '' );?>">
@@ -206,7 +208,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
                 ? \OWA\Module\Base\Entity\GoalEventDefinition::countModeOf( $owa_ke['count_mode'] ?? '' )
                 : \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT;
             ?>
-            <select id="owa_goalCountMode" name="<?php echo $view->getNs();?>countMode">
+            <select id="owa_goalCountMode" name="countMode">
             <?php foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::countModes() as $owa_value => $owa_label ):?>
                 <option value="<?php $view->out( $owa_value );?>" <?php echo $owa_count === $owa_value ? 'selected' : '';?>><?php $view->out( $owa_label );?></option>
             <?php endforeach;?>
@@ -231,7 +233,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
              */
             $owa_active = isset( $owa_ke['id'] ) ? ! empty( $owa_ke['is_active'] ) : true;
             ?>
-            <select id="owa_goalIsActive" name="<?php echo $view->getNs();?>isActive">
+            <select id="owa_goalIsActive" name="isActive">
                 <option value="1" <?php echo $owa_active ? 'selected' : '';?>>Active</option>
                 <option value="0" <?php echo $owa_active ? '' : 'selected';?>>Inactive</option>
             </select>
@@ -239,10 +241,10 @@ choose the event, then pick a property of it, how to compare it, and what to com
     </div>
 
     <?php echo $view->createNonceFormField('base.goalEventDefinitionSave');?>
-    <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->propertyId );?>">
-    <input type="hidden" name="<?php echo $view->getNs();?>goalEventDefinitionId" value="<?php $view->out( $view->goalEventDefinitionId ?? '' );?>">
-    <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventDefinitionSave">
-    <input class="owa-button" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Goal Event Definition">
+    <input type="hidden" name="propertyId" value="<?php $view->out( $view->propertyId );?>">
+    <input type="hidden" name="goalEventDefinitionId" value="<?php $view->out( $view->goalEventDefinitionId ?? '' );?>">
+    <input type="hidden" name="action" value="base.goalEventDefinitionSave">
+    <input class="owa-button" type="submit" name="submit_btn" value="Save Goal Event Definition">
 </form>
 
 <?php if ( ! empty( $owa_ke['id'] ) ):?>
@@ -253,11 +255,11 @@ choose the event, then pick a property of it, how to compare it, and what to com
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.goalEventDefinitionDelete');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>propertyId" value="<?php $view->out( $view->propertyId );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>goalEventDefinitionId" value="<?php $view->out( $owa_ke['id'] );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.goalEventDefinitionDelete">
+        <input type="hidden" name="propertyId" value="<?php $view->out( $view->propertyId );?>">
+        <input type="hidden" name="goalEventDefinitionId" value="<?php $view->out( $owa_ke['id'] );?>">
+        <input type="hidden" name="action" value="base.goalEventDefinitionDelete">
         <input class="owa-button owa-button-danger" type="submit"
-               name="<?php echo $view->getNs();?>submit_btn" value="Delete Goal Event Definition"
+               name="submit_btn" value="Delete Goal Event Definition"
                data-owa-confirm
                data-owa-confirm-title="Delete this goal event definition?"
                data-owa-confirm-body="&ldquo;<?php $view->out( $owa_ke['name'] ?? '' );?>&rdquo; stops counting and leaves reports. Events already counted are kept."

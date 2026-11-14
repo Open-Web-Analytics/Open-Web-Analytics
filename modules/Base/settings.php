@@ -84,7 +84,6 @@ return array(
                 'Anonymizes the IP addresses of visitors by removing the last octet '
                 . 'from their IP address.',
         ),
-        'app_ns' => array( 'default' => '', 'description' => 'The prefix on the parameter names in OWA\'s own admin and report URLs. Empty by default, so they read do=base.reportingHome.' ),
         'app_passwords_enabled' => array(
             'default'  => true,
             'storable' => true,
@@ -305,7 +304,7 @@ return array(
          */
         'log_visitor_pii' => array( 'default' => true, 'description' => 'Whether a visitor\'s identity is stored: the user_id an event carries, and the display name and email address set with setUserName() or sent by a 1.x tracker. Off removes them as a beacon arrives, before it is queued, and from events migrated from 1.x.' ),
         'logo_image_path' => array( 'default' => 'base/i/owa-logo.svg', 'description' => 'The logo shown in the header of OWA\'s screens, as a path under public/.' ),
-        'mailer-from' => array( 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host name OWA is served from.' ),
+        'mailer-from' => array( 'default' => '', 'description' => 'The address OWA\'s e-mail is sent from. Empty uses owa@ and the host of public_url, or the web server\'s host name when public_url is not set.' ),
         'mailer-fromName' => array( 'default' => 'OWA Server', 'description' => 'The sender name on OWA\'s e-mail. Default OWA Server.' ),
         'mailer-host' => array( 'default' => '', 'description' => 'The SMTP server host, used when mailer-use-smtp is on.' ),
         'mailer-password' => array( 'default' => '', 'description' => 'The password for the SMTP server, used with mailer-username.' ),
@@ -327,7 +326,14 @@ return array(
             'type'     => 'text',
             'label'    => 'Notice E-mail Address',
             'description' =>
-                'This is the e-mail address that new visitor e-mails will be sent to.',
+                'The e-mail address new visit announcements are sent to. Separate several with commas.',
+            /*
+             * Checked on save, because it is read during ingest: an address
+             * the mailer refuses is skipped there (Mailer::addAddress()), and
+             * a value like 'a@x b@y' would be found only in the error log.
+             */
+            'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
+            'pattern_problem' => \OWA\Core\CoreAPI::t( 'Notice E-mail Address is an e-mail address, or several separated by commas.' ),
         ),
         'ns' => array( 'default' => 'owa_', 'description' => 'The prefix on OWA\'s cookie names and on the URL parameters it reads from tracked pages, such as owa_source and owa_state. Default owa_. Changing it orphans every existing cookie and campaign link.' ),
 
@@ -421,6 +427,8 @@ return array(
         'modules_url'         => array( 'internal' => true ),
         'rest_api_url'        => array( 'internal' => true ),
         'tracking_mode'       => array( 'internal' => true ),
+        // Set by each entry point (log.php: logger; cli.php: admin_cli), never stored.
+        'instance_role'       => array( 'internal' => true ),
         'ua_regexes_dir'      => array( 'description' => 'The directory update-ua-regexes writes refreshed user-agent patterns to, and OWA reads them from. Empty uses owa-data/ua-parser/.' ),
 
         'queue_events' => array( 'default' => false, 'description' => 'The 1.x name for queueing incoming beacons. Read only when queue_tracker_ingest is not set.' ),
@@ -458,6 +466,8 @@ return array(
         'tracker_ingest_drain' => array( 'default' => 'scheduler', 'description' => 'What ingests queued beacons: scheduler (the drain-tracker-ingest job) or external (a consumer outside OWA).' ),
         'report_wrapper' => array( 'default' => 'wrapper_default.php', 'description' => 'The template that wraps OWA\'s admin and report pages. Default wrapper_default.php.' ),
         'request_mode' => array( 'default' => 'web_app', 'internal' => true ),
+        // Set by Update085 when it deleted the rows of 1.x settings nothing reads, so its down() can put them back.
+        'retired_settings_before_085' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'reserved_words' => array( 'default' => array( 'do' => 'action' ), 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ),
         'scheduled_jobs' => array( 'default' => array(), 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ),
         'scheduler_enabled' => array( 'default' => true, 'description' => 'Whether schedule-run runs any job. False stops every scheduled job without touching crontab.' ),

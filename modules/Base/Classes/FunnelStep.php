@@ -263,6 +263,17 @@ class FunnelStep {
                 continue;
             }
 
+            // It runs in the database, so it passes what a report filter's pattern must.
+            $refused = $operator === $E::MATCH_REGEX && $value !== '' ? ResultSetManager::regexProblem( $value ) : null;
+
+            if ( $refused !== null ) {
+
+                $out[ $field ] = sprintf( \OWA\Core\CoreAPI::t( 'Step %s: the regular expression was refused: %s' ),
+                    $number, $refused );
+
+                continue;
+            }
+
             if ( $property === 'page_path'
                  && in_array( $operator, array( $E::MATCH_EXACT, $E::MATCH_NOT, $E::MATCH_BEGINS ), true ) ) {
 

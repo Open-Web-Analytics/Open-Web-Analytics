@@ -155,23 +155,12 @@ describe('string coercion the ports used to provide', () => {
 });
 
 /**
- * The sprintf port is gone too, and it took a sharper edge with it.
- *
- * All eight callers used nothing but %s -- string concatenation written the
- * long way round, at 150 lines of ported flag, width and precision handling
- * that no caller ever reached. Three of them were worse than verbose: they
- * built the FORMAT STRING from a setting, as sprintf( ns + '%s[%s]', ... ). A
- * format string assembled from configuration is the same shape as a query
- * assembled from user input, and it fails the same way -- a '%' in the value
- * stops being data and starts being an instruction.
- *
- * The namespace is empty today, so nothing was broken in practice. It is a
- * setting, though, and the whole point of the namespace work in this branch was
- * that people set it.
+ * Beacon param names carry no prefix. They were once built from an app_ns
+ * setting, which is gone: a page that still sets one changes nothing.
  */
-describe('beacon param names are built by concatenation, not a format string', () => {
+describe('beacon param names', () => {
 
-    test('a namespace containing a percent sign is not read as a specifier', () => {
+    test('carry no prefix, whatever app_ns a page sets', () => {
         window.owa_baseUrl = 'https://owa.example.test/';
         OWA.setSetting('app_ns', '%s_');
 
@@ -181,17 +170,15 @@ describe('beacon param names are built by concatenation, not a format string', (
 
         try {
             const t = new OWATracker({ cookie_domain_set: true });
-            t.setSiteId('sprintf-site');
+            t.setSiteId('bare-site');
             t.trackPageView('https://example.com/p');
 
             expect(sent).toHaveLength(1);
-            // The namespace arrives verbatim. Under sprintf the leading '%s'
-            // would have consumed the first argument and the param name would
-            // have come out as the param's own name repeated.
-            expect(sent[0]).toContain('%s_site=sprintf-site');
+            expect(sent[0]).toMatch(/[?&]site=bare-site(&|$)/);
+            expect(sent[0]).not.toContain('%s_');
         } finally {
             global.Image = Orig;
-            OWA.setSetting('app_ns', '');
+            delete OWA.config.app_ns;
         }
     });
 });

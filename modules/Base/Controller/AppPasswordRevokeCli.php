@@ -49,7 +49,7 @@ class AppPasswordRevokeCli extends AppPasswordsCli {
                 return $this->fail( sprintf( 'The application passwords of %s could not be revoked.', $user_id ) );
             }
 
-            return \OWA\Core\CoreAPI::notice( sprintf( '%d application password(s) of %s revoked.', $count, $user_id ) );
+            return \OWA\Core\CoreAPI::notice( sprintf( '%d application password%s of %s revoked.', $count, $count === 1 ? '' : 's', $user_id ) );
         }
 
         $lookup_id = trim( (string) $this->getParam( 'id' ) );

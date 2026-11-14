@@ -114,6 +114,13 @@
     display: block;
 }
 
+/* Escape dismissed it (owa.reportnav.js): hidden until the pointer and the
+   focus have left the entry. */
+.owa_railEntry.is-dismissed:hover > .owa_railFlyout,
+.owa_railEntry.is-dismissed:focus-within > .owa_railFlyout {
+    display: none;
+}
+
 .owa_railFlyoutTitle {
     padding: 6px 12px 8px;
     font-size: 13px;
@@ -212,7 +219,7 @@
 
 /* A favorite's star, the same gold as the star on the roster. */
 .owa_navShell .owa_navColumnIcon.fa-star {
-    color: #c99a06;
+    color: #a67c00;
 }
 
 /* Hidden, the column keeps only its chevron, turned to point back out. */
@@ -491,4 +498,15 @@
 
 @keyframes owa-pull-spin {
     to { transform: rotate(360deg); }
+}
+
+/* With reduced motion, the chevron turns at once and the refresh icon holds still. */
+@media (prefers-reduced-motion: reduce) {
+    .owa_navColumnToggle i {
+        transition: none;
+    }
+
+    .owa_pullRefresh.is-refreshing i {
+        animation: none;
+    }
 }

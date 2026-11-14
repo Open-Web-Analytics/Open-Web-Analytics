@@ -610,6 +610,42 @@ describe('row actions', () => {
         expect(menuOf($root, 0).map((a) => a.id)).toEqual(['clicks']);
     });
 
+    test('the arrow keys, Home and End move through the menu; Escape closes it and returns to its button', () => {
+        const actions = ACTIONS.concat([{ id: 'paths', label: 'Previous and next pages',
+            href: '?do=base.report&reportId=document&pagePath=__OWA_ROW_pagePath__', params: { pagePath: 'pagePath' }, first: '' }]);
+        const { $root } = draw(pages('pagePathPlusQuery', ['/']), { rowActions: actions });
+        const $button = $root.find('.owa_gridRowActions').first();
+
+        $button.trigger('click');
+
+        const $items = $('.owa_gridRowActionsMenu [role="menuitem"]');
+        const focused = () => $items.index(document.activeElement);
+        const key = (k) => $(document.activeElement).trigger($.Event('keydown', { key: k }));
+
+        expect($items).toHaveLength(3);
+        expect(focused()).toBe(0);
+
+        key('ArrowDown');
+        expect(focused()).toBe(1);
+        key('ArrowDown');
+        key('ArrowDown');
+        expect(focused()).toBe(0);
+        key('ArrowUp');
+        expect(focused()).toBe(2);
+        key('Home');
+        expect(focused()).toBe(0);
+        key('End');
+        expect(focused()).toBe(2);
+        key('a');
+        expect(focused()).toBe(2);
+
+        $items.get(2).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+        expect($('.owa_gridRowActionsMenu')).toHaveLength(0);
+        expect(document.activeElement).toBe($button[0]);
+        expect($button.attr('aria-expanded')).toBe('false');
+    });
+
     test('a grid with no actions draws no button', () => {
         const { $root } = draw(pages('pagePathPlusQuery', ['/']));
 
@@ -697,6 +733,29 @@ describe('in a translated locale', () => {
 
         expect(texts($root.find('.owa_gridChipText'))).toEqual(['Chro : Browser (contient)', 'Medium — is not set']);
         expect($root.find('.owa_gridChipText strong').first().text()).toBe('Chro');
+    });
+
+    test('Rows per page and Go to are one sentence each, with the control where the translation puts it', () => {
+        const paged = () => draw(resultSet({ rs: { resultsPerPage: 25, total_pages: 4, next: 'n' } })).$root;
+
+        let $labels = paged().find('label.owa_gridPagingItem');
+
+        expect($labels.eq(0).text().startsWith('Rows per page ')).toBe(true);
+        expect($labels.eq(0).children('select.owa_gridPageSize')).toHaveLength(1);
+        expect($labels.eq(1).contents().first().text()).toBe('Go to ');
+        expect($labels.eq(1).children('input.owa_gridGoTo')).toHaveLength(1);
+
+        OWA.config.strings = {
+            'grid label: %s is the page size menu\x04Rows per page %s': '%s lignes par page',
+            'grid label: %s is the page number field\x04Go to %s': 'Aller à la page %s',
+        };
+
+        $labels = paged().find('label.owa_gridPagingItem');
+
+        const parts = ($label) => $label.contents().map((i, n) => (n.nodeType === 3 ? n.textContent : '<' + n.tagName.toLowerCase() + '>')).get();
+
+        expect(parts($labels.eq(0))).toEqual(['<select>', ' lignes par page']);
+        expect(parts($labels.eq(1))).toEqual(['Aller à la page ', '<input>']);
     });
 
     test('the pager reads its range, and a range that may go on, from one string each', () => {

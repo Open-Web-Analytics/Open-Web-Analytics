@@ -8,14 +8,14 @@
         <div class="owa_publicField">
             <label for="owa_loginUserId">User name</label>
             <input id="owa_loginUserId" type="text" autocomplete="username" autofocus
-                   name="<?php echo $view->getNs();?>user_id"
+                   name="user_id"
                    value="<?php $view->out( $view->user_id ); ?>">
         </div>
 
         <div class="owa_publicField">
             <label for="owa_loginPassword">Password</label>
             <input id="owa_loginPassword" type="password" autocomplete="current-password"
-                   name="<?php echo $view->getNs();?>password">
+                   name="password">
         </div>
 
         <?php
@@ -25,11 +25,11 @@
              * from a deep link lands on the dashboard instead.
              */
         ?>
-        <input type="hidden" name="<?php echo $view->getNs();?>go" value="<?php $view->out( $view->go );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.login">
+        <input type="hidden" name="go" value="<?php $view->out( $view->go );?>">
+        <input type="hidden" name="action" value="base.login">
 
         <input class="owa-button owa_publicSubmit" type="submit"
-               name="<?php echo $view->getNs();?>submit_btn" value="Login">
+               name="submit_btn" value="Login">
     </form>
 
     <div class="owa_publicAside">

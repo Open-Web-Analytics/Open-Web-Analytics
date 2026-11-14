@@ -239,9 +239,9 @@ OWA.resultSetExplorer.prototype = {
         }
 
         // set sort order
-        url.setQueryParam(OWA.util.appNs('sort'), column + sortorder);
+        url.setQueryParam('sort', column + sortorder);
         // remove page param
-        url.removeQueryParam(OWA.util.appNs('page'));
+        url.removeQueryParam('page');
         // fetch new results
         //alert( url.getSource() );
         this.getNewResultSet( url.getSource() );
@@ -256,7 +256,7 @@ OWA.resultSetExplorer.prototype = {
 
         // get current list of dimensions from url
         var url = new OWA.uri( this.resultSet.self );
-        var dims = OWA.util.urldecode(url.getQueryParam(OWA.util.appNs('dimensions')));
+        var dims = OWA.util.urldecode(url.getQueryParam('dimensions'));
 
         var new_dims = [];
 
@@ -286,7 +286,7 @@ OWA.resultSetExplorer.prototype = {
 
             new_dims = new_dims.join(',');
 
-            url.setQueryParam(OWA.util.appNs('dimensions'), new_dims);
+            url.setQueryParam('dimensions', new_dims);
             this.getNewResultSet( url.getSource() );
         }
     },
@@ -309,7 +309,7 @@ OWA.resultSetExplorer.prototype = {
 
         var url = new OWA.uri( this.resultSet.self );
 
-        url.setQueryParam( OWA.util.appNs( 'dimensions' ), dims.join( ',' ) );
+        url.setQueryParam( 'dimensions', dims.join( ',' ) );
 
         this.getNewResultSet( url.getSource() );
     },
@@ -319,7 +319,7 @@ OWA.resultSetExplorer.prototype = {
         var url = new OWA.uri( this.resultSet.self );
 
         // set constraints
-        url.setQueryParam(OWA.util.appNs('constraints'), constraints);
+        url.setQueryParam('constraints', constraints);
 
         // fetch new results
         this.getNewResultSet( url.getSource() );
@@ -336,10 +336,10 @@ OWA.resultSetExplorer.prototype = {
 
         var url = new OWA.uri( this.resultSet.self );
 
-        url.setQueryParam( OWA.util.appNs( 'page' ), page );
+        url.setQueryParam( 'page', page );
 
         if ( resultsPerPage ) {
-            url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), resultsPerPage );
+            url.setQueryParam( 'resultsPerPage', resultsPerPage );
         }
 
         this.getNewResultSet( url.getSource() );
@@ -1013,7 +1013,7 @@ OWA.resultSetExplorer.prototype = {
 
         var url = url || this.getApiEndpoint();
         url += '?';
-        url += OWA.util.appNs('do') + '=' + method;
+        url += 'do=' + method;
         var count = OWA.util.countObjectProperties(options);
         var i = 1;
         for (var option in options) {
@@ -1021,7 +1021,7 @@ OWA.resultSetExplorer.prototype = {
             if (options.hasOwnProperty(option)) {
 
                 if (typeof options[option] != 'undefined') {
-                    url += '&' + OWA.util.appNs(option) + '=' + OWA.util.urlEncode(options[option]);
+                    url += '&' + option + '=' + OWA.util.urlEncode(options[option]);
                 }
                 i++;
             }
@@ -1298,6 +1298,9 @@ OWA.dataGrid.operators = function () {
  * "(not set)" is the label for an empty value, and the server reads
  * `==(not set)` and `!=(not set)` as "is empty" and "has a value". Each key is
  * the whole tail of a clause.
+ *
+ * The labels in this table, OPERATOR_PHRASES and CONDITIONS are catalogued
+ * from here (Strings::LABEL_TABLES) and shown through OWA.translate().
  */
 OWA.dataGrid.EMPTY_TESTS = { '!=(not set)': 'has a value', '==(not set)': 'is not set' };
 
@@ -1317,6 +1320,68 @@ OWA.dataGrid.OPERATOR_PHRASES = {
     '!~': 'does not match',
     '=@': 'contains',
     '!@': 'does not contain'
+};
+
+/**
+ * A <label> holding a control where its sentence puts %s, so a translation
+ * can put the words before the control, after it, or both.
+ *
+ * @param  string text     e.g. "Rows per page %s"
+ * @param  jQuery $control
+ * @return jQuery
+ */
+OWA.dataGrid.labelled = function ( text, $control ) {
+
+    var parts  = String( text ).split( '%s' );
+    var before = parts.shift();
+    var after  = parts.join( '%s' );
+    var $label = jQuery( '<label></label>' );
+
+    if ( before !== '' ) {
+        $label.append( document.createTextNode( before ) );
+    }
+
+    $label.append( $control );
+
+    if ( after !== '' ) {
+        $label.append( document.createTextNode( after ) );
+    }
+
+    return $label;
+};
+
+/**
+ * A menu's arrow keys: Down and Up move focus to the next and previous item,
+ * wrapping at the ends; Home and End to the first and last. Escape is the
+ * popover's (openPopover()). Answers whether the key was one of these.
+ *
+ * @param  jQuery $items the menu's items, in order
+ * @param  Event  e      the keydown
+ * @return bool
+ */
+OWA.dataGrid.menuKey = function ( $items, e ) {
+
+    var n = $items.length;
+
+    if ( ! n ) {
+        return false;
+    }
+
+    var at = $items.index( document.activeElement );
+    var next;
+
+    switch ( e.key ) {
+        case 'ArrowDown': next = at < 0 ? 0 : ( at + 1 ) % n; break;
+        case 'ArrowUp':   next = at < 0 ? n - 1 : ( at - 1 + n ) % n; break;
+        case 'Home':      next = 0; break;
+        case 'End':       next = n - 1; break;
+        default:          return false;
+    }
+
+    e.preventDefault();
+    $items.eq( next ).trigger( 'focus' );
+
+    return true;
 };
 
 /** What the Add a filter dialog offers, for a dimension and for a metric. */
@@ -1399,7 +1464,7 @@ OWA.dataGrid.emptyText = function ( rs, own ) {
     } );
 
     var asked = rs && rs.self
-        ? OWA.dataGrid.parseConstraints( new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'constraints' ) ) )
+        ? OWA.dataGrid.parseConstraints( new OWA.uri( rs.self ).getQueryParam( 'constraints' ) )
         : [];
 
     var readers = asked.filter( function ( c ) {
@@ -1751,7 +1816,7 @@ OWA.dataGrid.prototype = {
         }
 
         return OWA.dataGrid.parseConstraints(
-            new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'constraints' ) ) );
+            new OWA.uri( rs.self ).getQueryParam( 'constraints' ) );
     },
 
     /** {name: {label, description, metric_type}} for every metric the result set relates. */
@@ -1849,8 +1914,8 @@ OWA.dataGrid.prototype = {
                 that.emit( 'page_change', [ 1, parseInt( jQuery( this ).val(), 10 ) ] );
             } );
 
-            $paging.append( jQuery( '<label class="owa_gridPagingItem"></label>' )
-                .text( OWA.l( 'Rows per page' ) + ' ' ).append( $size ) );
+            $paging.append( OWA.dataGrid.labelled( OWA.l( 'Rows per page %s', 'grid label: %s is the page size menu' ), $size )
+                .addClass( 'owa_gridPagingItem' ) );
         }
 
         if ( explore && pages > 1 ) {
@@ -1873,8 +1938,8 @@ OWA.dataGrid.prototype = {
                 if ( e.which === 13 ) { e.preventDefault(); go(); }
             } );
 
-            $paging.append( jQuery( '<label class="owa_gridPagingItem"></label>' )
-                .text( OWA.l( 'Go to' ) + ' ' ).append( $goto ) );
+            $paging.append( OWA.dataGrid.labelled( OWA.l( 'Go to %s', 'grid label: %s is the page number field' ), $goto )
+                .addClass( 'owa_gridPagingItem' ) );
         }
 
         var r = OWA.dataGrid.range( rs );
@@ -2290,6 +2355,11 @@ OWA.dataGrid.prototype = {
             $menu.append( $a );
         } );
 
+        $menu.on( 'keydown', function ( e ) {
+
+            OWA.dataGrid.menuKey( $menu.find( '[role="menuitem"]' ), e );
+        } );
+
         var $pop = this.openPopover( $trigger, OWA.l( 'Actions' ), $menu );
 
         if ( $pop ) {
@@ -2675,7 +2745,7 @@ OWA.dataGrid.prototype = {
 
         var self = new OWA.uri(resultSet.self);
 
-        return String( self.getQueryParam(OWA.util.appNs('dimensions')) || '' ).split(',');
+        return String( self.getQueryParam('dimensions') || '' ).split(',');
     }
 
 };
@@ -3352,7 +3422,7 @@ OWA.linkTrendToGrid = function ( trend, grid, count ) {
 
         sortedBy = rs.sortColumn;
 
-        var dims = OWA.util.urldecode( new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'dimensions' ) ) || '' )
+        var dims = OWA.util.urldecode( new OWA.uri( rs.self ).getQueryParam( 'dimensions' ) || '' )
             .split( ',' )
             .map( function ( d ) { return d.trim(); } )
             .filter( Boolean );

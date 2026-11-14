@@ -796,3 +796,11 @@ a.owa-button:hover {
    page on a phone: the scheduler banner's crontab line is one long word. A
    <pre> block keeps its lines and scrolls. */
 :not(pre) > code { overflow-wrap: anywhere; }
+
+/* With reduced motion, an override switch changes at once. */
+@media (prefers-reduced-motion: reduce) {
+    .owa-override input,
+    .owa-override input::after {
+        transition: none;
+    }
+}

@@ -27,7 +27,7 @@
         <TR>
             <TH>Tracking ID:</TH>
             <TD><?php $view->out( $view->site['site_id'] );?></TD>
-            <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] );?>">
+            <input type="hidden" name="siteId" value="<?php $view->out( $view->site['site_id'] );?>">
 
         </TR>
         <?php endif;?>
@@ -62,7 +62,7 @@
         <TR>
             <TH><label for="owa_profilePropertyId">Property:</label></TH>
             <TD>
-                <select name="<?php echo $view->getNs();?>propertyId" id="owa_profilePropertyId" class="owa_largeFormField">
+                <select name="propertyId" id="owa_profilePropertyId" class="owa_largeFormField">
                     <option value="">&mdash; a new Property &mdash;</option>
                     <?php foreach ( (array) ( $view->properties ?? array() ) as $owa_prop ):?>
                     <option value="<?php $view->out( $owa_prop['id'] );?>"
@@ -79,7 +79,7 @@
         <TR id="owa_newPropertyFields">
             <TH><label for="owa_newPropertyName">New Property Name:</label></TH>
             <TD>
-                <input type="text" id="owa_newPropertyName" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
+                <input type="text" id="owa_newPropertyName" name="name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
                 <span class="form-instructions">What the website or product is called. Only
                 used when creating a new Property.</span>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['name'] ?? '' );?></span>
@@ -98,7 +98,7 @@
         <TR>
             <TH><label for="owa_streamType">This Profile observes:</label></TH>
             <TD>
-                <select name="<?php echo $view->getNs();?>streamType" id="owa_streamType" class="owa_largeFormField">
+                <select name="streamType" id="owa_streamType" class="owa_largeFormField">
                     <option value="web" <?php echo $owa_stream === 'app' ? '' : 'selected';?>>A website</option>
                     <option value="app" <?php echo $owa_stream === 'app' ? 'selected' : '';?>>An app</option>
                 </select>
@@ -107,7 +107,7 @@
         <TR id="owa_streamWebFields">
             <TH><label for="owa_profileDomain">Domain:</label></TH>
             <TD>
-                <input type="text" id="owa_profileDomain" name="<?php echo $view->getNs();?>domain" size="52" maxlength="70" value="<?php $view->out( $view->site['domain'] ?? '' );?>">
+                <input type="text" id="owa_profileDomain" name="domain" size="52" maxlength="70" value="<?php $view->out( $view->site['domain'] ?? '' );?>">
                 <span class="form-instructions">The domain of the website being observed.</span>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['domain'] ?? '' );?></span>
             </TD>
@@ -115,7 +115,7 @@
         <TR id="owa_streamAppFields">
             <TH><label for="owa_profileAppId">App ID:</label></TH>
             <TD>
-                <input type="text" id="owa_profileAppId" name="<?php echo $view->getNs();?>appId" size="52" maxlength="70" value="<?php $view->out( $view->site['app_id'] ?? '' );?>">
+                <input type="text" id="owa_profileAppId" name="appId" size="52" maxlength="70" value="<?php $view->out( $view->site['app_id'] ?? '' );?>">
                 <span class="form-instructions">The bundle id or package name, for example
                 com.example.myapp.</span>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['appId'] ?? '' );?></span>
@@ -125,7 +125,7 @@
         <?php if ($view->edit == true):?>
         <TR>
             <TH><label for="owa_profileName">Profile Name:</label></TH>
-            <TD><input type="text" id="owa_profileName" name="<?php echo $view->getNs();?>name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
+            <TD><input type="text" id="owa_profileName" name="name" size="52" maxlength="70" value="<?php $view->out( $view->site['name'] ?? '' );?>">
 				<span class="form-instructions">Example: Main Profile</span>            
             </TD>
         </TR>
@@ -133,7 +133,7 @@
         <TR>
             <TH><label for="owa_profileDescription">Description:</label></TH>
             <TD>
-                <textarea id="owa_profileDescription" name="<?php echo $view->getNs();?>description" cols="52" rows="3"><?php $view->out( $view->site['description'] ?? '' );?></textarea>
+                <textarea id="owa_profileDescription" name="description" cols="52" rows="3"><?php $view->out( $view->site['description'] ?? '' );?></textarea>
             </TD>
         </TR>
 
@@ -142,8 +142,8 @@
     </table>
     <BR>
     <?php echo $view->createNonceFormField($view->action);?>
-    <input type="hidden" name="<?php echo $view->getNs();?>action" value="<?php $view->out( $view->action, false );?>">
-    <input class="owa-button" type="submit" name="<?php echo $view->getNs();?>submit_btn" value="Save Profile">
+    <input type="hidden" name="action" value="<?php $view->out( $view->action, false );?>">
+    <input class="owa-button" type="submit" name="submit_btn" value="Save Profile">
 
     </form>
 
@@ -169,10 +169,10 @@
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.sitesDelete');?>
-        <input type="hidden" name="<?php echo $view->getNs();?>siteId" value="<?php $view->out( $view->site['site_id'] );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.sitesDelete">
+        <input type="hidden" name="siteId" value="<?php $view->out( $view->site['site_id'] );?>">
+        <input type="hidden" name="action" value="base.sitesDelete">
         <input class="owa-button owa-button-danger" type="submit"
-               name="<?php echo $view->getNs();?>submit_btn" value="Delete Profile"
+               name="submit_btn" value="Delete Profile"
                data-owa-confirm
                data-owa-confirm-title="Delete this Observation Profile?"
                data-owa-confirm-body="&ldquo;<?php $view->out( $view->site['name'] ?? '' );?>&rdquo; stops recording and leaves reporting. Everything it collected is kept, and it can be restored."

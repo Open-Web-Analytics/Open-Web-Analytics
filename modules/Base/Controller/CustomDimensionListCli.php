@@ -74,8 +74,8 @@ class CustomDimensionListCli extends CustomDimensionsCli {
             $this->reportRoom( $property_id, count( $rows ) );
         }
 
-        \OWA\Core\CoreAPI::notice( sprintf( '%d dimension(s) across %d cube(s).',
-            $total, count( $cubes ) ) );
+        \OWA\Core\CoreAPI::notice( sprintf( '%d dimension%s across %d cube%s.',
+            $total, $total === 1 ? '' : 's', count( $cubes ), count( $cubes ) === 1 ? '' : 's' ) );
     }
 
     /**

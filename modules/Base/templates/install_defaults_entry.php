@@ -33,7 +33,7 @@ track.</p>
                  * line below already had the guard and the rest did not.
                  */
                 ?>
-                <input type="text" size="30" name="<?php echo $view->getNs();?>domain"
+                <input type="text" size="30" name="domain"
                        placeholder="example.com"
                        value="<?php $view->out( $view->defaults['domain'] ?? '' );?>">
             </span>
@@ -59,7 +59,7 @@ track.</p>
                  */
                 $tz_constant = $view->configFileConstantFor( 'base', 'timezone' );
                 ?>
-                <select name="<?php echo $view->getNs();?>timezone"<?php
+                <select name="timezone"<?php
                     echo $tz_constant ? ' disabled="disabled"' : ''; ?>>
                 <?php
                 /*
@@ -121,7 +121,7 @@ track.</p>
                 ?>
                 </select>
                 <?php if ( $tz_constant ) { ?>
-                    <input type="hidden" name="<?php echo $view->getNs();?>timezone"
+                    <input type="hidden" name="timezone"
                            value="<?php $view->out( \OWA\Core\CoreAPI::getSetting('base','timezone') ); ?>">
                 <?php } ?>
             </span>
@@ -138,7 +138,7 @@ track.</p>
         <div class="owa_installField">
             <label>Admin User Name</label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="<?php echo $view->getNs();?>user_id" value="<?php $view->out( $view->defaults['user_id'] ?? '' );?>">
+                <input type="text"size="30" name="user_id" value="<?php $view->out( $view->defaults['user_id'] ?? '' );?>">
             </span>
             <span class="owa_installHint">The user name to use for login.</span>
         </div>
@@ -146,7 +146,7 @@ track.</p>
         <div class="owa_installField">
             <label>Email Address</label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="<?php echo $view->getNs();?>email_address" value="<?php $view->out( $view->defaults['email_address'] ?? '' );?>">
+                <input type="text"size="30" name="email_address" value="<?php $view->out( $view->defaults['email_address'] ?? '' );?>">
             </span>
             <span class="owa_installHint">Where password resets for this account are sent.</span>
         </div>
@@ -154,16 +154,16 @@ track.</p>
         <div class="owa_installField">
             <label>Password</label>
             <span class="owa_installInput">
-                <input type="password"size="30" name="<?php echo $view->getNs();?>password" value="">
+                <input type="password"size="30" name="password" value="">
             </span>
             <span class="owa_installHint">The password for this account.</span>
         </div>
                 
         <div class="owa_installActions">
             <?php echo $view->createNonceFormField('base.installBase');?>
-            <input type="hidden" value="base.installBase" name="<?php echo $view->getNs();?>action">
+            <input type="hidden" value="base.installBase" name="action">
             <input class="owa-button owa_publicSubmit" type="submit" value="Continue"
-                   name="<?php echo $view->getNs();?>save_button">
+                   name="save_button">
         </div>
         
     </form>

@@ -35,6 +35,13 @@ switch ( parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ) ) {
     case '/moved':
         header( 'Location: /db', true, 302 );
         break;
+    case '/moved-denied':
+        header( 'Last-Modified: Mon, 02 Nov 2026 10:00:00 GMT' );
+        header( 'Location: /denied', true, 302 );
+        break;
+    case '/moved-missing':
+        header( 'Location: /nowhere', true, 302 );
+        break;
     default:
         http_response_code( 404 );
 }
@@ -123,6 +130,26 @@ PHP
 
         $this->assertSame( strtotime( 'Tue, 03 Nov 2026 10:00:00 GMT' ),
             $this->controller()->modified( self::$base . '/moved' ) );
+    }
+
+    /** The status is the last response's: a redirect to a refusal is a refusal. */
+    public function testARedirectToARefusalIsARefusal(): void {
+
+        $dest = self::$docroot . '/redirected.tar.gz';
+
+        $result = $this->controller()->fetch( self::$base . '/moved-denied', $dest );
+
+        $this->assertIsString( $result );
+        $this->assertStringContainsString( 'rejected the licence key', $result );
+        $this->assertFileDoesNotExist( $dest );
+
+        $result = $this->controller()->fetch( self::$base . '/moved-missing', $dest );
+
+        $this->assertSame( 'MaxMind returned HTTP 404. The database has not been changed.', $result );
+        $this->assertFileDoesNotExist( $dest );
+
+        $this->assertSame( 0, $this->controller()->modified( self::$base . '/moved-denied' ),
+            'nor is the redirect\'s own Last-Modified taken for the refusal\'s' );
     }
 
     public function testARejectedHeadRequestGivesNoDate(): void {

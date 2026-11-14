@@ -160,6 +160,30 @@ final class EventPredicateTest extends TestCase
     }
 
     /**
+     * A stored regex condition whose pattern a report filter would refuse is
+     * refused by name, with the reason, rather than run or dropped.
+     */
+    public function testARegexAReportFilterWouldRefuseIsRefused(): void
+    {
+        foreach ( array( '^/(a+)+$', '^/(a)\\1', '[[:<:]]shop', str_repeat( 'a', 257 ) ) as $pattern ) {
+
+            list( $out, $p ) = $this->compile( 'page_view', array(
+                array( 'page_path', GoalEventDefinition::MATCH_EXACT, '/a' ),
+                array( 'page_title', GoalEventDefinition::MATCH_REGEX, $pattern ) ) );
+
+            $this->assertNull( $out, $pattern );
+            $this->assertSame( 'page_title', $p->getError(), $pattern );
+            $this->assertSame( \OWA\Module\Base\Classes\ResultSetManager::regexProblem( $pattern ), $p->getProblem(), $pattern );
+        }
+
+        list( $out, $p ) = $this->compile( 'page_view', array(
+            array( 'page_title', GoalEventDefinition::MATCH_REGEX, '^(Shop|Store) [0-9]{1,6}$' ) ) );
+
+        $this->assertNotNull( $out );
+        $this->assertSame( '', $p->getProblem(), 'cleared by the next compile' );
+    }
+
+    /**
      * A custom dimension of the funnel's Property is a cube column a step can
      * test, by its column. Only the ones handed in: another Property's, or one
      * not applied, is not among them (testCustomColumnsAreTheAppliedOnesOfTheProperty).

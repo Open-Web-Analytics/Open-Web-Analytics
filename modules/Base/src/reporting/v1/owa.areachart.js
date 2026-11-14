@@ -594,7 +594,7 @@ OWA.areaChart.prototype = {
                 };
 
                 jQuery( '#' + dom_id + ' > .owa_areaChart' ).append(
-                    '<div class="owa_chartEmpty">No data for this period</div>' );
+                    jQuery( '<div class="owa_chartEmpty"></div>' ).text( OWA.l( 'No data for this period' ) ) );
             }
 
             this.draw();
@@ -1015,11 +1015,11 @@ OWA.areaChart.prototype = {
             } );
         } );
 
-        url.setQueryParam( OWA.util.appNs( 'dimensions' ), [ x ].concat( dims ).join( ',' ) );
-        url.setQueryParam( OWA.util.appNs( 'rowValues' ), JSON.stringify( restrict ) );
-        url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), 1000 );
-        url.removeQueryParam( OWA.util.appNs( 'page' ) );
-        url.removeQueryParam( OWA.util.appNs( 'sort' ) );
+        url.setQueryParam( 'dimensions', [ x ].concat( dims ).join( ',' ) );
+        url.setQueryParam( 'rowValues', JSON.stringify( restrict ) );
+        url.setQueryParam( 'resultsPerPage', 1000 );
+        url.removeQueryParam( 'page' );
+        url.removeQueryParam( 'sort' );
 
         var source = url.getSource();
 
@@ -1150,7 +1150,7 @@ OWA.areaChart.prototype = {
 
         // The total, first and filled -- it is the shape of the whole thing,
         // and the lines are what it is made of.
-        built.push( this.areaSeries( 'Total', xs.map( function ( x ) {
+        built.push( this.areaSeries( OWA.l( 'Total' ), xs.map( function ( x ) {
 
             return [ x, totals[ x ] ];
 
@@ -1600,7 +1600,7 @@ OWA.areaChart.prototype = {
         }
 
         var url  = new OWA.uri( this.explorer.resultSet.self );
-        var key  = OWA.util.appNs( 'dimensions' );
+        var key  = 'dimensions';
         var dims = OWA.util.urldecode( url.getQueryParam( key ) || '' ).split( ',' );
 
         var was = this.xDimension;
@@ -1612,11 +1612,11 @@ OWA.areaChart.prototype = {
         } ).filter( Boolean );
 
         url.setQueryParam( key, swapped.join( ',' ) );
-        url.setQueryParam( OWA.util.appNs( 'sort' ), dimension );
+        url.setQueryParam( 'sort', dimension );
 
         // A different grain is a different number of points, so the page the
         // reader was on no longer means anything.
-        url.removeQueryParam( OWA.util.appNs( 'page' ) );
+        url.removeQueryParam( 'page' );
 
         this.xDimension = dimension;
 
@@ -1674,7 +1674,7 @@ OWA.areaChart.prototype = {
         }
 
         var url  = new OWA.uri( this.explorer.resultSet.self );
-        var key  = OWA.util.appNs( 'dimensions' );
+        var key  = 'dimensions';
 
         var dims = OWA.util.urldecode( url.getQueryParam( key ) || '' )
             .split( ',' )
@@ -1692,7 +1692,7 @@ OWA.areaChart.prototype = {
 
         // A different breakdown is a different number of rows, so the page the
         // reader was on no longer means anything.
-        url.removeQueryParam( OWA.util.appNs( 'page' ) );
+        url.removeQueryParam( 'page' );
 
         /*
          * A broken-out trend is one row per (x, value) pair, and the chart sums
@@ -1702,7 +1702,7 @@ OWA.areaChart.prototype = {
          */
         if ( dimension ) {
 
-            url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), 1000 );
+            url.setQueryParam( 'resultsPerPage', 1000 );
         }
 
         // What generate() reads on the way back in: the refetch arrives as a
@@ -1809,6 +1809,9 @@ OWA.areaChart.prototype = {
         this.plotted = plotted;
 
         this.markLegend();
+
+        // The plot's canvases say nothing to a screen reader; the summary does.
+        jQuery( this.domSelector ).attr( { role: 'img', 'aria-label': this.chartSummary() } );
 
         this.drawCompareKey( plotted );
     },
@@ -2324,7 +2327,8 @@ OWA.areaChart.prototype = {
     },
 
     /**
-     * Clicking a legend entry brings that line forward.
+     * Clicking a legend entry brings that line forward; so does Enter or Space
+     * on its label, which is a toggle button (markLegend()).
      *
      * Bound once per plot, on the container rather than on the entries, because
      * flot rebuilds the legend's contents on every draw -- and every draw is
@@ -2335,9 +2339,9 @@ OWA.areaChart.prototype = {
         var that = this;
         var $legend = jQuery( '#' + this.dom_id + ' > .owa_chartLegend' );
 
-        $legend.addClass( 'owa_chartLegendInteractive' ).off( 'click.owaSeries' );
+        $legend.addClass( 'owa_chartLegendInteractive' ).off( 'click.owaSeries keydown.owaSeries' );
 
-        if ( this.dataseries.length < 2 ) {
+        if ( ! this.legendIsInteractive() ) {
 
             // One line is always the selected one. Offering a control that can
             // only turn itself off is worse than offering none.
@@ -2348,27 +2352,52 @@ OWA.areaChart.prototype = {
 
         $legend.on( 'click.owaSeries', '.legendLabel, .legendColorBox', function () {
 
-            /*
-             * The series index is stamped on the cell, not read from its row.
-             *
-             * The legend is laid out with one COLUMN per series so it reads
-             * left to right, which means every entry is in the same single
-             * <tr> -- so closest('tr').index() is 0 for all of them, and every
-             * click selected the first series.
-             */
-            var index = parseInt( jQuery( this ).attr( 'data-series' ), 10 );
+            that.toggleSeries( parseInt( jQuery( this ).attr( 'data-series' ), 10 ) );
+        } );
 
-            if ( isNaN( index ) || index < 0 || index >= that.dataseries.length ) {
+        $legend.on( 'keydown.owaSeries', '.legendLabel', function ( e ) {
+
+            if ( e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar' ) {
 
                 return;
             }
 
-            // Clicking the selected one again puts every line back, so there is
-            // always a way out that does not need a second control.
-            that.selected = ( that.selected === index ) ? null : index;
+            e.preventDefault();
 
-            that.draw();
+            var index = parseInt( jQuery( this ).attr( 'data-series' ), 10 );
+
+            that.toggleSeries( index );
+
+            // The draw rebuilt the legend: focus the new label for the same line.
+            $legend.find( '.legendLabel[data-series="' + index + '"]' ).trigger( 'focus' );
         } );
+    },
+
+    /** More than one line to choose between: the legend's entries are controls. */
+    legendIsInteractive : function () {
+
+        return ( this.dataseries || [] ).length >= 2;
+    },
+
+    /**
+     * Select a line, or put every line back when it is the selected one.
+     *
+     * The series index is stamped on the cell, not read from its row: the
+     * legend is laid out with one COLUMN per series so it reads left to right,
+     * so every entry is in the same single <tr>.
+     */
+    toggleSeries : function ( index ) {
+
+        if ( isNaN( index ) || index < 0 || index >= this.dataseries.length ) {
+
+            return;
+        }
+
+        // Selecting the selected one again puts every line back, so there is
+        // always a way out that does not need a second control.
+        this.selected = ( this.selected === index ) ? null : index;
+
+        this.draw();
     },
 
     /**
@@ -2380,12 +2409,15 @@ OWA.areaChart.prototype = {
      * The entries are cells rather than rows: the legend is one column per
      * series so that it reads left to right, which puts them all in a single
      * <tr>. Each label and its colour swatch carry the index, which is what the
-     * click handler reads and what these classes hang on.
+     * click handler reads and what these classes hang on. Where the entries
+     * are controls, each label is a toggle button, pressed while its line is
+     * the selected one; the swatch beside it is decoration.
      */
     markLegend : function () {
 
-        var $legend  = jQuery( '#' + this.dom_id + ' > .owa_chartLegend' );
-        var selected = this.selected;
+        var $legend     = jQuery( '#' + this.dom_id + ' > .owa_chartLegend' );
+        var selected    = this.selected;
+        var interactive = this.legendIsInteractive();
 
         $legend.find( '.legendLabel' ).each( function ( i ) {
 
@@ -2396,7 +2428,58 @@ OWA.areaChart.prototype = {
                 .attr( 'data-series', i )
                 .toggleClass( 'owa_seriesSelected', selected === i )
                 .toggleClass( 'owa_seriesDimmed', selected !== null && selected !== i );
+
+            if ( interactive ) {
+
+                $label.attr( { role: 'button', tabindex: '0', 'aria-pressed': selected === i ? 'true' : 'false' } );
+                $swatch.attr( 'aria-hidden', 'true' );
+            }
         } );
+    },
+
+    /**
+     * What the chart shows, in words, for a reader who cannot see it: its
+     * title, the first and last dates plotted, and each line's lowest and
+     * highest value. The plot carries it as its accessible name.
+     */
+    chartSummary : function () {
+
+        var that  = this;
+        var lines = ( this.dataseries || [] ).filter( function ( s ) {
+            return ! s.isCompare && s.data && s.data.length;
+        } );
+
+        if ( ! lines.length ) {
+
+            return OWA.l( 'No data for this period' );
+        }
+
+        var dated = this.xType === 'yyyymmdd' || this.xType === 'yyyymm' || this.xType === 'yyyymmddhh';
+        var day   = function ( t ) { return dated ? that.timestampFormatter( t ) : String( t ); };
+        var xs    = lines[0].data;
+        var out   = [ OWA.util.sprintf( OWA.l( '%1$s, %2$s to %3$s.', 'chart summary: title, first date, last date' ),
+            this.chartTitle() || OWA.l( 'Trend' ), day( xs[0][0] ), day( xs[ xs.length - 1 ][0] ) ) ];
+
+        lines.forEach( function ( s ) {
+
+            var ys = s.data.map( function ( p ) { return p[1]; } ).filter( function ( v ) {
+                return v !== null && isFinite( v );
+            } );
+
+            if ( ! ys.length ) {
+
+                return;
+            }
+
+            var low  = that.tipNumber( Math.min.apply( null, ys ) );
+            var high = that.tipNumber( Math.max.apply( null, ys ) );
+
+            out.push( s.label
+                ? OWA.util.sprintf( OWA.l( '%1$s: lowest %2$s, highest %3$s.' ), s.label, low, high )
+                : OWA.util.sprintf( OWA.l( 'Lowest %1$s, highest %2$s.' ), low, high ) );
+        } );
+
+        return out.join( ' ' );
     },
 
     /**

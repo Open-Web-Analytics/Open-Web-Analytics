@@ -96,7 +96,7 @@ class PartitionInitCli extends PartitionsCli {
         $through = \OWA\Core\Db::partitionLeadBoundary( $months_ahead );
 
         \OWA\Core\CoreAPI::notice( sprintf(
-            'Keeping %d month(s) of partitions ahead: through %s.', $months_ahead, $through
+            'Keeping %d month%s of partitions ahead: through %s.', $months_ahead, $months_ahead === 1 ? '' : 's', $through
         ) );
 
         foreach ( $tables as $table ) {
