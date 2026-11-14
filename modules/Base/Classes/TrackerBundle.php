@@ -189,6 +189,13 @@ class TrackerBundle {
             $options[] = array( 'setTrackUrlFragments', true );
         }
 
+        // Honoring is the tracker's default, so only turning it off is a command.
+        // tracker-dom.js reads it from the queue before any command runs.
+        if ( ! $get( 'tracker_honor_privacy_signals' ) ) {
+
+            $options[] = array( 'setOption', 'honorPrivacySignals', false );
+        }
+
         if ( \OWA\Core\Lib::inDebug() ) {
 
             $options[] = array( 'setDebug', true );
