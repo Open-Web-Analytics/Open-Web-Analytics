@@ -316,7 +316,7 @@ $owa_max        = (int) $view->get('max_widgets');
             <div class="owa_builderField">
                 <label for="dlgMoreReport">Full report link</label>
                 <select id="dlgMoreReport"></select>
-                <div class="owa_builderHelp">Shown beside the widget's name.</div>
+                <div class="owa_builderHelp">Shown beside the widget's name, or at the foot of a card.</div>
             </div>
 
             <div class="owa_builderField">

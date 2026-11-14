@@ -80,4 +80,20 @@ describe('a result set request that fails', () => {
 
         expect($('#grid .owa_loadError').length).toBe(0);
     });
+
+    /* A card's Show more waits for rows; a failed requery tells it to stop waiting. */
+    test('a failed requery is published to the grid', () => {
+        const explorer = new OWA.resultSetExplorer('grid');
+        explorer.resultSet = { self: 'https://owa.test/api/index.php?do=reports' };
+        explorer.registerDataChangeSubscriber('grid');
+
+        const heard = jest.fn();
+        $('#grid').on('result_set_error', heard);
+
+        explorer.getNewResultSet();
+        expect(heard).not.toHaveBeenCalled();
+
+        fail();
+        expect(heard).toHaveBeenCalledTimes(1);
+    });
 });
