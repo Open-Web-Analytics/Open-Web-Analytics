@@ -206,7 +206,8 @@ final class StringsCatalogueTest extends TestCase
             }
         }
 
-        $this->assertGreaterThan(20, $seen);
+        // Base's own fieldsets alone, as on a fresh install with no other module active.
+        $this->assertGreaterThan(10, $seen);
     }
 
     /** Every metric and dimension label and description a module ships is in the catalogue. */
