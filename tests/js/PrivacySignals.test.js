@@ -170,14 +170,14 @@ describe('a Profile bundle\'s honorPrivacySignals option', () => {
 
     const NOT_HONORED = ['setOption', 'honorPrivacySignals', false];
 
-    function bundleQueue(extraOptions) {
+    function bundleQueue(extraOptions, pageCommands = []) {
         const options = [
             ['setSiteId', 'privacy-site'],
             ['setOption', 'sessionLength', 1800],
             ...extraOptions,
             ['setOption', 'features', []],
         ];
-        const page = [['setPageTitle', 'From the page']];
+        const page = [...pageCommands, ['setPageTitle', 'From the page']];
         const features = [['trackPageView', 'https://site.example/page']];
 
         return options.concat(page, features);
@@ -201,6 +201,22 @@ describe('a Profile bundle\'s honorPrivacySignals option', () => {
 
         expect(sent).toHaveLength(1);
         expect(sent[0]).toMatch(/[?&]site=privacy-site/);
+    });
+
+    test('the page\'s own setOption wins over the bundle\'s, as for every option', () => {
+        const OwaCommandQueue = require('../../modules/Base/src/tracker/CommandQueue.js').CommandQueue;
+        const q = new OwaCommandQueue();
+        q.loadCmds(bundleQueue([NOT_HONORED], [['setOption', 'honorPrivacySignals', true]]));
+
+        expect(q.optionFor('OWATracker', 'honorPrivacySignals')).toBe(true);
+    });
+
+    test('off for the Profile, honored by the page: a GPC browser sends nothing', () => {
+        setFlag('globalPrivacyControl', true);
+
+        const sent = loadWith(bundleQueue([NOT_HONORED], [['setOption', 'honorPrivacySignals', true]]));
+
+        expect(sent).toHaveLength(0);
     });
 
     test('honored, the bundle\'s default: nothing runs and nothing is sent', () => {
