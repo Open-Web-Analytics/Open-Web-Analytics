@@ -56,7 +56,7 @@ final class TouchTargetTest extends TestCase
 
         foreach ( self::CSS as $file ) {
 
-            $css  = preg_replace( '#/\*.*?\*/#s', '', (string) file_get_contents( OWA_DIR . 'modules/Base/css/' . $file ) );
+            $css  = preg_replace( '#/\*.*?\*/#s', '', (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/' . $file ) );
             $from = 0;
 
             while ( preg_match( '/@media([^{]+)\{/', $css, $m, PREG_OFFSET_CAPTURE, $from ) ) {

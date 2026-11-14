@@ -244,7 +244,7 @@ final class MobileMarkupTest extends TestCase
     /** System Health's counts line up by digit. */
     public function testSystemHealthTablesAreNumeric(): void
     {
-        $source = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/system_health.php' );
+        $source = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/system_health.php' );
 
         $this->assertSame( 0, preg_match( '/<table class="management">/', $source ) );
         $this->assertGreaterThan( 0, preg_match_all( '/<table class="management owa_numericTable">/', $source ) );
