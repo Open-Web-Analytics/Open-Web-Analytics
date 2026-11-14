@@ -326,12 +326,12 @@ p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel, .owa .action_infobox .act
 }
 
 /* A compared grid cell: the change on its own line under the value. */
-.owa_gridChange { display: block; font-size: 0.6875rem; font-weight: 600; color: #6b7280; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: default; }
+.owa_gridChange { display: block; font-size: 0.75rem; font-weight: 600; color: #6b7280; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: default; }
 .owa_gridChange.is-up { color: #137a3e; }
 .owa_gridChange.is-down { color: #b42318; }
 
 /* Under a metric box's number when the report is compared: the change and the dates. */
-p.owa_metricInfoboxCompare { margin: 2px 0 0; font-size: 0.75rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+p.owa_metricInfoboxCompare { margin: 2px 0 0; font-size: 0.8125rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 p.owa_metricInfoboxCompare .is-up { color: #137a3e; font-weight: 600; }
 p.owa_metricInfoboxCompare .is-down { color: #b42318; font-weight: 600; }
 p.owa_metricInfoboxCompare .is-flat { font-weight: 600; }
