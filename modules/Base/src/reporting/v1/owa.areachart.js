@@ -88,16 +88,17 @@ OWA.areaChart = function( options ) {
         ],
 
         /*
-         * The narrowest an hour label is given. "12pm" and "10/30" are about
-         * forty pixels in the axis font, so this leaves a gap between them.
+         * The narrowest an hour label is given, at a 16px root (rootScale()).
+         * "12pm" and "10/30" are about forty pixels in the axis font, so this
+         * leaves a gap between them.
          */
         hourTickWidth: 56,
 
         /*
-         * The room a date label and a legend entry are given at the axis and
-         * legend font (12px). A date tick is wider than its label, "10/30":
-         * flot rounds the step between ticks down to a day count it likes,
-         * which can double the number asked for.
+         * The room a date label and a legend entry are given at a 16px root,
+         * where the axis and legend font is 12px. A date tick is wider than
+         * its label, "10/30": flot rounds the step between ticks down to a
+         * day count it likes, which can double the number asked for.
          */
         dateTickWidth: 80,
         legendEntryWidth: 120,
@@ -120,6 +121,18 @@ OWA.areaChart = function( options ) {
     this.domSelector = '';
     this.init = false;
 }
+
+/**
+ * The root font size over 16px. The chart's label widths are measured at a
+ * 16px root; a phone's larger root, or the browser's text size setting,
+ * makes every label wider by this much.
+ */
+OWA.areaChart.rootScale = function () {
+
+    var px = parseFloat( window.getComputedStyle( document.documentElement ).fontSize );
+
+    return px > 0 ? px / 16 : 1;
+};
 
 /**
  * How many things `each` pixels wide fit across `width`: at least one, at
@@ -1866,7 +1879,8 @@ OWA.areaChart.prototype = {
             plotted.push( copy );
         } );
 
-        var width = jQuery( this.domSelector ).width() || 0;
+        // The width in the px the label widths are given in (rootScale()).
+        var width = ( jQuery( this.domSelector ).width() || 0 ) / OWA.areaChart.rootScale();
 
         if ( this.xType === 'yyyymmddhh' && this.flotOptions.xaxis ) {
 

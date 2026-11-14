@@ -31,7 +31,7 @@
 
 .owa table.management td{
     background-color: #ffffff;
-    font-size: 14px;
+    font-size: 0.875rem;
     padding: 15px;
     border:0px;
 }
@@ -88,7 +88,7 @@
     border-radius: 20px;
     background: #e4e6eb;
     color: #050505;
-    font-size: 13px;
+    font-size: 0.8125rem;
     cursor: pointer;
 }
 
@@ -104,7 +104,7 @@
 }
 
 .owa .owa_userMenuCaret {
-    font-size: 10px;
+    font-size: 0.625rem;
     opacity: 0.7;
 }
 
@@ -138,7 +138,7 @@
     padding: 0;
     cursor: pointer;
     color: #050505;
-    font-size: 16px;
+    font-size: 1rem;
     line-height: 40px;
     text-align: center;
 }
@@ -181,7 +181,7 @@
     display: block;
     padding: 10px 16px;
     color: #050505;
-    font-size: 14px;
+    font-size: 0.875rem;
     text-decoration: none;
     white-space: nowrap;
 }
@@ -199,7 +199,7 @@
     border-radius: 20px;
     background: #e4e6eb;
     color: #050505;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 40px;
     text-decoration: none;
 }
@@ -209,7 +209,7 @@
 }
 
 .owa a.login {
-    font-size: 12px;
+    font-size: 0.75rem;
     text-decoration: none;
 }
 /* ---------------------------------------------------------------------------
@@ -268,7 +268,7 @@
     padding: 0;
     cursor: pointer;
     color: #050505;
-    font-size: 16px;
+    font-size: 1rem;
     line-height: 40px;
     text-align: center;
 }
@@ -295,7 +295,7 @@
     border-radius: 9px;
     background: #e41e3f;
     color: #fff;
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: 700;
     line-height: 18px;
     text-align: center;
@@ -335,7 +335,7 @@
     background: #fff;
     border-radius: 8px 8px 0 0;
     color: #050505;
-    font-size: 18px;
+    font-size: 1.125rem;
     font-weight: 700;
 }
 
@@ -401,7 +401,7 @@
     border-radius: 50%;
     background: #e7f3ff;
     color: #0866ff;
-    font-size: 15px;
+    font-size: 0.9375rem;
 }
 
 .owa .owa_notificationIcon i {
@@ -416,7 +416,7 @@
 
 .owa .owa_notificationTitle {
     color: #050505;
-    font-size: 14px;
+    font-size: 0.875rem;
     /* Read is the resting state: normal weight. Bolding is what marks the
        ones still waiting to be looked at. */
     font-weight: 400;
@@ -445,14 +445,14 @@
     overflow: hidden;
     margin-top: 1px;
     color: #65676b;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.3;
 }
 
 .owa .owa_notificationWhen {
     margin-top: 1px;
     color: #0866ff;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
@@ -469,7 +469,7 @@
     border-radius: 50%;
     background: transparent;
     color: #65676b;
-    font-size: 16px;
+    font-size: 1rem;
     line-height: 24px;
     text-align: center;
     cursor: pointer;
@@ -558,7 +558,7 @@
     padding: 4px 6px 4px 12px;
     border-bottom: 1px solid #d0d7de;
     background: #eef1f4;
-    font-size: var(--owa-text-xs, 11px);
+    font-size: var(--owa-text-xs, 0.6875rem);
     color: #57606a;
 }
 
@@ -603,7 +603,7 @@
     overflow-x: auto;
     white-space: pre;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.5;
     color: #1f2328;
     background: transparent;
@@ -628,7 +628,7 @@
 
 .owa-tagScreen__section > h2 {
     margin: 0 0 6px;
-    font-size: var(--owa-text-xl, 18px);
+    font-size: var(--owa-text-xl, 1.125rem);
 }
 
 .owa-tagScreen__lede {
@@ -695,7 +695,7 @@
 .owa-tagStatus__detail {
     display: block;
     color: #57606a;
-    font-size: var(--owa-text-sm, 12px);
+    font-size: var(--owa-text-sm, 0.75rem);
 }
 
 @media (max-width: 600px) {
@@ -722,7 +722,7 @@
     border-radius: 999px;
     background: #e9f7ee;
     color: #1a5e30;
-    font-size: var(--owa-text-sm, 12px);
+    font-size: var(--owa-text-sm, 0.75rem);
     white-space: nowrap;
 }
 
@@ -793,7 +793,7 @@
     grid-column: 2;
     font-weight: normal;
     color: #57606a;
-    font-size: var(--owa-text-sm, 12px);
+    font-size: var(--owa-text-sm, 0.75rem);
 }
 
 /* As specific as the hierarchy panel's own fieldset rule (owa.report.css), which loads later. */
@@ -827,7 +827,7 @@
 
     .owa .owa_navigation ul { gap: 0; }
 
-    .owa .owa_navigation li a { padding: 0 8px; font-size: 15px; }
+    .owa .owa_navigation li a { padding: 0 8px; font-size: 0.9375rem; }
 
     .owa .owa_userMenu, .owa .owa_helpMenu, .owa .owa_notificationBell { height: 44px; }
 
@@ -843,7 +843,7 @@
 
     .owa .owa_userMenuName { display: none; }
 
-    .owa .owa_userMenuIcon { display: inline-block; font-size: 22px; }
+    .owa .owa_userMenuIcon { display: inline-block; font-size: 1.375rem; }
 }
 
 
@@ -855,7 +855,7 @@
 
     .owa #owa_header .owa_logo img { height: 28px; }
 
-    .owa .owa_navigation li a { padding: 0 5px; font-size: 14px; }
+    .owa .owa_navigation li a { padding: 0 5px; font-size: 0.875rem; }
 
     .owa .owa_helpMenu { margin-right: 4px; }
 

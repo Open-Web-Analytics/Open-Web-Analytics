@@ -1,9 +1,20 @@
 /* HTML ENTITIES*/
 
-body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; padding:0; margin: 0;font-size:12px;}
+/*
+ * The type scale's one base. Every text size in OWA's stylesheets is in rem,
+ * so the browser's text size setting scales all of it, and a phone takes a
+ * larger base: 112.5% makes the 12px body 13.5px and a report's 14px text 15.75px.
+ */
+html { font-size: 100%; }
+
+@media (max-width: 600px) {
+    html { font-size: 112.5%; }
+}
+
+body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; padding:0; margin: 0;font-size:0.75rem;}
 th {padding:6px 6px 6px 6px; text-align:left;}
 td {padding: 2px 2px 2px 2px;}
-legend {font-size:16px;font-weight:bold;}
+legend {font-size:1rem;font-weight:bold;}
 fieldset{margin: 7px; padding: 20px; border:1px solid #cccccc;}
 div {margin:0;}
 
@@ -28,15 +39,15 @@ div {margin:0;}
 
 /* NAVIGATION */
 #sub_nav {padding:5px; background-color:#cccccc; width=100%; }
-.top_level_nav{font-size:20px;}
+.top_level_nav{font-size:1.25rem;}
 .nav_links {list-style:none; margin:0px; padding:0px; }
 .nav_links li {float: left; padding:4px 20px 4px 20px;}
 .nav_links li a {text-decoration: none; }
 .nav_links ul {clear: both;}
 .post-nav {clear: both; margin:0px; padding:0px 0px 5px 0px;}
 .active_nav_link {background-color:#cccccc;}
-.host_app_nav {background-color:; vertical-align:middle;font-size:18px;padding:4px;}
-#owa_header {border-bottom: 1px solid #9f9f9f; background-color:#FFFFFF; padding:10px; font-size:16px; line-height:55px;}
+.host_app_nav {background-color:; vertical-align:middle;font-size:1.125rem;padding:4px;}
+#owa_header {border-bottom: 1px solid #9f9f9f; background-color:#FFFFFF; padding:10px; font-size:1rem; line-height:55px;}
 .owa_logo {float:left;padding-right:12px;  vertical-align: middle;line-height:normal;}
 /* The top bar's links.
  *
@@ -107,7 +118,7 @@ div {margin:0;}
 
 #updates p {
 	
-	font-size: 14px;
+	font-size: 0.875rem;
 }
 
 /* A filled hover rather than an underline that appears from nowhere: the link
@@ -122,7 +133,7 @@ div {margin:0;}
     width: 44px;
     height: 40px;
     padding: 0;
-    font-size: 22px;
+    font-size: 1.375rem;
     color: #505050;
 }
 
@@ -164,7 +175,7 @@ div {margin:0;}
     padding: 8px 14px;
     background: #ffffff;
     color: #1a5f8a;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: bold;
     border-radius: 4px;
     outline: 2px solid var(--owa-focus, #1874CD);
@@ -182,7 +193,7 @@ div {margin:0;}
 .form-label {width:;}
 .form-field {position: relative; left: 120px;}
 .form-value {position: absolute; left: 380px; font-weight: bold;}
-.form-instructions {position: relative; left: 150px; font-size:12px; line-height: 1.4; color: var(--owa-text-muted, #6b7280);}
+.form-instructions {position: relative; left: 150px; font-size:0.75rem; line-height: 1.4; color: var(--owa-text-muted, #6b7280);}
 /* The fill is the accent darkened until white on it reads at 4.5:1 or more
    (#b45309 is 5.0:1; the logo's #f47a17 is 2.75:1). */
 .owa-button {
@@ -190,7 +201,7 @@ div {margin:0;}
     background-color:var(--owa-accent-fill, #b45309);
     padding:15px 30px 15px 30px;
     color:#ffffff;
-    font-size:18px;
+    font-size:1.125rem;
     font-weight:bold;
     border: 1px solid #efefef;
     -moz-border-radius: 3px;
@@ -237,40 +248,40 @@ div {margin:0;}
 
 /* HEADLINES */
 
-.inline_h1 {font-size:24px; font-weight:bold;}
-.inline_h2 {font-size:20px;}
-.inline_h2_grey {font-size:20px; color:#cccccc;}
-.inline_h3 {font-size:16px;}
-.inline_h4 {font-size:14px;}
-.headline {font-size:20px; background-color:var(--owa-accent, #f47a17);color:#ffffff;border-color:#000000;padding:8px; font-weight:bold;margin: 0px 0px 0px 0px;}
-.panel_headline {font-size:18px; background-color:#efefef;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
-.sub-legend {font-size:16px;font-weight:bold; }
+.inline_h1 {font-size:1.5rem; font-weight:bold;}
+.inline_h2 {font-size:1.25rem;}
+.inline_h2_grey {font-size:1.25rem; color:#cccccc;}
+.inline_h3 {font-size:1rem;}
+.inline_h4 {font-size:0.875rem;}
+.headline {font-size:1.25rem; background-color:var(--owa-accent, #f47a17);color:#ffffff;border-color:#000000;padding:8px; font-weight:bold;margin: 0px 0px 0px 0px;}
+.panel_headline {font-size:1.125rem; background-color:#efefef;padding:10px;font-weight:bold;margin: 0px 0px 20px 0px;border-bottom:solid 1px}
+.sub-legend {font-size:1rem;font-weight:bold; }
 
 /* DATA TABLES */
 
-.h_label {font-size:14px; font-weight:bold;}
+.h_label {font-size:0.875rem; font-weight:bold;}
 .indented_header_row {padding:0px 0px 0px 20px;}
 #layout_panels {border:1px solid #999999;border-collapse: collapse; width:100%; vertical-align:top;}
 .layout_panels td {border:1px solid #999999;border-collapse: collapse; vertical-align:top;}
 #panel {border-collapse: collapse; width:;border:0px;padding:10px; vertical-align:top;}
 td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0px;}
-.layout_subview {margin: 0px; padding:0px;border-collapse: collapse; font-size: 16px; line-height: normal;}
+.layout_subview {margin: 0px; padding:0px;border-collapse: collapse; font-size: 1rem; line-height: normal;}
 .subview_content{padding:10px;}
 .subview_content td {padding:20ps;}
 #nav_left {width:240px; padding:10px}
 #nav_left li {padding-bottom:5px;}
-.owa .introtext {padding:0px 10px 0px 10px; line-height: 25px;}
+.owa .introtext {padding:0px 10px 0px 10px; line-height: 1.5625rem;}
 
 
 /* WIZARD */
 
 .owa_wizard {}
-.owa_wizardNextText {text-align:left; font-size:20px;}
+.owa_wizardNextText {text-align:left; font-size:1.25rem;}
 
 /* FORMATING */
-.owa_largeFormField { font-size:18px;}
-.active_wizard_step {background-color:var(--owa-accent, #f47a17); color:#ffffff;border:1px solid #9f9f9f; padding:5px; font-weight:bold; font-size:16px;}
-.wizard_step {font-weight:bold; font-size:16px;}
+.owa_largeFormField { font-size:1.125rem;}
+.active_wizard_step {background-color:var(--owa-accent, #f47a17); color:#ffffff;border:1px solid #9f9f9f; padding:5px; font-weight:bold; font-size:1rem;}
+.wizard_step {font-weight:bold; font-size:1rem;}
 .visitor_info_box {width:40px; height:40px; text-align:center; padding:7px;}
 .owa_visitSummaryLeftCol {width:auto;}
 .owa_visitSummaryRightCol {padding-left:15px;width:auto; vertical-align: top;}
@@ -278,19 +289,19 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .visit_summary {width:100%;}
 .date_box {padding:4px;    border:solid 1px #999999;margin:2px;}
 .pages_box {padding:5px; border:solid 2px #999999; margin:0px 0px 0px 0px; text-align:center;}
-.large_number {font-size:24px; font-weight:bold;}
-.info_text {color:var(--owa-text-muted, #6b7280);font-size:12px;}
-.legend_link {color:var(--owa-text-muted, #6b7280);font-size:12px;font-weight:normal;}
+.large_number {font-size:1.5rem; font-weight:bold;}
+.info_text {color:var(--owa-text-muted, #6b7280);font-size:0.75rem;}
+.legend_link {color:var(--owa-text-muted, #6b7280);font-size:0.75rem;font-weight:normal;}
 .legend_link a {text-decoration:underline;}
 .centered_buttons {margin-left:auto;margin-right:auto;}
-.snippet_text {color:;font-size:12px;}
+.snippet_text {color:;font-size:0.75rem;}
 .snippet_text a {color:var(--owa-text-muted, #6b7280);}
-.snippet_anchor {font-size:14px;font-weight:bold;}
+.snippet_anchor {font-size:0.875rem;font-weight:bold;}
 .visit_box_stat {width:42px;}
 .nav_bar{text-decoration:none;}
-.id_box{background-color:green;color:#ffffff;font-style:bold;font-size:18px;padding:6px;}
-.code {padding:7px;margin:0px 30px 0px 30px;background-color:; border: 1px dashed blue; font-size:10px;}
-.top_level_nav_link{padding:0px 5px 0px 5px; font-size:22px;}
+.id_box{background-color:green;color:#ffffff;font-style:bold;font-size:1.125rem;padding:6px;}
+.code {padding:7px;margin:0px 30px 0px 30px;background-color:; border: 1px dashed blue; font-size:0.625rem;}
+.top_level_nav_link{padding:0px 5px 0px 5px; font-size:1.375rem;}
 .visible {display:;}
 .invisible {display:none;}
 
@@ -300,7 +311,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     margin:20px 40px 20px 40px;
     padding: 20px 10px 20px 20px;
     background-color: #FF4040;
-    font-size: 14px; 
+    font-size: 0.875rem; 
 }
 
 /* What was refused, on its own line under the message. */
@@ -312,7 +323,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 /* The way back from an error page, under its banner and on the banner's margin. */
 .owa .owa_errorBack {
     margin: 0 40px 20px 40px;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 /*
@@ -356,8 +367,8 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 
 /* Admin Settings */
 .setting {padding:5px;border:1px solid #cccccc; margin:10px;}
-.setting .description {border:0px solid #cccccc; font-size:12px; padding: 2px 0 2px 0;}
-.setting .title {font-weight:bold; font-size:16px; padding: 2px 0 2px 0;}
+.setting .description {border:0px solid #cccccc; font-size:0.75rem; padding: 2px 0 2px 0;}
+.setting .title {font-weight:bold; font-size:1rem; padding: 2px 0 2px 0;}
 .setting .field {padding: 2px 0 2px 0;}
 /*
  * A setting below the install (SettingsForm::scopedField): the value in force as
@@ -369,24 +380,24 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .setting .owa-overridable__value {display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; flex:1 1 auto; min-width:0;}
 .setting .owa-overridable [hidden] {display:none;}
 /* Text, not a control: a dashed outline on a light ground. #1f2937 on #f5f6f8 is 13.6:1, #4b5563 7.0:1. */
-.owa-inherited {display:inline-block; max-width:100%; min-width:0; box-sizing:border-box; padding:4px 10px; border:1px dashed #b8bec8; border-radius:4px; background:#f5f6f8; color:#1f2937; font-size:var(--owa-text-md, 13px); line-height:1.4; overflow-wrap:anywhere;}
+.owa-inherited {display:inline-block; max-width:100%; min-width:0; box-sizing:border-box; padding:4px 10px; border:1px dashed #b8bec8; border-radius:4px; background:#f5f6f8; color:#1f2937; font-size:var(--owa-text-md, 0.8125rem); line-height:1.4; overflow-wrap:anywhere;}
 .owa-inherited__none {font-style:italic; color:#4b5563;}
 .owa-inherited--long {display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden; max-width:min(100%, 36em);}
 .owa-inherited--long:hover, .owa-inherited--long:focus {display:inline-block; -webkit-line-clamp:unset; line-clamp:none;}
 .owa-inherited:focus-visible {outline:2px solid #1874CD; outline-offset:2px;}
-.owa-override {display:inline-flex; align-items:center; gap:6px; margin-left:auto; font-size:var(--owa-text-sm, 12px); cursor:pointer; white-space:nowrap;}
+.owa-override {display:inline-flex; align-items:center; gap:6px; margin-left:auto; font-size:var(--owa-text-sm, 0.75rem); cursor:pointer; white-space:nowrap;}
 .owa-override input {appearance:none; -webkit-appearance:none; width:30px; height:16px; margin:0; border-radius:8px; background:#bbbbbb; position:relative; cursor:pointer; transition:background .15s;}
 .owa-override input::after {content:''; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#ffffff; transition:left .15s;}
 .owa-override input:checked {background:#2a7ae2;}
 .owa-override input:checked::after {left:16px;}
 .owa-override input:focus-visible {outline:2px solid #2a7ae2; outline-offset:2px;}
-.setting .owa-inherit-note {font-size:var(--owa-text-xs, 11px); color:#666666; padding:2px 0;}
+.setting .owa-inherit-note {font-size:var(--owa-text-xs, 0.6875rem); color:#666666; padding:2px 0;}
 .setting .owa-inherit-note code {font-size:inherit; background:#f2f2f2; padding:0 3px; border-radius:2px;}
 
 /* LAYOUT */
-#admin_nav{font-size:12px;}
+#admin_nav{font-size:0.75rem;}
 #keywords{width:400px;}
-#side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 12px;}
+#side_bar {width:auto; color: ; border-right: 0px solid #000000; padding: 5px; background-color: ; font-size: 0.75rem;}
 #login_box {
     -moz-border-radius:10px 10px 10px 10px;
     border-radius:10px 10px 10px 10px;
@@ -440,12 +451,12 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 
 .owa span.optional {
 
-    font-size: 10px;
+    font-size: 0.625rem;
     color: var(--owa-text-muted, #6b7280);
 }
 
 .owa .formInstructions {
-    font-size: 10px;
+    font-size: 0.625rem;
     color: #505050;
 
     font-weight: normal;
@@ -470,7 +481,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     max-width: 960px;
     margin: 0 auto;
     padding: 48px 20px 32px 20px;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: normal;
 }
 
@@ -499,7 +510,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 
 .owa_publicTitle {
     margin: 0 0 6px 0;
-    font-size: 22px;
+    font-size: 1.375rem;
     font-weight: bold;
     color: #333333;
 }
@@ -507,7 +518,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa_publicIntro {
     margin: 0 0 20px 0;
     color: #666666;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.55;
 }
 
@@ -522,7 +533,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa_publicField label {
     display: block;
     margin-bottom: 5px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: bold;
     color: #505050;
 }
@@ -535,7 +546,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     padding: 9px 10px;
     border: 1px solid #cccccc;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .owa_publicField input:focus {
@@ -549,21 +560,21 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa_publicSubmit {
     width: 100%;
     margin: 4px 0 0 0;
-    font-size: 16px;
+    font-size: 1rem;
     padding: 12px 20px;
 }
 
 .owa_publicAside {
     margin-top: 18px;
     text-align: center;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 .owa_publicFooter {
     margin-top: 40px;
     text-align: right;
     color: var(--owa-text-muted, #6b7280);
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 /* The application's footer: the product and its version, right-aligned. */
@@ -571,7 +582,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     padding: 16px 20px;
     text-align: right;
     color: var(--owa-text-muted, #6b7280);
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 
@@ -595,7 +606,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 
 .owa_updatesCard h2 {
     margin: 22px 0 8px 0;
-    font-size: 16px;
+    font-size: 1rem;
     color: #333333;
 }
 
@@ -614,7 +625,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa_installBody h2,
 .owa_installFinish h2 {
     margin: 22px 0 8px 0;
-    font-size: 18px;
+    font-size: 1.125rem;
     color: #333333;
 }
 
@@ -622,7 +633,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     margin: 26px 0 10px 0;
     padding-bottom: 6px;
     border-bottom: 1px solid #ededed;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -636,7 +647,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 .owa_installField label {
     display: block;
     margin-bottom: 5px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: bold;
     color: #505050;
 }
@@ -649,14 +660,14 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     padding: 9px 10px;
     border: 1px solid #cccccc;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .owa_installHint {
     display: block;
     margin-top: 5px;
     color: var(--owa-text-muted, #6b7280);
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.5;
 }
 
@@ -675,7 +686,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     align-items: baseline;
     padding: 10px 0;
     border-bottom: 1px solid #f0f0f0;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 .owa_installCheckMark {
@@ -709,7 +720,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     grid-column: 2 / -1;
     margin-top: 4px;
     color: #666666;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.55;
 }
 
@@ -728,7 +739,7 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
 
 .owa_installCredential {
     font-family: monospace;
-    font-size: 15px;
+    font-size: 0.9375rem;
     color: #333333;
     /* Selectable in one gesture: it is generated, not chosen. */
     user-select: all;
@@ -784,7 +795,7 @@ a.owa-button:hover {
 
 .owa_installFinish .owa-install-cron p {
     margin: 8px 0 0 0;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.6;
 }
 
@@ -794,7 +805,7 @@ a.owa-button:hover {
     background-color: #ffffff;
     border: 1px solid #ecdcc0;
     border-radius: 3px;
-    font-size: 12px;
+    font-size: 0.75rem;
     word-break: break-all;
 }
 
@@ -803,17 +814,17 @@ a.owa-button:hover {
    <pre> block keeps its lines and scrolls. */
 :not(pre) > code { overflow-wrap: anywhere; }
 
-/* A phone. Every field is 16px, as iOS zooms the page on focus below that,
-   and at least 44px tall; the override switch's label is a 44px target. The
-   size is important because it is a floor under every screen's own, which
-   are more specific than this; the height is :where(), so a field drawn
-   inside a box of its own can opt out. */
+/* A phone. Every field is at least 16px, as iOS zooms the page on focus
+   below that, and at least 44px tall; the override switch's label is a 44px
+   target. The size is important because it is a floor under every screen's
+   own, which are more specific than this; the height is :where(), so a field
+   drawn inside a box of its own can opt out. */
 @media (max-width: 600px) {
 
     input:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="hidden"], [type="file"])),
     select,
     textarea {
-        font-size: 16px !important;
+        font-size: max(16px, 0.8125rem) !important;
     }
 
     input:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="hidden"], [type="file"])),

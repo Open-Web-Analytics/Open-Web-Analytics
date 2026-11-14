@@ -1094,18 +1094,18 @@ final class PropertyAdminScreensTest extends TestCase
             'Grid headers are unsized inside the pane, so they inherit larger than the '
             . 'page heading.' );
 
-        // Sizes are the type scale's variables, declared on :root in px.
-        preg_match_all( '/(--owa-text-[a-z]+):\s*(\d+)px/', $css, $tokens, PREG_SET_ORDER );
+        // Sizes are the type scale's variables, declared on :root in rem.
+        preg_match_all( '/(--owa-text-[a-z]+):\s*([\d.]+)rem/', $css, $tokens, PREG_SET_ORDER );
         $scale = array();
         foreach ( $tokens as $token ) {
-            $scale[ $token[1] ] = (int) $token[2];
+            $scale[ $token[1] ] = (float) $token[2];
         }
 
         $sizeOf = function ( string $selector ) use ( $css, $scale ) {
             $block = substr( $css, strpos( $css, $selector ) );
             $block = substr( $block, 0, strpos( $block, "\n}" ) );
-            if ( preg_match( '/font-size:\s*(\d+)px/', $block, $m ) ) {
-                return (int) $m[1];
+            if ( preg_match( '/font-size:\s*([\d.]+)rem/', $block, $m ) ) {
+                return (float) $m[1];
             }
             if ( preg_match( '/font-size:\s*var\((--owa-text-[a-z]+)\)/', $block, $m ) ) {
                 return $scale[ $m[1] ] ?? null;

@@ -276,11 +276,11 @@ test.describe('on a phone', () => {
 
     test.use(PHONE);
 
-    test('every field is 16px, so focusing it does not zoom the page', async ({ page }) => {
+    test('every field is 16px or more, so focusing it does not zoom the page', async ({ page }) => {
         await page.goto('?owa_do=base.loginForm', { waitUntil: 'networkidle' });
 
         for (const field of [page.getByLabel('User name'), page.getByLabel('Password')]) {
-            expect(await field.evaluate((el) => getComputedStyle(el).fontSize)).toBe('16px');
+            expect(await field.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(16);
             expect((await size(field)).h).toBeGreaterThanOrEqual(44);
         }
 

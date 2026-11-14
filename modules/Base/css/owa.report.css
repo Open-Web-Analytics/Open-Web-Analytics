@@ -5,7 +5,7 @@
 #report_header {width:100%; margin: 0 0 20px 0; }
 
 .owa_reportTitle, .report_headline {
-    font-size:30px;
+    font-size:1.875rem;
     line-height:1.25;
     letter-spacing:-0.01em;
     padding:0;
@@ -17,7 +17,7 @@
 .titleSuffix {
 
     font-weight: normal;
-    font-size: 20px;
+    font-size: 1.25rem;
 }
 
 .owa_reportContainer {width:auto; background-color: ; height:;}
@@ -31,7 +31,7 @@
     width:auto;
     padding:0;
     margin:0 0 16px 0;
-    font-size:16px;
+    font-size:1rem;
     font-weight:600;
     color:#111827;
 }
@@ -48,7 +48,7 @@
 .owa_reportHeadline {
     font-weight:bold;
     font-family: Helvetica, Arial, sans-serif;
-    font-size:20px;
+    font-size:1.25rem;
     margin: 10px 0 10px 0;
     color: #505050;
 }
@@ -77,7 +77,7 @@
 .owa_reportSubSectionLabel {
     color: #666666;
     border-top:2px solid #cccccc;
-    font-size: 12px;
+    font-size: 0.75rem;
     padding-left:2px;
     width:80%;
 }
@@ -104,7 +104,7 @@
 
 .owa_moreLinks li a, .owa_moreLinks a, .owa .moreLink a  {
     border:0px solid #ffffff;
-    font-size:10px;
+    font-size:0.625rem;
     text-decoration: none;
     padding-left:0px;
 }
@@ -133,8 +133,8 @@
 }
 
 #owa_reportSiteFilter {text-align:; width:100%; }
-#owa_reportSiteFilterSelect {font-size: 12px; width:200px; margin: 0px 20px; 0px 0px;}
-#owa_reportSiteFilterSelect span {font-size: 18px; font-weight: bold; vertical-align: baseline; }
+#owa_reportSiteFilterSelect {font-size: 0.75rem; width:200px; margin: 0px 20px; 0px 0px;}
+#owa_reportSiteFilterSelect span {font-size: 1.125rem; font-weight: bold; vertical-align: baseline; }
 
 /* The date range control, right of the report title. Below 600px it takes the
    whole width instead (see the narrow-screen rules). */
@@ -186,9 +186,9 @@
     text-align: right; color: #505050;
 }
 .owa_periodTrigger:hover { border-color: #a0a0a0; }
-.owa_periodTriggerMain { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 14px; }
-.owa_periodBadge { font-size: 12px; font-weight: 600; background: #eef2f7; border-radius: 4px; padding: 1px 6px; color: #374151; }
-.owa_periodTriggerCompare { font-size: 12px; color: var(--owa-period-muted); white-space: nowrap; }
+.owa_periodTriggerMain { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 0.875rem; }
+.owa_periodBadge { font-size: 0.75rem; font-weight: 600; background: #eef2f7; border-radius: 4px; padding: 1px 6px; color: #374151; }
+.owa_periodTriggerCompare { font-size: 0.75rem; color: var(--owa-period-muted); white-space: nowrap; }
 .owa_periodChevron { position: absolute; right: 12px; top: 50%; width: 7px; height: 7px; border-right: 2px solid #777; border-bottom: 2px solid #777; transform: translateY(-70%) rotate(45deg); transition: transform 0.12s ease; }
 .owa_periodTrigger[aria-expanded="true"] .owa_periodChevron { transform: translateY(-20%) rotate(225deg); }
 
@@ -196,7 +196,7 @@
     position: absolute; top: calc(100% + 6px); right: 0; z-index: 50;
     width: 680px; max-width: calc(100vw - 32px);
     display: grid; grid-template-rows: auto auto;
-    background: #fff; border-radius: 12px; color: #111827; font-size: 14px; line-height: 1.4;
+    background: #fff; border-radius: 12px; color: #111827; font-size: 0.875rem; line-height: 1.4;
     box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
     text-align: left;
 }
@@ -215,13 +215,13 @@
 .owa_periodList li > button { display: flex; align-items: center; width: 100%; min-height: 28px; padding: 3px 18px; background: none; border: 0; text-align: left; }
 .owa_periodList li > button:hover { background: #eef2f7; }
 .owa_periodList li > button[aria-pressed="true"] { background: var(--owa-period-range); color: #0d4f91; font-weight: 600; }
-.owa_periodGroup { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 18px 2px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--owa-period-muted); }
-.owa_periodGroup small { font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.owa_periodGroup { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 18px 2px; font-size: 0.6875rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--owa-period-muted); }
+.owa_periodGroup small { font-size: 0.6875rem; font-weight: 400; letter-spacing: 0; text-transform: none; }
 .owa_periodRule { border-top: 1px solid var(--owa-period-line); margin: 6px 0; }
 .owa_periodSwitchRow { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 40px; padding: 4px 18px; font-weight: 500; }
 /* What the period is compared to: one select under the switch. */
 .owa_periodCmpRow { padding: 0 18px 8px; }
-.owa_periodCmpSelect { -webkit-appearance: none; appearance: none; box-sizing: border-box; width: 100%; height: 32px; padding: 0 28px 0 8px; border: 1px solid var(--owa-period-line); border-radius: 6px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center; font: inherit; font-size: 13px; color: #111827; text-overflow: ellipsis; cursor: pointer; }
+.owa_periodCmpSelect { -webkit-appearance: none; appearance: none; box-sizing: border-box; width: 100%; height: 32px; padding: 0 28px 0 8px; border: 1px solid var(--owa-period-line); border-radius: 6px; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center; font: inherit; font-size: 0.8125rem; color: #111827; text-overflow: ellipsis; cursor: pointer; }
 /* Its own chevron: the browser's sat against the right edge. */
 .owa_periodCmpSelect:hover { border-color: #a0a0a0; }
 .owa_periodSwitch { position: relative; flex: none; width: 40px; height: 22px; border: 0; border-radius: 999px; background: #c3cad4; }
@@ -230,15 +230,15 @@
 .owa_periodSwitch[aria-checked="true"]::after { left: 21px; }
 
 .owa_periodFields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.owa_periodLabel { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--owa-period-muted); }
+.owa_periodLabel { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; color: var(--owa-period-muted); }
 .owa_periodLabel i { width: 10px; height: 10px; border-radius: 2px; background: var(--owa-period-range); border: 1px solid var(--owa-period-blue); }
 /* The comparison's icon is a short dotted line, as its line on the trend is drawn. */
 .owa_periodLabelCmp i { width: 14px; height: 0; border: 0; border-radius: 0; background: none; border-top: 2px dotted var(--owa-period-blue); }
-.owa_periodKind { margin-left: auto; font-size: 9.5px; font-weight: 400; letter-spacing: .07em; text-transform: uppercase; }
+.owa_periodKind { margin-left: auto; font-size: 0.5938rem; font-weight: 400; letter-spacing: .07em; text-transform: uppercase; }
 .owa_periodFieldRow { display: flex; align-items: center; gap: 8px; }
 .owa_periodField { display: grid; gap: 1px; flex: 1 1 0; min-width: 0; padding: 4px 10px 6px; background: #fff; border: 1px solid var(--owa-period-line); border-radius: 6px; }
 /* Darker than the muted grey: it sits on the read-only field's grey too. */
-.owa_periodField span { font-size: 12px; color: #4b5563; }
+.owa_periodField span { font-size: 0.75rem; color: #4b5563; }
 .owa_periodField input { width: 100%; min-width: 0; padding: 0; border: 0; background: transparent; font: inherit; font-variant-numeric: tabular-nums; }
 .owa_periodField input:focus { outline: none; }
 /* Focused, or the field the next day clicked sets: the same outline. */
@@ -246,16 +246,16 @@
 .owa_periodFieldCmp:focus-within, .owa_periodFieldCmp.is-target { border-color: transparent; box-shadow: none; outline: 2px dotted var(--owa-period-blue); outline-offset: -1px; }
 /* A preset's dates: read-only, so no box to type in. */
 .owa_periodField.is-readonly { background: var(--owa-period-readonly); border-color: transparent; }
-.owa_periodField .owa_periodValue { font-size: 14px; color: #374151; font-variant-numeric: tabular-nums; cursor: default; }
+.owa_periodField .owa_periodValue { font-size: 0.875rem; color: #374151; font-variant-numeric: tabular-nums; cursor: default; }
 
 .owa_periodCal { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; }
 .owa_periodCalNav { display: none; }
 .owa_periodCalWeek, .owa_periodDays { display: grid; grid-template-columns: repeat(7, 1fr); }
-.owa_periodCalWeek { padding: 6px 0; border-bottom: 1px solid var(--owa-period-line); font-size: 12px; color: var(--owa-period-muted); text-align: center; }
+.owa_periodCalWeek { padding: 6px 0; border-bottom: 1px solid var(--owa-period-line); font-size: 0.75rem; color: var(--owa-period-muted); text-align: center; }
 .owa_periodCalMonths { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px 0 8px; }
-.owa_periodMonthName { padding: 12px 6px 4px; font-size: 13px; font-weight: 600; color: var(--owa-period-muted); letter-spacing: .04em; text-transform: uppercase; }
+.owa_periodMonthName { padding: 12px 6px 4px; font-size: 0.8125rem; font-weight: 600; color: var(--owa-period-muted); letter-spacing: .04em; text-transform: uppercase; }
 .owa_periodDays { row-gap: 2px; }
-.owa_periodDay { position: relative; z-index: 0; height: 34px; padding: 0; border: 0; background: none; font-size: 13px; font-variant-numeric: tabular-nums; }
+.owa_periodDay { position: relative; z-index: 0; height: 34px; padding: 0; border: 0; background: none; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
 .owa_periodDay::before { content: ""; position: absolute; inset: 2px 0; z-index: -1; }
 .owa_periodDay > span { position: relative; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; }
 /* Each range shaded in its colour between the centres of its first and last day. */
@@ -277,7 +277,7 @@
 .owa_periodCal.is-readonly .owa_periodDay { cursor: default; }
 
 .owa_periodFoot { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border-top: 1px solid var(--owa-period-line); }
-.owa_periodWhy { min-width: 0; font-size: 12px; color: var(--owa-period-muted); }
+.owa_periodWhy { min-width: 0; font-size: 0.75rem; color: var(--owa-period-muted); }
 .owa_periodWhy b { color: #111827; font-weight: 600; }
 .owa_periodButtons { display: flex; flex: none; gap: 8px; }
 .owa_periodBtn { min-height: 36px; padding: 7px 16px; border: 1px solid var(--owa-period-line); border-radius: 6px; background: #fff; font-weight: 500; }
@@ -320,25 +320,25 @@
 
 p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel, .owa .action_infobox .action_name  {
     color:#6b7280;
-    font-size:13px;
+    font-size:0.8125rem;
     padding-top:0;
     margin-bottom:0px;
 }
 
 /* A compared grid cell: the change on its own line under the value. */
-.owa_gridChange { display: block; font-size: 11px; font-weight: 600; color: #6b7280; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: default; }
+.owa_gridChange { display: block; font-size: 0.6875rem; font-weight: 600; color: #6b7280; font-variant-numeric: tabular-nums; white-space: nowrap; cursor: default; }
 .owa_gridChange.is-up { color: #137a3e; }
 .owa_gridChange.is-down { color: #b42318; }
 
 /* Under a metric box's number when the report is compared: the change and the dates. */
-p.owa_metricInfoboxCompare { margin: 2px 0 0; font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+p.owa_metricInfoboxCompare { margin: 2px 0 0; font-size: 0.75rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 p.owa_metricInfoboxCompare .is-up { color: #137a3e; font-weight: 600; }
 p.owa_metricInfoboxCompare .is-down { color: #b42318; font-weight: 600; }
 p.owa_metricInfoboxCompare .is-flat { font-weight: 600; }
 
 p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_infobox .action_value {
     color:#111827;
-    font-size:34px;
+    font-size:2.125rem;
     letter-spacing:-0.02em;
     padding-bottom: 0px;
     margin-top:8px;
@@ -346,6 +346,15 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     font-variant-numeric: tabular-nums;
     line-height: 1.15;
     white-space:nowrap;
+}
+
+/* A phone's metric box is about a third of the screen wide, so the large
+   number is 30px there against 34px on desktop, and a value such as 71.43%
+   fits its box. In rem, so it still follows the browser's text size. */
+@media (max-width: 600px) {
+    p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
+        font-size: 1.6875rem;
+    }
 }
 
 .owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid var(--owa-accent);}
@@ -399,7 +408,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .owa_visitInfoboxTitle {
     color:#A0A0A0;
     padding:6px;
-    font-size:12px;
+    font-size:0.75rem;
     margin:0px;
 }
 
@@ -421,18 +430,18 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .owa_userNameLabel {
-    font-size: 14px;
+    font-size: 0.875rem;
 
 }
 
 .owa_userGeoLabel {
-    font-size: 10px;
-    line-height: 13px;
+    font-size: 0.625rem;
+    line-height: 0.8125rem;
 }
 
 .owa_largeNumber {
     color:#505050;
-    font-size:20px;
+    font-size:1.25rem;
 }
 
 .owa_visitInfoboxDocContainer {
@@ -440,7 +449,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     border: 1px solid #E0E0E0;
     border-collapse: collapse;
     width:100%;
-    font-size: 10px;
+    font-size: 0.625rem;
 }
 
 .owa_icon16x16 {
@@ -449,7 +458,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .owa_secondaryText {
-    font-size: 10px;
+    font-size: 0.625rem;
     color:#505050;
 }
 
@@ -468,7 +477,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .simpleTable {
-    font-size:12px;
+    font-size:0.75rem;
     width:100%;
 }
 
@@ -481,7 +490,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .simpleTable td {
     padding:3px 5px 3px 5px;
-    font-size:10px;
+    font-size:0.625rem;
 
 }
 
@@ -499,13 +508,13 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .owa_dimensionDetail .title {
 
-    font-size:22px;
+    font-size:1.375rem;
     padding-bottom: 7px;
 }
 
 .owa_dimensionDetail .url {
 
-    font-size:14px;
+    font-size:0.875rem;
     color: #0E774A;
     padding-bottom:5px;
 }
@@ -521,17 +530,17 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .owa .refererDetailPanel .snippet {
-    font-size:10px;
+    font-size:0.625rem;
     color: var(--owa-text-muted, #6b7280);
 
 }
 
 .owa .ui-widget {
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .owa .ui-tabs-nav {
-    font-size:14px;
+    font-size:0.875rem;
 }
 
 /* ---------------------------------------------------------------------------
@@ -655,7 +664,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .owa .owa_reportControl > .label,
 .owa .owa_reportControls .autoRefreshControl .label {
     display: inline-block;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #707070;
     margin-right: 6px;
     padding: 0;
@@ -710,7 +719,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
  * ------------------------------------------------------------------------- */
 
 .owa .owa_funnelHeadline {
-    font-size: 26px;
+    font-size: 1.625rem;
     font-weight: bold;
     padding-bottom: 20px;
 }
@@ -748,27 +757,27 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .owa .owa_funnelStepNumber {
-    font-size: 11px;
+    font-size: 0.6875rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--owa-text-muted, #6b7280);
 }
 
 .owa .funnelStepName {
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: bold;
     padding-bottom: 4px;
 }
 
 .owa .funnelStepCount {
-    font-size: 22px;
+    font-size: 1.375rem;
     font-weight: bold;
     padding: 4px 0;
 }
 
 .owa span.visitorCountLabel {
     vertical-align: middle;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: normal;
     color: var(--owa-text-muted, #6b7280);
 }
@@ -776,7 +785,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 /* Paths are long and must not stretch a column: the flex row would then stop
    sharing the width evenly. */
 .owa .funnelStepPath {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #707070;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -784,14 +793,14 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .owa .owa_funnelDrop {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #707070;
     padding-top: 8px;
 }
 
 .owa .secondaryText {
 
-    font-size:14px;
+    font-size:0.875rem;
     color: var(--owa-text-muted, #6b7280);
 }
 
@@ -800,7 +809,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     background-color:var(--owa-accent);
     padding:10px 10px 10px 10px;
     color:#ffffff;
-    font-size:14px;
+    font-size:0.875rem;
     font-weight:bold;
     border: 1px solid #efefef;
     -moz-border-radius: 3px;
@@ -812,7 +821,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .owa .externalUrl {
     color: #093;
-    font-size:12px;
+    font-size:0.75rem;
 }
 
 .submit-button:hover {
@@ -830,7 +839,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .dimensionPicker {
 
     width:175px;
-    font-size: 10px;
+    font-size: 0.625rem;
 
 }
 
@@ -854,7 +863,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 
 .dimensionPicker .select-button {
 
-    font-size: 10px;
+    font-size: 0.625rem;
     height:;
 
 }
@@ -866,7 +875,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 }
 
 .dimensionPicker h4 {
-    font-size:  14px;
+    font-size:  0.875rem;
     font-weight: bold;
     margin-bottom: 5px;
     margin-top: 10px;
@@ -964,7 +973,7 @@ li.constraintRow {
     background-color: #ffffff;
     background-image: none;
     font-family: inherit;
-    font-size: 11px;
+    font-size: 0.6875rem;
     color: #303030;
 }
 
@@ -1004,7 +1013,7 @@ li.constraintRow {
     color: #303030;
     opacity: 0.45;
     font-family: inherit;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 18px;
     text-align: center;
     cursor: pointer;
@@ -1017,7 +1026,7 @@ li.constraintRow {
 }
 
 .owa .constraintRow .constraintAddButton {
-    font-size: 15px;
+    font-size: 0.9375rem;
 }
 
 .owa .constraintRow .constraintAddButton:hover,
@@ -1052,9 +1061,9 @@ li.constraintRow {
     border-radius: 3px;
     background: #1874CD;
     font-family: inherit;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: bold;
-    line-height: 16px;
+    line-height: 1rem;
     color: #ffffff;
     cursor: pointer;
 }
@@ -1067,7 +1076,7 @@ li.constraintRow {
 /* Still used by the report-level control bar (the funnel's scope switch, the
    filters of module reports). The GRID's bar no longer has labels at all. */
 .controlItem .label {
-    font-size: 10px;
+    font-size: 0.625rem;
     padding-top: 7px;
     padding-right: 5px;
 }
@@ -1112,7 +1121,7 @@ li.constraintRow {
      background: #efefef;
      padding:0;
       margin:0;
-      font-size:12px;
+      font-size:0.75rem;
       margin-bottom:5px;
 }
 
@@ -1189,7 +1198,7 @@ li.constraintRow {
 .owa .notice.owa_reportDeprecated {
     margin: 0 0 12px;
     padding: 8px 14px;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.4;
     text-align: left;
 }
@@ -1337,7 +1346,7 @@ li.constraintRow {
  * wrong yet, it is a fact about the field. Hence the weight of a caption
  * rather than of a warning. */
 .owa .owa_builderRequired {
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: normal;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -1389,7 +1398,7 @@ li.constraintRow {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 15px;
+    font-size: 0.9375rem;
     color: #1f2937;
 }
 
@@ -1410,7 +1419,7 @@ li.constraintRow {
     border-radius: 4px;
     background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
     font: inherit;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #111827;
     cursor: pointer;
 }
@@ -1426,18 +1435,18 @@ li.constraintRow {
  */
 .owa .owa_chartLegend {
     margin-top: 6px;
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 /* The axis labels flot writes as text over the plot (flot measures them, so
    the plot leaves room for this size). */
 .owa .owa_areaChart .flot-tick-label {
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 /* A compared chart's tooltip: the day against its comparison day, then each line. */
-.owa_chartTipHead { padding: 2px 4px 4px; font-size: 12px; color: #374151; white-space: nowrap; }
-.owa_chartTip { border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.owa_chartTipHead { padding: 2px 4px 4px; font-size: 0.75rem; color: #374151; white-space: nowrap; }
+.owa_chartTip { border-collapse: collapse; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
 .owa_chartTip th { padding: 1px 10px 1px 4px; font-weight: 400; text-align: left; white-space: nowrap; }
 /* A long page path is cut short, not left to widen the tooltip off the page. */
 .owa_chartTip th span { display: inline-block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
@@ -1448,7 +1457,7 @@ li.constraintRow {
 .owa_chartTip td.owa_chartTipWas { color: #6b7280; }
 
 /* A compared trend's key: the period solid, the comparison dashed. */
-.owa .owa_chartKey { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12px; color: #374151; }
+.owa .owa_chartKey { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 0.75rem; color: #374151; }
 .owa .owa_chartKey span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .owa .owa_chartKey i { width: 18px; height: 0; border-top: 2px solid; }
 .owa .owa_chartKey .owa_chartKeyCompare i { border-top-style: dashed; }
@@ -1469,8 +1478,8 @@ li.constraintRow {
     padding: 2px 10px 2px 3px;
     vertical-align: middle;
     border: 0;
-    /* flot sets font-size:smaller on its table; the entries keep 12px. */
-    font-size: 12px;
+    /* flot sets font-size:smaller on its table; the entries keep 0.75rem. */
+    font-size: 0.75rem;
 }
 
 .owa .owa_chartLegend .legendColorBox div {
@@ -1601,7 +1610,7 @@ li.constraintRow {
 }
 
 .owa .owa_typeChoiceIcon {
-    font-size: 18px;
+    font-size: 1.125rem;
     line-height: 1;
 }
 
@@ -1621,14 +1630,14 @@ li.constraintRow {
 
 .owa .owa_typeChoiceName {
     display: block;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #111827;
 }
 
 .owa .owa_typeChoiceHint {
     display: block;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #4b5563;
     line-height: 1.45;
 
@@ -1665,7 +1674,7 @@ li.constraintRow {
 
 .owa .owa_rosterCount {
     margin-left: auto;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #6b7280;
 }
 
@@ -1685,7 +1694,7 @@ li.constraintRow {
     height: 30px;
     padding: 0 12px;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #4b5563;
     text-decoration: none;
     white-space: nowrap;
@@ -1725,14 +1734,14 @@ li.constraintRow {
     padding-top: 12px;
     padding-bottom: 12px;
     border-bottom: 1px solid #e5e7eb;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
     color: #6b7280;
 }
 
 .owa table.owa_customReportRoster td {
     border-bottom: 1px solid #f1f3f6;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #374151;
 }
 
@@ -1747,7 +1756,7 @@ li.constraintRow {
 }
 
 .owa .owa_rosterName > a {
-    font-size: 15px;
+    font-size: 0.9375rem;
     color: #1874CD;
     text-decoration: none;
 }
@@ -1815,7 +1824,7 @@ li.constraintRow {
     padding: 0 8px;
     border-radius: 10px;
     background: #f3f5f8;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #4b5563;
     white-space: nowrap;
     vertical-align: middle;
@@ -1829,13 +1838,13 @@ li.constraintRow {
 .owa .owa_rosterNote,
 .owa .owa_rosterEmpty {
     margin: 20px 0 0;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.5;
     color: #6b7280;
 }
 
 .owa .owa_rosterEmpty {
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #374151;
 }
 
@@ -1848,7 +1857,7 @@ li.constraintRow {
 }
 
 .owa .owa_sortIndicator {
-    font-size: 11px;
+    font-size: 0.6875rem;
 }
 
 /* A count beside a report title, and actions on the title's line. */
@@ -1859,7 +1868,7 @@ li.constraintRow {
     border-radius: 12px;
     background-color: #e6e6e6;
     color: #505050;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: normal;
     vertical-align: middle;
 }
@@ -1880,7 +1889,7 @@ li.constraintRow {
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     background: #ffffff;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #111827;
     text-decoration: none;
     white-space: nowrap;
@@ -1938,7 +1947,7 @@ li.constraintRow {
     height: 36px;
     margin-left: 4px;
     border-radius: 18px;
-    font-size: 17px;
+    font-size: 1.0625rem;
     line-height: 1;
     color: #4b5563;
     text-decoration: none;
@@ -1970,7 +1979,7 @@ li.constraintRow {
     padding: 0 8px;
     border-radius: 10px;
     background: #f3f5f8;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 400;
     letter-spacing: 0;
     color: #4b5563;
@@ -2005,7 +2014,7 @@ li.constraintRow {
     border-radius: 8px;
     background: #ffffff;
     font: inherit;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #111827;
     text-decoration: none;
     white-space: nowrap;
@@ -2051,7 +2060,7 @@ li.constraintRow {
     border-radius: 16px;
     background: transparent;
     color: #4b5563;
-    font-size: 14px;
+    font-size: 0.875rem;
     cursor: pointer;
 }
 
@@ -2085,7 +2094,7 @@ li.constraintRow {
     border: 1px solid #d1d5db;
     border-radius: 8px;
     font: inherit;
-    font-size: 22px;
+    font-size: 1.375rem;
     font-weight: 600;
     color: #111827;
 }
@@ -2110,7 +2119,7 @@ li.constraintRow {
 .owa .owa_widgetPanel label,
 .owa .owa_widgetPanel legend,
 .owa .owa_builderLabel {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #4b5563;
 }
@@ -2122,7 +2131,7 @@ li.constraintRow {
     align-items: center;
     gap: 10px;
     height: 44px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 400;
     color: #374151;
     cursor: pointer;
@@ -2176,7 +2185,7 @@ li.constraintRow {
 /* Why Save will not go. */
 .owa .owa_builderBlocker {
     margin: 12px 0 0;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #99321f;
 }
 
@@ -2190,18 +2199,18 @@ li.constraintRow {
 
 .owa .owa_editorSectionHead h2 {
     margin: 0;
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 600;
 }
 
 .owa .owa_builderBudget {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #6b7280;
 }
 
 .owa .owa_builderEmpty {
     margin: 0 0 16px;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #4b5563;
 }
 
@@ -2267,7 +2276,7 @@ li.constraintRow {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #6b7280;
 }
 
@@ -2293,14 +2302,14 @@ li.constraintRow {
 }
 
 .owa .owa_builderBlockName {
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: #111827;
     overflow-wrap: anywhere;
 }
 
 .owa .owa_builderBlockSummary {
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.45;
     color: #4b5563;
     overflow-wrap: anywhere;
@@ -2315,7 +2324,7 @@ li.constraintRow {
     align-items: center;
     gap: 8px;
     margin-top: auto;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #6b7280;
 }
 
@@ -2341,7 +2350,7 @@ li.constraintRow {
     border-radius: 12px;
     background: transparent;
     font: inherit;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #1874CD;
     cursor: pointer;
@@ -2358,7 +2367,7 @@ li.constraintRow {
 }
 
 .owa .owa_builderDelete {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #99321f;
 }
 
@@ -2398,7 +2407,7 @@ li.constraintRow {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #6b7280;
 }
 
@@ -2426,7 +2435,7 @@ li.constraintRow {
 
 .owa .owa_widgetPanelHead h2 {
     margin: 6px 0 0;
-    font-size: 18px;
+    font-size: 1.125rem;
     font-weight: 600;
 }
 
@@ -2475,7 +2484,7 @@ li.constraintRow {
     border-radius: 8px;
     background-color: #ffffff;
     font: inherit;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #111827;
 }
 
@@ -2487,14 +2496,14 @@ li.constraintRow {
 
 .owa .owa_builderHelp {
     margin-top: 6px;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.45;
     color: #6b7280;
 }
 
 .owa .owa_builderNote {
     flex: 1 1 100%;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.45;
     color: #4b5563;
 }
@@ -2504,7 +2513,7 @@ li.constraintRow {
     padding: 10px 12px;
     border-radius: 8px;
     background: #fdf0e6;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #9a3d0c;
 }
 
@@ -2532,7 +2541,7 @@ li.constraintRow {
     height: 30px;
     padding: 0 10px;
     border-radius: 8px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 400;
     color: #4b5563;
     cursor: pointer;
@@ -2572,8 +2581,8 @@ li.constraintRow {
     border-radius: 14px;
     background: #eef4fb;
     box-shadow: none;
-    font-size: 13px;
-    line-height: 18px;
+    font-size: 0.8125rem;
+    line-height: 1.125rem;
     color: #0f4f8f;
 }
 
@@ -2589,7 +2598,7 @@ li.constraintRow {
     border-radius: 8px;
     background: #ffffff;
     box-shadow: none;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 38px;
     color: #111827;
 }
@@ -2633,7 +2642,7 @@ li.constraintRow {
     padding: 0 4px 0 12px;
     border-radius: 16px;
     background: #eef4fb;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #0f4f8f;
     white-space: nowrap;
 }
@@ -2656,7 +2665,7 @@ li.constraintRow {
     border-radius: 12px;
     background: transparent;
     color: #0f4f8f;
-    font-size: 12px;
+    font-size: 0.75rem;
     cursor: pointer;
 }
 
@@ -2719,7 +2728,7 @@ li.constraintRow {
     align-items: baseline;
     gap: 8px;
     margin: 0 0 8px;
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 600;
 }
 
@@ -2755,7 +2764,7 @@ li.constraintRow {
 
 .owa .owa_funnelStepNumber {
     width: 20px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-variant-numeric: tabular-nums;
     color: #6b7280;
 }
@@ -2771,7 +2780,7 @@ li.constraintRow {
     border-radius: 8px;
     background-color: #ffffff;
     font: inherit;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #111827;
 }
 
@@ -2798,7 +2807,7 @@ li.constraintRow {
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .owa .owa_funnelStep .owa_funnelStepCustomEvent {
@@ -2864,13 +2873,13 @@ li.constraintRow {
     border-radius: 8px;
     background: #ffffff;
     box-shadow: none;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 38px;
 }
 
 .owa .owa_funnelPreviewNote {
     margin: 0 0 12px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #6b7280;
 }
 
@@ -2892,7 +2901,7 @@ li.constraintRow {
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 .owa .owa_funnelPreviewName {
@@ -2931,7 +2940,7 @@ li.constraintRow {
 .owa .owa_funnelPreviewSummary,
 .owa .owa_funnelPreviewEmpty {
     margin: 20px 0 0;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #374151;
 }
 
@@ -2950,7 +2959,7 @@ li.constraintRow {
 
 .owa .owa_funnelSavedFilter {
     margin: 0 0 16px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #4b5563;
 }
 
@@ -2997,7 +3006,7 @@ li.constraintRow {
     border-radius: 12px 12px 0 0;
     background: #ffffff;
     padding: 24px 24px 8px;
-    font-size: 18px;
+    font-size: 1.125rem;
 }
 
 .owa_typeDialogFrame .ui-dialog-title {
@@ -3142,13 +3151,13 @@ li.constraintRow {
 .owa .owa_reportSectionHeader .owa_moreLinks {
     margin: 0;
     padding: 0;
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: normal;
     white-space: nowrap;
 }
 
 .owa .owa_reportSectionHeader .owa_moreLinks a {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #1874CD;
 }
 
@@ -3166,7 +3175,7 @@ li.constraintRow {
 }
 
 .owa .owa_moreLinks.owa_cardFoot a {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #1874CD;
 }
 
@@ -3209,8 +3218,8 @@ li.constraintRow {
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 6px;
-    font-size: 14px;
-    line-height: 20px;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
 }
 
 .owa .owa_shareLabel {
@@ -3251,7 +3260,7 @@ li.constraintRow {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 12px;
+    font-size: 0.75rem;
     color: var(--owa-text-muted, #6b7280);
     white-space: nowrap;
     pointer-events: none;
@@ -3376,7 +3385,7 @@ li.constraintRow {
     box-shadow: 0 1px 3px rgba(17, 24, 39, 0.16), 0 0 8px 6px #ffffff;
 
     color: #374151;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 1;
     cursor: pointer;
 }
@@ -3487,7 +3496,7 @@ li.constraintRow {
     background: #ffffff;
     box-shadow: 0 8px 24px rgba(17, 24, 39, 0.14);
     color: #111827;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 400;
     line-height: 1.4;
     letter-spacing: normal;
@@ -3538,7 +3547,7 @@ li.constraintRow {
    row; still the largest thing in the widget, which is what makes it the
    headline. */
 .owa .owa_widget-trend-card:not(.owa_span-12) .owa_trendCardMetrics .owa_metricInfoboxLargeNumber {
-    font-size: 22px;
+    font-size: 1.375rem;
 }
 
 /* A trend card the width of the report has the room for a chart that is. */
@@ -3584,7 +3593,7 @@ li.constraintRow {
 .owa .owa_filterToggle {
     display: inline-block;
     /* 16px, which is what every other icon on the page is. */
-    font-size: 16px;
+    font-size: 1rem;
     line-height: 1;
     padding: 2px;
     color: #303030;
@@ -3613,9 +3622,9 @@ li.constraintRow {
     border-radius: 9px;
     background-color: #c0392b;
     color: #ffffff;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: bold;
-    line-height: 16px;
+    line-height: 1rem;
     text-align: center;
     vertical-align: middle;
 }
@@ -3625,7 +3634,7 @@ li.constraintRow {
  * its own filter control): a pill per chosen select.
  */
 .owa .constraintRow .chosen-container {
-    font-size: 11px;
+    font-size: 0.6875rem;
     max-width: 100%;
     /* Content width, not the 100% chosen was given at enhancement time. */
     width: auto !important;
@@ -3684,7 +3693,7 @@ li.constraintRow {
     border-radius: 12px;
     background-color: #e6e6e6;
     color: #303030;
-    font-size: 11px;
+    font-size: 0.6875rem;
     line-height: 1.4;
     white-space: nowrap;
 }
@@ -3701,7 +3710,7 @@ li.constraintRow {
 .owa .owa_dimPillRemove {
     color: var(--owa-text-muted, #6b7280);
     text-decoration: none;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1;
 }
 
@@ -3715,7 +3724,7 @@ li.constraintRow {
 }
 
 .owa .owa_dimPillAdd .chosen-container {
-    font-size: 11px;
+    font-size: 0.6875rem;
 }
 
 
@@ -3746,7 +3755,8 @@ li.constraintRow {
  *
  * Five sizes, named by role rather than by pixel, so a screen says what a piece
  * of text IS and the scale decides how big that is. On :root because jQuery
- * UI moves a dialog to the end of <body>, outside every OWA wrapper.
+ * UI moves a dialog to the end of <body>, outside every OWA wrapper. In rem,
+ * so they follow the root (owa.css): 18, 15, 13, 12 and 11px at a 16px root.
  *
  *   xl  page headline
  *   lg  section heading, dialog title
@@ -3755,11 +3765,11 @@ li.constraintRow {
  *   xs  notes beneath a field, nav group heads, ids, badges
  * ------------------------------------------------------------------------ */
 :root {
-    --owa-text-xl: 18px;
-    --owa-text-lg: 15px;
-    --owa-text-md: 13px;
-    --owa-text-sm: 12px;
-    --owa-text-xs: 11px;
+    --owa-text-xl: 1.125rem;
+    --owa-text-lg: 0.9375rem;
+    --owa-text-md: 0.8125rem;
+    --owa-text-sm: 0.75rem;
+    --owa-text-xs: 0.6875rem;
 
     /* The orange in the logo (modules/Base/i/owa-logo.svg). */
     --owa-accent: #f47a17;
@@ -3874,7 +3884,7 @@ li.constraintRow {
 /* The two tiers, weighted by how specific each is to where you are. */
 .owa_siteControlOrg {
     color: var(--owa-text-muted, #6b7280);
-    font-size: 10px;
+    font-size: 0.625rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -3901,8 +3911,8 @@ li.constraintRow {
     top: 50%;
     margin-top: -6px;
     color: #777777;
-    font-size: 12px;
-    line-height: 12px;
+    font-size: 0.75rem;
+    line-height: 0.75rem;
     transition: transform 0.12s ease;
 }
 
@@ -4861,13 +4871,13 @@ li.constraintRow {
     border-left: 4px solid #9a6700;
     border-radius: 3px;
     background: #fffaf0;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.6;
     color: #404040;
 }
 
 .owa_reportNotReadyHeadline {
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: bold;
     color: #303030;
     margin-bottom: 4px;
@@ -4878,7 +4888,7 @@ li.constraintRow {
     border: 1px solid #e6e6e6;
     border-radius: 3px;
     padding: 8px 10px;
-    font-size: 12px;
+    font-size: 0.75rem;
     overflow-x: auto;
 }
 
@@ -4892,7 +4902,7 @@ li.constraintRow {
  */
 .owa_reportAsOf {
     margin: 8px 0 0 0;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #6b7280;
     visibility: hidden;
 }
@@ -4919,7 +4929,7 @@ li.constraintRow {
 .owa_realtimeLead,
 .owa_realtimeHint {
     color: #666666;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.4;
     margin: 0 0 12px 0;
 }
@@ -4930,7 +4940,7 @@ li.constraintRow {
     border-left: 3px solid #9a6700;
     padding: 6px 10px;
     margin: 0 0 12px 0;
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .owa_realtimeStatus.is-stopped {
@@ -4953,13 +4963,13 @@ li.constraintRow {
 
 .owa_realtimeKpiLabel {
     color: #666666;
-    font-size: 11px;
+    font-size: 0.6875rem;
     text-transform: uppercase;
     letter-spacing: .04em;
 }
 
 .owa_realtimeKpiValue {
-    font-size: 32px;
+    font-size: 2rem;
     font-weight: bold;
     color: #505050;
     font-variant-numeric: tabular-nums;
@@ -5021,7 +5031,7 @@ li.constraintRow {
 
 .owa_realtimeMapNote {
     color: #666666;
-    font-size: 11px;
+    font-size: 0.6875rem;
     margin: 6px 0 0 0;
 }
 
@@ -5040,7 +5050,7 @@ li.constraintRow {
 
 .owa_realtimeCard h3 {
     margin: 0 0 8px 0;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 .owa_realtimeGoalTotal {
@@ -5050,7 +5060,7 @@ li.constraintRow {
 .owa_realtimeTable {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 0.75rem;
     table-layout: fixed;
 }
 
@@ -5085,7 +5095,7 @@ li.constraintRow {
     list-style: none;
     margin: 0;
     padding: 0;
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .owa_realtimeEvents li {
@@ -5170,7 +5180,7 @@ li.constraintRow {
         margin-left: auto;
         border: 0;
         background: transparent;
-        font-size: 20px;
+        font-size: 1.25rem;
         color: #555555;
         cursor: pointer;
     }
@@ -5213,7 +5223,7 @@ li.constraintRow {
         padding: 0;
         border: 0;
         background: transparent;
-        font-size: 22px;
+        font-size: 1.375rem;
         color: #555555;
         cursor: pointer;
     }
@@ -5292,37 +5302,40 @@ li.constraintRow {
         grid-template-rows: auto minmax(0, 1fr) auto; border-radius: 0; box-shadow: none;
         padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
     }
-    .owa_periodSheetHead { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--owa-period-line); font-size: 17px; font-weight: 600; }
-    .owa_periodSheetHead button { width: 44px; height: 44px; margin: -10px -10px -10px 0; border: 0; background: none; font-size: 24px; }
+    .owa_periodSheetHead { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--owa-period-line); font-size: 1.0625rem; font-weight: 600; }
+    .owa_periodSheetHead button { width: 44px; height: 44px; margin: -10px -10px -10px 0; border: 0; background: none; font-size: 1.5rem; }
     .owa_periodBody { display: block; overflow-y: auto; min-height: 0; }
     .owa_periodLeft { display: none; }
     .owa_periodRight { contain: none; min-height: 0; grid-template-rows: none; gap: 12px; padding: 0 16px 16px; }
     .owa_periodChips { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 12px 16px; scrollbar-width: none; }
-    .owa_periodChips button { flex: none; min-height: 40px; padding: 0 14px; border: 1px solid var(--owa-period-line); border-radius: 999px; background: #fff; font-size: 15px; white-space: nowrap; }
+    .owa_periodChips button { flex: none; min-height: 40px; padding: 0 14px; border: 1px solid var(--owa-period-line); border-radius: 999px; background: #fff; font-size: 0.9375rem; white-space: nowrap; }
     .owa_periodChips button[aria-pressed="true"] { background: var(--owa-period-blue); border-color: var(--owa-period-blue); color: #fff; }
     .owa_periodChipsCmp { padding-top: 0; }
     .owa_periodChipsCmp button[aria-pressed="true"] { background: #fff; border: 2px dotted var(--owa-period-blue); color: #0d4f91; }
     .owa_periodPhoneCompare { display: block; }
 
-    .owa_periodPhoneCompare .owa_periodSwitchRow { padding: 4px 0; font-size: 16px; }
-    .owa_periodField input, .owa_periodField .owa_periodValue { font-size: 16px; }
+    .owa_periodPhoneCompare .owa_periodSwitchRow { padding: 4px 0; font-size: max(16px, 0.8125rem); }
+    /* The sheet is a phone's upright and sideways; sideways the root is not
+       raised, so each size is the larger of its floor there and its share of
+       the root. */
+    .owa_periodField input, .owa_periodField .owa_periodValue { font-size: max(16px, 0.8125rem); }
     /* The field's box is the target; the input inside it has no border. */
     .owa_periodField input { min-height: 0; }
-    .owa_periodKind { font-size: 11px; }
+    .owa_periodKind { font-size: max(11px, 0.5938rem); }
     .owa_periodCal { grid-template-rows: auto auto auto; padding: 6px 8px 8px; border: 1px solid var(--owa-period-line); border-radius: 10px; }
-    .owa_periodCalNav { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; font-size: 16px; font-weight: 600; }
-    .owa_periodCalNav button { width: 44px; height: 44px; border: 1px solid var(--owa-period-line); border-radius: 8px; background: #fff; font-size: 20px; line-height: 1; }
+    .owa_periodCalNav { display: flex; align-items: center; justify-content: space-between; padding: 2px 0; font-size: 1rem; font-weight: 600; }
+    .owa_periodCalNav button { width: 44px; height: 44px; border: 1px solid var(--owa-period-line); border-radius: 8px; background: #fff; font-size: 1.25rem; line-height: 1; }
     .owa_periodCalNav button:disabled { opacity: .35; cursor: default; }
     .owa_periodCalMonths { overflow: visible; padding-top: 0; }
     .owa_periodMonth { display: none; }
     .owa_periodMonth.is-page { display: block; }
     .owa_periodMonthName { display: none; }
-    .owa_periodDay { height: 44px; font-size: 16px; }
+    .owa_periodDay { height: 44px; font-size: max(16px, 0.8125rem); }
     .owa_periodDay > span { width: 38px; height: 38px; }
     .owa_periodFoot { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 16px 14px; }
-    .owa_periodWhy { font-size: 13px; }
+    .owa_periodWhy { font-size: max(13px, 0.75rem); }
     .owa_periodButtons { width: 100%; }
-    .owa_periodBtn { flex: 1 1 0; min-height: 44px; font-size: 16px; }
+    .owa_periodBtn { flex: 1 1 0; min-height: 44px; font-size: max(16px, 0.8125rem); }
 }
 
 /*
@@ -5337,7 +5350,7 @@ li.constraintRow {
        making its own line taller. */
     .owa_metricDescribed::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 
-    .owa .owa_chartGranularity { height: 44px; font-size: 16px; }
+    .owa .owa_chartGranularity { height: 44px; font-size: max(16px, 0.8125rem); }
 
     .owa .ui-tabs .ui-tabs-nav .ui-tabs-anchor { display: inline-flex; align-items: center; min-height: 44px; padding-bottom: 0; }
 
@@ -5370,20 +5383,19 @@ li.constraintRow {
     /* The period's trigger across the screen, its range free to wrap. */
     .owa_reportHeadControls, .owa_reportPeriod { width: 100%; }
     .owa_periodTrigger { width: 100%; justify-items: start; text-align: left; min-height: 48px; padding: 8px 36px 8px 12px; }
-    .owa_periodTriggerMain { flex-wrap: wrap; white-space: normal; font-size: 16px; }
-    .owa_periodTriggerCompare { font-size: 13px; white-space: normal; }
+    .owa_periodTriggerMain { flex-wrap: wrap; white-space: normal; font-size: 0.9rem; }
+    .owa_periodTriggerCompare { white-space: normal; }
+
+    /* The Property chooser's tiers keep at least the sizes they had on a
+       phone before the type scale: 12, 17 and 13px at the phone's root. */
+    .owa_siteControlOrg { font-size: 0.6875rem; }
+    .owa_siteControlProperty { font-size: 0.95rem; }
+    .owa_siteControlDomain { font-size: 0.75rem; }
 
     /* The menu takes the whole screen: beside a sliver of page it was 280px of
        menu next to something too narrow to read. */
     .owa_reportNavRail { width: 100%; max-width: none; box-shadow: none; }
 
-    .owa_siteControl {
-        --owa-text-xs: 13px;
-        --owa-text-sm: 15px;
-        --owa-text-lg: 17px;
-    }
-    .owa_siteControlOrg { font-size: 12px; }
-    .owa_siteControlCaret { font-size: 14px; }
     .owa_siteControlSummary { padding: 10px 28px 10px 12px; }
     .owa_siteControlItem { padding: 12px; min-height: 44px; box-sizing: border-box; }
     .owa_siteControlColumnHead { padding: 10px 12px; }
@@ -5393,13 +5405,12 @@ li.constraintRow {
     .owa_hierarchyContent #panel { padding: 14px; min-width: 0; }
 
     /* A setting below the install: the value or its control on its own line,
-       the Override switch beneath it as a 44px target. Controls are 16px, as
-       iOS zooms below that. */
+       the Override switch beneath it as a 44px target. Controls take the
+       phone's 16px floor (owa.css). */
     .owa_hierarchyContent #panel .owa-overridable { flex-direction: column; align-items: stretch; gap: 4px; }
     .owa_hierarchyContent #panel .owa-overridable__value input,
-    .owa_hierarchyContent #panel .owa-overridable__value select { font-size: 16px; min-height: 44px; width: 100%; }
-    .owa_hierarchyContent #panel .owa-inherited { font-size: 16px; }
-    .owa_hierarchyContent #panel .owa-override { align-self: flex-start; margin-left: 0; min-height: 44px; font-size: 15px; }
+    .owa_hierarchyContent #panel .owa-overridable__value select { min-height: 44px; width: 100%; }
+    .owa_hierarchyContent #panel .owa-override { align-self: flex-start; margin-left: 0; min-height: 44px; }
 
     /* A data table wider than a phone scrolls inside its own box, as a
        report's tables do inside their widgets, instead of widening the page.
@@ -5426,10 +5437,10 @@ li.constraintRow {
     #panel table.management.owa_cardTable tr { display: block; margin: 0 0 12px; padding: 6px 0; border: 1px solid #d0d7de; border-radius: 8px; }
 
     .owa table.management.owa_cardTable td,
-    #panel table.management.owa_cardTable td { padding: 6px 12px; border: 0; background: none; font-size: 15px; overflow-wrap: anywhere; }
+    #panel table.management.owa_cardTable td { padding: 6px 12px; border: 0; background: none; overflow-wrap: anywhere; }
 
     .owa table.management.owa_cardTable td[data-label]::before,
-    #panel table.management.owa_cardTable td[data-label]::before { content: attr(data-label); display: block; color: #57606a; font-size: 12px; font-weight: 600; }
+    #panel table.management.owa_cardTable td[data-label]::before { content: attr(data-label); display: block; color: #57606a; font-size: 0.75rem; font-weight: 600; }
 
     .owa table.management.owa_cardTable td.owa_rowActions,
     #panel table.management.owa_cardTable td.owa_rowActions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -5478,7 +5489,7 @@ li.constraintRow {
     align-items: center;
     gap: 8px;
     margin-bottom: 12px;
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
 /* The rows indent under the sentence that opens them. Scoped like the settings
@@ -5499,7 +5510,7 @@ li.constraintRow {
 .owa .owa_funnelConditionHelp {
     flex-basis: 100%;
     margin: 0 0 0 2px;
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.4;
     color: #666666;
 }
@@ -5530,7 +5541,7 @@ li.constraintRow {
 .owa .owa_goalBuilder .chosen-results .owa_goalOptionName,
 .owa .owa_funnelConditions .chosen-results .owa_funnelOptionName {
     display: block;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #303030;
 }
@@ -5539,7 +5550,7 @@ li.constraintRow {
 .owa .owa_funnelConditions .chosen-results .owa_funnelOptionDescription {
     display: block;
     margin-top: 1px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     color: #707070;
 }
 
@@ -5563,7 +5574,7 @@ li.constraintRow {
 
 /* The event picker is part of the sentence's text, not a pill. */
 .owa .owa_goalSentence .chosen-container {
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 
 @media (max-width: 600px) {
