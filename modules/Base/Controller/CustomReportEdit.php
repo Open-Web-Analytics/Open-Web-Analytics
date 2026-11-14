@@ -88,7 +88,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
             if ( ! $report ) {
 
-                $this->set( 'custom_report_error', 'That report no longer exists.' );
+                $this->set( 'custom_report_error', \OWA\Core\CoreAPI::t( 'That report no longer exists.' ) );
 
             } else {
 
@@ -109,7 +109,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
                      */
                     $report = null;
                     $this->set( 'custom_report_error',
-                        'That report belongs to somebody else. You can view it, but not change it.' );
+                        \OWA\Core\CoreAPI::t( 'That report belongs to somebody else. You can view it, but not change it.' ) );
                 }
             }
         }
@@ -197,7 +197,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
         $this->set( 'metric_choices',    self::metricChoices() );
         $this->set( 'dimension_choices', self::dimensionChoices( $propertyId ) );
-        $this->set( 'widget_types',      \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPES );
+        $this->set( 'widget_types',      \OWA\Module\Base\Classes\CustomReports::translatedTable( \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPES ) );
         $this->set( 'max_widgets',       \OWA\Module\Base\Classes\CustomReports::MAX_WIDGETS );
         $this->set( 'max_metrics',       \OWA\Module\Base\Classes\CustomReports::MAX_METRICS );
         $this->set( 'max_dimensions',    \OWA\Module\Base\Classes\CustomReports::MAX_DIMENSIONS );
@@ -394,7 +394,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         // $this->data, not $this->get() -- get() reads the request, and this
         // was set by action().
         $this->set( 'title', ! empty( $this->data['custom_report_id'] )
-            ? 'Edit Custom Report' : 'New Custom Report' );
+            ? \OWA\Core\CoreAPI::t( 'Edit Custom Report' ) : \OWA\Core\CoreAPI::t( 'New Custom Report' ) );
 
         /*
          * The reporting NAV is hidden: this is one screen about one report, and

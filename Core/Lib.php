@@ -128,6 +128,21 @@ class Lib {
     }
 
     /**
+     * The English noun for a count, for operator output (CLI and log
+     * messages), which is outside the catalogue: $one for 1, $many otherwise.
+     * A user-facing message uses CoreAPI::tn() instead.
+     *
+     * @param  int|float $n
+     * @param  string    $one
+     * @param  string    $many
+     * @return string
+     */
+    public static function plural( $n, $one, $many ) {
+
+        return (int) $n === 1 ? (string) $one : (string) $many;
+    }
+
+    /**
      * Information array for Months in the year.
      *
      * @return array
@@ -136,18 +151,18 @@ class Lib {
 
         return array(
 
-                    1 => array('label' => 'January'),
-                    2 => array('label' => 'February'),
-                    3 => array('label' => 'March'),
-                    4 => array('label' => 'April'),
-                    5 => array('label' => 'May'),
-                    6 => array('label' => 'June'),
-                    7 => array('label' => 'July'),
-                    8 => array('label' => 'August'),
-                    9 => array('label' => 'September'),
-                    10 => array('label' => 'October'),
-                    11 => array('label' => 'November'),
-                    12 => array('label' => 'December')
+                    1 => array('label' => \OWA\Core\CoreAPI::t( 'January' )),
+                    2 => array('label' => \OWA\Core\CoreAPI::t( 'February' )),
+                    3 => array('label' => \OWA\Core\CoreAPI::t( 'March' )),
+                    4 => array('label' => \OWA\Core\CoreAPI::t( 'April' )),
+                    5 => array('label' => \OWA\Core\CoreAPI::t( 'May' )),
+                    6 => array('label' => \OWA\Core\CoreAPI::t( 'June' )),
+                    7 => array('label' => \OWA\Core\CoreAPI::t( 'July' )),
+                    8 => array('label' => \OWA\Core\CoreAPI::t( 'August' )),
+                    9 => array('label' => \OWA\Core\CoreAPI::t( 'September' )),
+                    10 => array('label' => \OWA\Core\CoreAPI::t( 'October' )),
+                    11 => array('label' => \OWA\Core\CoreAPI::t( 'November' )),
+                    12 => array('label' => \OWA\Core\CoreAPI::t( 'December' ))
         );
 
     }

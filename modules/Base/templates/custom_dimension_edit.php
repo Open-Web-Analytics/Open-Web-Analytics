@@ -8,27 +8,25 @@
  * with its reason beside the name and what was typed still in the fields.
  */
 ?>
-<h1 class="panel_headline">New Custom Dimension</h1>
+<h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'New Custom Dimension' ) ); ?></h1>
 <div id="panel">
 
 <div class="owa_panelIntro">
-    Register a value your site sets on an event or a visitor, so reports can group by it.
+    <?php $view->out( \OWA\Core\CoreAPI::t( 'Register a value your site sets on an event or a visitor, so reports can group by it.' ) ); ?>
 </div>
 
 <?php if ( ! $view->cube['exists'] ): ?>
 
     <div class="owa_panelIntro">
-        <b>This Property has not collected anything yet.</b>
-        Its reporting cube is created the first time data arrives, and there is nothing to
-        add a column to until then. Come back once the tracker has sent something.
+        <b><?php $view->out( \OWA\Core\CoreAPI::t( 'This Property has not collected anything yet.' ) ); ?></b>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'Its reporting cube is created the first time data arrives, and there is nothing to add a column to until then. Come back once the tracker has sent something.' ) ); ?>
     </div>
 
 <?php elseif ( $view->used >= $view->cube['capacity'] ): ?>
 
     <div class="owa_panelIntro">
-        <b>This Property has no room for another.</b>
-        All <?php echo (int) $view->cube['capacity']; ?> are in use. Remove one from the list
-        to make room.
+        <b><?php $view->out( \OWA\Core\CoreAPI::t( 'This Property has no room for another.' ) ); ?></b>
+        <?php $view->out( sprintf( \OWA\Core\CoreAPI::tn( 'All %d are in use. Remove one from the list to make room.', 'All %d are in use. Remove one from the list to make room.', (int) $view->cube['capacity'] ), (int) $view->cube['capacity'] ) ); ?>
     </div>
 
 <?php else: ?>
@@ -36,9 +34,8 @@
 <form method="post" name="owa-custom-dimension-form">
 
     <div class="setting">
-        <div class="title"><label for="owa-cd-key">Name</label></div>
-        <div class="description">The name your tracker sets it under, exactly: for <code>setEventProperty('plan', ...)</code>, <code>plan</code>.
-            Letters, digits and underscores, starting with a letter.</div>
+        <div class="title"><label for="owa-cd-key"><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?></label></div>
+        <div class="description"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'The name your tracker sets it under, exactly: for %1$s, %2$s. Letters, digits and underscores, starting with a letter.' ), '<code>setEventProperty(\'plan\', ...)</code>', '<code>plan</code>' ); ?></div>
         <div class="field">
             <input class="owa_largeFormField" type="text" id="owa-cd-key"
                 name="dimensionKey"
@@ -49,8 +46,8 @@
     </div>
 
     <div class="setting">
-        <div class="title"><label for="owa-cd-label">Label</label></div>
-        <div class="description">What reports call it. Defaults to the name.</div>
+        <div class="title"><label for="owa-cd-label"><?php $view->out( \OWA\Core\CoreAPI::t( 'Label' ) ); ?></label></div>
+        <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'What reports call it. Defaults to the name.' ) ); ?></div>
         <div class="field">
             <input class="owa_largeFormField" type="text" id="owa-cd-label"
                 name="label"
@@ -59,13 +56,8 @@
     </div>
 
     <div class="setting">
-        <div class="title"><label for="owa-cd-scope">Scope</label></div>
-        <div class="description"><b>event</b> &mdash; describes one thing that happened, set with
-            <code>setEventProperty()</code>.
-            <b>user</b> &mdash; describes the visitor, set with
-            <code>setUserProperty()</code>, and carried onto every event of theirs.
-            There is no session scope: a session-scoped value is one a report derives,
-            not one a browser carries.</div>
+        <div class="title"><label for="owa-cd-scope"><?php $view->out( \OWA\Core\CoreAPI::t( 'Scope' ) ); ?></label></div>
+        <div class="description"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s — describes one thing that happened, set with %2$s. %3$s — describes the visitor, set with %4$s, and carried onto every event of theirs. There is no session scope: a session-scoped value is one a report derives, not one a browser carries.' ), '<b>' . \OWA\Module\Base\Entity\CustomDimension::SCOPE_EVENT . '</b>', '<code>setEventProperty()</code>', '<b>' . \OWA\Module\Base\Entity\CustomDimension::SCOPE_USER . '</b>', '<code>setUserProperty()</code>' ); ?></div>
         <div class="field">
             <select id="owa-cd-scope" name="scope">
                 <?php foreach ( $view->scopes as $scope ): ?>
@@ -79,10 +71,8 @@
     </div>
 
     <div class="setting">
-        <div class="title"><label for="owa-cd-type">Type</label></div>
-        <div class="description">Fixed when the column is made, so it cannot be changed afterwards without
-            removing the dimension and registering it again. A value that will not
-            convert is stored as nothing rather than failing the report.</div>
+        <div class="title"><label for="owa-cd-type"><?php $view->out( \OWA\Core\CoreAPI::t( 'Type' ) ); ?></label></div>
+        <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Fixed when the column is made, so it cannot be changed afterwards without removing the dimension and registering it again. A value that will not convert is stored as nothing rather than failing the report.' ) ); ?></div>
         <div class="field">
             <select id="owa-cd-type" name="dataType">
                 <?php foreach ( $view->types as $type ): ?>
@@ -96,7 +86,7 @@
     </div>
 
     <div class="owa_panelIntro">
-        A new dimension is filled in for events from now on. To fill it for earlier events, rebuild the cube for that date range.
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'A new dimension is filled in for events from now on. To fill it for earlier events, rebuild the cube for that date range.' ) ); ?>
     </div>
 
     <input type="hidden" name="propertyId"
@@ -106,7 +96,7 @@
     <?php echo $view->createNonceFormField( 'base.customDimensionSave' ); ?>
 
     <input class="owa-button" type="submit" name="submit_btn"
-        value="Register Custom Dimension">
+        value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Register Custom Dimension' ) ); ?>">
 </form>
 
 <?php endif; ?>

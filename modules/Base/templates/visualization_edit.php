@@ -56,12 +56,12 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
     <div class="owa_editorHead">
         <div class="owa_editorName">
             <div class="owa_builderFieldLabel">
-                <label for="owa_funnelName">Funnel name</label>
-                <span class="owa_builderRequired">Required</span>
+                <label for="owa_funnelName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Funnel name' ) ); ?></label>
+                <span class="owa_builderRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span>
             </div>
             <input type="text" id="owa_funnelName" maxlength="255"
                    name="name"
-                   placeholder="Untitled funnel"
+                   placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'Untitled funnel' ) ); ?>"
                    value="<?php $view->out( $owa_v['name'] ?? '' );?>">
             <?php if ( ! empty( $owa_errors['name'] ) ):?>
             <span class="validation_error"><?php $view->out( $owa_errors['name'] );?></span>
@@ -75,17 +75,17 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
                    aria-describedby="owa_funnelSharedHint"
                    <?php echo ! empty( $owa_v['is_shared'] ) ? 'checked="checked"' : '';?>>
             <span class="owa_switchTrack" aria-hidden="true"></span>
-            Shared in everyone's list
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'Shared in everyone\'s list' ) ); ?>
         </label>
-        <span id="owa_funnelSharedHint" class="owa_srOnly">Anyone you send the link to can open it either way.</span>
+        <span id="owa_funnelSharedHint" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Anyone you send the link to can open it either way.' ) ); ?></span>
 
         <div class="owa_editorActions">
             <a class="owa_button" id="owa_funnelCancel" href="<?php echo $owa_id
                 ? $view->makeLink( array( 'do' => 'base.report',
                     'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $owa_id ), true )
-                : $view->makeLink( array( 'do' => 'base.customReports' ), true );?>">Cancel</a>
+                : $view->makeLink( array( 'do' => 'base.customReports' ), true );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></a>
             <input class="owa_button is-primary" type="submit" id="owa_visualizationSubmit"
-                   name="submit_btn" value="Save funnel">
+                   name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save funnel' ) ); ?>">
         </div>
     </div>
 
@@ -96,7 +96,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
 
         <section class="owa_funnelBuild" aria-labelledby="owa_funnelStepsHeading">
 
-            <h2 id="owa_funnelStepsHeading">Steps <span class="owa_builderRequired">Required</span></h2>
+            <h2 id="owa_funnelStepsHeading"><?php $view->out( \OWA\Core\CoreAPI::t( 'Steps' ) ); ?> <span class="owa_builderRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span></h2>
             <p class="owa_builderHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'In order, first to last. Each step is an event, and optionally what it carries: a page is a page_view with its page path. A step with no conditions matches every event of that name.' ) );?></p>
 
             <ol class="owa_funnelStepList" id="owa_funnelSteps">
@@ -121,13 +121,13 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
             </ol>
 
             <button type="button" class="owa_button owa_funnelAdd" id="owa_funnelAddStep">
-                <i class="fas fa-plus" aria-hidden="true"></i> Add a step</button>
+                <i class="fas fa-plus" aria-hidden="true"></i> <?php $view->out( \OWA\Core\CoreAPI::t( 'Add a step' ) ); ?></button>
 
             <?php foreach ( array_diff_key( $owa_errors, $owa_shownErrors ) as $owa_otherError ):?>
             <p class="validation_error"><?php $view->out( $owa_otherError );?></p>
             <?php endforeach;?>
 
-            <h2 id="owa_funnelFiltersLabel">Filters</h2>
+            <h2 id="owa_funnelFiltersLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filters' ) ); ?></h2>
             <?php
                 $owa_fp = array(
                     'pills' => 'owa_funnelFilters', 'add' => 'owa_funnelAddFilter', 'form' => 'owa_funnelFilterForm',
@@ -137,15 +137,15 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
                 );
                 include( 'filter_pills.php' );
             ?>
-            <p class="owa_builderHelp">A filter applies to every step.</p>
+            <p class="owa_builderHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'A filter applies to every step.' ) ); ?></p>
             <?php if ( ! empty( $owa_errors['constraints'] ) ):?>
             <p class="validation_error"><?php $view->out( $owa_errors['constraints'] );?></p>
             <?php endif;?>
         </section>
 
         <section class="owa_funnelPreview" aria-labelledby="owa_funnelPreviewHeading">
-            <h2 id="owa_funnelPreviewHeading">Preview</h2>
-            <p class="owa_funnelPreviewNote">Sessions that reached each step, in order, last 30 days.</p>
+            <h2 id="owa_funnelPreviewHeading"><?php $view->out( \OWA\Core\CoreAPI::t( 'Preview' ) ); ?></h2>
+            <p class="owa_funnelPreviewNote"><?php $view->out( \OWA\Core\CoreAPI::t( 'Sessions that reached each step, in order, last 30 days.' ) ); ?></p>
             <div id="owa_funnelPreview" aria-live="polite"></div>
         </section>
     </div>
@@ -172,11 +172,11 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
         <?php // A roster with no Property has no navigation, so the Property goes along. ?>
         <input type="hidden" name="propertyId" value="<?php $view->out( $view->get( 'propertyId' ) );?>">
         <input class="owa_builderDelete" type="submit"
-               name="submit_btn" value="Delete this funnel"
+               name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this funnel' ) ); ?>"
                data-owa-confirm
-               data-owa-confirm-title="Delete this funnel?"
-               data-owa-confirm-body="&ldquo;<?php $view->out( $owa_v['name'] ?? '' );?>&rdquo; disappears from the list. Nothing it counted is removed."
-               data-owa-confirm-proceed="Delete funnel">
+               data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this funnel?' ) ); ?>"
+               data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” disappears from the list. Nothing it counted is removed.' ), $owa_v['name'] ?? '' ) ); ?>"
+               data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete funnel' ) ); ?>">
     </form>
 </div>
 <?php endif;?>
@@ -186,15 +186,32 @@ jQuery( function () {
 
     var MAX_STEPS   = <?php echo (int) ( $view->maxSteps ?: 10 );?>;
     var DIMENSIONS  = <?php echo json_encode( array_values( (array) $view->dimensionChoices ) );?>;
-    // The words this script writes about a step, translated; %s is the step's number.
+    // The words this script writes, translated; %s is the step's number, %1$s, %2$s... the values in order.
     var TEXT = <?php echo json_encode( array(
         'eventLabel' => \OWA\Core\CoreAPI::t( 'The event step %s matches' ),
         'needsEvent' => \OWA\Core\CoreAPI::t( 'Step %s needs an event.' ),
         'fullUrl'    => \OWA\Core\CoreAPI::t( 'Step %s needs a path, such as /basket, not a full web address.' ),
+        'moveStep'   => \OWA\Core\CoreAPI::t( 'Move step %s' ),
+        'removeStep' => \OWA\Core\CoreAPI::t( 'Remove step %s' ),
+        'needsName'  => \OWA\Core\CoreAPI::t( 'Give the funnel a name.' ),
+        'needsStep'  => \OWA\Core\CoreAPI::t( 'Add at least one step.' ),
+        'noSteps'    => \OWA\Core\CoreAPI::t( 'Add a step to see how many sessions reach it.' ),
+        'previewFailed' => \OWA\Core\CoreAPI::t( 'The preview could not be counted.' ),
+        'stepsFailed'   => \OWA\Core\CoreAPI::t( 'These steps could not be counted.' ),
+        'continued'  => \OWA\Core\CoreAPI::t( '%s continued' ),
+        'summary'    => \OWA\Core\CoreAPI::t( '%1$s of sessions that reached %2$s went on to reach %3$s.' ),
+        'moved'      => \OWA\Core\CoreAPI::t( 'Step moved to position %1$s of %2$s.' ),
     ), JSON_HEX_TAG | JSON_HEX_AMP );?>;
 
     function say( pattern, n ) {
         return String( pattern ).replace( '%s', n );
+    }
+
+    /** pattern with %1$s, %2$s... replaced by the values in order. */
+    function sayEach( pattern, values ) {
+        return String( pattern ).replace( /%(\d+)\$s/g, function ( all, i ) {
+            return i - 1 < values.length ? String( values[ i - 1 ] ) : all;
+        } );
     }
 
     var PREVIEW_URL = <?php echo json_encode( $view->makeLink( array(
@@ -242,8 +259,8 @@ jQuery( function () {
 
             $row.find( '.owa_funnelStepNumber' ).text( n );
             $row.find( '.owa_funnelStepEvent' ).attr( 'aria-label', say( TEXT.eventLabel, n ) );
-            $row.find( '.owa_builderMove' ).attr( 'aria-label', 'Move step ' + n );
-            $row.find( '.owa_funnelStepRemove' ).attr( 'aria-label', 'Remove step ' + n );
+            $row.find( '.owa_builderMove' ).attr( 'aria-label', say( TEXT.moveStep, n ) );
+            $row.find( '.owa_funnelStepRemove' ).attr( 'aria-label', say( TEXT.removeStep, n ) );
         } );
 
         jQuery( '#owa_funnelAddStep' ).prop( 'disabled', rows().length >= MAX_STEPS );
@@ -253,7 +270,7 @@ jQuery( function () {
     function blocker() {
 
         if ( ! jQuery.trim( jQuery( '#owa_funnelName' ).val() || '' ) ) {
-            return 'Give the funnel a name.';
+            return TEXT.needsName;
         }
 
         var kept    = 0;
@@ -285,7 +302,7 @@ jQuery( function () {
         }
 
         if ( ! kept ) {
-            return 'Add at least one step.';
+            return TEXT.needsStep;
         }
 
         return filters.problem();
@@ -346,7 +363,7 @@ jQuery( function () {
 
         if ( ! steps.length ) {
             previewAsked = '';
-            previewMessage( 'Add a step to see how many sessions reach it.' );
+            previewMessage( TEXT.noSteps );
             return;
         }
 
@@ -385,7 +402,7 @@ jQuery( function () {
 
                 if ( status !== 'abort' ) {
                     previewAsked = '';
-                    previewMessage( 'The preview could not be counted.' );
+                    previewMessage( TEXT.previewFailed );
                 }
             } )
             .always( function () {
@@ -393,8 +410,30 @@ jQuery( function () {
             } );
     }
 
+    // The install's locale (OWA.config.locale, else the one this page was
+    // rendered in); undefined is the browser's own.
+    function locale() {
+        return ( window.OWA && OWA.config && OWA.config.locale )
+            || <?php echo json_encode( \OWA\Core\Strings::locale() === \OWA\Core\Strings::SOURCE_LOCALE ? null : \OWA\Core\Strings::htmlLang() ); ?>
+            || undefined;
+    }
+
+    function formatCount( n ) {
+        try {
+            return new Intl.NumberFormat( locale() ).format( n );
+        } catch ( e ) {
+            return n.toLocaleString();
+        }
+    }
+
     function percent( part, whole ) {
-        return whole > 0 ? ( Math.round( part / whole * 1000 ) / 10 ).toFixed( 1 ) + '%' : '0%';
+        var share = whole > 0 ? Math.round( part / whole * 1000 ) / 1000 : 0;
+
+        try {
+            return new Intl.NumberFormat( locale(), { style: 'percent', minimumFractionDigits: whole > 0 ? 1 : 0, maximumFractionDigits: 1 } ).format( share );
+        } catch ( e ) {
+            return whole > 0 ? ( share * 100 ).toFixed( 1 ) + '%' : '0%';
+        }
     }
 
     function drawPreview( steps ) {
@@ -403,7 +442,7 @@ jQuery( function () {
         var first = steps.length ? steps[0].reached : 0;
 
         if ( ! steps.length ) {
-            previewMessage( 'These steps could not be counted.' );
+            previewMessage( TEXT.stepsFailed );
             return;
         }
 
@@ -412,11 +451,11 @@ jQuery( function () {
         steps.forEach( function ( step, i ) {
 
             var $count = jQuery( '<span class="owa_funnelPreviewCount">' )
-                .append( jQuery( '<b>' ).text( step.reached.toLocaleString() ) );
+                .append( jQuery( '<b>' ).text( formatCount( step.reached ) ) );
 
             if ( i > 0 ) {
                 $count.append( jQuery( '<span class="owa_funnelPreviewRate">' )
-                    .text( ' · ' + percent( step.reached, steps[ i - 1 ].reached ) + ' continued' ) );
+                    .text( ' · ' + say( TEXT.continued, percent( step.reached, steps[ i - 1 ].reached ) ) ) );
             }
 
             $list.append( jQuery( '<li class="owa_funnelPreviewStep">' )
@@ -435,11 +474,14 @@ jQuery( function () {
         if ( steps.length > 1 ) {
 
             var last = steps[ steps.length - 1 ];
+            // The sentence around the bold percentage: the parts before and after %1$s.
+            var parts = String( TEXT.summary ).split( '%1$s' );
+            var names = [ '', steps[0].name, last.name ];
 
             $box.append( jQuery( '<p class="owa_funnelPreviewSummary">' )
+                .append( document.createTextNode( sayEach( parts[0], names ) ) )
                 .append( jQuery( '<b>' ).text( percent( last.reached, first ) ) )
-                .append( document.createTextNode( ' of sessions that reached ' + steps[0].name
-                    + ' went on to reach ' + last.name + '.' ) ) );
+                .append( document.createTextNode( sayEach( parts.slice( 1 ).join( '%1$s' ), names ) ) ) );
         }
     }
 
@@ -535,7 +577,7 @@ jQuery( function () {
 
             if ( moveStep( from, from + step ) ) {
                 rows().eq( from + step ).find( '.owa_builderMove' ).trigger( 'focus' );
-                jQuery( '#owa_funnelMoved' ).text( 'Step moved to position ' + ( from + step + 1 ) + ' of ' + rows().length + '.' );
+                jQuery( '#owa_funnelMoved' ).text( sayEach( TEXT.moved, [ from + step + 1, rows().length ] ) );
             }
         } )
 

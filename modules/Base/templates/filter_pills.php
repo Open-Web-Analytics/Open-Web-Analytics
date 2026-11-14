@@ -13,18 +13,18 @@ $owa_fp = $owa_fp ?? array();
      aria-labelledby="<?php $view->out( $owa_fp['label'] ); ?>">
     <button type="button" class="owa_button owa_filterAdd" id="<?php $view->out( $owa_fp['add'] ); ?>"
             aria-expanded="false" aria-controls="<?php $view->out( $owa_fp['form'] ); ?>"><i
-            class="fas fa-filter" aria-hidden="true"></i> Filter</button>
+            class="fas fa-filter" aria-hidden="true"></i> <?php $view->out( \OWA\Core\CoreAPI::t( 'Filter' ) ); ?></button>
 </div>
 <div class="owa_filterForm" id="<?php $view->out( $owa_fp['form'] ); ?>" style="display:none;">
-    <label for="<?php $view->out( $owa_fp['dimension'] ); ?>" class="owa_srOnly">Dimension</label>
+    <label for="<?php $view->out( $owa_fp['dimension'] ); ?>" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Dimension' ) ); ?></label>
     <select id="<?php $view->out( $owa_fp['dimension'] ); ?>"></select>
-    <label for="<?php $view->out( $owa_fp['operator'] ); ?>" class="owa_srOnly">Condition</label>
+    <label for="<?php $view->out( $owa_fp['operator'] ); ?>" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Condition' ) ); ?></label>
     <select id="<?php $view->out( $owa_fp['operator'] ); ?>"></select>
-    <label for="<?php $view->out( $owa_fp['value'] ); ?>" class="owa_srOnly">Value</label>
-    <input type="text" id="<?php $view->out( $owa_fp['value'] ); ?>" placeholder="Value" />
+    <label for="<?php $view->out( $owa_fp['value'] ); ?>" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) ); ?></label>
+    <input type="text" id="<?php $view->out( $owa_fp['value'] ); ?>" placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) ); ?>" />
     <div class="owa_filterFormActions">
-        <button type="button" class="owa_button" id="<?php $view->out( $owa_fp['cancel'] ); ?>">Cancel</button>
+        <button type="button" class="owa_button" id="<?php $view->out( $owa_fp['cancel'] ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></button>
         <button type="button" class="owa_button is-primary" id="<?php $view->out( $owa_fp['addFilter'] ); ?>"
-                disabled="disabled">Add filter</button>
+                disabled="disabled"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add filter' ) ); ?></button>
     </div>
 </div>

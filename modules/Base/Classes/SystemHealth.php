@@ -109,10 +109,10 @@ class SystemHealth {
 
         if ( ! $findings ) {
 
-            $findings[] = self::finding( 'green', 'Running', 'cron is running schedule-run.' );
+            $findings[] = self::finding( 'green', \OWA\Core\CoreAPI::t( 'Running' ), \OWA\Core\CoreAPI::t( 'cron is running schedule-run.' ) );
         }
 
-        return self::section( 'Scheduler', $findings );
+        return self::section( \OWA\Core\CoreAPI::t( 'Scheduler' ), $findings );
     }
 
     /** Each registered recurring job: when it last ran and how it went, and why it is behind if it is. */
@@ -146,12 +146,12 @@ class SystemHealth {
         }
 
         $findings = array_map( fn ( $r ) => self::finding( $r['level'], $r['name'],
-            $r['reason'] ?: ( $r['outcome'] === 'failed' ? 'Its last run failed: ' . $r['message'] : '' ) ), $rows );
+            $r['reason'] ?: ( $r['outcome'] === 'failed' ? sprintf( \OWA\Core\CoreAPI::t( 'Its last run failed: %s' ), $r['message'] ) : '' ) ), $rows );
 
         $findings = array_values( array_filter( $findings, fn ( $f ) => $f['level'] !== 'green' ) )
-            ?: array( self::finding( 'green', 'Up to date', 'Every job ran when it was due.' ) );
+            ?: array( self::finding( 'green', \OWA\Core\CoreAPI::t( 'Up to date' ), \OWA\Core\CoreAPI::t( 'Every job ran when it was due.' ) ) );
 
-        return self::section( 'Recurring jobs', $findings, array( 'rows' => $rows ) );
+        return self::section( \OWA\Core\CoreAPI::t( 'Recurring jobs' ), $findings, array( 'rows' => $rows ) );
     }
 
     /** The one-off job queue: what is waiting, running and failed, and whether it is being drained. */
@@ -162,14 +162,15 @@ class SystemHealth {
 
         if ( $stats['oldest_due_age'] !== null && $stats['oldest_due_age'] > self::QUEUE_DUE_TOO_LONG ) {
 
-            $findings[] = self::finding( 'red', 'Not draining', sprintf(
-                'A job has been due for %d minutes: the scheduler is not draining the queue.',
+            $findings[] = self::finding( 'red', \OWA\Core\CoreAPI::t( 'Not draining' ), sprintf(
+                \OWA\Core\CoreAPI::tn( 'A job has been due for %d minute: the scheduler is not draining the queue.',
+                    'A job has been due for %d minutes: the scheduler is not draining the queue.', intdiv( $stats['oldest_due_age'], 60 ) ),
                 intdiv( $stats['oldest_due_age'], 60 ) ), 'php cli.php cmd=schedule-status' );
         }
 
         if ( $stats['failed'] ) {
 
-            $findings[] = self::finding( 'yellow', 'Failed jobs', sprintf( \OWA\Core\CoreAPI::tn(
+            $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Failed jobs' ), sprintf( \OWA\Core\CoreAPI::tn(
                 '%d job used up its attempts and is kept with its errors.',
                 '%d jobs used up their attempts and are kept with their errors.', $stats['failed'] ), $stats['failed'] ),
                 'php cli.php cmd=jobs-retry id=<id>   (or id=all)' );
@@ -177,10 +178,10 @@ class SystemHealth {
 
         if ( ! $findings ) {
 
-            $findings[] = self::finding( 'green', 'Draining', 'Nothing is waiting longer than it should.' );
+            $findings[] = self::finding( 'green', \OWA\Core\CoreAPI::t( 'Draining' ), \OWA\Core\CoreAPI::t( 'Nothing is waiting longer than it should.' ) );
         }
 
-        return self::section( 'Job queue', $findings, array(
+        return self::section( \OWA\Core\CoreAPI::t( 'Job queue' ), $findings, array(
             'stats'  => $stats,
             'failed' => $stats['failed'] ? JobQueue::listJobs( 'failed', self::FAILED_SHOWN ) : array(),
         ) );
@@ -200,8 +201,8 @@ class SystemHealth {
 
         } catch ( \Throwable $t ) {
 
-            return self::section( 'Tracker ingest',
-                array( self::finding( 'red', 'Unavailable', $t->getMessage() ) ) );
+            return self::section( \OWA\Core\CoreAPI::t( 'Tracker ingest' ),
+                array( self::finding( 'red', \OWA\Core\CoreAPI::t( 'Unavailable' ), $t->getMessage() ) ) );
         }
 
         $findings = array();
@@ -209,15 +210,15 @@ class SystemHealth {
         // A queue that cannot be read cannot be drained either, and says nothing about a backlog.
         if ( $main['messages'] === null ) {
 
-            $findings[] = self::finding( 'red', 'Unreadable', sprintf(
-                'The tracker-ingest queue could not be read%s, so nothing is being drained from it.',
+            $findings[] = self::finding( 'red', \OWA\Core\CoreAPI::t( 'Unreadable' ), sprintf(
+                \OWA\Core\CoreAPI::t( 'The tracker-ingest queue could not be read%s, so nothing is being drained from it.' ),
                 ! empty( $main['error'] ) ? ': ' . $main['error'] : '' ),
                 'php cli.php cmd=drain-tracker-ingest' );
         }
 
         if ( $kept && $kept['messages'] ) {
 
-            $findings[] = self::finding( 'yellow', 'Kept in the file queue', sprintf( \OWA\Core\CoreAPI::tn(
+            $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Kept in the file queue' ), sprintf( \OWA\Core\CoreAPI::tn(
                 '%d beacon the tracker-ingest queue did not take is kept in the file queue. drain-tracker-ingest forwards it once the queue answers.',
                 '%d beacons the tracker-ingest queue did not take are kept in the file queue. drain-tracker-ingest forwards them once the queue answers.',
                 (int) $kept['messages'] ), (int) $kept['messages'] ),
@@ -227,22 +228,23 @@ class SystemHealth {
         if ( $main['oldest_age'] !== null && $main['oldest_age'] > self::INTAKE_BACKLOG_AGE ) {
 
             // A queue that cannot count its messages says "Some", a plural.
-            $findings[] = self::finding( 'red', 'Backlog', sprintf( \OWA\Core\CoreAPI::tn(
+            $findings[] = self::finding( 'red', \OWA\Core\CoreAPI::t( 'Backlog' ), sprintf( \OWA\Core\CoreAPI::tn(
                 '%s beacon waiting, the oldest for %d minutes: the drain is not keeping up.',
                 '%s beacons waiting, the oldest for %d minutes: the drain is not keeping up.', $main['messages'] ?? 2 ),
-                $main['messages'] ?? 'Some', intdiv( $main['oldest_age'], 60 ) ),
+                $main['messages'] ?? \OWA\Core\CoreAPI::t( 'Some' ), intdiv( $main['oldest_age'], 60 ) ),
                 'php cli.php cmd=schedule-status' );
         }
 
         if ( $dlq && $dlq['messages'] ) {
 
-            $findings[] = self::finding( 'yellow', 'Dead letters', sprintf( \OWA\Core\CoreAPI::tn(
+            $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Dead letters' ), sprintf( \OWA\Core\CoreAPI::tn(
                 '%d beacon in the dead-letter queue%s. Fix the cause, then replay it; '
                 . 'replay-tracker-ingest sends it back once a day on its own.',
                 '%d beacons in the dead-letter queue%s. Fix the cause, then replay them; '
                 . 'replay-tracker-ingest sends each back once a day on its own.', $dlq['messages'] ),
                 $dlq['messages'],
-                $dlq['oldest_age'] !== null ? ', the oldest ' . intdiv( $dlq['oldest_age'], 3600 ) . ' hours old' : '' ),
+                $dlq['oldest_age'] !== null ? sprintf( \OWA\Core\CoreAPI::tn( ', the oldest %d hour old', ', the oldest %d hours old',
+                    intdiv( $dlq['oldest_age'], 3600 ) ), intdiv( $dlq['oldest_age'], 3600 ) ) : '' ),
                 'php cli.php cmd=tracker-ingest-replay' );
         }
 
@@ -255,11 +257,12 @@ class SystemHealth {
                 continue;
             }
 
-            $findings[] = self::finding( 'red', 'Hung drain', sprintf(
-                'Batch %s has been held for %s by process %s%s. If that process is hung, end it and the next '
-                . 'drain takes the batch over.',
-                $batch['batch'], $age === null ? 'an unknown time' : intdiv( $age, 60 ) . ' minutes',
-                $batch['pid'] === null ? '(unknown)' : $batch['pid'],
+            $findings[] = self::finding( 'red', \OWA\Core\CoreAPI::t( 'Hung drain' ), sprintf(
+                \OWA\Core\CoreAPI::t( 'Batch %s has been held for %s by process %s%s. If that process is hung, end it and the next '
+                . 'drain takes the batch over.' ),
+                $batch['batch'], $age === null ? \OWA\Core\CoreAPI::t( 'an unknown time' )
+                    : sprintf( \OWA\Core\CoreAPI::tn( '%d minute', '%d minutes', intdiv( $age, 60 ) ), intdiv( $age, 60 ) ),
+                $batch['pid'] === null ? \OWA\Core\CoreAPI::t( '(unknown)' ) : $batch['pid'],
                 $batch['host'] !== '' ? ' on ' . $batch['host'] : '' ) );
         }
 
@@ -281,11 +284,12 @@ class SystemHealth {
 
         if ( ! $findings ) {
 
-            $findings[] = self::finding( 'green', TrackerIngest::isQueued() ? 'Draining' : 'Direct',
+            $findings[] = self::finding( 'green',
+                TrackerIngest::isQueued() ? \OWA\Core\CoreAPI::t( 'Draining' ) : \OWA\Core\CoreAPI::t( 'Direct' ),
                 TrackerIngest::isQueued()
-                    ? 'Beacons are queued and nothing is waiting longer than it should.'
-                    : 'Beacons are written as they arrive. Only a beacon whose write fails is queued, '
-                        . 'and retried a minute later.' );
+                    ? \OWA\Core\CoreAPI::t( 'Beacons are queued and nothing is waiting longer than it should.' )
+                    : \OWA\Core\CoreAPI::t( 'Beacons are written as they arrive. Only a beacon whose write fails is queued, '
+                        . 'and retried a minute later.' ) );
         }
 
         $blocked = self::spamBlocked();
@@ -295,7 +299,7 @@ class SystemHealth {
             $findings[] = $blocked;
         }
 
-        return self::section( 'Tracker ingest', $findings, array(
+        return self::section( \OWA\Core\CoreAPI::t( 'Tracker ingest' ), $findings, array(
             'type'     => $backend,
             'queued'   => TrackerIngest::isQueued(),
             'waiting'  => $main['messages'],
@@ -352,8 +356,8 @@ class SystemHealth {
 
         if ( ! TrackerBundle::buildManifest() ) {
 
-            return self::section( 'Tracker bundles', array( self::finding( 'red', 'Not built',
-                'The tracker has not been built on this installation, so no bundle can be published.',
+            return self::section( \OWA\Core\CoreAPI::t( 'Tracker bundles' ), array( self::finding( 'red', \OWA\Core\CoreAPI::t( 'Not built' ),
+                \OWA\Core\CoreAPI::t( 'The tracker has not been built on this installation, so no bundle can be published.' ),
                 'npm run build' ) ) );
         }
 
@@ -403,7 +407,7 @@ class SystemHealth {
 
             $queued = JobQueue::isQueued( 'publish-trackers' );
 
-            $findings[] = self::finding( 'yellow', 'Not current', sprintf( \OWA\Core\CoreAPI::tn(
+            $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Not current' ), sprintf( \OWA\Core\CoreAPI::tn(
                 '%d Profile has a bundle that is stale or not published%s.',
                 '%d Profiles have a bundle that is stale or not published%s.', $stale ), $stale,
                 $queued ? '; a publish is queued' : '' ), $queued ? null : 'php cli.php cmd=publish-trackers' );
@@ -413,28 +417,28 @@ class SystemHealth {
 
         if ( array_key_exists( 'ok', $cache ) && $cache['ok'] === false ) {
 
-            $findings[] = self::finding( 'yellow', 'Cached by browsers', sprintf(
-                'Bundles are served with Cache-Control "%s", so a browser may keep an old one after a change. '
+            $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Cached by browsers' ), sprintf(
+                \OWA\Core\CoreAPI::t( 'Bundles are served with Cache-Control "%s", so a browser may keep an old one after a change. '
                 . 'OWA\'s .htaccess sets no-cache for them when Apache reads .htaccess (AllowOverride) and has '
-                . 'mod_headers or mod_expires.',
+                . 'mod_headers or mod_expires.' ),
                 (string) ( $cache['cache_control'] ?? '' ) ) );
 
         } elseif ( array_key_exists( 'ok', $cache ) && $cache['ok'] === null ) {
 
-            $findings[] = self::finding( 'yellow', 'Cache header unknown', sprintf(
-                'Fetching %s answered %s, so what browsers are told is unknown.',
+            $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Cache header unknown' ), sprintf(
+                \OWA\Core\CoreAPI::t( 'Fetching %s answered %s, so what browsers are told is unknown.' ),
                 (string) ( $cache['url'] ?? 'a bundle' ),
                 ! empty( $cache['status'] ) ? 'HTTP ' . $cache['status'] : 'nothing' ) );
         }
 
         if ( ! $findings ) {
 
-            $findings[] = self::finding( 'green', 'Current', $rows
+            $findings[] = self::finding( 'green', \OWA\Core\CoreAPI::t( 'Current' ), $rows
                 ? 'Every Profile\'s bundle is published from this build and its settings.'
                 : 'No web Profile yet.' );
         }
 
-        return self::section( 'Tracker bundles', $findings, array( 'rows' => $rows ) );
+        return self::section( \OWA\Core\CoreAPI::t( 'Tracker bundles' ), $findings, array( 'rows' => $rows ) );
     }
 
     /**
@@ -456,24 +460,24 @@ class SystemHealth {
         };
 
         $facts = array(
-            'Organizations' => (string) $count( 'base.organization', false ),
-            'Properties'    => (string) $count( 'base.property', true ),
-            'Profiles'      => (string) $count( 'base.site', true ),
+            \OWA\Core\CoreAPI::t( 'Organizations' ) => (string) $count( 'base.organization', false ),
+            \OWA\Core\CoreAPI::t( 'Properties' )    => (string) $count( 'base.property', true ),
+            \OWA\Core\CoreAPI::t( 'Profiles' )      => (string) $count( 'base.site', true ),
         );
 
         // Raw: the estimate and size, and the oldest partition holding rows.
         $raw   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
         $size = $db->tableSize( $raw );
 
-        $facts['Raw events'] = $size
-            ? sprintf( 'about %s, %s on disk', number_format( $size['rows'] ), self::bytes( $size['bytes'] ) )
-            : 'unknown';
+        $facts[ \OWA\Core\CoreAPI::t( 'Raw events' ) ] = $size
+            ? sprintf( \OWA\Core\CoreAPI::t( 'about %1$s, %2$s on disk' ), \OWA\Core\Strings::formatNumber( $size['rows'] ), self::bytes( $size['bytes'] ) )
+            : \OWA\Core\CoreAPI::t( 'unknown' );
 
         foreach ( (array) $db->listPartitions( $raw ) as $partition ) {
 
             if ( $partition['rows'] > 0 && preg_match( '/^p(\d{4})(\d{2})(\d{2})$/', $partition['name'], $m ) ) {
 
-                $facts['Oldest data'] = sprintf( 'in the partition that starts %s-%s-%s', $m[1], $m[2], $m[3] );
+                $facts[ \OWA\Core\CoreAPI::t( 'Oldest data' ) ] = sprintf( \OWA\Core\CoreAPI::t( 'in the partition that starts %s-%s-%s' ), $m[1], $m[2], $m[3] );
 
                 break;
             }
@@ -483,27 +487,30 @@ class SystemHealth {
         $rotate = JobStatus::jobs()['rotate-partitions'] ?? null;
         $keep   = Retention::rawMonths();
 
-        $facts['Retention'] = $keep
-            ? sprintf( 'events older than %d months are deleted by rotate-partitions (Data Retention settings)', $keep )
-            : 'nothing is deleted: event data is kept indefinitely (Data Retention settings)';
+        $facts[ \OWA\Core\CoreAPI::t( 'Retention' ) ] = $keep
+            ? sprintf( \OWA\Core\CoreAPI::tn( 'events older than %d month are deleted by rotate-partitions (Data Retention settings)',
+                'events older than %d months are deleted by rotate-partitions (Data Retention settings)', $keep ), $keep )
+            : \OWA\Core\CoreAPI::t( 'nothing is deleted: event data is kept indefinitely (Data Retention settings)' );
 
-        $facts['Fine partitions'] = sprintf( 'the last %d months by month, older years by year',
-            (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_detail_months' ) );
+        $detail = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'partition_detail_months' );
+
+        $facts[ \OWA\Core\CoreAPI::t( 'Fine partitions' ) ] = sprintf( \OWA\Core\CoreAPI::tn( 'the last %d month by month, older years by year',
+            'the last %d months by month, older years by year', $detail ), $detail );
 
         $findings = array();
 
         if ( ! $rotate || JobStatus::isDisabled( $rotate ) ) {
 
-            $findings[] = self::finding( 'yellow', 'Not rotated', 'rotate-partitions is not running, so new periods '
-                . 'get no partitions of their own and retention is not applied.' );
+            $findings[] = self::finding( 'yellow', \OWA\Core\CoreAPI::t( 'Not rotated' ), \OWA\Core\CoreAPI::t( 'rotate-partitions is not running, so new periods '
+                . 'get no partitions of their own and retention is not applied.' ) );
         }
 
         if ( ! $findings ) {
 
-            $findings[] = self::finding( 'green', 'Rotated', 'rotate-partitions is running.' );
+            $findings[] = self::finding( 'green', \OWA\Core\CoreAPI::t( 'Rotated' ), \OWA\Core\CoreAPI::t( 'rotate-partitions is running.' ) );
         }
 
-        return self::section( 'Data', $findings, array( 'facts' => $facts ) );
+        return self::section( \OWA\Core\CoreAPI::t( 'Data' ), $findings, array( 'facts' => $facts ) );
     }
 
     private static function bytes( $n ) {
@@ -516,13 +523,13 @@ class SystemHealth {
             }
         }
 
-        return $n . ' bytes';
+        return sprintf( \OWA\Core\CoreAPI::tn( '%d byte', '%d bytes', $n ), $n );
     }
 
     /** A build hash, short enough to read; 'none' for no build or none recorded. */
     private static function shortBuild( $hash ) {
 
-        return $hash === '' ? 'none' : substr( $hash, 0, 12 );
+        return $hash === '' ? \OWA\Core\CoreAPI::t( 'none' ) : substr( $hash, 0, 12 );
     }
 
     /**
@@ -536,12 +543,13 @@ class SystemHealth {
 
         $facts = array(
             'OWA'     => (string) OWA_VERSION,
-            'Server role' => sprintf( '%s (serves %s%s)', $role->name(), implode( ', ', $role->requestTypes() ),
-                $role->runsScheduler() ? '; runs the scheduler' : '' ),
+            \OWA\Core\CoreAPI::t( 'Server role' ) => sprintf( $role->runsScheduler()
+                    ? \OWA\Core\CoreAPI::t( '%1$s (serves %2$s; runs the scheduler)' ) : \OWA\Core\CoreAPI::t( '%1$s (serves %2$s)' ),
+                $role->name(), implode( ', ', $role->requestTypes() ) ),
             'PHP'     => PHP_VERSION . ' (' . PHP_SAPI . ')',
-            'Schema'  => sprintf( '%d (this code requires %d)',
+            \OWA\Core\CoreAPI::t( 'Schema' )  => sprintf( \OWA\Core\CoreAPI::t( '%d (this code requires %d)' ),
                 (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' ), (int) $base->required_schema_version ),
-            'Tracker' => sprintf( 'build %s (built here: %s)',
+            \OWA\Core\CoreAPI::t( 'Tracker' ) => sprintf( \OWA\Core\CoreAPI::t( 'build %s (built here: %s)' ),
                 self::shortBuild( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_build' ) ),
                 self::shortBuild( \OWA\Module\Base\Module::requiredTrackerBuild() ) ),
         );
@@ -557,10 +565,10 @@ class SystemHealth {
         // Retired constants still in owa-config.php.
         foreach ( \OWA\Core\ServerRole::upgradeNotices() as $constant => $notice ) {
 
-            $findings[] = self::finding( 'yellow', $constant, $notice );
+            $findings[] = self::finding( 'yellow', $constant, \OWA\Core\Strings::translate( $notice ) );
         }
 
-        return self::section( 'Installation', $findings, array( 'facts' => $facts ) );
+        return self::section( \OWA\Core\CoreAPI::t( 'Installation' ), $findings, array( 'facts' => $facts ) );
     }
 }
 

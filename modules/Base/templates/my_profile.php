@@ -11,7 +11,7 @@ $owa_mayEditEmail = (bool) $view->may_edit_email;
 $owa_error        = (string) $view->my_profile_error;
 $owa_minPassword  = (int) $view->min_password_length;
 ?>
-<h1 class="panel_headline">User Profile</h1>
+<h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'User Profile' ) ); ?></h1>
 <div id="panel">
 
 <?php if ( $owa_error ): ?>
@@ -19,7 +19,7 @@ $owa_minPassword  = (int) $view->min_password_length;
 <?php endif; ?>
 
 <?php if ( $view->my_profile_saved ): ?>
-<div class="notice" role="status">Your profile has been saved.</div>
+<div class="notice" role="status"><?php $view->out( \OWA\Core\CoreAPI::t( 'Your profile has been saved.' ) ); ?></div>
 <?php endif; ?>
 
 <form method="post" name="owa_myProfile"
@@ -28,23 +28,22 @@ $owa_minPassword  = (int) $view->min_password_length;
     <fieldset name="owa-options" class="options">
 
         <div class="setting">
-            <div class="title">Username</div>
+            <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Username' ) ); ?></div>
             <div class="field">
                 <span class="noedit"><?php $view->out( $view->user_id ); ?></span>
             </div>
         </div>
 
         <div class="setting">
-            <div class="title">Role</div>
+            <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Role' ) ); ?></div>
             <div class="field">
                 <span class="noedit"><?php $view->out( $view->role ); ?></span>
             </div>
         </div>
 
         <div class="setting">
-            <label class="title" for="owa_myProfileRealName">Name</label>
-            <div class="description" id="owa_myProfileRealNameHint">Your name, as other people see it on the users
-            list.</div>
+            <label class="title" for="owa_myProfileRealName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?></label>
+            <div class="description" id="owa_myProfileRealNameHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Your name, as other people see it on the users list.' ) ); ?></div>
             <div class="field">
                 <input type="text" size="30" maxlength="255" name="real_name" id="owa_myProfileRealName"
                        aria-describedby="owa_myProfileRealNameHint"
@@ -55,12 +54,12 @@ $owa_minPassword  = (int) $view->min_password_length;
         <div class="setting">
             <?php // A label only when there is a field: read-only, the address is text. ?>
             <?php if ( $owa_mayEditEmail ): ?>
-            <label class="title" for="owa_myProfileEmail">Email address</label>
+            <label class="title" for="owa_myProfileEmail"><?php $view->out( \OWA\Core\CoreAPI::t( 'Email address' ) ); ?></label>
             <?php else: ?>
-            <div class="title">Email address</div>
+            <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Email address' ) ); ?></div>
             <?php endif; ?>
-            <div class="description" id="owa_myProfileEmailHint">Where password resets are sent.<?php
-                if ( ! $owa_mayEditEmail ): ?> Your role cannot change it; ask an administrator.<?php endif; ?></div>
+            <div class="description" id="owa_myProfileEmailHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Where password resets are sent.' ) ); ?><?php
+                if ( ! $owa_mayEditEmail ): ?> <?php $view->out( \OWA\Core\CoreAPI::t( 'Your role cannot change it; ask an administrator.' ) ); ?><?php endif; ?></div>
             <div class="field">
                 <?php
                     /*
@@ -86,9 +85,11 @@ $owa_minPassword  = (int) $view->min_password_length;
         </div>
 
         <div class="setting">
-            <div class="title" id="owa_myProfilePasswordTitle">Change password</div>
-            <div class="description" id="owa_myProfilePasswordHint">Leave empty to keep your current password. At least
-            <?php echo (int) $owa_minPassword; ?> characters. Changing it signs you out.</div>
+            <div class="title" id="owa_myProfilePasswordTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Change password' ) ); ?></div>
+            <div class="description" id="owa_myProfilePasswordHint"><?php $view->out( sprintf( \OWA\Core\CoreAPI::tn(
+                'Leave empty to keep your current password. At least %d character. Changing it signs you out.',
+                'Leave empty to keep your current password. At least %d characters. Changing it signs you out.',
+                $owa_minPassword ), $owa_minPassword ) ); ?></div>
             <div class="field">
                 <?php
                     /*
@@ -101,11 +102,11 @@ $owa_minPassword  = (int) $view->min_password_length;
                 <div class="owa_passwordFields" role="group" aria-labelledby="owa_myProfilePasswordTitle"
                      aria-describedby="owa_myProfilePasswordHint">
                     <input type="password" size="30" name="current_password"
-                           autocomplete="current-password" placeholder="Current password" aria-label="Current password">
+                           autocomplete="current-password" placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'Current password' ) ); ?>" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Current password' ) ); ?>">
                     <input type="password" size="30" name="new_password"
-                           autocomplete="new-password" placeholder="New password" aria-label="New password">
+                           autocomplete="new-password" placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'New password' ) ); ?>" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'New password' ) ); ?>">
                     <input type="password" size="30" name="new_password2"
-                           autocomplete="new-password" placeholder="Repeat new password" aria-label="Repeat new password">
+                           autocomplete="new-password" placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'Repeat new password' ) ); ?>" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Repeat new password' ) ); ?>">
                 </div>
             </div>
         </div>
@@ -121,7 +122,7 @@ $owa_minPassword  = (int) $view->min_password_length;
              */
         ?>
         <input type="hidden" name="siteId" value="<?php $view->out( $view->siteId ); ?>">
-        <input class="owa-button" type="submit" value="Save Profile">
+        <input class="owa-button" type="submit" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save Profile' ) ); ?>">
     </fieldset>
 </form>
 </div>

@@ -4,21 +4,21 @@
  * The Observation Profiles of one Property, each leading to its own screens.
  */
 ?>
-<h1 class="panel_headline">Observation Profiles</h1>
+<h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Profiles' ) );?></h1>
 <div id="panel">
-<div class="owa_panelIntro">Each Observation Profile collects data for this Property under its own tracking id. Reports combine all of the Property's Profiles; add the Profile Name dimension to a report to see them separately.</div>
+<div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Each Observation Profile collects data for this Property under its own tracking id. Reports combine all of the Property\'s Profiles; add the Profile Name dimension to a report to see them separately.' ) );?></div>
 
 <fieldset>
 
     <legend>
-        Observation Profiles <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
-            'do' => 'base.sitesProfile', 'propertyId' => $view->propertyId ) );?>">Add New Observation Profile</a>)</span>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Profiles' ) );?> <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
+            'do' => 'base.sitesProfile', 'propertyId' => $view->propertyId ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add New Observation Profile' ) );?></a>)</span>
     </legend>
 
 <?php if ( empty( $view->profiles ) ):?>
 
     <div class="owa_emptyState">
-        <p>This Property has no Observation Profiles, so it is not collecting anything.</p>
+        <p><?php $view->out( \OWA\Core\CoreAPI::t( 'This Property has no Observation Profiles, so it is not collecting anything.' ) );?></p>
     </div>
 
 <?php else:?>
@@ -26,9 +26,9 @@
     <table class="management owa_propertyProfiles">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Tracking ID</th>
-                <th>Observes</th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) );?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Tracking ID' ) );?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Observes' ) );?></th>
                 <th></th>
             </tr>
         </thead>
@@ -42,17 +42,17 @@
                 </td>
                 <td><code><?php $view->out( $owa_prof['site_id'] );?></code></td>
                 <td>
-                    <?php $view->out( $owa_is_app ? 'App' : 'Website' );?>
+                    <?php $view->out( $owa_is_app ? \OWA\Core\CoreAPI::t( 'App' ) : \OWA\Core\CoreAPI::t( 'Website' ) );?>
                     <span class="owa_siteControlDomain"><?php $view->out( $owa_is_app
                         ? ( $owa_prof['app_id'] ?? '' ) : ( $owa_prof['domain'] ?? '' ) );?></span>
                 </td>
                 <td class="owa_propertyProfilesActions">
                     <a href="<?php echo $view->makeLink( array( 'do' => 'base.sitesProfile',
-                        'siteId' => $owa_prof['site_id'], 'edit' => true ) );?>">Details</a>
+                        'siteId' => $owa_prof['site_id'], 'edit' => true ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Details' ) );?></a>
                     <a href="<?php echo $view->makeLink( array( 'do' => 'base.profileSettings',
-                        'siteId' => $owa_prof['site_id'] ) );?>">Observation Settings</a>
+                        'siteId' => $owa_prof['site_id'] ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Settings' ) );?></a>
                     <a href="<?php echo $view->makeLink( array( 'do' => 'base.sitesInvocation',
-                        'siteId' => $owa_prof['site_id'] ) );?>">Tracking Tag</a>
+                        'siteId' => $owa_prof['site_id'] ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Tracking Tag' ) );?></a>
                 </td>
             </tr>
         <?php endforeach;?>

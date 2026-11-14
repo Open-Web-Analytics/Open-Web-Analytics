@@ -153,7 +153,7 @@ class NotificationManager {
                 'source_key'   => (string) $release['id'],
                 // A release can be published without a name; the tag always
                 // exists and is what people call it anyway.
-                'title'        => (string) ( $release['name'] ?? $release['tag_name'] ?? 'Release' ),
+                'title'        => (string) ( $release['name'] ?? $release['tag_name'] ?? \OWA\Core\CoreAPI::t( 'Release' ) ),
                 'body'         => (string) ( $release['body'] ?? '' ),
                 'url'          => (string) ( $release['html_url'] ?? '' ),
                 'published_at' => $published ?: 0,

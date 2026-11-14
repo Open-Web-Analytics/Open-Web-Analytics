@@ -203,9 +203,9 @@ class ResultSetManager extends \OWA\Core\Base {
                 if ( \OWA\Core\Lib::isEmpty( $constraint['value'] ) ) {
 
                     $this->addRequestError( sprintf(
-                        'The "%s" constraint was given no value. Refusing to run the '
+                        \OWA\Core\CoreAPI::t( 'The "%s" constraint was given no value. Refusing to run the '
                         . 'query unconstrained -- a missing value is not a request for '
-                        . 'everything.',
+                        . 'everything.' ),
                         $constraint['name']
                     ) );
 
@@ -232,9 +232,9 @@ class ResultSetManager extends \OWA\Core\Base {
                      && ! $this->isMetric( $constraint['name'] ) ) {
 
                     $this->addRequestError( sprintf(
-                        '"%s" is not a dimension or a metric, so it cannot be constrained '
+                        \OWA\Core\CoreAPI::t( '"%s" is not a dimension or a metric, so it cannot be constrained '
                         . 'on. Refusing to run the query unconstrained -- an unknown name '
-                        . 'is not a request for everything.',
+                        . 'is not a request for everything.' ),
                         $constraint['name']
                     ) );
 
@@ -248,7 +248,7 @@ class ResultSetManager extends \OWA\Core\Base {
                     if ( $problem !== null ) {
 
                         $this->addRequestError( sprintf(
-                            'The "%s" pattern was refused: %s', $constraint['name'], $problem ) );
+                            \OWA\Core\CoreAPI::t( 'The "%1$s" pattern was refused: %2$s' ), $constraint['name'], $problem ) );
 
                         continue;
                     }
@@ -405,7 +405,7 @@ class ResultSetManager extends \OWA\Core\Base {
 
                 if ( $next === 'g' || $next === 'k' ) {
 
-                    return 'it uses a backreference.';
+                    return \OWA\Core\CoreAPI::t( 'it uses a backreference.' );
                 }
 
                 if ( in_array( $next, array( 'K', 'C', 'N', 'o' ), true ) ) {
@@ -497,7 +497,7 @@ class ResultSetManager extends \OWA\Core\Base {
 
             if ( substr( $after, 1, 2 ) === 'P=' ) {
 
-                return 'it uses a backreference.';
+                return \OWA\Core\CoreAPI::t( 'it uses a backreference.' );
             }
 
             if ( $kind === '(' ) {
@@ -559,7 +559,7 @@ class ResultSetManager extends \OWA\Core\Base {
 
         if ( strlen( $pattern ) > self::MAX_REGEX_LENGTH ) {
 
-            return sprintf( 'it is longer than %d characters.', self::MAX_REGEX_LENGTH );
+            return sprintf( \OWA\Core\CoreAPI::t( 'it is longer than %d characters.' ), self::MAX_REGEX_LENGTH );
         }
 
         // Before compiling: PCRE's own answer to some of these (\C, for one)
@@ -574,17 +574,17 @@ class ResultSetManager extends \OWA\Core\Base {
         // \x01 as the delimiter, so a / in a path pattern needs no escaping.
         if ( @preg_match( "\x01" . $pattern . "\x01u", '' ) === false ) {
 
-            return 'it is not a valid regular expression.';
+            return \OWA\Core\CoreAPI::t( 'it is not a valid regular expression.' );
         }
 
         if ( preg_match( '/\\\\[1-9]/', $pattern ) ) {
 
-            return 'it uses a backreference.';
+            return \OWA\Core\CoreAPI::t( 'it uses a backreference.' );
         }
 
         if ( self::repeatsARepeat( $pattern ) ) {
 
-            return 'it repeats a group that itself repeats, such as (a+)+.';
+            return \OWA\Core\CoreAPI::t( 'it repeats a group that itself repeats, such as (a+)+.' );
         }
 
         if ( preg_match_all( '/\{\s*(\d+)\s*(?:,\s*(\d*)\s*)?\}/', $pattern, $m, PREG_SET_ORDER ) ) {
@@ -594,7 +594,7 @@ class ResultSetManager extends \OWA\Core\Base {
                 if ( (int) $bound[1] > self::MAX_REGEX_BOUND
                      || ( isset( $bound[2] ) && $bound[2] !== '' && (int) $bound[2] > self::MAX_REGEX_BOUND ) ) {
 
-                    return sprintf( 'it repeats more than %d times.', self::MAX_REGEX_BOUND );
+                    return sprintf( \OWA\Core\CoreAPI::t( 'it repeats more than %d times.' ), self::MAX_REGEX_BOUND );
                 }
             }
         }
@@ -2057,14 +2057,14 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     function booleanFormatter($value) {
 
-        return ! empty( $value ) ? 'Yes' : 'No';
+        return ! empty( $value ) ? \OWA\Core\CoreAPI::t( 'Yes' ) : \OWA\Core\CoreAPI::t( 'No' );
     }
 
     function numberFormatter($value) {
 	if(is_null($value)){
             return $value;
         }
-        return number_format($value);
+        return \OWA\Core\Strings::formatNumber( $value );
     }
 
     /**
@@ -2156,7 +2156,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return $value;
         }
 
-        return number_format($value * 100, 2).'%';
+        return \OWA\Core\Strings::formatPercent( $value, 2 );
     }
 
     /** NULL stays NULL, for the same reason formatPercentage does. */

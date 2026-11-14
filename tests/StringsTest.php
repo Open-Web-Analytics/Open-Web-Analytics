@@ -393,6 +393,75 @@ class ConfiguredReport {
         }
     }
 
+    /**
+     * A module's metric and dimension vocabularies, its report definitions and
+     * the VALUE_TABLES constants are catalogued as data the server
+     * translates -- not as keys the JavaScript is sent.
+     */
+    public function testExtractCataloguesVocabulariesReportDefinitionsAndValueTables(): void
+    {
+        $root = sys_get_temp_dir() . '/owa-strings-' . bin2hex(random_bytes(4));
+        mkdir($root . '/modules/Demo/config', 0700, true);
+        mkdir($root . '/modules/Demo/reports', 0700, true);
+        mkdir($root . '/modules/Demo/Classes', 0700, true);
+
+        file_put_contents($root . '/modules/Demo/config/metrics.php', "<?php
+return array( 'entity' => 'demo.event', 'metrics' => array(
+    'clicks' => array( 'label' => 'Clicks', 'description' => 'Clicks on '
+        . 'the page.', 'column' => 'id' ),
+) );
+");
+        file_put_contents($root . '/modules/Demo/config/dimensions.php', "<?php
+return array( 'entity' => 'demo.event', 'dimensions' => array(
+    'pagePath' => array( 'column' => 'page_path', 'label' => 'Page Path', 'family' => 'content' ),
+) );
+");
+        file_put_contents($root . '/modules/Demo/reports/pages.json', json_encode([
+            'title' => 'Pages', 'titleSuffix' => ': {pagePath}', 'description' => 'Every page.',
+            'widgets' => [['type' => 'grid', 'id' => 'g', 'title' => 'Top pages']],
+        ], JSON_PRETTY_PRINT));
+        file_put_contents($root . '/modules/Demo/Classes/CustomReports.php', "<?php
+class CustomReports {
+    const WIDTHS = array( 4 => 'Third', 6 => 'Half' );
+    const MORE_LABEL = 'More';
+    const OTHER = array( 'x' => 'Not catalogued' );
+}
+");
+
+        try {
+            $map = Strings::extract([$root . '/modules'], $problems, $keys);
+
+            $this->assertSame([], $problems);
+            $this->assertSame([
+                ': {pagePath}' => ': {pagePath}', 'Clicks' => 'Clicks', 'Clicks on the page.' => 'Clicks on the page.',
+                'Every page.' => 'Every page.', 'Half' => 'Half', 'More' => 'More', 'Page Path' => 'Page Path',
+                'Pages' => 'Pages', 'Third' => 'Third', 'Top pages' => 'Top pages',
+            ], $map);
+            $this->assertSame([], $keys);
+        } finally {
+            exec('rm -rf ' . escapeshellarg($root));
+        }
+    }
+
+    public function testAVocabularyLabelThatIsNotALiteralIsReported(): void
+    {
+        $labels = Strings::vocabularyLabelsIn("<?php
+return array( 'metrics' => array( 'a' => array( 'label' => \$name, 'description' => 'Fine.' ) ) );
+");
+
+        $this->assertSame([null, 'Fine.'], array_column($labels, 'text'));
+        $this->assertSame(2, $labels[0]['line']);
+    }
+
+    public function testAReportDefinitionGivesItsTitlesAndDescriptionWithTheirLines(): void
+    {
+        $labels = Strings::reportLabelsIn("{\n    \"title\": \"Browsers\",\n    \"widgets\": [ { \"title\": \"By version\" }, { \"type\": \"grid\" } ]\n}");
+
+        $this->assertSame(['Browsers', 'By version'], array_column($labels, 'text'));
+        $this->assertSame([2, 3], array_column($labels, 'line'));
+        $this->assertSame([], Strings::reportLabelsIn('not json'));
+    }
+
     /** config_dom.php puts forScript() on OWA.config for OWA.l() to read; in English, nothing. */
     public function testThePageCarriesTheScriptsTranslationsAndRule(): void
     {

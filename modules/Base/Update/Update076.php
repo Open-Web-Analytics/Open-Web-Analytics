@@ -246,7 +246,7 @@ class Update076 extends \OWA\Core\Update {
 
         if ( $renamed ) {
 
-            $this->e->notice( sprintf( 'Funnel steps: %s is now %s in %d saved report(s).', $from, $to, $renamed ) );
+            $this->e->notice( sprintf( 'Funnel steps: %s is now %s in %d saved %s.', $from, $to, $renamed, \OWA\Core\Lib::plural( $renamed, 'report', 'reports' ) ) );
         }
 
         return true;

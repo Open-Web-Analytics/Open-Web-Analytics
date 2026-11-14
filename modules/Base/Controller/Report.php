@@ -413,7 +413,7 @@ class Report extends \OWA\Core\AdminController {
             array(
                 'url'   => ( new \OWA\Core\Template( null, array( 'link_state' => $state ) ) )
                                ->makeLink( $link, true ),
-                'label' => $is_viz ? 'Edit visualization' : 'Edit report',
+                'label' => $is_viz ? \OWA\Core\CoreAPI::t( 'Edit visualization' ) : \OWA\Core\CoreAPI::t( 'Edit report' ),
                 'icon'  => 'fas fa-pencil-alt',
                 // An icon, not a labelled button: the label names the row's own
                 // title, which is right beside it.
@@ -476,7 +476,7 @@ class Report extends \OWA\Core\AdminController {
                     'do'             => 'base.customReportMarkFavorite',
                     'customReportId' => $report['id'],
                 ), true, '', false, true ),
-            'label'    => $starred ? 'Remove from favorites' : 'Add to favorites',
+            'label'    => $starred ? \OWA\Core\CoreAPI::t( 'Remove from favorites' ) : \OWA\Core\CoreAPI::t( 'Add to favorites' ),
             /*
              * Filled when it is one of yours, outline when it is not -- the
              * two styles FA5 ships for the same glyph, so the control reads as

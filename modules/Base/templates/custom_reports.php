@@ -33,7 +33,7 @@ $owa_state = array(
     'rosterFavorites' => $owa_favs ? '1' : '0',
 );
 
-$owa_typeLabels = array( 'report' => 'Report' );
+$owa_typeLabels = array( 'report' => \OWA\Core\CoreAPI::t( 'Report' ) );
 $owa_typeIcons  = array( 'report' => 'fas fa-th-large' );
 
 foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as $owa_key => $owa_kind ) {
@@ -61,8 +61,8 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
     };
 ?>
 <div class="owa_rosterBar">
-    <div class="owa_rosterFilter" role="group" aria-label="Show">
-        <?php foreach ( array( 'all' => 'All', 'mine' => 'Just mine', 'favorites' => 'Favorites' ) as $owa_which => $owa_label ): ?>
+    <div class="owa_rosterFilter" role="group" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Show' ) ); ?>">
+        <?php foreach ( array( 'all' => \OWA\Core\CoreAPI::t( 'All' ), 'mine' => \OWA\Core\CoreAPI::t( 'Just mine' ), 'favorites' => \OWA\Core\CoreAPI::t( 'Favorites' ) ) as $owa_which => $owa_label ): ?>
         <a class="<?php echo $owa_active === $owa_which ? 'owa_rosterFilterActive' : ''; ?>"
            <?php echo $owa_active === $owa_which ? 'aria-current="true"' : ''; ?>
            href="<?php echo $owa_filterLink( $owa_which ); ?>"><?php
@@ -78,7 +78,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
 <table class="owa_customReportRoster">
     <thead>
         <tr>
-            <th class="owa_rosterStarCell"><span class="owa_srOnly">Favorite</span></th>
+            <th class="owa_rosterStarCell"><span class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Favorite' ) ); ?></span></th>
             <?php
                 /*
                  * Sortable headings, server-side and on the URL, so the order
@@ -113,10 +113,10 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
                     );
                 };
 
-                $owa_heading( 'name', 'Report' );
-                $owa_heading( 'type', 'Type' );
-                $owa_heading( 'author', 'Created by' );
-                $owa_heading( 'updated', 'Last updated' );
+                $owa_heading( 'name', \OWA\Core\CoreAPI::t( 'Report' ) );
+                $owa_heading( 'type', \OWA\Core\CoreAPI::t( 'Type' ) );
+                $owa_heading( 'author', \OWA\Core\CoreAPI::t( 'Created by' ) );
+                $owa_heading( 'updated', \OWA\Core\CoreAPI::t( 'Last updated' ) );
             ?>
         </tr>
     </thead>
@@ -136,8 +136,8 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
             <td class="owa_rosterStarCell">
                 <a class="owa_rosterStar<?php echo $owa_starred ? ' is-on' : ''; ?>"
                    href="<?php $view->out( $owa_starUrl, false ); ?>"
-                   aria-label="<?php echo $owa_starred ? 'Remove from favorites' : 'Add to favorites'; ?>"
-                   title="<?php echo $owa_starred ? 'Remove from favorites' : 'Add to favorites'; ?>"><i
+                   aria-label="<?php $view->out( $owa_starred ? \OWA\Core\CoreAPI::t( 'Remove from favorites' ) : \OWA\Core\CoreAPI::t( 'Add to favorites' ) ); ?>"
+                   title="<?php $view->out( $owa_starred ? \OWA\Core\CoreAPI::t( 'Remove from favorites' ) : \OWA\Core\CoreAPI::t( 'Add to favorites' ) ); ?>"><i
                    class="<?php echo $owa_starred ? 'fas' : 'far'; ?> fa-star" aria-hidden="true"></i></a>
             </td>
             <td class="owa_rosterName">
@@ -146,11 +146,11 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
                     'reportId' => 'custom-' . $owa_report['id'],
                 ), true ); ?>"><?php $view->out( $owa_report['name'] ); ?></a>
                 <?php if ( ! empty( $owa_report['is_shared'] ) ): ?>
-                    <span class="owa_rosterTag" title="In everyone's list">Shared</span>
+                    <span class="owa_rosterTag" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'In everyone\'s list' ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Shared' ) ); ?></span>
                 <?php endif; ?>
                 <?php if ( ! empty( $owa_report['invalid'] ) ): ?>
                     <span class="owa_rosterTag is-warn"
-                          title="<?php $view->out( $owa_report['invalid'] ); ?>">Can't be drawn</span>
+                          title="<?php $view->out( $owa_report['invalid'] ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Can\'t be drawn' ) ); ?></span>
                 <?php endif; ?>
             </td>
             <td class="owa_rosterType">
@@ -160,19 +160,19 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
             <td>
                 <?php
                     $owa_author = (string) $owa_report['user_id'];
-                    $view->out( $owa_author !== '' && $owa_author === $owa_me ? 'you' : $owa_author );
+                    $view->out( $owa_author !== '' && $owa_author === $owa_me ? \OWA\Core\CoreAPI::t( 'you' ) : $owa_author );
                 ?>
             </td>
             <td>
                 <?php $owa_when = (int) $owa_report['last_updated_timestamp']; ?>
-                <?php $view->out( $owa_when ? date( 'M j, Y, g:i A', $owa_when ) : '' ); ?>
+                <?php $view->out( $owa_when ? \OWA\Core\Strings::formatDate( $owa_when, 'yMMMdjmm', 'M j, Y, g:i A' ) : '' ); ?>
             </td>
         </tr>
     <?php endforeach; ?>
     </tbody>
 </table>
 
-<p class="owa_rosterNote">Favorites sort to the top and appear in the column on the left. A shared report is in everyone's list; any report opens for anyone with its link.</p>
+<p class="owa_rosterNote"><?php $view->out( \OWA\Core\CoreAPI::t( 'Favorites sort to the top and appear in the column on the left. A shared report is in everyone\'s list; any report opens for anyone with its link.' ) ); ?></p>
 
 <?php else: ?>
     <p class="owa_rosterEmpty">
@@ -184,13 +184,13 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
              * starred, reads as data loss.
              */
         ?>
-        <?php $view->out( $owa_active === 'mine' ? 'No reports of your own.' : 'No favorites yet. Star a report to add it here.' ); ?>
+        <?php $view->out( $owa_active === 'mine' ? \OWA\Core\CoreAPI::t( 'No reports of your own.' ) : \OWA\Core\CoreAPI::t( 'No favorites yet. Star a report to add it here.' ) ); ?>
     <?php elseif ( $owa_author ): ?>
-        No custom reports yet.
-        <a class="owa_newCustomReport"
-           href="<?php echo $view->makeLink( array( 'do' => 'base.customReportEdit' ), true ); ?>">Make one</a>.
+        <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'No custom reports yet. %s.' ),
+            '<a class="owa_newCustomReport" href="' . $view->makeLink( array( 'do' => 'base.customReportEdit' ), true ) . '">'
+            . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Make one' ), ENT_QUOTES, 'UTF-8' ) . '</a>' ); ?>
     <?php else: ?>
-        No custom reports have been shared with you yet.
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'No custom reports have been shared with you yet.' ) ); ?>
     <?php endif; ?>
     </p>
 <?php endif; ?>
@@ -240,7 +240,7 @@ jQuery( function () {
         autoOpen: false,
         modal: true,
         width: Math.min( 640, jQuery( window ).width() - 32 ),
-        title: 'What do you want to make?',
+        title: <?php echo json_encode( \OWA\Core\CoreAPI::t( 'What do you want to make?' ) ); ?>,
         // Kept inside .owa: every rule styling what is inside it is scoped
         // `.owa .owa_...`, and jQuery UI would otherwise lift it to <body>.
         appendTo: '.owa',

@@ -1575,7 +1575,34 @@ abstract class Module {
             return null;
         }
 
+        $declaration[ $kind ] = self::translatedVocabulary( (array) $declaration[ $kind ] );
+
         return $declaration;
+    }
+
+    /**
+     * A vocabulary's entries with what a reader sees -- each one's
+     * Strings::VOCABULARY_KEYS -- in the locale in use, for the pickers, the
+     * reports and the REST metadata alike. Strings::extract() catalogues them
+     * from the config file.
+     *
+     * @param  array $entries name => metric or dimension declaration
+     * @return array
+     */
+    public static function translatedVocabulary( array $entries ) {
+
+        foreach ( $entries as $name => $entry ) {
+
+            foreach ( \OWA\Core\Strings::VOCABULARY_KEYS as $key ) {
+
+                if ( is_array( $entry ) && isset( $entry[ $key ] ) && is_string( $entry[ $key ] ) && $entry[ $key ] !== '' ) {
+
+                    $entries[ $name ][ $key ] = \OWA\Core\Strings::translate( $entry[ $key ] );
+                }
+            }
+        }
+
+        return $entries;
     }
 
     function registerActions() {

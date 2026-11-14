@@ -121,7 +121,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerSettingsPage( array(
             'do'        => 'maxmind_geoip.optionsGeoip',
-            'title'     => 'GeoIP',
+            'title'     => \OWA\Core\CoreAPI::t( 'GeoIP' ),
             'section'   => 'Instance',
             'order'     => 10,
             'fieldsets' => array( 'maxmind_geoip.account' ),
@@ -138,7 +138,7 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerSettingsFieldSet( array(
             'id'       => 'maxmind_geoip.account',
-            'legend'   => 'MaxMind Account',
+            'legend'   => \OWA\Core\CoreAPI::t( 'MaxMind Account' ),
             'settings' => array( 'db_license_key', 'db_edition' ),
         ) );
     }

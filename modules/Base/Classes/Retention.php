@@ -346,8 +346,8 @@ class Retention {
         if ( self::shorter( $raw_new, $raw_now ) ) {
 
             $drop = self::dropsFor( self::rawTable(), $raw_new );
-            $sections[] = array( 'tone' => 'danger', 'title' => sprintf( 'Delete event data older than %d months?', $raw_new ),
-                'proceed' => 'Save and delete', 'paragraphs' => self::rawParagraphs( $raw_new, $drop ) );
+            $sections[] = array( 'tone' => 'danger', 'title' => sprintf( \OWA\Core\CoreAPI::tn( 'Delete event data older than %d month?', 'Delete event data older than %d months?', $raw_new ), $raw_new ),
+                'proceed' => \OWA\Core\CoreAPI::t( 'Save and delete' ), 'paragraphs' => self::rawParagraphs( $raw_new, $drop ) );
         }
 
         // CUBES: which Properties change, and how.
@@ -397,7 +397,7 @@ class Retention {
         // A cube shortened only because raw was is covered by raw's section.
         if ( $shorter && ! self::shorter( $raw_new, $raw_now ) ) {
 
-            $sections[] = array( 'tone' => 'notice', 'title' => 'Shorten reporting data?', 'proceed' => 'Save',
+            $sections[] = array( 'tone' => 'notice', 'title' => \OWA\Core\CoreAPI::t( 'Shorten reporting data?' ), 'proceed' => \OWA\Core\CoreAPI::t( 'Save' ),
                 'paragraphs' => self::cubeShorterParagraphs( $shorter ) );
         }
 
@@ -417,8 +417,8 @@ class Retention {
 
             if ( $owed ) {
 
-                $sections[] = array( 'tone' => 'notice', 'title' => 'Rebuild older reporting data?',
-                    'proceed' => 'Save and rebuild', 'paragraphs' => self::rebuildParagraphs( $owed ) );
+                $sections[] = array( 'tone' => 'notice', 'title' => \OWA\Core\CoreAPI::t( 'Rebuild older reporting data?' ),
+                    'proceed' => \OWA\Core\CoreAPI::t( 'Save and rebuild' ), 'paragraphs' => self::rebuildParagraphs( $owed ) );
             }
         }
 
@@ -463,19 +463,22 @@ class Retention {
 
         if ( $drop['partitions'] ) {
 
-            $out[] = sprintf( 'At %s, event data before %s is deleted: about %s events.',
-                $when, self::day( $drop['effective'] ), number_format( $drop['rows'] ) );
+            $out[] = sprintf( \OWA\Core\CoreAPI::tn( 'At %1$s, event data before %2$s is deleted: about %3$s event.',
+                'At %1$s, event data before %2$s is deleted: about %3$s events.', $drop['rows'] ),
+                $when, self::day( $drop['effective'] ), \OWA\Core\Strings::formatNumber( $drop['rows'] ) );
 
         } else {
 
-            $out[] = sprintf( 'Nothing is old enough to delete yet. From %s on, event data older than %d months is '
-                . 'deleted as it ages.', $when, $months );
+            $out[] = sprintf( \OWA\Core\CoreAPI::tn(
+                'Nothing is old enough to delete yet. From %1$s on, event data older than %2$d month is deleted as it ages.',
+                'Nothing is old enough to delete yet. From %1$s on, event data older than %2$d months is deleted as it ages.',
+                $months ), $when, $months );
         }
 
-        $out[] = 'Deleted event data cannot be recovered. Reports for every Property are limited to the same window.';
+        $out[] = \OWA\Core\CoreAPI::t( 'Deleted event data cannot be recovered. Reports for every Property are limited to the same window.' );
 
-        $out[] = 'Nothing is deleted before that run: changing this setting back in the meantime keeps everything. '
-               . 'To delete sooner, run cmd=partition-drop.';
+        $out[] = \OWA\Core\CoreAPI::t( 'Nothing is deleted before that run: changing this setting back in the meantime keeps everything. '
+               . 'To delete sooner, run cmd=partition-drop.' );
 
         return $out;
     }
@@ -483,14 +486,20 @@ class Retention {
     /** @return string[] */
     private static function cubeShorterParagraphs( array $shorter ) {
 
-        $months = array_unique( array_values( $shorter ) );
-        $which  = count( $shorter ) === 1 ? 'this Property' : sprintf( '%d Properties', count( $shorter ) );
+        $months     = array_unique( array_values( $shorter ) );
+        $properties = count( $shorter );
+        $window     = count( $months ) === 1
+            ? sprintf( \OWA\Core\CoreAPI::tn( '%d month', '%d months', reset( $months ) ), reset( $months ) )
+            : \OWA\Core\CoreAPI::t( 'their new window' );
 
         return array(
-            sprintf( 'At %s, reports for %s stop showing data older than %s.',
-                self::when(), $which,
-                count( $months ) === 1 ? sprintf( '%d months', reset( $months ) ) : 'their new window' ),
-            'The event data is kept. Lengthening this again rebuilds those months, as far back as event data is kept.',
+            $properties === 1
+                ? sprintf( \OWA\Core\CoreAPI::t( 'At %1$s, reports for this Property stop showing data older than %2$s.' ),
+                    self::when(), $window )
+                : sprintf( \OWA\Core\CoreAPI::tn( 'At %1$s, reports for %3$d Property stop showing data older than %2$s.',
+                    'At %1$s, reports for %3$d Properties stop showing data older than %2$s.', $properties ),
+                    self::when(), $window, $properties ),
+            \OWA\Core\CoreAPI::t( 'The event data is kept. Lengthening this again rebuilds those months, as far back as event data is kept.' ),
         );
     }
 
@@ -510,15 +519,21 @@ class Retention {
             $from    = $from === null ? $o['from'] : min( $from, $o['from'] );
         }
 
-        $which = count( $owed ) === 1 ? 'this Property' : sprintf( '%d Properties', count( $owed ) );
+        $properties = count( $owed );
+        $count      = \OWA\Core\Strings::formatNumber( $events );
 
         return array(
-            sprintf( 'Reports for %s are rebuilt back to %s from the event data: about %s events.',
-                $which, self::day( $from ), number_format( $events ) ),
-            sprintf( 'Estimated rebuild time: %s. It runs in the background, starting within a few minutes of '
-                . 'saving when the scheduler is running. Until it finishes, reports show the months they hold now.',
-                $low === $high ? sprintf( 'about %d minute%s', $low, $low === 1 ? '' : 's' )
-                               : sprintf( 'roughly %d to %d minutes', $low, $high ) ),
+            $properties === 1
+                ? sprintf( \OWA\Core\CoreAPI::tn( 'Reports for this Property are rebuilt back to %1$s from the event data: about %2$s event.',
+                    'Reports for this Property are rebuilt back to %1$s from the event data: about %2$s events.', $events ),
+                    self::day( $from ), $count )
+                : sprintf( \OWA\Core\CoreAPI::tn( 'Reports for %3$d Properties are rebuilt back to %1$s from the event data: about %2$s event.',
+                    'Reports for %3$d Properties are rebuilt back to %1$s from the event data: about %2$s events.', $events ),
+                    self::day( $from ), $count, $properties ),
+            sprintf( \OWA\Core\CoreAPI::t( 'Estimated rebuild time: %s. It runs in the background, starting within a few minutes of '
+                . 'saving when the scheduler is running. Until it finishes, reports show the months they hold now.' ),
+                $low === $high ? sprintf( \OWA\Core\CoreAPI::tn( 'about %d minute', 'about %d minutes', $low ), $low )
+                               : sprintf( \OWA\Core\CoreAPI::t( 'roughly %1$d to %2$d minutes' ), $low, $high ) ),
         );
     }
 
@@ -528,8 +543,9 @@ class Retention {
         $next = self::nextRotate();
 
         return $next
-            ? sprintf( 'the next daily maintenance run (%s)', date( 'D j M, H:i', $next ) )
-            : 'the next maintenance run, once the scheduler is running';
+            ? sprintf( \OWA\Core\CoreAPI::t( 'the next daily maintenance run (%s)' ),
+                \OWA\Core\Strings::formatDate( $next, 'EEEdMMMHHmm', 'D j M, H:i' ) )
+            : \OWA\Core\CoreAPI::t( 'the next maintenance run, once the scheduler is running' );
     }
 
     /** 20240101 as "1 Jan 2024". */
@@ -537,7 +553,7 @@ class Retention {
 
         $d = \DateTimeImmutable::createFromFormat( 'Ymd', (string) $yyyymmdd );
 
-        return $d ? $d->format( 'j M Y' ) : (string) $yyyymmdd;
+        return $d ? \OWA\Core\Strings::formatDate( $d->setTime( 12, 0 )->getTimestamp(), 'dMMMy', 'j M Y', 'UTC' ) : (string) $yyyymmdd;
     }
 
     /**

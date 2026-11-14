@@ -9,6 +9,6 @@
  */
 ?>
 <div class="owa_publicCard owa_installCard">
-    <h1 class="owa_publicTitle">Install Open Web Analytics</h1>
+    <h1 class="owa_publicTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Install Open Web Analytics' ) );?></h1>
     <div class="owa_installBody"><?php echo $view->subview;?></div>
 </div>

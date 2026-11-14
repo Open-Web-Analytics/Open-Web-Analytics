@@ -9,26 +9,26 @@
  * user, never a partial list.
  */
 ?>
-<h1 class="panel_headline">Property Access Management</h1>
+<h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'Property Access Management' ) ); ?></h1>
 <div id="panel">
-<div class="owa_panelIntro">Who can see this Property. A grant gives up to three capabilities: viewing reports, viewing e-commerce reports, and editing the Property. It covers all of the Property's Observation Profiles. Administrators always have access and cannot be changed here.</div>
+<div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Who can see this Property. A grant gives up to three capabilities: viewing reports, viewing e-commerce reports, and editing the Property. It covers all of the Property\'s Observation Profiles. Administrators always have access and cannot be changed here.' ) ); ?></div>
 <form method="post" name="owa-allowedusersform">
     <fieldset name="owa-allowedusers" class="options">
-    <legend>Allowed Users</legend>
+    <legend><?php $view->out( \OWA\Core\CoreAPI::t( 'Allowed Users' ) ); ?></legend>
 
         <?php if ( $view->edit ): ?>
 
         <div class="field">
             <input type="text" id="owa-user-filter" class="owa-user-filter"
-                placeholder="Filter by name, login or role" autocomplete="off">
+                placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'Filter by name, login or role' ) ); ?>" autocomplete="off">
         </div>
 
         <table class="management owa-allowed-users">
             <tr>
                 <th style="width:1%"></th>
-                <th>Login</th>
-                <th>Name</th>
-                <th>Role</th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Login' ) ); ?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Role' ) ); ?></th>
             </tr>
             <?php foreach ($view->users as $user):
                 $isAdmin   = ( $user['role'] ?? '' ) === 'admin';
@@ -37,7 +37,7 @@
             <tr class="owa-user-row">
                 <td>
                     <?php if ( $isAdmin ): ?>
-                        <input type="checkbox" checked disabled title="Administrators always have access">
+                        <input type="checkbox" checked disabled title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Administrators always have access' ) ); ?>">
                     <?php else: ?>
                         <input type="checkbox"
                             name="allowed_users[]"
@@ -53,7 +53,7 @@
                 <td><?php $view->out( $user['real_name'] );?></td>
                 <td>
                     <?php $view->out( $user['role'] );?>
-                    <?php if ( $isAdmin ): ?><span class="owa-always">always has access</span><?php endif;?>
+                    <?php if ( $isAdmin ): ?><span class="owa-always"><?php $view->out( \OWA\Core\CoreAPI::t( 'always has access' ) ); ?></span><?php endif;?>
                 </td>
             </tr>
             <?php endforeach;?>
@@ -64,7 +64,7 @@
         <input type="hidden" name="propertyId" value="<?php $view->out( $view->propertyId );?>">
         <input type="hidden" name="module" value="base">
         <input type="hidden" name="action" value="base.propertyAccessUpdate">
-        <input type="submit" name="submit_btn" value="Save Users" class="owa-button">
+        <input type="submit" name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save Users' ) ); ?>" class="owa-button">
 
         <?php endif;?>
 

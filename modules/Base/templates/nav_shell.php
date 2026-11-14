@@ -21,7 +21,7 @@ $owa_rail   = $owa_rail ?? array();
 $owa_column = $owa_column ?? null;
 ?>
 <div class="owa_navShell<?php echo $owa_column ? ' has-column' : '';?>" id="owa_navShell">
-    <nav class="owa_rail" aria-label="Sections">
+    <nav class="owa_rail" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Sections' ) );?>">
         <ul class="owa_railList">
         <?php foreach ( $owa_rail as $owa_section ):?>
             <li class="owa_railEntry<?php echo $owa_section['foot'] ? ' is-foot' : '';?>">
@@ -48,7 +48,7 @@ $owa_column = $owa_column ?? null;
         <div class="owa_navColumnHead">
             <span class="owa_navColumnTitle"><?php $view->out( $owa_column['title'] );?></span>
             <button type="button" class="owa_navColumnToggle" aria-controls="owa_navColumnBody" aria-expanded="true"
-                    aria-label="Hide this column" title="Hide this column"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                    aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Hide this column' ) );?>" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Hide this column' ) );?>"><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
         </div>
         <div class="owa_navColumnBody" id="owa_navColumnBody">
         <?php foreach ( $owa_column['groups'] as $owa_group ):?>

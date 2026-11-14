@@ -673,9 +673,10 @@ abstract class FactMigrator {
 
         // More rows in v2 than v1 is expected: a session's first page view also
         // writes its session_start and first_visit markers.
-        return sprintf( '%d day(s), %d v1 row(s), %d refused%s, %d row(s) in v2 with their markers',
-            count( $days ), $read, array_sum( $refused ), $reasons ? ' (' . implode( ', ', $reasons ) . ')' : '',
-            $present );
+        return sprintf( '%d %s, %d v1 %s, %d refused%s, %d %s in v2 with their markers',
+            count( $days ), \OWA\Core\Lib::plural( count( $days ), 'day', 'days' ), $read, \OWA\Core\Lib::plural( $read, 'row', 'rows' ),
+            array_sum( $refused ), $reasons ? ' (' . implode( ', ', $reasons ) . ')' : '',
+            $present, \OWA\Core\Lib::plural( $present, 'row', 'rows' ) );
     }
 
     /**

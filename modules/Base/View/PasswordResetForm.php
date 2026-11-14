@@ -38,7 +38,7 @@ class PasswordResetForm extends \OWA\Core\View {
 
     function render($data) {
 
-        $this->setTitle('Password Reset');
+        $this->setTitle( \OWA\Core\CoreAPI::t( 'Password Reset' ) );
         $this->t->set_template('wrapper_public.php');
         $this->body->set_template('users_password_reset_request.php');
     }

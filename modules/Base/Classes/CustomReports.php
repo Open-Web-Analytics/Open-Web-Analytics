@@ -334,6 +334,30 @@ class CustomReports {
     const MORE_LABEL = 'View Full Report »';
 
     /**
+     * A widget's "more" link label as shown: MORE_LABEL, which a saved widget
+     * holds when its author kept the default, in the locale in use; any
+     * other label as its author wrote it.
+     *
+     * @param  string $label
+     * @return string
+     */
+    public static function shownMoreLabel( $label ) {
+
+        return (string) $label === self::MORE_LABEL ? \OWA\Core\Strings::translate( self::MORE_LABEL ) : (string) $label;
+    }
+
+    /**
+     * A VALUE_TABLES constant's values in the locale in use (Strings::VALUE_TABLES).
+     *
+     * @param  array $table  e.g. self::WIDGET_TYPES
+     * @return array
+     */
+    public static function translatedTable( array $table ) {
+
+        return array_map( static function ( $value ) { return \OWA\Core\Strings::translate( $value ); }, $table );
+    }
+
+    /**
      * The dimensions that measure TIME: every registered dimension in the
      * `time` family.
      *
@@ -561,7 +585,7 @@ class CustomReports {
 
             $fixed  = self::FIXED_DIMENSIONS[ $type ];
             $listed = self::asNames( $query['dimensions'] ?? '' );
-            $label  = self::WIDGET_TYPES[ $type ] ?? $type;
+            $label  = \OWA\Core\Strings::translate( self::WIDGET_TYPES[ $type ] ?? $type );
 
             /*
              * The FIRST one, because it is the x axis. Order is not
@@ -656,7 +680,7 @@ class CustomReports {
 
                 return sprintf(
                     \OWA\Core\CoreAPI::t( '%s is a %s, which names its own metrics. This one names none.' ),
-                    $where, self::WIDGET_TYPES[ $type ] ?? $type );
+                    $where, \OWA\Core\Strings::translate( self::WIDGET_TYPES[ $type ] ?? $type ) );
             }
 
             if ( ! $has_report_metrics ) {
@@ -924,7 +948,7 @@ class CustomReports {
      */
     private static function validateSingleField( array $query, $type, $key, $where ) {
 
-        $label = isset( self::WIDGET_TYPES[ $type ] ) ? self::WIDGET_TYPES[ $type ] : $type;
+        $label = \OWA\Core\Strings::translate( self::WIDGET_TYPES[ $type ] ?? $type );
 
         $count = count( self::asNames( isset( $query[ $key ] ) ? $query[ $key ] : '' ) );
 
@@ -936,7 +960,7 @@ class CustomReports {
         return $key === 'metrics'
             ? sprintf( \OWA\Core\CoreAPI::t( '%s is a %s, which draws one metric. This one names %d metrics.' ), $where, $label, $count )
             : sprintf( \OWA\Core\CoreAPI::t( '%s is a %s, which draws one dimension. This one names %d dimensions. Use a %s for more than one.' ),
-                $where, $label, $count, self::WIDGET_TYPES['grid'] );
+                $where, $label, $count, \OWA\Core\Strings::translate( self::WIDGET_TYPES['grid'] ) );
     }
 
     // ------------------------------------------------------------------
@@ -1345,7 +1369,7 @@ class CustomReports {
      */
     private static function reportLabel( array $definition, $id ) {
 
-        $title = trim( (string) ( $definition['title'] ?? '' ) );
+        $title = trim( (string) ( \OWA\Core\ConfiguredReport::translated( $definition )['title'] ?? '' ) );
 
         $title = trim( (string) preg_replace( '/\{[^}]*\}/', '', $title ) );
 

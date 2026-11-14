@@ -6,7 +6,7 @@ class CustomDimensions extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Custom Dimensions' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'Custom Dimensions' ) );
         $this->body->set_template( 'custom_dimensions.php' );
 
         foreach ( array( 'propertyId', 'dimensions', 'cube' ) as $key ) {

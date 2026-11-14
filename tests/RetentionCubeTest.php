@@ -200,7 +200,7 @@ final class RetentionCubeTest extends TestCase
         $this->assertTrue($ask['needed']);
         $this->assertSame('notice', $ask['tone'], 'a rebuild is not a warning');
         $this->assertSame('Save and rebuild', $ask['proceed']);
-        $this->assertStringContainsString('about 1 events', implode(' ', $ask['paragraphs']));
+        $this->assertStringContainsString('about 1 event.', implode(' ', $ask['paragraphs']));
         $this->assertStringContainsString('Estimated rebuild time', implode(' ', $ask['paragraphs']));
 
         $this->assertFalse(Retention::preview(['property_id' => (string) self::PROPERTY, 'cube' => 2])['needed'],

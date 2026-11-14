@@ -12,7 +12,7 @@ class MyAppPasswords extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Application Passwords' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'Application Passwords' ) );
 
         $this->body->set_template( 'my_app_passwords.php' );
 

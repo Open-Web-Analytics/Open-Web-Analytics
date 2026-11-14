@@ -83,8 +83,7 @@ final class SqsOptionsPageTest extends TestCase {
 
     public function testItSaysHowToPutTheIntakeOnSqs(): void {
 
-        $this->assertStringContainsString( 'until <code>owa-config.php</code> sets
-            <code>OWA_SQS_QUEUE_URL</code>', $this->render() );
+        $this->assertStringContainsString( 'until <code>owa-config.php</code> sets <code>OWA_SQS_QUEUE_URL</code>', $this->render() );
         $this->assertStringContainsString( 'every beacon is queued here',
             $this->render( array( 'in_use' => true, 'queued' => true ) ) );
         $this->assertStringContainsString( "OWA_QUEUE_TRACKING_EVENTS', true",

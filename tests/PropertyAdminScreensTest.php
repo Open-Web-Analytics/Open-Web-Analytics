@@ -907,10 +907,18 @@ final class PropertyAdminScreensTest extends TestCase
 
             $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
 
-            /* Visible text only: strip PHP, HTML tags and comments. */
+            /*
+             * Visible text only: the HTML without PHP, tags and comments, and
+             * the English the template passes to t() and tn().
+             */
             $prose = preg_replace( '/<\?php.*?\?>/s', ' ', $body );
             $prose = preg_replace( '/<!--.*?-->/s', ' ', $prose );
             $prose = strip_tags( $prose );
+
+            foreach ( \OWA\Core\Strings::callsIn( $body ) as $call ) {
+
+                $prose .= ' ' . strip_tags( $call['text'] . ' ' . $call['plural'] );
+            }
 
             /*
              * Approved exceptions, all of one kind: naming the real-world thing

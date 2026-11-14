@@ -38,7 +38,7 @@ class Updates extends \OWA\Core\View {
         $this->t->set_template('wrapper_public.php');
         
         $this->body->set_template('updates.php');// This is the inner template
-        $this->body->set('headline', 'Your database needs to be upgraded...');
+        $this->body->set('headline', \OWA\Core\CoreAPI::t( 'Your database needs to be upgraded...' ));
         $this->body->set('modules', $data['modules']);
     }
 }

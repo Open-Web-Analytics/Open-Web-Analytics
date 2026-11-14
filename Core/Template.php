@@ -866,7 +866,7 @@ class Template extends TemplateEngine {
             if ( ! empty( $section['subgroup'] ) || ! empty( $section['keeps_column'] ) ) {
 
                 $items[] = array(
-                    'label'   => (string) ( $section['overview_label'] ?? 'Overview' ),
+                    'label'   => (string) ( $section['overview_label'] ?? \OWA\Core\CoreAPI::t( 'Overview' ) ),
                     'href'    => $this->makeLink( array_merge( $state, $own ), true ),
                     'current' => ! $inSettings && $this->navLinkIsCurrent( $section, $params ),
                 );
@@ -917,7 +917,7 @@ class Template extends TemplateEngine {
 
             $rail[] = array(
                 'id'      => 'settings',
-                'label'   => 'Settings',
+                'label'   => \OWA\Core\CoreAPI::t( 'Settings' ),
                 'icon'    => 'fas fa-cog',
                 // With the Property and the period, so the settings screens are
                 // of the one being looked at and the way back keeps the period.
@@ -1032,8 +1032,10 @@ class Template extends TemplateEngine {
     public function settingsColumn( $hierarchyNav, $params = array() ) {
 
         $headings = array(
-            'My Preferences' => 'My preferences',
-            'Instance'       => 'Server configuration',
+            'My Preferences' => \OWA\Core\CoreAPI::t( 'My preferences' ),
+            'Instance'       => \OWA\Core\CoreAPI::t( 'Server configuration' ),
+            'Organization'   => \OWA\Core\CoreAPI::t( 'Organization' ),
+            'Property'       => \OWA\Core\CoreAPI::t( 'Property' ),
         );
 
         $user    = $this->getCurrentUser();
@@ -1238,8 +1240,8 @@ class Template extends TemplateEngine {
         return '<div class="owa-codeBlock">'
              . '<div class="owa-codeBlock__bar">'
              . '<span class="owa-codeBlock__language">' . $e( $language ) . '</span>'
-             . '<button type="button" class="owa-codeBlock__copy" data-owa-copy aria-label="Copy to clipboard">'
-             . '<i class="far fa-copy" aria-hidden="true"></i><span class="owa-codeBlock__copyLabel">Copy</span>'
+             . '<button type="button" class="owa-codeBlock__copy" data-owa-copy aria-label="' . $e( \OWA\Core\CoreAPI::t( 'Copy to clipboard' ) ) . '">'
+             . '<i class="far fa-copy" aria-hidden="true"></i><span class="owa-codeBlock__copyLabel">' . $e( \OWA\Core\CoreAPI::t( 'Copy' ) ) . '</span>'
              . '</button>'
              . '</div>'
              . '<pre class="owa-codeBlock__code"><code>' . $e( trim( (string) $code, "\r\n" ) ) . '</code></pre>'
@@ -1264,6 +1266,22 @@ class Template extends TemplateEngine {
         }
 
         echo $output;
+    }
+
+    /**
+     * Outputs a translated sentence with markup in it: the sentence escaped as
+     * out() escapes, each placeholder filled with markup as given.
+     *
+     *   $view->outMarkup( \OWA\Core\CoreAPI::t( 'Send it in the %s header.' ), '<code>Authorization</code>' );
+     *
+     * The markup is not escaped: escape any value in it.
+     *
+     * @param string $text      the sentence, from CoreAPI::t() or tn()
+     * @param string ...$markup HTML for its placeholders, in order
+     */
+    function outMarkup( $text, ...$markup ) {
+
+        echo vsprintf( \OWA\Module\Base\Classes\Sanitize::escapeForDisplay( (string) $text ), array_map( 'strval', $markup ) );
     }
 
     /**

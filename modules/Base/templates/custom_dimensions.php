@@ -14,45 +14,44 @@
  * "registered" and "reportable" would look like a fault.
  */
 ?>
-<h1 class="panel_headline">Custom Dimensions</h1>
+<h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'Custom Dimensions' ) ); ?></h1>
 <div id="panel">
 
 <div class="owa_panelIntro">
-    Register a value your site sets on an event or a visitor to report on it. Every value is stored whether or not it is registered; registering gives it a column in the reporting cube, so reports can group by it.
+    <?php $view->out( \OWA\Core\CoreAPI::t( 'Register a value your site sets on an event or a visitor to report on it. Every value is stored whether or not it is registered; registering gives it a column in the reporting cube, so reports can group by it.' ) ); ?>
 </div>
 
 <?php if ( ! $view->cube['exists'] ): ?>
 
     <div class="owa_panelIntro">
-        <b>This Property has not collected anything yet.</b>
-        Its reporting cube is created the first time data arrives, and there is nothing to
-        add a column to until then. Come back once the tracker has sent something.
+        <b><?php $view->out( \OWA\Core\CoreAPI::t( 'This Property has not collected anything yet.' ) ); ?></b>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'Its reporting cube is created the first time data arrives, and there is nothing to add a column to until then. Come back once the tracker has sent something.' ) ); ?>
     </div>
 
 <?php else: ?>
 
     <fieldset>
     <legend>
-        Registered
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'Registered' ) ); ?>
         <?php if ( count( $view->dimensions ) < $view->cube['capacity'] ): ?>
         <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
-            'do' => 'base.customDimensionEdit', 'propertyId' => $view->propertyId ) ); ?>">Register New Custom Dimension</a>)</span>
+            'do' => 'base.customDimensionEdit', 'propertyId' => $view->propertyId ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Register New Custom Dimension' ) ); ?></a>)</span>
         <?php endif; ?>
     </legend>
 
     <?php if ( ! $view->dimensions ): ?>
 
-        <div class="owa_panelIntro">None yet.</div>
+        <div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'None yet.' ) ); ?></div>
 
     <?php else: ?>
 
         <table class="management">
             <tr>
-                <th>Name</th>
-                <th>Label</th>
-                <th>Scope</th>
-                <th>Type</th>
-                <th>Status</th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Label' ) ); ?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Scope' ) ); ?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Type' ) ); ?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Status' ) ); ?></th>
                 <th style="width:1%"></th>
             </tr>
             <?php foreach ( $view->dimensions as $dimension ): ?>
@@ -63,12 +62,12 @@
                 <td><?php $view->out( $dimension['data_type'] ); ?></td>
                 <td>
                     <?php if ( $dimension['state'] === 'applied' ): ?>
-                        Reportable
+                        <?php $view->out( \OWA\Core\CoreAPI::t( 'Reportable' ) ); ?>
                     <?php elseif ( $dimension['state'] === 'failed' ): ?>
-                        <b>Could not be added.</b>
+                        <b><?php $view->out( \OWA\Core\CoreAPI::t( 'Could not be added.' ) ); ?></b>
                         <?php $view->out( $dimension['state_message'] ); ?>
                     <?php else: ?>
-                        Being added &mdash; reportable within a few minutes
+                        <?php $view->out( \OWA\Core\CoreAPI::t( 'Being added — reportable within a few minutes' ) ); ?>
                     <?php endif; ?>
                 </td>
                 <td>
@@ -81,11 +80,11 @@
                         <input type="hidden" name="action"
                             value="base.customDimensionDelete">
                         <input class="owa-button owa-button-danger" type="submit"
-                            name="submit_btn" value="Remove"
+                            name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove' ) ); ?>"
                             data-owa-confirm
-                            data-owa-confirm-title="Remove this custom dimension?"
-                            data-owa-confirm-body="&ldquo;<?php $view->out( $dimension['dimension_key'] ); ?>&rdquo; stops being reportable, and its column and the values in it go at the next cube build. The events they were read from are untouched, so registering it again and rebuilding brings them back."
-                            data-owa-confirm-proceed="Remove dimension">
+                            data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove this custom dimension?' ) ); ?>"
+                            data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” stops being reportable, and its column and the values in it go at the next cube build. The events they were read from are untouched, so registering it again and rebuilding brings them back.' ), $dimension['dimension_key'] ) ); ?>"
+                            data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Remove dimension' ) ); ?>">
                     </form>
                 </td>
             </tr>
@@ -95,11 +94,9 @@
     <?php endif; ?>
 
     <div class="owa_panelIntro">
-        <?php echo (int) count( $view->dimensions ); ?> of <?php echo (int) $view->cube['capacity']; ?> used.
+        <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '%1$s of %2$s used.' ), (int) count( $view->dimensions ), (int) $view->cube['capacity'] ) ); ?>
         <?php if ( $view->cube['capacity'] < $view->cube['cap'] ): ?>
-            (<?php echo (int) $view->cube['capacity']; ?> rather than the usual
-            <?php echo (int) $view->cube['cap']; ?>: this database server will not take
-            more columns on a row of this cube's shape.)
+            <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '(%1$s rather than the usual %2$s: this database server will not take more columns on a row of this cube\'s shape.)' ), (int) $view->cube['capacity'], (int) $view->cube['cap'] ) ); ?>
         <?php endif; ?>
     </div>
     </fieldset>

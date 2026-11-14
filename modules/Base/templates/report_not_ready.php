@@ -25,13 +25,13 @@ $owa_r = (array) $view->readiness;
     <p>
         <?php if ( ( $owa_r['state'] ?? '' ) !== 'no_property' && ! empty( $owa_r['property_id'] ) ): ?>
         <a href="<?php echo $view->makeLink( array(
-            'do' => 'base.propertyProfiles', 'propertyId' => $owa_r['property_id'] ) ); ?>">Observation Profiles</a>
+            'do' => 'base.propertyProfiles', 'propertyId' => $owa_r['property_id'] ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Profiles' ) ); ?></a>
         <?php endif; ?>
 
         <?php if ( $view->can_view_cube_status && ! empty( $owa_r['property_id'] ) ): ?>
         &middot;
         <a href="<?php echo $view->makeLink( array(
-            'do' => 'base.cubeStatusDetail', 'propertyId' => $owa_r['property_id'] ) ); ?>">Reporting Cube status</a>
+            'do' => 'base.cubeStatusDetail', 'propertyId' => $owa_r['property_id'] ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Reporting Cube status' ) ); ?></a>
         <?php endif; ?>
     </p>
 </div>

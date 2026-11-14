@@ -1,16 +1,16 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <h1 class="panel_headline"><?php $view->out( $view->headline );?></h1>
 <div id="panel">
-<div class="owa_panelIntro">A Property is what reports are about. Its Observation Profiles collect its data, each under its own tracking id.</div>
+<div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'A Property is what reports are about. Its Observation Profiles collect its data, each under its own tracking id.' ) );?></div>
 
     <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.propertyEdit' ) );?>">
         <?php echo $view->createNonceFormField( 'base.propertyEdit' );?>
         <input type="hidden" name="propertyId" value="<?php $view->out( $view->property['id'] ?? '' );?>">
 
-        <label class="inline_h3" for="owa_propertyName">Name</label>
+        <label class="inline_h3" for="owa_propertyName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) );?></label>
         <input class="owa_largeFormField" type="text" size="52" maxlength="70" id="owa_propertyName"
                name="name" value="<?php $view->out( $view->property['name'] ?? '' );?>">
-        <span class="form-instructions">What this Property is called. Profiles are grouped under this name.</span>
+        <span class="form-instructions"><?php $view->out( \OWA\Core\CoreAPI::t( 'What this Property is called. Profiles are grouped under this name.' ) );?></span>
         <BR><BR>
 
         <?php
@@ -35,15 +35,15 @@
         ?>
 
         <?php if ( $owa_isNew ):?>
-        <label class="inline_h3" for="owa_propertyType">This Property is</label>
+        <label class="inline_h3" for="owa_propertyType"><?php $view->out( \OWA\Core\CoreAPI::t( 'This Property is' ) );?></label>
         <select class="owa_largeFormField" id="owa_propertyType" name="propertyType">
             <option value="<?php $view->out( \OWA\Module\Base\Entity\Property::TYPE_WEB );?>" selected>
                 <?php $view->out( $owa_types[ \OWA\Module\Base\Entity\Property::TYPE_WEB ] );?>
             </option>
         </select>
-        <span class="form-instructions">Chosen once: it sets the identifier this Property is known by, and its Observation Profiles are set up against that identifier. Apps arrive with app stream support.</span>
+        <span class="form-instructions"><?php $view->out( \OWA\Core\CoreAPI::t( 'Chosen once: it sets the identifier this Property is known by, and its Observation Profiles are set up against that identifier. Apps arrive with app stream support.' ) );?></span>
         <?php else:?>
-        <div class="inline_h3">This Property is</div>
+        <div class="inline_h3"><?php $view->out( \OWA\Core\CoreAPI::t( 'This Property is' ) );?></div>
         <span class="owa_statedValue"><?php $view->out( $owa_types[ $owa_type ] ?? $owa_type );?></span>
         <?php
             /*
@@ -57,16 +57,15 @@
              */
         ?>
         <input type="hidden" name="propertyType" value="<?php $view->out( $owa_type );?>">
-        <span class="form-instructions">Chosen when this Property was created. It cannot be changed, because the Property's Observation Profiles are set up against the identifier it sets.</span>
+        <span class="form-instructions"><?php $view->out( \OWA\Core\CoreAPI::t( 'Chosen when this Property was created. It cannot be changed, because the Property\'s Observation Profiles are set up against the identifier it sets.' ) );?></span>
         <?php endif;?>
         <BR><BR>
 
-        <label class="inline_h3" for="owa_propertyDomain">Domain<?php if ( ! $owa_isWeb ):?> <span class="owa_optional">optional</span><?php endif;?></label>
+        <label class="inline_h3" for="owa_propertyDomain"><?php $view->out( \OWA\Core\CoreAPI::t( 'Domain' ) );?><?php if ( ! $owa_isWeb ):?> <span class="owa_optional"><?php $view->out( \OWA\Core\CoreAPI::t( 'optional' ) );?></span><?php endif;?></label>
         <input class="owa_largeFormField" type="text" size="52" maxlength="70" id="owa_propertyDomain"
                name="domain" value="<?php $view->out( $view->property['domain'] ?? '' );?>">
-        <span class="form-instructions">The domain of the website or application being observed.<?php
-            if ( $owa_isWeb ):?> Required: it is the origin a tracking request is accepted or
-        refused on.<?php endif;?></span>
+        <span class="form-instructions"><?php $view->out( \OWA\Core\CoreAPI::t( 'The domain of the website or application being observed.' ) );?><?php
+            if ( $owa_isWeb ):?> <?php $view->out( \OWA\Core\CoreAPI::t( 'Required: it is the origin a tracking request is accepted or refused on.' ) );?><?php endif;?></span>
         <?php
             /*
              * No per-field error span here. A refused save on this screen comes
@@ -78,7 +77,7 @@
         ?>
         <BR><BR>
 
-        <label class="inline_h3" for="owa_propertyDescription">Description <span class="owa_optional">optional</span></label>
+        <label class="inline_h3" for="owa_propertyDescription"><?php $view->out( \OWA\Core\CoreAPI::t( 'Description' ) );?> <span class="owa_optional"><?php $view->out( \OWA\Core\CoreAPI::t( 'optional' ) );?></span></label>
         <input class="owa_largeFormField" type="text" size="52" id="owa_propertyDescription"
                name="description" value="<?php $view->out( $view->property['description'] ?? '' );?>">
         <BR><BR>
@@ -106,7 +105,7 @@
             }
         ?>
 
-        <input class="owa-button" type="submit" value="Save Property">
+        <input class="owa-button" type="submit" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save Property' ) );?>">
     </form>
 
 <?php if ( ! empty( $view->property['id'] ) && $view->getCurrentUser()->isCapable('edit_sites') ):?>
@@ -124,24 +123,23 @@
  */
 ?>
 <div class="owa_dangerZone">
-    <div class="owa_dangerZoneTitle">Delete this Property</div>
+    <div class="owa_dangerZoneTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this Property' ) );?></div>
     <div class="owa_dangerZoneBody">
-        This removes the Property and every Observation Profile under it. Those
-        Profiles stop recording and disappear from reporting.
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'This removes the Property and every Observation Profile under it. Those Profiles stop recording and disappear from reporting.' ) );?>
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.propertyDelete');?>
         <input type="hidden" name="propertyId" value="<?php $view->out( $view->property['id'] );?>">
         <input type="hidden" name="action" value="base.propertyDelete">
         <input class="owa-button owa-button-danger" type="submit"
-               name="submit_btn" value="Delete Property"
+               name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete Property' ) );?>"
                data-owa-confirm
-               data-owa-confirm-title="Delete this Property?"
+               data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this Property?' ) );?>"
                data-owa-confirm-body="<?php $owa_profiles = (int) ( $view->profileCount ?? 0 ); $view->out( sprintf( \OWA\Core\CoreAPI::tn(
                    '“%1$s” and its %2$d Observation Profile stop recording and leave reporting. Everything collected is kept, and it can be restored.',
                    '“%1$s” and its %2$d Observation Profiles stop recording and leave reporting. Everything collected is kept, and it can be restored.',
                    $owa_profiles ), $view->property['name'] ?? '', $owa_profiles ) );?>"
-               data-owa-confirm-proceed="Delete Property">
+               data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete Property' ) );?>">
     </form>
 </div>
 <?php endif;?>

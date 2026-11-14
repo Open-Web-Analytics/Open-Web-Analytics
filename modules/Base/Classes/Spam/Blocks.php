@@ -153,8 +153,8 @@ class Blocks {
 
         if ( ! $ok ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf( 'Spam detection: counting %d blocked beacon(s) for %s on %d failed.',
-                $count, $rule, $yyyymmdd ) );
+            \OWA\Core\CoreAPI::notice( sprintf( 'Spam detection: counting %d blocked %s for %s on %d failed.',
+                $count, \OWA\Core\Lib::plural( $count, 'beacon', 'beacons' ), $rule, $yyyymmdd ) );
         }
 
         return $ok;

@@ -7,9 +7,9 @@
  * that define it. Split out of the old three-form Profile page.
  */
 ?>
-<h1 class="panel_headline">Observation Settings</h1>
+<h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Settings' ) );?></h1>
 <div id="panel">
-<div class="owa_panelIntro">What this Observation Profile records and ignores. These settings apply to this Profile only; other Profiles of the same Property can use different ones.</div>
+<div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'What this Observation Profile records and ignores. These settings apply to this Profile only; other Profiles of the same Property can use different ones.' ) );?></div>
 <form method="post" name="owa_options">
 
     <?php
@@ -32,7 +32,7 @@
         <input type="hidden" name="siteId" value="<?php $view->out( $view->site['site_id'] ?? '' );?>">
         <input type="hidden" name="module" value="base">
         <input type="hidden" name="action" value="base.sitesEditSettings">
-        <input type="submit" name="submit_btn" value="Save Settings" class="owa-button">
+        <input type="submit" name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save Settings' ) );?>" class="owa-button">
     </fieldset>
 </form>
 </div>

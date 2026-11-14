@@ -14,12 +14,8 @@
 $owa_failed = count( (array) $view->errors );
 ?>
 <p class="owa_publicIntro">
-<?php if ( $owa_failed === 1 ): ?>
-One thing needs fixing before OWA can be installed. Sort it out and reload this page.
-<?php else: ?>
-<?php $view->out( (string) $owa_failed ); ?> things need fixing before OWA can be
-installed. Sort them out and reload this page.
-<?php endif; ?>
+<?php $view->out( sprintf( \OWA\Core\CoreAPI::tn( 'One thing needs fixing before OWA can be installed. Sort it out and reload this page.',
+    '%d things need fixing before OWA can be installed. Sort them out and reload this page.', $owa_failed ), $owa_failed ) ); ?>
 </p>
 
 <ul class="owa_installChecks">

@@ -31,8 +31,8 @@ return array(
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Record Page Interactions',
-            'description' => 'Records pointer movement, clicks and key presses (never the keys) so a visit can be played back.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Record Page Interactions' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Records pointer movement, clicks and key presses (never the keys) so a visit can be played back.' ),
         ),
         'sample_rate' => array(
             'default'  => 100,
@@ -41,8 +41,8 @@ return array(
             'type'     => 'integer',
             'min'      => 0,
             'max'      => 100,
-            'label'    => 'Recording Sample Rate (%)',
-            'description' => 'The share of page loads recorded, from 0 to 100.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Recording Sample Rate (%)' ),
+            'description' => \OWA\Core\CoreAPI::t( 'The share of page loads recorded, from 0 to 100.' ),
         ),
     ),
 );

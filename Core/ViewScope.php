@@ -70,6 +70,7 @@ namespace OWA\Core;
  * @method mixed makeParamString($params = [], $add_state = false, $format = 'query', $namespace = true)
  * @method mixed makeWikiLink($page)
  * @method mixed out($output, $sanitize = true, $decode_special_entities = false)
+ * @method void outMarkup($text, ...$markup)
  * @method array profileTabs($hierarchyNav, $params = [])
  * @method mixed renderDimension($template, $properties)
  * @method mixed safeHref($url, $echo = true)

@@ -141,7 +141,7 @@ class Update079 extends \OWA\Core\Update {
 
         if ( $converted ) {
 
-            $this->e->notice( sprintf( 'Funnel steps: the steps of %d saved funnel(s) are event steps now.', $converted ) );
+            $this->e->notice( sprintf( 'Funnel steps: the steps of %d saved %s are event steps now.', $converted, \OWA\Core\Lib::plural( $converted, 'funnel', 'funnels' ) ) );
         }
 
         return true;
@@ -188,8 +188,9 @@ class Update079 extends \OWA\Core\Update {
                     }
                 }
 
-                $this->e->notice( sprintf( 'Funnel %s was edited after Update079; %d of its %d converted step(s) were'
-                    . ' put back.', $id, $restored, count( (array) ( $record['steps'] ?? array() ) ) ) );
+                $this->e->notice( sprintf( 'Funnel %s was edited after Update079; %d of its %d converted %s put back.',
+                    $id, $restored, count( (array) ( $record['steps'] ?? array() ) ),
+                    \OWA\Core\Lib::plural( count( (array) ( $record['steps'] ?? array() ) ), 'step was', 'steps were' ) ) );
 
                 if ( $restored ) {
 
