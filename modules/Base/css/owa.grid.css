@@ -292,6 +292,12 @@
     background: #f7f8fa;
 }
 
+/* A row's values, in a full grid and a card alike. */
+.owa_grid .owa_gridRow td.owa_gridMetric {
+    font-weight: 500;
+    color: #111827;
+}
+
 .owa_grid .owa_gridTotal td {
     padding-top: 14px;
     padding-bottom: 16px;
@@ -301,6 +307,7 @@
 }
 
 .owa_gridShare {
+    font-weight: 400;
     color: #6b7280;
 }
 
@@ -437,11 +444,6 @@
 
 .owa_grid .owa_gridTable.is-compact td.owa_gridDimEnd {
     border-right: 0;
-}
-
-.owa_grid .owa_gridTable.is-compact td.owa_gridMetric {
-    font-weight: 500;
-    color: #111827;
 }
 
 .owa_grid .owa_gridTable.is-compact .owa_gridBarRow td {

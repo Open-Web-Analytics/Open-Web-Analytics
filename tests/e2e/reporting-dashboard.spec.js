@@ -806,6 +806,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         await expect(lines.first()).toHaveText(/^(▲ |▼ )?\d+\.\d%$|^—$/);
         await expect(lines.first()).toHaveAttribute('title', /\d{4}: /);
         expect(await lines.count()).toEqual(await page.locator('.owa_metricInfobox').count());
+        // The size of the box's label, not a footnote's.
+        expect(await lines.first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(13);
 
         // The compared line is the same metric, so it is no entry in the legend.
         await expect(page.locator('.owa_chartLegend').first()).not.toContainText('Compared');
@@ -1030,6 +1032,7 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
 
         const change = page.locator('.owa_gridTable .owa_gridChange').first();
         await expect(change).toHaveAttribute('title', /\d{4}: /);
+        expect(await change.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(12);
     });
 
     test('a dimension heading opens the dimensions to choose from, by family', async ({ page }) => {
@@ -1354,5 +1357,38 @@ test.describe('a dashboard card shows more rows from the bar under them', () => 
         await expect(more).toHaveCount(0);
         await expect(card.locator('[data-ui="grid-status"]')).toHaveText(`Showing ${n} of ${n} rows`);
         await expect(link).toBeFocused();
+    });
+});
+
+/*
+ * A value in a full grid is set as a card's is: one size, weight and colour,
+ * so a number reads the same wherever the dashboard shows it.
+ */
+test.describe('grid values', () => {
+
+    test('a full grid\'s values look like a card\'s', async ({ page }) => {
+        await login(page);
+        await openDashboard(page);
+
+        const grids = page.locator('[data-ui="grid"]');
+        await expect(grids.locator('[data-ui="grid-row"]').first()).toBeVisible({ timeout: 20_000 });
+
+        const looks = await grids.evaluateAll((all) => all.map((grid) => {
+            const cell = grid.querySelector('[data-ui="grid-row"] td.owa_gridMetric');
+            if (!cell) {
+                return null;
+            }
+            const cs = getComputedStyle(cell);
+            return {
+                card: !!grid.querySelector('.owa_gridTable.is-compact'),
+                look: [cs.fontSize, cs.fontWeight, cs.color].join(' '),
+            };
+        }).filter(Boolean));
+
+        const card = looks.find((l) => l.card);
+        const full = looks.find((l) => !l.card);
+        expect(card, JSON.stringify(looks)).toBeTruthy();
+        expect(full, JSON.stringify(looks)).toBeTruthy();
+        expect(full.look).toBe(card.look);
     });
 });
