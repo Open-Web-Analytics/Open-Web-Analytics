@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
  * `php cli.php cmd=<name> arg=val ...`).
  *
  * These drive the same controller lifecycle cli.php does -- boot owa in the
- * 'admin_cli' instance role, set request_mode to 'cli', resolve the command
+ * 'cli' request type, resolve the command
  * name to its controller class through the service registry, then run the
  * controller's doAction(). No shell process is spawned; we call the controller
  * directly, exactly as the REST tests (RestControllerTestCase) do.
@@ -49,11 +49,11 @@ abstract class CliControllerTestCase extends TestCase
             // the individual command files do not require it themselves.
 
             $GLOBALS['owa_test_cli_instance'] = new owa([
-                'instance_role' => 'admin_cli',
+                'request_type' => 'cli',
             ]);
         }
 
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'cli');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'cli');
     }
 
     protected function setUp(): void

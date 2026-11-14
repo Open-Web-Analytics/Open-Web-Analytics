@@ -78,7 +78,6 @@ class JobStatus {
         }
 
         $out['reason'] = self::diagnose( $name, $job, $row, $lock, $parsed, $now,
-            (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'scheduler_enabled' ),
             \OWA\Core\CoreAPI::isSchemaUpdateRequired(), (bool) $state, $last_activity );
 
         return $out;
@@ -165,11 +164,11 @@ class JobStatus {
      *
      * @return string|null  null when there is nothing to say
      */
-    public static function diagnose( $name, $job, $row, $lock, $parsed, $now, $enabled, $pending, $ever, $last_activity ) {
+    public static function diagnose( $name, $job, $row, $lock, $parsed, $now, $pending, $ever, $last_activity ) {
 
-        // Global causes outrank everything: nothing else can be true while they
-        // are, and they are already stated at the top of the report.
-        if ( $pending || ! $enabled ) {
+        // A global cause outranks everything: nothing else can be true while it
+        // is, and it is already stated at the top of the report.
+        if ( $pending ) {
 
             return null;
         }

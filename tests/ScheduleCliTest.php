@@ -45,7 +45,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         // Settings are global; restore anything a case changed.
         \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', []);
-        \OWA\Core\CoreAPI::setSetting('base', 'scheduler_enabled', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
 
         parent::tearDown();
     }
@@ -761,16 +761,16 @@ final class ScheduleCliTest extends CliControllerTestCase
     // The dispatcher
     // -----------------------------------------------------------------------
 
-    /** A disabled scheduler runs nothing and says so. */
-    public function testADisabledSchedulerRefusesToRun()
+    /** A server whose role does not run the scheduler runs nothing and says so. */
+    public function testARoleWithoutTheSchedulerRefusesToRun()
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'scheduler_enabled', false);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'console');
 
         $ctrl = $this->runner();
         $ctrl->action();
 
         $this->assertSame('refused', $ctrl->getCliOutcome()['outcome']);
-        $this->assertStringContainsString('disabled', $ctrl->getCliOutcome()['message']);
+        $this->assertStringContainsString('does not run the scheduler', $ctrl->getCliOutcome()['message']);
     }
 
     /** An unknown job name is refused, with the valid names offered. */
@@ -834,7 +834,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'ghost',
             ['command' => 'no-such-command', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
-            null, null, \OWA\Core\Cron::parse('@daily'), time(), true, false, true, time(),
+            null, null, \OWA\Core\Cron::parse('@daily'), time(), false, true, time(),
         ]);
 
         $this->assertStringContainsString('not registered', (string) $reason);
@@ -850,7 +850,7 @@ final class ScheduleCliTest extends CliControllerTestCase
             ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
             null,
             ['job_name' => 'busy', 'owner' => 'x', 'acquired_at' => $now - 60, 'expires_at' => $now + 3600],
-            \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $now,
+            \OWA\Core\Cron::parse('@daily'), $now, false, true, $now,
         ]);
 
         $this->assertStringContainsString('Running now', (string) $reason);
@@ -866,7 +866,7 @@ final class ScheduleCliTest extends CliControllerTestCase
             ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
             null,
             ['job_name' => 'stuck', 'owner' => 'x', 'acquired_at' => $now - 99999, 'expires_at' => $now - 60],
-            \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $now,
+            \OWA\Core\Cron::parse('@daily'), $now, false, true, $now,
         ]);
 
         $this->assertStringContainsString('died', (string) $reason);
@@ -891,7 +891,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'lonely',
             ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
-            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $long_ago,
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $long_ago,
         ]);
 
         $this->assertStringContainsString('does not appear to be running', (string) $reason);
@@ -916,7 +916,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'lonely',
             ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
-            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $now - 30,
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $now - 30,
         ]);
 
         $this->assertStringNotContainsString('does not appear to be running', (string) $reason);
@@ -939,7 +939,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'sad',
             ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
-            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $long_ago,
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $long_ago,
         ]);
 
         $this->assertStringContainsString('Failing since', (string) $reason);
@@ -962,7 +962,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'gone',
             ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
-            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, true, $long_ago,
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $long_ago,
         ]);
 
         $this->assertStringContainsString('never finished', (string) $reason);
@@ -976,7 +976,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'fresh',
             ['command' => 'flush-cache', 'schedule' => '* * * * *', 'params' => [], 'source' => 'code'],
-            null, null, \OWA\Core\Cron::parse('* * * * *'), $now, true, false, true, $now,
+            null, null, \OWA\Core\Cron::parse('* * * * *'), $now, false, true, $now,
         ]);
 
         $this->assertNull($reason, 'a job due within the grace period is simply waiting for the next tick');
@@ -988,7 +988,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'wonky',
             ['command' => 'flush-cache', 'schedule' => 'every thursday-ish', 'params' => [], 'source' => 'config'],
-            null, null, null, time(), true, false, true, time(),
+            null, null, null, time(), false, true, time(),
         ]);
 
         $this->assertStringContainsString('cannot be read', (string) $reason);
@@ -1564,7 +1564,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $reason = (string) $this->callProtected($this->statusCli(), 'diagnose', [
             'lonely',
             ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
-            $row, null, \OWA\Core\Cron::parse('@daily'), $now, true, false, false, 0,
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, false, 0,
         ]);
 
         $this->assertStringContainsString(

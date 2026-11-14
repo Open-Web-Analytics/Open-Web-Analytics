@@ -40,7 +40,7 @@ const FIXTURE_TAG         = 'e2e-rest';
 
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
-new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
+new owa(['tracking_mode' => true, 'request_type' => 'tracking']);
 
 $connected_db = (string) \OWA\Core\CoreAPI::getSetting('base', 'db_name');
 $allowed_db   = getenv('OWA_E2E_DB_NAME') ?: SCRATCH_DB_SENTINEL;

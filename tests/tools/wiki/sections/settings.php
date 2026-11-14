@@ -88,8 +88,9 @@ return function ( $arg = null ) {
 
     preg_match_all( "/setFromConfigConstant\(\s*'(\w+)',\s*'(\w+)',[^;]*?'(OWA_\w+)'\s*\)/", $source, $m, PREG_SET_ORDER );
 
+    // The first constant named for a key: a 1.x alias read after it is not the name to document.
     foreach ( $m as $hit ) {
-        $constants[ $hit[1] . '|' . $hit[2] ] = $hit[3];
+        $constants[ $hit[1] . '|' . $hit[2] ] ??= $hit[3];
     }
 
     // The foreach( array( 'OWA_X' => 'key' ) ...) blocks, all of which write base.

@@ -27,7 +27,7 @@
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
 
-new owa(['instance_role' => 'cli']);
+new owa(['request_type' => 'cli']);
 
 $mode   = $argv[1] ?? 'write';
 $module = $argv[2] ?? 'base';

@@ -94,6 +94,7 @@ class Strings {
         'CustomReports::MORE_LABEL',
         'CustomReports::VISUALIZATION_TYPES',
         'CustomReports::VISUALIZATION_TYPE_HINTS',
+        'ServerRole::RETIRED_CONSTANTS',
     );
 
     /** gettext's context separator. */

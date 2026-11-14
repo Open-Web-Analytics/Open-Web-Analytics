@@ -35,11 +35,10 @@ define('OWA_RESTAPI', true);
 
 $config = [
 
-    'instance_role' => 'rest_api'
+    'request_type' => 'rest'
 ];
 
 $owa = new owa( $config );
-$owa->setSetting('base', 'request_mode', 'rest_api');
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	

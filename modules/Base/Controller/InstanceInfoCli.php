@@ -34,6 +34,12 @@ namespace OWA\Module\Base\Controller;
  */
 class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::serverRoles(). A diagnostic: every server can report on itself. */
+    public static function serverRoles() {
+
+        return \OWA\Core\ServerRole::ALL;
+    }
+
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
@@ -81,16 +87,29 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         $lines = array();
 
+        // A server without a database (a collector) reports what it has.
+        $database = \OWA\Core\ServerRole::current()->hasDatabase();
+
         $lines = array_merge( $lines, $this->heading() );
         $lines = array_merge( $lines, $this->section( 'Environment',  $this->environment() ) );
         $lines = array_merge( $lines, $this->section( 'Modules',      $this->modules() ) );
-        $lines = array_merge( $lines, $this->section( 'Schema',       $this->schema() ) );
-        $lines = array_merge( $lines, $this->section( 'Scheduler',    $this->scheduler() ) );
-        $lines = array_merge( $lines, $this->section( 'Fact tables',  $this->factTables() ) );
-        $lines = array_merge( $lines, $this->section( 'Freshness',    $this->freshness() ) );
+
+        if ( $database ) {
+
+            $lines = array_merge( $lines, $this->section( 'Schema',       $this->schema() ) );
+            $lines = array_merge( $lines, $this->section( 'Scheduler',    $this->scheduler() ) );
+            $lines = array_merge( $lines, $this->section( 'Fact tables',  $this->factTables() ) );
+            $lines = array_merge( $lines, $this->section( 'Freshness',    $this->freshness() ) );
+        }
+
         $lines = array_merge( $lines, $this->section( 'Tracker ingest', $this->queue() ) );
-        $lines = array_merge( $lines, $this->section( 'Settings',     $this->settings() ) );
-        $lines = array_merge( $lines, $this->section( 'Contents',     $this->contents() ) );
+
+        if ( $database ) {
+
+            $lines = array_merge( $lines, $this->section( 'Settings',     $this->settings() ) );
+            $lines = array_merge( $lines, $this->section( 'Contents',     $this->contents() ) );
+        }
+
         $lines = array_merge( $lines, $this->summary() );
 
         $this->write( $lines );
@@ -108,13 +127,15 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function heading() {
 
-        $url = \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) ?: '(no public url set)';
+        $url  = \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) ?: '(no public url set)';
+        $role = \OWA\Core\ServerRole::current();
 
         $rows = array(
             $this->fact( 'Version',   OWA_VERSION ),
             $this->fact( 'Location',  OWA_DIR ),
+            $this->fact( 'Server role', sprintf( '%s (serves %s)', $role->name(), implode( ', ', $role->requestTypes() ) ) ),
             $this->fact( 'Public URL', $url ),
-            $this->fact( 'Database',  $this->databaseName() ),
+            $this->fact( 'Database',  $role->hasDatabase() ? $this->databaseName() : '(none: this role has no database)' ),
             $this->fact( 'PHP',       phpversion() . ' (' . PHP_OS . ')' ),
             $this->fact( 'Timezone',  $this->timezone() ),
             $this->fact( 'Reported',  date( 'Y-m-d H:i:s' ) ),
@@ -296,12 +317,11 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         $rows = array();
 
-        $enabled = (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'scheduler_enabled' );
+        $role = \OWA\Core\ServerRole::current();
 
-        $rows[] = $this->row(
-            $enabled ? self::OK : self::WARN,
-            'Enabled', $enabled ? 'yes' : 'no (OWA_SCHEDULER_ENABLED is off)',
-            'No job will run while the scheduler is disabled.' );
+        $rows[] = $this->fact( 'Runs here', $role->runsScheduler()
+            ? 'yes'
+            : sprintf( 'no (role %s): a full or worker server runs the jobs', $role->name() ) );
 
         $problem = \OWA\Module\Base\Classes\SchedulerHealth::problem();
 
@@ -453,7 +473,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         }
 
         $rows   = array();
-        $rows[] = $this->fact( 'Queue type', (string) ( \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_ingest_queue_type' ) ?: 'file' ) );
+        $rows[] = $this->fact( 'Queue type', \OWA\Module\Base\Classes\TrackerIngest::backend() );
         $rows[] = $this->fact( 'Queueing', \OWA\Module\Base\Classes\TrackerIngest::isQueued() ? 'on' : 'off (direct; failed writes retried)' );
 
         $behind = $main['oldest_age'] !== null && $main['oldest_age'] > 600;

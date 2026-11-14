@@ -12,9 +12,7 @@
             <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s and its dead-letter queue %2$s.' ),
                 '<code>' . htmlspecialchars( (string) $view->queue_name, ENT_QUOTES, 'UTF-8' ) . '</code>',
                 '<code>' . htmlspecialchars( (string) $view->dlq_name, ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?>
-            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'The names are derived from this install\'s database, so a logging node with the same %s finds them.' ),
-                '<code>owa-config.php</code>' ); ?>
-            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s in %2$s names the queue instead.' ),
+            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s in %2$s names the queue; without it the names are derived from this install\'s database.' ),
                 '<code>OWA_SQS_QUEUE_URL</code>',
                 '<code>owa-config.php</code>' ); ?>
         </div>
@@ -29,12 +27,9 @@
                 '<code>php cli.php cmd=tracker-ingest-provision</code>' ); ?>
         <?php elseif ( ! empty( $p['ok'] ) ): ?>
             <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'In place since %s UTC.' ), gmdate( 'j M Y H:i', (int) $p['at'] ) ) ); ?>
-            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'A logging node that cannot read this install\'s database, with the same %s database settings so it derives the same queue name, needs:' ),
-                '<code>owa-config.php</code>' ); ?><br>
-            <code>define('OWA_ACTIVE_MODULES', array('sqs'));</code><br>
-            <code>define('OWA_TRACKER_INGEST_QUEUE_TYPE', 'sqs');</code><br>
-            <code>define('OWA_QUEUE_TRACKER_INGEST', true);</code><br>
-            <code>define('OWA_SQS_REGION', '<?php $view->out( (string) $view->region ); ?>');</code><br>
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'A collector, a server that receives beacons and has no database, needs:' ) ); ?><br>
+            <code>define('OWA_SERVER_ROLE', 'collector');</code><br>
+            <code>define('OWA_SQS_QUEUE_URL', '<?php $view->out( (string) ( $p['main'] ?? '' ) ); ?>');</code><br>
             <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Its credentials need %1$s, %2$s and %3$s.' ),
                 '<code>sqs:GetQueueUrl</code>',
                 '<code>sqs:GetQueueAttributes</code>',
@@ -71,14 +66,16 @@
     <div class="setting" id="sqs_in_use">
         <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'In use' ) ); ?></div>
         <div class="description">
-        <?php if ( $view->in_use ): ?>
-            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Yes: %1$s is %2$s.' ),
-                '<code>tracker_ingest_queue_type</code>',
-                '<code>sqs</code>' ); ?>
+        <?php if ( $view->in_use && $view->queued ): ?>
+            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Yes: %s is set, and every beacon is queued here.' ), '<code>OWA_SQS_QUEUE_URL</code>' ); ?>
+        <?php elseif ( $view->in_use ): ?>
+            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Yes: %1$s is set. Beacons are written as they arrive; only one whose write fails is queued here. %2$s queues every beacon.' ),
+                '<code>OWA_SQS_QUEUE_URL</code>',
+                '<code>define(\'OWA_QUEUE_TRACKING_EVENTS\', true);</code>' ); ?>
         <?php else: ?>
-            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'No. Beacons go to the file queue until %1$s sets %2$s' ),
+            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'No. Beacons go to the file queue until %1$s sets %2$s.' ),
                 '<code>owa-config.php</code>',
-                '<code>define(\'OWA_TRACKER_INGEST_QUEUE_TYPE\', \'sqs\');</code>' ); ?>
+                '<code>OWA_SQS_QUEUE_URL</code>' ); ?>
         <?php endif; ?>
         </div>
     </div>

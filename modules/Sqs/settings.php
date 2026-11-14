@@ -13,18 +13,25 @@
  * default chain, or OWA_SQS_KEY / OWA_SQS_SECRET / OWA_SQS_TOKEN in
  * owa-config.php, never the database; the queue names are derived, or
  * OWA_SQS_QUEUE_URL names the queue (Classes\Sqs::queueName()).
+ *
+ * OWA_SQS_QUEUE_URL activates the module and makes sqs the tracking intake's
+ * queue backend (Core\ModuleActivation).
  */
 return array(
 
     'module' => 'sqs',
 
+    'activated_by'      => array( 'OWA_SQS_QUEUE_URL' ),
+    'intake_queue_type' => 'sqs',
+
     'settings' => array(
 
         /*
          * Read on log.php's path when the intake is sqs, so eager. No
-         * default. OWA_SQS_REGION wins over it; unset, AWS_REGION or
-         * AWS_DEFAULT_REGION in the environment is used (Classes\Sqs::region()).
-         * The region in an AWS profile is not read.
+         * default. OWA_SQS_REGION, then the region in OWA_SQS_QUEUE_URL, win
+         * over it; unset, AWS_REGION or AWS_DEFAULT_REGION in the environment
+         * is used (Classes\Sqs::region()). The region in an AWS profile is not
+         * read.
          */
         'region' => array(
             'storable'    => true,

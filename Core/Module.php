@@ -519,7 +519,12 @@ abstract class Module {
      * A missing file is not an error: that module declares nothing and keeps
      * the pre-registration behaviour. Adoption is one module at a time.
      *
-     * @return array{fields: array, declared: array}
+     * The file may also name the constants that activate the module, and the
+     * intake queue type it provides (ModuleActivation):
+     *
+     *     'activated_by' => [ 'OWA_SQS_QUEUE_URL' ], 'intake_queue_type' => 'sqs'
+     *
+     * @return array{fields: array, declared: array, activation: array}
      */
     public static function settingsRegistry() {
 
@@ -530,8 +535,9 @@ abstract class Module {
             return $registry;
         }
 
-        $fields   = array();
-        $declared = array();
+        $fields     = array();
+        $declared   = array();
+        $activation = array();
 
         $mechanical = self::mechanicalSettings();
 
@@ -583,9 +589,18 @@ abstract class Module {
             }
 
             $declared[ $module ] = true;
+
+            // The constants that switch the module on (ModuleActivation).
+            if ( ! empty( $decl['activated_by'] ) ) {
+
+                $activation[ $module ] = array(
+                    'activated_by'      => array_values( (array) $decl['activated_by'] ),
+                    'intake_queue_type' => (string) ( $decl['intake_queue_type'] ?? '' ),
+                );
+            }
         }
 
-        return $registry = array( 'fields' => $fields, 'declared' => $declared );
+        return $registry = array( 'fields' => $fields, 'declared' => $declared, 'activation' => $activation );
     }
 
     /**
@@ -1117,10 +1132,33 @@ abstract class Module {
      */
     function deactivate() {
 
+        // A module its own constant activates stays active while it is set (ModuleActivation).
+        $constant = self::activatedByConstant( $this->name );
+
+        if ( $constant !== '' ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf( 'Module %s stays active while %s is set in owa-config.php.', $this->name, $constant ) );
+
+            return false;
+        }
+
         if ($this->name != 'base') {
 
             \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', false );
     	}
+
+        return true;
+    }
+
+    /**
+     * The constant keeping a module active, or ''.
+     *
+     * @param string $name the module's name
+     * @return string
+     */
+    public static function activatedByConstant( $name ) {
+
+        return \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( (string) $name, 'is_active' );
     }
 
     /**

@@ -25,7 +25,7 @@ final class CurrentPublicUrlTest extends TestCase
     {
         $this->server = $_SERVER;
 
-        foreach (array('public_url', 'request_mode') as $name) {
+        foreach (array('public_url', 'request_type') as $name) {
             $this->settings[$name] = \OWA\Core\CoreAPI::getSetting('base', $name);
         }
     }
@@ -83,7 +83,7 @@ final class CurrentPublicUrlTest extends TestCase
     public function testTheLoginReturnsToThePublicUrl(): void
     {
         $this->request('https://example.com/owa/', 'localhost:3508', '/index.php', '/index.php?do=base.reportingHome');
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
 
         $screen = new class(array('do' => 'base.reportingHome')) extends \OWA\Core\Controller {
             function action() {}

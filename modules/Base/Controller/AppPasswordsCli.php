@@ -16,6 +16,12 @@ namespace OWA\Module\Base\Controller;
  */
 abstract class AppPasswordsCli extends \OWA\Core\Controller\Cli {
 
+    /** See \OWA\Core\Controller\Cli::serverRoles(). app-password-create, -list and -revoke: the same administration the console's screens offer. */
+    public static function serverRoles() {
+
+        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE );
+    }
+
     function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_users' );

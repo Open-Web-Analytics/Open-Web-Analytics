@@ -41,11 +41,11 @@ final class EdgePrivacyGatesTest extends TestCase
             'REMOTE_ADDR'     => '203.0.113.77',
         );
 
-        foreach (array('queue_tracker_ingest', 'log_visitor_pii', 'anonymize_ips', 'excluded_ips', 'log_named_users') as $key) {
+        foreach (array('queue_tracking_events', 'log_visitor_pii', 'anonymize_ips', 'excluded_ips', 'log_named_users') as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', true);
         \OWA\Core\CoreAPI::setSetting('base', 'log_named_users', true);
         \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', true);
         \OWA\Core\CoreAPI::setSetting('base', 'anonymize_ips', false);

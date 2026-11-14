@@ -30,6 +30,7 @@ final class SqsOptionsPageTest extends TestCase {
             'region'              => 'us-east-1',
             'provisioned'         => null,
             'in_use'              => false,
+            'queued'              => false,
             'settings_page_title' => 'AWS SQS',
         ), $overrides );
 
@@ -82,7 +83,20 @@ final class SqsOptionsPageTest extends TestCase {
 
     public function testItSaysHowToPutTheIntakeOnSqs(): void {
 
-        $this->assertStringContainsString( "OWA_TRACKER_INGEST_QUEUE_TYPE', 'sqs'", $this->render() );
-        $this->assertStringContainsString( 'Yes:', $this->render( array( 'in_use' => true ) ) );
+        $this->assertStringContainsString( 'until <code>owa-config.php</code> sets <code>OWA_SQS_QUEUE_URL</code>', $this->render() );
+        $this->assertStringContainsString( 'every beacon is queued here',
+            $this->render( array( 'in_use' => true, 'queued' => true ) ) );
+        $this->assertStringContainsString( "OWA_QUEUE_TRACKING_EVENTS', true",
+            $this->render( array( 'in_use' => true, 'queued' => false ) ) );
+    }
+
+    public function testACollectorsConfigurationNamesTheRoleAndTheQueueUrl(): void {
+
+        $html = $this->render( array( 'provisioned' => array( 'ok' => true, 'at' => 1700000000, 'error' => null,
+            'main' => 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-abc123def456' ) ) );
+
+        $this->assertStringContainsString( "OWA_SERVER_ROLE', 'collector'", $html );
+        $this->assertStringContainsString( "OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-abc123def456'", $html );
+        $this->assertStringNotContainsString( 'OWA_ACTIVE_MODULES', $html );
     }
 }

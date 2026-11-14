@@ -384,7 +384,7 @@ final class PartitionCliTest extends CliControllerTestCase
      * The controller's own step, not the database helper it calls: the ordering
      * -- extend, then compact, then drop only if asked -- is what could regress.
      * Lives here rather than in PartitionOperationsTest because constructing a
-     * CLI controller needs the admin_cli instance role this harness boots.
+     * CLI controller needs the cli request type this harness boots.
      */
     public function testCompactTableMergesWithoutDeleting()
     {

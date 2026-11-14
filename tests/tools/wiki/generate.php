@@ -48,40 +48,41 @@ if ( ! defined( 'OWA_DB_TYPE' ) && ! file_exists( OWA_DIR . 'owa-config.php' ) )
 
 /*
  * Every shipped module, active or not: the wiki documents what ships, and a
- * configless boot activates only base. OWA_ACTIVE_MODULES is the config
- * file's own switch, so each module registers through the normal boot
- * rather than being added to the service afterwards, when its metrics,
- * dimensions and entities would already have been collected without it.
+ * configless boot activates only base. Each is switched on through the
+ * caller's configuration, which is applied before the modules load, so each
+ * registers through the normal boot rather than being added to the service
+ * afterwards, when its metrics, dimensions and entities would already have
+ * been collected without it.
  *
  * OWA_WIKI_EXCLUDED_MODULES are left out.
  *
- * Outside the configless guard: with an owa-config.php present the boot would
- * otherwise document that install's active modules. The constant only adds, so
- * stored is_active rows cannot remove one. Only when run as a script: a test
- * that includes this file shares its process with the rest of the suite, which
- * must keep the modules its own config activates.
+ * Only when run as a script: a test that includes this file shares its process
+ * with the rest of the suite, which must keep the modules its own config
+ * activates.
  *
- * The constant takes runtime names, which do not follow from the directory
- * (FileCache is fileCache, MaxmindGeoip is maxmind_geoip), so each is read
- * from its Module.php. Nothing can be instantiated to ask before boot.
+ * The configuration takes runtime names, which do not follow from the
+ * directory (FileCache is fileCache, MaxmindGeoip is maxmind_geoip), so each is
+ * read from its Module.php. Nothing can be instantiated to ask before boot.
+ *
+ * @return array module name => array( 'is_active' => true )
  */
-if ( ! defined( 'OWA_ACTIVE_MODULES' )
-    && realpath( $_SERVER['SCRIPT_FILENAME'] ?? '' ) === realpath( __FILE__ ) ) {
+function owa_wiki_module_overrides() {
 
-    define( 'OWA_ACTIVE_MODULES', ( static function () {
+    if ( realpath( $_SERVER['SCRIPT_FILENAME'] ?? '' ) !== realpath( __FILE__ ) ) {
+        return array();
+    }
 
-        $names = array();
+    $out = array();
 
-        foreach ( glob( OWA_DIR . 'modules/*/Module.php' ) as $path ) {
+    foreach ( glob( OWA_DIR . 'modules/*/Module.php' ) as $path ) {
 
-            if ( preg_match( "/\\\$this->name\s*=\s*'([^']+)'/", (string) file_get_contents( $path ), $m )
-                && ! in_array( $m[1], OWA_WIKI_EXCLUDED_MODULES, true ) ) {
-                $names[] = $m[1];
-            }
+        if ( preg_match( "/\\\$this->name\s*=\s*'([^']+)'/", (string) file_get_contents( $path ), $m )
+            && ! in_array( $m[1], OWA_WIKI_EXCLUDED_MODULES, true ) ) {
+            $out[ $m[1] ] = array( 'is_active' => true );
         }
+    }
 
-        return $names;
-    } )() );
+    return $out;
 }
 
 require_once __DIR__ . '/../../../owa.php';
@@ -102,7 +103,8 @@ function owa_wiki_boot() {
     static $owa;
 
     if ( ! $owa ) {
-        $owa = new owa( array( 'instance_role' => 'cli' ) );
+        $owa = new owa( array_merge( owa_wiki_module_overrides(),
+            array( 'base' => array( 'request_type' => 'cli' ) ) ) );
     }
 
     return $owa;

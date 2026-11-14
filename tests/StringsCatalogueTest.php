@@ -99,6 +99,7 @@ final class StringsCatalogueTest extends TestCase
     /** File => why its message sinks are not read by a person. */
     private const NOT_USER_FACING = [
         'modules/Domstream/Classes/Chunk.php' => 'refuse() records why a recording chunk was dropped, for the log',
+        'Core/ServerRole.php'                 => 'bootProblem() messages go to the error log and the CLI; a web request is answered through t()',
     ];
 
     public static function messageSites(): array
@@ -240,7 +241,8 @@ final class StringsCatalogueTest extends TestCase
         $catalogue = include Strings::path(Strings::SOURCE_LOCALE);
 
         foreach (Strings::VALUE_TABLES as $table) {
-            $value = constant('OWA\\Module\\Base\\Classes\\' . $table);
+            $class = strstr($table, '::', true);
+            $value = constant((class_exists('OWA\\Core\\' . $class) ? 'OWA\\Core\\' : 'OWA\\Module\\Base\\Classes\\') . $table);
 
             $this->assertNotEmpty($value, $table);
 

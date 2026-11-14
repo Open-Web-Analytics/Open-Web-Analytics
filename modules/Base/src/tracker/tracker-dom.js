@@ -11,10 +11,12 @@ import { Util as OwaUtil } from '../common/Util.js';
 // so chunks would be requested from the dead module path). owa_baseUrl is the same
 // page global the tracker already reads for the log endpoint, so feed it to chunk
 // resolution too: every chunk then loads from <baseUrl>public/base/dist/ regardless
-// of where owa.tracker.js itself was served from. Left as webpack's auto default
-// (currentScript.src) only in the unsupported case where owa_baseUrl is unset.
-if ( typeof window !== 'undefined' && window.owa_baseUrl ) {
-    __webpack_public_path__ = window.owa_baseUrl + 'public/base/dist/';
+// of where owa.tracker.js itself was served from. owa_assetsUrl, set by the tag or
+// the bundle when OWA_ASSETS_URL serves public/ from elsewhere (a CDN), replaces
+// <baseUrl>public/. Left as webpack's auto default (currentScript.src) only in the
+// unsupported case where neither is set.
+if ( typeof window !== 'undefined' && ( window.owa_assetsUrl || window.owa_baseUrl ) ) {
+    __webpack_public_path__ = ( window.owa_assetsUrl || window.owa_baseUrl + 'public/' ) + 'base/dist/';
 }
 
 

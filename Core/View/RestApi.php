@@ -50,7 +50,7 @@ class RestApi extends \OWA\Core\View {
 
 	   // set header if the request is from the API endpoint. Could be an internal request.
 	   
-	   if ( \OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+	   if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
 		   
 			\OWA\Core\Lib::setContentTypeHeader( $type );
 			

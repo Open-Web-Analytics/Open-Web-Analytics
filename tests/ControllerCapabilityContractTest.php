@@ -84,7 +84,7 @@ final class ControllerCapabilityContractTest extends TestCase
         'Report',
 
         // CLI-only. Core\Controller\Cli::__construct() exits unless
-        // request_mode === 'cli', so these are not web-reachable.
+        // request_type === 'cli', so these are not web-reachable.
         'FlushCacheCli',
         'InstallCli',
         'UpdatesApplyCli',
