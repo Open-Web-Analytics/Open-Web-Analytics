@@ -183,6 +183,32 @@ final class StringsCatalogueTest extends TestCase
         ];
     }
 
+    /**
+     * Every registered settings fieldset's legend and description is in the
+     * catalogue. Fieldsets are positional arrays in each Module.php, which the
+     * message-sink scan cannot recognise, so they are checked as data: an
+     * unwrapped legend is never extracted, and so is missing here.
+     */
+    public function testEverySettingsFieldsetIsCatalogued(): void
+    {
+        $catalogue = include Strings::path(Strings::SOURCE_LOCALE);
+        $seen      = 0;
+
+        foreach ((array) \OWA\Core\CoreAPI::configSingleton()->registeredFieldSets() as $id => $set) {
+            foreach (array('legend', 'description') as $key) {
+                $text = (string) ($set[$key] ?? '');
+
+                if ($text !== '') {
+                    $this->assertArrayHasKey($text, $catalogue,
+                        "fieldset $id: its $key \"$text\" is not catalogued -- wrap it in \\OWA\\Core\\CoreAPI::t() where the fieldset is registered");
+                    $seen++;
+                }
+            }
+        }
+
+        $this->assertGreaterThan(20, $seen);
+    }
+
     /** Every metric and dimension label and description a module ships is in the catalogue. */
     public function testEveryVocabularyLabelIsCatalogued(): void
     {

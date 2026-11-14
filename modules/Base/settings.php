@@ -660,11 +660,11 @@ return array(
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Honor Privacy Signals',
-            'description' => 'Leaves a browser that sends Do Not Track or Global Privacy Control untracked, '
+            'label'    => \OWA\Core\CoreAPI::t( 'Honor Privacy Signals' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Leaves a browser that sends Do Not Track or Global Privacy Control untracked, '
                 . 'and erases OWA&rsquo;s cookies in it. Off, those browsers are tracked like any other. '
                 . 'In some jurisdictions honoring Global Privacy Control is a legal requirement, so '
-                . 'turning this off is the site owner&rsquo;s decision.',
+                . 'turning this off is the site owner&rsquo;s decision.' ),
         ),
         'use_32bit_hash' => array( 'default' => false, 'storable' => true, 'internal' => true ),
         // Set by Update034 when it re-keyed an installation that arrived still
