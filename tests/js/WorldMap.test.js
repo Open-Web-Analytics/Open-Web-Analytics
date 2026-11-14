@@ -73,7 +73,7 @@ test('names come from the map, and a code that is not a country names nothing', 
 test('the map is named, and a country titled, in the locale in use', async () => {
     OWA.config.strings = {
         'Active users by country': 'Utilisateurs actifs par pays',
-        '%1$s: %2$d user': ['%1$s : %2$d utilisateur', '%1$s : %2$d utilisateurs'],
+        '%1$s: %2$s user': ['%1$s : %2$s utilisateur', '%1$s : %2$s utilisateurs'],
     };
     OWA.config.plural_rule = 'french';
 

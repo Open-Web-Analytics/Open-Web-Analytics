@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import { OWA } from './owa.js';
 
 /**
  * A condition builder: the property list follows the event. A goal event
@@ -61,14 +62,26 @@ export const GOAL_CLASSES = {
 export const CUSTOM_TRIGGER = '(custom)';
 
 /**
- * The words this script writes, as printf patterns. The page passes them
- * translated (data-not-carried-label / -help on .owa_goalBuilder, from
- * CoreAPI::t()); these English ones are the fallback.
+ * The words this script writes, as printf patterns: the ones the page passed
+ * (data-not-carried-label / -help on .owa_goalBuilder, from CoreAPI::t()),
+ * else the catalogue's (pattern()).
  */
 const TEXT = {
-    notCarriedLabel: '%s -- not carried by %s',
-    notCarriedHelp: 'A %s event does not carry this property.',
+    notCarriedLabel: '',
+    notCarriedHelp: '',
 };
+
+function pattern( key ) {
+
+    if ( TEXT[ key ] ) {
+
+        return TEXT[ key ];
+    }
+
+    return key === 'notCarriedLabel'
+        ? OWA.l( '%s -- not carried by %s' )
+        : OWA.l( 'A %s event does not carry this property.' );
+}
 
 /** Fill %s placeholders in order. */
 export function format( pattern, ...args ) {
@@ -136,7 +149,7 @@ export function optionsFor( vocabulary, event, saved ) {
 
         list.push( {
             name: saved,
-            label: format( TEXT.notCarriedLabel, plainLabel( vocabulary, saved ), event ),
+            label: format( pattern( 'notCarriedLabel' ), plainLabel( vocabulary, saved ), event ),
             description: description,
             carried: false,
         } );
@@ -161,7 +174,7 @@ export function helpText( property, event ) {
 
     if ( property.carried === false ) {
 
-        return format( TEXT.notCarriedHelp, event );
+        return format( pattern( 'notCarriedHelp' ), event );
     }
 
     return property.description || '';

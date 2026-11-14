@@ -44,7 +44,10 @@ function loadFormatter() {
     expect(end).toBeGreaterThan(0);
 
     // eslint-disable-next-line no-new-func
-    return new Function('return (' + decl.slice(0, end) + ');')();
+    // OWA for its strings (OWA.l) and escaping, as the bundle has it.
+    const { OWA } = require('../../../modules/Base/src/reporting/v1/owa.js');
+
+    return new Function('OWA', 'return (' + decl.slice(0, end) + ');')(OWA);
 }
 
 const PAYLOAD = {

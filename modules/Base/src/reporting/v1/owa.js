@@ -164,6 +164,31 @@ var OWA = {
         }
     },
     
+    /*
+     * The installation's locale as a language tag (OWA_LOCALE, sent as
+     * OWA.config.locale), for Intl: dates, numbers and the first day of the
+     * week follow the install's language, as its strings do. Undefined -- the
+     * browser's own -- when none is sent or Intl does not know the tag.
+     */
+    locale: function () {
+
+        var tag = OWA.config.locale;
+
+        if ( typeof tag !== 'string' || tag === '' ) {
+
+            return undefined;
+        }
+
+        try {
+
+            return Intl.getCanonicalLocales( tag )[0];
+
+        } catch ( e ) {
+
+            return undefined;
+        }
+    },
+
     initializeStateManager: function() {
         
         if ( ! this.state.hasOwnProperty('init') ) {
@@ -1157,6 +1182,58 @@ OWA.util =  {
      * Covers both positions a value lands in: text content, and inside a
      * double-quoted attribute.
      */
+    /**
+     * A number in the install's locale (OWA.locale()): digits grouped, and
+     * options as Intl.NumberFormat takes them.
+     *
+     *   OWA.util.formatNumber( 1234.5, { maximumFractionDigits: 1 } )   "1,234.5"
+     */
+    formatNumber : function( n, options ) {
+
+        var locale = OWA.locale();
+        var key    = String( locale ) + '|' + JSON.stringify( options || {} );
+        var cache  = OWA.util.numberFormats || ( OWA.util.numberFormats = {} );
+
+        if ( ! cache[ key ] ) {
+
+            cache[ key ] = new Intl.NumberFormat( locale, options );
+        }
+
+        return cache[ key ].format( n );
+    },
+
+    /**
+     * An Intl.DateTimeFormat in the install's locale (OWA.locale()), made once
+     * per set of options. Give a timeZone: without one it is the browser's.
+     */
+    dateFormat : function( options ) {
+
+        var locale = OWA.locale();
+        var key    = String( locale ) + '|' + JSON.stringify( options || {} );
+        var cache  = OWA.util.dateFormats || ( OWA.util.dateFormats = {} );
+
+        if ( ! cache[ key ] ) {
+
+            cache[ key ] = new Intl.DateTimeFormat( locale, options );
+        }
+
+        return cache[ key ];
+    },
+
+    /** A Date (or milliseconds) as the install's locale writes it, options as Intl.DateTimeFormat takes them. */
+    formatDate : function( date, options ) {
+
+        return OWA.util.dateFormat( options ).format( date );
+    },
+
+    /** A fraction as a percentage in the install's locale, to a fixed number of decimals: 0.125, 1 -> "12.5%". */
+    formatPercent : function( fraction, decimals ) {
+
+        var d = decimals === undefined ? 0 : decimals;
+
+        return OWA.util.formatNumber( fraction, { style: 'percent', minimumFractionDigits: d, maximumFractionDigits: d } );
+    },
+
     escapeHtml : function( value ) {
 
         if ( value === null || value === undefined ) {

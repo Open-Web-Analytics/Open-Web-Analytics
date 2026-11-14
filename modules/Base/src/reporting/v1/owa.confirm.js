@@ -23,12 +23,16 @@ import { OWA } from './owa.js';
  * Only the attribute is required; every string has a default.
  */
 
-var DEFAULTS = {
-    title: 'Are you sure?',
-    body: 'This action cannot be undone from this screen.',
-    proceed: 'Delete',
-    cancel: 'Cancel'
-};
+/** The strings an element leaves out, in the locale in use when asked. */
+function defaults() {
+
+    return {
+        title: OWA.l( 'Are you sure?' ),
+        body: OWA.l( 'This action cannot be undone from this screen.' ),
+        proceed: OWA.l( 'Delete' ),
+        cancel: OWA.l( 'Cancel' )
+    };
+}
 
 /**
  * Read the strings off the element, falling back rather than rendering blanks.
@@ -36,12 +40,13 @@ var DEFAULTS = {
 function settingsFor( el ) {
 
     var $el = $( el );
+    var d   = defaults();
 
     return {
-        title: $el.data( 'owa-confirm-title' ) || DEFAULTS.title,
-        body: $el.data( 'owa-confirm-body' ) || DEFAULTS.body,
-        proceed: $el.data( 'owa-confirm-proceed' ) || DEFAULTS.proceed,
-        cancel: $el.data( 'owa-confirm-cancel' ) || DEFAULTS.cancel
+        title: $el.data( 'owa-confirm-title' ) || d.title,
+        body: $el.data( 'owa-confirm-body' ) || d.body,
+        proceed: $el.data( 'owa-confirm-proceed' ) || d.proceed,
+        cancel: $el.data( 'owa-confirm-cancel' ) || d.cancel
     };
 }
 
@@ -60,7 +65,7 @@ function settingsFor( el ) {
  */
 OWA.confirmAction = function ( options, onProceed ) {
 
-    var opts = $.extend( {}, DEFAULTS, options || {} );
+    var opts = $.extend( {}, defaults(), options || {} );
 
     var $dialog = $( '<div>' )
         .addClass( 'owa_confirmDialog' )
