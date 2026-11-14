@@ -12,7 +12,11 @@ import { OWA } from './owa.js';
  * Nothing is posted to the page itself, so reloading it repeats nothing.
  */
 
-var FALLBACK_ERROR = 'The application password could not be created.';
+/** The error when the server gives none. */
+function fallbackError() {
+
+    return OWA.l( 'The application password could not be created.' );
+}
 
 /** A roster row for a password just made, from the page's own row template. */
 function addRow( made ) {
@@ -26,7 +30,7 @@ function addRow( made ) {
     $row.find( '[data-field="created"]' ).text( made.created_display );
     $row.find( '[data-field="lookup_id"]' ).val( made.lookup_id );
     $row.find( '.owa_appPasswordRevoke' ).attr( 'data-owa-confirm-body',
-        'Anything using “' + made.name + '” stops working immediately.' );
+        OWA.util.sprintf( OWA.l( 'Anything using “%s” stops working immediately.' ), made.name ) );
 
     // Newest first, as the server draws them.
     $( 'table.owa_appPasswords tbody' ).prepend( $row );
@@ -60,7 +64,7 @@ function openAddDialog() {
 
         if ( ! name ) {
 
-            showError( 'Give the application password a name.' );
+            showError( OWA.l( 'Give the application password a name.' ) );
             $form.find( '[name="name"]' ).trigger( 'focus' );
             return;
         }
@@ -87,7 +91,7 @@ function openAddDialog() {
 
                 if ( ! res.ok || ! res.json.data || ! res.json.data.token ) {
 
-                    showError( res.json.error || FALLBACK_ERROR );
+                    showError( res.json.error || fallbackError() );
                     return;
                 }
 
@@ -103,7 +107,7 @@ function openAddDialog() {
             } )
             .catch( function () {
 
-                showError( FALLBACK_ERROR );
+                showError( fallbackError() );
             } )
             .then( function () {
 
@@ -114,12 +118,12 @@ function openAddDialog() {
 
     var createButtons = [
         {
-            text: 'Cancel',
+            text: OWA.l( 'Cancel' ),
             class: 'owa-button owa-button-quiet owa_appPasswordCancel',
             click: function () { $( this ).dialog( 'close' ); }
         },
         {
-            text: 'Create',
+            text: OWA.l( 'Create' ),
             class: 'owa-button owa_appPasswordCreate',
             click: create
         }
@@ -127,7 +131,7 @@ function openAddDialog() {
 
     var doneButtons = [
         {
-            text: 'Done',
+            text: OWA.l( 'Done' ),
             class: 'owa-button owa_appPasswordDone',
             click: function () { $( this ).dialog( 'close' ); }
         }

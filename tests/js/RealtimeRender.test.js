@@ -91,3 +91,49 @@ test('a refused refresh stops polling and says to reload', async () => {
     expect(rt.timer).toBeNull();
     expect(document.querySelector('.owa_realtimeStatus').textContent).toMatch(/Reload the page/);
 });
+
+describe('in the install\'s language', () => {
+
+    afterEach(() => {
+        delete OWA.config.locale;
+        delete OWA.config.strings;
+        delete OWA.config.plural_rule;
+    });
+
+    test('a bar names its users and its minute in one sentence', () => {
+        const bars = [...widget().querySelectorAll('.owa_realtimeBar')];
+
+        expect(bars[29].title).toBe('3 users, this minute');
+        expect(bars[28].title).toBe('0 users, 1 minute ago');
+        expect(bars[0].title).toBe('0 users, 29 minutes ago');
+    });
+
+    test('the locator note counts in the form the number takes', () => {
+        document.body.innerHTML = FRAME;
+        const rt = new OWA.realtime(document.getElementById('rt'), { apiUrl: 'api', mapUrl: '' });
+
+        rt.render(Object.assign({}, ANSWER, { activeUsers: { last30: 3, last5: 1 }, located: 2 }));
+        expect(document.querySelector('.owa_realtimeMapNote').textContent).toBe('1 of 3 users has no known location.');
+
+        rt.render(Object.assign({}, ANSWER, { activeUsers: { last30: 1500, last5: 1 }, located: 2 }));
+        expect(document.querySelector('.owa_realtimeMapNote').textContent).toBe('1,498 of 1,500 users have no known location.');
+    });
+
+    test('counts, minutes and words follow the install\'s locale and strings', () => {
+        OWA.config.locale = 'de-DE';
+        OWA.config.strings = {
+            'None in the last 30 minutes': 'Keine in den letzten 30 Minuten',
+            '%1$s user, %2$s': ['%1$s Nutzer, %2$s', '%1$s Nutzer, %2$s'],
+        };
+
+        document.body.innerHTML = FRAME;
+        const rt = new OWA.realtime(document.getElementById('rt'), { apiUrl: 'api', mapUrl: '' });
+        rt.render(Object.assign({}, ANSWER, { activeUsers: { last30: 1234, last5: 1 }, located: 1234 }));
+
+        const root = document.getElementById('rt');
+
+        expect(root.querySelector('.owa_realtimeUsers30').textContent).toBe('1.234');
+        expect(root.querySelector('[data-card="devices"] tbody').textContent).toBe('Keine in den letzten 30 Minuten');
+        expect(root.querySelectorAll('.owa_realtimeBar')[27].title).toBe('0 Nutzer, vor 2 Minuten');
+    });
+});

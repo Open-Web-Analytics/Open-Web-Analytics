@@ -70,6 +70,43 @@ describe('an hour', () => {
     });
 });
 
+describe('in the install\'s locale', () => {
+
+    afterEach(() => {
+        delete OWA.config.locale;
+    });
+
+    test('an hour and a date are written as the locale writes them', () => {
+        OWA.config.locale = 'de-DE';
+        const c = chart();
+        c.xType = 'yyyymmddhh';
+
+        expect(c.hourLabel(Date.UTC(2026, 9, 30, 14), false)).toBe('14 Uhr');
+        expect(c.hourLabel(Date.UTC(2026, 9, 30, 0), true)).toBe('30.10.');
+        expect(c.timestampFormatter(Date.UTC(2026, 9, 30, 14))).toBe('30.10.2026 14 Uhr');
+    });
+
+    test('a day axis and a month axis take the locale\'s order and month names', () => {
+        expect(chart().flotDates({ month: 'short', year: 'numeric' }).timeformat).toBe('%b %Y');
+        expect(chart().flotDates({ month: '2-digit', day: '2-digit' })).toEqual({ timeformat: '%m/%d' });
+        expect(chart().flotDates({ month: 'short', year: 'numeric' }).monthNames[10]).toBe('Nov');
+
+        OWA.config.locale = 'fr-FR';
+
+        expect(chart().flotDates({ month: '2-digit', day: '2-digit' })).toEqual({ timeformat: '%d/%m' });
+        expect(chart().flotDates({ month: 'short', year: 'numeric' }).monthNames[1]).toBe('févr.');
+    });
+
+    test('an axis number is grouped as the locale groups it', () => {
+        expect(chart().groupDigits(1234567.5, 1)).toBe('1,234,567.5');
+
+        OWA.config.locale = 'de-DE';
+
+        expect(chart().groupDigits(1234567.5, 1)).toBe('1.234.567,5');
+        expect(chart().tipNumber(1234.567)).toBe('1.234,57');
+    });
+});
+
 describe('a day by hour', () => {
 
     const day = { startDate: '20261030', endDate: '20261030', currentHour: 2026110109 };

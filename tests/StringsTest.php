@@ -408,6 +408,15 @@ class ConfiguredReport {
         $this->assertStringContainsString('OWA.config.plural_rule = "french";', $js);
     }
 
+    /** config_dom.php gives the reporting JavaScript the locale as a language tag, for Intl (OWA.locale()). */
+    public function testThePageCarriesTheLocaleAsALanguageTag(): void
+    {
+        $this->assertStringContainsString(
+            'OWA.config.locale = ' . json_encode(Strings::htmlLang()) . ';',
+            $this->configDom()
+        );
+    }
+
     private function configDom(): string
     {
         ob_start();

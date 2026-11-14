@@ -12,6 +12,8 @@
  * the fallback rather than dropped as legacy.
  */
 
+import { OWA } from './owa.js';
+
 var RESET_AFTER_MS = 2000;
 
 function copyText( text ) {
@@ -65,7 +67,7 @@ function show( button, state ) {
 
     if ( label ) {
 
-        label.textContent = state === 'copied' ? 'Copied' : ( state === 'failed' ? 'Press Ctrl+C' : 'Copy' );
+        label.textContent = state === 'copied' ? OWA.l( 'Copied' ) : ( state === 'failed' ? OWA.l( 'Press Ctrl+C' ) : OWA.l( 'Copy' ) );
     }
 
     if ( icon ) {

@@ -126,9 +126,7 @@ OWA.sparkline.prototype = {
         } );
 
         var num = function ( n ) {
-            var parts = String( Math.round( n * 100 ) / 100 ).split( '.' );
-            parts[0] = parts[0].replace( /\B(?=(\d{3})+(?!\d))/g, ',' );
-            return parts.join( '.' );
+            return OWA.util.formatNumber( n, { maximumFractionDigits: 2 } );
         };
 
         return ys.length

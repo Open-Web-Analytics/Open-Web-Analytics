@@ -1119,9 +1119,9 @@ OWA.dimensionPicker.prototype = {
          * half a report wide. Naming the control inside itself keeps it to one
          * element, so the bar stays a row.
          */
-        var placeholder = this.options.placeholder || 'Select...';
+        var placeholder = this.options.placeholder || OWA.l( 'Select...' );
 
-        var c = '<select data-placeholder="' + placeholder + '" name="dim-list" class="dim-list"><option value=""></option>';
+        var c = '<select data-placeholder="' + OWA.util.escapeHtml( placeholder ) + '" name="dim-list" class="dim-list"><option value=""></option>';
         var that = this;
 
         if ( OWA.util.countObjectProperties( this.dim_list ) > 0 ) {
@@ -1179,7 +1179,7 @@ OWA.dimensionPicker.prototype = {
         // measurement (chosen 0.9.x read the CSS width, so this wasn't needed
         // before the 0.9.6 -> 1.8.7 upgrade).
         jQuery( container_selector + ' > .dim-list' ).chosen( {
-            no_results_text: "Name not found.",
+            no_results_text: OWA.l( 'Name not found.' ),
             placeholder_text_single: placeholder,
             // Still explicit -- chosen-js 1.x measures the select at enhancement
             // time and reads 0 inside a display:none parent (the constraint
@@ -1564,7 +1564,7 @@ OWA.dataGrid.share = function ( value, total ) {
         return '';
     }
 
-    return ( Math.round( v / t * 1000 ) / 10 ).toFixed( 1 ) + '%';
+    return OWA.util.formatPercent( Math.round( v / t * 1000 ) / 1000, 1 );
 };
 
 /*
@@ -1613,7 +1613,7 @@ OWA.dataGrid.formatters = {
                 : cellvalue;
 
         if ( ! raw ) {
-            return '(none)';
+            return OWA.util.escapeHtml( OWA.l( '(none)' ) );
         }
 
         var list = raw;
@@ -1622,12 +1622,12 @@ OWA.dataGrid.formatters = {
             try {
                 list = JSON.parse( list );
             } catch ( e ) {
-                return '(none)';
+                return OWA.util.escapeHtml( OWA.l( '(none)' ) );
             }
         }
 
         if ( ! Array.isArray( list ) || ! list.length ) {
-            return '(none)';
+            return OWA.util.escapeHtml( OWA.l( '(none)' ) );
         }
 
         var esc = function( v ) {
@@ -1638,8 +1638,8 @@ OWA.dataGrid.formatters = {
         };
 
         var fields = [
-            [ 'md', 'Medium' ], [ 'sr', 'Source' ], [ 'cn', 'Campaign' ],
-            [ 'ad', 'Ad' ], [ 'at', 'Ad Type' ], [ 'st', 'Search Terms' ]
+            [ 'md', OWA.l( 'Medium' ) ], [ 'sr', OWA.l( 'Source' ) ], [ 'cn', OWA.l( 'Campaign' ) ],
+            [ 'ad', OWA.l( 'Ad' ) ], [ 'at', OWA.l( 'Ad Type' ) ], [ 'st', OWA.l( 'Search Terms' ) ]
         ];
 
         return list.map( function( item, i ) {
@@ -1647,10 +1647,10 @@ OWA.dataGrid.formatters = {
             var parts = fields
                 .filter( function( f ) { return item && item[ f[0] ]; } )
                 .map( function( f ) {
-                    return '<i>' + f[1] + ':</i> ' + esc( item[ f[0] ] );
+                    return '<i>' + esc( OWA.util.sprintf( OWA.l( '%s:', 'a label before its value' ), f[1] ) ) + '</i> ' + esc( item[ f[0] ] );
                 } );
 
-            return '<b>Attribution ' + ( i + 1 ) + ':</b><br>'
+            return '<b>' + esc( OWA.util.sprintf( OWA.l( 'Attribution %d:' ), i + 1 ) ) + '</b><br>'
                  + parts.join( ' -&gt; ' ) + '<br>';
         } ).join( '' );
     },
@@ -1691,7 +1691,7 @@ OWA.dataGrid.formatters = {
         return '<a class="owa_overlayLink" href="' + esc( data.url ) + '#owa_overlay.' + esc( data.overlay )
              + '" data-width="' + esc( parseInt( data.width, 10 ) || 0 )
              + '" data-height="' + esc( parseInt( data.height, 10 ) || 0 )
-             + '">' + esc( data.label || 'Open' ) + '</a>';
+             + '">' + esc( data.label || OWA.l( 'Open' ) ) + '</a>';
     }
 };
 
@@ -2004,7 +2004,8 @@ OWA.dataGrid.prototype = {
             .prop( 'disabled', ! rs.next )
             .on( 'click', function () { that.emit( 'page_forward' ); } );
 
-        var text = OWA.util.sprintf( r.more ? OWA.l( '%1$s–%2$s of %3$s+' ) : OWA.l( '%1$s–%2$s of %3$s' ), r.start, r.end, r.total );
+        var num  = OWA.util.formatNumber;
+        var text = OWA.util.sprintf( r.more ? OWA.l( '%1$s–%2$s of %3$s+' ) : OWA.l( '%1$s–%2$s of %3$s' ), num( r.start ), num( r.end ), num( r.total ) );
 
         $pager.append( $prev )
               .append( jQuery( '<span class="owa_gridRange" aria-live="polite"></span>' ).text( text ) )
@@ -2106,7 +2107,7 @@ OWA.dataGrid.prototype = {
 
         if ( m.next > 0 ) {
 
-            var name = OWA.util.sprintf( OWA.ln( 'Show %d more row', 'Show %d more rows', m.next ), m.next );
+            var name = OWA.util.sprintf( OWA.ln( 'Show %s more row', 'Show %s more rows', m.next ), OWA.util.formatNumber( m.next ) );
 
             var $button = jQuery( '<button type="button" class="owa_gridShowMore" data-ui="grid-show-more">'
                 + '<i class="fas fa-chevron-down" aria-hidden="true"></i></button>' )
@@ -2154,9 +2155,11 @@ OWA.dataGrid.prototype = {
     /** "Showing 20 of 46 rows", or "of 100+" when the total is a lower bound. */
     showingText : function ( m ) {
 
+        var num = OWA.util.formatNumber;
+
         return m.more
-            ? OWA.util.sprintf( OWA.l( 'Showing %1$s of %2$s+ rows' ), m.shown, m.total )
-            : OWA.util.sprintf( OWA.ln( 'Showing %1$s of %2$s row', 'Showing %1$s of %2$s rows', m.total ), m.shown, m.total );
+            ? OWA.util.sprintf( OWA.l( 'Showing %1$s of %2$s+ rows' ), num( m.shown ), num( m.total ) )
+            : OWA.util.sprintf( OWA.ln( 'Showing %1$s of %2$s row', 'Showing %1$s of %2$s rows', m.total ), num( m.shown ), num( m.total ) );
     },
 
     /** A press of Show more that came to nothing: the bar can be pressed again. */

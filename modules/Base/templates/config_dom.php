@@ -17,6 +17,8 @@ OWA.config.link_template = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'li
 OWA.config.constraint_operators = <?php echo json_encode( array_keys( \OWA\Module\Base\Classes\ResultSetManager::CONSTRAINT_OPERATORS ) ); ?>;
 // The most rows one report request returns (OWA.dataGrid.maxRows()).
 OWA.config.max_results_per_page = <?php echo (int) \OWA\Module\Base\Controller\ReportsRest::MAX_RESULTS_PER_PAGE; ?>;
+// The install's locale as a language tag (OWA.locale()): dates and numbers are written in it.
+OWA.config.locale = <?php echo json_encode( \OWA\Core\Strings::htmlLang() ); ?>;
 <?php $owa_l10n = \OWA\Core\Strings::forScript(); if ( $owa_l10n ) { ?>
 // The reporting strings in the locale in use, and its plural rule (OWA.l(), OWA.ln()). None in English.
 OWA.config.strings = <?php echo json_encode( (object) $owa_l10n['strings'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE ); ?>;

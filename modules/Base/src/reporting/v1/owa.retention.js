@@ -16,6 +16,8 @@
  * fetched is asked about in general terms rather than let through unasked.
  */
 
+import { OWA } from './owa.js';
+
 const RAW = 'base.raw_retention_months';
 const CUBE = 'base.cube_retention_months';
 
@@ -114,16 +116,19 @@ export function previewUrl( base, params ) {
 }
 
 /** Asked when the preview could not be fetched: no answer is not a yes. */
-export const UNKNOWN = {
-    needed: true,
-    tone: 'danger',
-    title: 'Save the retention change?',
-    paragraphs: [
-        'What this change would do could not be worked out just now.',
-        'A shorter event-data window deletes older event data at the next maintenance run, and it cannot be recovered.',
-    ],
-    proceed: 'Save anyway',
-};
+export function unknownPreview() {
+
+    return {
+        needed: true,
+        tone: 'danger',
+        title: OWA.l( 'Save the retention change?' ),
+        paragraphs: [
+            OWA.l( 'What this change would do could not be worked out just now.' ),
+            OWA.l( 'A shorter event-data window deletes older event data at the next maintenance run, and it cannot be recovered.' ),
+        ],
+        proceed: OWA.l( 'Save anyway' ),
+    };
+}
 
 /**
  * Ask, when the preview says to, then submit.
@@ -189,8 +194,8 @@ function bind( form ) {
 
         fetch( previewUrl( form.getAttribute( 'data-owa-retention-preview' ), params ), { credentials: 'same-origin' } )
             .then( ( r ) => ( r.ok ? r.json() : null ) )
-            .then( ( data ) => decide( ( data && data.data && data.data.preview ) || UNKNOWN, confirm, submit ) )
-            .catch( () => decide( UNKNOWN, confirm, submit ) );
+            .then( ( data ) => decide( ( data && data.data && data.data.preview ) || unknownPreview(), confirm, submit ) )
+            .catch( () => decide( unknownPreview(), confirm, submit ) );
     } );
 }
 
