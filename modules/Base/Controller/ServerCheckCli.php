@@ -142,15 +142,18 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
             'header'        => "User-Agent: Open Web Analytics server-check\r\n",
         ) ) );
 
-        $body    = @file_get_contents( $url, false, $context );
-        $headers = function_exists( 'http_get_last_response_headers' )
-            ? (array) http_get_last_response_headers()
-            : (array) $http_response_header;
+        $stream = @fopen( $url, 'rb', false, $context );
 
-        if ( $body === false && ! $headers ) {
+        if ( ! $stream ) {
 
             return array( 0, '' );
         }
+
+        // Every response's headers, a followed redirect's included.
+        $meta    = stream_get_meta_data( $stream );
+        $headers = is_array( $meta['wrapper_data'] ?? null ) ? $meta['wrapper_data'] : array();
+
+        fclose( $stream );
 
         $status = 0;
         $type   = '';
