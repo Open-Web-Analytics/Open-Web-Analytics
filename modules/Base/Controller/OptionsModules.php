@@ -57,6 +57,7 @@ class OptionsModules extends \OWA\Core\AdminController {
             $dirs[$file]['current_schema_version'] = $mod->getSchemaVersion();
             $dirs[$file]['required_schema_version'] = $mod->getRequiredSchemaVersion();
             $dirs[$file]['schema_uptodate'] = $mod->isSchemaCurrent();
+            $dirs[$file]['activated_by'] = \OWA\Core\Module::activatedByConstant( $mod->name );
         }
 
         ksort($dirs);

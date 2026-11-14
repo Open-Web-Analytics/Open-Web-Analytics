@@ -52,11 +52,11 @@ abstract class RestControllerTestCase extends TestCase
             require_once($owa_root . 'owa.php');
 
             $GLOBALS['owa_test_rest_instance'] = new owa([
-                'instance_role' => 'rest_api',
+                'request_type' => 'rest',
             ]);
         }
 
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'rest');
 
         // The new-account email observer fires when POST /users creates a
         // user. Its mail goes to a closed local SMTP port, never an MTA, and

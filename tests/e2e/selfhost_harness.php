@@ -353,7 +353,7 @@ function registerHarnessSite(string $repoRoot): void
     $php = escapeshellarg(PHP_BINARY);
     $cmd = $php . ' -r ' . escapeshellarg(
         'require "' . $repoRoot . 'owa.php";'
-      . ' new owa(["instance_role" => "cli"]);'
+      . ' new owa(["request_type" => "cli"]);'
       . ' $s = \OWA\Core\CoreAPI::entityFactory("base.site");'
       . ' $id = $s->generateId("' . $site_id . '");'
       . ' $s->load($id);'

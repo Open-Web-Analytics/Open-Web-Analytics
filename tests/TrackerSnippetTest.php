@@ -186,4 +186,83 @@ final class TrackerSnippetTest extends TestCase
         $this->assertSame( 2, substr_count( $html, '<!--' ), 'only the start and end markers' );
         $this->assertStringNotContainsString( '/*', $html );
     }
+
+    /**
+     * Sets tracking_url and assets_url for one test, as OWA_TRACKING_URL and
+     * OWA_ASSETS_URL would (null: not set, so derived from public_url), and
+     * puts them back.
+     */
+    private function withUrls(?string $tracking, ?string $assets, callable $test): void
+    {
+        $saved = array(
+            'tracking_url' => \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_url' ),
+            'assets_url'   => \OWA\Core\CoreAPI::getSetting( 'base', 'assets_url' ),
+        );
+
+        \OWA\Core\CoreAPI::setSetting( 'base', 'tracking_url', $tracking ?? '' );
+        \OWA\Core\CoreAPI::setSetting( 'base', 'assets_url', $assets ?? '' );
+
+        try {
+            $test();
+        } finally {
+            foreach ( $saved as $key => $value ) {
+                \OWA\Core\CoreAPI::setSetting( 'base', $key, $value );
+            }
+        }
+    }
+
+    /** With neither set, the classic tag is what it was: no owa_assetsUrl, the loader under owa_baseUrl. */
+    public function testByDefaultTheTagLoadsTheTrackerFromThePublicUrl(): void
+    {
+        $this->withUrls( null, null, function () {
+
+            $html = $this->render();
+
+            $this->assertStringNotContainsString( 'owa_assetsUrl', $html );
+            $this->assertStringNotContainsString( 'setLoggerEndpoint', $html );
+            $this->assertStringContainsString( "_owa.src = owa_baseUrl + 'public/base/dist/owa.tracker.js';", $html );
+            $this->assertSame( 1, substr_count( $html, 'rel="preconnect"' ), 'one origin' );
+        } );
+    }
+
+    /** OWA_ASSETS_URL: the tracker loads from there, and its chunks follow owa_assetsUrl. */
+    public function testAnAssetsUrlLoadsTheTrackerFromThere(): void
+    {
+        $this->withUrls( null, 'https://cdn.example.test/owa/', function () {
+
+            $html = $this->render();
+
+            $this->assertStringContainsString( "var owa_assetsUrl = 'https://cdn.example.test/owa/';", $html );
+            $this->assertStringContainsString( "_owa.src = owa_assetsUrl + 'base/dist/owa.tracker.js';", $html );
+            $this->assertStringContainsString( '<link rel="preconnect" href="//cdn.example.test">', $html );
+            $this->assertMatchesRegularExpression( "#var owa_baseUrl = 'https?://#", $html, 'owa_baseUrl stays the public URL' );
+        } );
+    }
+
+    /** OWA_TRACKING_URL: beacons go there; the tag preconnects to it as well. */
+    public function testATrackingUrlIsWhereBeaconsGo(): void
+    {
+        $this->withUrls( 'https://t.example.test/', null, function () {
+
+            $html = $this->render();
+
+            $this->assertStringContainsString( 'owa_cmds.push(["setLoggerEndpoint","https://t.example.test/"]);', $html );
+            $this->assertStringContainsString( '<link rel="preconnect" href="//t.example.test">', $html );
+            $this->assertSame( 2, substr_count( $html, 'rel="preconnect"' ), 'the tracker\'s origin and the beacons\'' );
+
+            $bundle = $this->bundleTag();
+
+            $this->assertStringContainsString( '<link rel="preconnect" href="https://t.example.test">', $bundle );
+            $this->assertSame( 2, substr_count( $bundle, 'rel="preconnect"' ) );
+        } );
+    }
+
+    public function testTheBundleTagLoadsFromTheAssetsUrl(): void
+    {
+        $this->withUrls( null, 'https://cdn.example.test/owa/', function () {
+
+            $this->assertStringContainsString( '<script async src="https://cdn.example.test/owa/tracker/snippet-site.js"></script>',
+                $this->bundleTag() );
+        } );
+    }
 }

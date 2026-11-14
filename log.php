@@ -111,7 +111,7 @@ require_once(OWA_BASE_DIR.'/owa.php');
 $config = array(
 
     'tracking_mode' => true,
-    'instance_role' => 'logger'
+    'request_type' => 'tracking'
 );
 
 $owa = new owa( $config );

@@ -159,7 +159,9 @@ final class WikiDocsSettingsTest extends TestCase
             'timezone'                => 'OWA_TIMEZONE',
             'db_host'                 => 'OWA_DB_HOST',
             'partition_detail_months' => 'OWA_PARTITION_DETAIL_MONTHS',
-            'tracker_ingest_drain'    => 'OWA_TRACKER_INGEST_DRAIN',
+            'server_role'             => 'OWA_SERVER_ROLE',
+            // The constant, not OWA_QUEUE_EVENTS, the 1.x alias read after it.
+            'queue_tracking_events'   => 'OWA_QUEUE_TRACKING_EVENTS',
         ) as $key => $constant ) {
 
             $this->assertStringContainsString( '`' . $constant . '`', (string) self::rowFor( $base, $key ),

@@ -29,9 +29,52 @@
  */
  
 /**
+ * SERVER ROLE
+ *
+ * What this server does. One server doing everything is the default, and
+ * needs nothing here. To split an install across servers, give each one a
+ * role; they share the database and, between collector and worker, a queue.
+ *
+ *   full       tracking (log.php), the admin and report screens (index.php),
+ *              the REST API (api/), the CLI, the installer; runs the scheduler.
+ *   collector  log.php only, with no database. Every beacon is queued for a
+ *              worker. Needs a queue other than the file queue:
+ *
+ *                define('OWA_SERVER_ROLE', 'collector');
+ *                define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest');
+ *
+ *              and no database settings or public URL. Credentials as in AWS
+ *              SQS below. Run from its cron, to forward beacons the queue did
+ *              not take:
+ *
+ *                * * * * * cd /path/to/owa && php cli.php cmd=drain-tracker-ingest forward_only=1
+ *
+ *   worker     the CLI and the scheduler: drains the queue, builds the cubes,
+ *              rotates partitions. The database settings, keys and public URL
+ *              below; with collectors, the same OWA_SQS_QUEUE_URL. Its crontab
+ *              runs cmd=schedule-run (see SCHEDULED JOBS).
+ *   console    the admin and report screens. The database settings, keys and
+ *              public URL.
+ *   api        the REST API. The database settings, keys and public URL.
+ *
+ * A comma list combines roles: 'console,api'. A request the role does not serve
+ * is answered with a 404 (a CLI command with a refusal), and a missing setting
+ * the role needs stops every request with a line in the error log.
+ * collector, console and api run only the CLI commands marked for them;
+ * cmd=server-check and cmd=instance-info run everywhere.
+ *
+ * Check a server with:
+ *
+ *   php cli.php cmd=server-check
+ */
+
+//define('OWA_SERVER_ROLE', 'full');
+
+/**
  * DATABASE CONFIGURATION
  *
- * Connection info for databases that will be used by OWA.
+ * Connection info for databases that will be used by OWA. Every role but
+ * collector needs it. OWA_DB_TYPE defaults to mysql.
  *
  */
 
@@ -73,10 +116,48 @@ define('OWA_AUTH_SALT', 'yourauthsaltgoeshere');
  * PUBLIC URL
  *
  * Define the URL of OWA's base directory e.g. http://www.domain.com/path/to/owa/
- * Don't forget the slash at the end.
+ * Don't forget the slash at the end. Every role but collector needs it: links,
+ * mail, the published tracking bundles and signed API requests are built from it.
  */
  
 define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
+
+/**
+ * TRACKING AND ASSETS URLS
+ *
+ *   OWA_PUBLIC_URL    the screens, the REST API, links and mail. Required.
+ *   OWA_TRACKING_URL  where browsers reach log.php, such as a collector:
+ *                     https://t.example.com/. Default: OWA_PUBLIC_URL.
+ *   OWA_ASSETS_URL    where the built files under public/ are served from,
+ *                     such as a CDN: the report screens' scripts, styles, fonts
+ *                     and images, the tracker and its chunks, and the Profiles'
+ *                     tracking bundles (public/tracker/<id>.js).
+ *                     Default: OWA_PUBLIC_URL followed by public/.
+ *
+ * Tracking tags and bundles send beacons to OWA_TRACKING_URL and load the
+ * tracker from OWA_ASSETS_URL; changing either republishes the bundles
+ * (cmd=publish-trackers, or the scheduler). Set them on the servers that build
+ * pages and bundles (full, console, worker); a collector needs neither.
+ *
+ * A CDN, best first:
+ *
+ *   1. In front of OWA's own hostname. Same origin, nothing else to set: leave
+ *      OWA_ASSETS_URL unset.
+ *   2. On a hostname of its own, set as OWA_ASSETS_URL. That is another origin,
+ *      a CNAME included: the CDN must send Access-Control-Allow-Origin for the
+ *      web fonts (and anything a script fetches). Plain <script> and
+ *      <link rel="stylesheet"> loads, the tracker's lazy chunks among them, work
+ *      across origins without it.
+ *
+ * Either way: public/tracker/ bundles keep fixed URLs (tags embed
+ * tracker/<id>.js), so give that path a short cache time or purge it when the
+ * bundles are published. Everything else is versioned (?version=) and can be
+ * cached long. The server holding public/, where publish-trackers writes, must
+ * be the CDN's origin, or share public/tracker/ with it.
+ */
+
+//define('OWA_TRACKING_URL', 'https://t.example.com/');
+//define('OWA_ASSETS_URL', 'https://cdn.example.com/owa/');
 
 /**
  * DEBUG
@@ -105,80 +186,44 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //define('OWA_CONFIGURATION_ID', '1');
 
 /**
- * STATIC CONFIG ONLY
+ * QUEUEING TRACKING EVENTS
  *
- * When true, OWA does NOT read your saved settings from the owa_configuration
- * database table at boot. It runs on the built-in defaults plus whatever this
- * config file defines. This suppresses the two DB queries every OWA process
- * would otherwise issue on boot (the connection handshake and the config read),
- * so a dedicated logging node that only queues incoming tracking events to a
- * file can accept beacons with zero database access.
+ * Queue every beacon instead of writing it while log.php answers; the
+ * drain-tracker-ingest job ingests them every minute, on the servers whose role
+ * runs the scheduler. Off by default; a collector always queues. OWA_QUEUE_EVENTS,
+ * the 1.x name, is still read while this is not set.
  *
- * ONLY enable this on a node whose job is to queue events (see the "Event
- * Queueing" wiki page). Because saved settings are not loaded, any non-default
- * setting such node relies on (tracked sites, the queue type, async_log_dir,
- * etc.) must be pinned here in owa-config.php. Do NOT enable it on the instance
- * that serves reports or the admin UI -- those need the database-backed config.
+ * The queue is the file queue under owa-data/logs/ unless a queue module's
+ * constant is set: OWA_SQS_QUEUE_URL makes it AWS SQS. Set one at most.
  */
 
-//define('OWA_USE_STATIC_CONFIG_ONLY', true);
-
+//define('OWA_QUEUE_TRACKING_EVENTS', true);
 
 /**
- * TRACKING INTAKE
+ * AWS SQS TRACKING QUEUE (the sqs module)
  *
- * Queue every beacon instead of ingesting it while log.php answers; the
- * drain-tracker-ingest job ingests them every minute. Off by default.
- * OWA_QUEUE_EVENTS, the 1.x name, is still read when this is not set.
- */
-
-//define('OWA_QUEUE_TRACKER_INGEST', true);
-
-/*
- * Where queued beacons go: 'file' (under owa-data/logs/), or a type a module
- * registers. And who drains it: 'scheduler', or 'external' when the module's
- * backend has its own consumer.
- */
-
-//define('OWA_TRACKER_INGEST_QUEUE_TYPE', 'file');
-//define('OWA_TRACKER_INGEST_DRAIN', 'scheduler');
-
-/**
- * MODULES ACTIVE FROM THIS FILE
- *
- * For a node with OWA_USE_STATIC_CONFIG_ONLY, which never reads which modules
- * are active from the database. Named modules are active whatever is stored,
- * and the Modules screen cannot turn them off.
- */
-
-//define('OWA_ACTIVE_MODULES', array('sqs'));
-
-/**
- * AWS SQS TRACKING INTAKE (the sqs module)
- *
- * The region the queues are in, for a logging node that cannot read the drain
- * install's settings. The queue names are derived from the database settings
- * above, so a node with the same ones finds the queues the drain install made.
+ * OWA_SQS_QUEUE_URL switches the sqs module on, on any server, and makes the
+ * queue the tracking queue; its dead-letter queue is the same URL with -dlq.
+ * Without OWA_QUEUE_TRACKING_EVENTS a full server still writes beacons as they
+ * arrive and queues only one whose write fails. The region is read from the
+ * URL; OWA_SQS_REGION overrides it.
  *
  * Credentials come from the AWS SDK's default chain -- environment, ~/.aws,
  * then the instance or task role -- unless set here; OWA_SQS_TOKEN is the
  * session token of temporary credentials. OWA never stores them.
- * Credentials that carry their account id (AWS_ACCOUNT_ID, or aws_account_id
- * in an AWS profile) save one request per beacon. OWA_SQS_QUEUE_URL names
- * the queue instead of deriving it; its dead-letter queue is the same URL
- * with -dlq.
  */
 
+//define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest');
 //define('OWA_SQS_REGION', 'us-east-1');
 //define('OWA_SQS_KEY', '');
 //define('OWA_SQS_SECRET', '');
 //define('OWA_SQS_TOKEN', '');
-//define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-example');
 
 /**
  * SCHEDULED JOBS
  *
- * OWA runs its periodic maintenance from a SINGLE cron entry:
+ * OWA runs its periodic maintenance from a SINGLE cron entry, on each server
+ * whose role is full or worker:
  *
  *   * * * * * cd /path/to/owa && php cli.php cmd=schedule-run
  *
@@ -249,14 +294,6 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //    // Turn a shipped job off.
 //    // 'rotate-partitions' => array( 'schedule' => 'off' ),
 //));
-
-/**
- * DISABLE THE SCHEDULER
- *
- * Stops every job without touching crontab -- for a migration or an incident.
- */
-
-//define('OWA_SCHEDULER_ENABLED', false);
 
 
 /**

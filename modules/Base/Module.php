@@ -184,9 +184,10 @@ class Module extends \OWA\Core\Module {
         $this->registerImplementation('event_queue_types', 'file', \OWA\Module\Base\Classes\FileEventQueue::class, 'Classes/FileEventQueue.php');
 
         /*
-         * The tracking intake (PLAN 2.30.3). Its type is written here and
-         * tracker_ingest_queue_type is the only plug: a type a module registers
-         * serves its own queues, and the setting points this one at it.
+         * The tracking intake (PLAN 2.30.3). Its type is written here and the
+         * backend is the only plug: a queue type a module registers serves its
+         * own queues, and that module's constant points this one at it
+         * (TrackerIngest::backend()).
          */
         $this->registerEventQueue( \OWA\Module\Base\Classes\TrackerIngest::QUEUE, array(
 
@@ -482,6 +483,7 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.scheduleRunCli',                'OWA\\Module\\Base\\Controller\\ScheduleRunCli',             'Controller/ScheduleRunCli.php' );
         $this->registerAction( 'base.scheduleStatusCli',             'OWA\\Module\\Base\\Controller\\ScheduleStatusCli',          'Controller/ScheduleStatusCli.php' );
         $this->registerAction( 'base.instanceInfoCli',              'OWA\\Module\\Base\\Controller\\InstanceInfoCli',           'Controller/InstanceInfoCli.php' );
+        $this->registerAction( 'base.serverCheckCli',               'OWA\\Module\\Base\\Controller\\ServerCheckCli',            'Controller/ServerCheckCli.php' );
         $this->registerAction( 'base.partitionInitCli',              'OWA\\Module\\Base\\Controller\\PartitionInitCli',           'Controller/PartitionInitCli.php' );
         $this->registerAction( 'base.partitionDropCli',              'OWA\\Module\\Base\\Controller\\PartitionDropCli',           'Controller/PartitionDropCli.php' );
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli',     'Controller/PartitionReorganizeCli.php' );
@@ -581,6 +583,7 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('schedule-run', 'base.scheduleRunCli');
         $this->registerCliCommand('schedule-status', 'base.scheduleStatusCli');
         $this->registerCliCommand('instance-info', 'base.instanceInfoCli');
+        $this->registerCliCommand('server-check', 'base.serverCheckCli');
         $this->registerCliCommand('cube-rebuild', 'base.cubeRebuildCli');
         $this->registerCliCommand('jobs', 'base.jobsCli');
         $this->registerCliCommand('jobs-retry', 'base.jobsRetryCli');
@@ -666,10 +669,9 @@ class Module extends \OWA\Core\Module {
           . 'less history (raw_retention_months, and cube_retention_months per Property).' );
 
         /*
-         * The tracking intake's drain (PLAN 2.30.4), every minute. A minute
-         * with nothing queued costs a few stat() calls (isProbablyEmpty()).
-         * With tracker_ingest_drain = external it refuses, and whatever
-         * consumes the module's backend ingests instead.
+         * The tracking intake's drain (PLAN 2.30.4), every minute, on the
+         * servers whose role runs the scheduler. A minute with nothing queued
+         * costs a few stat() calls (isProbablyEmpty()).
          */
         $this->registerJob( 'drain-tracker-ingest', 'drain-tracker-ingest', '* * * * *', array( 'scheduled' => 1 ),
             'Ingests the beacons waiting in the tracker-ingest queue: every beacon when queueing is on, and '

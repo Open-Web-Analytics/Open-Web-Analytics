@@ -15,10 +15,10 @@ trait AjaxRequestTrait
     protected function ajax($controller, string $method = 'POST'): array
     {
         $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
-        $mode    = \OWA\Core\CoreAPI::getSetting('base', 'request_mode');
+        $mode    = \OWA\Core\CoreAPI::getSetting('base', 'request_type');
         $type    = $request->request_type;
 
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
         $request->request_type = $method;
         http_response_code(200);
 
@@ -35,7 +35,7 @@ trait AjaxRequestTrait
                 'data'   => $data,
             );
         } finally {
-            \OWA\Core\CoreAPI::setSetting('base', 'request_mode', $mode);
+            \OWA\Core\CoreAPI::setSetting('base', 'request_type', $mode);
             $request->request_type = $type;
         }
     }

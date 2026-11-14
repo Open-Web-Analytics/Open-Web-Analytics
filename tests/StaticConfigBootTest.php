@@ -5,7 +5,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
 use PHPUnit\Framework\TestCase;
 
 /**
- * Locks the OWA_USE_STATIC_CONFIG_ONLY switch: when defined true in the config
+ * Locks the OWA_USE_STATIC_CONFIG_ONLY switch, the 1.x name still read in 2.0
+ * (OWA_SERVER_ROLE collector is the 2.0 way): when defined true in the config
  * environment, OWA must NOT open a database connection during boot.
  *
  * WHY IT MATTERS

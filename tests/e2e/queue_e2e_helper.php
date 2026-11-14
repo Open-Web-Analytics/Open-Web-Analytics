@@ -22,8 +22,8 @@
  * playwright.config.js does not (and must not) run this spec.
  *
  * SUBCOMMANDS (all print one JSON object)
- *   enable-queue         persist queue_tracker_ingest = true
- *   disable-queue        persist queue_tracker_ingest = false
+ *   enable-queue         persist queue_tracking_events = true
+ *   disable-queue        persist queue_tracking_events = false
  *   state site=<id>      { queue_depth, fact_rows } for the given site_id
  *
  * The DRAIN itself is not a subcommand here: the spec runs the real entrypoint
@@ -50,7 +50,7 @@ const SCRATCH_DB_SENTINEL = 'owa_e2e_selfhost';
 
 $owa_root = dirname(__DIR__, 2) . '/';
 require_once($owa_root . 'owa.php');
-new owa(['tracking_mode' => true, 'instance_role' => 'logger']);
+new owa(['tracking_mode' => true, 'request_type' => 'tracking']);
 
 // Refuse to run against anything but the scratch DB. Reading it from the booted
 // config (not the env) means a stray OWA_E2E_DB_NAME can't trick us into pointing
@@ -95,19 +95,19 @@ function argSite(array $argv): string
 }
 
 /**
- * Persist queue_tracker_ingest. Persisting (not just setSetting) is the
+ * Persist queue_tracking_events. Persisting (not just setSetting) is the
  * point: the beacon that log.php ingests runs in a SEPARATE php -S process, so the
  * flag must live in the stored config, not just this process's memory.
  */
 function setQueue(bool $on): array
 {
     $c = \OWA\Core\CoreAPI::configSingleton();
-    $c->persistSetting('base', 'queue_tracker_ingest', $on);
+    $c->persistSetting('base', 'queue_tracking_events', $on);
     $c->save();
 
     return [
         'status'               => 'ok',
-        'queue_tracker_ingest' => $on,
+        'queue_tracking_events' => $on,
     ];
 }
 

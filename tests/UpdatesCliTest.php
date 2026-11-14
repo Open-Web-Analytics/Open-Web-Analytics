@@ -95,7 +95,7 @@ final class UpdatesCliTest extends CliControllerTestCase
         );
 
         // Its protection is the SAPI gate in Core\Controller\Cli::__construct
-        // (which exits unless request_mode === 'cli'), NOT a capability. If it
+        // (which exits unless request_type === 'cli'), NOT a capability. If it
         // ever stops extending that base it becomes web-reachable with no gate
         // at all.
         $this->assertMatchesRegularExpression(

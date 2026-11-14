@@ -17,12 +17,23 @@
  * NO COMMENTS IN WHAT IT EMITS beyond the two markers the classic tag has:
  * this goes on every page of every tracked site.
  */
-$owa_bundle_url    = (string) $view->bundle_url;
-$owa_bundle_scheme = parse_url( $owa_bundle_url, PHP_URL_SCHEME );
-$owa_bundle_host   = parse_url( $owa_bundle_url, PHP_URL_HOST );
-$owa_bundle_port   = parse_url( $owa_bundle_url, PHP_URL_PORT );
+$owa_bundle_url = (string) $view->bundle_url;
+$owa_origins    = array();
+
+// The bundle's origin (the assets URL), and the beacons' (the tracking URL) when it is another.
+foreach ( array( $owa_bundle_url, \OWA\Module\Base\Classes\TrackerBundle::trackingUrl() ) as $owa_url ) {
+
+    $owa_scheme = parse_url( $owa_url, PHP_URL_SCHEME );
+    $owa_host   = parse_url( $owa_url, PHP_URL_HOST );
+    $owa_port   = parse_url( $owa_url, PHP_URL_PORT );
+
+    if ( $owa_scheme && $owa_host ) {
+
+        $owa_origins[ $owa_scheme . '://' . $owa_host . ( $owa_port ? ':' . $owa_port : '' ) ] = true;
+    }
+}
 ?>
-<?php if ( $owa_bundle_scheme && $owa_bundle_host ) { $owa_origin = $owa_bundle_scheme . '://' . $owa_bundle_host . ( $owa_bundle_port ? ':' . $owa_bundle_port : '' ); ?>
+<?php foreach ( array_keys( $owa_origins ) as $owa_origin ) { ?>
 <link rel="preconnect" href="<?php $view->out( $owa_origin ); ?>">
 <link rel="dns-prefetch" href="<?php $view->out( $owa_origin ); ?>">
 <?php } ?>

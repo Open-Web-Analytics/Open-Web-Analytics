@@ -373,6 +373,86 @@ final class TrackerBundleTest extends TestCase
         $this->assertFalse(TrackerBundle::isCurrent(self::SITE));
     }
 
+    /** @return array<string,mixed> the URL settings, to put back */
+    private static function urls(): array
+    {
+        $out = array();
+
+        foreach (array('public_url', 'tracking_url', 'assets_url') as $key) {
+            $out[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
+        }
+
+        return $out;
+    }
+
+    private static function restoreUrls(array $saved): void
+    {
+        foreach ($saved as $key => $value) {
+            \OWA\Core\CoreAPI::setSetting('base', $key, $value);
+        }
+    }
+
+    /** A changed tracking or assets URL is a new header: every bundle is republished. */
+    public function testAChangedTrackingOrAssetsUrlMakesABundleStale(): void
+    {
+        $saved = self::urls();
+
+        try {
+            TrackerBundle::publish(self::SITE);
+            $this->assertTrue(TrackerBundle::isCurrent(self::SITE));
+
+            \OWA\Core\CoreAPI::setSetting('base', 'tracking_url', 'https://t.example.test/');
+            $this->assertFalse(TrackerBundle::isCurrent(self::SITE));
+
+            TrackerBundle::publish(self::SITE);
+            $this->assertTrue(TrackerBundle::isCurrent(self::SITE));
+
+            \OWA\Core\CoreAPI::setSetting('base', 'assets_url', 'https://cdn.example.test/owa/');
+            $this->assertFalse(TrackerBundle::isCurrent(self::SITE));
+        } finally {
+            self::restoreUrls($saved);
+        }
+    }
+
+    /** OWA_TRACKING_URL: the bundle and the classic tag send beacons there. */
+    public function testATrackingUrlIsTheBeaconEndpoint(): void
+    {
+        $saved = self::urls();
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'tracking_url', TrackerBundle::publicUrl());
+            $this->assertNotContains('setLoggerEndpoint', self::names(TrackerBundle::config(self::SITE)['options']),
+                'the public URL\'s log.php is the tracker\'s own default');
+
+            \OWA\Core\CoreAPI::setSetting('base', 'tracking_url', 'https://t.example.test/');
+            $options = TrackerBundle::config(self::SITE)['options'];
+
+            $this->assertSame(array('setLoggerEndpoint', 'https://t.example.test/'), $options[1], 'before any command that could send');
+            $this->assertContains('owa_cmds.push(["setLoggerEndpoint","https://t.example.test/"]);',
+                TrackerBundle::commandLines(self::SITE));
+        } finally {
+            self::restoreUrls($saved);
+        }
+    }
+
+    /** OWA_ASSETS_URL: the bundle is loaded from there, and its chunks load from there. */
+    public function testAnAssetsUrlServesTheBundleAndItsChunks(): void
+    {
+        $saved = self::urls();
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'assets_url', 'https://cdn.example.test/owa/');
+
+            $this->assertSame('https://cdn.example.test/owa/tracker/' . self::SITE . '.js', TrackerBundle::url(self::SITE));
+            $this->assertStringContainsString('if(!w.owa_assetsUrl){w.owa_assetsUrl="https://cdn.example.test/owa/";',
+                TrackerBundle::preamble(TrackerBundle::config(self::SITE)));
+            $this->assertStringContainsString('if(!w.owa_baseUrl){w.owa_baseUrl=' . json_encode(TrackerBundle::publicUrl(), JSON_UNESCAPED_SLASHES),
+                TrackerBundle::preamble(TrackerBundle::config(self::SITE)), 'owa_baseUrl stays the public URL');
+        } finally {
+            self::restoreUrls($saved);
+        }
+    }
+
     /** A full run takes down the bundle of a Profile that is no longer live, and nothing else. */
     public function testABundleWhoseProfileIsGoneIsRemoved(): void
     {
@@ -396,7 +476,7 @@ final class TrackerBundleTest extends TestCase
         }
     }
 
-    public function testTheUrlIsUnderThePublicUrl(): void
+    public function testByDefaultTheUrlIsUnderThePublicUrl(): void
     {
         $this->assertSame(
             rtrim((string) \OWA\Core\CoreAPI::getSetting('base', 'public_url'), '/') . '/public/tracker/' . self::SITE . '.js',

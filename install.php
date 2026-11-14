@@ -54,7 +54,7 @@ if ( ! defined( 'OWA_DB_TYPE' ) && ! file_exists( OWA_DIR . 'owa-config.php' ) )
 
 $config = [
 
-    'instance_role' => 'installer'
+    'request_type' => 'install'
 ];
 
 $owa = new owa( $config );

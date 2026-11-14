@@ -412,10 +412,6 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'scheduled_jobs', OWA_SCHEDULED_JOBS, 'OWA_SCHEDULED_JOBS');
         }
 
-        if (defined('OWA_SCHEDULER_ENABLED')) {
-            $this->setFromConfigConstant( 'base', 'scheduler_enabled', (bool) OWA_SCHEDULER_ENABLED, 'OWA_SCHEDULER_ENABLED');
-        }
-
         /* REPORTING TIMEZONE */
 
         /*
@@ -461,21 +457,24 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'cache_objects', OWA_CACHE_OBJECTS, 'OWA_CACHE_OBJECTS');
         }
 
-        /* STATIC CONFIG ONLY */
+        /* SERVER ROLE */
 
-        // When true, owa_caller skips the boot-time load of user settings from
-        // the owa_configuration DB table (owa_caller.php ~97). This is the ONLY
-        // place the switch can be set early enough to matter: the check runs
-        // before caller overrides (overloadConfig) are applied, so a value
-        // passed to `new owa([...])` arrives too late. Setting it here -- from a
-        // config-file define, applied in owa_settings::__construct before the
-        // caller boots -- is what actually suppresses that DB read (and the
-        // connection handshake it triggers). A pure file-queue logging node can
-        // then accept + queue tracking events with zero DB access; everything it
-        // needs must be pinned in owa-config.php since it can no longer read
-        // persisted settings from the database.
-        if (defined('OWA_USE_STATIC_CONFIG_ONLY')) {
-            $this->setFromConfigConstant( 'base', 'useStaticConfigOnly', OWA_USE_STATIC_CONFIG_ONLY, 'OWA_USE_STATIC_CONFIG_ONLY');
+        /*
+         * What this server serves (Core\ServerRole). Here, before anything is
+         * read from the database, because the role decides whether anything is:
+         * Caller checks the request against it and skips the stored settings on
+         * a collector.
+         */
+        if (defined('OWA_SERVER_ROLE')) {
+            $this->setFromConfigConstant( 'base', 'server_role', (string) OWA_SERVER_ROLE, 'OWA_SERVER_ROLE');
+        }
+
+        /*
+         * The 1.x switch: stored settings are not read at boot, and nothing
+         * else. ServerRole::upgradeNotices() asks for OWA_SERVER_ROLE instead.
+         */
+        if (defined('OWA_USE_STATIC_CONFIG_ONLY') && OWA_USE_STATIC_CONFIG_ONLY) {
+            $this->setFromConfigConstant( 'base', 'skip_stored_settings', true, 'OWA_USE_STATIC_CONFIG_ONLY');
         }
 
         /* DATABASE CONFIGURATION */
@@ -517,46 +516,40 @@ namespace OWA\Module\Base\Classes;
             $this->setFromConfigConstant( 'base', 'public_path', OWA_PUBLIC_PATH, 'OWA_PUBLIC_PATH');
         }
 
-        if (defined('OWA_QUEUE_EVENTS')) {
-            $this->setFromConfigConstant( 'base', 'queue_events', OWA_QUEUE_EVENTS, 'OWA_QUEUE_EVENTS');
+        /*
+         * Where log.php is reached, and where the built static files are
+         * served from (a CDN). Each defaults to one under the public URL
+         * (setupPaths()), and is normalised to end in a slash there.
+         */
+        if (defined('OWA_TRACKING_URL') && OWA_TRACKING_URL) {
+            $this->setFromConfigConstant( 'base', 'tracking_url', (string) OWA_TRACKING_URL, 'OWA_TRACKING_URL');
+        }
+
+        if (defined('OWA_ASSETS_URL') && OWA_ASSETS_URL) {
+            $this->setFromConfigConstant( 'base', 'assets_url', (string) OWA_ASSETS_URL, 'OWA_ASSETS_URL');
         }
 
         /*
-         * MODULES ACTIVE BY CONFIG FILE, for a node that never reads the
-         * database (OWA_USE_STATIC_CONFIG_ONLY): a logging node putting
-         * beacons on SQS needs the sqs module, and stored is_active rows are
-         * exactly what it does not read.
-         *
-         *   define('OWA_ACTIVE_MODULES', array('sqs'));
-         *
-         * Each named module's is_active is governed by the constant, as any
-         * constant governs its key: stored values are ignored and the
-         * Modules screen cannot turn it off. It only adds; a module not
-         * named keeps whatever is stored. A name with no module directory is
-         * skipped, so a typo cannot take boot down.
+         * THE TRACKING INTAKE: queue each beacon for the drain-tracker-ingest
+         * job rather than writing it in the request. OWA_QUEUE_EVENTS is the
+         * 1.x name, read only while the new one is not set.
          */
-        if (defined('OWA_ACTIVE_MODULES')) {
-
-            foreach ((array) OWA_ACTIVE_MODULES as $active) {
-
-                $active = (string) $active;
-
-                if ($active !== '' && is_dir(OWA_MODULES_DIR . \OWA\Core\Lib::moduleDirName($active))) {
-                    $this->setFromConfigConstant( $active, 'is_active', true, 'OWA_ACTIVE_MODULES' );
-                }
-            }
+        if (defined('OWA_QUEUE_TRACKING_EVENTS')) {
+            $this->setFromConfigConstant( 'base', 'queue_tracking_events', (bool) OWA_QUEUE_TRACKING_EVENTS, 'OWA_QUEUE_TRACKING_EVENTS');
+        } elseif (defined('OWA_QUEUE_EVENTS')) {
+            $this->setFromConfigConstant( 'base', 'queue_tracking_events', (bool) OWA_QUEUE_EVENTS, 'OWA_QUEUE_EVENTS');
         }
 
-        /* THE TRACKING INTAKE (PLAN 2.30.3) */
-        foreach (array(
-            'OWA_QUEUE_TRACKER_INGEST'      => 'queue_tracker_ingest',
-            'OWA_TRACKER_INGEST_QUEUE_TYPE' => 'tracker_ingest_queue_type',
-            'OWA_TRACKER_INGEST_DRAIN'      => 'tracker_ingest_drain',
-        ) as $constant => $key) {
-
-            if (defined($constant)) {
-                $this->setFromConfigConstant( 'base', $key, constant($constant), $constant );
-            }
+        /*
+         * MODULES SWITCHED ON BY THEIR OWN CONSTANT (Core\ModuleActivation),
+         * such as the sqs module by OWA_SQS_QUEUE_URL, with or without a
+         * database. The module's is_active is governed by the constant, as any
+         * constant governs its key: stored values are ignored and the Modules
+         * screen cannot turn it off. It only adds; a module whose constant is
+         * not set keeps whatever is stored.
+         */
+        foreach (\OWA\Core\ModuleActivation::activeByConstant() as $module => $constant) {
+            $this->setFromConfigConstant( $module, 'is_active', true, $constant );
         }
 
 
@@ -575,7 +568,8 @@ namespace OWA\Module\Base\Classes;
 
              $in_place_config = $this->config->get('settings');
 
-             $old_array = $in_place_config[$module];
+             // A module with nothing in place yet: an override can be all it has.
+             $old_array = (array) ( $in_place_config[$module] ?? array() );
 
              $new_array = array_merge($old_array, $config);
 
@@ -701,8 +695,8 @@ namespace OWA\Module\Base\Classes;
              */
             /*
              * Except what a constant set. A constant wins over the database, so
-             * it cannot be what loses here: a module named in
-             * OWA_ACTIVE_MODULES with nothing stored had its is_active dropped
+             * it cannot be what loses here: a module its own constant activates
+             * (ModuleActivation) with nothing stored had its is_active dropped
              * with it, and never loaded. Only the constant-governed keys are
              * carried over, so nothing else a module once held comes back.
              */
@@ -2882,7 +2876,7 @@ namespace OWA\Module\Base\Classes;
                 'site_id'                            => '',
                 'configuration_id'                    => '1',
                 'session_length'                    => 1800, //sdk
-                'db_type'                            => '',
+                'db_type'                            => 'mysql',
                 'db_name'                            => '',
                 'db_host'                            => '',
                 'db_port'                            => 3306,
@@ -2909,8 +2903,8 @@ namespace OWA\Module\Base\Classes;
                 'public_url'                        => '',
                 'base_url'                            => '',
                 'action_url'                        => '',
-                'images_url'                        => '',
                 'assets_url'                        => '',
+                'tracking_url'                      => '',
                 'link_template'                        => '%s?%s', // main_url?key=value....
                 'owa_user_agent'                    => 'Open Web Analytics Bot '.OWA_VERSION,
                 'owa_news_url'                        => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5',
@@ -2956,10 +2950,7 @@ namespace OWA\Module\Base\Classes;
                 'mailer-smtpAuth'                    => false,
                 'mailer-username'                    => '',
                 'mailer-password'                    => '',
-                'queue_events'                        => false,
-                'queue_tracker_ingest'                => null, // unset: the 1.x names decide (TrackerIngest::isQueued())
-                'tracker_ingest_queue_type'           => 'file',
-                'tracker_ingest_drain'                => 'scheduler',
+                'queue_tracking_events'               => false,
                 'cookie_domain'                        => false,
                 'cookie_persistence'                => true,  // Controls persistence of cookies, only for use in europe needed
                 'is_active'                            => true,
@@ -3042,7 +3033,6 @@ namespace OWA\Module\Base\Classes;
                 // module; this holds only what OWA_SCHEDULED_JOBS overlays on
                 // top. See owa_service::loadJobs().
                 'scheduled_jobs'                    => array(),
-                'scheduler_enabled'                    => true,
                 'maxCustomVars'                        => 5, //sdk
                 'logo_image_path'                    => 'base/i/owa-logo.svg',
                 // Content-derived dimension ids are 63-bit. This flag marks an
@@ -3063,8 +3053,9 @@ namespace OWA\Module\Base\Classes;
                 'v1_tables_dropped'                 => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.
-                'request_mode'						=> 'web_app',
-                'useStaticConfigOnly'				=> false,
+                'request_type'                      => 'ui',
+                'server_role'                       => 'full',
+                'skip_stored_settings'              => false,
                 'db_supported_types'				=> ['mysql' => 'MySQL / MariaDB'],
                 'config_file'                       => OWA_DIR . 'owa-config.php'
             )
@@ -3122,18 +3113,17 @@ namespace OWA\Module\Base\Classes;
         // image emitted via makeImageLink) live in a dedicated public/ tree, physically
         // separated from the source they are built from so the deny-all .htaccess can
         // allow public/** wholesale without exposing PHP source, templates, or config.
-        // setJs()/setCss() (assets_url) and makeImageLink() (images_url) all resolve
+        // setJs()/setCss() and makeImageLink() (assetsUrl()) all resolve
         // here, NOT modules_url -- which no longer serves anything to the browser. The
         // tracker family (owa.tracker/vendors/heatmap/player) now lives here too, under
         // public/base/dist/; old embeds hardcoding modules/base/dist/owa.tracker.js are
         // 301'd here, and the tracker pins its own chunk publicPath to owa_baseUrl +
         // 'public/base/dist/' so the async chunks resolve correctly through the redirect
         // (see .htaccess and src/tracker/tracker-dom.js).
-        $assets_url = $public_url.'public/';
-        $this->set('base','assets_url', $assets_url);
-        $this->set('base','images_url', $assets_url);
-        $this->set('base','images_absolute_url', $assets_url);
-        $this->set('base','log_url',$public_url.'log.php');
+        //
+        // OWA_ASSETS_URL serves the same tree from elsewhere (a CDN), and
+        // OWA_TRACKING_URL is where log.php is reached: assetsUrl() and
+        // trackingUrl(), derived from the public URL when they are not set.
         $this->set('base','rest_api_url',$public_url.'api/index.php');
 
         // Fill these only when nothing has already named a path.
@@ -3168,6 +3158,43 @@ namespace OWA\Module\Base\Classes;
 
             $this->setCookieDomain();
         }
+     }
+
+     /**
+      * Where log.php is reached: OWA_TRACKING_URL, else the public URL.
+      *
+      * Derived when read, never stored, so it follows a public_url set after
+      * boot (the installer sets one).
+      *
+      * @return string ending in a slash
+      */
+     public function trackingUrl() {
+
+         return self::withSlash( (string) $this->get( 'base', 'tracking_url' ) )
+             ?: self::withSlash( (string) $this->get( 'base', 'public_url' ) );
+     }
+
+     /**
+      * Where public/ is served from: OWA_ASSETS_URL, else the public URL's
+      * public/. Derived when read, like trackingUrl().
+      *
+      * @return string ending in a slash
+      */
+     public function assetsUrl() {
+
+         return self::withSlash( (string) $this->get( 'base', 'assets_url' ) )
+             ?: self::withSlash( (string) $this->get( 'base', 'public_url' ) ) . 'public/';
+     }
+
+     /**
+      * A URL ending in exactly one slash; '' stays ''.
+      *
+      * @param string $url
+      * @return string
+      */
+     private static function withSlash( $url ) {
+
+         return $url === '' ? '' : rtrim( $url, '/' ) . '/';
      }
 
      /**
