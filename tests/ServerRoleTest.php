@@ -154,7 +154,7 @@ final class ServerRoleTest extends TestCase
     {
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
 
-        $problem = ServerRole::bootProblem('ui', array(), true);
+        $problem = ServerRole::bootProblem('ui', array(), true, false);
 
         $this->assertSame(404, $problem['status']);
         $this->assertSame('This server\'s role is collector, which serves tracking, cli, not ui requests.', $problem['message']);
@@ -164,9 +164,12 @@ final class ServerRoleTest extends TestCase
     {
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'worker');
 
-        $this->assertNull(ServerRole::bootProblem('cli', array(), false), 'before install: nothing to check');
-        $this->assertSame(503, ServerRole::bootProblem('cli', array(), true)['status']);
-        $this->assertNull(ServerRole::bootProblem('cli', self::DATABASE, true));
+        // Installing stated, not read: OWA_INSTALLING is process-global, and
+        // InstallCli defines it for the rest of a suite run.
+        $this->assertNull(ServerRole::bootProblem('cli', array(), false, false), 'before install: nothing to check');
+        $this->assertNull(ServerRole::bootProblem('cli', array(), true, true), 'the installer writes the configuration');
+        $this->assertSame(503, ServerRole::bootProblem('cli', array(), true, false)['status']);
+        $this->assertNull(ServerRole::bootProblem('cli', self::DATABASE, true, false));
     }
 
     public function testBootRefusesAnUnknownRoleForEveryRequest(): void
@@ -174,7 +177,7 @@ final class ServerRoleTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'nonsense');
 
         foreach (RequestType::ALL as $type) {
-            $this->assertSame(503, ServerRole::bootProblem($type, self::DATABASE, true)['status'], $type);
+            $this->assertSame(503, ServerRole::bootProblem($type, self::DATABASE, true, false)['status'], $type);
         }
     }
 

@@ -306,9 +306,10 @@ final class ServerRole {
      * @param string     $request_type
      * @param array|null $defined  the OWA_ constants; this process's when null
      * @param bool|null  $configured whether owa-config.php exists; this install's when null
+     * @param bool|null  $installing whether the installer is running (OWA_INSTALLING); this process's when null
      * @return array|null status (HTTP), message (for the log and the CLI)
      */
-    public static function bootProblem( $request_type, $defined = null, $configured = null ) {
+    public static function bootProblem( $request_type, $defined = null, $configured = null, $installing = null ) {
 
         $role = self::current();
 
@@ -328,8 +329,9 @@ final class ServerRole {
         }
 
         $configured = $configured ?? CoreAPI::configSingleton()->isConfigFilePresent();
+        $installing = $installing ?? defined( 'OWA_INSTALLING' );
 
-        if ( ! $configured || defined( 'OWA_INSTALLING' ) ) {
+        if ( ! $configured || $installing ) {
 
             return null;
         }

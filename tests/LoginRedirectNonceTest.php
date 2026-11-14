@@ -40,6 +40,14 @@ final class LoginRedirectNonceTest extends TestCase
      * CLI -- without this the redirect is empty for every case and the assertions
      * below would pass for the wrong reason.
      */
+    /** @var mixed request_type before the test, put back after it */
+    private $savedRequestType;
+
+    protected function tearDown(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', $this->savedRequestType);
+    }
+
     protected function setUp(): void
     {
         $_SERVER['HTTP_HOST']   = 'owa.example.test';
@@ -53,6 +61,7 @@ final class LoginRedirectNonceTest extends TestCase
         // never sets 'go' at all. request_type is global, so a REST test running
         // earlier in the suite would otherwise send these down that branch and
         // make the assertions meaningless.
+        $this->savedRequestType = \OWA\Core\CoreAPI::getSetting('base', 'request_type');
         \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
     }
 
