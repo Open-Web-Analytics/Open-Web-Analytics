@@ -500,7 +500,7 @@ jQuery( function () {
             syncRows();
             refresh();
         } )
-        .on( 'click keypress', '.owa_funnelConditions .constraintRemoveButton', function () {
+        .on( 'click', '.owa_funnelConditions .constraintRemoveButton', function () {
             window.setTimeout( refresh, 0 );
         } )
         .on( 'click', '.owa_funnelStepRemove', function () {

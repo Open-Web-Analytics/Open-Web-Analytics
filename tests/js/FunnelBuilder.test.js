@@ -191,3 +191,66 @@ test('an open-list item splits under the funnel\'s own class names', () => {
 function property(row) {
     return row.querySelector('.' + STEP_CLASSES.property);
 }
+
+/**
+ * A condition's + and X are buttons, so Enter and Space press them and no
+ * other key does anything.
+ */
+describe('a repeatable list\'s + and X', () => {
+
+    const fs = require('fs');
+    const path = require('path');
+
+    function list() {
+        document.body.insertAdjacentHTML('beforeend', `
+            <ul class="constraintList" id="repeat" data-owa-repeatable>
+                <li class="constraintRow"><input class="constraintValueField" value="a">
+                    <button type="button" class="constraintAddButton">+</button>
+                    <button type="button" class="constraintRemoveButton">X</button></li>
+            </ul>`);
+        return document.getElementById('repeat');
+    }
+
+    afterEach(() => {
+        const ul = document.getElementById('repeat');
+        if (ul) {
+            ul.remove();
+        }
+    });
+
+    test('a click adds a blank row after its own, and removes a row', async () => {
+        await new Promise((ready) => $(ready));
+        const ul = list();
+
+        $(ul).find('.constraintAddButton').first().trigger('click');
+        expect(ul.querySelectorAll('.constraintRow')).toHaveLength(2);
+        expect(ul.querySelectorAll('.constraintRow')[1].querySelector('input').value).toBe('');
+
+        $(ul).find('.constraintRemoveButton').last().trigger('click');
+        expect(ul.querySelectorAll('.constraintRow')).toHaveLength(1);
+    });
+
+    test('a key that is not a click does nothing', async () => {
+        await new Promise((ready) => $(ready));
+        const ul = list();
+        const add = ul.querySelector('.constraintAddButton');
+
+        for (const key of ['a', 'Tab', 'ArrowDown', 'Enter', ' ']) {
+            $(add).trigger($.Event('keypress', { key, which: key === 'Enter' ? 13 : key.charCodeAt(0) }));
+            $(add).trigger($.Event('keydown', { key }));
+        }
+
+        expect(ul.querySelectorAll('.constraintRow')).toHaveLength(1);
+    });
+
+    test.each([
+        'modules/Base/templates/goal_event_definition_edit.php',
+        'modules/Base/templates/visualization_edit_step.php',
+    ])('%s draws them as buttons', (file) => {
+        const src = fs.readFileSync(path.join(__dirname, '../..', file), 'utf8');
+
+        expect(src).toMatch(/<button type="button" class="constraintAddButton"/);
+        expect(src).toMatch(/<button type="button" class="constraintRemoveButton"/);
+        expect(src).not.toMatch(/<span class="constraint(Add|Remove)Button"/);
+    });
+});

@@ -36,6 +36,45 @@ final class StringsCatalogueTest extends TestCase
     }
 
     /**
+     * Each of Strings::LABEL_TABLES is found where it is declared and gives
+     * labels, so renaming or reshaping one does not quietly drop it from the
+     * catalogue; and every label is a key the JavaScript is sent.
+     */
+    public function testEveryLabelTableIsReadAndItsLabelsAreScriptKeys(): void
+    {
+        $where = [
+            'ConfiguredReport::ROW_ACTIONS' => 'Core/ConfiguredReport.php',
+            'OWA.dataGrid.EMPTY_TESTS'      => 'modules/Base/src/reporting/v1/owa.resultSetExplorer.js',
+            'OWA.dataGrid.OPERATOR_PHRASES' => 'modules/Base/src/reporting/v1/owa.resultSetExplorer.js',
+            'OWA.dataGrid.CONDITIONS'       => 'modules/Base/src/reporting/v1/owa.resultSetExplorer.js',
+            'OWA.filterPills.OPERATORS'     => 'modules/Base/src/reporting/v1/owa.filterpills.js',
+            'OWA.filterPills.EMPTY_TESTS'   => 'modules/Base/src/reporting/v1/owa.filterpills.js',
+        ];
+
+        $this->assertSame(array_keys($where), Strings::LABEL_TABLES);
+
+        $scriptKeys = include Strings::scriptKeysPath();
+
+        foreach ($where as $table => $file) {
+            $source = (string) file_get_contents(OWA_DIR . $file);
+            $labels = substr($file, -3) === '.js'
+                ? Strings::scriptTableLabelsIn($source, [$table])
+                : Strings::tableLabelsIn($source, [$table]);
+
+            $this->assertNotEmpty($labels, "$table gives no labels in $file");
+
+            foreach (array_column($labels, 'text') as $label) {
+                $this->assertContains($label, $scriptKeys, "$table: '$label'");
+            }
+        }
+
+        // The PHP table's labels are its row actions' labels, every one.
+        $this->assertSame(
+            array_values(array_column(\OWA\Core\ConfiguredReport::ROW_ACTIONS, 'label')),
+            array_column(Strings::tableLabelsIn((string) file_get_contents(OWA_DIR . 'Core/ConfiguredReport.php')), 'text'));
+    }
+
+    /**
      * Where a user-facing message is set, it is set through t(). A bare string
      * literal in one of these positions is a message the catalogue misses.
      *

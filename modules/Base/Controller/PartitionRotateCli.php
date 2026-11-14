@@ -234,15 +234,15 @@ class PartitionRotateCli extends PartitionsCli {
 
         \OWA\Core\CoreAPI::notice( $raw_cutoff
             ? sprintf(
-                'Rotating: keeping %d month(s) of event data (nothing before %s)%s, each reporting cube '
-              . 'to its own window, and %d month(s) of partitions ahead (through %s).',
-                $raw_months, $raw_cutoff, array_key_exists( 'raw', $whatif ) ? ' [what-if]' : '',
-                $months_ahead, $through )
+                'Rotating: keeping %d month%s of event data (nothing before %s)%s, each reporting cube '
+              . 'to its own window, and %d month%s of partitions ahead (through %s).',
+                $raw_months, $raw_months === 1 ? '' : 's', $raw_cutoff, array_key_exists( 'raw', $whatif ) ? ' [what-if]' : '',
+                $months_ahead, $months_ahead === 1 ? '' : 's', $through )
             : sprintf(
                 'Rotating: RETAINING ALL EVENT DATA (raw_retention_months is not set)%s, each reporting cube to its '
-              . 'own window, and %d month(s) of partitions ahead (through %s). Old periods are merged, not '
+              . 'own window, and %d month%s of partitions ahead (through %s). Old periods are merged, not '
               . 'deleted, to stay within the partition ceiling.',
-                array_key_exists( 'raw', $whatif ) ? ' [what-if]' : '', $months_ahead, $through )
+                array_key_exists( 'raw', $whatif ) ? ' [what-if]' : '', $months_ahead, $months_ahead === 1 ? '' : 's', $through )
         );
 
         $rotated = 0;
@@ -297,7 +297,8 @@ class PartitionRotateCli extends PartitionsCli {
             if ( ! $extended && $dropped && ! $dry_run ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s: retrying the lead now that %d partition(s) have gone.', $table, $dropped
+                    '%s: retrying the lead now that %d partition%s gone.', $table, $dropped,
+                    $dropped === 1 ? ' has' : 's have'
                 ) );
 
                 $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
@@ -464,8 +465,9 @@ class PartitionRotateCli extends PartitionsCli {
         foreach ( $owed as $b ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s: %s rebuilt from %d to %d (about %d event(s), roughly %d-%d minutes), so it covers its window.',
+                '%s: %s rebuilt from %d to %d (about %d event%s, roughly %d-%d minutes), so it covers its window.',
                 $b['table'], $dry_run ? 'would be' : 'queued to be', $b['from'], $b['to'], $b['events'],
+                (int) $b['events'] === 1 ? '' : 's',
                 $b['minutes'][0], $b['minutes'][1] ) );
         }
 
@@ -514,13 +516,17 @@ class PartitionRotateCli extends PartitionsCli {
 
         $store = \OWA\Module\Base\Classes\VisitorExpiry::table();
         $since = sprintf( '%04d-%02d', intdiv( $month, 100 ), $month % 100 );
-        $what  = sprintf( 'visitor(s) last seen before %s with no event left in %s', $since, $raw );
+        $what  = function ( $n ) use ( $since, $raw ) {
+
+            return sprintf( '%d visitor%s last seen before %s with no event left in %s',
+                $n, (int) $n === 1 ? '' : 's', $since, $raw );
+        };
 
         if ( $dry_run ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s: would delete %d %s.',
-                $store, \OWA\Module\Base\Classes\VisitorExpiry::countExpired( $month ), $what ) );
+                '%s: would delete %s.',
+                $store, $what( \OWA\Module\Base\Classes\VisitorExpiry::countExpired( $month ) ) ) );
 
             return;
         }
@@ -537,6 +543,6 @@ class PartitionRotateCli extends PartitionsCli {
         }
 
         \OWA\Core\CoreAPI::notice( sprintf(
-            '%s: deleted %d %s.', $store, $deleted, $what ) );
+            '%s: deleted %s.', $store, $what( $deleted ) ) );
     }
 }

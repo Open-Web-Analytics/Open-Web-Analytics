@@ -194,7 +194,8 @@ class PartitionReorganizeCli extends PartitionsCli {
             if ( ! $result['changed'] && ! $result['failed'] ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s: already %s (%d period(s) checked).', $table, $granularity, $result['skipped']
+                    '%s: already %s (%d period%s checked).', $table, $granularity, $result['skipped'],
+                    $result['skipped'] === 1 ? '' : 's'
                 ) );
 
                 continue;
@@ -206,8 +207,9 @@ class PartitionReorganizeCli extends PartitionsCli {
             }
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s: %s %d period(s), %d already correct.',
-                $table, $dry_run ? 'would rewrite' : 'rewrote', count( $result['changed'] ), $result['skipped']
+                '%s: %s %d period%s, %d already correct.',
+                $table, $dry_run ? 'would rewrite' : 'rewrote', count( $result['changed'] ),
+                count( $result['changed'] ) === 1 ? '' : 's', $result['skipped']
             ) );
 
             if ( $result['failed'] ) {

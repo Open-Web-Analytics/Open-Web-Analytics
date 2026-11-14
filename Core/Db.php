@@ -2078,7 +2078,7 @@ class Db extends \OWA\Core\Base {
                 $this->partition_change_busy = true;
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s was in use for %d second(s), so its partitions were not changed. The next run tries again.',
+                    '%s was in use for %d seconds, so its partitions were not changed. The next run tries again.',
                     $table_name, self::PARTITION_CHANGE_WAIT ) );
             }
 

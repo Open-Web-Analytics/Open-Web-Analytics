@@ -296,8 +296,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         if ( $dry_run ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s: would add %d %s partition(s), extending %s to %s.',
-                $table, $plan['planned'], $granularity, $plan['top'], $through
+                '%s: would add %d %s partition%s, extending %s to %s.',
+                $table, $plan['planned'], $granularity, $plan['planned'] === 1 ? '' : 's', $plan['top'], $through
             ) );
 
             return true;
@@ -316,8 +316,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         }
 
         \OWA\Core\CoreAPI::notice( sprintf(
-            '%s: added %d %s partition(s), now covered through %s.',
-            $table, count( $done['added'] ), $granularity, $through
+            '%s: added %d %s partition%s, now covered through %s.',
+            $table, count( $done['added'] ), $granularity, count( $done['added'] ) === 1 ? '' : 's', $through
         ) );
 
         return true;
@@ -365,10 +365,10 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         if ( count( $plan['drop'] ) === count( $spans ) && ! $this->getParam( 'force' ) ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s: %s would drop all %d historical partition(s), leaving only what is being '
+                '%s: %s would drop all %d historical partition%s, leaving only what is being '
               . 'collected now. Everything before %s would be gone. If that is intended, '
               . 're-run with --force.',
-                $table, $cutoff, count( $plan['drop'] ), $plan['effective']
+                $table, $cutoff, count( $plan['drop'] ), count( $plan['drop'] ) === 1 ? '' : 's', $plan['effective']
             ) );
 
             return 0;
@@ -379,8 +379,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         if ( $dry_run ) {
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s: would drop %d partition(s) [%s]; data before %s would be gone.',
-                $table, $dropped, implode( ', ', $plan['drop'] ), $plan['effective']
+                '%s: would drop %d partition%s [%s]; data before %s would be gone.',
+                $table, $dropped, $dropped === 1 ? '' : 's', implode( ', ', $plan['drop'] ), $plan['effective']
             ) );
 
         } else {
@@ -400,8 +400,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             }
 
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s: dropped %d partition(s). Data before %s no longer exists.',
-                $table, $dropped, $plan['effective']
+                '%s: dropped %d partition%s. Data before %s no longer exists.',
+                $table, $dropped, $dropped === 1 ? '' : 's', $plan['effective']
             ) );
         }
 
@@ -458,10 +458,11 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         $last  = $plan['operations'][ count( $plan['operations'] ) - 1 ];
 
         \OWA\Core\CoreAPI::notice( sprintf(
-            '%s: %s %d group(s) of old periods covering %s to %s into blocks of %d year(s), '
+            '%s: %s %d group%s of old periods covering %s to %s into blocks of %d year%s, '
           . 'leaving %d partitions. No data is deleted.',
             $table, $dry_run ? 'would reshape' : 'reshaping', count( $plan['operations'] ),
-            $first['start'], $last['less_than'], $plan['block_years'], $plan['projected']
+            count( $plan['operations'] ) === 1 ? '' : 's', $first['start'], $last['less_than'],
+            $plan['block_years'], $plan['block_years'] === 1 ? '' : 's', $plan['projected']
         ) );
 
         if ( $dry_run ) {

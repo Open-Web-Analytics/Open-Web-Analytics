@@ -840,3 +840,11 @@
 
     .owa .owa_userMenuCaret { display: none; }
 }
+
+/* With reduced motion, a settings group's arrow turns at once. */
+@media (prefers-reduced-motion: reduce) {
+    .owa-settingsGroup > summary::before,
+    .owa-tagScreen__classic > summary::before {
+        transition: none;
+    }
+}

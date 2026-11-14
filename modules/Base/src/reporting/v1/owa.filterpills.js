@@ -28,12 +28,12 @@ OWA.filterPills = function ( ids, dimensions, onChange ) {
 
     this.$( 'dimension' ).chosen( {
         width: '100%',
-        no_results_text: 'Name not found.',
-        placeholder_text_single: 'Choose a dimension'
+        no_results_text: OWA.l( 'Name not found.' ),
+        placeholder_text_single: OWA.l( 'Choose a dimension' )
     } );
 
     jQuery.each( jQuery.extend( {}, OWA.filterPills.OPERATORS, OWA.filterPills.EMPTY_TESTS ), function ( value, label ) {
-        that.$( 'operator' ).append( jQuery( '<option>' ).attr( 'value', value ).text( label ) );
+        that.$( 'operator' ).append( jQuery( '<option>' ).attr( 'value', value ).text( OWA.translate( label ) ) );
     } );
 
     this.$( 'add' ).on( 'click', function () {
@@ -102,7 +102,8 @@ OWA.filterPills = function ( ids, dimensions, onChange ) {
 
 /*
  * The conditions the form offers. A stored clause may use any operator the
- * server parses, so split() reads with those, not with these.
+ * server parses, so split() reads with those, not with these. The labels are
+ * catalogued from here (Strings::LABEL_TABLES) and shown translated.
  */
 OWA.filterPills.OPERATORS = {
     '==': 'is',
@@ -178,17 +179,36 @@ OWA.filterPills.stringify = function ( filters ) {
  */
 OWA.filterPills.phrase = function ( op ) {
 
-    return OWA.filterPills.OPERATORS[ op ] || OWA.filterPills.EMPTY_TESTS[ op ]
-        || OWA.dataGrid.OPERATOR_PHRASES[ op ] || op;
+    var phrase = OWA.filterPills.OPERATORS[ op ] || OWA.filterPills.EMPTY_TESTS[ op ]
+        || OWA.dataGrid.OPERATOR_PHRASES[ op ];
+
+    return phrase ? OWA.translate( phrase ) : op;
+};
+
+/**
+ * A filter as the report grid's chip words it: "%1$s %2$s %3$s" (field,
+ * condition, value), or "%1$s %2$s" for an empty test -- as the parts of the
+ * sentence either side of the value, which the caller puts between them.
+ */
+OWA.filterPills.sentence = function ( f, labelOf ) {
+
+    var empty = OWA.filterPills.EMPTY_TESTS.hasOwnProperty( f.op );
+    var form  = empty
+        ? OWA.l( '%1$s %2$s', 'filter chip: field, condition' )
+        : OWA.l( '%1$s %2$s %3$s', 'filter chip: field, condition, value' );
+
+    var label  = labelOf ? labelOf( f.name ) : f.name;
+    var phrase = OWA.filterPills.phrase( f.op );
+
+    return form.split( '%3$s' ).map( function ( part ) {
+        return OWA.util.sprintf( part, label, phrase );
+    } );
 };
 
 /** "Page Path contains /blog/", with labelOf() naming the dimension. */
 OWA.filterPills.words = function ( f, labelOf ) {
 
-    var empty = OWA.filterPills.EMPTY_TESTS.hasOwnProperty( f.op );
-    var words = OWA.filterPills.phrase( f.op );
-
-    return ( labelOf ? labelOf( f.name ) : f.name ) + ' ' + words + ( empty ? '' : ' ' + f.value );
+    return OWA.filterPills.sentence( f, labelOf ).join( f.value );
 };
 
 OWA.filterPills.prototype = {
@@ -229,20 +249,24 @@ OWA.filterPills.prototype = {
 
         this.filters.forEach( function ( f, i ) {
 
-            var empty = OWA.filterPills.EMPTY_TESTS.hasOwnProperty( f.op );
+            var $pill = jQuery( '<span class="owa_filterPill">' ).attr( 'data-index', i );
 
-            var $pill = jQuery( '<span class="owa_filterPill">' ).attr( 'data-index', i )
-                .append( jQuery( '<span>' ).text( that.labelOf( f.name ) + ' '
-                    + OWA.filterPills.phrase( f.op ) + ' ' ) );
+            // The value in bold where the sentence puts it.
+            OWA.filterPills.sentence( f, that.labelOf.bind( that ) ).forEach( function ( part, k ) {
 
-            if ( ! empty ) {
-                $pill.append( jQuery( '<strong>' ).text( f.value ) );
-            }
+                if ( k > 0 ) {
+                    $pill.append( jQuery( '<strong>' ).text( f.value ) );
+                }
+
+                if ( part !== '' ) {
+                    $pill.append( jQuery( '<span>' ).text( part ) );
+                }
+            } );
 
             $pill.append( jQuery( '<button type="button" class="owa_filterPillRemove">' )
                 .attr( {
-                    'aria-label': 'Remove the filter ' + OWA.filterPills.words( f, that.labelOf.bind( that ) ),
-                    title: 'Remove this filter'
+                    'aria-label': OWA.util.sprintf( OWA.l( 'Remove the filter %s' ), OWA.filterPills.words( f, that.labelOf.bind( that ) ) ),
+                    title: OWA.l( 'Remove this filter' )
                 } )
                 .append( '<i class="fas fa-times" aria-hidden="true"></i>' ) );
 
@@ -253,7 +277,7 @@ OWA.filterPills.prototype = {
     open : function () {
 
         var $dim = this.$( 'dimension' ).empty()
-            .append( jQuery( '<option value="">' ).text( 'Choose a dimension' ) );
+            .append( jQuery( '<option value="">' ).text( OWA.l( 'Choose a dimension' ) ) );
 
         this.dimensions.forEach( function ( choice ) {
             $dim.append( jQuery( '<option>' ).attr( 'value', choice.name )
@@ -324,9 +348,9 @@ OWA.filterPills.prototype = {
         }
 
         if ( String( this.$( 'value' ).val() ).indexOf( ',' ) !== -1 ) {
-            return 'A filter value cannot contain a comma.';
+            return OWA.l( 'A filter value cannot contain a comma.' );
         }
 
-        return 'Add the filter you started, or cancel it.';
+        return OWA.l( 'Add the filter you started, or cancel it.' );
     }
 };

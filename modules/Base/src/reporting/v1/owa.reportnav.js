@@ -226,9 +226,86 @@ function bindColumn() {
     } );
 }
 
+/** On a rail entry whose flyout Escape dismissed (dismissFlyout()). */
+export const DISMISSED = 'is-dismissed';
+
+/**
+ * Escape hides the section flyout that is showing -- the one under the
+ * pointer, or holding the focus -- without moving the pointer (WCAG 1.4.13).
+ * Focus inside it goes back to its section in the rail. It shows again once
+ * the pointer and the focus have both left the entry (bindFlyouts()).
+ *
+ * @param {HTMLElement} shell .owa_navShell
+ * @return {boolean} whether a flyout was dismissed
+ */
+export function dismissFlyout( shell ) {
+
+    let dismissed = false;
+
+    shell.querySelectorAll( '.owa_railEntry' ).forEach( function ( entry ) {
+
+        const flyout = entry.querySelector( '.owa_railFlyout' );
+
+        if ( ! flyout || entry.classList.contains( DISMISSED ) ) {
+            return;
+        }
+
+        if ( ! entry.matches( ':hover' ) && ! entry.contains( document.activeElement ) ) {
+            return;
+        }
+
+        entry.classList.add( DISMISSED );
+        dismissed = true;
+
+        if ( flyout.contains( document.activeElement ) ) {
+            entry.querySelector( '.owa_railItem' ).focus();
+        }
+    } );
+
+    return dismissed;
+}
+
+/** The entry is neither hovered nor holding the focus: its flyout may show again. */
+export function restoreFlyout( entry, focusTarget ) {
+
+    if ( entry.matches( ':hover' ) || ( focusTarget && entry.contains( focusTarget ) ) ) {
+        return;
+    }
+
+    entry.classList.remove( DISMISSED );
+}
+
+function bindFlyouts() {
+
+    const shell = document.getElementById( 'owa_navShell' );
+
+    if ( ! shell ) {
+        return;
+    }
+
+    document.addEventListener( 'keydown', function ( event ) {
+
+        if ( event.key === 'Escape' && dismissFlyout( shell ) ) {
+            event.preventDefault();
+        }
+    } );
+
+    shell.querySelectorAll( '.owa_railEntry' ).forEach( function ( entry ) {
+
+        entry.addEventListener( 'mouseleave', function () {
+            restoreFlyout( entry, document.activeElement );
+        } );
+
+        entry.addEventListener( 'focusout', function ( event ) {
+            restoreFlyout( entry, event.relatedTarget );
+        } );
+    } );
+}
+
 function bind() {
 
     bindColumn();
+    bindFlyouts();
 
     const rail = document.getElementById( 'owa_reportNavRail' );
 

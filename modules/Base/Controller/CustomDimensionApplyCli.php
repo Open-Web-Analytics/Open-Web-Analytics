@@ -119,13 +119,13 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
                 : 'Nothing is waiting for a column.' );
         }
 
-        \OWA\Core\CoreAPI::notice( sprintf( '%d cube(s) altered.', $changed ) );
+        \OWA\Core\CoreAPI::notice( sprintf( '%d cube%s altered.', $changed, $changed === 1 ? '' : 's' ) );
 
         if ( $failed ) {
 
             return $this->fail( sprintf(
-                '%d cube(s) could not be brought up to date. Those dimensions stay '
-              . 'unfilled; nothing else is affected.', $failed ) );
+                '%d cube%s could not be brought up to date. Those dimensions stay '
+              . 'unfilled; nothing else is affected.', $failed, $failed === 1 ? '' : 's' ) );
         }
     }
 

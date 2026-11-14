@@ -54,8 +54,8 @@ class ScheduleStatusCli extends SchedulerCli {
         $pending = \OWA\Core\CoreAPI::isSchemaUpdateRequired();
 
         $lines = array( sprintf(
-            'Scheduler status, %s (%s). %d job(s) registered.',
-            $this->readable( $now ), $this->timezone(), count( $jobs )
+            'Scheduler status, %s (%s). %d job%s registered.',
+            $this->readable( $now ), $this->timezone(), count( $jobs ), count( $jobs ) === 1 ? '' : 's'
         ) );
 
         // One source for this string, shared with the admin banner and the
@@ -266,8 +266,10 @@ class ScheduleStatusCli extends SchedulerCli {
                 $lines[] = sprintf( '               %s', $row['last_message'] );
             }
 
-            $lines[] = sprintf( '  history      %d run(s), %d failed',
-                (int) ( $row['run_count'] ?? 0 ), (int) ( $row['failure_count'] ?? 0 ) );
+            $runs = (int) ( $row['run_count'] ?? 0 );
+
+            $lines[] = sprintf( '  history      %d run%s, %d failed',
+                $runs, $runs === 1 ? '' : 's', (int) ( $row['failure_count'] ?? 0 ) );
 
             // The arguments a run used are recorded, so a change is visible
             // BEFORE it takes effect rather than diagnosed afterwards.
@@ -366,8 +368,8 @@ class ScheduleStatusCli extends SchedulerCli {
         }
 
         $lines[] = sprintf(
-            '%d job(s) registered. Last activity of any kind: %s.',
-            count( $jobs ), $this->readable( $last_activity )
+            '%d job%s registered. Last activity of any kind: %s.',
+            count( $jobs ), count( $jobs ) === 1 ? '' : 's', $this->readable( $last_activity )
         );
 
         // Queued beacons are ingested only by drain-tracker-ingest, or by

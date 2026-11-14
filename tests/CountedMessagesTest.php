@@ -10,6 +10,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * Messages with a count say it in the form the count takes (CoreAPI::tn()),
  * in English and in a translation: the job lateness, the custom report
  * roster, the Property delete confirmation and System Health's queue wait.
+ * None writes a plural as "(s)".
  */
 final class CountedMessagesTest extends TestCase
 {
@@ -66,6 +67,44 @@ final class CountedMessagesTest extends TestCase
         $this->assertStringContainsString('The oldest due job has waited 1 minute.', $this->queueIntro(90));
         $this->assertStringContainsString('The oldest due job has waited 4 minutes.', $this->queueIntro(240));
         $this->assertStringNotContainsString('(s)', $this->queueIntro(240));
+    }
+
+    /**
+     * No message writes a count's noun as "job(s)": the CLI commands and Core
+     * say it in the form the count takes, and System Health through tn().
+     *
+     * @dataProvider sourcesWithCounts
+     */
+    public function testNoMessageWritesAPluralAsParenthesisedS(string $file): void
+    {
+        $found = [];
+
+        foreach (token_get_all((string) file_get_contents($file)) as $t) {
+            if (is_array($t) && in_array($t[0], [T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE], true)
+                && preg_match('/[a-z]\(s\)/i', str_replace('http(s)', '', $t[1]))) {
+                $found[] = $t[2] . ': ' . $t[1];
+            }
+        }
+
+        $this->assertSame([], $found);
+    }
+
+    public static function sourcesWithCounts(): array
+    {
+        $files = array_merge(
+            glob(OWA_DIR . 'modules/*/Controller/*.php'),
+            glob(OWA_DIR . 'Core/*.php'),
+            glob(OWA_DIR . 'Core/*/*.php'),
+            [OWA_DIR . 'modules/Base/Classes/SystemHealth.php']
+        );
+
+        $out = [];
+
+        foreach ($files as $file) {
+            $out[str_replace(OWA_DIR, '', $file)] = [$file];
+        }
+
+        return $out;
     }
 
     /** A Template whose links, nonces and user need no request or database. */

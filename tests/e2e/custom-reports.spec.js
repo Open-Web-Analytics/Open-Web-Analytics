@@ -2784,7 +2784,7 @@ test.describe('custom reports', () => {
                 const starred = page.locator('.owa_titleActionMark[href*="customReportMarkFavorite"]');
                 await expect(starred.locator('i.fas.fa-star')).toHaveCount(1);
                 // Gold when it is on, as on the list.
-                await expect(starred.locator('i.fas.fa-star')).toHaveCSS('color', 'rgb(201, 154, 6)');
+                await expect(starred.locator('i.fas.fa-star')).toHaveCSS('color', 'rgb(166, 124, 0)');
 
                 // And again, to clear it -- it is a toggle, not a one-way mark.
                 await starred.click();

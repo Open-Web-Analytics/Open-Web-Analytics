@@ -184,6 +184,7 @@ final class AccessibleMarkupTest extends TestCase
         $this->assertNotFalse($link);
         $this->assertLessThan(strpos($src, 'echo $owa_header;'), $link);
         $this->assertStringContainsString("strpos( \$owa_body, 'id=\"owa_main\"' ) !== false", $src);
+        $this->assertStringContainsString("\$view->out( \\OWA\\Core\\CoreAPI::t( 'Skip to content' ) );", $src, 'its words are translated');
 
         $css = (string) file_get_contents(OWA_DIR . 'modules/Base/css/owa.css');
         $this->assertStringContainsString('.owa .owa_skipLink:focus {', $css, 'it is shown when it has the focus');

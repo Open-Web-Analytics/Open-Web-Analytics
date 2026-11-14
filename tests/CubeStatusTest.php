@@ -232,7 +232,7 @@ final class CubeStatusTest extends TestCase
         $job   = ['row' => [
             'last_run_at'  => time(),
             'last_status'  => 'failed',
-            'last_message' => "$table stopped at p20260923: EXCHANGE PARTITION failed. 1 cube(s) stopped; the next run resumes there.",
+            'last_message' => "$table stopped at p20260923: EXCHANGE PARTITION failed. 1 cube stopped; the next run resumes there.",
         ]];
 
         $mine = $this->invoke('lastBuildCheck', [$job, $table]);

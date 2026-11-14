@@ -205,8 +205,10 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
                 $locked === 1 ? 'that cube' : 'every cube in this run' ) );
         }
 
-        \OWA\Core\CoreAPI::notice( sprintf( '%d partition(s) across %d cube(s)%s; %d unchanged since their last build, skipped.',
-            $built, count( $properties ) - $locked, $dry_run ? ' (dry run)' : ' rebuilt', $skipped ) );
+        $cubes = count( $properties ) - $locked;
+
+        \OWA\Core\CoreAPI::notice( sprintf( '%d partition%s across %d cube%s%s; %d unchanged since their last build, skipped.',
+            $built, $built === 1 ? '' : 's', $cubes, $cubes === 1 ? '' : 's', $dry_run ? ' (dry run)' : ' rebuilt', $skipped ) );
 
         if ( $failed ) {
 
@@ -216,8 +218,8 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
              * screen shows as the reason. The next scheduled run starts again
              * from that partition.
              */
-            return $this->fail( sprintf( '%s. %d cube(s) stopped; the next run resumes there.',
-                implode( '; ', $stopped ), count( $stopped ) ) );
+            return $this->fail( sprintf( '%s. %d cube%s stopped; the next run resumes there.',
+                implode( '; ', $stopped ), count( $stopped ), count( $stopped ) === 1 ? '' : 's' ) );
         }
     }
 
@@ -272,8 +274,10 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
              * command's to fix, and neither should be silent.
              */
             \OWA\Core\CoreAPI::notice( sprintf(
-                '%s raw row(s) in that range belong to a site id no Property claims, '
-              . 'so they are in no cube.', number_format( $collecting['orphan_rows'] ) ) );
+                '%s raw row%s in that range belong%s to a site id no Property claims, '
+              . 'so %s in no cube.', number_format( $collecting['orphan_rows'] ),
+                (int) $collecting['orphan_rows'] === 1 ? '' : 's', (int) $collecting['orphan_rows'] === 1 ? 's' : '',
+                (int) $collecting['orphan_rows'] === 1 ? 'it is' : 'they are' ) );
         }
 
         /*
@@ -540,8 +544,8 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
          * date=20260915 against monthly partitioning rebuilds all of September,
          * and reporting the requested day back would hide that entirely.
          */
-        \OWA\Core\CoreAPI::notice( sprintf( '%s: %d to %d covers %d partition(s).%s',
-            $table, $range['from'], $range['to'], count( $partitions ),
+        \OWA\Core\CoreAPI::notice( sprintf( '%s: %d to %d covers %d partition%s.%s',
+            $table, $range['from'], $range['to'], count( $partitions ), count( $partitions ) === 1 ? '' : 's',
             $dry_run ? ' Dry run.' : '' ) );
 
         $outcome = $none;

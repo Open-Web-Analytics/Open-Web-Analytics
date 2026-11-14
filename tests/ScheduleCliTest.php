@@ -177,7 +177,8 @@ final class ScheduleCliTest extends CliControllerTestCase
             $q->deadLetter($q->receive(10, 300)[0], 'gave up');
 
             $lines = implode("\n", $this->callProtected($this->statusCli(), 'describeIntake'));
-            $this->assertStringContainsString('1 beacon(s) in the dead-letter queue', $lines);
+            $this->assertStringContainsString('1 beacon in the dead-letter queue, the oldest', $lines);
+            $this->assertStringContainsString('Fix the cause, then replay it;', $lines);
             $this->assertStringContainsString('cmd=tracker-ingest-replay', $lines);
 
             $q->send($envelope);

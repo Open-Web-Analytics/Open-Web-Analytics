@@ -175,8 +175,9 @@ class SystemHealth {
 
         if ( $stats['failed'] ) {
 
-            $findings[] = self::finding( 'yellow', 'Failed jobs', sprintf(
-                '%d job(s) used up their attempts and are kept with their errors.', $stats['failed'] ),
+            $findings[] = self::finding( 'yellow', 'Failed jobs', sprintf( \OWA\Core\CoreAPI::tn(
+                '%d job used up its attempts and is kept with its errors.',
+                '%d jobs used up their attempts and are kept with their errors.', $stats['failed'] ), $stats['failed'] ),
                 'php cli.php cmd=jobs-retry id=<id>   (or id=all)' );
         }
 
@@ -231,8 +232,10 @@ class SystemHealth {
 
         if ( $main['oldest_age'] !== null && $main['oldest_age'] > self::INTAKE_BACKLOG_AGE ) {
 
-            $findings[] = self::finding( 'red', 'Backlog', sprintf(
-                '%s beacon(s) waiting, the oldest for %d minutes: the drain is not keeping up%s.',
+            // A queue that cannot count its messages says "Some", a plural.
+            $findings[] = self::finding( 'red', 'Backlog', sprintf( \OWA\Core\CoreAPI::tn(
+                '%s beacon waiting, the oldest for %d minutes: the drain is not keeping up%s.',
+                '%s beacons waiting, the oldest for %d minutes: the drain is not keeping up%s.', $main['messages'] ?? 2 ),
                 $main['messages'] ?? 'Some', intdiv( $main['oldest_age'], 60 ),
                 TrackerIngest::isDrainedExternally() ? ' (tracker_ingest_drain is external)' : '' ),
                 'php cli.php cmd=schedule-status' );
@@ -240,9 +243,11 @@ class SystemHealth {
 
         if ( $dlq && $dlq['messages'] ) {
 
-            $findings[] = self::finding( 'yellow', 'Dead letters', sprintf(
-                '%d beacon(s) in the dead-letter queue%s. Fix the cause, then replay them; '
-                . 'replay-tracker-ingest sends each back once a day on its own.',
+            $findings[] = self::finding( 'yellow', 'Dead letters', sprintf( \OWA\Core\CoreAPI::tn(
+                '%d beacon in the dead-letter queue%s. Fix the cause, then replay it; '
+                . 'replay-tracker-ingest sends it back once a day on its own.',
+                '%d beacons in the dead-letter queue%s. Fix the cause, then replay them; '
+                . 'replay-tracker-ingest sends each back once a day on its own.', $dlq['messages'] ),
                 $dlq['messages'],
                 $dlq['oldest_age'] !== null ? ', the oldest ' . intdiv( $dlq['oldest_age'], 3600 ) . ' hours old' : '' ),
                 'php cli.php cmd=tracker-ingest-replay' );
@@ -322,7 +327,8 @@ class SystemHealth {
         }
 
         return self::finding( 'green', \OWA\Core\CoreAPI::t( 'Blocked as spam' ), sprintf(
-            \OWA\Core\CoreAPI::t( '%1$d beacon(s) today and yesterday. By rule: %2$s.' ),
+            \OWA\Core\CoreAPI::tn( '%1$d beacon today and yesterday. By rule: %2$s.',
+                '%1$d beacons today and yesterday. By rule: %2$s.', $total ),
             $total, $rules ? implode( ', ', $rules ) : '-' ) );
     }
 
@@ -388,8 +394,9 @@ class SystemHealth {
 
             $queued = JobQueue::isQueued( 'publish-trackers' );
 
-            $findings[] = self::finding( 'yellow', 'Not current', sprintf(
-                '%d Profile(s) have a bundle that is stale or not published%s.', $stale,
+            $findings[] = self::finding( 'yellow', 'Not current', sprintf( \OWA\Core\CoreAPI::tn(
+                '%d Profile has a bundle that is stale or not published%s.',
+                '%d Profiles have a bundle that is stale or not published%s.', $stale ), $stale,
                 $queued ? '; a publish is queued' : '' ), $queued ? null : 'php cli.php cmd=publish-trackers' );
         }
 
