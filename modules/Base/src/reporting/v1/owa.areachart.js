@@ -22,7 +22,8 @@ OWA.areaChart = function( options ) {
             mode: 'time'
             
         },
-        timeformat: "%m/%d",
+        // A day's tick, and a month's: as Intl.DateTimeFormat takes them, in the install's locale (flotDates()).
+        dayTick: { month: '2-digit', day: '2-digit' },
         showGrid: true,
         showLegend: true,
         showDots: false,
@@ -81,9 +82,9 @@ OWA.areaChart = function( options ) {
          * a week ago, so it covers eight dates.
          */
         granularities: [
-            { dimension: 'dateHour',  label: 'Hour', maxDays: 8 },
-            { dimension: 'date',      label: 'Day' },
-            { dimension: 'yearMonth', label: 'Month' }
+            { dimension: 'dateHour', maxDays: 8 },
+            { dimension: 'date' },
+            { dimension: 'yearMonth' }
         ],
 
         /*
@@ -92,7 +93,7 @@ OWA.areaChart = function( options ) {
          */
         hourTickWidth: 56,
 
-        monthFormat: "%b %Y"
+        monthTick: { month: 'short', year: 'numeric' }
     };
     
     // merge passed options with defaults.
@@ -228,15 +229,10 @@ OWA.areaChart.prototype = {
         return value;
     },
     
+    /** A point's date in the install's locale: "10/30/2026", and its hour on an hourly chart. */
     timestampFormatter : function(timestamp) {
-        
-        var d = new Date(timestamp*1);
-        var curr_date = d.getUTCDate();
-        var curr_month = d.getUTCMonth() + 1;
-        var curr_year = d.getUTCFullYear();
-        //alert(d+' date: '+curr_month);
-        var date =  curr_month + "/" + curr_date + "/" + curr_year;
-        //var date =  curr_month + "/" + curr_date;
+
+        var date = OWA.util.formatDate( new Date( timestamp * 1 ), { year: 'numeric', month: 'numeric', day: 'numeric', timeZone: 'UTC' } );
 
         if ( this.xType === 'yyyymmddhh' ) {
 
@@ -247,20 +243,61 @@ OWA.areaChart.prototype = {
     },
 
     /**
-     * An hour on a 12-hour clock, "12am" to "11pm" -- or the date, "10/30",
-     * at a midnight when the chart spans more than a day.
+     * An hour as the install's locale writes it -- "12am" to "11pm" in
+     * English, "0 Uhr" in German -- or the date, "10/30", at a midnight when
+     * the chart spans more than a day.
      */
     hourLabel : function ( timestamp, dateAtMidnight ) {
 
         var d = new Date( timestamp * 1 );
-        var h = d.getUTCHours();
 
-        if ( dateAtMidnight && h === 0 ) {
+        if ( dateAtMidnight && d.getUTCHours() === 0 ) {
 
-            return ( d.getUTCMonth() + 1 ) + '/' + d.getUTCDate();
+            return OWA.util.formatDate( d, { month: 'numeric', day: 'numeric', timeZone: 'UTC' } );
         }
 
-        return ( h % 12 || 12 ) + ( h < 12 ? 'am' : 'pm' );
+        var f = OWA.util.dateFormat( { hour: 'numeric', timeZone: 'UTC' } );
+
+        // English as a tick has room for: "12am", not "12 AM".
+        if ( /^en\b/i.test( f.resolvedOptions().locale ) ) {
+
+            return f.formatToParts( d ).map( function ( p ) {
+
+                return p.type === 'literal' ? p.value.trim() : ( p.type === 'dayPeriod' ? p.value.toLowerCase() : p.value );
+
+            } ).join( '' );
+        }
+
+        return f.format( d );
+    },
+
+    /**
+     * flot's time axis options for a date as the install's locale writes it,
+     * options as Intl.DateTimeFormat takes them: the strftime pattern flot
+     * reads (timeformat) and, for a month by name, the months' names. In
+     * English { month: 'short', year: 'numeric' } is "%b %Y".
+     */
+    flotDates : function ( options ) {
+
+        var f     = OWA.util.dateFormat( Object.assign( { timeZone: 'UTC' }, options ) );
+        var named = options.month === 'short' || options.month === 'long';
+        var codes = { year: '%Y', month: named ? '%b' : '%m', day: '%d' };
+        var names = [];
+
+        var format = f.formatToParts( new Date( Date.UTC( 2026, 10, 14 ) ) ).map( function ( p ) {
+
+            return codes[ p.type ] || p.value;
+
+        } ).join( '' );
+
+        for ( var m = 0; m < 12; m++ ) {
+
+            names.push( f.formatToParts( new Date( Date.UTC( 2026, m, 1 ) ) )
+                .filter( function ( p ) { return p.type === 'month'; } )
+                .map( function ( p ) { return p.value; } ).join( '' ) );
+        }
+
+        return named ? { timeformat: format, monthNames: names } : { timeformat: format };
     },
 
     /**
@@ -450,9 +487,8 @@ OWA.areaChart.prototype = {
 
                 // A month axis labelled with days would repeat the same day
                 // number every tick.
-                this.flotOptions.xaxis.timeformat = built.x_type === 'yyyymm'
-                    ? this.options.monthFormat
-                    : this.options.timeformat;
+                Object.assign( this.flotOptions.xaxis, this.flotDates(
+                    built.x_type === 'yyyymm' ? this.options.monthTick : this.options.dayTick ) );
             }
 
             OWA.debug('Plotting area graph in ' + selector);
@@ -549,14 +585,11 @@ OWA.areaChart.prototype = {
                      * reads as a chart of negative numbers.
                      */
                     yaxis: { min: 0, max: 1, tickDecimals: 0 },
-                    xaxis: {
+                    xaxis: Object.assign( {
                         mode: 'time',
-                        timeformat: zero.x_type === 'yyyymm'
-                            ? this.options.monthFormat
-                            : this.options.timeformat,
                         ticks: Math.min( 10, zero.points.length ),
                         tickLength: 0
-                    },
+                    }, this.flotDates( zero.x_type === 'yyyymm' ? this.options.monthTick : this.options.dayTick ) ),
                     grid: { show: this.options.showGrid, hoverable: true,
                             borderWidth: 0, borderColor: null,
                             color: this.options.gridColor, tickColor: this.options.tickColor },
@@ -912,7 +945,7 @@ OWA.areaChart.prototype = {
         var lines = [];
         var compares = [];
 
-        total.label = 'Total';
+        total.label = OWA.l( 'Total' );
 
         this.plot.rows.forEach( function ( row, i ) {
 
@@ -1247,7 +1280,7 @@ OWA.areaChart.prototype = {
                      */
                     tickFormatter: function ( value, axis ) {
 
-                        return ( value * 100 ).toFixed( Math.max( 0, axis.tickDecimals - 2 ) ) + '%';
+                        return OWA.util.formatPercent( value, Math.max( 0, axis.tickDecimals - 2 ) );
                     }
                 };
 
@@ -1269,7 +1302,7 @@ OWA.areaChart.prototype = {
                     tickFormatter: function ( value, axis ) {
 
                         return money.prefix
-                            + that.groupDigits( value.toFixed( axis.tickDecimals ) )
+                            + that.groupDigits( value, axis.tickDecimals )
                             + money.suffix;
                     }
                 };
@@ -1307,7 +1340,7 @@ OWA.areaChart.prototype = {
                     tickDecimals: 0,
                     tickFormatter: function ( value, axis ) {
 
-                        return that.groupDigits( value.toFixed( axis.tickDecimals ) );
+                        return that.groupDigits( value, axis.tickDecimals );
                     }
                 };
         }
@@ -1331,14 +1364,12 @@ OWA.areaChart.prototype = {
             : { prefix: '', suffix: '' };
     },
 
-    /** 1234567.5 -> "1,234,567.5", the way the server's number_format writes it. */
-    groupDigits : function ( value ) {
+    /** 1234567.5, 1 -> "1,234,567.5": digits grouped in the install's locale, to a fixed number of decimals. */
+    groupDigits : function ( value, decimals ) {
 
-        var parts = String( value ).split( '.' );
+        var d = decimals || 0;
 
-        parts[0] = parts[0].replace( /\B(?=(\d{3})+(?!\d))/g, ',' );
-
-        return parts.join( '.' );
+        return OWA.util.formatNumber( Number( value ), { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true } );
     },
 
     /** Seconds as a duration: 90 -> "1:30", 3900 -> "1:05:00". */
@@ -1558,7 +1589,7 @@ OWA.areaChart.prototype = {
         var days = this.periodDays( this.explorer.resultSet );
 
         var $select = jQuery( '<select class="owa_chartGranularity">' )
-            .attr( 'title', 'Show this trend by hour, day or month' );
+            .attr( 'title', OWA.l( 'Show this trend by hour, day or month' ) );
 
         this.options.granularities.forEach( function ( g ) {
 
@@ -1569,7 +1600,7 @@ OWA.areaChart.prototype = {
             }
 
             $select.append( jQuery( '<option>' ).attr( 'value', g.dimension )
-                .prop( 'selected', g.dimension === current ).text( g.label ) );
+                .prop( 'selected', g.dimension === current ).text( that.granularityLabel( g ) ) );
         } );
 
         $select.on( 'change', function () {
@@ -1578,6 +1609,24 @@ OWA.areaChart.prototype = {
         } );
 
         $box.append( $select );
+    },
+
+    /** A granularity's name in the select: its label, or the name of its dimension's grain. */
+    granularityLabel : function ( g ) {
+
+        switch ( g.dimension ) {
+
+            case 'dateHour':
+                return OWA.l( 'Hour', 'trend granularity' );
+
+            case 'date':
+                return OWA.l( 'Day', 'trend granularity' );
+
+            case 'yearMonth':
+                return OWA.l( 'Month', 'trend granularity' );
+        }
+
+        return g.label || g.dimension;
     },
 
     /**
@@ -1890,7 +1939,9 @@ OWA.areaChart.prototype = {
             }
         } );
 
-        var head = day( x ) + ( compared && real !== null ? ' vs ' + day( real ) : '' );
+        var head = compared && real !== null
+            ? OWA.util.sprintf( OWA.l( '%1$s vs %2$s', 'a date and the date it is compared with' ), day( x ), day( real ) )
+            : day( x );
 
         var html = '<div class="owa_chartTipHead">' + esc( head ) + '</div><table class="owa_chartTip">';
 
@@ -2234,7 +2285,7 @@ OWA.areaChart.prototype = {
     /** A number for the tooltip: digits grouped, at most two decimals. */
     tipNumber : function ( v ) {
 
-        return this.groupDigits( Math.round( v * 100 ) / 100 );
+        return OWA.util.formatNumber( v, { maximumFractionDigits: 2 } );
     },
 
     /**

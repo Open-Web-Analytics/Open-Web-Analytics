@@ -322,7 +322,7 @@ OWA.report.prototype = {
 OWA.report.tab = function(dom_id) {
     this.dom_id = dom_id;
     this.resultSetExplorers = {};
-    this.label = 'Default label';
+    this.label = OWA.l( 'Default label' );
     this.isLoaded = false;
     this.load = function() {
         if ( ! this.isLoaded ) {
@@ -358,7 +358,8 @@ OWA.report.tab.prototype = {
 
 /**
  * An "as of" time as a person reads it, in the installation's zone -- the same
- * zone the reports' days are cut in -- rather than the browser's.
+ * zone the reports' days are cut in -- rather than the browser's, and in the
+ * installation's locale.
  *
  * @param {number} asOf      unix seconds
  * @param {string} timezone  IANA name; the browser's own if absent or unknown
@@ -375,13 +376,13 @@ OWA.report.formatAsOf = function( asOf, timezone ) {
 
     try {
 
-        return new Intl.DateTimeFormat( undefined, opts ).format( new Date( asOf * 1000 ) );
+        return new Intl.DateTimeFormat( OWA.locale(), opts ).format( new Date( asOf * 1000 ) );
 
     } catch ( e ) {
 
         delete opts.timeZone;
 
-        return new Intl.DateTimeFormat( undefined, opts ).format( new Date( asOf * 1000 ) );
+        return new Intl.DateTimeFormat( OWA.locale(), opts ).format( new Date( asOf * 1000 ) );
     }
 };
 

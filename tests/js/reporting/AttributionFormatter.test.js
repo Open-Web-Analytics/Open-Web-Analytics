@@ -42,7 +42,10 @@ function loadFormatter() {
     expect(end).toBeGreaterThan(0);
 
     // eslint-disable-next-line no-new-func
-    return new Function('return (' + decl.slice(0, end) + ');')();
+    // OWA for its strings (OWA.l) and escaping, as the bundle has it.
+    const { OWA } = require('../../../modules/Base/src/reporting/v1/owa.js');
+
+    return new Function('OWA', 'return (' + decl.slice(0, end) + ');')(OWA);
 }
 
 const cell = (json) => ({ value: json, formatted_value: json });
@@ -64,6 +67,27 @@ describe('attributionList formatter', () => {
 
         expect(html).toContain('<i>Medium:</i> beach');
         expect(html).toContain('<i>Source:</i> kauai');
+    });
+
+    test('labels and headings are in the locale in use', () => {
+        const { OWA } = require('../../../modules/Base/src/reporting/v1/owa.js');
+
+        OWA.config.strings = {
+            'Medium': 'Support',
+            'a label before its value\x04%s:': '%s :',
+            'Attribution %d:': 'Attribution n° %d :',
+            '(none)': '(aucune)',
+        };
+
+        try {
+            const html = fmt(cell('[{"md":"beach"}]'));
+
+            expect(html).toContain('<b>Attribution n° 1 :</b>');
+            expect(html).toContain('<i>Support :</i> beach');
+            expect(fmt(cell(''))).toBe('(aucune)');
+        } finally {
+            delete OWA.config.strings;
+        }
     });
 
     test('omits the fields it does not carry', () => {

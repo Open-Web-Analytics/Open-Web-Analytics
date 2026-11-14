@@ -108,7 +108,7 @@ OWA.worldMap.prototype = {
             if ( title ) {
 
                 title.textContent = n > 0
-                    ? OWA.util.sprintf( OWA.ln( '%1$s: %2$d user', '%1$s: %2$d users', n ), g.getAttribute( 'data-name' ), n )
+                    ? OWA.util.sprintf( OWA.ln( '%1$s: %2$s user', '%1$s: %2$s users', n ), g.getAttribute( 'data-name' ), OWA.util.formatNumber( n ) )
                     : g.getAttribute( 'data-name' );
             }
         } );

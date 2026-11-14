@@ -1,4 +1,5 @@
 import { handleClick, open, close, OPEN, setColumnHidden, COLUMN_KEY, dismissFlyout, restoreFlyout, DISMISSED } from '../../modules/Base/src/reporting/v1/owa.reportnav.js';
+import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
 
 /**
  * The report nav behind a menu button on a narrow screen (owa.reportnav.js):
@@ -135,6 +136,20 @@ test('showing the column again forgets the choice', () => {
     expect(el.toggle.getAttribute('aria-expanded')).toBe('true');
     expect(el.toggle.getAttribute('aria-label')).toBe('Hide this column');
     expect(window.localStorage.getItem(COLUMN_KEY)).toBeNull();
+});
+
+test('the chevron is named in the locale in use', () => {
+    const el = renderShell();
+    OWA.config.strings = { 'Show this column': 'Afficher cette colonne' };
+
+    try {
+        setColumnHidden(el.shell, true);
+        expect(el.toggle.getAttribute('aria-label')).toBe('Afficher cette colonne');
+        expect(el.toggle.getAttribute('title')).toBe('Afficher cette colonne');
+    } finally {
+        delete OWA.config.strings;
+        setColumnHidden(el.shell, false);
+    }
 });
 
 test('a column still hides when storage is refused', () => {

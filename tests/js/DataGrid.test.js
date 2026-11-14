@@ -165,6 +165,16 @@ describe('a row\'s share', () => {
         expect(OWA.dataGrid.share(0, 7)).toBe('0.0%');
     });
 
+    test('is written as the install\'s locale writes a percentage', () => {
+        OWA.config.locale = 'de-DE';
+
+        try {
+            expect(OWA.dataGrid.share(1, 3)).toBe('33,3\u00a0%');
+        } finally {
+            delete OWA.config.locale;
+        }
+    });
+
     test('is nothing of a zero or missing total', () => {
         expect(OWA.dataGrid.share(4, 0)).toBe('');
         expect(OWA.dataGrid.share(4, undefined)).toBe('');
@@ -679,7 +689,7 @@ describe('a card\'s Show more', () => {
 
     test('the names are translated, in the form the count takes', () => {
         OWA.config.strings = {
-            'Show %d more row': ['Afficher %d ligne de plus', 'Afficher %d lignes de plus'],
+            'Show %s more row': ['Afficher %s ligne de plus', 'Afficher %s lignes de plus'],
         };
         OWA.config.plural_rule = 'french';
 

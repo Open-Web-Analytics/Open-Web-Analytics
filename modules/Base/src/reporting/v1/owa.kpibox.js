@@ -244,11 +244,12 @@ OWA.kpiBox.prototype = {
         jQuery('#' + dom_id).append( OWA.util.sprintf(
               '<div class="owa_metricCarousel">'
             + '<button type="button" class="owa_metricCarouselArrow owa_metricCarouselPrev" '
-            + 'aria-label="Show earlier metrics">&lsaquo;</button>'
-            + '<div id="%s" class="metricInfoboxesContainer" style="width:auto;"></div>'
+            + 'aria-label="%2$s">&lsaquo;</button>'
+            + '<div id="%1$s" class="metricInfoboxesContainer" style="width:auto;"></div>'
             + '<button type="button" class="owa_metricCarouselArrow owa_metricCarouselNext" '
-            + 'aria-label="Show later metrics">&rsaquo;</button>'
-            + '</div><div style="clear:both;"></div>', con_id ) );
+            + 'aria-label="%3$s">&rsaquo;</button>'
+            + '</div><div style="clear:both;"></div>', con_id,
+            OWA.util.escapeHtml( OWA.l( 'Show earlier metrics' ) ), OWA.util.escapeHtml( OWA.l( 'Show later metrics' ) ) ) );
         //jQuery('#' + dom_id).append('<div style="clear:both;"></div>');
 
         var ordered = this.orderedAggregates( resultSet );

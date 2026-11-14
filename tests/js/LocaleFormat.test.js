@@ -43,3 +43,14 @@ test('a date is written as the locale writes it', () => {
 
     expect(OWA.util.formatDate(d, { month: 'short', day: 'numeric', timeZone: 'UTC' })).toBe('14 nov.');
 });
+
+test('the share chart\'s percentage follows the locale', () => {
+    require('../../modules/Base/src/reporting/v1/owa.sharechart.js');
+
+    expect(OWA.shareChart.percent(0.004)).toBe('<1%');
+
+    OWA.config.locale = 'de-DE';
+
+    expect(OWA.shareChart.percent(0.415)).toBe('42 %');
+    expect(OWA.shareChart.percent(0.004)).toBe('<1 %');
+});
