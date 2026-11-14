@@ -56,6 +56,40 @@ final class MaxmindUpdateCliTest extends TestCase {
         );
     }
 
+    private function jobsFor( $module_name ) {
+
+        return (array) \OWA\Core\CoreAPI::moduleClassFactory( $module_name, 'Module' )->scheduled_jobs;
+    }
+
+    /**
+     * The weekly refresh is the module's job, so it runs only while the module
+     * is active, and as a scheduled run.
+     */
+    public function testTheModuleRegistersAWeeklyRefresh(): void {
+
+        $jobs = $this->jobsFor( 'maxmind_geoip' );
+
+        $this->assertArrayHasKey( 'refresh-geoip-db', $jobs );
+        $this->assertArrayNotHasKey( 'refresh-geoip-db', $this->jobsFor( 'base' ) );
+
+        $job = $jobs['refresh-geoip-db'];
+
+        $this->assertSame( 'update-geoip-db', $job['command'] );
+        $this->assertSame( array( 'scheduled' => 1 ), $job['params'] );
+        $this->assertSame( 'maxmind_geoip', $job['module'] );
+        $this->assertMatchesRegularExpression( '/^\d+ \d+ \* \* [0-6]$/', $job['schedule'],
+            'weekly, at a time this install derives' );
+        $this->assertNotSame( '0 0 * * 0', $job['schedule'] );
+        $this->assertNotEmpty( $job['description'] );
+    }
+
+    /** On the servers that run the scheduler, and only there. */
+    public function testTheCommandRunsOnTheSchedulerRoles(): void {
+
+        $this->assertSame( \OWA\Core\ServerRole::SCHEDULER,
+            \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::serverRoles() );
+    }
+
     /**
      * The action name has to resolve to the class. This asks the ACTION REGISTRY,
      * which is where a registered action's class actually comes from -- not the

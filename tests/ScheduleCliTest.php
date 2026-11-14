@@ -256,10 +256,13 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertStringContainsString('| `drain-tracker-ingest` | `drain-tracker-ingest scheduled=1` | every minute | Ingests', implode("\n", $lines));
     }
 
-    /** Only these jobs ship; everything else is opt-in. */
+    /**
+     * Only these jobs ship in Base; everything else is opt-in. Another
+     * module's jobs register while it is active (MaxmindUpdateCliTest).
+     */
     public function testTheDefaultJobsAreRegistered()
     {
-        $jobs = $this->callProtected($this->runner(), 'jobs');
+        $jobs = array_filter($this->callProtected($this->runner(), 'jobs'), fn ($job) => $job['module'] === 'base');
 
         // Named exactly, not counted: a job appearing here means every install
         // starts running something on a timer, which is a decision rather than
