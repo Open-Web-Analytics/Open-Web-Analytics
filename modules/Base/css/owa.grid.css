@@ -199,6 +199,44 @@
     overflow-x: auto;
 }
 
+/*
+ * A table wider than its box shows a shadow on each edge it runs past
+ * (OWA.dataGrid.scrollCue puts has-more-left / has-more-right on the frame
+ * from the scroll position), so a column cut at the edge reads as more to
+ * the side rather than as the end of the table. The left one starts where the
+ * sticky first column ends.
+ */
+.owa_gridScrollFrame {
+    position: relative;
+}
+
+.owa_gridScrollFrame::before,
+.owa_gridScrollFrame::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 3;
+    width: 20px;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.owa_gridScrollFrame::before {
+    left: var(--owa-grid-lead, 0px);
+    background: linear-gradient(to right, rgba(17, 24, 39, 0.16), rgba(17, 24, 39, 0));
+}
+
+.owa_gridScrollFrame::after {
+    right: 0;
+    background: linear-gradient(to left, rgba(17, 24, 39, 0.16), rgba(17, 24, 39, 0));
+}
+
+.owa_gridScrollFrame.has-more-left::before,
+.owa_gridScrollFrame.has-more-right::after {
+    opacity: 1;
+}
+
 .owa_grid .owa_gridTable {
     width: 100%;
     border-collapse: collapse;
@@ -645,10 +683,48 @@
     cursor: progress;
 }
 
-/* A finger's height on a phone. */
+/* A finger's target on a phone or a touch screen: 44px. */
 @media (max-width: 600px), (pointer: coarse) {
 
-    .owa_grid .owa_gridShowMore {
+    .owa_grid .owa_gridShowMore,
+    .owa_grid .owa_gridButton,
+    .owa_grid .owa_gridSort {
+        min-height: 44px;
+    }
+
+    .owa_grid .owa_gridButton {
+        height: auto;
+    }
+
+    .owa_grid .owa_gridSort {
+        align-items: center;
+        padding-top: 0;
+    }
+
+    .owa_grid .owa_gridIconButton,
+    .owa_grid .owa_gridChipRemove {
+        width: 44px;
+        height: 44px;
+        border-radius: 22px;
+    }
+
+    .owa_grid .owa_gridChip {
+        min-height: 44px;
+        border-radius: 22px;
+    }
+
+    .owa_grid .owa_gridPageSize,
+    .owa_grid .owa_gridGoTo {
+        height: 44px;
+        font-size: 16px;
+    }
+
+    .owa_grid .owa_gridRowActions {
+        min-height: 44px;
+        padding: 0 8px;
+    }
+
+    .owa_grid .owa_gridPopOption {
         min-height: 44px;
     }
 }
@@ -672,6 +748,38 @@
 
     .owa_gridPaging {
         gap: 8px 12px;
+    }
+}
+
+/*
+ * A phone-width grid: no row numbers, and the first dimension column stays
+ * in place, narrower, while the metrics scroll past it.
+ */
+@container (max-width: 600px) {
+
+    .owa_grid .owa_gridTable .owa_gridRowNum {
+        display: none;
+    }
+
+    .owa_grid .owa_gridTable:not(.is-compact) .owa_gridLead {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: #ffffff;
+    }
+
+    /* A collapsed border stays with the table; the rule moves with the column. */
+    .owa_grid .owa_gridTable:not(.is-compact) .owa_gridLead.owa_gridDimEnd {
+        box-shadow: inset -1px 0 0 #e5e7eb;
+    }
+
+    .owa_grid .owa_gridTable:not(.is-compact) td.owa_gridLead {
+        min-width: 6em;
+        max-width: 42vw;
+    }
+
+    .owa_grid .owa_gridTable:not(.is-compact) .owa_gridRow.is-alt td.owa_gridLead {
+        background: #f7f8fa;
     }
 }
 

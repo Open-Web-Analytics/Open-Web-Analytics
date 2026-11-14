@@ -277,8 +277,8 @@ OWA.kpiBox.prototype = {
              * metric a box shows reads this.
              */
             var html = OWA.util.sprintf(
-                '<div id ="%s" class="owa_metricInfobox" data-metric="%s" style="min-width:%s;width:%s">',
-                item.dom_id, item.name, this.options.minWidth, width );
+                '<div id ="%s" class="owa_metricInfobox" data-metric="%s" data-ui="kpi:%s" style="min-width:%s;width:%s">',
+                item.dom_id, item.name, OWA.util.escapeHtml( item.name ), this.options.minWidth, width );
             html += OWA.util.sprintf('<p class="owa_metricInfoboxLabel">%s</p>', item.label);
             html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>',
                 OWA.util.escapeHtml( OWA.util.metricText( item ) ) );

@@ -93,6 +93,15 @@ OWA.areaChart = function( options ) {
          */
         hourTickWidth: 56,
 
+        /*
+         * The room a date label and a legend entry are given at the axis and
+         * legend font (12px). A date tick is wider than its label, "10/30":
+         * flot rounds the step between ticks down to a day count it likes,
+         * which can double the number asked for.
+         */
+        dateTickWidth: 80,
+        legendEntryWidth: 120,
+
         monthTick: { month: 'short', year: 'numeric' }
     };
     
@@ -111,6 +120,22 @@ OWA.areaChart = function( options ) {
     this.domSelector = '';
     this.init = false;
 }
+
+/**
+ * How many things `each` pixels wide fit across `width`: at least one, at
+ * most `most`. An unknown width (0, not laid out) gives `most`.
+ */
+OWA.areaChart.fitCount = function ( width, each, most ) {
+
+    most = Math.max( 1, most || 1 );
+
+    if ( ! width ) {
+
+        return most;
+    }
+
+    return Math.max( 1, Math.min( most, Math.floor( width / each ) ) );
+};
 
 /**
  * Where a tooltip w wide and h tall goes beside the pointer: right of it and
@@ -462,6 +487,7 @@ OWA.areaChart.prototype = {
                      * the widget, which puts it under the x-axis labels.
                      */
                     container: jQuery( '#' + dom_id + ' > .owa_chartLegend' ),
+                    // As many entries a row as the width has room for (draw()).
                     noColumns: dataseries.length,
 
                     /*
@@ -1840,6 +1866,8 @@ OWA.areaChart.prototype = {
             plotted.push( copy );
         } );
 
+        var width = jQuery( this.domSelector ).width() || 0;
+
         if ( this.xType === 'yyyymmddhh' && this.flotOptions.xaxis ) {
 
             var xs = ( this.dataseries[0] && this.dataseries[0].data || [] ).map( function ( p ) { return p[0]; } );
@@ -1847,8 +1875,23 @@ OWA.areaChart.prototype = {
             if ( xs.length ) {
 
                 this.flotOptions.xaxis.ticks = this.hourTicks(
-                    xs[0], xs[ xs.length - 1 ], jQuery( this.domSelector ).width() || 600 );
+                    xs[0], xs[ xs.length - 1 ], width || 600 );
             }
+
+        } else if ( this.flotOptions.xaxis && this.flotOptions.xaxis.mode === 'time' ) {
+
+            // generate()'s count is the most; a narrower plot gets fewer.
+            var axis = this.flotOptions.xaxis;
+
+            axis.owaMostTicks = axis.owaMostTicks || axis.ticks;
+            axis.ticks = OWA.areaChart.fitCount( width, this.options.dateTickWidth, axis.owaMostTicks );
+        }
+
+        if ( this.flotOptions.legend ) {
+
+            var entries = this.dataseries.filter( function ( s ) { return ! s.isCompare; } ).length;
+
+            this.flotOptions.legend.noColumns = OWA.areaChart.fitCount( width, this.options.legendEntryWidth, entries );
         }
 
         jQuery.plot( jQuery( this.domSelector ), plotted.concat( scaleOnly ), this.flotOptions );
@@ -2434,8 +2477,8 @@ OWA.areaChart.prototype = {
      * Select a line, or put every line back when it is the selected one.
      *
      * The series index is stamped on the cell, not read from its row: the
-     * legend is laid out with one COLUMN per series so it reads left to right,
-     * so every entry is in the same single <tr>.
+     * legend reads left to right, as many entries a row as fit, so a row
+     * holds several series.
      */
     toggleSeries : function ( index ) {
 
@@ -2457,9 +2500,9 @@ OWA.areaChart.prototype = {
      * Run after every draw, because flot rebuilds the legend's contents each
      * time -- so the numbering has to be reapplied, not set once.
      *
-     * The entries are cells rather than rows: the legend is one column per
-     * series so that it reads left to right, which puts them all in a single
-     * <tr>. Each label and its colour swatch carry the index, which is what the
+     * The entries are cells rather than rows: the legend reads left to right,
+     * as many entries a row as the width has room for, so a row holds
+     * several. Each label and its colour swatch carry the index, which is what the
      * click handler reads and what these classes hang on. Where the entries
      * are controls, each label is a toggle button, pressed while its line is
      * the selected one; the swatch beside it is decoration.
@@ -2590,7 +2633,7 @@ OWA.areaChart.prototype = {
          */
         jQuery("#"+dom_id).html(
             '<div class="owa_chartHead"><div class="owa_chartTitle"></div><div class="owa_chartControls"></div></div>'
-          + '<div class="owa_areaChart"></div>'
+          + '<div class="owa_areaChart" data-ui="chart:' + OWA.util.escapeHtml( dom_id ) + '"></div>'
           + '<div class="owa_chartLegend"></div>' );
 
         jQuery(that.domSelector).css('width', this.getOption('width'));

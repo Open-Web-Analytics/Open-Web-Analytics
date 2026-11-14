@@ -31,6 +31,7 @@
 // was supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
+import { dialogFit } from './owa.dialog.js';
 import { describeChange } from './owa.periodpicker.js';
 
 OWA.resultSet = function( attributes ) {
@@ -1313,6 +1314,30 @@ OWA.dataGrid.MAX_DIMENSIONS = 2;
  */
 OWA.dataGrid.SHARE_TYPES = [ 'count', 'distinct_count', 'sum' ];
 
+/**
+ * Mark a grid's scroll frame with the sides its table runs past: has-more-left
+ * and has-more-right, which owa.grid.css draws as a shadow on that edge. The
+ * left shadow starts where the sticky first column ends, read into
+ * --owa-grid-lead.
+ */
+OWA.dataGrid.scrollCue = function ( frame ) {
+
+    var box = frame && frame.querySelector( '.owa_gridScroll' );
+
+    if ( ! box ) {
+        return;
+    }
+
+    var over = box.scrollWidth - box.clientWidth;
+    var at   = Math.abs( box.scrollLeft );
+    var lead = box.querySelector( 'thead .owa_gridLead' );
+    var stuck = lead && window.getComputedStyle( lead ).position === 'sticky' ? lead.offsetWidth : 0;
+
+    frame.classList.toggle( 'has-more-left', over > 1 && at > 1 );
+    frame.classList.toggle( 'has-more-right', over > 1 && at < over - 1 );
+    frame.style.setProperty( '--owa-grid-lead', stuck + 'px' );
+};
+
 /*
  * The filter conditions, as the server parses them: the keys of
  * ResultSetManager::CONSTRAINT_OPERATORS, which config_dom.php puts in
@@ -1758,7 +1783,7 @@ OWA.dataGrid.prototype = {
         var $grid = $root.children( '.owa_grid' );
 
         if ( ! $grid.length ) {
-            $grid = jQuery( '<div class="owa_grid"></div>' ).appendTo( $root );
+            $grid = jQuery( '<div class="owa_grid" data-ui="grid"></div>' ).appendTo( $root );
         }
 
         this.closePopover();
@@ -1784,7 +1809,11 @@ OWA.dataGrid.prototype = {
             .append( this.head( rs ) )
             .append( this.body( rs ) );
 
-        $grid.append( jQuery( '<div class="owa_gridScroll"></div>' ).append( $table ) );
+        var $frame = jQuery( '<div class="owa_gridScrollFrame" data-ui="grid-scroll"></div>' )
+            .append( jQuery( '<div class="owa_gridScroll"></div>' ).append( $table ) );
+
+        $grid.append( $frame );
+        this.watchScroll( $frame );
 
         if ( this.options.compact ) {
 
@@ -2187,6 +2216,32 @@ OWA.dataGrid.prototype = {
         return $live;
     },
 
+    /**
+     * Keep the scroll cue (OWA.dataGrid.scrollCue) in step with the table:
+     * on scroll, and when the box changes width. One observer per grid; a
+     * redraw replaces the frame, so the last one is let go first.
+     */
+    watchScroll : function ( $frame ) {
+
+        var frame = $frame[ 0 ];
+        var box   = $frame.children( '.owa_gridScroll' )[ 0 ];
+        var cue   = function () { OWA.dataGrid.scrollCue( frame ); };
+
+        if ( this.scrollObserver ) {
+            this.scrollObserver.disconnect();
+            this.scrollObserver = null;
+        }
+
+        jQuery( box ).on( 'scroll', cue );
+
+        if ( typeof ResizeObserver !== 'undefined' ) {
+            this.scrollObserver = new ResizeObserver( cue );
+            this.scrollObserver.observe( box );
+        }
+
+        cue();
+    },
+
     announce : function ( text ) {
 
         this.liveRegion().text( text );
@@ -2217,6 +2272,10 @@ OWA.dataGrid.prototype = {
 
             if ( col.kind === 'dimension' && col === dims[ dims.length - 1 ] ) {
                 $th.addClass( 'owa_gridDimEnd' );
+            }
+
+            if ( col === dims[ 0 ] ) {
+                $th.addClass( 'owa_gridLead' );
             }
 
             if ( sorted ) {
@@ -2336,12 +2395,17 @@ OWA.dataGrid.prototype = {
 
         if ( totals ) {
 
-            var $total = jQuery( '<tr class="owa_gridTotal"></tr>' );
-            var lead   = dimCount + ( this.rowNumbers() ? 1 : 0 );
+            var $total = jQuery( '<tr class="owa_gridTotal" data-ui="grid-total"></tr>' );
 
-            if ( lead ) {
-                $total.append( jQuery( '<td class="owa_gridDim owa_gridDimEnd"></td>' )
-                    .attr( 'colspan', lead ).text( OWA.l( 'Total' ) ) );
+            // A cell of its own under the row numbers, so hiding that column
+            // on a phone hides one whole column.
+            if ( this.rowNumbers() ) {
+                $total.append( '<td class="owa_gridRowNum"></td>' );
+            }
+
+            if ( dimCount ) {
+                $total.append( jQuery( '<td class="owa_gridDim owa_gridDimEnd owa_gridLead"></td>' )
+                    .attr( 'colspan', dimCount ).text( OWA.l( 'Total' ) ) );
             }
 
             columns.forEach( function ( c ) {
@@ -2388,7 +2452,7 @@ OWA.dataGrid.prototype = {
 
         ( rs.resultsRows || [] ).forEach( function ( row, i ) {
 
-            var $tr = jQuery( '<tr class="owa_gridRow"></tr>' );
+            var $tr = jQuery( '<tr class="owa_gridRow" data-ui="grid-row"></tr>' );
 
             if ( i % 2 === 1 && ! that.options.compact ) {
                 $tr.addClass( 'is-alt' );
@@ -2411,6 +2475,10 @@ OWA.dataGrid.prototype = {
                         $td.addClass( 'owa_gridDimEnd' );
                     }
 
+                    if ( ci === 0 ) {
+                        $td.addClass( 'owa_gridLead' );
+                    }
+
                 } else {
 
                     $td.addClass( 'owa_gridMetric' );
@@ -2425,7 +2493,7 @@ OWA.dataGrid.prototype = {
 
                     if ( actions.length ) {
 
-                        $td.append( jQuery( '<button type="button" class="owa_gridRowActions" aria-haspopup="menu" aria-expanded="false"></button>' )
+                        $td.append( jQuery( '<button type="button" class="owa_gridRowActions" data-ui="grid-row-actions" aria-haspopup="menu" aria-expanded="false"></button>' )
                             .attr( 'aria-label', OWA.util.sprintf( OWA.l( 'Actions for %s' ), cell.formatted_value || cell.value || '' ) )
                             .append( jQuery( '<span class="owa_gridRowActionsLabel"></span>' ).text( OWA.l( 'Actions' ) ) )
                             .append( '<i class="fas fa-chevron-down" aria-hidden="true"></i>' )
@@ -3117,7 +3185,7 @@ OWA.constraintBuilder.prototype = {
         var button_selector = container_selector + ' > .toggle-button';
         var builder_selector = '#' + builder_id;
 
-        jQuery( container_selector + ' > .builder' ).attr( 'id', builder_id );
+        jQuery( container_selector + ' > .builder' ).attr( { id: builder_id, 'data-ui': 'dialog:filter' } );
 
         // if there are existing constraints
         if (constraints.length > 0) {
@@ -3153,18 +3221,17 @@ OWA.constraintBuilder.prototype = {
          * so a lifted dialog matches none of them. That is exactly how both
          * report-builder modals shipped unstyled for a while.
          */
-        jQuery( builder_selector ).dialog( {
+        jQuery( builder_selector ).dialog( jQuery.extend( {
             autoOpen: false,
             modal: true,
             appendTo: '.owa',
-            width: Math.min( 560, jQuery( window ).width() - 40 ),
             title: OWA.l( 'Filter' ),
             dialogClass: 'owa_filterDialogFrame',
             close: function () {
 
                 jQuery( button_selector ).attr( 'aria-expanded', 'false' );
             }
-        } );
+        }, dialogFit( 560 ) ) );
 
         // Open it. Keyboard as well as mouse: the icon is not a <button>, so
         // Enter and Space are not free.

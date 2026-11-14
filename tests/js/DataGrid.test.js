@@ -188,8 +188,42 @@ describe('the table', () => {
         const $rows = $root.find('tbody tr');
 
         expect($rows.first().hasClass('owa_gridTotal')).toBe(true);
-        expect(texts($rows.first().children())).toEqual(['Total', '100', '38.00%']);
+        expect(texts($rows.first().children())).toEqual(['', 'Total', '100', '38.00%']);
         expect(texts($root.find('tr.owa_gridRow td.owa_gridRowNum'))).toEqual(['1', '2', '3']);
+    });
+
+    /*
+     * Hiding the row numbers on a phone hides a whole column: the Total row
+     * has its own cell under them rather than a Total spanning both.
+     */
+    test('the Total row has a cell of its own under the row numbers', () => {
+        const { $root } = draw(resultSet({ dimensions: 'browserType,osName', rows: [
+            { browserType: cell('browserType', 'dimension', 'Chrome'), osName: cell('osName', 'dimension', 'Linux'),
+              sessions: cell('sessions', 'metric', 60), bounceRate: cell('bounceRate', 'metric', 0.4, '40.00%') },
+        ] }));
+        const $total = $root.find('tr.owa_gridTotal');
+
+        expect($total.children().first().is('td.owa_gridRowNum')).toBe(true);
+        expect($total.find('td.owa_gridDim').attr('colspan')).toBe('2');
+        expect($root.find('thead th').length).toBe($total.children().toArray()
+            .reduce((n, td) => n + Number(td.getAttribute('colspan') || 1), 0));
+    });
+
+    test('the first dimension column is the lead, in the heading, the Total and every row', () => {
+        const { $root } = draw(resultSet());
+
+        expect($root.find('thead th.owa_gridLead').attr('data-column')).toBe('browserType');
+        expect($root.find('tr.owa_gridTotal td.owa_gridLead').text()).toBe('Total');
+        expect(texts($root.find('tr.owa_gridRow td.owa_gridLead'))).toEqual(['Chrome', 'Firefox', 'Safari']);
+    });
+
+    test('the parts a test finds carry data-ui', () => {
+        const { $root } = draw(resultSet());
+
+        expect($root.find('[data-ui="grid"]').length).toBe(1);
+        expect($root.find('[data-ui="grid-scroll"] > .owa_gridScroll > table').length).toBe(1);
+        expect($root.find('[data-ui="grid-total"]').length).toBe(1);
+        expect($root.find('[data-ui="grid-row"]').length).toBe(3);
     });
 
     test('row numbers continue from the page before', () => {
@@ -1045,5 +1079,68 @@ describe('in a translated locale', () => {
 
         $root.find('.owa_gridRowActions').first().trigger('click');
         expect($('.owa_gridRowActionsMenu a').last().text()).toBe('Clics');
+    });
+});
+
+/*
+ * A table wider than its box shows a shadow on each side it runs past, from
+ * the scroll position: none when it fits, right at the start, both in the
+ * middle, left at the end.
+ */
+describe('the scroll cue', () => {
+
+    function sized(box, { scrollWidth, clientWidth, scrollLeft }) {
+        Object.defineProperty(box, 'scrollWidth', { configurable: true, value: scrollWidth });
+        Object.defineProperty(box, 'clientWidth', { configurable: true, value: clientWidth });
+        box.scrollLeft = scrollLeft;
+    }
+
+    const sides = (frame) => ['has-more-left', 'has-more-right'].filter((c) => frame.classList.contains(c));
+
+    test.each([
+        ['a table that fits', 300, 0, []],
+        ['at the start', 600, 0, ['has-more-right']],
+        ['in the middle', 600, 150, ['has-more-left', 'has-more-right']],
+        ['at the end', 600, 300, ['has-more-left']],
+    ])('%s', (name, scrollWidth, scrollLeft, expected) => {
+        const { $root } = draw(resultSet());
+        const frame = $root.find('.owa_gridScrollFrame')[0];
+        const box = frame.querySelector('.owa_gridScroll');
+
+        sized(box, { scrollWidth, clientWidth: 300, scrollLeft });
+        OWA.dataGrid.scrollCue(frame);
+
+        expect(sides(frame)).toEqual(expected);
+    });
+
+    test('scrolling the table moves the cue', () => {
+        const { $root } = draw(resultSet());
+        const frame = $root.find('.owa_gridScrollFrame')[0];
+        const box = frame.querySelector('.owa_gridScroll');
+
+        sized(box, { scrollWidth: 600, clientWidth: 300, scrollLeft: 0 });
+        OWA.dataGrid.scrollCue(frame);
+        expect(sides(frame)).toEqual(['has-more-right']);
+
+        box.scrollLeft = 300;
+        $(box).trigger('scroll');
+        expect(sides(frame)).toEqual(['has-more-left']);
+    });
+
+    test('the left shadow starts after a sticky lead column', () => {
+        const { $root } = draw(resultSet());
+        const frame = $root.find('.owa_gridScrollFrame')[0];
+        const lead = frame.querySelector('thead .owa_gridLead');
+
+        lead.style.position = 'sticky';
+        Object.defineProperty(lead, 'offsetWidth', { configurable: true, value: 120 });
+        OWA.dataGrid.scrollCue(frame);
+
+        expect(frame.style.getPropertyValue('--owa-grid-lead')).toBe('120px');
+
+        lead.style.position = '';
+        OWA.dataGrid.scrollCue(frame);
+
+        expect(frame.style.getPropertyValue('--owa-grid-lead')).toBe('0px');
     });
 });

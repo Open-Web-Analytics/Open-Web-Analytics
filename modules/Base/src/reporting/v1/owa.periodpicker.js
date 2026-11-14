@@ -546,7 +546,7 @@ PeriodPicker.prototype = {
         const a = this.applied;
         const badge = a.preset !== 'custom' ? '<span class="owa_periodBadge">' + esc( this.presetLabel( a.preset ) ) + '</span>' : '';
 
-        return '<button type="button" class="owa_periodTrigger" data-act="toggle" aria-haspopup="dialog" aria-expanded="' + ( this.draft ? 'true' : 'false' ) + '" aria-controls="' + this.uid + '">'
+        return '<button type="button" class="owa_periodTrigger" data-ui="period-trigger" data-act="toggle" aria-haspopup="dialog" aria-expanded="' + ( this.draft ? 'true' : 'false' ) + '" aria-controls="' + this.uid + '">'
             + '<span class="owa_periodTriggerMain">' + badge + '<span class="owa_periodTriggerRange">' + esc( formatRange( a.main[0], a.main[1] ) ) + '</span></span>'
             + ( a.cmpOn && a.cmp[0] ? '<span class="owa_periodTriggerCompare">' + esc( OWA.util.sprintf( OWA.l( 'Compare: %s' ), formatRange( a.cmp[0], a.cmp[1] ) ) ) + '</span>' : '' )
             + '<span class="owa_periodChevron" aria-hidden="true"></span></button>';
@@ -914,7 +914,7 @@ PeriodPicker.prototype = {
 
         const target = calendarTarget( this.draft, this.focus );
 
-        return '<div class="owa_periodPanel" id="' + this.uid + '" role="dialog" aria-label="' + esc( OWA.l( 'Date range' ) ) + '" tabindex="-1">'
+        return '<div class="owa_periodPanel" data-ui="period-panel" id="' + this.uid + '" role="dialog" aria-label="' + esc( OWA.l( 'Date range' ) ) + '" tabindex="-1">'
             + '<div class="owa_periodSheetHead">' + esc( OWA.l( 'Date range' ) ) + '<button type="button" data-act="cancel" aria-label="' + esc( OWA.l( 'Close' ) ) + '">×</button></div>'
             + '<div class="owa_periodBody"><div class="owa_periodLeft">' + this.listHtml() + '</div>'
             + '<div class="owa_periodRight">' + this.chipsHtml( false ) + this.fieldsHtml( target ) + this.calendarHtml( target ) + '</div></div>'
