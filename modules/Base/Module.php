@@ -308,13 +308,13 @@ class Module extends \OWA\Core\Module {
          * the same list.
          */
         foreach ( array(
-            array( 'base.profileObservation', 'Pages and domains',
+            array( 'base.profileObservation', \OWA\Core\CoreAPI::t( 'Pages and domains' ),
                 array( 'domain_aliases', 'query_string_filters' ) ),
-            array( 'base.profileCampaigns', 'Campaign parameters',
+            array( 'base.profileCampaigns', \OWA\Core\CoreAPI::t( 'Campaign parameters' ),
                 array( 'campaignKeys' ) ),
-            array( 'base.profilePrivacy', 'Privacy and exclusions',
+            array( 'base.profilePrivacy', \OWA\Core\CoreAPI::t( 'Privacy and exclusions' ),
                 array( 'anonymize_ips', 'excluded_ips', 'log_named_users' ) ),
-            array( 'base.profileAnnouncements', 'Visitor announcements',
+            array( 'base.profileAnnouncements', \OWA\Core\CoreAPI::t( 'Visitor announcements' ),
                 array( 'announce_visitors', 'notice_email' ) ),
         ) as $order => list( $id, $legend, $settings ) ) {
 
@@ -356,26 +356,26 @@ class Module extends \OWA\Core\Module {
          * show them as collapsed groups a person opens only for the one they want.
          */
         foreach ( array(
-            array( 'base.trackingPageViews', 'Page views',
-                'When the tracker sends a page view, and what identifies the page.',
+            array( 'base.trackingPageViews', \OWA\Core\CoreAPI::t( 'Page views' ),
+                \OWA\Core\CoreAPI::t( 'When the tracker sends a page view, and what identifies the page.' ),
                 array( 'tracker_page_views', 'tracker_route_changes', 'tracker_url_fragments' ) ),
-            array( 'base.trackingClicks', 'Clicks and downloads',
-                'Clicks on links and other elements, and which links count as downloads.',
+            array( 'base.trackingClicks', \OWA\Core\CoreAPI::t( 'Clicks and downloads' ),
+                \OWA\Core\CoreAPI::t( 'Clicks on links and other elements, and which links count as downloads.' ),
                 array( 'tracker_clicks', 'tracker_download_extensions' ) ),
-            array( 'base.trackingForms', 'Forms',
-                'A visitor starting and submitting a form.',
+            array( 'base.trackingForms', \OWA\Core\CoreAPI::t( 'Forms' ),
+                \OWA\Core\CoreAPI::t( 'A visitor starting and submitting a form.' ),
                 array( 'tracker_forms' ) ),
-            array( 'base.trackingScroll', 'Scroll depth',
-                'How far down each page visitors get.',
+            array( 'base.trackingScroll', \OWA\Core\CoreAPI::t( 'Scroll depth' ),
+                \OWA\Core\CoreAPI::t( 'How far down each page visitors get.' ),
                 array( 'tracker_scroll', 'tracker_scroll_thresholds' ) ),
-            array( 'base.trackingSearch', 'Site search',
-                'Searches made with your site’s own search box, read from the results page’s URL.',
+            array( 'base.trackingSearch', \OWA\Core\CoreAPI::t( 'Site search' ),
+                \OWA\Core\CoreAPI::t( 'Searches made with your site’s own search box, read from the results page’s URL.' ),
                 array( 'tracker_site_search', 'tracker_site_search_params' ) ),
-            array( 'base.trackingErrors', 'JavaScript errors',
-                'Uncaught errors in your pages’ scripts.',
+            array( 'base.trackingErrors', \OWA\Core\CoreAPI::t( 'JavaScript errors' ),
+                \OWA\Core\CoreAPI::t( 'Uncaught errors in your pages’ scripts.' ),
                 array( 'tracker_exceptions' ) ),
-            array( 'base.trackingVisit', 'Visits and cookies',
-                'How long the tracker’s cookies hold a visit and a visitor together, and the domain they are set on.',
+            array( 'base.trackingVisit', \OWA\Core\CoreAPI::t( 'Visits and cookies' ),
+                \OWA\Core\CoreAPI::t( 'How long the tracker’s cookies hold a visit and a visitor together, and the domain they are set on.' ),
                 array( 'tracker_session_cookie_days', 'tracker_visitor_cookie_days', 'tracker_cookie_domain' ) ),
         ) as $order => list( $id, $legend, $description, $settings ) ) {
 
@@ -829,7 +829,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerSettingsPage(array(
                 'do'             => 'base.optionsGeneral',
-                'title'          => 'General',
+                'title'          => \OWA\Core\CoreAPI::t( 'General' ),
                 'group'          => 'General',
                 'order'          => 1,
                 'fieldsets'      => array(
@@ -847,7 +847,7 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.tracking',
-            'legend'   => 'Tracking Request Processing',
+            'legend'   => \OWA\Core\CoreAPI::t( 'Tracking Request Processing' ),
             'settings' => array(
                 'spam_detection',
                 'spam_threshold',
@@ -861,13 +861,13 @@ class Module extends \OWA\Core\Module {
 
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.announcements',
-            'legend'   => 'Visitor Announcements',
+            'legend'   => \OWA\Core\CoreAPI::t( 'Visitor Announcements' ),
             'settings' => array( 'announce_visitors', 'notice_email' ),
         ) );
 
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.reporting',
-            'legend'   => 'Reporting',
+            'legend'   => \OWA\Core\CoreAPI::t( 'Reporting' ),
             'settings' => array( 'timezone', 'attribution_lookback_days' ),
         ) );
 
@@ -876,7 +876,7 @@ class Module extends \OWA\Core\Module {
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.restApi',
             'group'    => 'rest_api',
-            'legend'   => 'REST API',
+            'legend'   => \OWA\Core\CoreAPI::t( 'REST API' ),
             'settings' => array( 'app_passwords_enabled', 'app_passwords_require_https' ),
         ) );
 
@@ -884,7 +884,7 @@ class Module extends \OWA\Core\Module {
         // first of these deletes data, and that should not sit among routine settings.
         $this->registerSettingsPage( array(
                 'do'        => 'base.optionsRetention',
-                'title'     => 'Data retention',
+                'title'     => \OWA\Core\CoreAPI::t( 'Data retention' ),
                 'group'     => 'General',
                 'order'     => 6,
                 'fieldsets' => array( 'base.retention' ) )
@@ -892,9 +892,9 @@ class Module extends \OWA\Core\Module {
 
         $this->registerSettingsFieldSet( array(
             'id'       => 'base.retention',
-            'legend'   => 'Data Retention',
-            'description' => 'Each night\'s maintenance run (rotate-partitions) removes data outside these windows. '
-                . 'Every Property can set its own reporting window on its Data Retention page.',
+            'legend'   => \OWA\Core\CoreAPI::t( 'Data Retention' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Each night\'s maintenance run (rotate-partitions) removes data outside these windows. '
+                . 'Every Property can set its own reporting window on its Data Retention page.' ),
             'settings' => array( 'raw_retention_months', 'cube_retention_months' ),
         ) );
 
@@ -930,7 +930,7 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerSettingsPage(array(
                 'do'             => 'base.optionsModules',
-                'title'          => 'Modules',
+                'title'          => \OWA\Core\CoreAPI::t( 'Modules' ),
                 'group'          => 'General',
                 'order'          => 3)
         );
@@ -943,7 +943,7 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerSettingsPage(array(
                 'do'             => 'base.cubeStatus',
-                'title'          => 'Reporting cubes',
+                'title'          => \OWA\Core\CoreAPI::t( 'Reporting cubes' ),
                 'group'          => 'General',
                 'order'          => 4)
         );
@@ -951,7 +951,7 @@ class Module extends \OWA\Core\Module {
         // Is the background work happening: the scheduler, its jobs, the job queue, the tracker intake.
         $this->registerSettingsPage(array(
                 'do'             => 'base.systemHealth',
-                'title'          => 'System health',
+                'title'          => \OWA\Core\CoreAPI::t( 'System health' ),
                 'group'          => 'General',
                 'order'          => 5)
         );
@@ -1067,10 +1067,10 @@ class Module extends \OWA\Core\Module {
 
     function registerNavigation() {
 
-        $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), 'Dashboard', 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
+        $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), \OWA\Core\CoreAPI::t( 'Dashboard' ), 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
 
         // Second, after the dashboard.
-        $this->addNavigationSubGroup('Realtime', $this->reportRef( 'realtime' ), 'Realtime', 2, 'view_reports', 'Reports','fa fa-bolt');
+        $this->addNavigationSubGroup('Realtime', $this->reportRef( 'realtime' ), \OWA\Core\CoreAPI::t( 'Realtime' ), 2, 'view_reports', 'Reports','fa fa-bolt');
 
         /*
          * The custom report roster. Gated on view_reports rather than on
@@ -1078,7 +1078,7 @@ class Module extends \OWA\Core\Module {
          * sent one -- the roster is where they find what they have been given.
          */
         $this->addNavigationSubGroup('Custom Reports', array( 'do' => 'base.customReports' ),
-            'Custom Reports', 9, 'view_site_list', 'Reports', 'fa fa-sliders-h');
+            \OWA\Core\CoreAPI::t( 'Custom Reports' ), 9, 'view_site_list', 'Reports', 'fa fa-sliders-h');
 
         //Ecommerce
         /*
@@ -1104,11 +1104,11 @@ class Module extends \OWA\Core\Module {
          * claiming a weaker requirement than the group holding it is a
          * disagreement waiting to be read the wrong way.
          */
-        $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), 'Ecommerce', 6, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), 'Revenue', 2, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), 'Transactions', 3, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'avg-order-value' ), 'Average Order Value', 4, 'view_reports_ecommerce');
-        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'ecommerce-conversion-rate' ), 'Conversion Rate', 5, 'view_reports_ecommerce');
+        $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), \OWA\Core\CoreAPI::t( 'Ecommerce' ), 6, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), \OWA\Core\CoreAPI::t( 'Revenue' ), 2, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'transactions' ), \OWA\Core\CoreAPI::t( 'Transactions' ), 3, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'avg-order-value' ), \OWA\Core\CoreAPI::t( 'Average Order Value' ), 4, 'view_reports_ecommerce');
+        $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'ecommerce-conversion-rate' ), \OWA\Core\CoreAPI::t( 'Conversion Rate' ), 5, 'view_reports_ecommerce');
         /*
          * days-to-purchase and visits-to-purchase go with them. Each is one
          * dimension -- daysToTransaction, visitsToTransaction -- measuring the
@@ -1129,20 +1129,20 @@ class Module extends \OWA\Core\Module {
          */
 
         //Content
-        $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), 'Content', 5, 'view_reports', 'Reports','fa fa-newspaper');
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), 'Pages', 1);
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), 'Page Types', 2);
+        $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), \OWA\Core\CoreAPI::t( 'Content' ), 5, 'view_reports', 'Reports','fa fa-newspaper');
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), \OWA\Core\CoreAPI::t( 'Pages' ), 1);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), \OWA\Core\CoreAPI::t( 'Page Types' ), 2);
         /*
          * The Feeds link was here. Feed requests are not a v2 event -- the type
          * is refused at the door -- and nothing has written one since 2021. A
          * nav entry to a report with no data source is worse than no entry.
          */
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), 'Entry Pages', 3);
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), 'Exit Pages', 4);
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), 'Clicks', 5);
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'scroll-depth' ), 'Scroll Depth', 6);
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'site-search' ), 'Site Search', 7);
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'forms' ), 'Forms', 8);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), \OWA\Core\CoreAPI::t( 'Entry Pages' ), 3);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), \OWA\Core\CoreAPI::t( 'Exit Pages' ), 4);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), \OWA\Core\CoreAPI::t( 'Clicks' ), 5);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'scroll-depth' ), \OWA\Core\CoreAPI::t( 'Scroll Depth' ), 6);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'site-search' ), \OWA\Core\CoreAPI::t( 'Site Search' ), 7);
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'forms' ), \OWA\Core\CoreAPI::t( 'Forms' ), 8);
 
 
         /*
@@ -1160,31 +1160,31 @@ class Module extends \OWA\Core\Module {
          */
 
         //Visitors
-        $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), 'Visitors', 4, 'view_reports', 'Reports','fa fa-user-friends');
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'geolocation' ), 'Geo-location', 1);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'languages' ), 'Languages', 2);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-loyalty' ), 'Visitor Loyalty', 3);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'devices' ), 'Device Types', 4);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'screen-resolutions' ), 'Screen Resolutions', 5);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), 'Browser Types', 6);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), 'Operating Systems', 7);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'latest-visits' ), 'Latest Visits', 8);
-        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'events' ), 'Events', 9);
+        $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), \OWA\Core\CoreAPI::t( 'Visitors' ), 4, 'view_reports', 'Reports','fa fa-user-friends');
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'geolocation' ), \OWA\Core\CoreAPI::t( 'Geo-location' ), 1);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'languages' ), \OWA\Core\CoreAPI::t( 'Languages' ), 2);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'visitors-loyalty' ), \OWA\Core\CoreAPI::t( 'Visitor Loyalty' ), 3);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'devices' ), \OWA\Core\CoreAPI::t( 'Device Types' ), 4);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'screen-resolutions' ), \OWA\Core\CoreAPI::t( 'Screen Resolutions' ), 5);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'browsers' ), \OWA\Core\CoreAPI::t( 'Browser Types' ), 6);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'os' ), \OWA\Core\CoreAPI::t( 'Operating Systems' ), 7);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'latest-visits' ), \OWA\Core\CoreAPI::t( 'Latest Visits' ), 8);
+        $this->addNavigationLinkInSubGroup( 'Visitors', $this->reportRef( 'events' ), \OWA\Core\CoreAPI::t( 'Events' ), 9);
 
         //Traffic
-        $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), 'Traffic', 3, 'view_reports', 'Reports','fa fa-random');
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'channels' ), 'Channels', 0);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'user-acquisition' ), 'User Acquisition', 2);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'model-comparison' ), 'Model Comparison', 7);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'keywords' ), 'Search Terms', 1);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'search-engines' ), 'Search Engines', 3);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'referring-sites' ), 'Referring Web Sites', 4);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'campaigns' ), 'Campaigns', 5);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ads' ), 'Ad Performance', 6);
-        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'creative-performance' ), 'Creative Performance', 8);
+        $this->addNavigationSubGroup('Traffic', $this->reportRef( 'traffic' ), \OWA\Core\CoreAPI::t( 'Traffic' ), 3, 'view_reports', 'Reports','fa fa-random');
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'channels' ), \OWA\Core\CoreAPI::t( 'Channels' ), 0);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'user-acquisition' ), \OWA\Core\CoreAPI::t( 'User Acquisition' ), 2);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'model-comparison' ), \OWA\Core\CoreAPI::t( 'Model Comparison' ), 7);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'keywords' ), \OWA\Core\CoreAPI::t( 'Search Terms' ), 1);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'search-engines' ), \OWA\Core\CoreAPI::t( 'Search Engines' ), 3);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'referring-sites' ), \OWA\Core\CoreAPI::t( 'Referring Web Sites' ), 4);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'campaigns' ), \OWA\Core\CoreAPI::t( 'Campaigns' ), 5);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'ads' ), \OWA\Core\CoreAPI::t( 'Ad Performance' ), 6);
+        $this->addNavigationLinkInSubGroup( 'Traffic', $this->reportRef( 'creative-performance' ), \OWA\Core\CoreAPI::t( 'Creative Performance' ), 8);
 
         //Goals
-        $this->addNavigationSubGroup('Goals', $this->reportRef( 'goals' ), 'Goals', 7, 'view_reports', 'Reports','fa fa-bullseye');
+        $this->addNavigationSubGroup('Goals', $this->reportRef( 'goals' ), \OWA\Core\CoreAPI::t( 'Goals' ), 7, 'view_reports', 'Reports','fa fa-bullseye');
 
     }
 

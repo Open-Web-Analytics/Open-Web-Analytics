@@ -116,9 +116,9 @@ class VisualizationEdit extends \OWA\Core\ReportController {
             : (array) $report );
         $this->set( 'visualizationType', $type );
         $this->set( 'visualizationTypeLabel',
-            \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES[ $type ] ?? $type );
+            \OWA\Core\Strings::translate( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES[ $type ] ?? $type ) );
         $this->set( 'visualizationTypeHint',
-            \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $type ] ?? '' );
+            \OWA\Core\Strings::translate( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $type ] ?? '' ) );
         $this->set( 'visualizationTypeIcon',
             \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $type ] ?? '' );
 
@@ -365,7 +365,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
 
         $this->setSubview( 'base.visualizationEdit' );
         $this->setView( 'base.report' );
-        $this->set( 'title', $this->get( 'visualizationId' ) ? 'Funnel' : 'New funnel' );
+        $this->set( 'title', $this->get( 'visualizationId' ) ? \OWA\Core\CoreAPI::t( 'Funnel' ) : \OWA\Core\CoreAPI::t( 'New funnel' ) );
 
         /* A form is not a report of a time range. */
         $this->hideTimeControls();

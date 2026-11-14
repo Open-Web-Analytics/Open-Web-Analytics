@@ -28,12 +28,12 @@ return array(
             'storable'    => true,
             'autoload'    => true,
             'type'        => 'select',
-            'label'       => 'Database Edition',
+            'label'       => \OWA\Core\CoreAPI::t( 'Database Edition' ),
             'description' =>
-                'City resolves city, region and country. Country resolves only the '
+                \OWA\Core\CoreAPI::t( 'City resolves city, region and country. Country resolves only the '
               . 'country and is a fraction of the size, which is the better trade if '
               . 'your reports never go below country level. Changing this changes '
-              . 'which file is downloaded and which one is read, together.',
+              . 'which file is downloaded and which one is read, together.' ),
             'options'     => array( 'GeoLite2-City', 'GeoLite2-Country' ),
         ),
 
@@ -79,11 +79,11 @@ return array(
             'default'     => '',
             'storable'    => true,
             'type'        => 'text',
-            'label'       => 'Licence Key',
+            'label'       => \OWA\Core\CoreAPI::t( 'Licence Key' ),
             'description' =>
-                'The GeoLite2 databases are free, but MaxMind stopped allowing '
+                \OWA\Core\CoreAPI::t( 'The GeoLite2 databases are free, but MaxMind stopped allowing '
               . 'anonymous downloads at the end of 2019, so fetching one needs a key. '
-              . 'Creating a MaxMind account and a key costs nothing.',
+              . 'Creating a MaxMind account and a key costs nothing.' ),
         ),
     ),
 );

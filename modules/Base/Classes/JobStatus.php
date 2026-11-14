@@ -49,7 +49,7 @@ class JobStatus {
 
         if ( ! $job ) {
 
-            $out['reason'] = sprintf( 'No job named "%s" is registered.', $name );
+            $out['reason'] = sprintf( \OWA\Core\CoreAPI::t( 'No job named "%s" is registered.' ), $name );
 
             return $out;
         }
@@ -180,7 +180,7 @@ class JobStatus {
             // since been removed; config entries are refused before they get
             // this far.
             return sprintf(
-                'Names command "%s", which is not registered, so it can never run.', $job['command']
+                \OWA\Core\CoreAPI::t( 'Names command "%s", which is not registered, so it can never run.' ), $job['command']
             );
         }
 
@@ -192,22 +192,22 @@ class JobStatus {
         if ( $parsed === null ) {
 
             return sprintf(
-                'The schedule "%s" cannot be read, so this job will never run. It is deliberately '
-              . 'not given a default.', $job['schedule']
+                \OWA\Core\CoreAPI::t( 'The schedule "%s" cannot be read, so this job will never run. It is deliberately '
+              . 'not given a default.' ), $job['schedule']
             );
         }
 
         if ( $lock && (int) $lock['expires_at'] > $now ) {
 
-            return sprintf( 'Running now, since %s.', self::readable( $lock['acquired_at'] ) );
+            return sprintf( \OWA\Core\CoreAPI::t( 'Running now, since %s.' ), self::readable( $lock['acquired_at'] ) );
         }
 
         if ( $lock ) {
 
             return sprintf(
-                'A lock from %s is still present and its lease expired at %s -- the run holding it '
+                \OWA\Core\CoreAPI::t( 'A lock from %s is still present and its lease expired at %s -- the run holding it '
               . 'died. It will be taken over on the next tick, or drop it now with '
-              . 'cmd=schedule-run --force-release job=%s',
+              . 'cmd=schedule-run --force-release job=%s' ),
                 self::readable( $lock['acquired_at'] ), self::readable( $lock['expires_at'] ), $name
             );
         }
@@ -245,8 +245,8 @@ class JobStatus {
         if ( $row && (int) $row['last_finished_at'] && (int) $row['last_finished_at'] < (int) $row['last_run_at'] ) {
 
             return sprintf(
-                'Overdue by %s. The last run started %s and never finished -- a fatal error or the '
-              . 'process being killed, which nothing inside PHP could have caught.',
+                \OWA\Core\CoreAPI::t( 'Overdue by %s. The last run started %s and never finished -- a fatal error or the '
+              . 'process being killed, which nothing inside PHP could have caught.' ),
                 $late, self::readable( $row['last_run_at'] )
             );
         }
@@ -254,16 +254,16 @@ class JobStatus {
         if ( $row && (int) $row['last_failure_at'] > (int) $row['last_success_at'] ) {
 
             return sprintf(
-                'Overdue by %s. Failing since %s: %s. It is retried at every tick.',
-                $late, self::readable( $row['last_failure_at'] ), $row['last_message'] ?: 'no message recorded'
+                \OWA\Core\CoreAPI::t( 'Overdue by %s. Failing since %s: %s. It is retried at every tick.' ),
+                $late, self::readable( $row['last_failure_at'] ), $row['last_message'] ?: \OWA\Core\CoreAPI::t( 'no message recorded' )
             );
         }
 
         if ( $row && $row['last_status'] === 'refused' ) {
 
             return sprintf(
-                'Overdue by %s. The last run declined to act: %s',
-                $late, $row['last_message'] ?: 'no reason recorded'
+                \OWA\Core\CoreAPI::t( 'Overdue by %s. The last run declined to act: %s' ),
+                $late, $row['last_message'] ?: \OWA\Core\CoreAPI::t( 'no reason recorded' )
             );
         }
 
@@ -273,8 +273,8 @@ class JobStatus {
         if ( ! $ever ) {
 
             return sprintf(
-                'Overdue by %s, and no job has EVER recorded a run -- the dispatcher has not run at '
-              . 'all. That almost always means the cron entry is missing or wrong. Add:  %s',
+                \OWA\Core\CoreAPI::t( 'Overdue by %s, and no job has EVER recorded a run -- the dispatcher has not run at '
+              . 'all. That almost always means the cron entry is missing or wrong. Add:  %s' ),
                 $late, \OWA\Module\Base\Classes\SchedulerHealth::cronLine()
             );
         }
@@ -282,15 +282,15 @@ class JobStatus {
         if ( $last_activity && $now - $last_activity < self::MIN_GRACE ) {
 
             return sprintf(
-                'Overdue by %s, but another job ran at %s, so the dispatcher is alive. The problem '
-              . 'is specific to this job.',
+                \OWA\Core\CoreAPI::t( 'Overdue by %s, but another job ran at %s, so the dispatcher is alive. The problem '
+              . 'is specific to this job.' ),
                 $late, self::readable( $last_activity )
             );
         }
 
         return sprintf(
-            'Overdue by %s and nothing above explains it. The dispatcher does not appear to be '
-          . 'running -- the last activity of any kind was %s. Check the cron entry:  %s',
+            \OWA\Core\CoreAPI::t( 'Overdue by %s and nothing above explains it. The dispatcher does not appear to be '
+          . 'running -- the last activity of any kind was %s. Check the cron entry:  %s' ),
             $late, self::readable( $last_activity ),
             \OWA\Module\Base\Classes\SchedulerHealth::cronLine()
         );

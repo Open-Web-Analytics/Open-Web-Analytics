@@ -201,8 +201,8 @@ class WideIds {
 
         if ( $moved || $merged ) {
 
-            $this->report[] = sprintf( '%s: %d row(s) re-keyed to %d-bit ids%s.', $table, $moved, $wide ? 64 : 32,
-                $merged ? sprintf( ', %d duplicate(s) of a row already at its new id removed', $merged ) : '' );
+            $this->report[] = sprintf( '%s: %d %s re-keyed to %d-bit ids%s.', $table, $moved, \OWA\Core\Lib::plural( $moved, 'row', 'rows' ), $wide ? 64 : 32,
+                $merged ? sprintf( ', %d %s of a row already at its new id removed', $merged, \OWA\Core\Lib::plural( $merged, 'duplicate', 'duplicates' ) ) : '' );
         }
 
         return true;

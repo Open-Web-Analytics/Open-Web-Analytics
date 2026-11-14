@@ -65,9 +65,10 @@ class Update062 extends \OWA\Core\Update {
         if ( $queued['file_lines'] ) {
 
             $this->e->notice( sprintf(
-                'OWA 1.x queued %d beacon(s) to its file queue that were never ingested, and v2 cannot read them. '
-              . 'Process them on 1.x (php cli.php cmd=processEventQueue) until the queue is empty, then upgrade.',
-                $queued['file_lines'] ) );
+                'OWA 1.x queued %d %s to its file queue that %s never ingested, and v2 cannot read %s. '
+              . 'Process %s on 1.x (php cli.php cmd=processEventQueue) until the queue is empty, then upgrade.',
+                $queued['file_lines'], \OWA\Core\Lib::plural( $queued['file_lines'], 'beacon', 'beacons' ), \OWA\Core\Lib::plural( $queued['file_lines'], 'was', 'were' ),
+                \OWA\Core\Lib::plural( $queued['file_lines'], 'it', 'them' ), \OWA\Core\Lib::plural( $queued['file_lines'], 'it', 'them' ) ) );
 
             $this->awaiting = 'the 1.x file queue processed first';
 
@@ -77,8 +78,8 @@ class Update062 extends \OWA\Core\Update {
         if ( $queued['queue_rows'] ) {
 
             $this->e->notice( sprintf(
-                '%d failed event(s) awaiting retry in %squeue_item will be dropped with the table: v2 does not '
-              . 'retry v1 handler failures.', $queued['queue_rows'], $this->prefix ) );
+                '%d failed %s awaiting retry in %squeue_item will be dropped with the table: v2 does not '
+              . 'retry v1 handler failures.', $queued['queue_rows'], \OWA\Core\Lib::plural( $queued['queue_rows'], 'event', 'events' ), $this->prefix ) );
         }
 
         if ( ! $this->hasV1() ) {

@@ -34,7 +34,7 @@ class InstallDefaultsEntry extends \OWA\Core\View {
     function render($data) {
 
         // page title
-        $this->t->set('page_title', 'OWA User / Site Setup');
+        $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'OWA User / Site Setup' ));
         // set defaults
         $this->body->set('defaults', $this->get('defaults'));
         $this->body->set( 'db_server', (string) $this->get( 'db_server' ) );

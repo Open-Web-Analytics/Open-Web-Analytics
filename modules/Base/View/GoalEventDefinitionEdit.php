@@ -10,7 +10,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\View {
         $definition = (array) $this->get( 'goalEventDefinition' );
 
         $this->body->set( 'headline',
-            ! empty( $definition['id'] ) ? 'Goal Event Definition' : 'New Goal Event Definition' );
+            ! empty( $definition['id'] ) ? \OWA\Core\CoreAPI::t( 'Goal Event Definition' ) : \OWA\Core\CoreAPI::t( 'New Goal Event Definition' ) );
 
         $this->body->set( 'goalEventDefinition', $definition );
         $this->body->set( 'goalEventDefinitionId', $this->get( 'goalEventDefinitionId' ) );

@@ -478,19 +478,19 @@ class TimePeriod {
 
         return array(
 
-                    'today'            => array('label' => 'Today', 'covers' => 'Today'),
-                    'yesterday'        => array('label' => 'Yesterday', 'covers' => 'Yesterday'),
-                    'this_week'        => array('label' => 'This week (Sun – today)', 'covers' => 'Sunday of the current week to today'),
-                    'last_seven_days'  => array('label' => 'Last 7 days', 'covers' => 'Today and the six days before it'),
-                    'last_week'        => array('label' => 'Last week (Sun – Sat)', 'covers' => 'Sunday to Saturday of the previous week'),
-                    'last_28_days'     => array('label' => 'Last 28 days', 'covers' => 'Today and the 27 days before it'),
-                    'last_thirty_days' => array('label' => 'Last 30 days', 'covers' => 'Today and the 29 days before it'),
-                    'this_month'       => array('label' => 'This month', 'covers' => 'The 1st of the current month to today'),
-                    'last_month'       => array('label' => 'Last month', 'covers' => 'The previous calendar month'),
-                    'last_90_days'     => array('label' => 'Last 90 days', 'covers' => 'Today and the 89 days before it'),
-                    'quarter_to_date'  => array('label' => 'Quarter to date', 'covers' => 'The first day of the current quarter to today'),
-                    'this_year'        => array('label' => 'This year (Jan – today)', 'covers' => '1 January of the current year to today'),
-                    'last_year'        => array('label' => 'Last calendar year', 'covers' => 'The previous calendar year'),
+                    'today'            => array('label' => \OWA\Core\CoreAPI::t( 'Today' ), 'covers' => 'Today'),
+                    'yesterday'        => array('label' => \OWA\Core\CoreAPI::t( 'Yesterday' ), 'covers' => 'Yesterday'),
+                    'this_week'        => array('label' => \OWA\Core\CoreAPI::t( 'This week (Sun – today)' ), 'covers' => 'Sunday of the current week to today'),
+                    'last_seven_days'  => array('label' => \OWA\Core\CoreAPI::t( 'Last 7 days' ), 'covers' => 'Today and the six days before it'),
+                    'last_week'        => array('label' => \OWA\Core\CoreAPI::t( 'Last week (Sun – Sat)' ), 'covers' => 'Sunday to Saturday of the previous week'),
+                    'last_28_days'     => array('label' => \OWA\Core\CoreAPI::t( 'Last 28 days' ), 'covers' => 'Today and the 27 days before it'),
+                    'last_thirty_days' => array('label' => \OWA\Core\CoreAPI::t( 'Last 30 days' ), 'covers' => 'Today and the 29 days before it'),
+                    'this_month'       => array('label' => \OWA\Core\CoreAPI::t( 'This month' ), 'covers' => 'The 1st of the current month to today'),
+                    'last_month'       => array('label' => \OWA\Core\CoreAPI::t( 'Last month' ), 'covers' => 'The previous calendar month'),
+                    'last_90_days'     => array('label' => \OWA\Core\CoreAPI::t( 'Last 90 days' ), 'covers' => 'Today and the 89 days before it'),
+                    'quarter_to_date'  => array('label' => \OWA\Core\CoreAPI::t( 'Quarter to date' ), 'covers' => 'The first day of the current quarter to today'),
+                    'this_year'        => array('label' => \OWA\Core\CoreAPI::t( 'This year (Jan – today)' ), 'covers' => '1 January of the current year to today'),
+                    'last_year'        => array('label' => \OWA\Core\CoreAPI::t( 'Last calendar year' ), 'covers' => 'The previous calendar year'),
         );
 
     }

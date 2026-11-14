@@ -61,11 +61,11 @@ class EnvironmentCheck {
         $checks = array();
 
         $checks[] = self::check(
-            'PHP version',
+            \OWA\Core\CoreAPI::t( 'PHP version' ),
             phpversion(),
             version_compare( phpversion(), self::MIN_PHP_VERSION, '>=' ),
-            sprintf( 'OWA needs PHP %s or newer. Ask your host to upgrade, or point '
-                   . 'this virtual host at a newer PHP.', self::MIN_PHP_VERSION ),
+            sprintf( \OWA\Core\CoreAPI::t( 'OWA needs PHP %s or newer. Ask your host to upgrade, or point '
+                   . 'this virtual host at a newer PHP.' ), self::MIN_PHP_VERSION ),
             sprintf( 'PHP is %s or later.', self::MIN_PHP_VERSION ) );
 
         $checks[] = self::integerSize( PHP_INT_SIZE );
@@ -79,24 +79,24 @@ class EnvironmentCheck {
         foreach ( self::REQUIRED_EXTENSIONS as $extension => $what_for ) {
 
             $checks[] = self::check(
-                sprintf( 'PHP extension: %s', $extension ),
-                extension_loaded( $extension ) ? 'loaded' : 'missing',
+                sprintf( \OWA\Core\CoreAPI::t( 'PHP extension: %s' ), $extension ),
+                extension_loaded( $extension ) ? \OWA\Core\CoreAPI::t( 'loaded' ) : \OWA\Core\CoreAPI::t( 'missing' ),
                 extension_loaded( $extension ),
-                $what_for . ' Install the ' . $extension . ' extension and restart PHP.',
+                sprintf( \OWA\Core\CoreAPI::t( '%1$s Install the %2$s extension and restart PHP.' ), $what_for, $extension ),
                 sprintf( '`%s` is loaded.', $extension ) );
         }
 
         // Where OWA writes.
-        foreach ( array( 'logs' => 'Log directory', 'caches' => 'Cache directory' )
+        foreach ( array( 'logs' => \OWA\Core\CoreAPI::t( 'Log directory' ), 'caches' => \OWA\Core\CoreAPI::t( 'Cache directory' ) )
                   as $dir => $label ) {
 
             $path = OWA_DATA_DIR . $dir . '/';
 
             $checks[] = self::check(
                 $label,
-                is_writable( $path ) ? 'writable' : 'not writable',
+                is_writable( $path ) ? \OWA\Core\CoreAPI::t( 'writable' ) : \OWA\Core\CoreAPI::t( 'not writable' ),
                 is_writable( $path ),
-                sprintf( 'Make %s writable by the user your web server runs as.', $path ),
+                sprintf( \OWA\Core\CoreAPI::t( 'Make %s writable by the user your web server runs as.' ), $path ),
                 sprintf( '`%s` is writable.', substr( $path, strlen( OWA_DIR ) ) ) );
         }
 
@@ -115,33 +115,33 @@ class EnvironmentCheck {
             : is_writable( $config_dir );
 
         $checks[] = self::check(
-            'Configuration file',
+            \OWA\Core\CoreAPI::t( 'Configuration file' ),
             file_exists( $config_file )
-                ? ( is_readable( $config_file ) ? 'present' : 'present, not readable' )
-                : ( is_writable( $config_dir ) ? 'can be created' : 'cannot be created' ),
+                ? ( is_readable( $config_file ) ? \OWA\Core\CoreAPI::t( 'present' ) : \OWA\Core\CoreAPI::t( 'present, not readable' ) )
+                : ( is_writable( $config_dir ) ? \OWA\Core\CoreAPI::t( 'can be created' ) : \OWA\Core\CoreAPI::t( 'cannot be created' ) ),
             $config_ok,
             file_exists( $config_file )
-                ? sprintf( 'Make %s readable by the user your web server runs as.', $config_file )
-                : sprintf( 'Make %s writable so the installer can create owa-config.php, or '
-                         . 'copy owa-config-dist.php to owa-config.php yourself and fill it in.',
+                ? sprintf( \OWA\Core\CoreAPI::t( 'Make %s readable by the user your web server runs as.' ), $config_file )
+                : sprintf( \OWA\Core\CoreAPI::t( 'Make %s writable so the installer can create owa-config.php, or '
+                         . 'copy owa-config-dist.php to owa-config.php yourself and fill it in.' ),
                            $config_dir ),
             '`owa-config.php` exists and is readable, or its directory is writable so the installer can create it.' );
 
         // The two directories a source checkout does not come with.
         $checks[] = self::check(
-            'Dependencies',
-            is_dir( OWA_VENDOR_DIR ) ? 'installed' : 'missing',
+            \OWA\Core\CoreAPI::t( 'Dependencies' ),
+            is_dir( OWA_VENDOR_DIR ) ? \OWA\Core\CoreAPI::t( 'installed' ) : \OWA\Core\CoreAPI::t( 'missing' ),
             is_dir( OWA_VENDOR_DIR ),
-            "Run 'composer install' in the top level OWA directory.",
+            \OWA\Core\CoreAPI::t( "Run 'composer install' in the top level OWA directory." ),
             '`vendor/` exists.' );
 
         $built = \OWA\Core\Template::assetsAreBuilt();
 
         $checks[] = self::check(
-            'Built assets',
-            $built ? 'built' : 'missing',
+            \OWA\Core\CoreAPI::t( 'Built assets' ),
+            $built ? \OWA\Core\CoreAPI::t( 'built' ) : \OWA\Core\CoreAPI::t( 'missing' ),
             $built,
-            "Run 'npm run build' in the top level OWA directory.",
+            \OWA\Core\CoreAPI::t( "Run 'npm run build' in the top level OWA directory." ),
             'The JavaScript and CSS have been built.' );
 
         return $checks;
@@ -157,7 +157,7 @@ class EnvironmentCheck {
     public static function integerSize( $int_size ) {
 
         return self::check(
-            '64-bit PHP',
+            \OWA\Core\CoreAPI::t( '64-bit PHP' ),
             ( (int) $int_size * 8 ) . '-bit',
             (int) $int_size === 8,
             \OWA\Core\CoreAPI::t( 'OWA needs a 64-bit build of PHP. Install a 64-bit PHP and point this virtual host at it.' ),
@@ -220,8 +220,8 @@ class EnvironmentCheck {
         }
 
         return self::check(
-            'Database driver',
-            $found ? implode( ', ', $found ) : 'none found',
+            \OWA\Core\CoreAPI::t( 'Database driver' ),
+            $found ? implode( ', ', $found ) : \OWA\Core\CoreAPI::t( 'none found' ),
             $passed,
             $msg,
             '`pdo_mysql`, or `mysqli` built with mysqlnd, is loaded.' );

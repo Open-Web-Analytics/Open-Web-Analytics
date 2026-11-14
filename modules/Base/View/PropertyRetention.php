@@ -11,8 +11,8 @@ class PropertyRetention extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Data Retention' );
-        $this->body->set( 'headline', 'Data Retention' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'Data Retention' ) );
+        $this->body->set( 'headline', \OWA\Core\CoreAPI::t( 'Data Retention' ) );
         $this->body->set_template( 'property_retention.php' );
         $this->body->set( 'property', $this->get( 'property' ) );
         $this->body->set( 'propertyId', $this->get( 'propertyId' ) );

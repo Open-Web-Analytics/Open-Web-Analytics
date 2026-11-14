@@ -16,7 +16,7 @@ class MyProfile extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Profile' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'Profile' ) );
 
         $this->body->set_template( 'my_profile.php' );
 

@@ -1138,7 +1138,7 @@ class Controller extends \OWA\Core\Base {
         $nav['My Preferences'] = array(
             array(
                 'do'         => 'base.myProfile',
-                'label'      => 'User profile',
+                'label'      => \OWA\Core\CoreAPI::t( 'User profile' ),
                 'params'     => array(),
                 // What admin, analyst and viewer all carry and nothing else
                 // does -- the capability that means "signed in".
@@ -1146,7 +1146,7 @@ class Controller extends \OWA\Core\Base {
             ),
             array(
                 'do'         => 'base.myAppPasswords',
-                'label'      => 'Application passwords',
+                'label'      => \OWA\Core\CoreAPI::t( 'Application passwords' ),
                 'params'     => array(),
                 'capability' => 'view_site_list',
             ),
@@ -1181,28 +1181,28 @@ class Controller extends \OWA\Core\Base {
         }
 
         $nav['Organization'] = array(
-            array( 'do' => 'base.organizationProfile', 'label' => 'Details', 'params' => array(),
+            array( 'do' => 'base.organizationProfile', 'label' => \OWA\Core\CoreAPI::t( 'Details' ), 'params' => array(),
                    'capability' => 'edit_settings' ),
             /*
              * User accounts live in the Organization, which is why Users is
              * here and not in the install settings nav -- that put the people
              * belonging to an Organization somewhere that never named one.
              */
-            array( 'do' => 'base.users', 'label' => 'Users', 'params' => array(),
+            array( 'do' => 'base.users', 'label' => \OWA\Core\CoreAPI::t( 'Users' ), 'params' => array(),
                    'capability' => 'edit_users' ),
         );
 
         if ( $propertyId ) {
 
             $nav['Property'] = array(
-                array( 'do' => 'base.propertyProfile', 'label' => 'Details',
+                array( 'do' => 'base.propertyProfile', 'label' => \OWA\Core\CoreAPI::t( 'Details' ),
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_sites' ),
                 /*
                  * Goal event definitions describe a behaviour on the WEBSITE,
                  * so they belong here and every Profile of it inherits them.
                  */
-                array( 'do' => 'base.goalEventDefinitions', 'label' => 'Goal event definitions',
+                array( 'do' => 'base.goalEventDefinitions', 'label' => \OWA\Core\CoreAPI::t( 'Goal event definitions' ),
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_settings' ),
                 /*
@@ -1211,10 +1211,10 @@ class Controller extends \OWA\Core\Base {
                  * registration adds is the Property's and two Properties may
                  * use the same key for different things.
                  */
-                array( 'do' => 'base.customDimensions', 'label' => 'Custom dimensions',
+                array( 'do' => 'base.customDimensions', 'label' => \OWA\Core\CoreAPI::t( 'Custom dimensions' ),
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_settings' ),
-                array( 'do' => 'base.propertyRetention', 'label' => 'Data retention',
+                array( 'do' => 'base.propertyRetention', 'label' => \OWA\Core\CoreAPI::t( 'Data retention' ),
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_settings' ),
                 /*
@@ -1222,7 +1222,7 @@ class Controller extends \OWA\Core\Base {
                  * it, so it belongs to the Property. Stored per Profile;
                  * PropertyGrants reads and writes it across all of them.
                  */
-                array( 'do' => 'base.propertyAccess', 'label' => 'Access',
+                array( 'do' => 'base.propertyAccess', 'label' => \OWA\Core\CoreAPI::t( 'Access' ),
                        'params' => array( 'propertyId' => $propertyId ),
                        'capability' => 'edit_sites' ),
             );
@@ -1255,7 +1255,7 @@ class Controller extends \OWA\Core\Base {
 
             $nav['Profiles'][] = array(
                 'do'         => 'base.sitesProfile',
-                'label'      => 'Add profile',
+                'label'      => \OWA\Core\CoreAPI::t( 'Add profile' ),
                 'params'     => array( 'propertyId' => $propertyId ),
                 'capability' => 'edit_sites',
             );
@@ -1270,7 +1270,7 @@ class Controller extends \OWA\Core\Base {
         if ( $siteId ) {
 
             $nav['Observation Profile'] = array(
-                array( 'do' => 'base.sitesInvocation', 'label' => 'Tracking tag',
+                array( 'do' => 'base.sitesInvocation', 'label' => \OWA\Core\CoreAPI::t( 'Tracking tag' ),
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_sites' ),
                 /*
@@ -1278,10 +1278,10 @@ class Controller extends \OWA\Core\Base {
                  * watches the site is its own screen rather than a second form
                  * stacked under its name.
                  */
-                array( 'do' => 'base.profileSettings', 'label' => 'Observation settings',
+                array( 'do' => 'base.profileSettings', 'label' => \OWA\Core\CoreAPI::t( 'Observation settings' ),
                        'params' => array( 'siteId' => $siteId ),
                        'capability' => 'edit_sites' ),
-                array( 'do' => 'base.sitesProfile', 'label' => 'Details',
+                array( 'do' => 'base.sitesProfile', 'label' => \OWA\Core\CoreAPI::t( 'Details' ),
                        'params' => array( 'siteId' => $siteId, 'edit' => true ),
                        'capability' => 'edit_sites' ),
             );
@@ -1533,7 +1533,7 @@ class Controller extends \OWA\Core\Base {
 
             $properties['__unassigned'] = array(
                 'id'       => '',
-                'name'     => 'Unassigned',
+                'name'     => \OWA\Core\CoreAPI::t( 'Unassigned' ),
                 'domain'   => '',
                 'profiles' => $unassigned,
             );

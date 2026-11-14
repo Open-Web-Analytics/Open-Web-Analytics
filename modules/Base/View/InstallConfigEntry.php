@@ -36,7 +36,7 @@ class InstallConfigEntry extends \OWA\Core\View {
     function render($data) {
 
         //page title
-        $this->t->set('page_title', 'Configuration File Generator');
+        $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'Configuration File Generator' ));
         // load body template. On the first render there is no submitted config
         // yet ($this->get('config') is false); default to an empty array so the
         // template's $config['db_host'] etc. don't warn on a bool offset. When a

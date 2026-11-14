@@ -6,7 +6,7 @@ class ProfileSettings extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Observation Settings' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'Observation Settings' ) );
         $this->body->set_template( 'profile_settings.php' );
         $this->body->set( 'site', $this->get( 'site' ) );
         $this->body->set( 'posted', $this->get( 'posted' ) );

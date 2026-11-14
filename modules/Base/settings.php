@@ -66,11 +66,11 @@ return array(
             // Per Profile, on its Observation Settings screen.
             'scopes'   => array( 'install', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Announce New Visitors Via E-mail',
+            'label'    => \OWA\Core\CoreAPI::t( 'Announce New Visitors Via E-mail' ),
             'description' =>
-                'Announces each new visitor to your web site via e-mail. If you have '
+                \OWA\Core\CoreAPI::t( 'Announces each new visitor to your web site via e-mail. If you have '
                 . 'a lot of visitors then you probably want to keep this feature turned '
-                . 'off.',
+                . 'off.' ),
         ),
         'anonymize_ips' => array(
             'default'  => false,
@@ -79,10 +79,10 @@ return array(
             // Per Profile, on its Observation Settings screen.
             'scopes'   => array( 'install', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Anonymize IP Addresses',
+            'label'    => \OWA\Core\CoreAPI::t( 'Anonymize IP Addresses' ),
             'description' =>
-                'Anonymizes the IP addresses of visitors by removing the last octet '
-                . 'from their IP address.',
+                \OWA\Core\CoreAPI::t( 'Anonymizes the IP addresses of visitors by removing the last octet '
+                . 'from their IP address.' ),
         ),
         'app_passwords_enabled' => array(
             'default'  => true,
@@ -90,11 +90,11 @@ return array(
             'autoload' => true,
             'scopes'   => array( 'install' ),
             'type'     => 'boolean',
-            'label'    => 'Allow Application Passwords',
+            'label'    => \OWA\Core\CoreAPI::t( 'Allow Application Passwords' ),
             'description' =>
-                'Whether REST API requests can authenticate with an application password, which each user '
+                \OWA\Core\CoreAPI::t( 'Whether REST API requests can authenticate with an application password, which each user '
                 . 'makes under My Preferences. Off refuses every one; the passwords are kept and work again '
-                . 'when it is turned back on. The legacy API key is not affected.',
+                . 'when it is turned back on. The legacy API key is not affected.' ),
         ),
         'app_passwords_require_https' => array(
             'default'  => true,
@@ -102,10 +102,10 @@ return array(
             'autoload' => true,
             'scopes'   => array( 'install' ),
             'type'     => 'boolean',
-            'label'    => 'Application Passwords Need HTTPS',
+            'label'    => \OWA\Core\CoreAPI::t( 'Application Passwords Need HTTPS' ),
             'description' =>
-                'Whether an application password is refused on a request that did not arrive over HTTPS. '
-                . 'Turn off only on a development install without TLS.',
+                \OWA\Core\CoreAPI::t( 'Whether an application password is refused on a request that did not arrive over HTTPS. '
+                . 'Turn off only on a development install without TLS.' ),
         ),
         'archive_old_events' => array( 'default' => true, 'description' => 'Whether the file event queue moves a processed batch file to its archive directory instead of deleting it. On by default.' ),
         'assets_url' => array( 'default' => '', 'internal' => true ),
@@ -130,11 +130,11 @@ return array(
             'type'     => 'integer',
             'min'      => 0,
             'max'      => 365,
-            'label'    => 'Attribution lookback (days)',
+            'label'    => \OWA\Core\CoreAPI::t( 'Attribution lookback (days)' ),
             'description' =>
-                'How far back a session that arrives directly takes the visitor&rsquo;s last '
+                \OWA\Core\CoreAPI::t( 'How far back a session that arrives directly takes the visitor&rsquo;s last '
                 . 'campaign, search or referral visit as its attributed source. A change reaches '
-                . 'past reports when their days are rebuilt (cube-rebuild).',
+                . 'past reports when their days are rebuilt (cube-rebuild).' ),
         ),
         'currencyISO3' => array(
             'default'  => 'USD',
@@ -146,10 +146,10 @@ return array(
             'type'     => 'text',
             'pattern'  => '/^[A-Za-z]{3}$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Currency is a three-letter ISO 4217 code, such as USD.' ),
-            'label'    => 'Currency',
+            'label'    => \OWA\Core\CoreAPI::t( 'Currency' ),
             'description' =>
-                'The ISO 4217 code revenue is recorded and reported in, such as USD or EUR. '
-                . 'A purchase that names no currency is recorded in this one.',
+                \OWA\Core\CoreAPI::t( 'The ISO 4217 code revenue is recorded and reported in, such as USD or EUR. '
+                . 'A purchase that names no currency is recorded in this one.' ),
         ),
         // RETENTION (Classes\Retention). Months; not set keeps everything. Read by
         // partition-rotate, which drops whole partitions outside the window.
@@ -164,11 +164,11 @@ return array(
             'min'      => 1,
             'max'      => 1200,
             'blank'    => 'Keep everything',
-            'label'    => 'Keep event data (months)',
+            'label'    => \OWA\Core\CoreAPI::t( 'Keep event data (months)' ),
             'description' =>
-                'How many months of tracked events to keep. Older months are deleted at the next '
+                \OWA\Core\CoreAPI::t( 'How many months of tracked events to keep. Older months are deleted at the next '
                 . 'daily maintenance run and <strong>cannot be recovered</strong>. Reporting data '
-                . 'can never reach further back than this. Leave blank to keep everything.',
+                . 'can never reach further back than this. Leave blank to keep everything.' ),
         ),
         'cube_retention_months' => array(
             // No value is the same window as event data.
@@ -181,11 +181,11 @@ return array(
             'min'      => 1,
             'max'      => 1200,
             'blank'    => 'Same as event data',
-            'label'    => 'Keep reporting data (months)',
+            'label'    => \OWA\Core\CoreAPI::t( 'Keep reporting data (months)' ),
             'description' =>
-                'How many months reports can show. Shortening it removes older months from reports '
+                \OWA\Core\CoreAPI::t( 'How many months reports can show. Shortening it removes older months from reports '
                 . 'only: they are rebuilt from the event data if it is lengthened again, as far back '
-                . 'as event data is kept. Leave blank to keep as much as event data.',
+                . 'as event data is kept. Leave blank to keep as much as event data.' ),
         ),
         'currencyLocal' => array( 'default' => 'en_US', 'description' => 'The locale revenue is formatted with in reports, such as en_US.' ),
         'db_force_new_connections' => array( 'default' => true ),
@@ -233,10 +233,10 @@ return array(
             // Per Profile, on its Observation Settings screen.
             'scopes'   => array( 'install', 'profile' ),
             'type'     => 'text',
-            'label'    => 'Domain Aliases',
+            'label'    => \OWA\Core\CoreAPI::t( 'Domain Aliases' ),
             'description' =>
-                'Other domain names to treat as this one. If the domain is www.mydomain.com, '
-                . 'an alias of mydomain.com counts both as the same. Separate aliases with commas.',
+                \OWA\Core\CoreAPI::t( 'Other domain names to treat as this one. If the domain is www.mydomain.com, '
+                . 'an alias of mydomain.com counts both as the same. Separate aliases with commas.' ),
         ),
         'enableEcommerceReporting' => array(
             'default'  => false,
@@ -244,8 +244,8 @@ return array(
             // Not per Profile: a report is of a Property, and covers them all.
             'scopes'   => array( 'install', 'property' ),
             'type'     => 'boolean',
-            'label'    => 'e-commerce Reporting',
-            'description' => 'Adds e-commerce metrics to reports.',
+            'label'    => \OWA\Core\CoreAPI::t( 'e-commerce Reporting' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Adds e-commerce metrics to reports.' ),
         ),
         'error_log_file' => array( 'default' => '', 'description' => 'The path of OWA\'s error log. Empty uses a file in owa-data/logs/ named errors_ followed by a hash of the instance.' ),
         'excluded_ips' => array(
@@ -255,10 +255,10 @@ return array(
             // Per Profile, on its Observation Settings screen.
             'scopes'   => array( 'install', 'profile' ),
             'type'     => 'text',
-            'label'    => 'Excluded IP Addresses',
+            'label'    => \OWA\Core\CoreAPI::t( 'Excluded IP Addresses' ),
             'description' =>
-                'Enter a comma-separated list of the IP addresses that you wish to '
-                . 'exclude from tracking.',
+                \OWA\Core\CoreAPI::t( 'Enter a comma-separated list of the IP addresses that you wish to '
+                . 'exclude from tracking.' ),
         ),
         'feed_subscription_param' => array( 'default' => 'sid', 'description' => 'The name, after the ns prefix, of the URL parameter that carries a feed subscriber id. It is removed from page URLs before they are stored. Default sid (owa_sid).' ),
         'geolocation_lookup' => array( 'default' => false, 'description' => 'Whether OWA resolves a location from each visitor\'s IP address. Turned on by the Maxmind GeoIP module when it is active.' ),
@@ -290,9 +290,9 @@ return array(
             // Per Profile, on its Observation Settings screen.
             'scopes'   => array( 'install', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Log Requests From Named Users',
+            'label'    => \OWA\Core\CoreAPI::t( 'Log Requests From Named Users' ),
             'description' =>
-                'Controls the logging of requests made by named users.',
+                \OWA\Core\CoreAPI::t( 'Controls the logging of requests made by named users.' ),
         ),
         // Set by Update084 when it turned log_robots into a blank spam_threshold, so its
         // down() can put the log_robots rows and the spam_threshold row back as they were.
@@ -324,9 +324,9 @@ return array(
             // Per Profile, on its Observation Settings screen.
             'scopes'   => array( 'install', 'profile' ),
             'type'     => 'text',
-            'label'    => 'Notice E-mail Address',
+            'label'    => \OWA\Core\CoreAPI::t( 'Notice E-mail Address' ),
             'description' =>
-                'The e-mail address new visit announcements are sent to. Separate several with commas.',
+                \OWA\Core\CoreAPI::t( 'The e-mail address new visit announcements are sent to. Separate several with commas.' ),
             /*
              * Checked on save, because it is read during ingest: an address
              * the mailer refuses is skipped there (Mailer::addAddress()), and
@@ -364,11 +364,11 @@ return array(
             'storable' => true,
             'scopes'   => array( 'install', 'property' ),
             'type'     => 'boolean',
-            'label'    => 'Read utm_ Campaign Parameters',
+            'label'    => \OWA\Core\CoreAPI::t( 'Read utm_ Campaign Parameters' ),
             'description' =>
-                'Reads utm_source, utm_medium, utm_campaign, utm_term and utm_content from a '
+                \OWA\Core\CoreAPI::t( 'Reads utm_source, utm_medium, utm_campaign, utm_term and utm_content from a '
                 . 'landing URL as well as OWA&rsquo;s own owa_ parameters. When a URL carries '
-                . 'both, the owa_ value is used. Applies to visits recorded after the change.',
+                . 'both, the owa_ value is used. Applies to visits recorded after the change.' ),
         ),
         /*
          * On the Property screen beside campaignUtmParams, and on the Profile's
@@ -381,11 +381,11 @@ return array(
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'map',
             'keys'     => array_keys( \OWA\Module\Base\Classes\TrackingEventHelpers::CAMPAIGN_KEYS ),
-            'label'    => 'Campaign Parameter Names',
+            'label'    => \OWA\Core\CoreAPI::t( 'Campaign Parameter Names' ),
             'description' =>
-                'Renames the URL parameters campaign tags are read from, as role=parameter pairs separated '
+                \OWA\Core\CoreAPI::t( 'Renames the URL parameters campaign tags are read from, as role=parameter pairs separated '
                 . 'by commas, such as source=src, medium=channel. The roles are source, medium, campaign, '
-                . 'search_terms and ad; a role not named keeps its ns-prefixed name, such as owa_source.',
+                . 'search_terms and ad; a role not named keeps its ns-prefixed name, such as owa_source.' ),
         ),
         'owa_news_url' => array( 'default' => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5', 'description' => 'The URL fetch-notifications reads OWA release notifications from.' ),
         'owa_user_agent' => array( 'default' => 'Open Web Analytics Bot master', 'description' => 'The User-Agent header OWA sends on its own outbound HTTP requests.' ),
@@ -402,13 +402,13 @@ return array(
             // Per Profile, on its Observation Settings screen.
             'scopes'   => array( 'install', 'profile' ),
             'type'     => 'text',
-            'label'    => 'URL Parameters',
+            'label'    => \OWA\Core\CoreAPI::t( 'URL Parameters' ),
             'description' =>
-                'URL parameters OWA removes before storing a page\'s URL, its referring URL '
+                \OWA\Core\CoreAPI::t( 'URL parameters OWA removes before storing a page\'s URL, its referring URL '
                 . 'and a clicked link\'s URL, and leaves out of the page query string reports '
                 . 'group by. Use it for session, state or personal parameters in your URLs. '
                 . 'Campaign tags are still read from a URL before its parameters are removed. '
-                . 'Applies to events recorded after a change. Parameter names should be separated by comma.',
+                . 'Applies to events recorded after a change. Parameter names should be separated by comma.' ),
         ),
         /*
          * COMPUTED AT BOOT, never stored, and declared anyway.
@@ -486,22 +486,22 @@ return array(
             'storable' => true,
             'autoload' => true,
             'type'     => 'select',
-            'label'    => 'Spam Detection',
+            'label'    => \OWA\Core\CoreAPI::t( 'Spam Detection' ),
             'description' =>
-                '<strong>Normal</strong> blocks requests whose user agent names a robot or crawler.<br>'
+                \OWA\Core\CoreAPI::t( '<strong>Normal</strong> blocks requests whose user agent names a robot or crawler.<br>'
                 . '<strong>Strict</strong> also checks that a request looks like it came from the browser it claims '
-                . 'to be, from a page of your site, with an ordinary URL.',
-            'options'  => array( 'normal' => 'Normal', 'strict' => 'Strict' ),
+                . 'to be, from a page of your site, with an ordinary URL.' ),
+            'options'  => array( 'normal' => \OWA\Core\CoreAPI::t( 'Normal' ), 'strict' => \OWA\Core\CoreAPI::t( 'Strict' ) ),
         ),
         'spam_threshold' => array(
             'default'  => 5.0,
             'storable' => true,
             'autoload' => true,
             'type'     => 'text',
-            'label'    => 'Spam Threshold',
+            'label'    => \OWA\Core\CoreAPI::t( 'Spam Threshold' ),
             'description' =>
-                'A request whose spam score reaches this number is not recorded. Leave blank to record every '
-                . 'request; each one still gets a score.',
+                \OWA\Core\CoreAPI::t( 'A request whose spam score reaches this number is not recorded. Leave blank to record every '
+                . 'request; each one still gets a score.' ),
             // 0.1 to 9999.9, at most one decimal place; blank for none.
             'pattern'  => '/^$|^(?:0\\.[1-9]|[1-9][0-9]{0,3}(?:\\.[0-9])?)$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Spam Threshold is a number of at least 0.1 with at most one decimal place, or blank.' ),
@@ -524,16 +524,16 @@ return array(
             'storable' => true,
             'autoload' => true,
             'type'     => 'timezone',
-            'label'    => 'Reporting Timezone',
+            'label'    => \OWA\Core\CoreAPI::t( 'Reporting Timezone' ),
             'description' =>
-                'This is the timezone that should be used to generate statistics for '
+                \OWA\Core\CoreAPI::t( 'This is the timezone that should be used to generate statistics for '
                 . 'a specific time period.<br><br><strong>Changing this is not '
                 . 'retroactive.</strong> Each request is filed under a calendar day '
                 . 'when it is recorded, using the timezone set at that moment. Data '
                 . 'already collected keeps the day boundaries it was recorded with, so '
                 . 'a change applies only to traffic from this point on &mdash; and '
                 . 'reports spanning the change will mix the two. Depending on how far '
-                . 'the zones are apart, a day boundary can move by up to 21 hours.',
+                . 'the zones are apart, a day boundary can move by up to 21 hours.' ),
         ),
         'ua-regexes' => array( 'default' => '', 'description' => 'The path of a user-agent regexes.php file to parse user agents with. Empty uses the one in ua_regexes_dir if present, otherwise the bundled one.' ),
         /*
@@ -550,72 +550,72 @@ return array(
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Track Page Views',
-            'description' => 'Sends a page view when the page loads.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Track Page Views' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Sends a page view when the page loads.' ),
         ),
         'tracker_clicks' => array(
             'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackClicks' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Track Clicks',
-            'description' => 'Sends a click event for each click, with the element clicked and where the link led.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Track Clicks' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Sends a click event for each click, with the element clicked and where the link led.' ),
         ),
         'tracker_forms' => array(
             'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackForms' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Track Forms',
-            'description' => 'Sends an event when a visitor starts and when they submit a form.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Track Forms' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Sends an event when a visitor starts and when they submit a form.' ),
         ),
         'tracker_scroll' => array(
             'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackScroll' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Track Scroll Depth',
-            'description' => 'Sends one event per page view the visitor scrolls, at the deepest scroll threshold reached.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Track Scroll Depth' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Sends one event per page view the visitor scrolls, at the deepest scroll threshold reached.' ),
         ),
         'tracker_site_search' => array(
             'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackSiteSearch' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Track Site Search',
-            'description' => 'Sends a search event when a page&rsquo;s URL carries one of the site search parameters.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Track Site Search' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Sends a search event when a page&rsquo;s URL carries one of the site search parameters.' ),
         ),
         'tracker_exceptions' => array(
             'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackExceptions' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Track JavaScript Errors',
-            'description' => 'Sends an exception event for each uncaught JavaScript error on the page, once per page view for each message, source file and line. The browser\'s ResizeObserver loop notice is not sent.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Track JavaScript Errors' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Sends an exception event for each uncaught JavaScript error on the page, once per page view for each message, source file and line. The browser\'s ResizeObserver loop notice is not sent.' ),
         ),
         'tracker_route_changes' => array(
             'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackRouteChanges' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Track Route Changes',
-            'description' => 'For single-page applications: sends a page view when the URL changes without a page load.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Track Route Changes' ),
+            'description' => \OWA\Core\CoreAPI::t( 'For single-page applications: sends a page view when the URL changes without a page load.' ),
         ),
         'tracker_url_fragments' => array(
             'default'  => false,
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'boolean',
-            'label'    => 'Keep URL Fragments',
-            'description' => 'Keeps the part of a URL after # in page locations, for sites whose pages are told apart by it.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Keep URL Fragments' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Keeps the part of a URL after # in page locations, for sites whose pages are told apart by it.' ),
         ),
         'tracker_scroll_thresholds' => array(
             'default'  => \OWA\Module\Base\Classes\TrackerDefaults::text( 'scrollThresholds' ),
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'text',
-            'label'    => 'Scroll Thresholds',
-            'description' => 'The scroll depths, in percent of the page, that a page view\'s deepest point is reported at. Separate them with commas.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Scroll Thresholds' ),
+            'description' => \OWA\Core\CoreAPI::t( 'The scroll depths, in percent of the page, that a page view\'s deepest point is reported at. Separate them with commas.' ),
             'pattern'  => '/^(100|[1-9][0-9]?)(\\s*,\\s*(100|[1-9][0-9]?))*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Scroll Thresholds is a comma-separated list of percentages from 1 to 100.' ),
         ),
@@ -624,8 +624,8 @@ return array(
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'text',
-            'label'    => 'Site Search Parameters',
-            'description' => 'The URL parameters that carry a search term on your site. Separate them with commas.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Site Search Parameters' ),
+            'description' => \OWA\Core\CoreAPI::t( 'The URL parameters that carry a search term on your site. Separate them with commas.' ),
             'pattern'  => '/^[A-Za-z0-9_.\\-\\[\\]]+(\\s*,\\s*[A-Za-z0-9_.\\-\\[\\]]+)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Site Search Parameters is a comma-separated list of URL parameter names.' ),
         ),
@@ -634,8 +634,8 @@ return array(
             'storable' => true,
             'scopes'   => array( 'install', 'property', 'profile' ),
             'type'     => 'text',
-            'label'    => 'Download File Extensions',
-            'description' => 'A click on a link to a file with one of these extensions is a download. Separate them with commas.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Download File Extensions' ),
+            'description' => \OWA\Core\CoreAPI::t( 'A click on a link to a file with one of these extensions is a download. Separate them with commas.' ),
             'pattern'  => '/^[A-Za-z0-9]+(\\s*,\\s*[A-Za-z0-9]+)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Download File Extensions is a comma-separated list of file extensions, without the dot.' ),
         ),
@@ -647,11 +647,11 @@ return array(
             'type'     => 'integer',
             'min'      => 0,
             'max'      => 400,
-            'label'    => 'Visitor Cookie Lifetime (days)',
-            'description' => 'How long the visitor cookie lasts after a visitor&rsquo;s last visit. '
+            'label'    => \OWA\Core\CoreAPI::t( 'Visitor Cookie Lifetime (days)' ),
+            'description' => \OWA\Core\CoreAPI::t( 'How long the visitor cookie lasts after a visitor&rsquo;s last visit. '
                 . '<strong>0 ends it when the browser closes</strong>: every browser session is then a new '
                 . 'visitor, so returning visitors and attribution across visits are mostly lost. At most 400, '
-                . 'the longest a browser keeps a cookie.',
+                . 'the longest a browser keeps a cookie.' ),
         ),
         'tracker_session_cookie_days' => array(
             'default'  => 364,
@@ -660,18 +660,18 @@ return array(
             'type'     => 'integer',
             'min'      => 0,
             'max'      => 400,
-            'label'    => 'Session Cookie Lifetime (days)',
-            'description' => 'How long the session cookie, which carries a visitor&rsquo;s session history, '
-                . 'lasts after their last visit. 0 ends it when the browser closes. At most 400.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Session Cookie Lifetime (days)' ),
+            'description' => \OWA\Core\CoreAPI::t( 'How long the session cookie, which carries a visitor&rsquo;s session history, '
+                . 'lasts after their last visit. 0 ends it when the browser closes. At most 400.' ),
         ),
         'tracker_cookie_domain' => array(
             'default'  => '',
             'storable' => true,
             'scopes'   => array( 'install', 'property' ),
             'type'     => 'text',
-            'label'    => 'Tracker Cookie Domain',
-            'description' => 'The domain the tracker&rsquo;s cookies are set on, such as example.com to share '
-                . 'them across its subdomains. Empty uses the page&rsquo;s own domain.',
+            'label'    => \OWA\Core\CoreAPI::t( 'Tracker Cookie Domain' ),
+            'description' => \OWA\Core\CoreAPI::t( 'The domain the tracker&rsquo;s cookies are set on, such as example.com to share '
+                . 'them across its subdomains. Empty uses the page&rsquo;s own domain.' ),
             'pattern'  => '/^$|^\\.?[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Tracker Cookie Domain is a domain name, such as example.com.' ),
         ),

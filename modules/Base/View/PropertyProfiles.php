@@ -5,7 +5,7 @@ class PropertyProfiles extends \OWA\Core\View {
 
     function render( $data ) {
 
-        $this->t->set( 'page_title', 'Observation Profiles' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'Observation Profiles' ) );
         $this->body->set_template( 'property_profiles.php' );
         $this->body->set( 'property', (array) ( $this->get( 'property' ) ?: array() ) );
         $this->body->set( 'propertyId', (string) $this->get( 'propertyId' ) );

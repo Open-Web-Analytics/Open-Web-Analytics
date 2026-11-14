@@ -22,10 +22,10 @@ class InstallFinish extends \OWA\Core\View {
     function render($data) {
 
         // Set Page title
-        $this->t->set('page_title', 'Installation Complete');
+        $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'Installation Complete' ));
 
         // Set Page headline
-        $this->body->set('headline', 'Installation is Complete');
+        $this->body->set('headline', \OWA\Core\CoreAPI::t( 'Installation is Complete' ));
 
         $this->body->set('site_id', $this->get('site_id'));
         $this->body->set('u', $this->get('u'));

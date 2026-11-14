@@ -39,11 +39,11 @@ class ReportDomstreams extends \OWA\Core\ReportController {
 
         if ( $page_path !== '' ) {
 
-            $this->setTitle( 'Recordings: ', $page_path );
+            $this->setTitle( \OWA\Core\CoreAPI::t( 'Recordings: ' ), $page_path );
 
         } else {
 
-            $this->setTitle( 'Recordings' );
+            $this->setTitle( \OWA\Core\CoreAPI::t( 'Recordings' ) );
         }
 
         $filter = $this->segment()->options();
@@ -258,7 +258,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             'url'    => $url,
             'width'  => (int) $r['viewport_w'],
             'height' => (int) $r['viewport_h'],
-            'label'  => 'Play',
+            'label'  => \OWA\Core\CoreAPI::t( 'Play' ),
         );
     }
 

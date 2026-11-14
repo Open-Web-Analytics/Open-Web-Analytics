@@ -321,7 +321,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return array(
             'messages'   => $a === null ? null : array_sum( array_map( 'intval', $a ) ),
             'oldest_age' => null,
-            'error'      => $a === null ? (string) ( $this->last_error ?: 'no answer' ) : null,
+            'error'      => $a === null ? (string) ( $this->last_error ?: \OWA\Core\CoreAPI::t( 'no answer' ) ) : null,
         );
     }
 

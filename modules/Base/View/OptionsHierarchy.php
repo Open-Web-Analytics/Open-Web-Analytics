@@ -14,7 +14,7 @@ class OptionsHierarchy extends \OWA\Core\View {
 
     function render( $data ) {
 
-        $this->t->set( 'page_title', 'OWA Options' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'OWA Options' ) );
         $this->body->set_template( 'options_hierarchy.php' );
         $this->body->set( 'site_hierarchy', $this->get( 'site_hierarchy' ) );
         /*

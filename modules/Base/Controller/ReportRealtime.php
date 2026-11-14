@@ -22,7 +22,7 @@ class ReportRealtime extends \OWA\Core\ReportController {
 
     function action() {
 
-        $this->setTitle( 'Realtime' );
+        $this->setTitle( \OWA\Core\CoreAPI::t( 'Realtime' ) );
         $this->hideTimeControls();
 
         $this->set( 'realtime_property_id', (string) $this->getParam( 'propertyId' ) );
