@@ -38,8 +38,25 @@ namespace OWA\Module\MaxmindGeoip\Controller;
  *
  * Writes to the directory the module already reads from, so a successful run
  * takes effect with nothing to configure.
+ *
+ * SCHEDULED WEEKLY (the module's refresh-geoip-db job, scheduled=1). A
+ * scheduled run with nothing to do -- no licence key, or the local copy already
+ * current -- is a success that says so; by hand, "already current" is a
+ * refusal. A scheduled run downloads only when MaxMind's HEAD answer says
+ * there is something newer, or when there is no local copy, and not again
+ * within RETRY_DOWNLOAD_AFTER of a download that did not install.
  */
 class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
+
+    /**
+     * How long a scheduled run waits after a download that did not install
+     * before downloading again, in seconds. The scheduler retries a failed
+     * job hourly, and each retry would otherwise spend a download.
+     */
+    const RETRY_DOWNLOAD_AFTER = 86400;
+
+    /** @var int HTTP status of the last lastModified() request; 0 when there was no response */
+    protected $check_status = 0;
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
@@ -52,6 +69,9 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
                                     . '. Defaults to the one the module reads.',
                 '--force'           => 'Download even when the local copy is as new as MaxMind\'s.',
                 '--dry-run'         => 'Report what would be downloaded, and write nothing.',
+                'scheduled=1'       => 'Set by the scheduler. Skips quietly without a licence key, counts an already current '
+                                    . 'copy as success, never downloads when MaxMind\'s update check fails while a local copy exists, and '
+                                    . 'waits a day after a download that did not install.',
             ),
         );
     }
@@ -65,7 +85,8 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
     function action() {
 
-        $dry_run = (bool) $this->getParam( 'dry-run' );
+        $dry_run   = (bool) $this->getParam( 'dry-run' );
+        $scheduled = (bool) $this->getParam( 'scheduled' );
 
         // The same answer the reader uses, so what is downloaded is what gets
         // read. edition= overrides for a one-off, but only to something the
@@ -89,6 +110,11 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             ?: \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_license_key' )
             ?: \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_license_key' )
         ) );
+
+        if ( ! $key && $scheduled ) {
+
+            return $this->skip( 'Skipped: no MaxMind licence key is set (db_license_key of the maxmind_geoip module).' );
+        }
 
         if ( ! $key ) {
 
@@ -145,12 +171,40 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
         if ( $local && $remote && $remote <= $local && ! $this->getParam( 'force' ) ) {
 
-            return $this->refuse( sprintf(
-                'Already current: MaxMind last changed %s on %s, and the local copy is from %s. '
-              . 'Nothing downloaded. Use --force to fetch it anyway.',
+            $current = sprintf(
+                'Already current: MaxMind last changed %s on %s, and the local copy is from %s. Nothing downloaded.',
                 $edition,
                 gmdate( 'Y-m-d H:i:s', $remote ) . ' UTC',
                 gmdate( 'Y-m-d H:i:s', $local ) . ' UTC'
+            );
+
+            return $scheduled
+                ? $this->skip( $current )
+                : $this->refuse( $current . ' Use --force to fetch it anyway.' );
+        }
+
+        // A scheduled run with a local copy downloads only on MaxMind's word
+        // that theirs is newer. Without an answer it fails, so the scheduler
+        // retries the HEAD, which is free, rather than spending a download
+        // each week on a copy that may be current. A missing copy downloads
+        // without asking, above.
+        if ( $scheduled && $local && ! $remote ) {
+
+            return $this->fail( $this->whyNoAnswer( $edition ) );
+        }
+
+        // After a download that did not install, a scheduled run waits before
+        // spending another: the scheduler retries a failed job hourly.
+        $attempted = $this->attemptMarker( $dir, $edition );
+        $last      = file_exists( $attempted ) ? (int) filemtime( $attempted ) : 0;
+
+        if ( $scheduled && $last && time() - $last < self::RETRY_DOWNLOAD_AFTER && ! $dry_run ) {
+
+            return $this->fail( sprintf(
+                'The download at %s did not install, so the next scheduled download is after %s. '
+              . 'Run update-geoip-db by hand to try now.',
+                gmdate( 'Y-m-d H:i:s', $last ) . ' UTC',
+                gmdate( 'Y-m-d H:i:s', $last + self::RETRY_DOWNLOAD_AFTER ) . ' UTC'
             ) );
         }
 
@@ -205,6 +259,16 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
             return $this->fail( $bytes );
         }
 
+        // Recorded once a download has been spent, and cleared once it is
+        // installed: what remains marks one that did not install. The
+        // directory may not exist yet; whyNotWritable() allowed creating it.
+        if ( ! is_dir( $dir ) ) {
+
+            @mkdir( $dir, 0755, true );
+        }
+
+        @touch( $attempted );
+
         $this->write( sprintf( 'Downloaded %s.', $this->readableSize( $bytes ) ) );
 
         $extracted = $this->extractDatabase( $archive, $dir, $edition );
@@ -217,6 +281,8 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
                 ? $extracted
                 : 'The archive did not contain a database file.' );
         }
+
+        @unlink( $attempted );
 
         $this->write( sprintf(
             'Done. %s is %s, and lookups use it from the next request onward.',
@@ -235,6 +301,57 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         }
 
         return;
+    }
+
+    /**
+     * Nothing to do, on a scheduled run: the outcome stays 'ok', and the line
+     * saying why is what the job history records.
+     *
+     * @param string $msg
+     * @return null
+     */
+    protected function skip( $msg ) {
+
+        $this->cli_message = $this->cli_message ?: $msg;
+
+        \OWA\Core\CoreAPI::notice( $msg );
+
+        return null;
+    }
+
+    /**
+     * Why lastModified() gave no date, from the status it recorded.
+     *
+     * @param string $edition
+     * @return string
+     */
+    protected function whyNoAnswer( $edition ) {
+
+        $status = (int) $this->check_status;
+
+        if ( $status === 401 || $status === 403 ) {
+
+            return 'MaxMind rejected the licence key. Check that it is current and permits GeoLite2 '
+                 . 'downloads. The database has not been changed.';
+        }
+
+        return sprintf(
+            '%s, so whether %s has changed is unknown. Nothing downloaded; the database has not been changed.',
+            $status ? sprintf( 'MaxMind\'s update check (HTTP %d) gave no Last-Modified date', $status )
+                    : 'Could not reach MaxMind to check for an update',
+            $edition
+        );
+    }
+
+    /**
+     * The file whose mtime records a download that has not yet installed.
+     * Beside the database, in the directory already checked as writable.
+     *
+     * @return string
+     */
+    protected function attemptMarker( $dir, $edition ) {
+
+        return $dir . '.' . $edition . '.download-attempt';
     }
 
     /**
@@ -322,14 +439,16 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      * When MaxMind last changed this edition, or 0 if they will not say.
      *
      * A HEAD request, which MaxMind document as the way to check for updates
-     * without spending a download from the account's limit. Returning 0 on any
-     * doubt means the caller downloads -- being wrong in the direction of doing
-     * the work is much better than skipping an update that was available.
+     * without spending a download from the account's limit. On 0, a run by
+     * hand downloads, and a scheduled run fails without downloading and is
+     * retried. Records the response status in $check_status.
      *
      * @param string $url
      * @return int unix timestamp, or 0
      */
     protected function lastModified( $url ) {
+
+        $this->check_status = 0;
 
         $context = stream_context_create( [
             'http' => [ 'method' => 'HEAD', 'timeout' => 30, 'ignore_errors' => true,
@@ -348,7 +467,9 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
         fclose( $handle );
 
-        if ( $this->statusFrom( $headers ) >= 400 ) {
+        $this->check_status = $this->statusFrom( $headers );
+
+        if ( $this->check_status >= 400 ) {
 
             // A rejected key answers here too. Say nothing and let the download
             // report it properly, rather than reporting "already current" for

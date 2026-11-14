@@ -90,6 +90,27 @@ class Cron {
     }
 
     /**
+     * A weekly expression at a weekday, hour and minute derived from `$seed`.
+     *
+     * The weekly counterpart of dailySpreadFor(), for the same reason:
+     * `@weekly` is Sunday at midnight on every install at once. The weekday
+     * comes from a third slice of the digest, independent of the other two.
+     *
+     * @param string $seed something stable and install-specific
+     * @return string a five-field cron expression
+     */
+    public static function weeklySpreadFor( $seed ) {
+
+        $digest = md5( (string) $seed );
+
+        $minute  = hexdec( substr( $digest, 0, 6 ) ) % 60;
+        $hour    = hexdec( substr( $digest, 6, 6 ) ) % 24;
+        $weekday = hexdec( substr( $digest, 12, 6 ) ) % 7;
+
+        return sprintf( '%d %d * * %d', $minute, $hour, $weekday );
+    }
+
+    /**
      * Every N minutes, at an offset this install keeps.
      *
      * The frequent counterpart of dailySpreadFor(), and spread for the local
@@ -549,6 +570,13 @@ class Cron {
         if ( preg_match( '#^(\d+) (\d+) \* \* \*$#', $expr, $m ) ) {
 
             return sprintf( 'daily at %02d:%02d', (int) $m[2], (int) $m[1] );
+        }
+
+        if ( preg_match( '#^(\d+) (\d+) \* \* ([0-6])$#', $expr, $m ) ) {
+
+            $days = array( 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' );
+
+            return sprintf( 'weekly, on %s at %02d:%02d', $days[ (int) $m[3] ], (int) $m[2], (int) $m[1] );
         }
 
         if ( preg_match( '#^(\d+) (\d+) (\d+) \* \*$#', $expr, $m ) ) {

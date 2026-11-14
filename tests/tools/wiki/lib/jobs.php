@@ -2,9 +2,10 @@
 /**
  * The registered jobs, with each schedule described the same on every install.
  *
- * Spread schedules (Cron::dailySpreadFor(), minutelySpreadFor()) are seeded
- * from the install, so the expression a job registers is this checkout's and
- * would put this checkout's minute on the wiki. Which jobs are spread is found
+ * Spread schedules (Cron::dailySpreadFor(), weeklySpreadFor(),
+ * minutelySpreadFor()) are seeded from the install, so the expression a job
+ * registers is this checkout's and would put this checkout's minute on the
+ * wiki. Which jobs are spread is found
  * by asking: each module re-registers its jobs under two different public_url
  * values, and a schedule that differs between them is derived from the install.
  * Nothing is inferred from the shape of the expression, which a fixed
@@ -73,6 +74,10 @@ function owa_wiki_job_schedule( array $job ) {
 
     if ( preg_match( '#^\d+ \d+ \* \* \*$#', $expr ) ) {
         return 'daily, at a time each install derives for itself';
+    }
+
+    if ( preg_match( '#^\d+ \d+ \* \* [0-6]$#', $expr ) ) {
+        return 'weekly, on a day and at a time each install derives for itself';
     }
 
     if ( preg_match( '#^(\d+),(\d+)(?:,\d+)* \* \* \* \*$#', $expr, $m ) ) {
