@@ -409,9 +409,13 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
              * Not drawn with that condition ignored, which would report a
              * larger number than the step means.
              */
-            $this->set( 'funnel_step_error', sprintf( \OWA\Core\CoreAPI::t(
-                'Step %s tests %s, which a funnel step cannot test. Edit the funnel and choose another property.' ),
-                $number, $predicate->getError() ) );
+            $this->set( 'funnel_step_error', $predicate->getProblem() !== ''
+                ? sprintf( \OWA\Core\CoreAPI::t(
+                    'Step %s: the regular expression on %s was refused: %s Edit the funnel and change it.' ),
+                    $number, $predicate->getError(), $predicate->getProblem() )
+                : sprintf( \OWA\Core\CoreAPI::t(
+                    'Step %s tests %s, which a funnel step cannot test. Edit the funnel and choose another property.' ),
+                    $number, $predicate->getError() ) );
 
             return null;
         }

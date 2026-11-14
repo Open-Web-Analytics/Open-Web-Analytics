@@ -150,6 +150,17 @@ final class FunnelEventStepTest extends TestCase
         $this->assertStringContainsString( 'Step 1 tests cd_plan', (string) ( $controller->data['funnel_step_error'] ?? '' ) );
     }
 
+    /** A stored regex a report filter would refuse is refused with its reason, not run. */
+    public function testAStoredRegexAReportFilterWouldRefuseIsRefused(): void
+    {
+        list( $out, $controller ) = $this->predicate( array( 'kind' => 'event', 'event' => 'page_view',
+            'conditions' => array( array( 'property' => 'page_path', 'operator' => 'regex', 'value' => '^/(a+)+$' ) ) ) );
+
+        $this->assertNull( $out );
+        $this->assertSame( 'Step 1: the regular expression on page_path was refused: it repeats a group that itself '
+            . 'repeats, such as (a+)+. Edit the funnel and change it.', (string) ( $controller->data['funnel_step_error'] ?? '' ) );
+    }
+
     /** What a step matches, in words: a page step reads as its page, anything else as its event and conditions. */
     public function testAStepIsSummarisedForTheChart(): void
     {

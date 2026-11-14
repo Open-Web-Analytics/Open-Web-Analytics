@@ -10,13 +10,13 @@
         <div class="owa_publicField">
             <label for="owa_newPassword">New password</label>
             <input id="owa_newPassword" type="password" autocomplete="new-password" autofocus
-                   name="<?php echo $view->getNs();?>password">
+                   name="password">
         </div>
 
         <div class="owa_publicField">
             <label for="owa_newPassword2">Repeat new password</label>
             <input id="owa_newPassword2" type="password" autocomplete="new-password"
-                   name="<?php echo $view->getNs();?>password2">
+                   name="password2">
         </div>
 
         <?php
@@ -26,10 +26,10 @@
              * form.
              */
         ?>
-        <input type="hidden" name="<?php echo $view->getNs();?>k" value="<?php $view->out( $view->key );?>">
-        <input type="hidden" name="<?php echo $view->getNs();?>action" value="base.usersChangePassword">
+        <input type="hidden" name="k" value="<?php $view->out( $view->key );?>">
+        <input type="hidden" name="action" value="base.usersChangePassword">
 
         <input class="owa-button owa_publicSubmit" type="submit"
-               name="<?php echo $view->getNs();?>submit_btn" value="Save new password">
+               name="submit_btn" value="Save new password">
     </form>
 </div>

@@ -63,12 +63,6 @@ final class TemplateLatentVarTest extends TestCase
 
                 return 'LINK';
             }
-
-            // Delegates rather than hardcoding: this used to return
-            // 'owa_', which stopped being what the admin forms emit when
-            // the namespace split moved them onto app_ns. A double that
-            // pins the old answer renders markup no user ever sees.
-            function getNs() { return \OWA\Core\CoreAPI::appNs(); }
         };
     }
 

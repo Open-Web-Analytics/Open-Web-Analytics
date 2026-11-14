@@ -197,10 +197,12 @@ class SystemHealth {
 
         try {
 
-            $intake = TrackerIngest::queue();
-            $main   = $intake->stats();
-            $dlq    = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
-            $held   = method_exists( $intake, 'heldBatches' ) ? $intake->heldBatches() : array();
+            $intake   = TrackerIngest::queue();
+            $main     = $intake->stats();
+            $dlq      = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
+            $held     = method_exists( $intake, 'heldBatches' ) ? $intake->heldBatches() : array();
+            $fallback = TrackerIngest::fallback();
+            $kept     = $fallback ? $fallback->stats() : null;
 
         } catch ( \Throwable $t ) {
 
@@ -209,6 +211,24 @@ class SystemHealth {
         }
 
         $findings = array();
+
+        // A queue that cannot be read cannot be drained either, and says nothing about a backlog.
+        if ( $main['messages'] === null ) {
+
+            $findings[] = self::finding( 'red', 'Unreadable', sprintf(
+                'The tracker-ingest queue could not be read%s, so nothing is being drained from it.',
+                ! empty( $main['error'] ) ? ': ' . $main['error'] : '' ),
+                'php cli.php cmd=drain-tracker-ingest' );
+        }
+
+        if ( $kept && $kept['messages'] ) {
+
+            $findings[] = self::finding( 'yellow', 'Kept in the file queue', sprintf( \OWA\Core\CoreAPI::tn(
+                '%d beacon the tracker-ingest queue did not take is kept in the file queue. drain-tracker-ingest forwards it once the queue answers.',
+                '%d beacons the tracker-ingest queue did not take are kept in the file queue. drain-tracker-ingest forwards them once the queue answers.',
+                (int) $kept['messages'] ), (int) $kept['messages'] ),
+                'php cli.php cmd=drain-tracker-ingest' );
+        }
 
         if ( $main['oldest_age'] !== null && $main['oldest_age'] > self::INTAKE_BACKLOG_AGE ) {
 
@@ -271,6 +291,7 @@ class SystemHealth {
             'queued'   => TrackerIngest::isQueued(),
             'waiting'  => $main['messages'],
             'dead'     => $dlq ? $dlq['messages'] : null,
+            'kept'     => $kept ? $kept['messages'] : null,
         ) );
     }
 

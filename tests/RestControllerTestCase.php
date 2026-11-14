@@ -58,12 +58,11 @@ abstract class RestControllerTestCase extends TestCase
 
         \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
 
-        // The new-account email observer fires when POST /users creates a user.
-        // The default derived mailer-from ("owa@localhost") is rejected by
-        // PHPMailer (no dot in the domain), which would abort the request path
-        // with an exception unrelated to what we're testing. Pin a valid,
-        // clearly non-deliverable from-address for the test process.
-        \OWA\Core\CoreAPI::setSetting('base', 'mailer-from', 'owa@owatest.example.com');
+        // The new-account email observer fires when POST /users creates a
+        // user. Its mail goes to a closed local SMTP port, never an MTA, and
+        // fails there; the From is a valid, non-deliverable address.
+        require_once __DIR__ . '/fixtures/mail_to_nowhere.php';
+        owa_test_mail_to_nowhere();
     }
 
     protected function setUp(): void

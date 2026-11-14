@@ -563,7 +563,8 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
             /*
              * THE CUBE HOLDS DAYS RAW NO LONGER HAS: raw's partitions were
-             * dropped (partition-drop only=raw) while the cube kept them. A
+             * dropped (partition-drop only=raw) and the next rotate has not
+             * yet dropped the cube's (PartitionRotateCli::cutoffFor()). A
              * rebuild replaces the partition with what raw has, which would
              * lose those days, so the partition is left as built.
              *
@@ -673,36 +674,12 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      */
     protected function rawCoversFrom() {
 
-        $db  = \OWA\Core\CoreAPI::dbSingleton();
-        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        if ( $this->raw_covers_from === false ) {
 
-        if ( ! $db->isPartitioned( $raw ) ) {
-
-            return null;
+            $this->raw_covers_from = \OWA\Module\Base\Classes\Retention::rawCoversFrom();
         }
 
-        if ( $this->raw_covers_from !== false ) {
-
-            return $this->raw_covers_from;
-        }
-
-        $spans = $db->getPartitionSpans( $raw );
-        $from  = $spans && ctype_digit( (string) $spans[0]['start'] ) ? (int) $spans[0]['start'] : null;
-
-        // The oldest partition holds everything below its boundary, so a row
-        // can sit before the start its name gives. Raw covers that row too.
-        if ( $from ) {
-
-            $row = (array) $db->get_row( sprintf( 'SELECT MIN(yyyymmdd) AS d FROM %s PARTITION (%s)',
-                $raw, $spans[0]['name'] ) );
-
-            if ( ! empty( $row['d'] ) && (int) $row['d'] < $from ) {
-
-                $from = (int) $row['d'];
-            }
-        }
-
-        return $this->raw_covers_from = $from;
+        return $this->raw_covers_from;
     }
 
     /**

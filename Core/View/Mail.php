@@ -46,12 +46,29 @@ class Mail extends \OWA\Core\View {
         $this->po->setSubject( $sbj );
     }
 
+    /**
+     * Add the recipients: one address, or a comma-separated list of them, as
+     * notice_email may hold. An address the mailer refuses is logged and
+     * skipped (Mailer::addAddress()).
+     *
+     * @return int how many were added
+     */
     function addMailToAddress($email, $name = '') {
 
-        if (empty($name)) {
-            $name = $email;
+        $added     = 0;
+        $addresses = array_values( array_filter( array_map( 'trim', explode( ',', (string) $email ) ), 'strlen' ) );
+
+        foreach ( $addresses as $address ) {
+
+            // A name belongs to one person: a list is addressed by address alone.
+            $label = count( $addresses ) === 1 && ! empty( $name ) ? $name : $address;
+
+            if ( $this->po->addAddress( $address, $label ) ) {
+
+                $added++;
+            }
         }
 
-        $this->po->addAddress($email, $name);
+        return $added;
     }
 }

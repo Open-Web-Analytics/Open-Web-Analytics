@@ -540,6 +540,40 @@ class Retention {
         return $d ? $d->format( 'j M Y' ) : (string) $yyyymmdd;
     }
 
+    /**
+     * The first day raw holds, or null when raw is not partitioned or has no
+     * partitions: the start of its oldest partition, or the oldest row in it
+     * when that is earlier (the oldest partition holds everything below it).
+     *
+     * @return int|null yyyymmdd
+     */
+    public static function rawCoversFrom() {
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $raw = self::rawTable();
+
+        if ( ! $db->isPartitioned( $raw ) ) {
+
+            return null;
+        }
+
+        $spans = $db->getPartitionSpans( $raw );
+        $from  = $spans && ctype_digit( (string) $spans[0]['start'] ) ? (int) $spans[0]['start'] : null;
+
+        if ( $from ) {
+
+            $row = (array) $db->get_row( sprintf( 'SELECT MIN(yyyymmdd) AS d FROM %s PARTITION (%s)',
+                $raw, $spans[0]['name'] ) );
+
+            if ( ! empty( $row['d'] ) && (int) $row['d'] < $from ) {
+
+                $from = (int) $row['d'];
+            }
+        }
+
+        return $from;
+    }
+
     /** @return string owa_event_raw, prefixed */
     public static function rawTable() {
 

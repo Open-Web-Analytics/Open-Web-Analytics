@@ -239,9 +239,9 @@ OWA.resultSetExplorer.prototype = {
         }
 
         // set sort order
-        url.setQueryParam(OWA.util.appNs('sort'), column + sortorder);
+        url.setQueryParam('sort', column + sortorder);
         // remove page param
-        url.removeQueryParam(OWA.util.appNs('page'));
+        url.removeQueryParam('page');
         // fetch new results
         //alert( url.getSource() );
         this.getNewResultSet( url.getSource() );
@@ -256,7 +256,7 @@ OWA.resultSetExplorer.prototype = {
 
         // get current list of dimensions from url
         var url = new OWA.uri( this.resultSet.self );
-        var dims = OWA.util.urldecode(url.getQueryParam(OWA.util.appNs('dimensions')));
+        var dims = OWA.util.urldecode(url.getQueryParam('dimensions'));
 
         var new_dims = [];
 
@@ -286,7 +286,7 @@ OWA.resultSetExplorer.prototype = {
 
             new_dims = new_dims.join(',');
 
-            url.setQueryParam(OWA.util.appNs('dimensions'), new_dims);
+            url.setQueryParam('dimensions', new_dims);
             this.getNewResultSet( url.getSource() );
         }
     },
@@ -309,7 +309,7 @@ OWA.resultSetExplorer.prototype = {
 
         var url = new OWA.uri( this.resultSet.self );
 
-        url.setQueryParam( OWA.util.appNs( 'dimensions' ), dims.join( ',' ) );
+        url.setQueryParam( 'dimensions', dims.join( ',' ) );
 
         this.getNewResultSet( url.getSource() );
     },
@@ -319,7 +319,7 @@ OWA.resultSetExplorer.prototype = {
         var url = new OWA.uri( this.resultSet.self );
 
         // set constraints
-        url.setQueryParam(OWA.util.appNs('constraints'), constraints);
+        url.setQueryParam('constraints', constraints);
 
         // fetch new results
         this.getNewResultSet( url.getSource() );
@@ -336,10 +336,10 @@ OWA.resultSetExplorer.prototype = {
 
         var url = new OWA.uri( this.resultSet.self );
 
-        url.setQueryParam( OWA.util.appNs( 'page' ), page );
+        url.setQueryParam( 'page', page );
 
         if ( resultsPerPage ) {
-            url.setQueryParam( OWA.util.appNs( 'resultsPerPage' ), resultsPerPage );
+            url.setQueryParam( 'resultsPerPage', resultsPerPage );
         }
 
         this.getNewResultSet( url.getSource() );
@@ -1027,7 +1027,7 @@ OWA.resultSetExplorer.prototype = {
 
         var url = url || this.getApiEndpoint();
         url += '?';
-        url += OWA.util.appNs('do') + '=' + method;
+        url += 'do=' + method;
         var count = OWA.util.countObjectProperties(options);
         var i = 1;
         for (var option in options) {
@@ -1035,7 +1035,7 @@ OWA.resultSetExplorer.prototype = {
             if (options.hasOwnProperty(option)) {
 
                 if (typeof options[option] != 'undefined') {
-                    url += '&' + OWA.util.appNs(option) + '=' + OWA.util.urlEncode(options[option]);
+                    url += '&' + option + '=' + OWA.util.urlEncode(options[option]);
                 }
                 i++;
             }
@@ -1497,7 +1497,7 @@ OWA.dataGrid.emptyText = function ( rs, own ) {
     } );
 
     var asked = rs && rs.self
-        ? OWA.dataGrid.parseConstraints( new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'constraints' ) ) )
+        ? OWA.dataGrid.parseConstraints( new OWA.uri( rs.self ).getQueryParam( 'constraints' ) )
         : [];
 
     var readers = asked.filter( function ( c ) {
@@ -1860,7 +1860,7 @@ OWA.dataGrid.prototype = {
         }
 
         return OWA.dataGrid.parseConstraints(
-            new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'constraints' ) ) );
+            new OWA.uri( rs.self ).getQueryParam( 'constraints' ) );
     },
 
     /** {name: {label, description, metric_type}} for every metric the result set relates. */
@@ -2928,7 +2928,7 @@ OWA.dataGrid.prototype = {
 
         var self = new OWA.uri(resultSet.self);
 
-        return String( self.getQueryParam(OWA.util.appNs('dimensions')) || '' ).split(',');
+        return String( self.getQueryParam('dimensions') || '' ).split(',');
     }
 
 };
@@ -3605,7 +3605,7 @@ OWA.linkTrendToGrid = function ( trend, grid, count ) {
 
         sortedBy = rs.sortColumn;
 
-        var dims = OWA.util.urldecode( new OWA.uri( rs.self ).getQueryParam( OWA.util.appNs( 'dimensions' ) ) || '' )
+        var dims = OWA.util.urldecode( new OWA.uri( rs.self ).getQueryParam( 'dimensions' ) || '' )
             .split( ',' )
             .map( function ( d ) { return d.trim(); } )
             .filter( Boolean );

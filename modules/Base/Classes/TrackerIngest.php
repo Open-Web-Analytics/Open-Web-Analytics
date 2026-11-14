@@ -19,6 +19,15 @@ namespace OWA\Module\Base\Classes;
  * The drain is generic over the contract: drain-tracker-ingest every minute,
  * or, with tracker_ingest_drain = external, a module's own consumer calling
  * ingestMessage() per message.
+ *
+ * THE FILE FALLBACK. When the intake is not the file queue -- SQS -- a beacon
+ * it refuses (a timeout, a missing queue, an outage) is written to the file
+ * queue in async_log_dir instead, and logged as an error. forwardFallback()
+ * sends those on to the intake once it answers again; drain-tracker-ingest
+ * runs it before each drain, and a logging node with no scheduler runs
+ * `cmd=drain-tracker-ingest forward_only=1` from cron. A beacon sent twice
+ * -- one SQS took after all, then forwarded -- is ingested once: ingest skips
+ * an event whose id is already stored (EventRawHandlers::alreadyIngested()).
  */
 class TrackerIngest {
 
@@ -55,6 +64,9 @@ class TrackerIngest {
 
     /** @var \OWA\Core\IntakeQueue|null a queue to use instead of the configured one. TESTS ONLY. */
     public static $queue = null;
+
+    /** @var \OWA\Core\IntakeQueue|null the file fallback to use with $queue. TESTS ONLY. */
+    public static $fallback = null;
 
     // ---------------------------------------------------------------------
     // Settings
@@ -132,6 +144,65 @@ class TrackerIngest {
         return $built[ $type ] = $queue;
     }
 
+    /**
+     * Where a beacon the intake refuses is kept: the file queue in
+     * async_log_dir, built with the intake's registration. Null when the
+     * intake is the file queue itself.
+     *
+     * @return \OWA\Core\IntakeQueue|null
+     */
+    public static function fallback() {
+
+        static $built = null;
+
+        if ( self::$queue ) {
+
+            return self::$fallback;
+        }
+
+        if ( self::queue() instanceof FileEventQueue ) {
+
+            return null;
+        }
+
+        if ( ! $built ) {
+
+            $map = (array) \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'event_queues', self::QUEUE );
+            $map['queue_type'] = 'file';
+            $built = new FileEventQueue( $map );
+        }
+
+        return $built;
+    }
+
+    /**
+     * Why the queue's last call failed, when it says; null otherwise.
+     *
+     * @return string|null
+     */
+    public static function queueError( \OWA\Core\IntakeQueue $queue ) {
+
+        return method_exists( $queue, 'lastError' ) ? $queue->lastError() : null;
+    }
+
+    /**
+     * Whether an envelope fits the queue: a queue may declare the largest
+     * message it takes (maxMessageBytes()), and one over it is refused there.
+     *
+     * @return bool
+     */
+    public static function fits( \OWA\Core\IntakeQueue $queue, array $envelope ) {
+
+        if ( ! method_exists( $queue, 'maxMessageBytes' ) ) {
+
+            return true;
+        }
+
+        $body = json_encode( $envelope, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
+
+        return $body !== false && strlen( $body ) <= (int) $queue->maxMessageBytes();
+    }
+
     // ---------------------------------------------------------------------
     // The envelope
     // ---------------------------------------------------------------------
@@ -194,16 +265,7 @@ class TrackerIngest {
      */
     public static function send( $event, $delay = 0 ) {
 
-        try {
-
-            return (bool) self::queue()->send( self::envelope( $event ), $delay );
-
-        } catch ( \Throwable $t ) {
-
-            \OWA\Core\CoreAPI::error( 'Tracker ingest: could not queue a beacon: ' . $t->getMessage() );
-
-            return false;
-        }
+        return self::put( self::envelope( $event ), $delay, 'a beacon' );
     }
 
     /**
@@ -218,16 +280,63 @@ class TrackerIngest {
         \OWA\Core\CoreAPI::notice( sprintf( 'Tracker ingest: %s %s was not ingested; queued to retry.',
             $event->getEventType(), $event->getGuid() ) );
 
+        return self::put( $envelope, self::BACKOFF[0], 'a retry' );
+    }
+
+    /**
+     * Send an envelope to the intake, and to the file fallback when the
+     * intake refuses it.
+     *
+     * An envelope over the intake's message size limit is refused and
+     * logged, not kept: the fallback could never forward it.
+     *
+     * @param  array  $envelope
+     * @param  int    $delay
+     * @param  string $what  for the log
+     * @return bool
+     */
+    private static function put( array $envelope, $delay, $what ) {
+
+        $queue = null;
+        $error = null;
+
         try {
 
-            return (bool) self::queue()->send( $envelope, self::BACKOFF[0] );
+            $queue = self::queue();
+
+            if ( ! self::fits( $queue, $envelope ) ) {
+
+                \OWA\Core\CoreAPI::error( sprintf( 'Tracker ingest: %s %s is over the intake\'s message size limit '
+                    . 'of %d bytes; not queued.', (string) ( $envelope['type'] ?? '' ), $what, $queue->maxMessageBytes() ) );
+
+                return false;
+            }
+
+            if ( $queue->send( $envelope, $delay ) ) {
+
+                return true;
+            }
+
+            $error = self::queueError( $queue ) ?: 'refused';
 
         } catch ( \Throwable $t ) {
 
-            \OWA\Core\CoreAPI::error( 'Tracker ingest: could not queue a retry: ' . $t->getMessage() );
-
-            return false;
+            $error = $t->getMessage();
         }
+
+        $fallback = $queue && ! $queue instanceof FileEventQueue ? self::fallback() : null;
+
+        if ( $fallback && $fallback->send( $envelope, $delay ) ) {
+
+            \OWA\Core\CoreAPI::error( sprintf( 'Tracker ingest: the intake did not take %s (%s); kept in the file '
+                . 'queue until it can be forwarded.', $what, $error ) );
+
+            return true;
+        }
+
+        \OWA\Core\CoreAPI::error( sprintf( 'Tracker ingest: could not queue %s: %s', $what, $error ) );
+
+        return false;
     }
 
     // ---------------------------------------------------------------------
@@ -330,6 +439,78 @@ class TrackerIngest {
     }
 
     /**
+     * Send what the file fallback holds on to the intake, until it is empty,
+     * the deadline passes, or the intake refuses one.
+     *
+     * Nothing is received from the fallback until the intake answers, so an
+     * outage does not spend the fallback's receive limit. A message refused
+     * on the way is released to wait a minute; one over the intake's size
+     * limit, or not an envelope, goes to the fallback's dead-letter queue
+     * (dead-letter/ in async_log_dir).
+     *
+     * @param  int $deadline unix time
+     * @return array counts: forwarded, waiting (still in the fallback), dead
+     */
+    public static function forwardFallback( $deadline ) {
+
+        $counts   = array( 'forwarded' => 0, 'waiting' => 0, 'dead' => 0 );
+        $fallback = self::fallback();
+
+        if ( ! $fallback || $fallback->isProbablyEmpty() ) {
+
+            return $counts;
+        }
+
+        $main = self::queue();
+
+        if ( ( $main->stats()['messages'] ?? null ) === null ) {
+
+            $counts['waiting'] = (int) ( $fallback->stats()['messages'] ?? 0 );
+
+            return $counts;
+        }
+
+        while ( time() < $deadline ) {
+
+            $messages = $fallback->receive( self::BATCH, self::VISIBILITY );
+
+            if ( ! $messages ) {
+
+                break;
+            }
+
+            foreach ( $messages as $i => $message ) {
+
+                if ( $message->envelope === null || ! self::fits( $main, $message->envelope ) ) {
+
+                    $fallback->deadLetter( $message, $message->envelope === null
+                        ? 'Not a tracker-ingest envelope this version reads.'
+                        : 'Over the intake\'s message size limit.' );
+                    $counts['dead']++;
+
+                } elseif ( $main->send( $message->envelope, 0, $message->replayed ) ) {
+
+                    $fallback->ack( $message );
+                    $counts['forwarded']++;
+
+                } else {
+
+                    // The intake stopped answering: this and the rest of the batch wait.
+                    foreach ( array_slice( $messages, $i ) as $rest ) {
+
+                        $fallback->release( $rest, self::BACKOFF[0] );
+                        $counts['waiting']++;
+                    }
+
+                    return $counts;
+                }
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
      * Receive and ingest until the intake is empty or the deadline passes.
      *
      * @param  int $deadline unix time
@@ -339,6 +520,12 @@ class TrackerIngest {
 
         $counts = array( 'ingested' => 0, 'released' => 0, 'dead' => 0 );
         $queue  = self::queue();
+
+        // So queueError() afterwards speaks for this drain.
+        if ( method_exists( $queue, 'clearLastError' ) ) {
+
+            $queue->clearLastError();
+        }
 
         if ( $queue->isProbablyEmpty() ) {
 
@@ -388,7 +575,9 @@ class TrackerIngest {
      * in an outage longer than the back-off gets one more round, and one that
      * has been replayed already stays, so a beacon that fails for good is not
      * sent round forever. By hand (cmd=tracker-ingest-replay) everything is
-     * replayed, once its cause is fixed.
+     * replayed, once its cause is fixed. On SQS a dead letter not replayed
+     * within the queue's retention, fourteen days, is deleted by SQS; the
+     * file queue keeps one until it is replayed.
      *
      * A dead letter that never decoded is never replayed: it would only come
      * back. What is not replayed is released for REPLAY_RECHECK seconds, so
@@ -407,6 +596,14 @@ class TrackerIngest {
         $counts    = array( 'replayed' => 0, 'kept' => 0, 'unreadable' => 0, 'expired' => 0 );
         $main      = self::queue();
         $dlq       = $main->deadLetterQueue();
+
+        foreach ( array( $main, $dlq ) as $q ) {
+
+            if ( $q && method_exists( $q, 'clearLastError' ) ) {
+
+                $q->clearLastError();
+            }
+        }
 
         if ( ! $dlq || $dlq->isProbablyEmpty() ) {
 

@@ -306,11 +306,6 @@ class Template extends TemplateEngine {
         return \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( $module, $key );
     }
 
-    function getNs() {
-
-        return \OWA\Core\CoreAPI::appNs();
-    }
-
     function makeParamString($params = array(), $add_state = false, $format = 'query', $namespace = true) {
 
         $all_params = array();
@@ -334,7 +329,7 @@ class Template extends TemplateEngine {
 
                 foreach ($all_params as $n => $v) {
 
-                    $get .= $this->getNs().$n.'='.$v;
+                    $get .= $n.'='.$v;
 
                     $i++;
 
@@ -445,7 +440,7 @@ class Template extends TemplateEngine {
 
             foreach ($all_params as $n => $v) {
 
-                $get .= $this->getNs().\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($n).'='.\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($v);
+                $get .= \OWA\Module\Base\Classes\Sanitize::escapeForDisplay($n).'='.\OWA\Module\Base\Classes\Sanitize::escapeForDisplay($v);
 
                 $i++;
 
@@ -1225,8 +1220,7 @@ class Template extends TemplateEngine {
     function createNonceFormField($action) {
 
         return sprintf(
-                '<input type="hidden" name="%snonce" value="%s">',
-                $this->getNs(),
+                '<input type="hidden" name="nonce" value="%s">',
                 \OWA\Core\CoreAPI::createNonce($action));
     }
 

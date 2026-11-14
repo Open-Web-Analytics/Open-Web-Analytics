@@ -14,11 +14,11 @@
 <?php
 foreach ( $view->settings_fieldsets as $set ) {
 
-    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set, $view->getNs() );
+    echo \OWA\Module\Base\Classes\SettingsForm::fieldSet( $set );
 }
 ?>
     <?php echo $view->createNonceFormField( 'base.optionsRetentionUpdate' );?>
-    <input type="hidden" name="<?php echo $view->getNs();?>module" value="base">
-    <BUTTON class="owa-button" type="submit" name="<?php echo $view->getNs();?>action" value="base.optionsRetentionUpdate">Save</BUTTON>
+    <input type="hidden" name="module" value="base">
+    <BUTTON class="owa-button" type="submit" name="action" value="base.optionsRetentionUpdate">Save</BUTTON>
 </form>
 </div>

@@ -25,7 +25,8 @@ namespace OWA\Module\Base\Controller;
  * raw_retention_months for raw and every other event table, and each
  * Property's cube_retention_months for its cube. Both 0 by default, which
  * keeps everything: the lead is maintained and old periods are merged, never
- * dropped. The visitor store has its own fixed rule instead: a visitor not
+ * dropped. No merge crosses a table's cutoff (Db::planPartitionCompaction()).
+ * The visitor store has its own fixed rule instead: a visitor not
  * seen for 14 months, with no event left in raw, is deleted
  * (expireVisitorStore()), so a cube rebuild never loses an acquisition.
  *
@@ -277,12 +278,14 @@ class PartitionRotateCli extends PartitionsCli {
             // Ahead first: see the class comment.
             $extended = $this->extendTableLead( $table, $table_granularity, $through, $budget, $dry_run );
 
+            $cutoff = $this->cutoffFor( $table, $whatif, $raw_months );
+
             // Coarsen old periods so partition count stays under the budget
             // without deleting anything. This is what allows a table to hold
-            // decades of history within a modest open-file allowance.
-            $this->compactTable( $table, $budget, $dry_run );
+            // decades of history within a modest open-file allowance. No merge
+            // crosses the cutoff, so the drop below can reach it.
+            $this->compactTable( $table, $budget, $dry_run, $cutoff ? (string) $cutoff : null );
 
-            $cutoff  = $this->cutoffFor( $table, $whatif, $raw_months );
             $dropped = $cutoff ? $this->dropOlderThan( $table, (string) $cutoff, $dry_run ) : 0;
 
             // Dropping frees the open files the lead was refused for, so a

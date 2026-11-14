@@ -124,8 +124,6 @@ final class GoalEventDefinitionCountModeTest extends TestCase
 
                 return 'LINK';
             }
-
-            function getNs() { return \OWA\Core\CoreAPI::appNs(); }
         };
 
         foreach ($vars as $k => $v) {
