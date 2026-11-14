@@ -87,6 +87,34 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand( 'update-geoip-db', 'maxmind_geoip.updateGeoipDbCli' );
     }
 
+    /**
+     * Keeping the database current, weekly, on the servers whose role runs the
+     * scheduler (the command's default roles, full and worker).
+     *
+     * Registered here for the reason the command is: a module's jobs are
+     * collected from active modules only (Service::loadJobs()). Registered
+     * whether or not a licence key is set, so the job is listed wherever it can
+     * run; without a key the scheduled run is a success that says it skipped.
+     *
+     * Unlike Base's update-ua-regexes, this outbound request ships on: an
+     * administrator who activated this module and saved a key has asked for
+     * the database.
+     *
+     * Weekly at a time each install derives, not '@weekly': MaxMind see every
+     * install's check, and '@weekly' is Sunday midnight everywhere. The check
+     * is a HEAD request, which does not count against the account's download
+     * limit; MaxMind publish twice a week, so a copy is at most a week behind.
+     */
+    function registerJobs() {
+
+        $this->registerJob(
+            'refresh-geoip-db', 'update-geoip-db',
+            \OWA\Core\Cron::weeklySpreadFor( $this->jobSeed( 'refresh-geoip-db' ) ), array( 'scheduled' => 1 ),
+            'Checks whether MaxMind have published a newer GeoLite2 database than the local copy, and downloads '
+          . 'it if they have, or if there is no local copy. The check does not count against the MaxMind '
+          . 'account\'s download limit. Does nothing until a MaxMind licence key is set.' );
+    }
+
     function registerActions() {
 
         $this->registerAction(

@@ -41,7 +41,8 @@
     <div class="setting" id="geoip_refresh">
         <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Updating' ) ); ?></div>
         <div class="description">
-            <?php $view->out( \OWA\Core\CoreAPI::t( 'Downloading runs from the command line, because it fetches tens of megabytes and can take longer than a web request is allowed to:' ) ); ?><br>
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'With a key set, the scheduled job refresh-geoip-db checks MaxMind once a week and downloads a newer database when there is one.' ) ); ?><br>
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'To update now, run this from the command line. A download is tens of megabytes and can take longer than a web request is allowed to:' ) ); ?><br>
             <code>php cli.php cmd=update-geoip-db</code><br>
             <?php $view->out( \OWA\Core\CoreAPI::t( 'It checks with MaxMind first and does nothing if your copy is already current.' ) ); ?>
         </div>

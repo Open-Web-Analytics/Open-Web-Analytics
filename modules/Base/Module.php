@@ -597,31 +597,6 @@ class Module extends \OWA\Core\Module {
     }
 
     /**
-     * A stable seed for spreading one daily job, per install and per job.
-     *
-     * The fallbacks matter: an install that has not been configured yet has no
-     * public_url, and seeding every one of those from the same empty string
-     * would put exactly the installs most likely to share an image back on the
-     * same minute. The directory path differs per install even then.
-     *
-     * @return string
-     */
-    private function jobSeed( $job ) {
-
-        $seed = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
-
-        if ( $seed === '' ) {
-
-            $seed = \OWA\Core\Env::root() . '/';
-        }
-
-        // The JOB NAME is part of it, or every daily job on one install lands
-        // on the same minute -- which is the collision the spread exists to
-        // avoid, just moved from between installs to within one.
-        return $seed . '|' . $job;
-    }
-
-    /**
      * Register Scheduled Jobs
      *
      * Run by cmd=schedule-run, which belongs in cron every minute:
