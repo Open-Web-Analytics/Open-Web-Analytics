@@ -338,22 +338,19 @@ describe('the table', () => {
 
 describe('the headings', () => {
 
-    test('the sorted metric says so, and a description is its tooltip', () => {
+    test('the sorted metric says so', () => {
         const { $root } = draw(resultSet());
         const $sessions = $root.find('thead th[data-column="sessions"]');
 
         expect($sessions.attr('aria-sort')).toBe('descending');
         expect($sessions.hasClass('is-sorted')).toBe(true);
-        expect($sessions.find('.owa_gridSort').attr('title')).toBe('The number of sessions.');
-        expect($sessions.find('.owa_gridSortLabel').hasClass('has-description')).toBe(true);
-        expect($root.find('thead th[data-column="bounceRate"] .owa_gridSortLabel').hasClass('has-description')).toBe(false);
     });
 
     test('a metric sorts largest first, and the sorted one turns round', () => {
         const { $root, events } = draw(resultSet());
 
         $root.find('thead th[data-column="bounceRate"] .owa_gridSort').trigger('click');
-        $root.find('thead th[data-column="sessions"] .owa_gridSort').trigger('click');
+        $root.find('thead th[data-column="sessions"] [data-ui="grid-sort"]').trigger('click');
 
         expect(events).toEqual([
             ['sort_column_change', 'bounceRate', 'desc'],
@@ -435,6 +432,194 @@ describe('the headings', () => {
             .filter((i, el) => el.style.display !== 'none');
 
         expect(texts(shown)).toEqual(['Operating System']);
+    });
+});
+
+/*
+ * A metric heading with a description: its name opens the description
+ * (owa.metricinfo.js), on hover with a mouse and on a click or a tap, and the
+ * arrow after the name sorts. A heading without one is a sort button.
+ */
+describe('a heading\'s description', () => {
+
+    beforeEach(() => jest.useFakeTimers());
+
+    afterEach(() => {
+        OWA.metricInfo.close();
+        jest.useRealTimers();
+    });
+
+    const th = ($root, column) => $root.find(`thead th[data-column="${column}"]`);
+    const name = ($root, column) => th($root, column).find('.owa_metricDescribed');
+    const arrow = ($root, column) => th($root, column).find('[data-ui="grid-sort"]');
+    const shown = () => $('[data-ui="metric-description"]');
+
+    function pointer(el, type) {
+        const e = new Event(type);
+        Object.defineProperty(e, 'pointerType', { value: 'mouse' });
+        el.dispatchEvent(e);
+    }
+
+    test('the name is a button with no tooltip; the arrow is named for sorting', () => {
+        const { $root } = draw(resultSet());
+
+        expect(name($root, 'sessions').is('button')).toBe(true);
+        expect(name($root, 'sessions').text()).toBe('Sessions');
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('false');
+        expect(name($root, 'sessions').attr('title')).toBeUndefined();
+        expect(arrow($root, 'sessions').attr('aria-label')).toBe('Sort by Sessions');
+
+        // No description: the name sorts, as before.
+        expect(name($root, 'bounceRate').length).toBe(0);
+        expect(arrow($root, 'bounceRate').length).toBe(0);
+        expect(th($root, 'bounceRate').find('.owa_gridSort').text()).toBe('Bounce Rate');
+    });
+
+    test('the arrow points the way the sort goes: down unsorted, the direction when sorted', () => {
+        const { $root } = draw(resultSet({ rows: [
+            { browserType: cell('browserType', 'dimension', 'Chrome'), sessions: cell('sessions', 'metric', 1), pageViews: cell('pageViews', 'metric', 2) },
+        ], rs: { self: url({ dimensions: 'browserType', metrics: 'sessions,pageViews', page: 1 }), sortOrder: 'asc' } }));
+
+        expect(arrow($root, 'sessions').find('.fa-arrow-up').length).toBe(1);
+        expect(arrow($root, 'pageViews').find('.fa-arrow-down').length).toBe(1);
+    });
+
+    test('a click on the name shows the description and does not sort; the arrow sorts', () => {
+        const { $root, events } = draw(resultSet());
+
+        name($root, 'sessions').trigger('click');
+        jest.runAllTimers();
+
+        const pop = document.getElementById(name($root, 'sessions').attr('aria-controls'));
+
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('true');
+        expect(pop.textContent).toBe('The number of sessions.');
+        expect(pop.getAttribute('role')).toBe('status');
+        expect(events).toEqual([]);
+
+        // The heading is active while it is open: a touch screen shows the arrow.
+        expect(th($root, 'sessions').hasClass('is-describing')).toBe(true);
+
+        // A press on the arrow is in the heading, so it does not close it first...
+        arrow($root, 'sessions')[0].dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('true');
+
+        // ...and the arrow sorts, closing it.
+        arrow($root, 'sessions').trigger('click');
+        expect(events).toEqual([['sort_column_change', 'sessions', 'asc']]);
+        expect(shown().length).toBe(0);
+        expect(th($root, 'sessions').hasClass('is-describing')).toBe(false);
+    });
+
+    test('the name again closes it', () => {
+        const { $root } = draw(resultSet());
+
+        name($root, 'sessions').trigger('click');
+        name($root, 'sessions').trigger('click');
+
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('false');
+        expect(name($root, 'sessions').attr('aria-controls')).toBeUndefined();
+        expect(shown().length).toBe(0);
+    });
+
+    test('a mouse resting on the name opens it, and leaving closes it after a moment', () => {
+        const { $root } = draw(resultSet());
+        const el = name($root, 'sessions')[0];
+
+        pointer(el, 'pointerenter');
+        expect(shown().length).toBe(0);
+        jest.advanceTimersByTime(150);
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('true');
+
+        // Into the description: it stays.
+        pointer(el, 'pointerleave');
+        pointer(shown()[0], 'pointerenter');
+        jest.advanceTimersByTime(500);
+        expect(shown().length).toBe(1);
+
+        pointer(shown()[0], 'pointerleave');
+        jest.advanceTimersByTime(250);
+        expect(shown().length).toBe(0);
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('false');
+    });
+
+    test('a click while hovering keeps it open after the mouse leaves', () => {
+        const { $root } = draw(resultSet());
+        const el = name($root, 'sessions')[0];
+
+        pointer(el, 'pointerenter');
+        jest.advanceTimersByTime(150);
+        name($root, 'sessions').trigger('click');
+        pointer(el, 'pointerleave');
+        jest.advanceTimersByTime(1000);
+
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('true');
+    });
+
+    test('a touch does not open it on its own: only the tap does', () => {
+        const { $root } = draw(resultSet());
+        const e = new Event('pointerenter');
+        Object.defineProperty(e, 'pointerType', { value: 'touch' });
+
+        name($root, 'sessions')[0].dispatchEvent(e);
+        jest.advanceTimersByTime(500);
+
+        expect(shown().length).toBe(0);
+    });
+
+    test('one is open at a time', () => {
+        const { $root } = draw(resultSet({ rows: [
+            { browserType: cell('browserType', 'dimension', 'Chrome'), sessions: cell('sessions', 'metric', 1), pageViews: cell('pageViews', 'metric', 2) },
+        ], rs: { self: url({ dimensions: 'browserType', metrics: 'sessions,pageViews', page: 1 }) } }));
+
+        name($root, 'sessions').trigger('click');
+        name($root, 'pageViews').trigger('click');
+        jest.runAllTimers();
+
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('false');
+        expect(th($root, 'sessions').hasClass('is-describing')).toBe(false);
+        expect(name($root, 'pageViews').attr('aria-expanded')).toBe('true');
+        expect(shown().length).toBe(1);
+        expect(shown().text()).toBe('Pages viewed.');
+    });
+
+    test('Escape closes it and puts focus back on the name', () => {
+        const { $root } = draw(resultSet());
+
+        name($root, 'sessions').trigger('click');
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('false');
+        expect(document.activeElement).toBe(name($root, 'sessions')[0]);
+    });
+
+    test('a press anywhere else closes it; a press on it does not', () => {
+        const { $root } = draw(resultSet());
+
+        name($root, 'sessions').trigger('click');
+        jest.runAllTimers();
+
+        shown()[0].dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('true');
+
+        document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+        expect(name($root, 'sessions').attr('aria-expanded')).toBe('false');
+    });
+});
+
+describe('where a description opens', () => {
+
+    const phone = { innerWidth: 375, innerHeight: 667 };
+
+    test('under its button, kept 8px inside a phone', () => {
+        expect(OWA.metricInfo.place({ left: 300, top: 100, bottom: 120 }, 280, 60, phone))
+            .toEqual({ left: 87, top: 124, bottom: null });
+        expect(OWA.metricInfo.place({ left: 2, top: 100, bottom: 120 }, 280, 60, phone).left).toBe(8);
+    });
+
+    test('above its button when there is more room there', () => {
+        expect(OWA.metricInfo.place({ left: 20, top: 600, bottom: 620 }, 280, 100, phone))
+            .toEqual({ left: 20, top: null, bottom: 71 });
     });
 });
 

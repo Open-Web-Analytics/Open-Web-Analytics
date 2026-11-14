@@ -5,7 +5,8 @@ const { FIXTURE, adminLogin, login, ui } = require('./fixtures');
  * The admin and reporting screens used with a finger, upright and sideways:
  * nothing wider than the screen, dialogs wholly on it, a roster's actions in
  * reach, fields that do not make iOS zoom, 44px targets, the period sheet in
- * landscape, and a trend whose legend wraps instead of scrolling the widget.
+ * landscape, a trend whose legend wraps instead of scrolling the widget, a row
+ * of metric boxes that swipes, and a metric's description opened from its name.
  *
  * Elements are found by role and label, then by data-ui; never by a styling
  * class (CONTRIBUTING.md).
@@ -50,6 +51,31 @@ async function pastTheEdge(page) {
 
         return { over: document.documentElement.scrollWidth - vw, first: out.slice(-3) };
     });
+}
+
+/** A finger dragging `dx` pixels sideways across `locator` (negative: towards the left). */
+async function swipe(page, locator, dx) {
+    await locator.scrollIntoViewIfNeeded();
+    const box = await locator.boundingBox();
+    const y = Math.round(box.y + box.height / 2);
+    const x = Math.round(box.x + box.width * 0.75);
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type, at) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: at === null ? [] : [{ x: at, y }] });
+
+    await touch('touchStart', x);
+    for (let i = 1; i <= 10; i++) {
+        await touch('touchMove', Math.round(x + (dx * i) / 10));
+    }
+    await touch('touchEnd', null);
+    await cdp.detach();
+}
+
+/** The dashboard's first row of metric boxes, its boxes drawn. */
+async function metricRow(page) {
+    await page.goto(report('dashboard'), { waitUntil: 'networkidle' });
+    const row = ui(page, 'kpi-row').first();
+    await expect(row.locator('[data-ui^="kpi:"]').first()).toBeVisible({ timeout: 20_000 });
+    return row;
 }
 
 /** Height and width of a control, as drawn. */
@@ -161,7 +187,8 @@ for (const [name, device] of [['phone', PHONE], ['phone held sideways', LANDSCAP
 
             const controls = {
                 'row actions': ui(grid, 'grid-row-actions').first(),
-                'sort heading': grid.locator('thead').getByRole('button', { name: /Sessions/ }),
+                'sort heading': grid.locator('thead').getByRole('button', { name: 'Sessions', exact: true }),
+                'sort arrow': grid.locator('thead').getByRole('button', { name: /^Sort by /, includeHidden: true }).first(),
                 'rows per page': grid.getByRole('combobox', { name: 'Rows per page' }),
                 'previous page': grid.getByRole('button', { name: 'Previous page' }),
                 'next page': grid.getByRole('button', { name: 'Next page' }),
@@ -206,6 +233,28 @@ for (const [name, device] of [['phone', PHONE], ['phone held sideways', LANDSCAP
                 const box = await entry.boundingBox();
                 expect(box.x + box.width, 'every legend entry is on the screen').toBeLessThanOrEqual(device.viewport.width);
             }
+        });
+
+        /*
+         * The row of metric boxes over a trend scrolls under a finger. A swipe
+         * chooses no box, and a touch screen has no arrows over the boxes.
+         */
+        test('the metric boxes swipe sideways, and a swipe charts nothing', async ({ page }) => {
+            const row = await metricRow(page);
+            const chart = page.locator('[data-ui^="chart:"]').first();
+            await expect(chart).toHaveAttribute('aria-label', /./, { timeout: 20_000 });
+            const charted = await chart.getAttribute('aria-label');
+
+            expect(await row.evaluate((el) => el.scrollWidth - el.clientWidth),
+                'the dashboard\'s boxes fit, so the swipe proves nothing').toBeGreaterThan(10);
+
+            await expect(ui(page, 'kpi-next').first()).toBeHidden();
+            await expect(ui(page, 'kpi-prev').first()).toBeHidden();
+
+            await swipe(page, row, -200);
+            await expect.poll(() => row.evaluate((el) => el.scrollLeft)).toBeGreaterThan(20);
+
+            expect(await chart.getAttribute('aria-label'), 'the swipe charted a box').toBe(charted);
         });
 
         test('a notification\'s Dismiss is shown, a 44px target', async ({ page }) => {
@@ -281,6 +330,96 @@ test.describe('on a phone', () => {
         expect(lead.x).toBeLessThan(40);
     });
 
+    /*
+     * About 2.4 boxes to a row: two whole ones and part of the next at the
+     * edge, which is what says the row goes on.
+     */
+    test('a metric box shows in part at the row\'s edge, and a tap still charts a box', async ({ page }) => {
+        await adminLogin(page);
+        const row = await metricRow(page);
+
+        const edge = await row.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            return [...el.querySelectorAll('[data-ui^="kpi:"]')].map((b) => {
+                const x = b.getBoundingClientRect();
+                return { whole: x.left >= r.left - 1 && x.right <= r.right + 1, shown: Math.min(x.right, r.right) - Math.max(x.left, r.left) };
+            });
+        });
+
+        expect(edge.filter((b) => b.whole).length, 'two whole boxes').toBeGreaterThanOrEqual(2);
+        const part = edge.find((b) => !b.whole && b.shown > 0);
+        expect(part, 'no box shows in part at the edge').toBeTruthy();
+        expect(part.shown, 'the part of the next box is too thin to see').toBeGreaterThanOrEqual(30);
+
+        const chart = page.locator('[data-ui^="chart:"]').first();
+        await expect(chart).toHaveAttribute('aria-label', /./, { timeout: 20_000 });
+        const before = await chart.getAttribute('aria-label');
+
+        await row.locator('[data-ui^="kpi:"]').nth(1).tap();
+        await expect.poll(() => chart.getAttribute('aria-label')).not.toBe(before);
+    });
+
+    /*
+     * A heading's name opens its description and does not sort. The tap also
+     * shows that heading's sort arrow, which is how a phone sorts a column
+     * that is not sorted.
+     */
+    test('a heading\'s name shows its description and does not sort; its arrow then sorts', async ({ page }) => {
+        await adminLogin(page);
+        await page.goto(report('pages'), { waitUntil: 'networkidle' });
+
+        const grid = ui(page, 'grid').last();
+        await expect(ui(grid, 'grid-row').first()).toBeVisible({ timeout: 20_000 });
+
+        // A column with a description that is not the sorted one.
+        const heading = grid.getByRole('columnheader')
+            .filter({ has: page.getByRole('button', { name: /^Sort by /, includeHidden: true }) })
+            .and(grid.locator('th[aria-sort="none"]')).first();
+        const label = heading.getByRole('button').first();
+        const sortArrow = heading.getByRole('button', { name: /^Sort by /, includeHidden: true });
+        const column = await heading.getAttribute('data-column');
+
+        await expect(sortArrow).toBeHidden();
+        await label.scrollIntoViewIfNeeded();
+        await label.tap();
+
+        const text = ui(page, 'metric-description');
+        await expect(text).toBeVisible();
+        await expect(text).not.toBeEmpty();
+        await expect(label).toHaveAttribute('aria-expanded', 'true');
+
+        const box = await text.boundingBox();
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(PHONE.viewport.width);
+
+        await page.waitForTimeout(500);
+        await expect(heading, 'the name sorted the column').toHaveAttribute('aria-sort', 'none');
+
+        await expect(sortArrow).toBeVisible();
+        expect((await size(sortArrow)).h).toBeGreaterThanOrEqual(44);
+        expect(await sortArrow.evaluate((el) => parseFloat(getComputedStyle(el, '::before').width))).toBeGreaterThanOrEqual(44);
+
+        await sortArrow.tap();
+        await expect(grid.locator(`th[data-column="${column}"]`)).toHaveAttribute('aria-sort', 'descending');
+    });
+
+    test('a metric box\'s name shows its description and does not chart the metric', async ({ page }) => {
+        await adminLogin(page);
+        const row = await metricRow(page);
+
+        const chart = page.locator('[data-ui^="chart:"]').first();
+        await expect(chart).toHaveAttribute('aria-label', /./, { timeout: 20_000 });
+        const before = await chart.getAttribute('aria-label');
+
+        const box = row.locator('[data-ui^="kpi:"]').filter({ has: page.getByRole('button') }).nth(1);
+        await box.getByRole('button').tap();
+
+        await expect(ui(page, 'metric-description')).toBeVisible();
+        await expect(ui(page, 'metric-description')).not.toBeEmpty();
+        await page.waitForTimeout(500);
+        expect(await chart.getAttribute('aria-label'), 'the name charted the metric').toBe(before);
+    });
+
     test('refused a page, a signed-in user still has the menu', async ({ page }) => {
         await login(page);
         await page.goto('?owa_do=base.optionsGeneral', { waitUntil: 'networkidle' });
@@ -288,6 +427,38 @@ test.describe('on a phone', () => {
         await expect(page.getByText('Your account does not have access to this page.')).toBeVisible();
         await page.getByRole('button', { name: 'Show the menu' }).click();
         await expect(ui(page, 'nav:Dashboard')).toBeVisible();
+    });
+});
+
+test.describe('with a mouse', () => {
+
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    /* The sorted column's arrow is always there; another column's shows on hover. */
+    test('a heading shows its sort arrow on hover; the sorted column\'s always', async ({ page }) => {
+        await adminLogin(page);
+        await page.goto(report('pages'), { waitUntil: 'networkidle' });
+
+        const grid = ui(page, 'grid').last();
+        await expect(ui(grid, 'grid-row').first()).toBeVisible({ timeout: 20_000 });
+
+        const arrows = grid.getByRole('columnheader').filter({ has: page.getByRole('button', { name: /^Sort by /, includeHidden: true }) });
+        const sorted = arrows.and(grid.locator('th:not([aria-sort="none"])')).first();
+        const other = arrows.and(grid.locator('th[aria-sort="none"]')).first();
+
+        await page.mouse.move(0, 0);
+        await expect(sorted.getByRole('button', { name: /^Sort by /, includeHidden: true })).toBeVisible();
+        await expect(other.getByRole('button', { name: /^Sort by /, includeHidden: true })).toBeHidden();
+
+        const widthBefore = (await other.boundingBox()).width;
+        await other.hover();
+        await expect(other.getByRole('button', { name: /^Sort by /, includeHidden: true })).toBeVisible();
+        expect((await other.boundingBox()).width, 'the heading moved when its arrow showed').toBe(widthBefore);
+
+        // Hovering the name shows the description; it does not sort.
+        await other.getByRole('button').first().hover();
+        await expect(ui(page, 'metric-description')).toBeVisible();
+        await expect(other).toHaveAttribute('aria-sort', 'none');
     });
 });
 
