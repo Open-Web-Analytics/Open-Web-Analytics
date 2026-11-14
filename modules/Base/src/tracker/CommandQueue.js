@@ -342,6 +342,10 @@ class CommandQueue {
      * Returns undefined when nothing sets it, which is distinct from a command
      * that sets it to false -- the caller has to be able to tell those apart, so
      * this cannot use the '' sentinel argFor() uses.
+     *
+     * The LAST setOption in the queue wins, as it does when the commands run:
+     * a bundle queues its options ahead of the page's commands, so the page's
+     * own value overrides the bundle's.
      */
     optionFor( obj_name, option_name, current ) {
 
@@ -366,7 +370,7 @@ class CommandQueue {
             return found;
         }
 
-        for ( var i = 0; i < this.asyncCmds.length; i++ ) {
+        for ( var i = this.asyncCmds.length - 1; i >= 0; i-- ) {
 
             found = valueOf( this.asyncCmds[i] );
 
