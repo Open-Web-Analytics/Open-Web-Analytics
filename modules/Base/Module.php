@@ -378,6 +378,9 @@ class Module extends \OWA\Core\Module {
             array( 'base.trackingVisit', \OWA\Core\CoreAPI::t( 'Visits and cookies' ),
                 \OWA\Core\CoreAPI::t( 'How long the tracker’s cookies hold a visit and a visitor together, and the domain they are set on.' ),
                 array( 'tracker_session_cookie_days', 'tracker_visitor_cookie_days', 'tracker_cookie_domain' ) ),
+            array( 'base.trackingPrivacy', 'Privacy signals',
+                'Browsers that ask not to be tracked, with Do Not Track or Global Privacy Control.',
+                array( 'tracker_honor_privacy_signals' ) ),
         ) as $order => list( $id, $legend, $description, $settings ) ) {
 
             $this->registerSettingsFieldSet( array(

@@ -19,7 +19,7 @@ final class TagSettingsTest extends TestCase
 
     /** Base's tag fieldsets, one per job. */
     const BASE_SETS = array('base.trackingPageViews', 'base.trackingClicks', 'base.trackingForms', 'base.trackingScroll',
-                            'base.trackingSearch', 'base.trackingErrors', 'base.trackingVisit');
+                            'base.trackingSearch', 'base.trackingErrors', 'base.trackingVisit', 'base.trackingPrivacy');
 
     private function tagSet(string $id = 'base.trackingClicks'): array
     {
@@ -59,7 +59,7 @@ final class TagSettingsTest extends TestCase
             $keys = array_merge($keys, $set['settings']);
         }
 
-        $this->assertCount(14, $keys, 'every tag setting Base declares, each in one fieldset');
+        $this->assertCount(15, $keys, 'every tag setting Base declares, each in one fieldset');
         $this->assertSame($keys, array_unique($keys), 'none in both');
 
         foreach ($keys as $key) {
@@ -89,6 +89,33 @@ final class TagSettingsTest extends TestCase
 
         $this->assertStringContainsString('config[base.tracker_visitor_cookie_days]', $property);
         $this->assertStringContainsString('config[base.tracker_cookie_domain]', $property);
+    }
+
+    /**
+     * Honoring privacy signals is the tracker's default, a switch at every
+     * level, and the site owner's to turn off: the description says what each
+     * value does and that the law may decide it.
+     */
+    public function testPrivacySignalsAreASwitchAtEveryLevel(): void
+    {
+        $args = $this->config()->registeredField('base', 'tracker_honor_privacy_signals');
+
+        $this->assertNotNull($args);
+        $this->assertSame('boolean', $args['type']);
+        $this->assertTrue($args['default']);
+        $this->assertSame(array('install', 'property', 'profile'), $args['scopes']);
+        $this->assertSame('Honor Privacy Signals', $args['label']);
+
+        foreach (array('Do Not Track', 'Global Privacy Control', 'untracked', 'erases', 'tracked like any other', 'legal requirement') as $phrase) {
+            $this->assertStringContainsString($phrase, $args['description']);
+        }
+
+        $this->assertSame(array('tracker_honor_privacy_signals'), $this->tagSet('base.trackingPrivacy')['settings']);
+
+        foreach (array('property', 'profile') as $level) {
+            $this->assertStringContainsString('config[base.tracker_honor_privacy_signals]',
+                SettingsForm::scopedFieldSet($this->tagSet('base.trackingPrivacy'), $level, 'zz-tag-' . $level, 'owa_'), $level);
+        }
     }
 
     /** The Tracking Tag screen heads each group with its legend and description, so every one needs both. */

@@ -98,17 +98,71 @@ export function compareRange( key, start, end ) {
     return null;
 }
 
-let dateFormat, monthFormat, dayFormat, longFormat;
+let dateFormat, monthFormat, dayFormat, longFormat, formatsLocale;
 
+/** The date formats, in the install's locale (OWA.locale()). */
 function formats() {
 
-    if ( ! dateFormat ) {
+    const locale = OWA.locale();
 
-        dateFormat  = new Intl.DateTimeFormat( undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' } );
-        longFormat  = new Intl.DateTimeFormat( undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' } );
-        monthFormat = new Intl.DateTimeFormat( undefined, { month: 'short', year: 'numeric', timeZone: 'UTC' } );
-        dayFormat   = new Intl.DateTimeFormat( undefined, { weekday: 'narrow', timeZone: 'UTC' } );
+    if ( ! dateFormat || formatsLocale !== String( locale ) ) {
+
+        dateFormat    = new Intl.DateTimeFormat( locale, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' } );
+        longFormat    = new Intl.DateTimeFormat( locale, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' } );
+        monthFormat   = new Intl.DateTimeFormat( locale, { month: 'short', year: 'numeric', timeZone: 'UTC' } );
+        dayFormat     = new Intl.DateTimeFormat( locale, { weekday: 'narrow', timeZone: 'UTC' } );
+        formatsLocale = String( locale );
     }
+}
+
+/**
+ * The regions whose week does not start on Monday, by first day (0 Sunday,
+ * 6 Saturday, 5 Friday): CLDR's firstDay, which Intl.Locale's week
+ * information is read from where a browser has it.
+ */
+const WEEK_STARTS = {
+    0: 'AG AS BD BR BS BT BW BZ CA CO DM DO ET GT GU HK HN ID IL IN IS JM JP KE KH KR LA MH MM MO MT MX MZ NI NP PA PE PH PK PR PT PY SA SG SV TH TT TW UM US VE VI WS YE ZA ZW',
+    6: 'AF BH DJ DZ EG IQ IR JO KW LY OM QA SD SY',
+    5: 'MV',
+};
+
+/**
+ * The first day of the week in a locale, as Date.getUTCDay() numbers it
+ * (0 Sunday, 1 Monday). Intl.Locale's week information where the browser has
+ * it; else the locale's region, or the region its language is most likely
+ * spoken in (en: US, fr: FR), looked up in WEEK_STARTS. Sunday where Intl
+ * cannot say.
+ *
+ * @param {string|undefined} locale  a language tag; the browser's when undefined
+ * @return {number}
+ */
+export function weekStart( locale ) {
+
+    try {
+
+        const l    = new Intl.Locale( locale || Intl.DateTimeFormat().resolvedOptions().locale );
+        const info = typeof l.getWeekInfo === 'function' ? l.getWeekInfo() : l.weekInfo;
+
+        if ( info && info.firstDay >= 1 && info.firstDay <= 7 ) {
+
+            return info.firstDay % 7;
+        }
+
+        const region = l.region || ( typeof l.maximize === 'function' ? l.maximize().region : '' );
+
+        if ( region ) {
+
+            const day = Object.keys( WEEK_STARTS ).find( ( d ) => WEEK_STARTS[ d ].split( ' ' ).includes( region ) );
+
+            return day === undefined ? 1 : +day;
+        }
+
+    } catch ( e ) {
+
+        // An Intl without Locale, or a tag it refuses.
+    }
+
+    return 0;
 }
 
 /** "Oct 13, 2026" */
@@ -143,6 +197,16 @@ export function formatRange( start, end ) {
     }
 
     return formatDate( start ) + ' – ' + formatDate( end );
+}
+
+/**
+ * A label set inside a sentence: lower-cased in English ("Compared to
+ * previous period."), where a label is capitalised only as a heading; as
+ * written in any other language, whose capitals may be grammar.
+ */
+function midSentence( label ) {
+
+    return /^en\b/i.test( OWA.locale() || 'en' ) ? String( label ).toLowerCase() : String( label );
 }
 
 function esc( s ) {
@@ -285,8 +349,60 @@ function validYmd( y, m, d ) {
 }
 
 /**
+ * A date written the way a locale writes one, as yyyymmdd; '' if it is not
+ * one. A month named in the locale ("13 oct. 2026", "Oct 13, 2026") with a
+ * day and a four-digit year; or three numbers in the order the locale writes
+ * a numeric date ("13/10/2026", "10/13/2026", "13.10.2026").
+ */
+function localDate( t, locale ) {
+
+    const lower = t.toLocaleLowerCase( locale );
+    const nums  = lower.match( /\d+/g ) || [];
+    let month = 0, name = '';
+
+    for ( let m = 1; m <= 12; m++ ) {
+
+        for ( const style of [ 'long', 'short' ] ) {
+
+            const n = new Intl.DateTimeFormat( locale, { month: style, timeZone: 'UTC' } )
+                .format( new Date( Date.UTC( 2000, m - 1, 1 ) ) ).toLocaleLowerCase( locale ).replace( /\.$/, '' );
+
+            // The longest name found: "june", not "jun".
+            if ( n && ! /\d/.test( n ) && lower.includes( n ) && n.length > name.length ) {
+
+                name  = n;
+                month = m;
+            }
+        }
+    }
+
+    if ( month ) {
+
+        const day  = nums.find( ( n ) => n.length <= 2 );
+        const year = nums.find( ( n ) => n.length === 4 );
+
+        return day && year ? validYmd( +year, month, +day ) : '';
+    }
+
+    if ( nums.length !== 3 ) {
+
+        return '';
+    }
+
+    const v = {};
+
+    new Intl.DateTimeFormat( locale, { day: 'numeric', month: 'numeric', year: 'numeric', timeZone: 'UTC' } )
+        .formatToParts( new Date( 0 ) )
+        .filter( ( p ) => p.type === 'day' || p.type === 'month' || p.type === 'year' )
+        .forEach( ( p, i ) => { v[ p.type ] = +nums[ i ]; } );
+
+    return v.year >= 1000 ? validYmd( v.year, v.month, v.day ) : '';
+}
+
+/**
  * A typed date as yyyymmdd, or '' if it is not one. Takes 2026-10-13,
- * 20261013, and what the browser's Date reads: "Oct 13, 2026", "10/13/2026".
+ * 20261013, a date as the install's locale writes it (the fields show
+ * formatDate()), and what the browser's Date reads.
  */
 export function parseDateInput( text ) {
 
@@ -295,6 +411,13 @@ export function parseDateInput( text ) {
 
     if ( ( m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec( t ) ) ) return validYmd( +m[1], +m[2], +m[3] );
     if ( ( m = /^(\d{4})(\d{2})(\d{2})$/.exec( t ) ) ) return validYmd( +m[1], +m[2], +m[3] );
+
+    const local = t ? localDate( t, OWA.locale() ) : '';
+
+    if ( local ) {
+
+        return local;
+    }
 
     const d = t ? new Date( t ) : null;
 
@@ -322,6 +445,7 @@ export function PeriodPicker( el, config, onApply ) {
     this.page     = '';
     this.active   = '';
     this.uid      = 'owaPeriod' + ( ++PeriodPicker.seq );
+    this.weekStart = weekStart( OWA.locale() );
 
     this.render();
 
@@ -434,12 +558,12 @@ PeriodPicker.prototype = {
         const item = ( act, key, on, label ) =>
             '<li><button type="button" data-act="' + act + '" data-k="' + key + '" aria-pressed="' + on + '">' + esc( label ) + '</button></li>';
 
-        let h = '<ul class="owa_periodList"><li class="owa_periodGroup">Relative <small>to today</small></li>';
+        let h = '<ul class="owa_periodList"><li class="owa_periodGroup">' + OWA.l( 'Relative <small>to today</small>' ) + '</li>';
 
         this.presets.forEach( ( p ) => { h += item( 'preset', p.key, d.preset === p.key, p.label ); } );
 
-        h += '<li class="owa_periodGroup">Fixed <small>dates you choose</small></li>'
-            + item( 'preset', 'custom', d.preset === 'custom', 'Custom date range' )
+        h += '<li class="owa_periodGroup">' + OWA.l( 'Fixed <small>dates you choose</small>' ) + '</li>'
+            + item( 'preset', 'custom', d.preset === 'custom', OWA.l( 'Custom date range' ) )
             + '<li class="owa_periodRule" role="separator"></li>'
             + '<li>' + this.switchHtml( 'l' ) + '</li>';
 
@@ -458,16 +582,16 @@ PeriodPicker.prototype = {
         const d = this.draft;
         const option = ( key, label ) => '<option value="' + esc( key ) + '"' + ( d.cmpKey === key ? ' selected' : '' ) + '>' + esc( label ) + '</option>';
 
-        return '<select class="owa_periodCmpSelect" data-cmp-select aria-label="Compared to">'
+        return '<select class="owa_periodCmpSelect" data-cmp-select aria-label="' + esc( OWA.l( 'Compared to' ) ) + '">'
             + this.compares.map( ( c ) => option( c.key, c.label ) ).join( '' )
-            + option( 'custom', 'Custom date range' ) + '</select>';
+            + option( 'custom', OWA.l( 'Custom date range' ) ) + '</select>';
     },
 
     switchHtml( where ) {
 
         const id = this.uid + where;
 
-        return '<div class="owa_periodSwitchRow"><span id="' + id + '">Compare</span>'
+        return '<div class="owa_periodSwitchRow"><span id="' + id + '">' + esc( OWA.l( 'Compare' ) ) + '</span>'
             + '<button type="button" class="owa_periodSwitch" role="switch" aria-labelledby="' + id + '" aria-checked="' + this.draft.cmpOn + '" data-act="cmpToggle"></button></div>';
     },
 
@@ -481,17 +605,17 @@ PeriodPicker.prototype = {
 
             return '<div class="owa_periodChips owa_periodChipsCmp">'
                 + this.compares.map( ( c ) => chip( 'cmpKey', c.key, d.cmpKey === c.key, c.label ) ).join( '' )
-                + chip( 'cmpKey', 'custom', d.cmpKey === 'custom', 'Custom date range' ) + '</div>';
+                + chip( 'cmpKey', 'custom', d.cmpKey === 'custom', OWA.l( 'Custom date range' ) ) + '</div>';
         }
 
         return '<div class="owa_periodChips">'
             + this.presets.map( ( p ) => chip( 'preset', p.key, d.preset === p.key, p.label ) ).join( '' )
-            + chip( 'preset', 'custom', d.preset === 'custom', 'Custom date range' ) + '</div>';
+            + chip( 'preset', 'custom', d.preset === 'custom', OWA.l( 'Custom date range' ) ) + '</div>';
     },
 
     fieldHtml( which, i, ymd, editable, outlined ) {
 
-        const label = i === 0 ? 'Start date' : 'End date';
+        const label = esc( i === 0 ? OWA.l( 'Start date' ) : OWA.l( 'End date' ) );
         const cls   = 'owa_periodField' + ( which === 'cmp' ? ' owa_periodFieldCmp' : '' ) + ( editable ? ( outlined ? ' is-target' : '' ) : ' is-readonly' );
 
         // A preset's date is text, not a read-only input: nothing to focus,
@@ -512,16 +636,16 @@ PeriodPicker.prototype = {
         const d = this.draft;
         const pEd = d.preset === 'custom';
         const cEd = d.cmpKey === 'custom';
-        const kind = ( fixed ) => '<span class="owa_periodKind">' + ( fixed ? 'Fixed period' : 'Relative period' ) + '</span>';
+        const kind = ( fixed ) => '<span class="owa_periodKind">' + esc( fixed ? OWA.l( 'Fixed period' ) : OWA.l( 'Relative period' ) ) + '</span>';
 
         let h = '<div class="owa_periodFields">'
-            + '<div class="owa_periodLabel"><i aria-hidden="true"></i>Date range' + kind( pEd ) + '</div>'
+            + '<div class="owa_periodLabel"><i aria-hidden="true"></i>' + esc( OWA.l( 'Date range' ) ) + kind( pEd ) + '</div>'
             + '<div class="owa_periodFieldRow">' + this.fieldHtml( 'main', 0, d.main[0], pEd, target === 'main' && this.edge === 0 ) + '<span aria-hidden="true">–</span>' + this.fieldHtml( 'main', 1, d.main[1], pEd, target === 'main' && this.edge === 1 ) + '</div>'
             + '<div class="owa_periodPhoneCompare">' + this.switchHtml( 'p' ) + ( d.cmpOn ? this.chipsHtml( true ) : '' ) + '</div>';
 
         if ( d.cmpOn ) {
 
-            h += '<div class="owa_periodLabel owa_periodLabelCmp"><i aria-hidden="true"></i>Compared to' + kind( cEd ) + '</div>'
+            h += '<div class="owa_periodLabel owa_periodLabelCmp"><i aria-hidden="true"></i>' + esc( OWA.l( 'Compared to' ) ) + kind( cEd ) + '</div>'
                 + '<div class="owa_periodFieldRow">' + this.fieldHtml( 'cmp', 0, d.cmp[0], cEd, target === 'cmp' && this.edge === 0 ) + '<span aria-hidden="true">–</span>' + this.fieldHtml( 'cmp', 1, d.cmp[1], cEd, target === 'cmp' && this.edge === 1 ) + '</div>';
         }
 
@@ -546,7 +670,7 @@ PeriodPicker.prototype = {
         for ( let i = 0; i < 7; i++ ) {
 
             // 4 January 1970 was a Sunday.
-            wk += '<span>' + esc( dayFormat.format( new Date( Date.UTC( 1970, 0, 4 + i ) ) ) ) + '</span>';
+            wk += '<span>' + esc( dayFormat.format( new Date( Date.UTC( 1970, 0, 4 + this.weekStart + i ) ) ) ) + '</span>';
         }
 
         const pageT = Date.UTC( +page.substr( 0, 4 ), +page.substr( 4, 2 ) - 1, 1 );
@@ -554,9 +678,9 @@ PeriodPicker.prototype = {
         const roving = target ? this.rovingDay( target, first ) : '';
 
         let h = '<div class="owa_periodCal' + ( target ? '' : ' is-readonly' ) + '">'
-            + '<div class="owa_periodCalNav"><button type="button" data-act="mprev" aria-label="Previous month"' + ( pageT <= first ? ' disabled' : '' ) + '>‹</button>'
+            + '<div class="owa_periodCalNav"><button type="button" data-act="mprev" aria-label="' + esc( OWA.l( 'Previous month' ) ) + '"' + ( pageT <= first ? ' disabled' : '' ) + '>‹</button>'
             + '<span>' + esc( monthFormat.format( new Date( pageT ) ) ) + '</span>'
-            + '<button type="button" data-act="mnext" aria-label="Next month"' + ( pageT >= last ? ' disabled' : '' ) + '>›</button></div>'
+            + '<button type="button" data-act="mnext" aria-label="' + esc( OWA.l( 'Next month' ) ) + '"' + ( pageT >= last ? ' disabled' : '' ) + '>›</button></div>'
             + '<div class="owa_periodCalWeek">' + wk + '</div><div class="owa_periodCalMonths">';
 
         while ( y < endY || ( y === endY && m <= endM ) ) {
@@ -568,7 +692,7 @@ PeriodPicker.prototype = {
             h += '<div class="owa_periodMonth' + ( key === page ? ' is-page' : '' ) + '" data-month="' + key + '">'
                 + '<div class="owa_periodMonthName">' + esc( monthFormat.format( new Date( start ) ) ) + '</div><div class="owa_periodDays">';
 
-            for ( let b = 0; b < new Date( start ).getUTCDay(); b++ ) {
+            for ( let b = 0; b < ( new Date( start ).getUTCDay() - this.weekStart + 7 ) % 7; b++ ) {
 
                 h += '<span></span>';
             }
@@ -702,7 +826,8 @@ PeriodPicker.prototype = {
 
         const from = e.target.getAttribute( 'data-d' );
         const t = toTime( from );
-        const dow = new Date( t ).getUTCDay();
+        // The day's place in the week, which starts on the locale's first day.
+        const dow = ( new Date( t ).getUTCDay() - this.weekStart + 7 ) % 7;
         let to = null;
 
         switch ( e.key ) {
@@ -761,36 +886,41 @@ PeriodPicker.prototype = {
             return esc( this.badInput );
         }
 
-        let s = pEd ? '<b>Fixed dates.</b>' : '<b>' + esc( this.presetLabel( d.preset ) ) + '</b>, counted from today.';
+        const bold = ( text ) => '<b>' + esc( text ) + '</b>';
+
+        // Whole sentences, joined by a space.
+        const said = [ pEd ? bold( OWA.l( 'Fixed dates.' ) )
+            : OWA.util.sprintf( OWA.l( '%s, counted from today.' ), bold( this.presetLabel( d.preset ) ) ) ];
 
         if ( d.cmpOn ) {
 
-            s += cEd ? ' Compared to <b>fixed dates</b>.' : ' Compared to <b>' + esc( this.compareLabel( d.cmpKey ).toLowerCase() ) + '</b>.';
+            said.push( cEd ? OWA.util.sprintf( OWA.l( 'Compared to %s.' ), bold( OWA.l( 'fixed dates' ) ) )
+                : OWA.util.sprintf( OWA.l( 'Compared to %s.' ), bold( midSentence( this.compareLabel( d.cmpKey ) ) ) ) );
         }
 
         if ( target ) {
 
-            s += this.edge === 0 ? ' Click a day to set the start date.' : ' Click a day to set the end date.';
+            said.push( esc( this.edge === 0 ? OWA.l( 'Click a day to set the start date.' ) : OWA.l( 'Click a day to set the end date.' ) ) );
 
         } else {
 
-            s += ' Pick Custom date range to choose dates.';
+            said.push( esc( OWA.l( 'Pick Custom date range to choose dates.' ) ) );
         }
 
-        return s;
+        return said.join( ' ' );
     },
 
     panelHtml() {
 
         const target = calendarTarget( this.draft, this.focus );
 
-        return '<div class="owa_periodPanel" id="' + this.uid + '" role="dialog" aria-label="Date range" tabindex="-1">'
-            + '<div class="owa_periodSheetHead">Date range<button type="button" data-act="cancel" aria-label="Close">×</button></div>'
+        return '<div class="owa_periodPanel" id="' + this.uid + '" role="dialog" aria-label="' + esc( OWA.l( 'Date range' ) ) + '" tabindex="-1">'
+            + '<div class="owa_periodSheetHead">' + esc( OWA.l( 'Date range' ) ) + '<button type="button" data-act="cancel" aria-label="' + esc( OWA.l( 'Close' ) ) + '">×</button></div>'
             + '<div class="owa_periodBody"><div class="owa_periodLeft">' + this.listHtml() + '</div>'
             + '<div class="owa_periodRight">' + this.chipsHtml( false ) + this.fieldsHtml( target ) + this.calendarHtml( target ) + '</div></div>'
             + '<div class="owa_periodFoot"><div class="owa_periodWhy" aria-live="polite">' + this.whyHtml( target ) + '</div>'
-            + '<div class="owa_periodButtons"><button type="button" class="owa_periodBtn" data-act="cancel">Cancel</button>'
-            + '<button type="button" class="owa_periodBtn is-primary" data-act="apply">Apply</button></div></div></div>';
+            + '<div class="owa_periodButtons"><button type="button" class="owa_periodBtn" data-act="cancel">' + esc( OWA.l( 'Cancel' ) ) + '</button>'
+            + '<button type="button" class="owa_periodBtn is-primary" data-act="apply">' + esc( OWA.l( 'Apply' ) ) + '</button></div></div></div>';
     },
 
     /**
@@ -1045,15 +1175,15 @@ PeriodPicker.prototype = {
 
         if ( ! ymd ) {
 
-            this.badInput = 'Couldn’t read “' + text + '” as a date. Try a date like ' + formatDate( this.today ) + '.';
+            this.badInput = OWA.util.sprintf( OWA.l( 'Couldn’t read “%1$s” as a date. Try a date like %2$s.' ), text, formatDate( this.today ) );
 
         } else if ( ymd > this.today ) {
 
-            this.badInput = formatDate( ymd ) + ' is after today.';
+            this.badInput = OWA.util.sprintf( OWA.l( '%s is after today.' ), formatDate( ymd ) );
 
         } else if ( i === 1 && ymd < r[0] ) {
 
-            this.badInput = 'The end date can’t be before the start date.';
+            this.badInput = OWA.l( 'The end date can’t be before the start date.' );
 
         } else {
 
@@ -1211,11 +1341,11 @@ export function describeChange( cell, compare ) {
     if ( ch !== null && ch !== undefined && isFinite( ch ) ) {
 
         cls  = ch > 0 ? 'is-up' : ( ch < 0 ? 'is-down' : 'is-flat' );
-        text = ( ch > 0 ? '▲ ' : ( ch < 0 ? '▼ ' : '' ) ) + ( Math.abs( ch ) * 100 ).toFixed( 1 ) + '%';
+        text = ( ch > 0 ? '▲ ' : ( ch < 0 ? '▼ ' : '' ) ) + OWA.util.formatPercent( Math.abs( ch ), 1 );
     }
 
     const was = cell.compare_formatted_value === null || cell.compare_formatted_value === undefined
-        ? 'no data' : cell.compare_formatted_value;
+        ? OWA.l( 'no data' ) : cell.compare_formatted_value;
 
-    return { cls: cls, text: text, title: range + ': ' + was };
+    return { cls: cls, text: text, title: OWA.util.sprintf( OWA.l( '%1$s: %2$s', 'comparison dates: value' ), range, was ) };
 }

@@ -2870,6 +2870,7 @@ namespace OWA\Module\Base\Classes;
                 'tracker_visitor_cookie_days'       => 364,
                 'tracker_session_cookie_days'       => 364,
                 'tracker_cookie_domain'             => '',
+                'tracker_honor_privacy_signals'     => true,
                 'feed_subscription_param'            => 'sid',
                 'source_param'                        => 'source',
                 'site_id'                            => '',

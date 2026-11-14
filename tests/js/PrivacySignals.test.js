@@ -158,3 +158,74 @@ describe('the bootstrap reads honorPrivacySignals from the queue', () => {
         expect(sent).toHaveLength(0);
     });
 });
+
+/*
+ * A Profile's bundle queues its options, then the page's commands, then its
+ * features (TrackerBundle::preamble(): w.owa_cmds=o.concat(p,f), pinned by
+ * TrackerBundleTest). A Profile that does not honor privacy signals adds
+ * ['setOption', 'honorPrivacySignals', false] to the options; one that does
+ * adds nothing.
+ */
+describe('a Profile bundle\'s honorPrivacySignals option', () => {
+
+    const NOT_HONORED = ['setOption', 'honorPrivacySignals', false];
+
+    function bundleQueue(extraOptions, pageCommands = []) {
+        const options = [
+            ['setSiteId', 'privacy-site'],
+            ['setOption', 'sessionLength', 1800],
+            ...extraOptions,
+            ['setOption', 'features', []],
+        ];
+        const page = [...pageCommands, ['setPageTitle', 'From the page']];
+        const features = [['trackPageView', 'https://site.example/page']];
+
+        return options.concat(page, features);
+    }
+
+    test('is seen by the bootstrap ahead of the page\'s commands', () => {
+        const OwaCommandQueue = require('../../modules/Base/src/tracker/CommandQueue.js').CommandQueue;
+        const q = new OwaCommandQueue();
+        q.loadCmds(bundleQueue([NOT_HONORED]));
+
+        expect(q.optionFor('OWATracker', 'honorPrivacySignals')).toBe(false);
+    });
+
+    test.each([
+        ['Do Not Track', 'doNotTrack', '1'],
+        ['Global Privacy Control', 'globalPrivacyControl', true],
+    ])('off: a browser sending %s gets its page view', (_label, flag, value) => {
+        setFlag(flag, value);
+
+        const sent = loadWith(bundleQueue([NOT_HONORED]));
+
+        expect(sent).toHaveLength(1);
+        expect(sent[0]).toMatch(/[?&]site=privacy-site/);
+    });
+
+    test('the page\'s own setOption wins over the bundle\'s, as for every option', () => {
+        const OwaCommandQueue = require('../../modules/Base/src/tracker/CommandQueue.js').CommandQueue;
+        const q = new OwaCommandQueue();
+        q.loadCmds(bundleQueue([NOT_HONORED], [['setOption', 'honorPrivacySignals', true]]));
+
+        expect(q.optionFor('OWATracker', 'honorPrivacySignals')).toBe(true);
+    });
+
+    test('off for the Profile, honored by the page: a GPC browser sends nothing', () => {
+        setFlag('globalPrivacyControl', true);
+
+        const sent = loadWith(bundleQueue([NOT_HONORED], [['setOption', 'honorPrivacySignals', true]]));
+
+        expect(sent).toHaveLength(0);
+    });
+
+    test('honored, the bundle\'s default: nothing runs and nothing is sent', () => {
+        setFlag('globalPrivacyControl', true);
+
+        const cmds = bundleQueue([]);
+        const sent = loadWith(cmds);
+
+        expect(sent).toHaveLength(0);
+        expect(window.owa_cmds).toBe(cmds);
+    });
+});

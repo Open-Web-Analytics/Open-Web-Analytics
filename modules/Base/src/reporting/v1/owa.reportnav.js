@@ -16,6 +16,8 @@
  * the column, and the choice is remembered (nav_shell.php).
  */
 
+import { OWA } from './owa.js';
+
 export const NARROW = '(max-width: 900px)';
 export const OPEN = 'owa_reportNavOpen';
 
@@ -40,12 +42,12 @@ function toggles( rail ) {
 function setExpanded( rail, expanded ) {
 
     const closer = rail.querySelector( '.owa_reportNavClose' );
-    const hide = ( closer && closer.getAttribute( 'aria-label' ) ) || 'Hide the menu';
+    const hide = ( closer && closer.getAttribute( 'aria-label' ) ) || OWA.l( 'Hide the menu' );
 
     toggles( rail ).forEach( function ( toggle ) {
 
         if ( ! toggle.hasAttribute( 'data-owa-show-label' ) ) {
-            toggle.setAttribute( 'data-owa-show-label', toggle.getAttribute( 'aria-label' ) || 'Show the menu' );
+            toggle.setAttribute( 'data-owa-show-label', toggle.getAttribute( 'aria-label' ) || OWA.l( 'Show the menu' ) );
         }
 
         toggle.setAttribute( 'aria-expanded', expanded ? 'true' : 'false' );
@@ -172,6 +174,12 @@ export function handleClick( target, rail ) {
 /** Where the column's hidden state is remembered (nav_shell.php reads it before the first paint). */
 export const COLUMN_KEY = 'owa_navColumnHidden';
 
+/** The column toggle's label: what a click on it does. */
+function columnLabel( hidden ) {
+
+    return hidden ? OWA.l( 'Show this column' ) : OWA.l( 'Hide this column' );
+}
+
 /**
  * Hide or show the column beside the rail, and remember the choice. Storage
  * can be refused (a private window, blocked site data); the column still
@@ -188,7 +196,7 @@ export function setColumnHidden( shell, hidden ) {
 
     if ( toggle ) {
 
-        const label = hidden ? 'Show this column' : 'Hide this column';
+        const label = columnLabel( hidden );
 
         toggle.setAttribute( 'aria-expanded', hidden ? 'false' : 'true' );
         toggle.setAttribute( 'aria-label', label );
@@ -217,8 +225,8 @@ function bindColumn() {
     const hidden = shell.classList.contains( 'is-collapsed' );
 
     toggle.setAttribute( 'aria-expanded', hidden ? 'false' : 'true' );
-    toggle.setAttribute( 'aria-label', hidden ? 'Show this column' : 'Hide this column' );
-    toggle.setAttribute( 'title', hidden ? 'Show this column' : 'Hide this column' );
+    toggle.setAttribute( 'aria-label', columnLabel( hidden ) );
+    toggle.setAttribute( 'title', columnLabel( hidden ) );
 
     toggle.addEventListener( 'click', function () {
 

@@ -197,8 +197,8 @@ OWA.shareChart.prototype = {
 OWA.shareChart.percent = function ( share ) {
 
     if ( share > 0 && share < 0.005 ) {
-        return '<1%';
+        return OWA.util.sprintf( OWA.l( '<%s', 'less than a percentage' ), OWA.util.formatPercent( 0.01 ) );
     }
 
-    return Math.round( share * 100 ) + '%';
+    return OWA.util.formatPercent( Math.round( share * 100 ) / 100 );
 };

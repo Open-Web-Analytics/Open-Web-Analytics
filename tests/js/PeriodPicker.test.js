@@ -11,7 +11,7 @@
 import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
 import {
     PeriodPicker, compareRange, initialState, settle, toParams, calendarTarget,
-    pickDay, formatRange, toIso, fromIso, parseDateInput,
+    pickDay, formatRange, formatDate, toIso, fromIso, parseDateInput, weekStart,
 } from '../../modules/Base/src/reporting/v1/owa.periodpicker.js';
 
 const fixture = require( '../fixtures/compare-ranges.json' );
@@ -502,5 +502,131 @@ describe( 'in a translated locale', () => {
         el.innerHTML = '';
         make();
         expect( el.querySelector( '.owa_periodTriggerCompare' ).textContent ).toMatch( /^Comparé à Sep/ );
+    } );
+} );
+
+describe( 'in the install\'s locale', () => {
+
+    let el;
+
+    function open( extra ) {
+        document.body.innerHTML = '<div id="pp"></div>';
+        el = document.getElementById( 'pp' );
+        new PeriodPicker( el, config( extra ), () => {} );
+        click( el.querySelector( '.owa_periodTrigger' ) );
+    }
+
+    const click = ( node ) => node.dispatchEvent( new MouseEvent( 'click', { bubbles: true } ) );
+    const key = ( node, k ) => node.dispatchEvent( new KeyboardEvent( 'keydown', { key: k, bubbles: true, cancelable: true } ) );
+    const listButton = ( text ) => Array.from( el.querySelectorAll( '.owa_periodList button' ) ).find( ( b ) => b.textContent === text );
+
+    afterEach( () => {
+        delete OWA.config.locale;
+        delete OWA.config.strings;
+    } );
+
+    test( 'the week starts on the locale\'s first day', () => {
+        expect( weekStart( 'en-US' ) ).toBe( 0 );
+        expect( weekStart( 'en-GB' ) ).toBe( 1 );
+        expect( weekStart( 'fr' ) ).toBe( 1 );
+        expect( weekStart( 'pt-BR' ) ).toBe( 0 );
+        expect( weekStart( 'ar-EG' ) ).toBe( 6 );
+    } );
+
+    test( 'without week information, the region decides, or the region the language is most spoken in', () => {
+        const Real = Intl.Locale;
+
+        // An Intl.Locale without week information, as some browsers have.
+        Intl.Locale = class {
+            constructor( tag ) { this.real = new Real( tag ); this.region = this.real.region; }
+            maximize() { return this.real.maximize(); }
+        };
+
+        try {
+            expect( [ 'en', 'en-GB', 'de', 'ja', 'ar-EG', 'he' ].map( weekStart ) ).toEqual( [ 0, 1, 1, 0, 6, 0 ] );
+
+            // No Intl.Locale at all: Sunday, as before there was a locale.
+            Intl.Locale = undefined;
+            expect( weekStart( 'de' ) ).toBe( 0 );
+        } finally {
+            Intl.Locale = Real;
+        }
+    } );
+
+    test( 'the calendar\'s weeks start on Monday in en-GB, and Home goes to the Monday', () => {
+        OWA.config.locale = 'en-GB';
+        open();
+        click( listButton( 'Custom date range' ) );
+
+        expect( Array.from( el.querySelectorAll( '.owa_periodCalWeek span' ) ).map( ( s ) => s.textContent ) )
+            .toEqual( [ 'M', 'T', 'W', 'T', 'F', 'S', 'S' ] );
+
+        // 1 November 2026 is a Sunday: six empty days before it.
+        expect( el.querySelectorAll( '.owa_periodMonth[data-month="202611"] .owa_periodDays > span' ) ).toHaveLength( 6 );
+
+        const wednesday = el.querySelector( '[data-d="20261104"]' );
+        wednesday.focus();
+        key( wednesday, 'Home' );
+        expect( document.activeElement.getAttribute( 'data-d' ) ).toBe( '20261102' );
+        key( document.activeElement, 'End' );
+        expect( document.activeElement.getAttribute( 'data-d' ) ).toBe( '20261108' );
+    } );
+
+    test( 'in en-US the weeks start on Sunday', () => {
+        OWA.config.locale = 'en-US';
+        open();
+
+        expect( el.querySelector( '.owa_periodCalWeek span' ).textContent ).toBe( 'S' );
+        expect( el.querySelectorAll( '.owa_periodMonth[data-month="202611"] .owa_periodDays > span' ) ).toHaveLength( 0 );
+    } );
+
+    test( 'dates are written as the locale writes them, and read back the same way', () => {
+        OWA.config.locale = 'de-DE';
+
+        expect( formatDate( '20261013' ) ).toBe( '13. Okt. 2026' );
+        expect( parseDateInput( formatDate( '20261013' ) ) ).toBe( '20261013' );
+        expect( parseDateInput( '13.10.2026' ) ).toBe( '20261013' );
+        expect( parseDateInput( '13. Oktober 2026' ) ).toBe( '20261013' );
+
+        OWA.config.locale = 'en-GB';
+
+        expect( parseDateInput( '13/10/2026' ) ).toBe( '20261013' );
+        expect( parseDateInput( '13 Oct 2026' ) ).toBe( '20261013' );
+
+        OWA.config.locale = 'en-US';
+
+        expect( parseDateInput( '10/13/2026' ) ).toBe( '20261013' );
+        expect( parseDateInput( '13/10/2026' ) ).toBe( '' );
+    } );
+
+    test( 'the panel\'s words and sentences are the locale\'s', () => {
+        OWA.config.locale = 'de-DE';
+        OWA.config.strings = {
+            'Custom date range': 'Benutzerdefinierter Zeitraum',
+            'Apply': 'Anwenden',
+            '%s, counted from today.': '%s, ab heute gezählt.',
+            'Compared to %s.': 'Verglichen mit %s.',
+            'Pick Custom date range to choose dates.': 'Wählen Sie einen benutzerdefinierten Zeitraum.',
+        };
+        open( { compare: 'previous_period' } );
+
+        expect( listButton( 'Benutzerdefinierter Zeitraum' ) ).toBeDefined();
+        expect( el.querySelector( '[data-act="apply"]' ).textContent ).toBe( 'Anwenden' );
+
+        // A label inside a sentence keeps its capitals outside English.
+        expect( el.querySelector( '.owa_periodWhy' ).textContent )
+            .toBe( 'Last 28 days, ab heute gezählt. Verglichen mit Previous period. Wählen Sie einen benutzerdefinierten Zeitraum.' );
+    } );
+
+    test( 'a date that cannot be read is named in the locale\'s sentence', () => {
+        OWA.config.strings = { 'Couldn’t read “%1$s” as a date. Try a date like %2$s.': 'Datum „%1$s“ unlesbar, z. B. %2$s.' };
+        open();
+        click( listButton( 'Custom date range' ) );
+
+        const field = el.querySelector( '[data-in="main0"]' );
+        field.value = 'soon';
+        field.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+
+        expect( el.querySelector( '.owa_periodWhy' ).textContent ).toBe( 'Datum „soon“ unlesbar, z. B. Nov 9, 2026.' );
     } );
 } );

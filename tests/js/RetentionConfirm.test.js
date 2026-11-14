@@ -1,4 +1,5 @@
-import { readValues, previewParams, previewUrl, decide, UNKNOWN } from '../../modules/Base/src/reporting/v1/owa.retention.js';
+import { readValues, previewParams, previewUrl, decide, unknownPreview } from '../../modules/Base/src/reporting/v1/owa.retention.js';
+import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
 
 /**
  * When a Data Retention save is interrupted to ask, and with what
@@ -82,6 +83,18 @@ test('a preview that needs asking asks, and submits only on proceed', () => {
 });
 
 test('no answer from the server is asked about as a warning, not let through', () => {
-    expect(UNKNOWN.needed).toBe(true);
-    expect(UNKNOWN.tone).toBe('danger');
+    expect(unknownPreview().needed).toBe(true);
+    expect(unknownPreview().tone).toBe('danger');
+});
+
+test('the question without an answer is in the locale in use when it is asked', () => {
+    OWA.config.strings = { 'Save anyway': 'Enregistrer quand même' };
+
+    try {
+        expect(unknownPreview().proceed).toBe('Enregistrer quand même');
+    } finally {
+        delete OWA.config.strings;
+    }
+
+    expect(unknownPreview().proceed).toBe('Save anyway');
 });

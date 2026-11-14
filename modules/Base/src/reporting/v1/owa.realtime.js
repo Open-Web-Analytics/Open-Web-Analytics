@@ -90,7 +90,7 @@ OWA.realtime.prototype = {
                 // leave a screen that looks live and is not.
                 if ( r.status === 401 || r.status === 403 ) {
 
-                    self.stop( 'This view has been open a long time. Reload the page to continue.' );
+                    self.stop( OWA.l( 'This view has been open a long time. Reload the page to continue.' ) );
 
                     return null;
                 }
@@ -119,7 +119,7 @@ OWA.realtime.prototype = {
             } )
             .catch( function () {
 
-                self.status( 'Could not refresh. Trying again shortly.' );
+                self.status( OWA.l( 'Could not refresh. Trying again shortly.' ) );
             } );
     },
 
@@ -149,7 +149,7 @@ OWA.realtime.prototype = {
         // medium or campaign is (not set).
         this.table( 'sources', d.sources, function ( r ) {
 
-            return [ r.source === null ? '(unknown)' : r.source, r.medium, r.campaign, r.users ];
+            return [ r.source === null ? OWA.l( '(unknown)' ) : r.source, r.medium, r.campaign, r.users ];
         } );
 
         this.table( 'events', d.events, function ( r ) { return [ r.name, r.count ]; } );
@@ -175,11 +175,13 @@ OWA.realtime.prototype = {
 
         if ( d.activeUsers.last30 > 0 && ! d.located ) {
 
-            note = 'No locations: they need the MaxMind GeoIP module.';
+            note = OWA.l( 'No locations: they need the MaxMind GeoIP module.' );
 
         } else if ( unknown > 0 ) {
 
-            note = unknown + ' of ' + d.activeUsers.last30 + ' users have no known location.';
+            note = OWA.util.sprintf(
+                OWA.ln( '%1$s of %2$s users has no known location.', '%1$s of %2$s users have no known location.', unknown ),
+                this.number( unknown ), this.number( d.activeUsers.last30 ) );
         }
 
         this.text( '.owa_realtimeMapNote', note );
@@ -192,6 +194,7 @@ OWA.realtime.prototype = {
 
         var slot = this.root.querySelector( '.owa_realtimeBars' );
         var max  = Math.max.apply( null, perMinute.concat( [ 1 ] ) );
+        var self = this;
 
         slot.textContent = '';
 
@@ -202,8 +205,7 @@ OWA.realtime.prototype = {
 
             bar.className    = 'owa_realtimeBar';
             bar.style.height = Math.round( 100 * n / max ) + '%';
-            bar.title        = n + ( n === 1 ? ' user, ' : ' users, ' )
-                + ( ago === 0 ? 'this minute' : ago + ( ago === 1 ? ' minute ago' : ' minutes ago' ) );
+            bar.title        = OWA.util.sprintf( OWA.ln( '%1$s user, %2$s', '%1$s users, %2$s', n ), self.number( n ), self.ago( ago ) );
 
             slot.appendChild( bar );
         } );
@@ -228,7 +230,7 @@ OWA.realtime.prototype = {
 
             cell.colSpan     = body.parentNode.querySelectorAll( 'thead th' ).length || 1;
             cell.className   = 'owa_realtimeEmpty';
-            cell.textContent = 'None in the last 30 minutes';
+            cell.textContent = OWA.l( 'None in the last 30 minutes' );
             empty.appendChild( cell );
             body.appendChild( empty );
 
@@ -251,7 +253,7 @@ OWA.realtime.prototype = {
                 } else {
 
                     // NULL is absent, and is labelled at the edge (PLAN 2.11).
-                    td.textContent = v === null || v === undefined || v === '' ? '(not set)' : String( v );
+                    td.textContent = v === null || v === undefined || v === '' ? OWA.l( '(not set)' ) : String( v );
                 }
 
                 tr.appendChild( td );
@@ -278,7 +280,7 @@ OWA.realtime.prototype = {
             var li = document.createElement( 'li' );
 
             li.className   = 'owa_realtimeEmpty';
-            li.textContent = 'No events in the last 30 minutes';
+            li.textContent = OWA.l( 'No events in the last 30 minutes' );
             list.appendChild( li );
 
             return;
@@ -309,7 +311,7 @@ OWA.realtime.prototype = {
             if ( linkVisitors ) {
 
                 li.setAttribute( 'data-visitor', e.visitor );
-                li.title = 'Show this visitor’s events';
+                li.title = OWA.l( 'Show this visitor’s events' );
             }
 
             list.appendChild( li );
@@ -335,7 +337,7 @@ OWA.realtime.prototype = {
                 var d = json.data || json;
 
                 self.show( 'visitor' );
-                self.text( '.owa_realtimeVisitorId', 'Visitor ' + id );
+                self.text( '.owa_realtimeVisitorId', OWA.util.sprintf( OWA.l( 'Visitor %s' ), id ) );
                 self.events( '.owa_realtimeVisitorEvents', d.events || [], false );
             } );
     },
@@ -367,15 +369,22 @@ OWA.realtime.prototype = {
         }
     },
 
+    /** A count in the install's locale. */
     number: function ( n ) {
 
-        return Number( n || 0 ).toLocaleString();
+        return OWA.util.formatNumber( Number( n || 0 ) );
     },
 
-    /** A raw ts (microseconds) as a wall-clock time in the installation's zone. */
+    /** Minutes before this one, in the install's locale: "this minute", "3 minutes ago". */
+    ago: function ( minutes ) {
+
+        return new Intl.RelativeTimeFormat( OWA.locale(), { numeric: 'auto' } ).format( -minutes, 'minute' );
+    },
+
+    /** A raw ts (microseconds) as a wall-clock time in the installation's zone, in the install's locale. */
     clock: function ( usec ) {
 
-        return new Date( Math.floor( usec / 1000 ) ).toLocaleTimeString( undefined, { timeZone: this.timezone } );
+        return new Date( Math.floor( usec / 1000 ) ).toLocaleTimeString( OWA.locale(), { timeZone: this.timezone } );
     }
 };
 
