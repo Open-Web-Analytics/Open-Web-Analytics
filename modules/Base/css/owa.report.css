@@ -5221,8 +5221,14 @@ li.constraintRow {
     /* The period's trigger across the screen, its range free to wrap. */
     .owa_reportHeadControls, .owa_reportPeriod { width: 100%; }
     .owa_periodTrigger { width: 100%; justify-items: start; text-align: left; min-height: 48px; padding: 8px 36px 8px 12px; }
-    .owa_periodTriggerMain { flex-wrap: wrap; white-space: normal; }
+    .owa_periodTriggerMain { flex-wrap: wrap; white-space: normal; font-size: 0.9rem; }
     .owa_periodTriggerCompare { white-space: normal; }
+
+    /* The Property chooser's tiers keep at least the sizes they had on a
+       phone before the type scale: 12, 17 and 13px at the phone's root. */
+    .owa_siteControlOrg { font-size: 0.6875rem; }
+    .owa_siteControlProperty { font-size: 0.95rem; }
+    .owa_siteControlDomain { font-size: 0.75rem; }
 
     /* The menu takes the whole screen: beside a sliver of page it was 280px of
        menu next to something too narrow to read. */
