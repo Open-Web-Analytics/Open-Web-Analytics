@@ -98,13 +98,15 @@ class ChannelStep extends Step {
      * REPLACED, NOT MERGED, unlike the site lists: the order is the rule set,
      * and a merge could only append.
      *
-     * @param  string $data_dir
+     * @param  string|null $data_dir the data directory; null for the install's
      * @return array[]
      * @throws \RuntimeException
      */
-    public static function definitions( $data_dir = OWA_DATA_DIR ) {
+    public static function definitions( $data_dir = null ) {
 
-        $file = file_exists( $data_dir . 'channels.php' ) ? $data_dir . 'channels.php' : OWA_CONF_DIR . 'channels.php';
+        $data_dir = $data_dir ?? \OWA\Core\Env::dataDir();
+
+        $file = file_exists( $data_dir . 'channels.php' ) ? $data_dir . 'channels.php' : \OWA\Core\Env::confDir() . 'channels.php';
 
         return self::validate( include $file );
     }

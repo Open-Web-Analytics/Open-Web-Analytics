@@ -71,7 +71,7 @@ final class DbDriverResolutionTest extends TestCase {
 
     public function testAnUnrecognisedTypePassesThrough() {
 
-        // The third-party driver seam: plugins/db/owa_db_<type>.php.
+        // The third-party driver seam: an autoloadable owa_db_<type>.
         $this->assertSame(
             'acme',
             \OWA\Core\CoreAPI::resolveDbDriver( 'acme', true ),
@@ -138,6 +138,32 @@ final class DbDriverResolutionTest extends TestCase {
                     sprintf( '%s does not exist, so driver "%s" cannot load', $resolved, $token )
                 );
             }
+        }
+    }
+
+    /**
+     * A third-party driver is a class owa_db_<type> some autoloader can load;
+     * nothing is required from a plugins/ directory.
+     */
+    public function testAThirdPartyDriverLoadsOnlyWhenItsClassIsLoadable(): void
+    {
+        require_once __DIR__ . '/bootstrap_owa.php';
+
+        $this->assertFalse( \OWA\Core\CoreAPI::setupStorageEngine( 'acme_probe_missing' ),
+            'a type naming no loadable class must fail to set up' );
+
+        $loader = static function ( $class ) {
+            if ( $class === 'owa_db_acme_probe' ) {
+                require __DIR__ . '/fixtures/owa_db_acme_probe.php';
+            }
+        };
+
+        spl_autoload_register( $loader );
+
+        try {
+            $this->assertTrue( \OWA\Core\CoreAPI::setupStorageEngine( 'acme_probe' ) );
+        } finally {
+            spl_autoload_unregister( $loader );
         }
     }
 }

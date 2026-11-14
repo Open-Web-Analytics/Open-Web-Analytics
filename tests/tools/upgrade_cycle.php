@@ -554,7 +554,7 @@ function owa_update_for( $v ) {
  */
 function owa_update_declares_schema_work( $v ) {
 
-    $file = sprintf( '%smodules/Base/Update/Update%03d.php', OWA_DIR, $v );
+    $file = sprintf( '%smodules/Base/Update/Update%03d.php', \OWA\Core\Env::root() . '/', $v );
 
     if ( ! is_readable( $file ) ) {
 

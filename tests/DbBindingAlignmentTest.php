@@ -62,7 +62,7 @@ final class DbBindingAlignmentTest extends TestCase
          * Asserted against the source, because the binding happens inside a
          * try block against a live connection and cannot be observed otherwise.
          */
-        $source = file_get_contents( OWA_DIR . 'Core/Db/Pdo.php' );
+        $source = file_get_contents( \OWA\Core\Env::root() . '/Core/Db/Pdo.php' );
 
         $this->assertMatchesRegularExpression(
             '/\$statement->bindValue\(\s*\$position/', $source,

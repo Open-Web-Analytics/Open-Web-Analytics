@@ -189,7 +189,7 @@ final class ServerOwnedPropertyTest extends TestCase
          * the filter could be removed from the one place that needs it while
          * every test above still passed.
          */
-        $source = file_get_contents( OWA_DIR . 'log.php' );
+        $source = file_get_contents( \OWA\Core\Env::root() . '/log.php' );
 
         /*
          * admitRequestParams(), not rejectServerOwnedParams(): the gate is an

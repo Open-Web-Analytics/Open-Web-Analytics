@@ -18,7 +18,7 @@ final class WikiDocsSettingsTest extends TestCase
     private static function run_section( string $section, &$status = null ): string
     {
         $cmd = escapeshellarg( PHP_BINARY ) . ' -d display_startup_errors=0 '
-             . escapeshellarg( OWA_DIR . 'tests/tools/wiki/generate.php' ) . ' '
+             . escapeshellarg( \OWA\Core\Env::root() . '/tests/tools/wiki/generate.php' ) . ' '
              . escapeshellarg( $section ) . ' 2>&1';
 
         exec( $cmd, $lines, $status );
@@ -102,7 +102,7 @@ final class WikiDocsSettingsTest extends TestCase
     private const UNREAD = array(
         'base|action_url', 'base|base_url', 'base|clean_query_string', 'base|db_force_new_connections',
         'base|memcachedPersistantConnections', 'base|memcachedServers', 'base|modules', 'base|password_length',
-        'base|plugin_dir', 'base|site_id', 'base|source_param',
+        'base|site_id', 'base|source_param',
     );
 
     public function testEveryListedSettingHasADescriptionUnlessNothingReadsIt(): void
@@ -168,8 +168,11 @@ final class WikiDocsSettingsTest extends TestCase
                 "$key should name $constant" );
         }
 
-        // Set only by a constant, declared by no module.
-        $this->assertNotNull( self::rowFor( $base, 'data_dir' ) );
+        // Optional constants: the row names them although this boot defines neither.
+        foreach ( array( 'data_dir' => 'OWA_DATA_DIR', 'cache_dir' => 'OWA_CACHE_DIR' ) as $key => $constant ) {
+            $this->assertStringContainsString( '`' . $constant . '`', (string) self::rowFor( $base, $key ),
+                "$key should name $constant" );
+        }
     }
 
     public function testAGroupListsEveryModulesFieldsetsIncludingInactiveOnes(): void

@@ -62,7 +62,7 @@ final class DebugLoggingTest extends TestCase
         $statements = 0;
 
         foreach (['Core', 'modules'] as $dir) {
-            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(OWA_DIR . $dir,
+            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(\OWA\Core\Env::root() . '/' . $dir,
                 FilesystemIterator::SKIP_DOTS));
 
             foreach ($files as $file) {
@@ -89,7 +89,7 @@ final class DebugLoggingTest extends TestCase
                         continue;
                     }
 
-                    $where = substr($path, strlen(OWA_DIR)) . ':' . $line;
+                    $where = substr($path, strlen(\OWA\Core\Env::root() . '/')) . ':' . $line;
 
                     if (preg_match('/print_r|var_export/', $statement)) {
                         $offenders[] = "$where formats the value itself: pass it as debug()'s context";

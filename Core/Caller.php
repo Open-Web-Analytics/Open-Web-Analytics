@@ -20,11 +20,7 @@ namespace OWA\Core;
 
 // __DIR__ is required: a bare relative path is resolved against include_path,
 // which begins with '.', i.e. the CURRENT WORKING DIRECTORY -- not this file's
-// directory. The root entry points (index.php, log.php, cli.php ...) get away
-// with the bare form only because owa_env.php sits beside them, so PHP's
-// calling-script-directory fallback finds it. This file lives in Core/, so that
-// fallback looks in the wrong place and the include fails for every caller whose
-// cwd is not the install root (CLI, cron, WP-CLI, a plugin-nested install).
+// directory -- so another installation's owa_env.php could load.
 include_once( __DIR__ . '/../owa_env.php' );
 
 /**
@@ -80,7 +76,7 @@ class Caller extends \OWA\Core\Base {
         parent::__construct();
         
         // Log version debug
-        \OWA\Core\CoreAPI::debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', OWA_VERSION, PHP_VERSION, PHP_OS));
+        \OWA\Core\CoreAPI::debug(sprintf('*** Starting Open Web Analytics v%s. Running under PHP v%s (%s) ***', \OWA\Core\Env::version(), PHP_VERSION, PHP_OS));
         
         if ( array_key_exists('REQUEST_URI', $_SERVER ) ) {
             \OWA\Core\CoreAPI::debug( 'Request URL:' . ( $_SERVER['REQUEST_METHOD'] ?? '' ) .' '.$_SERVER['REQUEST_URI'] );

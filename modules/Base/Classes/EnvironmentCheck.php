@@ -86,18 +86,33 @@ class EnvironmentCheck {
                 sprintf( '`%s` is loaded.', $extension ) );
         }
 
-        // Where OWA writes.
-        foreach ( array( 'logs' => \OWA\Core\CoreAPI::t( 'Log directory' ), 'caches' => \OWA\Core\CoreAPI::t( 'Cache directory' ) )
-                  as $dir => $label ) {
+        /*
+         * Where OWA writes: the data directory (OWA_DATA_DIR, else owa-data/),
+         * its logs/, and the cache directory (OWA_CACHE_DIR, else caches/ in
+         * the data directory). The data directory itself need only exist: what
+         * writes directly under it (update-ua-regexes, update-geoip-db) checks
+         * for itself.
+         */
+        $data = \OWA\Core\Env::dataDir();
 
-            $path = OWA_DATA_DIR . $dir . '/';
+        $checks[] = self::check(
+            \OWA\Core\CoreAPI::t( 'Data directory' ),
+            sprintf( '%s (%s)', $data, is_dir( $data ) ? ( is_writable( $data ) ? \OWA\Core\CoreAPI::t( 'writable' ) : \OWA\Core\CoreAPI::t( 'not writable' ) ) : \OWA\Core\CoreAPI::t( 'missing' ) ),
+            is_dir( $data ),
+            sprintf( \OWA\Core\CoreAPI::t( 'Create %s, or set OWA_DATA_DIR in owa-config.php to a directory that exists.' ), $data ),
+            'The data directory exists: `owa-data/` in the OWA directory, or `OWA_DATA_DIR`.' );
+
+        foreach ( array(
+            \OWA\Core\CoreAPI::t( 'Log directory' )   => array( $data . 'logs/', '`logs/` in the data directory is writable.' ),
+            \OWA\Core\CoreAPI::t( 'Cache directory' ) => array( \OWA\Core\Env::cacheDir(), 'The cache directory is writable: `caches/` in the data directory, or `OWA_CACHE_DIR`.' ),
+        ) as $label => list( $path, $requires ) ) {
 
             $checks[] = self::check(
                 $label,
-                is_writable( $path ) ? \OWA\Core\CoreAPI::t( 'writable' ) : \OWA\Core\CoreAPI::t( 'not writable' ),
+                sprintf( '%s (%s)', $path, is_writable( $path ) ? \OWA\Core\CoreAPI::t( 'writable' ) : \OWA\Core\CoreAPI::t( 'not writable' ) ),
                 is_writable( $path ),
                 sprintf( \OWA\Core\CoreAPI::t( 'Make %s writable by the user your web server runs as.' ), $path ),
-                sprintf( '`%s` is writable.', substr( $path, strlen( OWA_DIR ) ) ) );
+                $requires );
         }
 
         /*
@@ -130,8 +145,8 @@ class EnvironmentCheck {
         // The two directories a source checkout does not come with.
         $checks[] = self::check(
             \OWA\Core\CoreAPI::t( 'Dependencies' ),
-            is_dir( OWA_VENDOR_DIR ) ? \OWA\Core\CoreAPI::t( 'installed' ) : \OWA\Core\CoreAPI::t( 'missing' ),
-            is_dir( OWA_VENDOR_DIR ),
+            is_dir( \OWA\Core\Env::vendorDir() ) ? \OWA\Core\CoreAPI::t( 'installed' ) : \OWA\Core\CoreAPI::t( 'missing' ),
+            is_dir( \OWA\Core\Env::vendorDir() ),
             \OWA\Core\CoreAPI::t( "Run 'composer install' in the top level OWA directory." ),
             '`vendor/` exists.' );
 
@@ -214,7 +229,7 @@ class EnvironmentCheck {
 
         } else {
 
-            // A third-party driver from the plugins/ seam: its needs are its own.
+            // A third-party driver: its needs are its own.
             $passed = true;
             $msg    = '';
         }

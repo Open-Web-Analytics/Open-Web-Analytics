@@ -25,7 +25,7 @@ final class ThirdPartyModuleCompatTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         require_once __DIR__ . '/bootstrap_owa.php';
-        self::$modulesDir = OWA_DIR . 'modules/';
+        self::$modulesDir = \OWA\Core\Env::root() . '/modules/';
     }
 
     protected function setUp(): void

@@ -28,7 +28,7 @@ final class TrackingPropertyConfigTest extends TestCase
 
     private function raw(): array
     {
-        $json = file_get_contents( OWA_DIR . self::PATH );
+        $json = file_get_contents( \OWA\Core\Env::root() . '/' . self::PATH );
 
         $this->assertNotFalse( $json, self::PATH . ' is not readable.' );
 

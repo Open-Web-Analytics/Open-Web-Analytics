@@ -13,7 +13,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers;
 return function () {
 
     $ns       = (string) ( Module::settingsRegistry()['fields']['base|ns']['default'] ?? '' );
-    $registry = json_decode( (string) file_get_contents( OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
+    $registry = json_decode( (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json' ), true );
 
     if ( $ns === '' || ! is_array( $registry ) ) {
         throw new RuntimeException( 'Could not read the ns default or the property registry.' );

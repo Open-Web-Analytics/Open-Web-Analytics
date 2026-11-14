@@ -73,7 +73,7 @@ final class VocabularyConfigTest extends TestCase
     {
         foreach (['dimensions', 'metrics'] as $kind) {
 
-            $file = OWA_DIR . 'modules/Base/config/' . $kind . '.php';
+            $file = \OWA\Core\Env::root() . '/modules/Base/config/' . $kind . '.php';
 
             $this->assertFileExists($file,
                 $kind . ' belong in a file, not in a class literal');
@@ -88,7 +88,7 @@ final class VocabularyConfigTest extends TestCase
     /** The declarations reached the registry, which is the loader's whole job. */
     public function testWhatTheFileDeclaresIsRegistered(): void
     {
-        $declared = (array) (include OWA_DIR . 'modules/Base/config/dimensions.php')['dimensions'];
+        $declared = (array) (include \OWA\Core\Env::root() . '/modules/Base/config/dimensions.php')['dimensions'];
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
@@ -128,7 +128,7 @@ final class VocabularyConfigTest extends TestCase
     {
         $this->assertStringNotContainsString(
             "'base.event'",
-            (string) file_get_contents(OWA_DIR . 'modules/Base/Module.php'),
+            (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/Module.php'),
             'the cube\'s vocabulary belongs in config/dimensions.php and '
           . 'config/metrics.php, not in a registration call');
     }

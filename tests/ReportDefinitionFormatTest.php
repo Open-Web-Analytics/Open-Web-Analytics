@@ -659,7 +659,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $declared = array();
 
-        foreach ( (array) glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $def = json_decode( (string) file_get_contents( $file ), true );
 
@@ -672,7 +672,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $broken  = array();
         $checked = 0;
 
-        foreach ( (array) glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $name = basename( $file );
             $def  = json_decode( (string) file_get_contents( $file ), true );
@@ -758,7 +758,7 @@ final class ReportDefinitionFormatTest extends TestCase
          * on the Content report pointed at the wrong report for years, because
          * as hand-written markup nobody could check them.
          */
-        foreach ( (array) glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $definition = json_decode( (string) file_get_contents( $file ), true );
 
@@ -802,7 +802,7 @@ final class ReportDefinitionFormatTest extends TestCase
          */
         $declared = 0;
 
-        foreach ( (array) glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $declared += substr_count( (string) file_get_contents( $file ), '"reportId"' );
         }
@@ -841,7 +841,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $reports = array();
 
-        foreach ( (array) glob( OWA_DIR . 'modules/Base/reports/*.json' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/Base/reports/*.json' ) as $file ) {
 
             $reports[ basename( $file, '.json' ) ] = json_decode( (string) file_get_contents( $file ), true );
         }
@@ -2179,7 +2179,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $named = array();
 
-        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $definition = json_decode( (string) file_get_contents( $file ), true );
 
@@ -2201,7 +2201,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $bad = array();
 
-        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $error = \OWA\Core\ConfiguredReport::getDefinitionError(
                 (array) json_decode( (string) file_get_contents( $file ), true ) );
@@ -2298,7 +2298,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $found = array();
 
-        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $definition = json_decode( (string) file_get_contents( $file ), true );
 
@@ -2361,7 +2361,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $bad = array();
 
-        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $definition = json_decode( (string) file_get_contents( $file ), true );
 
@@ -2458,7 +2458,7 @@ final class ReportDefinitionFormatTest extends TestCase
     {
         $definitions = array();
 
-        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
             $decoded = json_decode( (string) file_get_contents( $file ), true );
 

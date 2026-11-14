@@ -112,13 +112,13 @@ final class ReportNavigationLinkTest extends TestCase
         $offenders = array();
 
         $files = array_merge(
-            (array) glob( OWA_DIR . 'modules/*/templates/*.php' ),
-            (array) glob( OWA_DIR . 'modules/*/Controller/*.php' ),
-            (array) glob( OWA_DIR . 'modules/Base/reports/*.json' ),
+            (array) glob( \OWA\Core\Env::root() . '/modules/*/templates/*.php' ),
+            (array) glob( \OWA\Core\Env::root() . '/modules/*/Controller/*.php' ),
+            (array) glob( \OWA\Core\Env::root() . '/modules/Base/reports/*.json' ),
             // The e2e specs navigate to these URLs for real. Leaving them out
             // is how a swept tree still broke six browser tests: the scan said
             // no link named a controller action while tests/e2e/ held eleven.
-            (array) glob( OWA_DIR . 'tests/e2e/*.js' )
+            (array) glob( \OWA\Core\Env::root() . '/tests/e2e/*.js' )
         );
 
         foreach ( $files as $file ) {
@@ -469,7 +469,7 @@ final class ReportNavigationLinkTest extends TestCase
     public function testTheEcommerceOverviewHasNoReportLinksWidget(): void
     {
         $definition = json_decode( (string) file_get_contents(
-            OWA_DIR . 'modules/Base/reports/ecommerce.json' ), true );
+            \OWA\Core\Env::root() . '/modules/Base/reports/ecommerce.json' ), true );
 
         $this->assertIsArray( $definition );
 
@@ -508,7 +508,7 @@ final class ReportNavigationLinkTest extends TestCase
          */
         foreach ( array( 'ecommerce-conversion-rate' ) as $id ) {
 
-            $file = OWA_DIR . 'modules/Base/reports/' . $id . '.json';
+            $file = \OWA\Core\Env::root() . '/modules/Base/reports/' . $id . '.json';
 
             $this->assertFileExists( $file, "'$id' is listed as remaining but has no definition" );
 

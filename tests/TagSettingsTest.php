@@ -208,7 +208,7 @@ final class TagSettingsTest extends TestCase
     /** The Tracking Tag screen renders the group, not a list it keeps itself. */
     public function testTheTrackingTagScreenRendersTheGroup(): void
     {
-        $code = php_strip_whitespace(OWA_DIR . 'modules/Base/templates/sites_invocation.php');
+        $code = php_strip_whitespace(\OWA\Core\Env::root() . '/modules/Base/templates/sites_invocation.php');
 
         $this->assertStringContainsString("SettingsForm::groupFieldSets( 'tracking_tag' )", $code);
         $this->assertStringContainsString('SettingsForm::scopedFieldSet', $code);

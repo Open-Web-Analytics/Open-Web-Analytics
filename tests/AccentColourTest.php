@@ -14,12 +14,12 @@ final class AccentColourTest extends TestCase
 
     private function css( string $file ): string
     {
-        return (string) file_get_contents( OWA_DIR . 'modules/Base/css/' . $file );
+        return (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/' . $file );
     }
 
     private function logoOrange(): string
     {
-        $svg = (string) file_get_contents( OWA_DIR . 'modules/Base/i/owa-logo.svg' );
+        $svg = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/i/owa-logo.svg' );
         preg_match_all( '/#([0-9a-f]{6})\b/i', $svg, $m );
 
         foreach ( array_unique( array_map( 'strtolower', $m[1] ) ) as $hex ) {

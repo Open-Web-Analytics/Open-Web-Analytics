@@ -312,7 +312,7 @@ final class SystemHealthTest extends TestCase
         $install = SystemHealth::installation();
 
         $this->assertSame(['OWA', 'Server role', 'PHP', 'Schema', 'Tracker'], array_keys($install['facts']));
-        $this->assertSame((string) OWA_VERSION, $install['facts']['OWA']);
+        $this->assertSame((string) \OWA\Core\Env::version(), $install['facts']['OWA']);
 
         $checks = \OWA\Module\Base\Classes\EnvironmentCheck::all((string) \OWA\Core\CoreAPI::getSetting('base', 'config_file'));
         $this->assertSame(array_column($checks, 'name'), array_column($install['findings'], 'label'),

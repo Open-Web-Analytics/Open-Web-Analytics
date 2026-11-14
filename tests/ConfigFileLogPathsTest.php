@@ -83,9 +83,9 @@ final class ConfigFileLogPathsTest extends TestCase
 
         $this->runSetupPaths($s);
 
-        $this->assertSame(OWA_DATA_DIR . 'logs/', $s->get('base', 'async_log_dir'),
+        $this->assertSame(\OWA\Core\Env::dataDir() . 'logs/', $s->get('base', 'async_log_dir'),
             'an install that sets nothing must still get the default queue directory');
-        $this->assertStringStartsWith(OWA_DATA_DIR . 'logs/errors_', $s->get('base', 'error_log_file'));
+        $this->assertStringStartsWith(\OWA\Core\Env::dataDir() . 'logs/errors_', $s->get('base', 'error_log_file'));
         $this->assertStringEndsWith('.txt', $s->get('base', 'error_log_file'));
     }
 

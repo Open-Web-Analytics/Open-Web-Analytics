@@ -177,7 +177,7 @@ final class DeletedUserGrantsTest extends TestCase
     public function testTheAssignedUsersCacheIsCleared(): void
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Classes/UserManager.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Classes/UserManager.php' );
 
         $this->assertStringContainsString( 'forgetAssignedUsers()', $src,
             'A deleted user can still appear in a site\'s assigned-users list for the '

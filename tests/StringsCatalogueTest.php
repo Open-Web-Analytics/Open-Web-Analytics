@@ -60,7 +60,7 @@ final class StringsCatalogueTest extends TestCase
         $scriptKeys = include Strings::scriptKeysPath();
 
         foreach ($where as $table => $file) {
-            $source = (string) file_get_contents(OWA_DIR . $file);
+            $source = (string) file_get_contents(\OWA\Core\Env::root() . '/' . $file);
             $labels = substr($file, -3) === '.js'
                 ? Strings::scriptTableLabelsIn($source, [$table])
                 : Strings::tableLabelsIn($source, [$table]);
@@ -75,7 +75,7 @@ final class StringsCatalogueTest extends TestCase
         // The PHP table's labels are its row actions' labels, every one.
         $this->assertSame(
             array_values(array_column(\OWA\Core\ConfiguredReport::ROW_ACTIONS, 'label')),
-            array_column(Strings::tableLabelsIn((string) file_get_contents(OWA_DIR . 'Core/ConfiguredReport.php'), ['ConfiguredReport::ROW_ACTIONS']), 'text'));
+            array_column(Strings::tableLabelsIn((string) file_get_contents(\OWA\Core\Env::root() . '/Core/ConfiguredReport.php'), ['ConfiguredReport::ROW_ACTIONS']), 'text'));
     }
 
     /**
@@ -88,7 +88,7 @@ final class StringsCatalogueTest extends TestCase
      */
     public function testUserFacingMessagesGoThroughT(string $file): void
     {
-        $source = (string) file_get_contents(OWA_DIR . $file);
+        $source = (string) file_get_contents(\OWA\Core\Env::root() . '/' . $file);
         $found  = array_map(function ($f) use ($file) {
             return UserFacingStrings::describe($file, $f);
         }, UserFacingStrings::inMessageSinks($source, basename($file) === 'settings.php'));
@@ -216,7 +216,7 @@ final class StringsCatalogueTest extends TestCase
         $catalogue = include Strings::path(Strings::SOURCE_LOCALE);
         $seen      = 0;
 
-        foreach (glob(OWA_DIR . 'modules/*/config/{metrics,dimensions}.php', GLOB_BRACE) as $file) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/*/config/{metrics,dimensions}.php', GLOB_BRACE) as $file) {
             $declaration = include $file;
             $kind        = basename($file, '.php');
 
@@ -239,7 +239,7 @@ final class StringsCatalogueTest extends TestCase
         $catalogue = include Strings::path(Strings::SOURCE_LOCALE);
         $seen      = 0;
 
-        foreach (glob(OWA_DIR . 'modules/*/reports/*.json') as $file) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json') as $file) {
             $definition = json_decode((string) file_get_contents($file), true);
             $strings    = [];
 

@@ -83,7 +83,7 @@ final class ReportCharacterizationTest extends TestCase
         foreach ( Harness::definitionIds() as $id ) {
 
             $definition = json_decode( (string) file_get_contents(
-                OWA_DIR . "modules/Base/reports/$id.json" ), true );
+                \OWA\Core\Env::root() . "/modules/Base/reports/$id.json" ), true );
 
             if ( ! empty( $definition['params'] ) ) {
                 $declared++;

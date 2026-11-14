@@ -37,8 +37,7 @@ class OptionsGeoip extends \OWA\Core\AdminController {
         // actually resolve a location right now. A key that was never set and a
         // database that was never downloaded both present as "geolocation just
         // does not work", and neither is visible anywhere else.
-        $file = ( defined( 'OWA_MAXMIND_DATA_DIR' ) ? OWA_MAXMIND_DATA_DIR : OWA_DATA_DIR . 'maxmind/' )
-              . $edition . '.mmdb';
+        $file = \OWA\Module\MaxmindGeoip\Classes\Maxmind::dataDir() . $edition . '.mmdb';
 
         $this->set( 'db_file', $file );
         $this->set( 'db_present', file_exists( $file ) );

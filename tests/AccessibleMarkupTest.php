@@ -13,7 +13,7 @@ final class AccessibleMarkupTest extends TestCase
 {
     private function template(string $file): string
     {
-        return (string) file_get_contents(OWA_DIR . 'modules/Base/templates/' . $file);
+        return (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/' . $file);
     }
 
     /**
@@ -112,7 +112,7 @@ final class AccessibleMarkupTest extends TestCase
     /** Every template that opens <html> says which language the page is in. */
     public function testEveryPageDeclaresItsLanguage(): void
     {
-        foreach (glob(OWA_DIR . 'modules/*/templates/*.php') as $file) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/*/templates/*.php') as $file) {
 
             $src = (string) file_get_contents($file);
 
@@ -161,7 +161,7 @@ final class AccessibleMarkupTest extends TestCase
     /** A settings screen's headline is the page's <h1>. */
     public function testEverySettingsHeadlineIsAnH1(): void
     {
-        foreach (glob(OWA_DIR . 'modules/*/templates/*.php') as $file) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/*/templates/*.php') as $file) {
 
             $src = (string) file_get_contents($file);
 
@@ -186,7 +186,7 @@ final class AccessibleMarkupTest extends TestCase
         $this->assertStringContainsString("strpos( \$owa_body, 'id=\"owa_main\"' ) !== false", $src);
         $this->assertStringContainsString("\$view->out( \\OWA\\Core\\CoreAPI::t( 'Skip to content' ) );", $src, 'its words are translated');
 
-        $css = (string) file_get_contents(OWA_DIR . 'modules/Base/css/owa.css');
+        $css = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/css/owa.css');
         $this->assertStringContainsString('.owa .owa_skipLink:focus {', $css, 'it is shown when it has the focus');
     }
 
@@ -334,7 +334,7 @@ final class AccessibleMarkupTest extends TestCase
     /** A label keeps the block layout of the div it replaced. */
     public function testALabelIsLaidOutAsTheTitleItReplaced(): void
     {
-        $css = (string) file_get_contents(OWA_DIR . 'modules/Base/css/owa.css');
+        $css = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/css/owa.css');
 
         $this->assertMatchesRegularExpression(
             '/\.owa \.setting label\.title,\s*\.owa label\.inline_h3 \{\s*display: block;/', $css);

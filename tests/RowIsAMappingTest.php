@@ -66,7 +66,7 @@ final class RowIsAMappingTest extends TestCase
     private function body(): string
     {
         $source = file_get_contents(
-            OWA_DIR . 'modules/Base/Handler/EventRawHandlers.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Handler/EventRawHandlers.php' );
 
         $open = strpos( $source, 'protected function row( $event, $name ) {' );
 

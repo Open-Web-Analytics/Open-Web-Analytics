@@ -22,7 +22,7 @@ final class WikiDocsReportsTest extends TestCase
     {
         if ( ! isset( self::$out[ $name ] ) ) {
 
-            $cmd = escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( OWA_DIR . 'tests/tools/wiki/generate.php' )
+            $cmd = escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( \OWA\Core\Env::root() . '/tests/tools/wiki/generate.php' )
                  . ' ' . escapeshellarg( $name ) . ' 2>/dev/null';
 
             exec( $cmd, $lines, $status );
@@ -43,7 +43,7 @@ final class WikiDocsReportsTest extends TestCase
     {
         $ids = array();
 
-        foreach ( glob( OWA_DIR . 'modules/*/Module.php' ) as $path ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/*/Module.php' ) as $path ) {
 
             $module = basename( dirname( $path ) );
 
@@ -76,7 +76,7 @@ final class WikiDocsReportsTest extends TestCase
 
     public function testEveryShippedReportFileHasADescription(): void
     {
-        $files = array_filter( glob( OWA_DIR . 'modules/*/reports/*.json' ),
+        $files = array_filter( glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ),
             fn ( $p ) => basename( dirname( $p, 2 ) ) !== 'Hello' );
 
         $this->assertGreaterThan( 30, count( $files ) );
@@ -135,7 +135,7 @@ final class WikiDocsReportsTest extends TestCase
     {
         $md = self::section( 'channels' );
 
-        foreach ( ChannelStep::definitions( OWA_CONF_DIR ) as $i => $rule ) {
+        foreach ( ChannelStep::definitions( \OWA\Core\Env::confDir() ) as $i => $rule ) {
 
             $this->assertStringContainsString( sprintf( '| %d | %s |', $i + 1, $rule['channel'] ), $md );
         }
@@ -151,7 +151,7 @@ final class WikiDocsReportsTest extends TestCase
 
             $this->assertStringContainsString( "| `$list` |", $md );
 
-            foreach ( (array) include OWA_CONF_DIR . $spec[0] as $entry ) {
+            foreach ( (array) include \OWA\Core\Env::confDir() . $spec[0] as $entry ) {
 
                 $domain = strtolower( is_array( $entry ) ? (string) ( $entry['domain'] ?? '' ) : (string) $entry );
 

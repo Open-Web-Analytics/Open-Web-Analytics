@@ -36,7 +36,7 @@ final class TrackingPropertyFormatTest extends TestCase
     /** @return array<string,array> */
     private function registry(): array
     {
-        $path = OWA_DIR . 'modules/Base/config/tracking_properties.json';
+        $path = \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json';
 
         $config = json_decode( (string) file_get_contents( $path ), true );
 

@@ -6,7 +6,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Built stylesheets and scripts are requested with ?version=, and a browser
- * keeps what it has for that URL. OWA_VERSION is 'master' in a source checkout,
+ * keeps what it has for that URL. Env::VERSION is 'master' in a source checkout,
  * so the URL has to change with the build, not with the release.
  */
 final class AssetVersionTest extends TestCase
@@ -48,7 +48,7 @@ final class AssetVersionTest extends TestCase
         $view->setCss( 'base/css/sample.css' );
         $after = $view->css['base/css/sample.css']['url'];
 
-        $this->assertStringEndsWith( '?version=' . OWA_VERSION . '.1700000000', $before );
+        $this->assertStringEndsWith( '?version=' . \OWA\Core\Env::version() . '.1700000000', $before );
         $this->assertNotSame( $before, $after, 'A rebuilt stylesheet kept its URL, so a browser keeps the old one.' );
     }
 
@@ -61,13 +61,13 @@ final class AssetVersionTest extends TestCase
         $view = new \OWA\Core\View();
         $view->setJs( 'sample', 'base/css/sample.css' );
 
-        $this->assertStringEndsWith( '?version=' . OWA_VERSION . '.1700000000',
+        $this->assertStringEndsWith( '?version=' . \OWA\Core\Env::version() . '.1700000000',
             current( array_filter( $view->js, fn( $js ) => str_contains( $js['url'], 'sample.css' ) ) )['url'] );
     }
 
     public function testAMissingFileFallsBackToTheRelease(): void
     {
-        $this->assertSame( OWA_VERSION, \OWA\Core\View::assetVersion( 'base/css/not-built.css' ) );
+        $this->assertSame( \OWA\Core\Env::version(), \OWA\Core\View::assetVersion( 'base/css/not-built.css' ) );
     }
 
     public function testAnExplicitVersionIsKept(): void

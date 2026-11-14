@@ -1060,7 +1060,7 @@ final class ScheduleCliTest extends CliControllerTestCase
      */
     public function testTheDocumentedExampleObeysItsOwnRules()
     {
-        $template = OWA_DIR . 'owa-config-dist.php';
+        $template = \OWA\Core\Env::root() . '/owa-config-dist.php';
 
         if (! is_readable($template)) {
             $this->markTestSkipped('no config template to check');

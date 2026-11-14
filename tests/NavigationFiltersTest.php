@@ -111,13 +111,13 @@ final class NavigationFiltersTest extends TestCase
      */
     public function testTheTemplatesBuildTheirListsThroughTheFilters(): void
     {
-        $header = (string) file_get_contents(OWA_DIR . 'modules/Base/templates/header.php');
+        $header = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/header.php');
 
         foreach (['nav_header', 'nav_user_menu', 'nav_help_menu'] as $filter) {
             $this->assertStringContainsString("Navigation::links( '$filter'", $header);
         }
 
-        $siteControl = (string) file_get_contents(OWA_DIR . 'modules/Base/templates/site_control.php');
+        $siteControl = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/site_control.php');
 
         $this->assertSame(3, substr_count($siteControl, "Navigation::links( 'nav_site_control'"),
             'every row and column action in the site control goes through the filter');

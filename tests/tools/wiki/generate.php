@@ -42,7 +42,7 @@ require_once __DIR__ . '/../../../owa_env.php';
 
 // Boots without owa-config.php: the registry needs the DB driver's OWA_DTD_*
 // constants but no connection. Same guard install.php and tests/bootstrap.php use.
-if ( ! defined( 'OWA_DB_TYPE' ) && ! file_exists( OWA_DIR . 'owa-config.php' ) ) {
+if ( ! defined( 'OWA_DB_TYPE' ) && ! file_exists( \OWA\Core\Env::root() . '/owa-config.php' ) ) {
     define( 'OWA_DB_TYPE', 'mysql' );
 }
 
@@ -74,7 +74,7 @@ function owa_wiki_module_overrides() {
 
     $out = array();
 
-    foreach ( glob( OWA_DIR . 'modules/*/Module.php' ) as $path ) {
+    foreach ( glob( \OWA\Core\Env::root() . '/modules/*/Module.php' ) as $path ) {
 
         if ( preg_match( "/\\\$this->name\s*=\s*'([^']+)'/", (string) file_get_contents( $path ), $m )
             && ! in_array( $m[1], OWA_WIKI_EXCLUDED_MODULES, true ) ) {

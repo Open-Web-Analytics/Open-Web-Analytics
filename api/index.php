@@ -16,8 +16,7 @@
 // $Id$
 //
 
-include_once('../owa_env.php');
-require_once(OWA_DIR.'/owa.php');
+require_once(__DIR__ . '/../owa.php');
 
 /**
  * REST API

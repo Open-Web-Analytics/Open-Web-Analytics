@@ -36,7 +36,7 @@ final class TrackerReservedEventNamesTest extends TestCase
     private function trackerReserved(): array
     {
         $source = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/src/tracker/Tracker.js' );
+            \OWA\Core\Env::root() . '/modules/Base/src/tracker/Tracker.js' );
 
         $open = strpos( $source, 'static get RESERVED_EVENT_NAMES()' );
 
@@ -108,7 +108,7 @@ final class TrackerReservedEventNamesTest extends TestCase
     public function testEveryEventTheTrackerSendsIsReserved(): void
     {
         $source = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/src/tracker/Tracker.js' );
+            \OWA\Core\Env::root() . '/modules/Base/src/tracker/Tracker.js' );
 
         preg_match_all( "/(?:setEventType|raiseEvent)\\(\\s*'([A-Za-z_]+)'/", $source, $found );
 
@@ -136,7 +136,7 @@ final class TrackerReservedEventNamesTest extends TestCase
     public function testTheTrackerReservesTheOwaPrefix(): void
     {
         $source = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/src/tracker/Tracker.js' );
+            \OWA\Core\Env::root() . '/modules/Base/src/tracker/Tracker.js' );
 
         $this->assertStringContainsString( "RESERVED_EVENT_PREFIX() { return 'owa_'; }",
             $source, 'the tracker no longer reserves the owa_ prefix' );

@@ -87,7 +87,7 @@ class UpdateUaRegexesCli extends \OWA\Core\Controller\Cli {
             );
         }
 
-        $dir  = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: OWA_DATA_DIR . 'ua-parser/';
+        $dir  = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: \OWA\Core\Env::dataDir() . 'ua-parser/';
         $file = $dir . 'regexes.php';
 
         // Permissions BEFORE the download. Finding out that owa-data cannot be
@@ -196,7 +196,7 @@ class UpdateUaRegexesCli extends \OWA\Core\Controller\Cli {
 
         if ( ! is_dir( $dir ) ) {
 
-            // The directory's OWN parent, not OWA_DATA_DIR. They are usually
+            // The directory's OWN parent, not the data directory. They are usually
             // the same, but the location is configurable, and checking a
             // different directory than the one mkdir will use gives a confident
             // answer about the wrong thing.

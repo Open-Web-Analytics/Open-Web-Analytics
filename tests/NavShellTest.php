@@ -394,7 +394,7 @@ final class NavShellTest extends TestCase
      */
     public function testTheRailAndColumnHaveTheWidthOfTheirFlexBasis(): void
     {
-        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.shell.css' );
+        $css = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/owa.shell.css' );
         $css = preg_replace( '#/\*.*?\*/#s', '', $css );
 
         preg_match_all( '/([^{}]+)\{([^{}]*)\}/', $css, $rules, PREG_SET_ORDER );

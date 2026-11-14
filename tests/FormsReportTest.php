@@ -163,7 +163,7 @@ final class FormsReportTest extends TestCase
     private function report(): array
     {
         $definition = json_decode( (string) file_get_contents(
-            OWA_DIR . 'modules/Base/reports/forms.json' ), true );
+            \OWA\Core\Env::root() . '/modules/Base/reports/forms.json' ), true );
 
         $this->assertIsArray( $definition, 'reports/forms.json did not parse' );
         $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError( $definition ) );

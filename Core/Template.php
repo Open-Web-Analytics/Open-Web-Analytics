@@ -39,8 +39,6 @@ class Template extends TemplateEngine {
      */
     var $config;
 
-    var $theme_template_dir;
-
     var $module_local_template_dir;
 
     var $module_template_dir;
@@ -80,13 +78,10 @@ class Template extends TemplateEngine {
     function _setTemplateDir($module) {
 
         // set module template dir (on-disk module dir is PascalCase; PSR-4)
-        $this->module_template_dir = OWA_DIR.'modules'.'/' . \OWA\Core\Lib::moduleDirName( $module ) . '/'.'templates'.'/';
+        $this->module_template_dir = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $module ) . '/templates/';
 
         // set module local template override dir
         $this->module_local_template_dir = $this->module_template_dir.'local'.'/';
-
-        // set theme template dir
-        $this->theme_template_dir = OWA_THEMES_DIR.$this->config['theme'].'/';
 
         return;
     }
@@ -102,10 +97,6 @@ class Template extends TemplateEngine {
             // check module's local modification template Directory
             if (file_exists($this->module_local_template_dir.$file)) {
                 $fullfile = $this->module_local_template_dir.$file;
-
-            // check theme's template Directory
-            } elseif(file_exists($this->theme_template_dir.$file)) {
-                $fullfile = $this->theme_template_dir.$file;
 
             // check module's template directory
             } elseif(file_exists($this->module_template_dir.$file)) {
@@ -149,10 +140,6 @@ class Template extends TemplateEngine {
             // check module's local modification template Directory
             if (file_exists($this->module_local_template_dir.$file)):
                 $this->file = $this->module_local_template_dir.$file;
-
-            // check theme's template Directory
-            elseif(file_exists($this->theme_template_dir.$file)):
-                $this->file = $this->theme_template_dir.$file;
 
             // check module's template directory
             elseif(file_exists($this->module_template_dir.$file)):
@@ -631,7 +618,7 @@ class Template extends TemplateEngine {
 
         if ( $built === null ) {
 
-            $built = is_dir( OWA_DIR . 'public/base/dist' );
+            $built = is_dir( \OWA\Core\Env::root() . '/public/base/dist' );
         }
 
         return $built;
@@ -660,7 +647,7 @@ class Template extends TemplateEngine {
 
         if ( ! $public_path ) {
 
-            $public_path = OWA_DIR . 'public/';
+            $public_path = \OWA\Core\Env::root() . '/public/';
         }
 
         $file = rtrim( $public_path, '/' ) . '/' . ltrim( $path, '/' );

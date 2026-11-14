@@ -89,16 +89,10 @@ class CoreAPI {
      * THIRD-PARTY DB-DRIVER SEAM
      * --------------------------
      * OWA's bundled drivers (e.g. "mysql") live in the OWA\Core\Db namespace
-     * and autoload via Composer. A third party can add
-     * support for another database WITHOUT patching OWA core: drop a class file
-     * at `plugins/db/owa_db_<type>.php` declaring `class owa_db_<type> extends
-     * \OWA\Core\Db`, then set the `db_type` config to `<type>`.
-     *
-     * The `plugins/` directory is NOT shipped in the repo — it is a convention
-     * location that a driver author creates in their own install. Because this
-     * method `require`s the file by its constructed path (below), the driver
-     * does NOT need to be Composer-classmap-discoverable to load; and because
-     * the file is untracked by OWA's git, a `git pull` upgrade never removes it.
+     * and autoload via Composer. A third party can add support for another
+     * database WITHOUT patching OWA core: a class `owa_db_<type>` extending
+     * \OWA\Core\Db that an autoloader can load (a module's composer.json
+     * `autoload`, merged by `composer install`), then `db_type` set to `<type>`.
      */
     /**
      * The driver name to actually load for a configured db_type.
@@ -120,8 +114,7 @@ class CoreAPI {
      *   'pdo'        friendly alias for pdo_mysql
      *   'pdo_pgsql'  Postgres over PDO, once a PgsqlDialect exists
      *
-     * A third-party owa_db_<type> from the plugins/ seam is passed through
-     * untouched.
+     * A third-party driver's type is passed through untouched.
      *
      * @param string $type
      * @return string
@@ -181,27 +174,15 @@ class CoreAPI {
              */
             $nsClass = self::namespacedClass( 'OWA\\Core\\Db', $type );
 
+            // A third-party driver is a class owa_db_<type> that an
+            // autoloader can load, such as one a module's composer.json
+            // declares.
             if ( $nsClass === null && ! class_exists( $connection_class ) ) {
 
-                // Third-party driver seam: load a custom owa_db_<type> dropped
-                // in at plugins/db/. Guarded above so bundled (autoloadable)
-                // drivers never reach this fallback.
-                $connection_class_path = OWA_PLUGIN_DIR.'db/' . $connection_class . ".php";
+                \OWA\Core\CoreAPI::error( sprintf( 'No database driver for %s: no class %s is loadable.', $type, $connection_class ) );
 
-				if ( file_exists( $connection_class_path ) ) {
-					
-	                 if ( ! require_once( $connection_class_path ) ) {
-	                     
-	                     \OWA\Core\CoreAPI::error(sprintf('Cannot locate proper db class at %s.', $connection_class_path));
-	                     
-	                     return false;
-	                }
-	                
-				} else {
-					
-					\OWA\Core\CoreAPI::error("$type database connection class file not found.");
-				}
-			}
+                return false;
+            }
 
         } else {
 	        
@@ -240,8 +221,7 @@ class CoreAPI {
              *
              * A bundled driver's class follows from its token -- pdo_mysql ->
              * OWA\Core\Db\PdoMysql -- so it needs nothing registered. A
-             * third-party owa_db_<type> from the plugins/ seam keeps its own
-             * name (setupStorageEngine required it in).
+             * third-party driver keeps its own name, owa_db_<type>.
              *
              * The same resolution as setupStorageEngine(), which runs first and
              * is what loaded the class. The two must agree: if this one picked
@@ -1129,7 +1109,7 @@ class CoreAPI {
 
         if ( empty ( $cache ) ) {
 	        
-            $cache = \OWA\Core\Lib::simpleFactory( \OWA\Module\Base\Classes\Cache::class, OWA_BASE_CLASS_DIR.'cache.php', $params );
+            $cache = new \OWA\Module\Base\Classes\Cache( $params );
         }
 
         return $cache;
@@ -1271,7 +1251,7 @@ class CoreAPI {
         $dir  = $dirs[ strtolower( (string) $sub_directory ) ] ?? $sub_directory;
 
         $nsClass = \OWA\Core\Lib::conventionalClass(
-            OWA_DIR . 'modules/' . \OWA\Core\Lib::moduleDirName( $module ) . '/' . $dir,
+            \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $module ) . '/' . $dir,
             '', $file, (string) $class_suffix );
 
         if ( $nsClass !== null ) {
@@ -1300,7 +1280,7 @@ class CoreAPI {
         $class = 'OWA\\Module\\' . $seg . '\\Module';
 
         if ( class_exists( $class ) ) {
-            return \OWA\Core\Lib::factory( OWA_BASE_CLASSES_DIR . $seg, '', $class );
+            return new $class( array() );
         }
 
         throw new \Exception( sprintf(
@@ -1379,7 +1359,7 @@ class CoreAPI {
             return new $core( $params );
         }
 
-        $obj = \OWA\Core\Lib::factory(OWA_BASE_DIR.'/'.'modules'.'/'.\OWA\Core\Lib::moduleDirName($module).'/'.'Classes'.'/', $class_ns, $class, $params);
+        $obj = \OWA\Core\Lib::factory(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($module) . '/Classes/', $class_ns, $class, $params);
         //$obj->module = $module;
 
         return $obj;
@@ -1874,7 +1854,7 @@ class CoreAPI {
 
         static $warned = array();
 
-        $path = OWA_DIR . 'modules';
+        $path = rtrim( \OWA\Core\Env::modulesDir(), '/' );
 
         if ( ! is_dir( $path ) ) {
 
@@ -2261,7 +2241,7 @@ class CoreAPI {
         
         // Tracking Event processing STAGE 1
         // sets any necessary environmental properties from SERVER global
-        $teh = \OWA\Core\CoreAPI::getInstance( \OWA\Module\Base\Classes\TrackingEventHelpers::class, OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+        $teh = \OWA\Module\Base\Classes\TrackingEventHelpers::getInstance();
         $event = \OWA\Module\Base\Classes\Ingest::at(
             \OWA\Module\Base\Classes\Ingest::EDGE_PRE, $event );
 
@@ -2378,16 +2358,6 @@ class CoreAPI {
         return $result;
     }
 
-    public static function getInstance( $class, $path ) {
-
-        if ( ! class_exists( $class ) ) {
-
-            require_once( $path );
-        }
-
-        return $class::getInstance();
-    }
-
     /**
      * Displays a View without user authentication. Takes array of data as input
      *
@@ -2448,8 +2418,8 @@ class CoreAPI {
     public static function validationFactory($class_file, $conf = array()) {
 
         // OWA's own validators by convention: 'required' is
-        // OWA\Core\Validation\Required. A third-party one still loads from
-        // plugins/validations/ below.
+        // OWA\Core\Validation\Required. Otherwise a class
+        // owa_<name>Validation that an autoloader can load.
         $nsClass = 'OWA\\Core\\Validation\\' . ucfirst( (string) $class_file );
 
         if ( preg_match( '/^[A-Za-z0-9_]+$/', (string) $class_file ) && class_exists( $nsClass ) ) {
@@ -2457,7 +2427,7 @@ class CoreAPI {
             return new $nsClass( $conf );
         }
 
-        return \OWA\Core\Lib::factory(OWA_PLUGIN_DIR.'validations', 'owa_', $class_file, $conf, 'Validation');
+        return \OWA\Core\Lib::factory( '', 'owa_', $class_file, $conf, 'Validation' );
 
     }
 
@@ -3404,14 +3374,14 @@ class CoreAPI {
     
     static function loadConf( $file_name, $filter_name = '' ) {
 	    
-	    $conf_file = OWA_CONF_DIR . $file_name;
+	    $conf_file = \OWA\Core\Env::confDir() . $file_name;
 	    
 	    if ( file_exists( $conf_file ) ) {
 	    
 	    	$conf = include( $conf_file);
 	    }
 	    
-	    $sup_file = OWA_DATA_DIR .  $file_name;
+	    $sup_file = \OWA\Core\Env::dataDir() . $file_name;
 	    
 	    if ( file_exists( $sup_file ) ) {
 		    

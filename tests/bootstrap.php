@@ -10,7 +10,7 @@
  * ---------------
  * Booting OWA constructs the base.configuration entity (owa_settings::__construct
  * -> \OWA\Core\CoreAPI::entityFactory('base.configuration')). entityFactory() only sets
- * up the storage engine -- the driver file plugins/db/owa_db_<type>.php that
+ * up the storage engine -- the driver class in Core/Db/ that
  * define()s OWA_DTD_BIGINT / OWA_DTD_BLOB etc. -- when OWA_DB_TYPE is defined
  * (owa_coreAPI.php ~505). OWA_DB_TYPE normally comes from owa-config.php, which is
  * an install-generated file that is never committed. With no config file the

@@ -107,7 +107,7 @@ if ( function_exists( 'fastcgi_finish_request' ) ) {
 }
 
 // Create instance of OWA
-require_once(OWA_BASE_DIR.'/owa.php');
+require_once(__DIR__ . '/owa.php');
 $config = array(
 
     'tracking_mode' => true,

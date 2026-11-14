@@ -481,7 +481,7 @@ final class SettingsFormScopedTest extends TestCase
             'modules/Base/templates/property_profile.php' => 'base.propertyAttribution',
         ) as $template => $set) {
 
-            $code = php_strip_whitespace(OWA_DIR . $template);
+            $code = php_strip_whitespace(\OWA\Core\Env::root() . '/' . $template);
 
             $this->assertStringNotContainsString('config[', $code, $template);
             $this->assertStringContainsString('SettingsForm::scopedFieldSet', $code, $template);

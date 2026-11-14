@@ -26,7 +26,7 @@ final class ConstraintOperatorsJsTest extends TestCase
         ob_start();
 
         try {
-            include OWA_DIR . 'modules/Base/templates/config_dom.php';
+            include \OWA\Core\Env::root() . '/modules/Base/templates/config_dom.php';
         } finally {
             $js = (string) ob_get_clean();
         }
@@ -39,7 +39,7 @@ final class ConstraintOperatorsJsTest extends TestCase
 
     public function testTheGridReadsTheOperatorsFromThePage(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . self::EXPLORER );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . self::EXPLORER );
 
         $this->assertStringContainsString( "OWA.getSetting( 'constraint_operators' )", $src );
         $this->assertStringNotContainsString( 'OWA.dataGrid.OPERATORS =', $src,
@@ -49,7 +49,7 @@ final class ConstraintOperatorsJsTest extends TestCase
     /** A chip has words for every operator the server parses, and for no other. */
     public function testEveryOperatorHasAChipPhrase(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . self::EXPLORER );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . self::EXPLORER );
 
         $this->assertSame( 1, preg_match( '/OWA\.dataGrid\.OPERATOR_PHRASES = \{(.*?)\};/s', $src, $block ) );
         preg_match_all( "/^\s*'([^']+)':/m", $block[1], $keys );
@@ -63,7 +63,7 @@ final class ConstraintOperatorsJsTest extends TestCase
      */
     public function testThePillsSplitWithTheServersOperators(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . self::PILLS );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . self::PILLS );
 
         $this->assertSame( 1, preg_match( '/OWA\.filterPills\.split = function \( clause \) \{(.*?)\n\};/s', $src, $split ) );
         $this->assertStringContainsString( 'OWA.dataGrid.operators()', $split[1] );
@@ -76,7 +76,7 @@ final class ConstraintOperatorsJsTest extends TestCase
     {
         foreach ( array( 'tests/js/DataGrid.test.js', 'tests/js/FilterPills.test.js' ) as $file ) {
 
-            $src = (string) file_get_contents( OWA_DIR . $file );
+            $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $file );
 
             $this->assertSame( 1, preg_match( '/const SERVER_OPERATORS = \[(.*?)\];/', $src, $list ), $file );
             preg_match_all( "/'([^']+)'/", $list[1], $ops );

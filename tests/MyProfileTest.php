@@ -4,8 +4,7 @@
  * The full framework, the way CapabilitiesConfigFileOnlyTest loads it.
  *
  * Reading a setting or the action map spins up the service singleton, which
- * needs OWA_BASE_DIR -- defined by owa_env.php, which this bootstrap loads.
- * Without it these pass only when some earlier test in the same process has
+ * needs a booted framework, which this bootstrap provides. Without it these pass only when some earlier test in the same process has
  * already booted OWA, and fail when the file is run alone. CI runs an isolation
  * sweep that does exactly that.
  */

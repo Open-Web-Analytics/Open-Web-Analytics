@@ -34,7 +34,7 @@ final class DomstreamFixtures
         if (!$s->getMapValue('actions', 'domstream.reportDomstreams')) {
             $s->setMapValue('actions', 'domstream.reportDomstreams', [
                 'class_name' => \OWA\Module\Domstream\Controller\ReportDomstreams::class,
-                'file'       => OWA_BASE_MODULE_DIR,
+                'file'       => '',
             ]);
         }
 

@@ -266,7 +266,7 @@ final class EventRawEntityTest extends TestCase
         $this->assertArrayNotHasKey('v2_raw_collection', $denylist,
             'nothing left to protect from the options form');
 
-        foreach (glob(OWA_BASE_DIR . '/modules/Base/templates/*.php') as $template) {
+        foreach (glob(\OWA\Core\Env::root() . '/modules/Base/templates/*.php') as $template) {
 
             $this->assertStringNotContainsString('v2_raw_collection', file_get_contents($template),
                 basename($template) . ' still names the removed flag.');

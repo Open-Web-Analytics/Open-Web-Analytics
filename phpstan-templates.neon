@@ -19,7 +19,8 @@
 # `$view`, an OWA\Core\ViewScope whose __get serves any key the controller
 # set, so ViewScope must be declared a universal object crate or every
 # `$view->anything` read reports an undefined property. And the tree uses
-# runtime-defined constants (OWA_DIR and friends), so the bootstrap file
+# runtime-defined constants (the OWA_SQL_* and OWA_DTD_* the database
+# driver defines), so the bootstrap file
 # has to run first. Drop either and the run reports nothing useful.
 #
 # CAUTION: PHPStan resolves `paths` RELATIVE TO THIS FILE. A copy of this

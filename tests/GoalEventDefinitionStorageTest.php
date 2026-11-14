@@ -191,7 +191,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
     public function testABrokenRegexIsRefusedOnSave(): void
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/GoalEventDefinitionSave.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Controller/GoalEventDefinitionSave.php' );
 
         $this->assertStringContainsString( 'The regular expression is not valid.', $src,
             'A pattern that cannot compile can be saved, and then matches nothing '
@@ -383,7 +383,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /** The builder's script names the picker's custom value as the server does. */
     public function testTheBuilderKnowsTheCustomTriggerValue(): void
     {
-        $source = (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.goalbuilder.js' );
+        $source = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.goalbuilder.js' );
 
         $this->assertMatchesRegularExpression( '/export const CUSTOM_TRIGGER = ' . preg_quote(
             "'" . \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM . "';", '/' ) . '/', $source );
@@ -913,7 +913,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
     public function testTheSaveStoresTheCountModeItWasGiven(): void
     {
         $body = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/GoalEventDefinitionSave.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Controller/GoalEventDefinitionSave.php' );
 
         $write = substr( $body, (int) strpos( $body, "set( 'count_mode'" ) );
         $write = substr( $write, 0, (int) strpos( $write, ';' ) );

@@ -383,7 +383,7 @@ class Lib {
         }
 
         // THEN the name as given: a fully-qualified class, or one already
-        // loaded (a driver from the plugins/db seam). Nothing is required in
+        // loaded (a third-party database driver). Nothing is required in
         // by file path -- the pre-PSR-4 convention was removed at v2.0.
         if (!class_exists($class)) {
             throw new \Exception(sprintf(
@@ -1272,7 +1272,7 @@ class Lib {
                 continue;
             }
 
-            $root = defined( 'OWA_DIR' ) ? OWA_DIR : '';
+            $root = \OWA\Core\Env::root() . '/';
 
             return ( $root !== '' && strpos( $file, $root ) === 0 ? substr( $file, strlen( $root ) ) : $file )
                 . ':' . ( $frame['line'] ?? 0 );

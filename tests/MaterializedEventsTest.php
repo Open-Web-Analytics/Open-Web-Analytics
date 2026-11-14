@@ -66,7 +66,7 @@ final class MaterializedEventsTest extends IngestionTestCase
     public function testTheMaterializeKeyIsOnlyUsedWhereItHasAnEffect(): void
     {
         $registry = json_decode((string) file_get_contents(
-            OWA_DIR . 'modules/Base/config/tracking_properties.json'), true);
+            \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json'), true);
 
         $flagged = [];
 

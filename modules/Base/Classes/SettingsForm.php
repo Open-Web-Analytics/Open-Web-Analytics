@@ -1007,8 +1007,8 @@ class SettingsForm {
 
         /** @var array<string, array<string>> $timezones */
         /** @var array<string, string> $countryCode2Name */
-        require( OWA_DIR . 'conf/country2Timezones.php' );
-        require( OWA_DIR . 'conf/countryCodes2Names.php' );
+        require( \OWA\Core\Env::confDir() . 'country2Timezones.php' );
+        require( \OWA\Core\Env::confDir() . 'countryCodes2Names.php' );
 
         ksort( $timezones );
 

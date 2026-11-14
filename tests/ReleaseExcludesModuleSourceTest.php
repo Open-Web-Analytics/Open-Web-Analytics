@@ -15,14 +15,14 @@ final class ReleaseExcludesModuleSourceTest extends TestCase
 {
     public function testEveryModuleSourceDirectoryIsExcluded(): void
     {
-        $workflow = (string) file_get_contents(OWA_DIR . '.github/workflows/main.yml');
+        $workflow = (string) file_get_contents(\OWA\Core\Env::root() . '/.github/workflows/main.yml');
 
-        $dirs = glob(OWA_DIR . 'modules/*/src', GLOB_ONLYDIR);
+        $dirs = glob(\OWA\Core\Env::root() . '/modules/*/src', GLOB_ONLYDIR);
 
-        $this->assertContains(OWA_DIR . 'modules/Base/src', $dirs, 'no source directories were found');
+        $this->assertContains(\OWA\Core\Env::root() . '/modules/Base/src', $dirs, 'no source directories were found');
 
         foreach ($dirs as $dir) {
-            $relative = './' . substr($dir, strlen(OWA_DIR));
+            $relative = './' . substr($dir, strlen(\OWA\Core\Env::root() . '/'));
 
             $this->assertStringContainsString("--exclude='$relative'", $workflow,
                 "$relative would ship in the release tarball");

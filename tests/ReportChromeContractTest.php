@@ -170,7 +170,7 @@ final class ReportChromeContractTest extends TestCase
     /** @return array<int,string> the parameter names a definition declares */
     private static function declaredParams( string $id ): array
     {
-        $file = OWA_DIR . 'modules/Base/reports/' . $id . '.json';
+        $file = \OWA\Core\Env::root() . '/modules/Base/reports/' . $id . '.json';
 
         if ( ! is_readable( $file ) ) {
 

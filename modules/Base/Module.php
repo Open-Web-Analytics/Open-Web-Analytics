@@ -612,7 +612,7 @@ class Module extends \OWA\Core\Module {
 
         if ( $seed === '' ) {
 
-            $seed = defined( 'OWA_DIR' ) ? OWA_DIR : php_uname( 'n' );
+            $seed = \OWA\Core\Env::root() . '/';
         }
 
         // The JOB NAME is part of it, or every daily job on one install lands

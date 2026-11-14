@@ -14,7 +14,7 @@ return static function () {
 
     $out = "| Check | Passes when |\n|---|---|\n";
 
-    foreach ( EnvironmentCheck::all( OWA_DIR . 'owa-config.php' ) as $check ) {
+    foreach ( EnvironmentCheck::all( \OWA\Core\Env::root() . '/owa-config.php' ) as $check ) {
 
         if ( trim( (string) ( $check['requires'] ?? '' ) ) === '' ) {
             throw new RuntimeException( "EnvironmentCheck '{$check['name']}' does not say what passes." );

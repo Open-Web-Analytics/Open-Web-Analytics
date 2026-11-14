@@ -225,7 +225,7 @@ abstract class RestControllerTestCase extends TestCase
         if (!class_exists($class)) {
             $path = ($controllerFile[0] === '/')
                 ? $controllerFile
-                : OWA_BASE_MODULE_DIR . 'controllers/' . $controllerFile;
+                : \OWA\Core\Env::modulesDir() . 'Base/controllers/' . $controllerFile;
             require_once($path);
         }
         $ctrl = new $class($params);

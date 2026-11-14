@@ -222,7 +222,7 @@ JS;
     /** A lexing slip -- a regular expression read as a division, say -- shows as brackets that do not pair. */
     public function testEveryModuleScriptLexesToPairedBrackets(): void
     {
-        $files = glob(OWA_DIR . 'modules/*/src/{,*/,*/*/,*/*/*/}*.js', GLOB_BRACE);
+        $files = glob(\OWA\Core\Env::root() . '/modules/*/src/{,*/,*/*/,*/*/*/}*.js', GLOB_BRACE);
 
         $this->assertNotEmpty($files);
 
@@ -491,7 +491,7 @@ return array( 'metrics' => array( 'a' => array( 'label' => \$name, 'description'
         ob_start();
 
         try {
-            include OWA_DIR . 'modules/Base/templates/config_dom.php';
+            include \OWA\Core\Env::root() . '/modules/Base/templates/config_dom.php';
         } finally {
             $js = (string) ob_get_clean();
         }

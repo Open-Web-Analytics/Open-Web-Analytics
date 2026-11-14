@@ -32,7 +32,7 @@ final class EmbeddedSettingRemovedTest extends TestCase
         $this->assertFalse(
             \OWA\Core\CoreAPI::configSingleton()->isRegistered( 'base', 'is_embedded' ) );
 
-        $declaration = include OWA_DIR . 'modules/Base/settings.php';
+        $declaration = include \OWA\Core\Env::root() . '/modules/Base/settings.php';
 
         $this->assertArrayNotHasKey( 'is_embedded', (array) $declaration['settings'] );
     }
