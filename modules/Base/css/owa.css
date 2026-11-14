@@ -3,12 +3,12 @@
 /*
  * The type scale's one base. Every text size in OWA's stylesheets is in rem,
  * so the browser's text size setting scales all of it, and a phone takes a
- * larger base: 125% makes the 12px body 15px and a report's 14px text 17.5px.
+ * larger base: 112.5% makes the 12px body 13.5px and a report's 14px text 15.75px.
  */
 html { font-size: 100%; }
 
 @media (max-width: 600px) {
-    html { font-size: 125%; }
+    html { font-size: 112.5%; }
 }
 
 body {border-color:#cccccc; background-color:; font-family:Helvetica,'Arial'; padding:0; margin: 0;font-size:0.75rem;}
