@@ -74,8 +74,22 @@ final class DataDirConfigTest extends TestCase
         $this->fail("the probe printed nothing:\n" . $out . $err);
     }
 
+    /**
+     * The error log the runner's own config pins, or null. A config that sets
+     * error_log_file itself (the CI harness does) keeps its log where it says;
+     * only the default follows the data directory.
+     */
+    private function pinnedErrorLog(): ?string
+    {
+        $default = $this->probe(self::SQS)['error_log_file'];
+
+        return strpos($default, \OWA\Core\Env::root() . '/owa-data/logs/errors_') === 0 ? null : $default;
+    }
+
     public function testTheDataDirectoryMovesEverythingWrittenUnderIt(): void
     {
+        $pinned = $this->pinnedErrorLog();
+
         // No trailing slash: the setting adds one.
         $r    = $this->probe(array('OWA_DATA_DIR' => $this->dir) + self::SQS, 'log');
         $data = $this->dir . '/';
@@ -84,7 +98,9 @@ final class DataDirConfigTest extends TestCase
         $this->assertSame('OWA_DATA_DIR', $r['constant']);
         $this->assertSame($data . 'caches/', $r['cache_dir']);
         $this->assertSame($data . 'caches/', $r['file_cache_dir']);
-        $this->assertStringStartsWith($data . 'logs/errors_', $r['error_log_file']);
+        $pinned === null
+            ? $this->assertStringStartsWith($data . 'logs/errors_', $r['error_log_file'])
+            : $this->assertSame($pinned, $r['error_log_file'], 'a log the config pins stays where it says');
         $this->assertSame($data . 'logs/', $r['async_log_dir']);
         $this->assertSame($data . 'logs/', $r['queue_dir']);
         $this->assertSame($data . 'logs/archive/', $r['archive_dir']);
@@ -118,14 +134,17 @@ final class DataDirConfigTest extends TestCase
 
     public function testWithNothingSetEverythingStaysInOwaData(): void
     {
-        $r    = $this->probe(self::SQS);
-        $data = \OWA\Core\Env::root() . '/owa-data/';
+        $pinned = $this->pinnedErrorLog();
+        $r      = $this->probe(self::SQS);
+        $data   = \OWA\Core\Env::root() . '/owa-data/';
 
         $this->assertSame($data, $r['data_dir']);
         $this->assertSame('', $r['constant']);
         $this->assertSame($data . 'caches/', $r['cache_dir']);
         $this->assertSame($data . 'caches/', $r['file_cache_dir']);
-        $this->assertStringStartsWith($data . 'logs/errors_', $r['error_log_file']);
+        $pinned === null
+            ? $this->assertStringStartsWith($data . 'logs/errors_', $r['error_log_file'])
+            : $this->assertSame($pinned, $r['error_log_file']);
         $this->assertSame($data . 'logs/', $r['queue_dir']);
         $this->assertSame($data . 'logs/', $r['fallback_dir']);
         $this->assertSame($data . 'maxmind/', $r['maxmind_dir']);
