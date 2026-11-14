@@ -95,6 +95,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
         } elseif ($cmd) {
             $params['do'] = $cmd;
             echo $owa->handleRequest($params);
+            $exit_code = \OWA\Core\Controller\Cli::$exit_code;
         } else {
             \OWA\Core\CoreAPI::notice( "Invalid command name.");
         }
@@ -106,6 +107,10 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 } else {
     // unload owa
     $owa->restInPeace();
+}
+
+if (!empty($exit_code)) {
+    exit($exit_code);
 }
 
 ?>

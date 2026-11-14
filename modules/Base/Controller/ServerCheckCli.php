@@ -27,6 +27,9 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
     /** How long the round trip waits to receive its own message, in seconds. */
     const ROUND_TRIP_SECONDS = 10;
 
+    /** A check that fails exits 1, for a deploy script or a monitor. */
+    protected $exit_on_failure = true;
+
     /** See \OWA\Core\Controller\Cli::serverRoles(). A diagnostic: every server can check itself. */
     public static function serverRoles() {
 
@@ -92,7 +95,7 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
 
         if ( $failed ) {
 
-            return $this->fail( 'Server check: this server cannot do what its role needs.' );
+            return $this->fail( 'Server check failed: see above.' );
         }
     }
 

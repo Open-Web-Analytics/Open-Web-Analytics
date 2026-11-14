@@ -338,7 +338,7 @@ final class ServerRole {
      */
     public static function refuse( $request_type, array $problem ) {
 
-        CoreAPI::error( sprintf( 'Refused a %s request: %s', $request_type, $problem['message'] ) );
+        CoreAPI::error( sprintf( 'Refused a request of type %s: %s', $request_type, $problem['message'] ) );
 
         if ( $request_type === RequestType::CLI ) {
 

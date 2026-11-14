@@ -115,6 +115,12 @@ class Cli extends \OWA\Core\AdminController {
     /** @var string */
     protected $cli_message = '';
 
+    /** @var bool whether a failure of this command makes cli.php exit 1 */
+    protected $exit_on_failure = false;
+
+    /** @var int the exit code cli.php ends with: 1 once a command that opted in has failed. */
+    public static $exit_code = 0;
+
     /**
      * The job lock held for this run, when the scheduler is running us.
      *
@@ -160,6 +166,11 @@ class Cli extends \OWA\Core\AdminController {
 
         $this->cli_outcome = 'failed';
         $this->cli_message = $this->cli_message ?: $msg;
+
+        if ( $this->exit_on_failure ) {
+
+            self::$exit_code = 1;
+        }
 
         \OWA\Core\CoreAPI::notice( $msg );
 

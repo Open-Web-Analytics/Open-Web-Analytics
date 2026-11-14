@@ -75,7 +75,7 @@ final class ServerRoleBootTest extends TestCase
     {
         $file = (string) \OWA\Core\CoreAPI::getSetting('base', 'error_log_file');
 
-        return is_file($file) ? substr_count((string) file_get_contents($file), "Refused a $type request: ") : 0;
+        return is_file($file) ? substr_count((string) file_get_contents($file), "Refused a request of type $type: ") : 0;
     }
 
     /** @return iterable<string, array{string}> */
