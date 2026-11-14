@@ -39,7 +39,7 @@
 
 <?php else:?>
 
-    <table class="management">
+    <table class="management owa_cardTable" data-ui="goal-events-table">
         <thead>
             <tr>
                 <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?></th>
@@ -52,9 +52,9 @@
         </thead>
         <tbody>
         <?php foreach ( $view->goalEventDefinitions as $owa_ke ):?>
-            <tr>
-                <td><?php $view->out( $owa_ke['name'] );?></td>
-                <td class="owa_goalEventCondition">
+            <tr data-ui="goal-event-row">
+                <td data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?>"><?php $view->out( $owa_ke['name'] );?></td>
+                <td class="owa_goalEventCondition" data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Counts' ) ); ?>">
                     <?php $owa_trigger = (string) ( $owa_ke['trigger_event_type'] ?? '' );?>
                     <?php if ( ! empty( $owa_ke['conditions'] ) ):?>
                     <span class="owa_goalEventTrigger"><?php $view->out( $owa_trigger );?></span>
@@ -83,11 +83,11 @@
                     <span class="owa_goalEventIncomplete"><?php $view->out( \OWA\Core\CoreAPI::t( 'no condition set — counts nothing' ) ); ?></span>
                     <?php endif;?>
                 </td>
-                <td class="owa_goalEventCountMode"><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::countModes()[
+                <td class="owa_goalEventCountMode" data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'How often' ) );?>"><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::countModes()[
                     \OWA\Module\Base\Entity\GoalEventDefinition::countModeOf( $owa_ke['count_mode'] ?? '' ) ] );?></td>
-                <td><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::centsToDecimal( $owa_ke['value'] ) );?></td>
-                <td><?php $view->out( $owa_ke['is_active'] ? \OWA\Core\CoreAPI::t( 'Active' ) : \OWA\Core\CoreAPI::t( 'Inactive' ) );?></td>
-                <td>
+                <td data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) ); ?>"><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::centsToDecimal( $owa_ke['value'] ) );?></td>
+                <td data-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Status' ) ); ?>"><?php $view->out( $owa_ke['is_active'] ? \OWA\Core\CoreAPI::t( 'Active' ) : \OWA\Core\CoreAPI::t( 'Inactive' ) );?></td>
+                <td class="owa_rowActions">
                     <a href="<?php echo $view->makeLink( array( 'do' => 'base.goalEventDefinitionEdit',
                         'propertyId' => $view->propertyId, 'goalEventDefinitionId' => $owa_ke['id'] ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Edit' ) ); ?></a>
                 </td>

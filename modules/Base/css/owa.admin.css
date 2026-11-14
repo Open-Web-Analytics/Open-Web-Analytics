@@ -477,13 +477,42 @@
 }
 
 .owa .owa_notification:hover .owa_notificationDismiss,
-.owa .owa_notificationDismiss:focus {
+.owa .owa_notificationDismiss:focus,
+.owa .owa_notificationDismiss:focus-visible {
     opacity: 1;
 }
 
 .owa .owa_notificationDismiss:hover {
     background: #e4e6eb;
     color: #050505;
+}
+
+/* No hover to reveal it (a touch screen, or a phone's width): always shown,
+   a 44px target at the row's top right, and the unread dot moves to the foot
+   of the row from under it. */
+@media (hover: none), (pointer: coarse), (max-width: 600px) {
+
+    .owa .owa_notification {
+        padding-right: 48px;
+    }
+
+    .owa .owa_notificationDismiss {
+        top: 2px;
+        right: 2px;
+        width: 44px;
+        height: 44px;
+        line-height: 44px;
+        opacity: 1;
+    }
+
+    .owa .owa_notification.is-unread::after,
+    .owa .owa_notification.is-unread:hover::after {
+        display: block;
+        top: auto;
+        bottom: 16px;
+        right: 19px;
+        margin-top: 0;
+    }
 }
 
 .owa .owa_notificationItems .info_text {
@@ -818,8 +847,8 @@
 }
 
 
-/* A phone. With the notification badge showing, the bar is about 460px wide at
- * the 900px sizes, so the help and bell buttons wrapped onto a second row. */
+/* A phone. The bar is one row: the menu button, then help, the bell and the
+ * account, each a 44px target. */
 @media (max-width: 600px) {
 
     .owa #owa_header { padding: 4px 4px; }
@@ -827,8 +856,6 @@
     .owa #owa_header .owa_logo img { height: 28px; }
 
     .owa .owa_navigation li a { padding: 0 5px; font-size: 14px; }
-
-    .owa .owa_helpMenuToggle, .owa .owa_notificationToggle { width: 34px; height: 34px; line-height: 34px; font-size: 14px; }
 
     .owa .owa_helpMenu { margin-right: 4px; }
 
@@ -839,6 +866,15 @@
     .owa .owa_userMenuToggle { padding: 0 4px; }
 
     .owa .owa_userMenuCaret { display: none; }
+}
+
+/* A finger's target: the header's buttons 44px square on a phone or a touch screen. */
+@media (max-width: 600px), (pointer: coarse) {
+
+    .owa .owa_helpMenuToggle,
+    .owa .owa_notificationToggle { width: 44px; height: 44px; line-height: 44px; }
+
+    .owa .owa_userMenuToggle { min-width: 44px; height: 44px; justify-content: center; }
 }
 
 /* With reduced motion, a settings group's arrow turns at once. */

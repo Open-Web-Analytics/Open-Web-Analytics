@@ -182,7 +182,7 @@ div {margin:0;}
 .form-label {width:;}
 .form-field {position: relative; left: 120px;}
 .form-value {position: absolute; left: 380px; font-weight: bold;}
-.form-instructions {position: relative; left: 150px; font-size:12px; color: var(--owa-text-muted, #6b7280);}
+.form-instructions {position: relative; left: 150px; font-size:12px; line-height: 1.4; color: var(--owa-text-muted, #6b7280);}
 /* The fill is the accent darkened until white on it reads at 4.5:1 or more
    (#b45309 is 5.0:1; the logo's #f47a17 is 2.75:1). */
 .owa-button {
@@ -301,6 +301,12 @@ td#panel {margin: 0px; padding-top:0px;width:;border-collapse: collapse;border:0
     padding: 20px 10px 20px 20px;
     background-color: #FF4040;
     font-size: 14px; 
+}
+
+/* What was refused, on its own line under the message. */
+.owa .error .owa_errorDetail {
+    display: block;
+    margin-top: 6px;
 }
 
 /* The way back from an error page, under its banner and on the banner's margin. */
@@ -796,6 +802,30 @@ a.owa-button:hover {
    page on a phone: the scheduler banner's crontab line is one long word. A
    <pre> block keeps its lines and scrolls. */
 :not(pre) > code { overflow-wrap: anywhere; }
+
+/* A phone. Every field is 16px, as iOS zooms the page on focus below that,
+   and at least 44px tall; the override switch's label is a 44px target. The
+   size is important because it is a floor under every screen's own, which
+   are more specific than this; the height is :where(), so a field drawn
+   inside a box of its own can opt out. */
+@media (max-width: 600px) {
+
+    input:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="hidden"], [type="file"])),
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    input:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="hidden"], [type="file"])),
+    select {
+        min-height: 44px;
+        box-sizing: border-box;
+    }
+
+    .owa-override {
+        min-height: 44px;
+    }
+}
 
 /* With reduced motion, an override switch changes at once. */
 @media (prefers-reduced-motion: reduce) {

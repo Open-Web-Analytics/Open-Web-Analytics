@@ -137,7 +137,7 @@
         <div class="owa_installField">
             <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Admin User Name' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="user_id" value="<?php $view->out( $view->defaults['user_id'] ?? '' );?>">
+                <input type="text" size="30" name="user_id" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" value="<?php $view->out( $view->defaults['user_id'] ?? '' );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'The user name to use for login.' ) ); ?></span>
         </div>
@@ -145,7 +145,7 @@
         <div class="owa_installField">
             <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Email Address' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="email_address" value="<?php $view->out( $view->defaults['email_address'] ?? '' );?>">
+                <input type="email" size="30" name="email_address" autocomplete="email" autocapitalize="none" spellcheck="false" value="<?php $view->out( $view->defaults['email_address'] ?? '' );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Where password resets for this account are sent.' ) ); ?></span>
         </div>
@@ -153,7 +153,7 @@
         <div class="owa_installField">
             <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Password' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="password"size="30" name="password" value="">
+                <input type="password" size="30" name="password" autocomplete="new-password" value="">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'The password for this account.' ) ); ?></span>
         </div>

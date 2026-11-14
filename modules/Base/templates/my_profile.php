@@ -75,7 +75,7 @@ $owa_minPassword  = (int) $view->min_password_length;
                      */
                 ?>
                 <?php if ( $owa_mayEditEmail ): ?>
-                <input type="email" size="30" maxlength="255" name="email_address" id="owa_myProfileEmail"
+                <input type="email" size="30" maxlength="255" name="email_address" id="owa_myProfileEmail" autocomplete="email" autocapitalize="none" spellcheck="false"
                        aria-describedby="owa_myProfileEmailHint"
                        value="<?php $view->out( $view->email_address ); ?>">
                 <?php else: ?>

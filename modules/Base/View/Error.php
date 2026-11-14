@@ -62,6 +62,23 @@ class Error extends \OWA\Core\View {
         $this->body->set( 'back_url', (string) ( $data['error_back_url'] ?? '' ) );
         $this->body->set_template('generic_error.php');
 
+        /*
+         * A signed-in user refused a page keeps the menu
+         * (Controller::authenticatedButNotCapableAction() names its Property),
+         * so a phone, where the menu button is the way to every other screen,
+         * is not left at a dead end.
+         */
+        $navProperty = (string) ( $data['nav_property_id'] ?? '' );
+
+        if ( $this->is_subview !== true && $navProperty !== '' ) {
+
+            $this->t->set( 'nav_rail', true );
+            $this->body->set( 'nav_property_id', $navProperty );
+            $this->body->set( 'nav_access_site', (string) ( $data['nav_access_site'] ?? '' ) );
+            $this->body->set( 'report_nav', \OWA\Core\ReportController::reportNavigation( $navProperty ) );
+            $this->setJs( 'owa.reporting', 'base/dist/owa.reporting-combined-min.js' );
+        }
+
         // The admin chrome's styles: the header's icons and the banner itself.
         $this->setCss( 'base/css/font-awesome/css/all.min.css' );
         $this->setCss( 'base/css/owa.reporting-css-combined.css' );
@@ -71,7 +88,7 @@ class Error extends \OWA\Core\View {
      * An error message in the banner's shape.
      *
      * @param  mixed $msg getMsg()'s array, an array with 'msg', a string, or nothing
-     * @return array headline, message
+     * @return array headline, message, and for an array its detail line
      */
     public static function bannerMessage( $msg ) {
 
@@ -80,6 +97,7 @@ class Error extends \OWA\Core\View {
             return array(
                 'headline' => (string) ( $msg['headline'] ?? \OWA\Core\CoreAPI::t( 'Error' ) ),
                 'message'  => (string) ( $msg['message'] ?? $msg['msg'] ?? '' ),
+                'detail'   => (string) ( $msg['detail'] ?? '' ),
             );
         }
 

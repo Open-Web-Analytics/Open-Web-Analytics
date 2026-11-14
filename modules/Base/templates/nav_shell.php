@@ -27,6 +27,7 @@ $owa_column = $owa_column ?? null;
             <li class="owa_railEntry<?php echo $owa_section['foot'] ? ' is-foot' : '';?>">
                 <a class="owa_railItem<?php echo $owa_section['current'] ? ' is-current' : '';?>"
                    id="owa_railItem_<?php $view->out( preg_replace( '/[^A-Za-z0-9_-]/', '', $owa_section['id'] ) );?>"
+                   data-ui="nav:<?php $view->out( $owa_section['id'] );?>"
                    <?php echo $owa_section['current'] ? 'aria-current="page"' : '';?>
                    href="<?php $view->safeHref( $owa_section['href'] );?>"><i class="owa_railIcon <?php $view->out( $owa_section['icon'] );?>" aria-hidden="true"></i><span class="owa_railLabel"><?php $view->out( $owa_section['label'] );?></span></a>
                 <?php if ( ! $owa_section['current'] && $owa_section['items'] ):?>

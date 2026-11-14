@@ -473,8 +473,19 @@ function logoOrange() {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
+/**
+ * The element a test names by its data-ui hook, `part:name` -- the locator to
+ * use where a role or label cannot single it out (`ui(page, 'kpi:visits')`,
+ * `ui(page, 'grid-row')`). Styling classes are not locators: they change with
+ * the look.
+ */
+function ui(scope, name) {
+    return scope.locator(`[data-ui="${name}"]`);
+}
+
 module.exports = {
     FIXTURE,
+    ui,
     logoOrange,
     login,
     loginAs,
