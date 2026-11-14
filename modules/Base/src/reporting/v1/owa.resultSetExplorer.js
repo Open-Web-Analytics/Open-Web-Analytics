@@ -455,6 +455,11 @@ OWA.resultSetExplorer.prototype = {
         jQuery( "#" + dom_id ).bind( 'page_change', function(event, page, resultsPerPage) {
             that.changePage(page, resultsPerPage);
         });
+
+        // A card's Show more: the same rows from the first, more of them.
+        jQuery( "#" + dom_id ).bind( 'show_more', function(event, resultsPerPage) {
+            that.changePage(1, resultsPerPage);
+        });
     },
 
     /**
@@ -527,7 +532,16 @@ OWA.resultSetExplorer.prototype = {
 
         var that = this;
         jQuery.getJSON(url, '', function (data) {that.clearLoadError(); that.setResultSet(data);})
-            .fail( function () { that.showLoadError(); } );
+            .fail( function () {
+
+                that.showLoadError();
+
+                // The rows drawn are still the last ones; a control waiting
+                // for new ones stops waiting.
+                for ( var i = 0; i < that.subscriber_dom_ids.length; i++ ) {
+                    jQuery( '#' + that.subscriber_dom_ids[ i ] ).trigger( 'result_set_error' );
+                }
+            } );
     },
 
     /**
@@ -1229,11 +1243,15 @@ jQuery( container_selector + ' > .dim-list' ).chosen().change( function() {
  *   - a Total row first, from the result set's aggregates, and on each row a
  *     count's share of that total
  *
+ * A card (`compact`) has no pager: a Show more bar under its rows asks for
+ * the same rows again with more of them (showMore()).
+ *
  * Every change is published as an event on the grid's element, and the
  * explorer that owns the grid refetches (createGrid() binds them):
  *
  *   page_forward, page_back
  *   page_change           (page, resultsPerPage)
+ *   show_more             (resultsPerPage)
  *   dimension_list_change (dims)
  *   sort_column_change    (column, 'asc'|'desc')
  *   constraint_change     (the constraints string)
@@ -1259,10 +1277,25 @@ OWA.dataGrid = function(target_dom_id, options) {
     this.init = false;
     this.resultSet = null;
     this.popover = null;
+
+    // A card's Show more: how many rows each press adds (its first page
+    // size), and whether a press is waiting for its rows.
+    this.moreStep = 0;
+    this.moreWaiting = false;
+    this.moreExpanded = false;
 };
 
 /** What Rows per page offers. A result set's own size is added when it is not one of them. */
 OWA.dataGrid.PAGE_SIZES = [ 10, 25, 50, 100 ];
+
+/**
+ * The most rows one request returns: ReportsRest::MAX_RESULTS_PER_PAGE, which
+ * config_dom.php puts in OWA.config. A card's Show more stops there.
+ */
+OWA.dataGrid.maxRows = function () {
+
+    return parseInt( OWA.getSetting( 'max_results_per_page' ), 10 ) || 1000;
+};
 
 /*
  * How many dimensions the headings let you choose between.
@@ -1705,6 +1738,11 @@ OWA.dataGrid.prototype = {
         jQuery( '#' + that.dom_id ).bind( 'new_result_set', function( event, resultSet ) {
             that.generate( resultSet );
         } );
+
+        // A requery that failed leaves these rows; Show more can be pressed again.
+        jQuery( '#' + that.dom_id ).bind( 'result_set_error', function () {
+            that.moreDone();
+        } );
     },
 
     /** Publish a change for the explorer to refetch with. */
@@ -1747,6 +1785,12 @@ OWA.dataGrid.prototype = {
             .append( this.body( rs ) );
 
         $grid.append( jQuery( '<div class="owa_gridScroll"></div>' ).append( $table ) );
+
+        if ( this.options.compact ) {
+
+            $grid.addClass( 'is-card' );
+            this.showMore( rs, $grid );
+        }
     },
 
     /**
@@ -1861,7 +1905,9 @@ OWA.dataGrid.prototype = {
         var explore  = this.options.showExplorerControls !== false && !! rs.self;
         var pages    = parseInt( rs.total_pages, 10 ) || 1;
         var page     = parseInt( rs.page, 10 ) || 1;
-        var paged    = pages > 1 || page > 1;
+
+        // A card shows more rows with the bar under them, not pages.
+        var paged    = ! this.options.compact && ( pages > 1 || page > 1 );
 
         if ( ! explore && ! paged ) {
             return null;
@@ -1888,7 +1934,7 @@ OWA.dataGrid.prototype = {
 
         // A page with no rows has nothing to page through: the filters are
         // what there is to change.
-        if ( ! ( rs.resultsRows || [] ).length ) {
+        if ( ! ( rs.resultsRows || [] ).length || this.options.compact ) {
             return $bar;
         }
 
@@ -2004,6 +2050,143 @@ OWA.dataGrid.prototype = {
             } );
 
         return jQuery( '<span class="owa_gridChip"></span>' ).append( $text ).append( $remove );
+    },
+
+    // ---- a card's Show more ----------------------------------------------
+
+    /**
+     * The rows a card shows, of how many, and how many a press of Show more
+     * adds: as many again as the card first showed, fewer when fewer are left,
+     * and none past maxRows().
+     *
+     * @return object {shown, total, more (the total is a lower bound), next}
+     */
+    moreRows : function ( rs ) {
+
+        var r     = OWA.dataGrid.range( rs );
+        var left  = r.more ? Infinity : Math.max( 0, r.total - r.end );
+        var room  = Math.max( 0, OWA.dataGrid.maxRows() - r.end );
+
+        return {
+            shown: r.end,
+            total: r.total,
+            more:  r.more,
+            next:  Math.min( this.moreStep, left, room )
+        };
+    },
+
+    /**
+     * A full-width bar under a card's rows, a chevron in its middle, while
+     * there are rows it does not show. A press asks for the same query from
+     * the first row with that many more (show_more), so the sort, the filters
+     * and the period stay as they are.
+     *
+     * While the rows load the bar is busy and ignores presses. aria-disabled
+     * rather than disabled, which would drop the focus the bar has.
+     *
+     * When the rows arrive the new bar takes the focus, without scrolling, so
+     * a keyboard reader can press again from where they were: most cards have
+     * nothing focusable in their rows to go to instead. The polite status says
+     * how many are shown. Once a card has grown to its last row the bar
+     * becomes a line saying so, which takes the focus in its place.
+     */
+    showMore : function ( rs, $grid ) {
+
+        var that   = this;
+        var waited = this.moreWaiting;
+
+        if ( ! this.moreStep ) {
+            this.moreStep = parseInt( rs.resultsPerPage, 10 ) || ( rs.resultsRows || [] ).length;
+        }
+
+        this.moreWaiting = false;
+        this.liveRegion();
+
+        var m = this.moreRows( rs );
+
+        if ( m.next > 0 ) {
+
+            var name = OWA.util.sprintf( OWA.ln( 'Show %d more row', 'Show %d more rows', m.next ), m.next );
+
+            var $button = jQuery( '<button type="button" class="owa_gridShowMore" data-ui="grid-show-more">'
+                + '<i class="fas fa-chevron-down" aria-hidden="true"></i></button>' )
+                .attr( { 'aria-label': name, title: name } )
+                .on( 'click', function () {
+
+                    if ( that.moreWaiting ) {
+                        return;
+                    }
+
+                    that.moreWaiting  = true;
+                    that.moreExpanded = true;
+
+                    $button.attr( { 'aria-busy': 'true', 'aria-disabled': 'true' } );
+                    that.emit( 'show_more', [ m.shown + m.next ] );
+                } );
+
+            $grid.append( $button );
+
+            if ( waited ) {
+                $button[ 0 ].focus( { preventScroll: true } );
+                this.announce( this.showingText( m ) );
+            }
+
+            return;
+        }
+
+        // Every row is showing: the bar goes. The focus it held moves to the
+        // card's full-report link, the next thing to do, else to the grid.
+        if ( ! this.moreExpanded || ! waited ) {
+            return;
+        }
+
+        this.announce( this.showingText( m ) );
+
+        var $link = $grid.parents().filter( function () {
+            return jQuery( this ).find( '[data-ui="card-full-report"]' ).length > 0;
+        } ).first().find( '[data-ui="card-full-report"]' ).first();
+
+        var target = $link.length ? $link[ 0 ] : $grid.attr( 'tabindex', '-1' )[ 0 ];
+
+        target.focus( { preventScroll: true } );
+    },
+
+    /** "Showing 20 of 46 rows", or "of 100+" when the total is a lower bound. */
+    showingText : function ( m ) {
+
+        return m.more
+            ? OWA.util.sprintf( OWA.l( 'Showing %1$s of %2$s+ rows' ), m.shown, m.total )
+            : OWA.util.sprintf( OWA.ln( 'Showing %1$s of %2$s row', 'Showing %1$s of %2$s rows', m.total ), m.shown, m.total );
+    },
+
+    /** A press of Show more that came to nothing: the bar can be pressed again. */
+    moreDone : function () {
+
+        this.moreWaiting = false;
+
+        jQuery( '#' + this.dom_id ).find( '.owa_gridShowMore' ).removeAttr( 'aria-busy aria-disabled' );
+    },
+
+    /**
+     * The grid's polite status, beside the grid rather than in it so a redraw
+     * keeps it, and there before anything is said in it.
+     */
+    liveRegion : function () {
+
+        var $root = jQuery( '#' + this.dom_id );
+        var $live = $root.children( '.owa_gridStatus' );
+
+        if ( ! $live.length ) {
+            $live = jQuery( '<p class="owa_gridStatus owa_srOnly" role="status" aria-live="polite" data-ui="grid-status"></p>' )
+                .appendTo( $root );
+        }
+
+        return $live;
+    },
+
+    announce : function ( text ) {
+
+        this.liveRegion().text( text );
     },
 
     // ---- the table -------------------------------------------------------

@@ -2403,6 +2403,52 @@ final class ReportDefinitionFormatTest extends TestCase
             'this widget type dropped its "more" link' );
     }
 
+    /**
+     * A card's full-report link is at its foot, after the body its rows and
+     * Show more bar are drawn into, and not on its heading's line. With no
+     * label of its own it says "Full report".
+     */
+    public function testACardsFullReportLinkIsAtItsFoot(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'More',
+            'metrics' => 'sessions',
+            'widgets' => array( array( 'type' => 'grid-card', 'id' => 'c', 'container' => 'card',
+                'title' => 'Top pages',
+                'query' => array( 'dimensions' => 'pagePath', 'sort' => 'pageViews-' ),
+                'more'  => array( 'reportId' => 'pages' ) ) ),
+        ), array() );
+
+        $this->assertSame( 1, preg_match(
+            '~<h2 class="owa_reportSectionTitle">Top pages</h2></div>~', $html ),
+            'the card\'s heading carries the link' );
+
+        $this->assertSame( 1, preg_match(
+            '~id="card" class="owa_widgetBody".*?</script>\s*<div class="owa_moreLinks owa_cardFoot">'
+            . '<a data-ui="card-full-report" href="[^"]*reportId=pages[^"]*">Full report</a></div>~s', $html ),
+            'the card\'s link is not after its body' );
+    }
+
+    /** A grid that is not a card keeps its link on its heading's line. */
+    public function testAGridsFullReportLinkStaysOnItsHeading(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $html = $this->renderedWith( array(
+            'title'   => 'More',
+            'metrics' => 'sessions',
+            'widgets' => array( array( 'type' => 'grid', 'id' => 'g', 'container' => 'dimension-grid',
+                'title' => 'Mediums',
+                'query' => array( 'dimensions' => 'medium', 'sort' => 'sessions-' ),
+                'more'  => array( 'reportId' => 'pages', 'label' => 'View Full Report' ) ) ),
+        ), array() );
+
+        $this->assertStringContainsString( '<h2 class="owa_reportSectionTitle">Mediums</h2><span class="owa_moreLinks">', $html );
+        $this->assertStringNotContainsString( 'card-full-report', $html );
+    }
+
     // ------------------------------------------------------------------
     // The two table types, across the shipped definitions
     // ------------------------------------------------------------------
