@@ -10,7 +10,7 @@
 ?>
 <h1 class="panel_headline"><?php echo $view->headline;?></h1>
 <div id="panel">
-<div class="owa_panelIntro">A goal event definition counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted, or every one of an event of your own. Goal event definitions belong to the <strong>Property</strong>, so they count the same way in all of its Observation Profiles.</div>
+<div class="owa_panelIntro"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'A goal event definition counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted, or every one of an event of your own. Goal event definitions belong to the %s, so they count the same way in all of its Observation Profiles.' ), '<strong>' . htmlspecialchars( (string) \OWA\Core\CoreAPI::t( 'Property' ), ENT_QUOTES, 'UTF-8' ) . '</strong>' ); ?></div>
 
 <?php
 /*
@@ -27,14 +27,14 @@
 <fieldset>
 
     <legend>
-        Goal Event Definitions <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
-            'do' => 'base.goalEventDefinitionEdit', 'propertyId' => $view->propertyId ) );?>">Add New Goal Event Definition</a>)</span>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'Goal Event Definitions' ) ); ?> <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
+            'do' => 'base.goalEventDefinitionEdit', 'propertyId' => $view->propertyId ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add New Goal Event Definition' ) ); ?></a>)</span>
     </legend>
 
 <?php if ( empty( $view->goalEventDefinitions ) ):?>
 
     <div class="owa_emptyState">
-        <p>This Property counts nothing yet.</p>
+        <p><?php $view->out( \OWA\Core\CoreAPI::t( 'This Property counts nothing yet.' ) ); ?></p>
     </div>
 
 <?php else:?>
@@ -42,11 +42,11 @@
     <table class="management">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Counts</th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Counts' ) ); ?></th>
                 <th><?php $view->out( \OWA\Core\CoreAPI::t( 'How often' ) );?></th>
-                <th>Value</th>
-                <th>Status</th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) ); ?></th>
+                <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Status' ) ); ?></th>
                 <th></th>
             </tr>
         </thead>
@@ -58,10 +58,10 @@
                     <?php $owa_trigger = (string) ( $owa_ke['trigger_event_type'] ?? '' );?>
                     <?php if ( ! empty( $owa_ke['conditions'] ) ):?>
                     <span class="owa_goalEventTrigger"><?php $view->out( $owa_trigger );?></span>
-                    <span class="owa_goalEventJoin">where</span>
+                    <span class="owa_goalEventJoin"><?php $view->out( \OWA\Core\CoreAPI::t( 'where' ) ); ?></span>
                     <?php foreach ( $owa_ke['conditions'] as $owa_i => $owa_cond ):?>
                         <?php if ( $owa_i ):?>
-                        <span class="owa_goalEventJoin"><?php $view->out( $owa_ke['condition_match'] === 'any' ? 'or' : 'and' );?></span>
+                        <span class="owa_goalEventJoin"><?php $view->out( $owa_ke['condition_match'] === 'any' ? \OWA\Core\CoreAPI::t( 'or' ) : \OWA\Core\CoreAPI::t( 'and' ) );?></span>
                         <?php endif;?>
                         <span class="owa_goalEventProperty"><?php $view->out( $owa_cond['property'] );?></span>
                         <span class="owa_goalEventOperator"><?php $view->out(
@@ -69,7 +69,7 @@
                         <span class="owa_goalEventValue"><?php $view->out( $owa_cond['value'] );?></span>
                     <?php endforeach;?>
                     <?php elseif ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_trigger ) ):?>
-                    every <span class="owa_goalEventTrigger"><?php $view->out( $owa_trigger );?></span>
+                    <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'every %s' ), '<span class="owa_goalEventTrigger">' . htmlspecialchars( (string) $owa_trigger, ENT_QUOTES, 'UTF-8' ) . '</span>' ); ?>
                     <?php else:?>
                     <?php
                         /*
@@ -80,16 +80,16 @@
                          * nothing anywhere said it would never fire.
                          */
                     ?>
-                    <span class="owa_goalEventIncomplete">no condition set &mdash; counts nothing</span>
+                    <span class="owa_goalEventIncomplete"><?php $view->out( \OWA\Core\CoreAPI::t( 'no condition set — counts nothing' ) ); ?></span>
                     <?php endif;?>
                 </td>
                 <td class="owa_goalEventCountMode"><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::countModes()[
                     \OWA\Module\Base\Entity\GoalEventDefinition::countModeOf( $owa_ke['count_mode'] ?? '' ) ] );?></td>
                 <td><?php $view->out( \OWA\Module\Base\Entity\GoalEventDefinition::centsToDecimal( $owa_ke['value'] ) );?></td>
-                <td><?php echo $owa_ke['is_active'] ? 'Active' : 'Inactive';?></td>
+                <td><?php $view->out( $owa_ke['is_active'] ? \OWA\Core\CoreAPI::t( 'Active' ) : \OWA\Core\CoreAPI::t( 'Inactive' ) );?></td>
                 <td>
                     <a href="<?php echo $view->makeLink( array( 'do' => 'base.goalEventDefinitionEdit',
-                        'propertyId' => $view->propertyId, 'goalEventDefinitionId' => $owa_ke['id'] ) );?>">Edit</a>
+                        'propertyId' => $view->propertyId, 'goalEventDefinitionId' => $owa_ke['id'] ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Edit' ) ); ?></a>
                 </td>
             </tr>
         <?php endforeach;?>

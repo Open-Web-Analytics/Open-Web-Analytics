@@ -6,5 +6,5 @@
  */
 ?>
 <?php if ( $view->back_url ):?>
-<p class="owa_errorBack"><a href="<?php $view->out( $view->back_url );?>">Return to the previous screen</a></p>
+<p class="owa_errorBack"><a href="<?php $view->out( $view->back_url );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Return to the previous screen' ) );?></a></p>
 <?php endif;?>

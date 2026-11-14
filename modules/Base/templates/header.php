@@ -11,7 +11,7 @@
     ?>
     <?php if ( $view->get( 'nav_rail' ) ):?>
     <button type="button" class="owa_reportNavToggle" aria-controls="owa_reportNavRail" aria-expanded="false"
-            aria-label="<?php echo $view->get( 'nav_section' ) === 'analytics' ? 'Show the report menu' : 'Show the menu';?>">
+            aria-label="<?php $view->out( $view->get( 'nav_section' ) === 'analytics' ? \OWA\Core\CoreAPI::t( 'Show the report menu' ) : \OWA\Core\CoreAPI::t( 'Show the menu' ) );?>">
         <i class="fas fa-bars" aria-hidden="true"></i>
     </button>
     <?php endif;?>
@@ -71,7 +71,7 @@
     <span class="owa_userMenu">
         <button type="button" id="owa_userMenuToggle" class="owa_userMenuToggle"
                 aria-expanded="false" aria-controls="owa_userMenuPanel" aria-haspopup="true"
-                aria-label="Account: <?php $view->out( $cu->getUserData('user_id') );?>">
+                aria-label="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Account: %s' ), $cu->getUserData('user_id') ) );?>">
             <i class="fas fa-user-circle owa_userMenuIcon" aria-hidden="true"></i>
             <span class="owa_userMenuName"><?php $view->out( $cu->getUserData('user_id') );?></span>
             <i class="fas fa-chevron-down owa_userMenuCaret" aria-hidden="true"></i>
@@ -80,9 +80,9 @@
             <?php
                 /* nav_user_menu. */
                 $owa_user_links = array(
-                    array( 'id' => 'profile', 'label' => 'Profile', 'class' => 'owa_myProfileLink',
+                    array( 'id' => 'profile', 'label' => \OWA\Core\CoreAPI::t( 'Profile' ), 'class' => 'owa_myProfileLink',
                            'href' => $view->makeLink( array( 'do' => 'base.myProfile' ), false ) ),
-                    array( 'id' => 'logout', 'label' => 'Logout', 'class' => 'owa_userMenuLogout',
+                    array( 'id' => 'logout', 'label' => \OWA\Core\CoreAPI::t( 'Logout' ), 'class' => 'owa_userMenuLogout',
                            'href' => $view->makeLink( array( 'do' => 'base.logout' ), false ) ),
                 );
             ?>
@@ -115,14 +115,14 @@
     <span class="owa_notificationBell">
         <button type="button" id="owa_notificationToggle" class="owa_notificationToggle"
                 aria-expanded="false" aria-controls="owa_notificationPanel"
-                aria-label="Notifications">
+                aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Notifications' ) ); ?>">
             <i class="fas fa-bell"></i>
             <span id="owa_notificationBadge" class="owa_notificationBadge">0</span>
         </button>
         <div id="owa_notificationPanel" class="owa_notificationPanel" hidden>
-            <div class="owa_notificationPanelHeader">Notifications</div>
+            <div class="owa_notificationPanelHeader"><?php $view->out( \OWA\Core\CoreAPI::t( 'Notifications' ) ); ?></div>
             <div id="owa_notificationItems" class="owa_notificationItems">
-                <p class="info_text">Loading...</p>
+                <p class="info_text"><?php $view->out( \OWA\Core\CoreAPI::t( 'Loading...' ) ); ?></p>
             </div>
         </div>
     </span>
@@ -140,6 +140,16 @@
         // and assembling path segments here would only work on an install
         // whose URLs are rewritten.
         var apiUrl = <?php echo json_encode( $owa_apiUrl ); ?>;
+
+        // The words this script writes, translated; %s is a number.
+        var TEXT = <?php echo json_encode( array(
+            'nothingNew' => \OWA\Core\CoreAPI::t( 'Nothing new.' ),
+            'justNow'    => \OWA\Core\CoreAPI::t( 'just now' ),
+            'minutes'    => \OWA\Core\CoreAPI::t( '%sm', 'minutes ago, abbreviated' ),
+            'hours'      => \OWA\Core\CoreAPI::t( '%sh', 'hours ago, abbreviated' ),
+            'days'       => \OWA\Core\CoreAPI::t( '%sd', 'days ago, abbreviated' ),
+            'dismiss'    => \OWA\Core\CoreAPI::t( 'Dismiss notification' ),
+        ), JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
 
         // The badge counts the UNREAD rows we hold -- not how many rows there
         // are, because a read notification stays on screen without counting.
@@ -193,7 +203,7 @@
             paintBadge();
             var p = document.createElement('p');
             p.className = 'info_text';
-            p.textContent = 'Nothing new.';
+            p.textContent = TEXT.nothingNew;
             items.appendChild(p);
         }
 
@@ -201,18 +211,40 @@
         // nothing, so a row never renders with an empty hole where the icon is.
         var ICONS = { release: 'fa-box', general: 'fa-bell' };
 
-        // "3d" rather than a date, the way a notification list reads. Falls
-        // back to a real date past a week, where "37d" stops being useful.
+        // The install's locale (OWA.config.locale, else the one this page was
+        // rendered in); undefined is the browser's own. Read when a time is
+        // written, after config_dom.php has set OWA.config.
+        function locale() {
+            return (window.OWA && OWA.config && OWA.config.locale)
+                || <?php echo json_encode( \OWA\Core\Strings::locale() === \OWA\Core\Strings::SOURCE_LOCALE ? null : \OWA\Core\Strings::htmlLang() ); ?>
+                || undefined;
+        }
+
+        // "3d ago" rather than a date, the way a notification list reads, in
+        // the locale's own words where the browser has Intl.RelativeTimeFormat.
+        // Falls back to a real date past a week, where "37d" stops being useful.
         function relativeTime(seconds) {
             var diff = Math.floor(Date.now() / 1000) - seconds;
+            var unit = diff < 3600 ? ['minute', 60, TEXT.minutes]
+                     : diff < 86400 ? ['hour', 3600, TEXT.hours] : ['day', 86400, TEXT.days];
 
-            if (diff < 60)     { return 'just now'; }
-            if (diff < 3600)   { return Math.floor(diff / 60) + 'm'; }
-            if (diff < 86400)  { return Math.floor(diff / 3600) + 'h'; }
-            if (diff < 604800) { return Math.floor(diff / 86400) + 'd'; }
+            if (diff < 60) { return TEXT.justNow; }
 
-            return new Date(seconds * 1000)
-                .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            if (diff < 604800) {
+                var n = Math.floor(diff / unit[1]);
+
+                try {
+                    return new Intl.RelativeTimeFormat(locale(), { style: 'narrow', numeric: 'always' }).format(-n, unit[0]);
+                } catch (e) {
+                    return unit[2].replace('%s', n);
+                }
+            }
+
+            try {
+                return new Intl.DateTimeFormat(locale(), { month: 'short', day: 'numeric' }).format(new Date(seconds * 1000));
+            } catch (e) {
+                return new Date(seconds * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            }
         }
 
         function render(list) {
@@ -277,7 +309,7 @@
                 var x = document.createElement('button');
                 x.type = 'button';
                 x.className = 'owa_notificationDismiss';
-                x.setAttribute('aria-label', 'Dismiss notification');
+                x.setAttribute('aria-label', TEXT.dismiss);
                 x.textContent = '\u00d7';
                 x.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -346,7 +378,7 @@
          */
     ?>
     <span class="owa_userMenu">
-        <a class="owa_userMenuSignIn" href="<?php echo $view->makeLink(array('do' => 'base.loginForm'), false);?>">Login</a>
+        <a class="owa_userMenuSignIn" href="<?php echo $view->makeLink(array('do' => 'base.loginForm'), false);?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Login' ) ); ?></a>
     </span>
 <?php endif; ?>
     <?php
@@ -367,18 +399,18 @@
     <span class="owa_helpMenu">
         <button type="button" id="owa_helpMenuToggle" class="owa_helpMenuToggle"
                 aria-expanded="false" aria-controls="owa_helpMenuPanel"
-                aria-haspopup="true" aria-label="Help">
+                aria-haspopup="true" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Help' ) ); ?>">
             <i class="fas fa-question" aria-hidden="true"></i>
         </button>
         <div id="owa_helpMenuPanel" class="owa_helpMenuPanel owa_headerMenuPanel" role="menu" hidden>
             <?php foreach ( \OWA\Core\Navigation::links( 'nav_help_menu', array(
-                array( 'id' => 'documentation', 'label' => 'Documentation',
+                array( 'id' => 'documentation', 'label' => \OWA\Core\CoreAPI::t( 'Documentation' ),
                        'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki' ),
-                array( 'id' => 'bugs', 'label' => 'Report a Bug',
+                array( 'id' => 'bugs', 'label' => \OWA\Core\CoreAPI::t( 'Report a Bug' ),
                        'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues' ),
                 array( 'id' => 'github', 'label' => 'GitHub',
                        'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics' ),
-                array( 'id' => 'donate', 'label' => 'Donate',
+                array( 'id' => 'donate', 'label' => \OWA\Core\CoreAPI::t( 'Donate' ),
                        'href' => 'https://github.com/sponsors/padams' ),
             ) ) as $owa_link ):?>
             <a role="menuitem" class="owa_headerMenuItem" target="_blank" rel="noopener"

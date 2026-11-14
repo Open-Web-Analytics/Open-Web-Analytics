@@ -24,22 +24,20 @@ $owa_operators = array(
 ?>
 <h1 class="panel_headline"><?php echo $view->headline;?></h1>
 <div id="panel">
-<div class="owa_panelIntro">Goal events are custom events that are created when OWA observes
-a behavior pattern you specify. A goal event definition names them and says which events count:
-choose the event, then pick a property of it, how to compare it, and what to compare it to.</div>
+<div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Goal events are custom events that are created when OWA observes a behavior pattern you specify. A goal event definition names them and says which events count: choose the event, then pick a property of it, how to compare it, and what to compare it to.' ) );?></div>
 
 <form method="post" name="owa_goalEventDefinition">
 
     <div class="setting">
         <?php // Once saved the name is text, not a field: nothing to label. ?>
         <?php if ( ! empty( $view->goalEventDefinitionId ) && ! empty( $owa_ke['name'] ) ):?>
-        <div class="title">Name</div>
+        <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) );?></div>
         <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Each goal event is stored as an event with this name. It cannot be changed: for another name, create another goal event definition and switch this one off.' ) );?></div>
         <div class="field">
             <code><?php $view->out( $owa_ke['name'] );?></code>
         </div>
         <?php else:?>
-        <label class="title" for="owa_goalName">Name</label>
+        <label class="title" for="owa_goalName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) );?></label>
         <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Each goal event is stored as an event with this name, which reports show: Signup_Completed rather than Goal_3. A letter, then up to 39 letters, digits and underscores. It cannot be changed once the goal event definition is saved.' ) );?></div>
         <div class="field">
             <input class="owa_largeFormField" type="text" maxlength="40" id="owa_goalName"
@@ -51,8 +49,8 @@ choose the event, then pick a property of it, how to compare it, and what to com
     </div>
 
     <div class="setting">
-        <div class="title">Counts when</div>
-        <div class="description">Which event counts as this goal, and the values it must carry. Only properties the chosen event carries are offered: a page view has no click target, for example. A goal event definition with no conditions matches nothing.</div>
+        <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Counts when' ) );?></div>
+        <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'Which event counts as this goal, and the values it must carry. Only properties the chosen event carries are offered: a page view has no click target, for example. A goal event definition with no conditions matches nothing.' ) );?></div>
         <div class="field">
             <?php
             /*
@@ -73,7 +71,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
                  data-not-carried-label="<?php $view->out( \OWA\Core\CoreAPI::t( '%s -- not carried by %s' ) );?>"
                  data-not-carried-help="<?php $view->out( \OWA\Core\CoreAPI::t( 'A %s event does not carry this property.' ) );?>">
                 <div class="owa_goalSentence">
-                    A
+                    <?php $view->out( \OWA\Core\CoreAPI::t( 'A' ) );?>
                     <?php
                     /*
                      * OWA's events, then the site's own: the ones its Profiles
@@ -92,8 +90,8 @@ choose the event, then pick a property of it, how to compare it, and what to com
                     $owa_other = \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM;
                     ?>
                     <select class="owa_goalTrigger" name="triggerEvent"
-                            aria-label="The event this goal counts">
-                        <optgroup label="OWA events">
+                            aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'The event this goal counts' ) );?>">
+                        <optgroup label="<?php $view->out( \OWA\Core\CoreAPI::t( 'OWA events' ) );?>">
                         <?php foreach ( (array) $view->triggerEvents as $owa_event ):?>
                             <option value="<?php $view->out( $owa_event );?>"
                                 <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
@@ -101,7 +99,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
                             </option>
                         <?php endforeach;?>
                         </optgroup>
-                        <optgroup label="Your events">
+                        <optgroup label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Your events' ) );?>">
                         <?php foreach ( $owa_custom as $owa_event ):?>
                             <option value="<?php $view->out( $owa_event );?>"
                                 <?php echo ( $view->triggerEvent === $owa_event ) ? 'selected' : '';?>>
@@ -110,23 +108,23 @@ choose the event, then pick a property of it, how to compare it, and what to com
                         <?php endforeach;?>
                             <option value="<?php $view->out( $owa_other );?>"
                                 <?php echo ( $view->triggerEvent === $owa_other ) ? 'selected' : '';?>>
-                                Another event of yours&hellip;
+                                <?php $view->out( \OWA\Core\CoreAPI::t( 'Another event of yours…' ) );?>
                             </option>
                         </optgroup>
                     </select>
                     <input class="owa_goalCustomTrigger" type="text" maxlength="40"
                            name="customTriggerEvent"
                            value="<?php $view->out( (string) $view->customTriggerEvent );?>"
-                           placeholder="newsletter_signup" aria-label="The name of your event">
-                    event where
+                           placeholder="newsletter_signup" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'The name of your event' ) );?>">
+                    <?php $view->out( \OWA\Core\CoreAPI::t( 'event where' ) );?>
                     <select class="owa_goalMatch" name="conditionMatch"
-                            aria-label="How many conditions must match">
-                        <option value="all" <?php echo ( $owa_ke['condition_match'] ?? 'all' ) !== 'any' ? 'selected' : '';?>>all</option>
-                        <option value="any" <?php echo ( $owa_ke['condition_match'] ?? '' ) === 'any' ? 'selected' : '';?>>any</option>
+                            aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'How many conditions must match' ) );?>">
+                        <option value="all" <?php echo ( $owa_ke['condition_match'] ?? 'all' ) !== 'any' ? 'selected' : '';?>><?php $view->out( \OWA\Core\CoreAPI::t( 'all' ) );?></option>
+                        <option value="any" <?php echo ( $owa_ke['condition_match'] ?? '' ) === 'any' ? 'selected' : '';?>><?php $view->out( \OWA\Core\CoreAPI::t( 'any' ) );?></option>
                     </select>
-                    of these match:
+                    <?php $view->out( \OWA\Core\CoreAPI::t( 'of these match:' ) );?>
                 </div>
-                <div class="owa_goalTriggerHelp">An event of your own, sent with trackCustomEvent, needs no conditions: leave them empty to count every one.</div>
+                <div class="owa_goalTriggerHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'An event of your own, sent with trackCustomEvent, needs no conditions: leave them empty to count every one.' ) );?></div>
                 <span class="validation_error"><?php $view->out( $view->validation_errors['triggerEvent'] ?? '' );?></span>
 
                 <ul class="constraintList owa_goalEventCondition" data-owa-repeatable>
@@ -136,7 +134,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
                             (array) $view->savedProperties, true ) ? $owa_cond['condition_property'] : '' );?>">
                         <span class="constraintDimensionPicker">
                             <select class="dim-list owa_goalProperty" name="conditionProperty[]"
-                                    aria-label="Property">
+                                    aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Property' ) );?>">
                             <?php foreach ( (array) $view->conditionProperties as $owa_prop ):?>
                                 <option value="<?php $view->out( $owa_prop['name'] );?>"
                                     data-description="<?php $view->out( $owa_prop['description'] ?? '' );?>"
@@ -148,7 +146,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
                         </span>
                         <span class="constraintOperatorPicker">
                             <select class="operator-list" name="conditionOperator[]"
-                                    aria-label="Comparison">
+                                    aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Comparison' ) );?>">
                             <?php foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::operators() as $owa_value => $owa_label ):?>
                                 <option value="<?php $view->out( $owa_value );?>"
                                     <?php echo ( ( $owa_cond['condition_operator'] ?? '' ) === $owa_value ) ? 'selected' : '';?>>
@@ -157,7 +155,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
                             <?php endforeach;?>
                             </select>
                         </span>
-                        <input class="constraintValueField" type="text" aria-label="Value"
+                        <input class="constraintValueField" type="text" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) );?>"
                                name="conditionValue[]"
                                value="<?php $view->out( $owa_cond['condition_value'] ?? '' );?>">
                         <button type="button" class="constraintAddButton"
@@ -180,7 +178,7 @@ choose the event, then pick a property of it, how to compare it, and what to com
     </div>
 
     <div class="setting">
-        <label class="title" for="owa_goalValue">Value <span class="owa_optional">optional</span></label>
+        <label class="title" for="owa_goalValue"><?php $view->out( \OWA\Core\CoreAPI::t( 'Value' ) );?> <span class="owa_optional"><?php $view->out( \OWA\Core\CoreAPI::t( 'optional' ) );?></span></label>
         <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'What one goal event is worth, in the Property\'s currency. Left blank, a goal event met by a purchase carries the purchase\'s revenue, and any other carries no value.' ) );?></div>
         <div class="field">
             <input class="owa_shortFormField" type="text" id="owa_goalValue"
@@ -217,9 +215,8 @@ choose the event, then pick a property of it, how to compare it, and what to com
     </div>
 
     <div class="setting">
-        <label class="title" for="owa_goalIsActive">Status</label>
-        <div class="description">An inactive goal event definition is kept and stops
-        counting.</div>
+        <label class="title" for="owa_goalIsActive"><?php $view->out( \OWA\Core\CoreAPI::t( 'Status' ) );?></label>
+        <div class="description"><?php $view->out( \OWA\Core\CoreAPI::t( 'An inactive goal event definition is kept and stops counting.' ) );?></div>
         <div class="field">
             <?php
             /*
@@ -234,8 +231,8 @@ choose the event, then pick a property of it, how to compare it, and what to com
             $owa_active = isset( $owa_ke['id'] ) ? ! empty( $owa_ke['is_active'] ) : true;
             ?>
             <select id="owa_goalIsActive" name="isActive">
-                <option value="1" <?php echo $owa_active ? 'selected' : '';?>>Active</option>
-                <option value="0" <?php echo $owa_active ? '' : 'selected';?>>Inactive</option>
+                <option value="1" <?php echo $owa_active ? 'selected' : '';?>><?php $view->out( \OWA\Core\CoreAPI::t( 'Active' ) );?></option>
+                <option value="0" <?php echo $owa_active ? '' : 'selected';?>><?php $view->out( \OWA\Core\CoreAPI::t( 'Inactive' ) );?></option>
             </select>
         </div>
     </div>
@@ -244,14 +241,14 @@ choose the event, then pick a property of it, how to compare it, and what to com
     <input type="hidden" name="propertyId" value="<?php $view->out( $view->propertyId );?>">
     <input type="hidden" name="goalEventDefinitionId" value="<?php $view->out( $view->goalEventDefinitionId ?? '' );?>">
     <input type="hidden" name="action" value="base.goalEventDefinitionSave">
-    <input class="owa-button" type="submit" name="submit_btn" value="Save Goal Event Definition">
+    <input class="owa-button" type="submit" name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save Goal Event Definition' ) );?>">
 </form>
 
 <?php if ( ! empty( $owa_ke['id'] ) ):?>
 <div class="owa_dangerZone">
-    <div class="owa_dangerZoneTitle">Delete this goal event definition</div>
+    <div class="owa_dangerZoneTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this goal event definition' ) );?></div>
     <div class="owa_dangerZoneBody">
-        It stops counting and is removed from reports. The events it has already counted are kept.
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'It stops counting and is removed from reports. The events it has already counted are kept.' ) );?>
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.goalEventDefinitionDelete');?>
@@ -259,11 +256,11 @@ choose the event, then pick a property of it, how to compare it, and what to com
         <input type="hidden" name="goalEventDefinitionId" value="<?php $view->out( $owa_ke['id'] );?>">
         <input type="hidden" name="action" value="base.goalEventDefinitionDelete">
         <input class="owa-button owa-button-danger" type="submit"
-               name="submit_btn" value="Delete Goal Event Definition"
+               name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete Goal Event Definition' ) );?>"
                data-owa-confirm
-               data-owa-confirm-title="Delete this goal event definition?"
-               data-owa-confirm-body="&ldquo;<?php $view->out( $owa_ke['name'] ?? '' );?>&rdquo; stops counting and leaves reports. Events already counted are kept."
-               data-owa-confirm-proceed="Delete goal event definition">
+               data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this goal event definition?' ) );?>"
+               data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” stops counting and leaves reports. Events already counted are kept.' ), $owa_ke['name'] ?? '' ) );?>"
+               data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete goal event definition' ) );?>">
     </form>
 </div>
 <?php endif;?>

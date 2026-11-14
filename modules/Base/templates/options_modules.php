@@ -7,10 +7,10 @@
 <table width="100%" id="module_roster" class="management">
     <thead>
     <TR>
-        <TH>Module</TH>
-        <th>Current Schema</th>
-        <th>Required Schema</th>
-        <th>Schema Up to Date?</th>
+        <TH><?php $view->out( \OWA\Core\CoreAPI::t( 'Module' ) ); ?></TH>
+        <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Current Schema' ) ); ?></th>
+        <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Required Schema' ) ); ?></th>
+        <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Schema Up to Date?' ) ); ?></th>
         <TH></TH>
     </TR>
     </thead>
@@ -28,9 +28,9 @@
         <TD class="">
         <?php if ($v['name'] != 'base'): ?>
         <?php if (isset($v['status']) && $v['status'] == 'active'): ?>
-            <a href="<?php echo $view->makeLink( array('do' => 'base.moduleDeactivate', 'module' => $v['name']), false, false, false, true );?>">Deactivate</a>
+            <a href="<?php echo $view->makeLink( array('do' => 'base.moduleDeactivate', 'module' => $v['name']), false, false, false, true );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Deactivate' ) ); ?></a>
         <?php else: ?>
-            <a href="<?php echo $view->makeLink( array('do' => 'base.moduleActivate', 'module' => $v['name']), false, false, false, true );?>">Activate</a>
+            <a href="<?php echo $view->makeLink( array('do' => 'base.moduleActivate', 'module' => $v['name']), false, false, false, true );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Activate' ) ); ?></a>
         <?php endif; ?>
         <?php endif;?>
 
@@ -43,7 +43,7 @@
 
 <?php else: ?>
 
-There are no additional modules installed.
+<?php $view->out( \OWA\Core\CoreAPI::t( 'There are no additional modules installed.' ) ); ?>
 
 <?php endif;?>
 

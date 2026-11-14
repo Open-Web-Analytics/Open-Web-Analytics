@@ -1,22 +1,20 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<p>There was a new visit to site: <?php $view->out( $view->site['domain'] );?>.</p>
+<p><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'There was a new visit to site: %s.' ), $view->site['domain'] ) );?></p>
 
-<p>Visitor ID: <?php $view->out( $view->session['visitor_id'] );?></p>
+<p><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Visitor ID: %s' ), $view->session['visitor_id'] ) );?></p>
 
-<p>Username (email): <?php $view->out( $view->session['user_name'] );?>  (<?php if (isset($view->session['user_email'])) {
-                                                                    $view->out( $view->session['user_email'] );
-                                                                } else {
-                                                                    echo 'not set';
-                                                                }  ?>)
+<p><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Username (email): %1$s (%2$s)' ),
+                              $view->session['user_name'],
+                              isset( $view->session['user_email'] ) ? $view->session['user_email'] : \OWA\Core\CoreAPI::t( 'not set' ) ) );?>
 </p>
-<p>Host: <?php $view->out( $view->session['host'] );?></p>
+<p><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Host: %s' ), $view->session['host'] ) );?></p>
 
 
-<p>City/Country:  <?php $view->out( $view->session['city'] );?> <?php $view->out( $view->session['country'] );?></p>
+<p><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'City/Country: %1$s %2$s' ), $view->session['city'], $view->session['country'] ) );?></p>
 
 
-<p>Entry page:  <?php $view->out( $view->session['page_title'] );?> - <?php $view->out( $view->session['page_url'] );?></p>
+<p><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Entry page: %1$s - %2$s' ), $view->session['page_title'], $view->session['page_url'] ) );?></p>
 
 
 <hr>
-<p>This visit notification e-mail was sent to you from your instance of Open Web Analytics running at <?php echo \OWA\Core\CoreAPI::getSetting('base', 'public_url'); ?>. To disable these notifications change your configuration settings.</p>
+<p><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'This visit notification e-mail was sent to you from your instance of Open Web Analytics running at %s. To disable these notifications change your configuration settings.' ), \OWA\Core\CoreAPI::getSetting('base', 'public_url') ) );?></p>

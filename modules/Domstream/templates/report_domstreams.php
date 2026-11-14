@@ -31,13 +31,13 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
          */
     ?>
     <span class="owa_reportControl">
-        <span class="label">Filter:</span>
+        <span class="label"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filter:' ) ); ?></span>
         <span id="domstreamFilter" class="constraintPicker"></span>
     </span>
 
     <span class="owa_reportControl owa_reportControlRight">
-        <?php $view->out( number_format( (int) $view->get('domstreams_total') ) );?>
-        <?php $view->out( (int) $view->get('domstreams_total') === 1 ? 'recording' : 'recordings' );?>
+        <?php $view->out( sprintf( \OWA\Core\CoreAPI::tn( '%s recording', '%s recordings', (int) $view->get('domstreams_total') ),
+            number_format( (int) $view->get('domstreams_total') ) ) );?>
     </span>
 
     <div style="clear:both;"></div>
@@ -68,7 +68,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
 
 <?php elseif ( ! $view->get('domstreams_segment_error') ):?>
 <div class="owa_reportSectionContent">
-    There are no recordings for this period.
+    <?php $view->out( \OWA\Core\CoreAPI::t( 'There are no recordings for this period.' ) ); ?>
 </div>
 <?php endif;?>
 

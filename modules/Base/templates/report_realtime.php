@@ -14,30 +14,29 @@ $owa_realtimeApi = $view->makeApiLink( array(
 <div id="owa_realtime" class="owa_realtime">
 
     <p class="owa_realtimeLead">
-        The last 30 minutes, as events arrive. Refreshes every 15 seconds while this tab is open.
-        Sources are shown as collected; channels are classified when reports are built.
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'The last 30 minutes, as events arrive. Refreshes every 15 seconds while this tab is open. Sources are shown as collected; channels are classified when reports are built.' ) );?>
     </p>
 
     <p class="owa_realtimeStatus" role="status" hidden></p>
 
     <p class="owa_realtimeQueued" hidden>
-        This install queues incoming events, so they appear here when the queue is processed.
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'This install queues incoming events, so they appear here when the queue is processed.' ) );?>
     </p>
 
     <div class="owa_realtimeSummary">
 
         <div class="owa_realtimeHead">
             <div class="owa_realtimeKpi">
-                <div class="owa_realtimeKpiLabel">Active users, last 30 minutes</div>
+                <div class="owa_realtimeKpiLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Active users, last 30 minutes' ) );?></div>
                 <div class="owa_realtimeKpiValue owa_realtimeUsers30">&hellip;</div>
             </div>
             <div class="owa_realtimeKpi">
-                <div class="owa_realtimeKpiLabel">Last 5 minutes</div>
+                <div class="owa_realtimeKpiLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Last 5 minutes' ) );?></div>
                 <div class="owa_realtimeKpiValue owa_realtimeUsers5">&hellip;</div>
             </div>
             <div class="owa_realtimePerMinute">
-                <div class="owa_realtimeKpiLabel">Active users per minute</div>
-                <div class="owa_realtimeBars" aria-label="Active users per minute, oldest first"></div>
+                <div class="owa_realtimeKpiLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Active users per minute' ) );?></div>
+                <div class="owa_realtimeBars" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Active users per minute, oldest first' ) );?>"></div>
             </div>
         </div>
 
@@ -49,63 +48,63 @@ $owa_realtimeApi = $view->makeApiLink( array(
         <div class="owa_realtimeGrid">
 
             <section class="owa_realtimeCard">
-                <h3>First user source</h3>
+                <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'First user source' ) );?></h3>
                 <table class="owa_realtimeTable" data-card="sources">
-                    <thead><tr><th>Source</th><th>Medium</th><th>Campaign</th><th class="n">Users</th></tr></thead>
+                    <thead><tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Source' ) );?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Medium' ) );?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Campaign' ) );?></th><th class="n"><?php $view->out( \OWA\Core\CoreAPI::t( 'Users' ) );?></th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
 
             <section class="owa_realtimeCard">
-                <h3>Pages</h3>
+                <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'Pages' ) );?></h3>
                 <table class="owa_realtimeTable" data-card="pages">
-                    <thead><tr><th>Page</th><th class="n">Views</th><th class="n">Users</th></tr></thead>
+                    <thead><tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Page' ) );?></th><th class="n"><?php $view->out( \OWA\Core\CoreAPI::t( 'Views' ) );?></th><th class="n"><?php $view->out( \OWA\Core\CoreAPI::t( 'Users' ) );?></th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
 
             <section class="owa_realtimeCard">
-                <h3>Event count</h3>
+                <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'Event count' ) );?></h3>
                 <table class="owa_realtimeTable" data-card="events">
-                    <thead><tr><th>Event</th><th class="n">Count</th></tr></thead>
+                    <thead><tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Event' ) );?></th><th class="n"><?php $view->out( \OWA\Core\CoreAPI::t( 'Count' ) );?></th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
 
             <section class="owa_realtimeCard">
-                <h3>Goal completions <span class="owa_realtimeGoalTotal">&hellip;</span></h3>
+                <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'Goal completions' ) );?> <span class="owa_realtimeGoalTotal">&hellip;</span></h3>
                 <table class="owa_realtimeTable" data-card="goals">
-                    <thead><tr><th>Goal</th><th class="n">Completions</th></tr></thead>
+                    <thead><tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Goal' ) );?></th><th class="n"><?php $view->out( \OWA\Core\CoreAPI::t( 'Completions' ) );?></th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
 
             <section class="owa_realtimeCard">
-                <h3>Countries</h3>
+                <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'Countries' ) );?></h3>
                 <table class="owa_realtimeTable" data-card="countries">
-                    <thead><tr><th>Country</th><th class="n">Users</th></tr></thead>
+                    <thead><tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Country' ) );?></th><th class="n"><?php $view->out( \OWA\Core\CoreAPI::t( 'Users' ) );?></th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
 
             <section class="owa_realtimeCard">
-                <h3>Devices</h3>
+                <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'Devices' ) );?></h3>
                 <table class="owa_realtimeTable" data-card="devices">
-                    <thead><tr><th>Device</th><th class="n">Users</th></tr></thead>
+                    <thead><tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Device' ) );?></th><th class="n"><?php $view->out( \OWA\Core\CoreAPI::t( 'Users' ) );?></th></tr></thead>
                     <tbody></tbody>
                 </table>
             </section>
         </div>
 
         <section class="owa_realtimeCard owa_realtimeRecentCard">
-            <h3>Recent events</h3>
-            <p class="owa_realtimeHint">Select an event to see that visitor&rsquo;s last 30 minutes.</p>
+            <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'Recent events' ) );?></h3>
+            <p class="owa_realtimeHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Select an event to see that visitor’s last 30 minutes.' ) );?></p>
             <ol class="owa_realtimeEvents owa_realtimeRecent"></ol>
         </section>
     </div>
 
     <div class="owa_realtimeVisitor" hidden>
-        <button type="button" class="owa_realtimeBack">&larr; Back to the overview</button>
+        <button type="button" class="owa_realtimeBack"><?php $view->out( \OWA\Core\CoreAPI::t( '← Back to the overview' ) );?></button>
         <h3 class="owa_realtimeVisitorId"></h3>
         <ol class="owa_realtimeEvents owa_realtimeVisitorEvents"></ol>
     </div>

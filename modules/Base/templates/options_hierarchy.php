@@ -25,7 +25,7 @@
             <div class="owa_reportNavRail" id="owa_reportNavRail">
                 <div class="owa_reportNavRailHead">
                     <span class="owa_railLogo"><?php include( 'logo_image.php' );?></span>
-                    <button type="button" class="owa_reportNavClose" aria-label="Hide the menu">
+                    <button type="button" class="owa_reportNavClose" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Hide the menu' ) );?>">
                         <i class="fas fa-times" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -34,7 +34,7 @@
                 <?php
                     $owa_rail   = $view->navRail( $view->report_nav, (string) $view->nav_property_id,
                         (array) $view->params, (string) $view->nav_access_site, true );
-                    $owa_column = array( 'title' => 'Settings',
+                    $owa_column = array( 'title' => \OWA\Core\CoreAPI::t( 'Settings' ),
                         'groups' => $view->settingsColumn( $view->hierarchy_nav, (array) $view->params ) );
                     include( 'nav_shell.php' );
                 ?>
@@ -54,7 +54,7 @@
                 $owa_tabs = $view->profileTabs( $view->hierarchy_nav, (array) $view->params );
             ?>
             <?php if ( $owa_tabs ):?>
-            <nav class="owa_pageTabs" aria-label="Profile">
+            <nav class="owa_pageTabs" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Profile' ) );?>">
                 <?php foreach ( $owa_tabs as $owa_tab ):?>
                 <a class="owa_pageTab<?php echo $owa_tab['current'] ? ' is-current' : '';?>"
                    <?php echo $owa_tab['current'] ? 'aria-current="page"' : '';?>

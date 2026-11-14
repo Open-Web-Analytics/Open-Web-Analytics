@@ -10,11 +10,11 @@
 ?>
 <div class="owa_publicCard owa_updatesCard">
 
-    <h1 class="owa_publicTitle">Open Web Analytics Updater</h1>
+    <h1 class="owa_publicTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Open Web Analytics Updater' ) ); ?></h1>
 
-    <p class="owa_publicIntro">Some modules need to create or update their database tables.</p>
+    <p class="owa_publicIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'Some modules need to create or update their database tables.' ) ); ?></p>
 
-    <h2>Modules with updates to apply</h2>
+    <h2><?php $view->out( \OWA\Core\CoreAPI::t( 'Modules with updates to apply' ) ); ?></h2>
 
     <ul class="owa_updatesModules">
         <?php foreach ($view->modules as $module): ?>
@@ -22,11 +22,11 @@
         <?php endforeach;?>
     </ul>
 
-    <p class="owa_publicIntro"><i>It is recommended that you back up your database before applying updates.</i></p>
+    <p class="owa_publicIntro"><i><?php $view->out( \OWA\Core\CoreAPI::t( 'It is recommended that you back up your database before applying updates.' ) ); ?></i></p>
 
     <div class="owa_installActions">
         <?php // No nonce: base.updatesApply takes none, see UpdatesApply (#979). ?>
-        <a class="owa-button" href="<?php echo $view->makeLink(array('do' => 'base.updatesApply'));?>">Apply updates</a>
+        <a class="owa-button" href="<?php echo $view->makeLink(array('do' => 'base.updatesApply'));?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Apply updates' ) ); ?></a>
     </div>
 
 </div>

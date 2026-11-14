@@ -1,16 +1,17 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<h2>Your first Property</h2>
+<h2><?php $view->out( \OWA\Core\CoreAPI::t( 'Your first Property' ) ); ?></h2>
 
 <?php if ( $view->db_server !== '' ): ?>
-<p class="owa_publicIntro">Connected to <?php $view->out( $view->db_server ); ?>, database <code><?php $view->out( $view->db_name ); ?></code>.</p>
+<p class="owa_publicIntro"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Connected to %1$s, database %2$s.' ),
+    htmlspecialchars( (string) $view->db_server, ENT_QUOTES, 'UTF-8' ),
+    '<code>' . htmlspecialchars( (string) $view->db_name, ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?></p>
 <?php endif; ?>
-<p class="owa_publicIntro">A Property is the website or application you want to
-track.</p>
+<p class="owa_publicIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'A Property is the website or application you want to track.' ) ); ?></p>
 <div id="configSettings">
     <form method="POST">
         
         <div class="owa_installField">
-            <label>Property Domain</label>
+            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Property Domain' ) ); ?></label>
             <span class="owa_installInput">
                 <?php
                 /*
@@ -37,12 +38,11 @@ track.</p>
                        placeholder="example.com"
                        value="<?php $view->out( $view->defaults['domain'] ?? '' );?>">
             </span>
-            <span class="owa_installHint">The domain of the website this Property will
-            track (e.g. www.mydomain.com). Subdomains are also acceptable.</span>
+            <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'The domain of the website this Property will track (e.g. www.mydomain.com). Subdomains are also acceptable.' ) ); ?></span>
         </div>
 
         <div class="owa_installField">
-            <label>Reporting Timezone</label>
+            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Reporting Timezone' ) ); ?></label>
             <span class="owa_installInput">
                 <?php
                 /*
@@ -98,7 +98,7 @@ track.</p>
 
                     $country_name = isset($countryCode2Name[$country])
                         ? $countryCode2Name[$country]
-                        : 'unknown - '.$country;
+                        : sprintf( \OWA\Core\CoreAPI::t( 'unknown - %s' ), $country );
 
                     echo sprintf('<optgroup label="%s">', htmlspecialchars($country_name));
 
@@ -126,43 +126,42 @@ track.</p>
                 <?php } ?>
             </span>
             <?php if ( $tz_constant ) { ?>
-            <span class="owa_installHint">Set by <code><?php $view->out( $tz_constant ); ?></code>
-            in <code>owa-config.php</code>, which overrides any value chosen here. Remove the
-            constant to choose a timezone from this page.</span>
+            <span class="owa_installHint"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Set by %1$s in %2$s, which overrides any value chosen here. Remove the constant to choose a timezone from this page.' ),
+                '<code>' . htmlspecialchars( (string) $tz_constant, ENT_QUOTES, 'UTF-8' ) . '</code>',
+                '<code>owa-config.php</code>' ); ?></span>
             <?php } else { ?>
-            <span class="owa_installHint">Statistics are bucketed into days using this
-            timezone. <strong>Changing it later is not retroactive</strong>: existing data keeps the day boundaries it was recorded with.</span>
+            <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Statistics are bucketed into days using this timezone.' ) ); ?> <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%s: existing data keeps the day boundaries it was recorded with.' ), '<strong>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Changing it later is not retroactive' ), ENT_QUOTES, 'UTF-8' ) . '</strong>' ); ?></span>
             <?php } ?>
         </div>
 
         <div class="owa_installField">
-            <label>Admin User Name</label>
+            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Admin User Name' ) ); ?></label>
             <span class="owa_installInput">
                 <input type="text"size="30" name="user_id" value="<?php $view->out( $view->defaults['user_id'] ?? '' );?>">
             </span>
-            <span class="owa_installHint">The user name to use for login.</span>
+            <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'The user name to use for login.' ) ); ?></span>
         </div>
 
         <div class="owa_installField">
-            <label>Email Address</label>
+            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Email Address' ) ); ?></label>
             <span class="owa_installInput">
                 <input type="text"size="30" name="email_address" value="<?php $view->out( $view->defaults['email_address'] ?? '' );?>">
             </span>
-            <span class="owa_installHint">Where password resets for this account are sent.</span>
+            <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Where password resets for this account are sent.' ) ); ?></span>
         </div>
         
         <div class="owa_installField">
-            <label>Password</label>
+            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Password' ) ); ?></label>
             <span class="owa_installInput">
                 <input type="password"size="30" name="password" value="">
             </span>
-            <span class="owa_installHint">The password for this account.</span>
+            <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'The password for this account.' ) ); ?></span>
         </div>
                 
         <div class="owa_installActions">
             <?php echo $view->createNonceFormField('base.installBase');?>
             <input type="hidden" value="base.installBase" name="action">
-            <input class="owa-button owa_publicSubmit" type="submit" value="Continue"
+            <input class="owa-button owa_publicSubmit" type="submit" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Continue' ) ); ?>"
                    name="save_button">
         </div>
         

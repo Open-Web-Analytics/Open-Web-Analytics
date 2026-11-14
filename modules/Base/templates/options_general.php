@@ -44,7 +44,7 @@ foreach ( $view->settings_fieldsets as $set ) {
 
     <?php echo $view->createNonceFormField('base.optionsUpdate');?>
 
-    <BUTTON class="owa-button" type="submit" name="action" value="base.optionsUpdate">Update Configuration</BUTTON>
+    <BUTTON class="owa-button" type="submit" name="action" value="base.optionsUpdate"><?php $view->out( \OWA\Core\CoreAPI::t( 'Update Configuration' ) ); ?></BUTTON>
 
 </form>
 
@@ -55,6 +55,6 @@ foreach ( $view->settings_fieldsets as $set ) {
 <form method="POST">
     <?php echo $view->createNonceFormField('base.optionsReset');?>
     <input type="hidden" name="module" value="base">
-    <BUTTON class="owa-button" type="submit" name="action" value="base.optionsReset">Reset Configuration to Default Values</BUTTON>
+    <BUTTON class="owa-button" type="submit" name="action" value="base.optionsReset"><?php $view->out( \OWA\Core\CoreAPI::t( 'Reset Configuration to Default Values' ) ); ?></BUTTON>
 </form>
 </div>
