@@ -13,14 +13,17 @@ namespace OWA\Module\Sqs\Classes;
  *
  * owa-config.php constants, all optional:
  *
- *   OWA_SQS_REGION      the region; else the stored region, else AWS_REGION or
- *                       AWS_DEFAULT_REGION in the environment
+ *   OWA_SQS_REGION      the region; else the one in OWA_SQS_QUEUE_URL, else the
+ *                       stored region, else AWS_REGION or AWS_DEFAULT_REGION
+ *                       in the environment
  *   OWA_SQS_KEY,
  *   OWA_SQS_SECRET      credentials; else the AWS SDK's default chain
  *   OWA_SQS_TOKEN       the session token that goes with temporary (STS)
  *                       credentials in OWA_SQS_KEY and OWA_SQS_SECRET
  *   OWA_SQS_QUEUE_URL   the main queue's URL; its dead-letter queue is the
  *                       same URL with -dlq. Else the name is derived (queueName()).
+ *                       Setting it activates the module and makes sqs the
+ *                       tracking intake's backend (Core\ModuleActivation).
  */
 final class Sqs {
 
@@ -34,7 +37,7 @@ final class Sqs {
     public static $handler = null;
 
     /**
-     * HTTP limits on log.php's path (instance_role logger), where a beacon
+     * HTTP limits on log.php's path (request type tracking), where a beacon
      * that cannot be queued in time goes to the file intake instead
      * (TrackerIngest::send()): a second to connect, three for the answer, and
      * one retry.
@@ -52,7 +55,7 @@ final class Sqs {
      *
      * Derived from what identifies where the beacons land -- the database
      * host and its name -- and ns, the prefix on OWA's cookie and URL
-     * parameter names, so a logging node computes the same name from its own
+     * parameter names, so another server computes the same name from its own
      * owa-config.php and two installs on one server do not share a queue. Not
      * generateInstanceSpecificHash(): that is made from the credentials,
      * which installs on one server often share.
@@ -123,7 +126,7 @@ final class Sqs {
      */
     public static function isLogger() {
 
-        return \OWA\Core\CoreAPI::getSetting( 'base', 'instance_role' ) === 'logger';
+        return \OWA\Core\RequestType::is( \OWA\Core\RequestType::TRACKING );
     }
 
     /**
@@ -154,15 +157,22 @@ final class Sqs {
     }
 
     /**
-     * OWA_SQS_REGION, else the stored region, else AWS_REGION or
-     * AWS_DEFAULT_REGION in the environment, else null. The region in an AWS
-     * profile (~/.aws/config) is not read.
+     * OWA_SQS_REGION, else the region in OWA_SQS_QUEUE_URL, else the stored
+     * region, else AWS_REGION or AWS_DEFAULT_REGION in the environment, else
+     * null. The region in an AWS profile (~/.aws/config) is not read.
      */
     public static function region() {
 
         if ( defined( 'OWA_SQS_REGION' ) && OWA_SQS_REGION ) {
 
             return (string) OWA_SQS_REGION;
+        }
+
+        $from_url = self::regionFromUrl( (string) self::configuredUrl() );
+
+        if ( $from_url !== null ) {
+
+            return $from_url;
         }
 
         $region = \OWA\Core\CoreAPI::getSetting( 'sqs', 'region' );
@@ -173,6 +183,33 @@ final class Sqs {
         }
 
         return getenv( 'AWS_REGION' ) ?: ( getenv( 'AWS_DEFAULT_REGION' ) ?: null );
+    }
+
+    /**
+     * The region in a queue URL's host: sqs.<region>.amazonaws.com, and the
+     * FIPS, VPC endpoint, China and legacy <region>.queue forms.
+     *
+     * @param string $url
+     * @return string|null
+     */
+    public static function regionFromUrl( $url ) {
+
+        $host = strtolower( (string) parse_url( (string) $url, PHP_URL_HOST ) );
+
+        if ( ! preg_match( '/\.amazonaws\.com(\.cn)?$/D', $host ) ) {
+
+            return null;
+        }
+
+        foreach ( explode( '.', $host ) as $label ) {
+
+            if ( preg_match( '/^[a-z]{2}(-[a-z]+)+-\d+$/D', $label ) ) {
+
+                return $label;
+            }
+        }
+
+        return null;
     }
 
     /** Where the credentials come from, for the settings screen. Never the secret. */
@@ -249,7 +286,7 @@ final class Sqs {
 
         if ( ! $region ) {
 
-            throw new \Exception( 'No AWS region: set it on the SQS settings screen, or OWA_SQS_REGION in owa-config.php.' );
+            throw new \Exception( 'No AWS region: set it on the SQS settings screen, or OWA_SQS_REGION in owa-config.php, or give OWA_SQS_QUEUE_URL its region\'s host.' );
         }
 
         $args = self::clientArgs( $region );
@@ -297,7 +334,7 @@ final class Sqs {
 
         } catch ( \Throwable $t ) {
 
-            // A logging node with static config only: the outcome is still returned.
+            // A server without a database (a collector): the outcome is still returned.
         }
 
         return $result;

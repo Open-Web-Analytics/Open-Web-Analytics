@@ -10,23 +10,22 @@ namespace OWA\Module\Sqs;
 /**
  * The tracking intake on AWS SQS (PLAN 2.30.4a).
  *
- * Registers the sqs queue type. The install that drains it is given a region
- * on this module's screen, which provisions the queues; a logging node that
- * reads no database is configured entirely in owa-config.php:
+ * Registers the sqs queue type. OWA_SQS_QUEUE_URL activates the module and
+ * makes sqs the tracking intake's backend, on any server (Core\ModuleActivation);
+ * the region is read from the URL. A collector, which has no database, is
+ * configured entirely in owa-config.php:
  *
- *   define('OWA_ACTIVE_MODULES', array('sqs'));
- *   define('OWA_TRACKER_INGEST_QUEUE_TYPE', 'sqs');
- *   define('OWA_QUEUE_TRACKER_INGEST', true);
- *   define('OWA_SQS_REGION', 'us-east-1');
+ *   define('OWA_SERVER_ROLE', 'collector');
+ *   define('OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest');
  *
- * The queue's name is derived from the database settings in the same file, so
- * the node finds the queue the drain install made; OWA_SQS_QUEUE_URL names it
- * instead.
+ * Activated from the Modules screen without the URL, the module provisions
+ * queues with a name derived from the database settings, and the intake stays
+ * on the file queue until OWA_SQS_QUEUE_URL names one.
  *
  * The queues -- the main one and its dead-letter queue -- are created by the
  * install that drains them: on activation, when the region is saved, by
  * cmd=tracker-ingest-provision, and on first use when they are missing. Never
- * by log.php: a logging node that finds no queue keeps the beacon in its file
+ * by log.php: a collector that finds no queue keeps the beacon in its file
  * queue (async_log_dir), and `php cli.php cmd=drain-tracker-ingest
  * forward_only=1`, run from its cron, forwards those once the queue answers.
  * Credentials are never stored: the AWS SDK's default chain, or OWA_SQS_KEY,

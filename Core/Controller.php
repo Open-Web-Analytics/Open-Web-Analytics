@@ -162,7 +162,7 @@ class Controller extends \OWA\Core\Base {
         
         switch ( $this->getMode() ) {
             
-            case 'cli':
+            case \OWA\Core\RequestType::CLI:
             	
             	$this->set('error_msg', $error_msg );
             	$this->setView('base.genericCli');
@@ -170,20 +170,20 @@ class Controller extends \OWA\Core\Base {
             	
             	break;
             	
-            case 'web_app':
+            case \OWA\Core\RequestType::REST:
+            
+            	$this->set('error_msg', $error_msg );
+            	$this->setView('base.restApi');
+            
+            	break;
+
+            default:
             	
             	// reset data
             	$this->data = array();
             	//redirect browser to update page
             	$this->setRedirectAction( 'base.updates' );
                     
-            	break;
-            	
-            case 'rest_api':
-            
-            	$this->set('error_msg', $error_msg );
-            	$this->setView('base.restApi');
-            
             	break;
         }
         
@@ -221,7 +221,7 @@ class Controller extends \OWA\Core\Base {
         /* Check validity of nonce */
         
         // certain web app controllers require nonce verification
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' ) === 'web_app' ) {
+        if ( \OWA\Core\RequestType::isWebApp() ) {
 	        
 	        if ($this->is_nonce_required == true) {
 		        
@@ -236,7 +236,7 @@ class Controller extends \OWA\Core\Base {
         
         // if the rest api is originating within the web app then we always need to check for a nonce
         // The only way to tell if that's the case is to check if the request was auth'd using "cookies"
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
+        if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST ) ) {
             
             $auth = \OWA\Core\Auth::get_instance();
             
@@ -522,15 +522,15 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
-     * Whether this action refuses to run while updates are pending. A command
-     * that touches nothing the updates change, on a node with no database to
-     * read the schema version from, answers false.
+     * Whether this action refuses to run while updates are pending. On a
+     * server without a database (a collector) there is no schema version to
+     * read, so nothing does.
      *
      * @return bool
      */
     function needsCurrentSchema() {
 
-        return true;
+        return \OWA\Core\ServerRole::current()->hasDatabase();
     }
 
     function isAdmin() {
@@ -718,9 +718,10 @@ class Controller extends \OWA\Core\Base {
 
     }
     
+    /** This request's type (Core\RequestType). */
     public function getMode() {
 	    
-	    return \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' );
+	    return \OWA\Core\RequestType::current();
     }
 
     function mergeParams($array) {
@@ -870,7 +871,7 @@ class Controller extends \OWA\Core\Base {
 			return $this->notAuthenticatedAction();
 		}
 
-		if (\OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+		if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
 
 			$this->setView('base.restApi');
 			$this->set('error_msg', $this->getMsg(2005));
@@ -894,7 +895,7 @@ class Controller extends \OWA\Core\Base {
 
     function notAuthenticatedAction() {
 		
-		if (\OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'rest_api') {
+		if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
 			
 			$this->setView('base.restApi');
 			$this->set('error_msg', ['headline'	=> \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )] );

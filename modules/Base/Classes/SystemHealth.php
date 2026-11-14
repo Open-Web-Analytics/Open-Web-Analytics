@@ -93,12 +93,6 @@ class SystemHealth {
 
         $findings = array();
 
-        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'scheduler_enabled' ) ) {
-
-            $findings[] = self::finding( 'red', 'Disabled',
-                'OWA_SCHEDULER_ENABLED turns the scheduler off, so no job runs.' );
-        }
-
         $problem = SchedulerHealth::problem();
 
         if ( $problem ) {
@@ -234,10 +228,9 @@ class SystemHealth {
 
             // A queue that cannot count its messages says "Some", a plural.
             $findings[] = self::finding( 'red', 'Backlog', sprintf( \OWA\Core\CoreAPI::tn(
-                '%s beacon waiting, the oldest for %d minutes: the drain is not keeping up%s.',
-                '%s beacons waiting, the oldest for %d minutes: the drain is not keeping up%s.', $main['messages'] ?? 2 ),
-                $main['messages'] ?? 'Some', intdiv( $main['oldest_age'], 60 ),
-                TrackerIngest::isDrainedExternally() ? ' (tracker_ingest_drain is external)' : '' ),
+                '%s beacon waiting, the oldest for %d minutes: the drain is not keeping up.',
+                '%s beacons waiting, the oldest for %d minutes: the drain is not keeping up.', $main['messages'] ?? 2 ),
+                $main['messages'] ?? 'Some', intdiv( $main['oldest_age'], 60 ) ),
                 'php cli.php cmd=schedule-status' );
         }
 
@@ -270,6 +263,22 @@ class SystemHealth {
                 $batch['host'] !== '' ? ' on ' . $batch['host'] : '' ) );
         }
 
+        $backend = TrackerIngest::backend();
+
+        /*
+         * A queue backend configured while beacons are written as they arrive:
+         * right for a worker that only drains it, worth saying on a server
+         * that receives beacons.
+         */
+        if ( $backend !== 'file' && ! TrackerIngest::isQueued()
+             && \OWA\Core\ServerRole::current()->serves( \OWA\Core\RequestType::TRACKING ) ) {
+
+            $findings[] = self::finding( 'green',
+                sprintf( \OWA\Core\CoreAPI::t( '%s configured, tracking events not queued' ), strtoupper( $backend ) ),
+                \OWA\Core\CoreAPI::t( 'Beacons are written as they arrive. Only a beacon whose write fails goes to the queue, '
+                    . 'to be retried. OWA_QUEUE_TRACKING_EVENTS queues every beacon.' ) );
+        }
+
         if ( ! $findings ) {
 
             $findings[] = self::finding( 'green', TrackerIngest::isQueued() ? 'Draining' : 'Direct',
@@ -287,7 +296,7 @@ class SystemHealth {
         }
 
         return self::section( 'Tracker ingest', $findings, array(
-            'type'     => (string) ( \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_ingest_queue_type' ) ?: 'file' ),
+            'type'     => $backend,
             'queued'   => TrackerIngest::isQueued(),
             'waiting'  => $main['messages'],
             'dead'     => $dlq ? $dlq['messages'] : null,
@@ -523,9 +532,12 @@ class SystemHealth {
     public static function installation() {
 
         $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule( 'base' );
+        $role = \OWA\Core\ServerRole::current();
 
         $facts = array(
             'OWA'     => (string) OWA_VERSION,
+            'Server role' => sprintf( '%s (serves %s%s)', $role->name(), implode( ', ', $role->requestTypes() ),
+                $role->runsScheduler() ? '; runs the scheduler' : '' ),
             'PHP'     => PHP_VERSION . ' (' . PHP_SAPI . ')',
             'Schema'  => sprintf( '%d (this code requires %d)',
                 (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' ), (int) $base->required_schema_version ),
@@ -540,6 +552,12 @@ class SystemHealth {
 
             $findings[] = self::finding( $check['passed'] ? 'green' : 'red', (string) $check['name'],
                 (string) $check['value'] . ( $check['passed'] ? '' : '. ' . $check['msg'] ) );
+        }
+
+        // Retired constants still in owa-config.php.
+        foreach ( \OWA\Core\ServerRole::upgradeNotices() as $constant => $notice ) {
+
+            $findings[] = self::finding( 'yellow', $constant, $notice );
         }
 
         return self::section( 'Installation', $findings, array( 'facts' => $facts ) );

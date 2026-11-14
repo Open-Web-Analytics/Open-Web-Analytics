@@ -21,14 +21,23 @@ final class NonceFailureResponseTest extends TestCase
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
+    /** @var mixed request_type before the test, put back after it */
+    private $savedRequestType;
+
+    protected function tearDown(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', $this->savedRequestType);
+    }
+
     protected function setUp(): void
     {
         $_SERVER['HTTP_HOST']   = 'owa.example.test';
         $_SERVER['REQUEST_URI'] = '/owa/index.php?owa_do=base.sitesDelete';
 
-        // request_mode is global and decides which branch answers, so a REST
+        // request_type is global and decides which branch answers, so a REST
         // test running earlier would otherwise steer these.
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'admin_web');
+        $this->savedRequestType = \OWA\Core\CoreAPI::getSetting('base', 'request_type');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
 
         // The referring page decides whether a way back is offered, so each test
         // states its own rather than inheriting a previous one's.

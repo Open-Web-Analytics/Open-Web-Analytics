@@ -332,9 +332,9 @@ class CoreAPI {
 
         $s = \OWA\Core\CoreAPI::configSingleton();
 
-        // A static-config node (a logging node) holds no scoped settings: it
-        // reads nothing from the database, so every scope answers the install's.
-        if ( ! $scopeType || ! $scopeId || $s->get( 'base', 'useStaticConfigOnly' ) ) {
+        // A server without a database (a collector) holds no scoped settings,
+        // so every scope answers the install's.
+        if ( ! $scopeType || ! $scopeId || ! \OWA\Core\ServerRole::current()->hasDatabase() ) {
 
             return $s->get($module, $name);
         }
@@ -962,9 +962,9 @@ class CoreAPI {
             return false;
         }
 
-        // A static-config node is a logging node: it has no database to ask,
-        // and the ingest that drains its queue checks the site.
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'useStaticConfigOnly' ) ) {
+        // A server without a database (a collector) has none to ask, and the
+        // ingest that drains its queue checks the site.
+        if ( ! \OWA\Core\ServerRole::current()->hasDatabase() ) {
 
             return null;
         }
@@ -1397,14 +1397,11 @@ class CoreAPI {
 
         // Must be called before any entities are created
 
+        // The driver defines the OWA_DTD_* column types. OWA_DB_TYPE
+        // defaults to mysql, as db_type does: a server without database
+        // settings (a collector) still builds entities.
         if (!defined('OWA_DTD_INT')) {
-            if (defined('OWA_DB_TYPE')) {
-                \OWA\Core\CoreAPI::setupStorageEngine(OWA_DB_TYPE);
-            } else {
-                //owa_coreAPI::setupStorageEngine('mysql');
-                self::error("OWA_DB_TYPE constant has not been set for some reason.");
-            }
-
+            \OWA\Core\CoreAPI::setupStorageEngine(defined('OWA_DB_TYPE') && OWA_DB_TYPE ? OWA_DB_TYPE : 'mysql');
         }
 
 
@@ -2740,7 +2737,7 @@ class CoreAPI {
 
         // REST API Requests
         // Lookup controller for REST API route.
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' ) === 'rest_api' ) {
+        if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST ) ) {
 
             // get request method
             $request_method = $service->request->getRequestType();

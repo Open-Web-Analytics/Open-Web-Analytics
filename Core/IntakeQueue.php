@@ -28,8 +28,8 @@ namespace OWA\Core;
  * A message is an envelope, a JSON-encodable array -- {v, type, properties,
  * queued_at} -- never a PHP object (Classes\TrackerIngest builds and reads it).
  *
- * An implementation is registered under event_queue_types and chosen by the
- * tracker_ingest_queue_type setting. Its constructor takes the queue's
+ * An implementation is registered under event_queue_types and chosen as the
+ * backend by its module's constant (TrackerIngest::backend()). Its constructor takes the queue's
  * registration map; max_receives is in it.
  */
 interface IntakeQueue {

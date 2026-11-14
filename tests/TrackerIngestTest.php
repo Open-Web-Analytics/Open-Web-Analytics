@@ -28,8 +28,7 @@ final class TrackerIngestTest extends TestCase
     {
         \OWA\Core\CoreAPI::rememberSiteRegistration(self::SITE, true);
 
-        foreach (array('queue_tracker_ingest', 'queue_incoming_tracking_events', 'queue_events',
-                       'tracker_ingest_queue_type', 'tracker_ingest_drain', 'raw_retention_months') as $key) {
+        foreach (array('queue_tracking_events', 'server_role', 'raw_retention_months') as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
@@ -48,7 +47,8 @@ final class TrackerIngestTest extends TestCase
             \OWA\Core\CoreAPI::setSetting('base', $key, $value);
         }
 
-        TrackerIngest::$queue = null;
+        TrackerIngest::$queue   = null;
+        TrackerIngest::$backend = null;
         \OWA\Core\CoreAPI::forgetRegisteredSites();
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -120,47 +120,38 @@ final class TrackerIngestTest extends TestCase
     // Settings
     // ---------------------------------------------------------------------
 
-    /** queue_tracker_ingest decides; unset, the 1.x names do. */
-    public function testTheOldNamesAreReadOnlyWhenTheNewOneIsUnset(): void
+    /** queue_tracking_events decides, except on a collector, which always queues. */
+    public function testQueueTrackingEventsDecidesAndACollectorAlwaysQueues(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_events', false);
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_incoming_tracking_events', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
 
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', null);
-        $this->assertTrue(TrackerIngest::isQueued(), 'unset: the old name queues');
+        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', false);
+        $this->assertFalse(TrackerIngest::isQueued());
 
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', false);
-        $this->assertFalse(TrackerIngest::isQueued(), 'set to false: the old name is not read');
-
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_incoming_tracking_events', false);
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', true);
         $this->assertTrue(TrackerIngest::isQueued());
 
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', null);
-        \OWA\Core\CoreAPI::setSetting('base', 'queue_events', true);
-        $this->assertTrue(TrackerIngest::isQueued(), 'OWA_QUEUE_EVENTS too');
+        \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', false);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
+        $this->assertTrue(TrackerIngest::isQueued(), 'a collector has no database to write a beacon to');
     }
 
-    public function testTheDefaultsAreAFileQueueDrainedByTheScheduler(): void
+    public function testTheDefaultIsNotQueued(): void
     {
         $settings = require dirname(__DIR__) . '/modules/Base/settings.php';
 
-        $this->assertSame('file', $settings['settings']['tracker_ingest_queue_type']['default']);
-        $this->assertSame('scheduler', $settings['settings']['tracker_ingest_drain']['default']);
-        $this->assertArrayHasKey('default', $settings['settings']['queue_tracker_ingest']);
-        $this->assertNull($settings['settings']['queue_tracker_ingest']['default'], 'null, so unset is distinguishable from false');
+        $this->assertFalse($settings['settings']['queue_tracking_events']['default']);
     }
 
     public function testTheIntakeIsTheFileQueueByDefault(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'tracker_ingest_queue_type', 'file');
-
+        $this->assertSame('file', TrackerIngest::backend(), 'no queue module constant is set in this process');
         $this->assertInstanceOf(\OWA\Module\Base\Classes\FileEventQueue::class, TrackerIngest::queue());
     }
 
     public function testAnUnknownQueueTypeIsAnError(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'tracker_ingest_queue_type', 'zz-no-such-type');
+        TrackerIngest::$backend = 'zz-no-such-type';
 
         $this->expectExceptionMessage('no module registers that queue type');
         TrackerIngest::queue();
@@ -171,7 +162,7 @@ final class TrackerIngestTest extends TestCase
     {
         \OWA\Core\CoreAPI::serviceSingleton()->setMapValue('event_queue_types', 'zz-not-an-intake',
             array(NotAnIntake::class, __FILE__, array()));
-        \OWA\Core\CoreAPI::setSetting('base', 'tracker_ingest_queue_type', 'zz-not-an-intake');
+        TrackerIngest::$backend = 'zz-not-an-intake';
 
         try {
             $this->expectExceptionMessage('does not implement the tracking intake contract');

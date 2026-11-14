@@ -68,7 +68,7 @@
 
 require_once dirname( __DIR__, 2 ) . '/owa.php';
 
-$owa = new owa( array( 'instance_role' => 'cli' ) );
+$owa = new owa( array( 'request_type' => 'cli' ) );
 
 $phase   = isset( $argv[1] ) && $argv[1][0] !== '-' ? $argv[1] : '';
 $force   = in_array( '--force', $argv, true );

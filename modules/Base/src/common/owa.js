@@ -268,9 +268,9 @@ class OWA {
      * The fallback below is a trap and has never executed: on a tracked page
      * `baseUrl` is where the tracker *logs*, which need not be where reporting
      * lives. OWA supports split deployment on purpose -- separate logger and
-     * API endpoints, the SQS intake module, and OWA_USE_STATIC_CONFIG_ONLY for
-     * a logging-only node that never touches the reporting database -- so the
-     * admin interface can be on a different domain entirely.
+     * API endpoints, and server roles: a collector that only receives beacons
+     * and never touches the reporting database -- so the admin interface can
+     * be on a different domain entirely.
      *
      * In practice startOverlaySession() always calls setApiEndpoint() with the
      * URL the *admin interface* minted, because that origin is the only one
@@ -303,7 +303,7 @@ class OWA {
         var that = this;
         
         // load css for heatmap class
-        Util.loadCss(this.getSetting('baseUrl')+'public/base/css/owa.overlay.css', function(){});
+        Util.loadCss(( window.owa_assetsUrl || this.getSetting('baseUrl') + 'public/' ) + 'base/css/owa.overlay.css', function(){});
         
         // dynamic import of the Heatmap class
 	    import(/* webpackChunkName: "owa.heatmap" */ '../tracker/Heatmap.js').then( ( { Heatmap } ) => { 

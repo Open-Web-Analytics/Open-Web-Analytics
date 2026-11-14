@@ -3,7 +3,7 @@
  *
  * WHY THIS EXISTS
  * OWA can be told to QUEUE incoming tracking events instead of ingesting them
- * synchronously (setting: queue_tracker_ingest). When on, a beacon at
+ * synchronously (setting: queue_tracking_events). When on, a beacon at
  * log.php is appended to the FILE queue under owa-data/logs/ and NOT written to the
  * fact tables until a separate drain runs (`php cli.php cmd=drain-tracker-ingest`).
  * That deferred path is what a busy site turns on to keep log.php cheap, and it is
@@ -77,7 +77,7 @@ test.describe('tracking events queue to a file and ingest on drain @selfhost-onl
     test.beforeAll(() => {
         // Turn the incoming-event queue ON (persisted) for the whole describe.
         const res = helper('enable-queue');
-        expect(res.queue_tracker_ingest, 'helper failed to enable the queue').toBe(true);
+        expect(res.queue_tracking_events, 'helper failed to enable the queue').toBe(true);
     });
 
     test.afterAll(() => {

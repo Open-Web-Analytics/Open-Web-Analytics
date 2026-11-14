@@ -46,7 +46,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         // database. tearDown() still runs then, and restoring a $_SERVER that
         // was never saved set it to null for every test after this one.
         $this->saved = array(
-            'mode'   => \OWA\Core\CoreAPI::getSetting('base', 'request_mode'),
+            'mode'   => \OWA\Core\CoreAPI::getSetting('base', 'request_type'),
             'server' => $_SERVER,
         );
 
@@ -56,13 +56,13 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         $_SERVER['HTTP_HOST']   = 'owa.example.com';
         $_SERVER['REQUEST_URI'] = '/index.php?do=base.testScreen';
 
-        $this->mode('web_app');
+        $this->mode('ui');
         $this->signedInBy(null);
     }
 
     protected function tearDown(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', $this->saved['mode']);
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', $this->saved['mode']);
         $_SERVER = $this->saved['server'];
 
         foreach (array('apiKey', 'user_id', 'password') as $param) {
@@ -76,7 +76,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
 
     private function mode(string $mode): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', $mode);
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', $mode);
     }
 
     /** An admin screen: needs a signed-in user who can view the site list. */
@@ -119,7 +119,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         // The control: the same key opens the same class served by the REST API.
         $this->resetCurrentUser();
         $this->signedInBy(null);
-        $this->mode('rest_api');
+        $this->mode('rest');
 
         $screen = $this->screen();
         $screen->doAction();
@@ -189,7 +189,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
 
     public function testTheRestApiTakesItsOwnCredentials(): void
     {
-        $this->mode('rest_api');
+        $this->mode('rest');
 
         $this->assertNull($this->screen()->acceptedAuthMethods());
         $this->assertNull((new \OWA\Module\Base\Controller\ReportsRest(array()))->acceptedAuthMethods());

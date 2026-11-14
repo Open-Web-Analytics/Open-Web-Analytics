@@ -33,6 +33,12 @@ namespace OWA\Module\Base\Controller;
 
 class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
 
+    /** See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer. */
+    public static function serverRoles() {
+
+        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE );
+    }
+
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 

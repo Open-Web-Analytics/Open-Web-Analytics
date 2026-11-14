@@ -39,7 +39,8 @@ final class SystemHealthTest extends TestCase
     {
         JobQueue::$table     = null;
         JobQueue::$frozen_at = null;
-        TrackerIngest::$queue = null;
+        TrackerIngest::$queue   = null;
+        TrackerIngest::$backend = null;
 
         if (owa_test_db_available()) {
             \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::JOBS);
@@ -62,20 +63,20 @@ final class SystemHealthTest extends TestCase
     /** Direct mode says only a failed write is queued, so no one reads it as every beacon going to the queue. */
     public function testTheQuietFindingSaysWhatIsQueuedInEachMode(): void
     {
-        $before = \OWA\Core\CoreAPI::getSetting('base', 'queue_tracker_ingest');
+        $before = \OWA\Core\CoreAPI::getSetting('base', 'queue_tracking_events');
 
         try {
-            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', false);
+            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', false);
             $direct = array_column(SystemHealth::intake()['findings'], 'detail', 'label');
             $this->assertSame('Beacons are written as they arrive. Only a beacon whose write fails is queued, '
                 . 'and retried a minute later.', $direct['Direct'] ?? null);
 
-            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', true);
+            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', true);
             $queued = array_column(SystemHealth::intake()['findings'], 'detail', 'label');
             $this->assertArrayHasKey('Draining', $queued);
             $this->assertArrayNotHasKey('Direct', $queued);
         } finally {
-            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracker_ingest', $before);
+            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', $before);
         }
     }
 
@@ -310,12 +311,60 @@ final class SystemHealthTest extends TestCase
     {
         $install = SystemHealth::installation();
 
-        $this->assertSame(['OWA', 'PHP', 'Schema', 'Tracker'], array_keys($install['facts']));
+        $this->assertSame(['OWA', 'Server role', 'PHP', 'Schema', 'Tracker'], array_keys($install['facts']));
         $this->assertSame((string) OWA_VERSION, $install['facts']['OWA']);
 
         $checks = \OWA\Module\Base\Classes\EnvironmentCheck::all((string) \OWA\Core\CoreAPI::getSetting('base', 'config_file'));
         $this->assertSame(array_column($checks, 'name'), array_column($install['findings'], 'label'),
             'the same list the installer and cmd=instance-info read');
+    }
+
+    public function testTheInstallationNamesTheServerRole(): void
+    {
+        $saved = \OWA\Core\CoreAPI::getSetting('base', 'server_role');
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
+            $this->assertSame('full (serves tracking, ui, rest, cli, install; runs the scheduler)',
+                SystemHealth::installation()['facts']['Server role']);
+
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'console,api');
+            $this->assertSame('console,api (serves ui, rest, cli)', SystemHealth::installation()['facts']['Server role']);
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', $saved);
+        }
+    }
+
+    /** A queue backend with queueing off: said on a server that receives beacons, not on one that only drains. */
+    public function testAQueueBackendWithQueueingOffIsSaid(): void
+    {
+        $saved = array(
+            'server_role'           => \OWA\Core\CoreAPI::getSetting('base', 'server_role'),
+            'queue_tracking_events' => \OWA\Core\CoreAPI::getSetting('base', 'queue_tracking_events'),
+        );
+
+        try {
+            TrackerIngest::$backend = 'sqs';
+            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', false);
+
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
+            $full = array_column(SystemHealth::intake()['findings'], 'level', 'label');
+            $this->assertSame('green', $full['SQS configured, tracking events not queued'] ?? null);
+            $this->assertSame('sqs', SystemHealth::intake()['type']);
+
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'worker');
+            $this->assertArrayNotHasKey('SQS configured, tracking events not queued',
+                array_column(SystemHealth::intake()['findings'], 'level', 'label'));
+
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'full');
+            \OWA\Core\CoreAPI::setSetting('base', 'queue_tracking_events', true);
+            $this->assertArrayNotHasKey('SQS configured, tracking events not queued',
+                array_column(SystemHealth::intake()['findings'], 'level', 'label'));
+        } finally {
+            foreach ($saved as $key => $value) {
+                \OWA\Core\CoreAPI::setSetting('base', $key, $value);
+            }
+        }
     }
 
     public function testThePageIsInTheSettingsNav(): void

@@ -254,7 +254,7 @@ class Auth extends \OWA\Core\Base {
      */
     private function appPasswordCredential() {
 
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' ) !== 'rest_api' ) {
+        if ( ! \OWA\Core\RequestType::is( \OWA\Core\RequestType::REST ) ) {
 
             return null;
         }

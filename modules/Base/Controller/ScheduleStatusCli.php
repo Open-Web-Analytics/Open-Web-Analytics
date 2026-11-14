@@ -24,6 +24,12 @@ namespace OWA\Module\Base\Controller;
  */
 class ScheduleStatusCli extends SchedulerCli {
 
+    /** See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer. */
+    public static function serverRoles() {
+
+        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE );
+    }
+
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
@@ -50,7 +56,6 @@ class ScheduleStatusCli extends SchedulerCli {
         $now     = time();
         $jobs    = $this->jobs();
         $state   = $this->allState();
-        $enabled = (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'scheduler_enabled' );
         $pending = \OWA\Core\CoreAPI::isSchemaUpdateRequired();
 
         $lines = array( sprintf(
@@ -64,10 +69,13 @@ class ScheduleStatusCli extends SchedulerCli {
         $lines[] = 'Expected cron entry:  '
                  . \OWA\Module\Base\Classes\SchedulerHealth::cronLine();
 
-        if ( ! $enabled ) {
+        $role = \OWA\Core\ServerRole::current();
+
+        if ( ! $role->runsScheduler() ) {
 
             $lines[] = '';
-            $lines[] = 'The scheduler is DISABLED by OWA_SCHEDULER_ENABLED. No job will run.';
+            $lines[] = sprintf( 'This server (role %s) does not run the scheduler: a full or worker server runs these jobs.',
+                $role->name() );
         }
 
         if ( $pending ) {
@@ -99,7 +107,7 @@ class ScheduleStatusCli extends SchedulerCli {
 
             $lines[] = '';
             $lines   = array_merge( $lines, $this->describeJob(
-                $name, $job, $state[ $name ] ?? null, $now, $enabled, $pending, $ever, $last_activity
+                $name, $job, $state[ $name ] ?? null, $now, $pending, $ever, $last_activity
             ) );
         }
 
@@ -219,7 +227,7 @@ class ScheduleStatusCli extends SchedulerCli {
      *
      * @return string[]
      */
-    protected function describeJob( $name, $job, $row, $now, $enabled, $pending, $ever, $last_activity ) {
+    protected function describeJob( $name, $job, $row, $now, $pending, $ever, $last_activity ) {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $lock   = $db->getJobLock( $name );
@@ -284,7 +292,7 @@ class ScheduleStatusCli extends SchedulerCli {
             }
         }
 
-        $reason = $this->diagnose( $name, $job, $row, $lock, $parsed, $now, $enabled, $pending, $ever, $last_activity );
+        $reason = $this->diagnose( $name, $job, $row, $lock, $parsed, $now, $pending, $ever, $last_activity );
 
         if ( $reason ) {
 
@@ -300,10 +308,10 @@ class ScheduleStatusCli extends SchedulerCli {
      *
      * @return string|null
      */
-    protected function diagnose( $name, $job, $row, $lock, $parsed, $now, $enabled, $pending, $ever, $last_activity ) {
+    protected function diagnose( $name, $job, $row, $lock, $parsed, $now, $pending, $ever, $last_activity ) {
 
         return \OWA\Module\Base\Classes\JobStatus::diagnose(
-            $name, $job, $row, $lock, $parsed, $now, $enabled, $pending, $ever, $last_activity );
+            $name, $job, $row, $lock, $parsed, $now, $pending, $ever, $last_activity );
     }
 
     /**
@@ -372,10 +380,8 @@ class ScheduleStatusCli extends SchedulerCli {
             count( $jobs ), count( $jobs ) === 1 ? '' : 's', $this->readable( $last_activity )
         );
 
-        // Queued beacons are ingested only by drain-tracker-ingest, or by
-        // whatever consumes the queue when tracker_ingest_drain is external.
-        if ( \OWA\Module\Base\Classes\TrackerIngest::isQueued()
-             && ! \OWA\Module\Base\Classes\TrackerIngest::isDrainedExternally() ) {
+        // Queued beacons are ingested only by drain-tracker-ingest.
+        if ( \OWA\Module\Base\Classes\TrackerIngest::isQueued() ) {
 
             $drains = false;
 
@@ -389,7 +395,7 @@ class ScheduleStatusCli extends SchedulerCli {
 
             if ( ! $drains ) {
 
-                $lines[] = 'NOTE: beacons are queued (queue_tracker_ingest) but no job runs drain-tracker-ingest, '
+                $lines[] = 'NOTE: beacons are queued (OWA_QUEUE_TRACKING_EVENTS) but no job runs drain-tracker-ingest, '
                          . 'so nothing ingests them. See OWA_SCHEDULED_JOBS in owa-config.php.';
             }
         }

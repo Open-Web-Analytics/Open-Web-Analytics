@@ -5,30 +5,29 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * A static-config logging node has no database to read the schema version
- * from, so the pending-updates gate would refuse every command there. Only
- * drain-tracker-ingest forward_only=1 runs past it, and only on such a node:
- * it moves beacons from the file queue to the intake and reads nothing else.
+ * A collector has no database: no schema version to gate commands on, no
+ * scoped settings, no site table. drain-tracker-ingest runs there with
+ * forward_only=1 only, moving beacons from the file queue to the intake.
  */
 final class LoggingNodeForwardTest extends TestCase
 {
-    private $saved;
+    private $savedRole;
 
-    private $savedMode;
+    private $savedType;
 
     protected function setUp(): void
     {
-        $this->saved     = \OWA\Core\CoreAPI::getSetting('base', 'useStaticConfigOnly');
-        $this->savedMode = \OWA\Core\CoreAPI::getSetting('base', 'request_mode');
+        $this->savedRole = \OWA\Core\CoreAPI::getSetting('base', 'server_role');
+        $this->savedType = \OWA\Core\CoreAPI::getSetting('base', 'request_type');
 
-        // A CLI controller built outside request_mode cli exits the process.
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'cli');
+        // A CLI controller built outside request type cli exits the process.
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'cli');
     }
 
     protected function tearDown(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'useStaticConfigOnly', $this->saved);
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', $this->savedMode);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', $this->savedRole);
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', $this->savedType);
     }
 
     private function drain(array $params): \OWA\Module\Base\Controller\DrainTrackerIngestCli
@@ -36,37 +35,37 @@ final class LoggingNodeForwardTest extends TestCase
         return new \OWA\Module\Base\Controller\DrainTrackerIngestCli($params);
     }
 
-    public function testForwardOnlyOnAStaticNodeSkipsTheUpdateGate(): void
+    public function testACollectorSkipsTheUpdateGate(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'useStaticConfigOnly', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
 
         $this->assertFalse($this->drain(['forward_only' => 1])->needsCurrentSchema());
+        $this->assertFalse((new \OWA\Module\Base\Controller\InstanceInfoCli([]))->needsCurrentSchema());
     }
 
-    public function testTheFullDrainOnAStaticNodeIsStillGated(): void
+    public function testTheFullDrainOnACollectorIsRefused(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'useStaticConfigOnly', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
 
-        $this->assertTrue($this->drain([])->needsCurrentSchema());
+        $drain = $this->drain([]);
+        $drain->action();
+
+        $this->assertSame('refused', $drain->getCliOutcome()['outcome']);
+        $this->assertStringContainsString('forward_only=1', $drain->getCliOutcome()['message']);
     }
 
-    public function testForwardOnlyWithADatabaseIsStillGated(): void
+    public function testEveryRoleWithADatabaseIsGated(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'useStaticConfigOnly', false);
+        foreach (array('full', 'worker', 'console', 'api', 'collector,worker') as $role) {
+            \OWA\Core\CoreAPI::setSetting('base', 'server_role', $role);
 
-        $this->assertTrue($this->drain(['forward_only' => 1])->needsCurrentSchema());
+            $this->assertTrue($this->drain(['forward_only' => 1])->needsCurrentSchema(), $role);
+        }
     }
 
-    public function testEveryOtherControllerNeedsACurrentSchema(): void
+    public function testACollectorAnswersEveryScopeWithTheInstallValue(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'useStaticConfigOnly', true);
-
-        $this->assertTrue((new \OWA\Module\Base\Controller\PruneEventQueueArchivesCli(['forward_only' => 1]))->needsCurrentSchema());
-    }
-
-    public function testAStaticNodeAnswersEveryScopeWithTheInstallValue(): void
-    {
-        \OWA\Core\CoreAPI::setSetting('base', 'useStaticConfigOnly', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
 
         $this->assertSame(
             \OWA\Core\CoreAPI::getSetting('base', 'excluded_ips'),
@@ -74,9 +73,9 @@ final class LoggingNodeForwardTest extends TestCase
         );
     }
 
-    public function testAStaticNodeLeavesTheSiteCheckToIngest(): void
+    public function testACollectorLeavesTheSiteCheckToIngest(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'useStaticConfigOnly', true);
+        \OWA\Core\CoreAPI::setSetting('base', 'server_role', 'collector');
 
         $this->assertNull(\OWA\Core\CoreAPI::siteRegistration('logging-node-probe-site'));
         $this->assertFalse(\OWA\Core\CoreAPI::siteRegistration(''), 'an empty site id is still refused');

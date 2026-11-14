@@ -20,6 +20,9 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     /** @var string */
     private $method;
 
+    /** @var mixed the Auth singleton's method before the test: authenticate() sets it */
+    private $authMethod;
+
     /** @var array settings a test changed, to put back */
     private $settings = array();
 
@@ -33,6 +36,7 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $request      = \OWA\Core\CoreAPI::serviceSingleton()->request;
         $this->server = $request->server;
         $this->method = $request->request_type;
+        $this->authMethod = \OWA\Core\Auth::get_instance()->getAuthMethod();
         $_SERVER['HTTPS'] = 'on';
     }
 
@@ -42,13 +46,18 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $request->server       = $this->server;
         $request->request_type = $this->method;
         $request->setParam('apiKey', '');
+
+        // A method left on the one Auth per process refuses a later screen
+        // test's in-process user (Controller::checkCapabilityAndAuthenticateUser()).
+        (new \ReflectionProperty(\OWA\Core\Auth::get_instance(), 'auth_method'))
+            ->setValue(\OWA\Core\Auth::get_instance(), $this->authMethod);
         unset($_SERVER['HTTPS']);
 
         foreach ($this->settings as $name => $value) {
             \OWA\Core\CoreAPI::setSetting('base', $name, $value);
         }
 
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'rest');
 
         foreach ($this->users as $user_id) {
             AppPasswords::revokeAllForUser($user_id);
@@ -238,7 +247,7 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     public function testOutsideTheRestApiTheHeaderIsIgnored(): void
     {
         list(, $made) = $this->userWithPassword();
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
 
         $result = $this->authenticate(self::bearer($made['token']));
 
