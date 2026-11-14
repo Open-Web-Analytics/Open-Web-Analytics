@@ -20,7 +20,7 @@ use OWA\Module\Base\Classes\TrackingEventHelpers;
 
 return function () {
 
-    $source = (string) file_get_contents( OWA_DIR . 'modules/Base/src/tracker/Tracker.js' );
+    $source = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/tracker/Tracker.js' );
 
     $body = function ( $marker ) use ( $source ) {
 
@@ -62,7 +62,7 @@ return function () {
     // What each module's lazy plugin sends.
     $modules = array();
 
-    foreach ( glob( OWA_MODULES_DIR . '*/build.manifest.json' ) as $path ) {
+    foreach ( glob( \OWA\Core\Env::modulesDir() . '*/build.manifest.json' ) as $path ) {
 
         $dir = basename( dirname( $path ) );
 

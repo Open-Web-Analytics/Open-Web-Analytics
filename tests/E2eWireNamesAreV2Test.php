@@ -41,7 +41,7 @@ final class E2eWireNamesAreV2Test extends TestCase
     private function liveEventNames(): array
     {
         $contracts = json_decode( (string) file_get_contents(
-            OWA_DIR . 'tests/fixtures/beacon_contracts.json' ), true );
+            \OWA\Core\Env::root() . '/tests/fixtures/beacon_contracts.json' ), true );
 
         $this->assertArrayHasKey( self::CURRENT, (array) $contracts,
             'the beacon contract has no entry for the current format version' );
@@ -71,7 +71,7 @@ final class E2eWireNamesAreV2Test extends TestCase
     /** @return string[] the v1 spellings, read from the compat index */
     private function retiredEventNames(): array
     {
-        $compat = require OWA_DIR . 'conf/beacon_compat.php';
+        $compat = require \OWA\Core\Env::root() . '/conf/beacon_compat.php';
 
         $retired = array_keys( (array) ( $compat['event_names'] ?? array() ) );
 
@@ -89,7 +89,7 @@ final class E2eWireNamesAreV2Test extends TestCase
         $offenders = array();
         $scanned   = 0;
 
-        foreach ( (array) glob( OWA_DIR . 'tests/e2e/*.spec.js' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/tests/e2e/*.spec.js' ) as $file ) {
 
             $scanned++;
 
@@ -141,7 +141,7 @@ final class E2eWireNamesAreV2Test extends TestCase
         $live    = $this->liveEventNames();
         $unknown = array();
 
-        foreach ( (array) glob( OWA_DIR . 'tests/e2e/*.spec.js' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/tests/e2e/*.spec.js' ) as $file ) {
 
             $source = (string) file_get_contents( $file );
 
@@ -171,7 +171,7 @@ final class E2eWireNamesAreV2Test extends TestCase
     {
         $long = array();
 
-        foreach ( (array) ( require OWA_DIR . 'conf/beacon_compat.php' )['renames'] as $entry ) {
+        foreach ( (array) ( require \OWA\Core\Env::root() . '/conf/beacon_compat.php' )['renames'] as $entry ) {
 
             if ( $entry['role'] === 'wire' ) {
 
@@ -185,7 +185,7 @@ final class E2eWireNamesAreV2Test extends TestCase
 
         $offenders = array();
 
-        foreach ( (array) glob( OWA_DIR . 'tests/e2e/*.spec.js' ) as $file ) {
+        foreach ( (array) glob( \OWA\Core\Env::root() . '/tests/e2e/*.spec.js' ) as $file ) {
 
             foreach ( explode( "\n", (string) file_get_contents( $file ) ) as $n => $line ) {
 

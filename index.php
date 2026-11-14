@@ -16,8 +16,7 @@
 // $Id$
 //
 
-require_once(__DIR__ . '/owa_env.php');
-require_once(OWA_DIR.'owa.php');
+require_once(__DIR__ . '/owa.php');
 
 /**
  * Main Admin Page Wrapper Script

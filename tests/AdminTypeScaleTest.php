@@ -12,7 +12,7 @@ final class AdminTypeScaleTest extends TestCase
 {
     private function css(string $file): string
     {
-        return (string) file_get_contents(OWA_DIR . 'modules/Base/css/' . $file);
+        return (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/css/' . $file);
     }
 
     /** @return array<string,int> */

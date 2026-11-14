@@ -65,7 +65,7 @@ final class ElementAnchorPropertyTest extends TestCase
             $this->assertSame( $name, Helpers::columnFor( $name ) );
         }
 
-        $registry = json_decode( file_get_contents( OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
+        $registry = json_decode( file_get_contents( \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json' ), true );
 
         foreach ( self::ORDER as $name => $callback ) {
             $this->assertSame( array( Helpers::class . '::' . $callback ), $registry[ $name ]['callbacks'], $name );

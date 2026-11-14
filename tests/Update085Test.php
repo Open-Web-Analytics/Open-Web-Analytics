@@ -98,7 +98,7 @@ final class Update085Test extends TestCase
 
         $readers = [];
 
-        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(OWA_DIR . 'modules', FilesystemIterator::SKIP_DOTS)) as $file) {
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(\OWA\Core\Env::root() . '/modules', FilesystemIterator::SKIP_DOTS)) as $file) {
             if (substr((string) $file, -4) !== '.php' || strpos((string) $file, '/Update/') !== false) {
                 continue;
             }
@@ -107,7 +107,7 @@ final class Update085Test extends TestCase
 
             foreach (Update085::RETIRED as $name) {
                 if (strpos($src, $name) !== false) {
-                    $readers[] = $name . ' in ' . str_replace(OWA_DIR, '', (string) $file);
+                    $readers[] = $name . ' in ' . str_replace(\OWA\Core\Env::root() . '/', '', (string) $file);
                 }
             }
         }

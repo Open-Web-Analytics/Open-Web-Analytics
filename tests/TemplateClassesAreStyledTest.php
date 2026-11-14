@@ -30,10 +30,10 @@ final class TemplateClassesAreStyledTest extends TestCase
     /** @dataProvider templates */
     public function testEveryClassItUsesIsStyled(string $template): void
     {
-        $markup = (string) file_get_contents(OWA_DIR . 'modules/Base/templates/' . $template);
+        $markup = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/' . $template);
         $css    = '';
 
-        foreach ((array) glob(OWA_DIR . 'modules/Base/css/*.css') as $file) {
+        foreach ((array) glob(\OWA\Core\Env::root() . '/modules/Base/css/*.css') as $file) {
             $css .= file_get_contents($file);
         }
 
@@ -55,7 +55,7 @@ final class TemplateClassesAreStyledTest extends TestCase
     {
         $css = '';
 
-        foreach ((array) glob(OWA_DIR . 'modules/Base/css/*.css') as $file) {
+        foreach ((array) glob(\OWA\Core\Env::root() . '/modules/Base/css/*.css') as $file) {
             $css .= file_get_contents($file);
         }
 

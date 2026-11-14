@@ -32,7 +32,7 @@ final class MessageSubstitutionTest extends TestCase
 
     protected function setUp(): void
     {
-        // getMsg() needs only OWA_DIR (to locate conf/messages.php); the
+        // getMsg() needs only the autoloader (Env locates conf/messages.php); the
         // constructor's error/config singletons are irrelevant to it, so skip
         // them rather than boot the whole framework.
         require_once dirname(__DIR__) . '/owa_env.php';

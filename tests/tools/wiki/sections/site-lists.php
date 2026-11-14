@@ -18,7 +18,7 @@ return function () {
 
         $entries = array();
 
-        foreach ( (array) include OWA_CONF_DIR . $spec[0] as $entry ) {
+        foreach ( (array) include \OWA\Core\Env::confDir() . $spec[0] as $entry ) {
 
             $domain = strtolower( trim( (string) ( is_array( $entry ) ? ( $entry['domain'] ?? '' ) : $entry ) ) );
 

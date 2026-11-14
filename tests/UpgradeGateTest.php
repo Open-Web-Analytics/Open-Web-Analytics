@@ -38,9 +38,9 @@ final class UpgradeGateTest extends TestCase
     public function testTheOldestUpgradableSchemaIs114s(): void
     {
         $this->assertSame(33, \OWA\Module\Base\Module::OLDEST_UPGRADABLE_SCHEMA);
-        $this->assertSame([], glob(OWA_DIR . 'modules/Base/Update/Update0{0,1,2}[0-9].php', GLOB_BRACE),
+        $this->assertSame([], glob(\OWA\Core\Env::root() . '/modules/Base/Update/Update0{0,1,2}[0-9].php', GLOB_BRACE),
             'v2 carries no update older than 1.14\'s schema');
-        $this->assertSame([], glob(OWA_DIR . 'modules/Base/Update/Update03[0-3].php'));
+        $this->assertSame([], glob(\OWA\Core\Env::root() . '/modules/Base/Update/Update03[0-3].php'));
     }
 
     public function testAnInstallationOlderThan114IsRefused(): void

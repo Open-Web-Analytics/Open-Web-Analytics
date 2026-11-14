@@ -25,7 +25,7 @@ final class LogEndpointTest extends TestCase
     {
         $src    = $this->source();
         $finish = strpos($src, 'fastcgi_finish_request();');
-        $boot   = strpos($src, "require_once(OWA_BASE_DIR.'/owa.php')");
+        $boot   = strpos($src, "require_once(__DIR__ . '/owa.php')");
 
         $this->assertNotFalse($finish, 'PHP-FPM is told the response is complete');
         $this->assertNotFalse($boot);

@@ -222,7 +222,7 @@ final class ModuleActivateInstallTest extends TestCase
     public function testTheActivateCommandInstalls(): void
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/ModuleActivateCli.php');
+            \OWA\Core\Env::root() . '/modules/Base/Controller/ModuleActivateCli.php');
 
         $this->assertStringContainsString('CoreAPI::installModule(', $src,
             'cmd=activate must install, matching the admin UI');
@@ -234,7 +234,7 @@ final class ModuleActivateInstallTest extends TestCase
     public function testTheInstallModuleCommandIsDeprecatedButStillWorks(): void
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/ModuleInstallCli.php');
+            \OWA\Core\Env::root() . '/modules/Base/Controller/ModuleInstallCli.php');
 
         $this->assertMatchesRegularExpression('/deprecated/i', $src,
             'cmd=install-module must announce its deprecation');

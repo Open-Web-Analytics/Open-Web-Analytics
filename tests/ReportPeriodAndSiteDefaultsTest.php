@@ -155,13 +155,13 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $this->assertFalse( $this->period()->isValid( 'all_time' ) );
 
         $source = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Classes/TimePeriod.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Classes/TimePeriod.php' );
 
         $this->assertStringNotContainsString( 'case "all_time"', $source,
             'the implementation must go too, or set() can still reach it' );
 
         // ...and nothing links to it any more.
-        foreach ( glob( OWA_DIR . 'modules/Base/templates/*.php' ) as $tpl ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/Base/templates/*.php' ) as $tpl ) {
 
             $this->assertStringNotContainsString( "'all_time'", (string) file_get_contents( $tpl ),
                 basename( $tpl ) . ' still asks for a period that no longer exists' );
@@ -194,7 +194,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
 
         // The REST controller must read that list rather than build a second one.
         $rest = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/ReportsRest.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Controller/ReportsRest.php' );
 
         $this->assertStringContainsString( 'getValidPeriods()', $rest,
             'ReportsRest must validate against the shared list' );

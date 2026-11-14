@@ -37,7 +37,7 @@ final class DomstreamsRestControllerTest extends RestControllerTestCase
 
     private function ctrlFile(): string
     {
-        return OWA_MODULES_DIR . 'Domstream/Controller/DomstreamsRestController.php';
+        return \OWA\Core\Env::modulesDir() . 'Domstream/Controller/DomstreamsRestController.php';
     }
 
     /** Two chunks, stored out of order. */

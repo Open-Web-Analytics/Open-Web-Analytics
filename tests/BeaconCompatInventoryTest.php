@@ -30,14 +30,14 @@ final class BeaconCompatInventoryTest extends TestCase
 {
     private function index(): array
     {
-        return (array) include OWA_DIR . 'conf/beacon_compat.php';
+        return (array) include \OWA\Core\Env::root() . '/conf/beacon_compat.php';
     }
 
     /** @return array<string,array> every declared tracking property, by name */
     private function properties(): array
     {
         $declared = json_decode( (string) file_get_contents(
-            OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
+            \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json' ), true );
 
         // The file is flat: every entry declares `set_by` rather than sitting in
         // a group that implied it.
@@ -140,7 +140,7 @@ final class BeaconCompatInventoryTest extends TestCase
                 continue;
             }
 
-            $path = OWA_DIR . $entry['in'];
+            $path = \OWA\Core\Env::root() . '/' . $entry['in'];
 
             $this->assertFileExists( $path, $entry['in'] . ' is indexed as carrying a bridge' );
 

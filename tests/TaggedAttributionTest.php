@@ -133,7 +133,7 @@ final class TaggedAttributionTest extends TestCase
     public function testNoDimensionIdIsDerivedInThePipeline(): void
     {
         $config = json_decode(
-            (string) file_get_contents( OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
+            (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json' ), true );
 
         $registered = array();
         foreach ( (array) $config as $scope => $properties ) {

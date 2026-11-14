@@ -56,10 +56,8 @@ class Module extends \OWA\Core\Module {
      * the class here keeps CoreAPI::performAction() on the registered branch,
      * and is what a module should do.
      *
-     * The path argument is empty on purpose: registerAction() prefixes it with
-     * OWA_BASE_MODULE_DIR, which is hardcoded to modules/Base/, so a non-Base
-     * module cannot express a correct path through it. The class name is the
-     * PSR-4 name, so Composer autoloads it and the path is never consulted.
+     * The path argument is empty: the class name is the PSR-4 name, so Composer
+     * autoloads it and needs no path.
      */
     function registerActions() {
 

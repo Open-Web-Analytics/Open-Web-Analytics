@@ -17,36 +17,15 @@
 //
 
 /**
- * Environment Configuration
- * 
- * @author      Peter Adams <peter@openwebanalytics.com>
- * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
- * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
- * @category    owa
- * @package     owa
- * @version        $Revision$
- * @since        owa 1.0.0
+ * Loads the class autoloader. Every entry point includes this, by way of
+ * owa.php, before anything else.
+ *
+ * Where the installation is and which release it is: \OWA\Core\Env.
  */
-  
-if (!defined('OWA_PATH')) {
-    define('OWA_PATH', dirname(__FILE__));
-}
-define('OWA_DIR', OWA_PATH . '/');
-define('OWA_DATA_DIR', OWA_DIR . 'owa-data/');
-define('OWA_MODULES_DIR', OWA_DIR.'modules/');
-define('OWA_BASE_DIR', OWA_PATH); // depricated
-define('OWA_BASE_CLASSES_DIR', OWA_DIR); //depricated
-define('OWA_BASE_MODULE_DIR', OWA_DIR.'modules/Base/'); // PSR-4: base module dir is PascalCase on disk
-define('OWA_BASE_CLASS_DIR', OWA_BASE_MODULE_DIR.'Classes/');
-define('OWA_PLUGIN_DIR', OWA_DIR.'plugins/');
-define('OWA_CONF_DIR', OWA_DIR.'conf/');
-define('OWA_THEMES_DIR', OWA_DIR.'themes/');
-define('OWA_VERSION', 'master');
-define('OWA_VENDOR_DIR', OWA_DIR.'vendor/');
 
-if ( file_exists( OWA_VENDOR_DIR . 'autoload.php' ) ) {
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 
-	require_once ( OWA_VENDOR_DIR . 'autoload.php' );
+	require_once __DIR__ . '/vendor/autoload.php';
 
 } else {
 
@@ -69,8 +48,8 @@ if ( file_exists( OWA_VENDOR_DIR . 'autoload.php' ) ) {
 	spl_autoload_register( function ( $class ) {
 
 		$prefixes = array(
-			'OWA\\Core\\'   => OWA_DIR . 'Core/',
-			'OWA\\Module\\' => OWA_DIR . 'modules/',
+			'OWA\\Core\\'   => __DIR__ . '/Core/',
+			'OWA\\Module\\' => __DIR__ . '/modules/',
 		);
 
 		foreach ( $prefixes as $prefix => $base_dir ) {
@@ -92,6 +71,3 @@ if ( file_exists( OWA_VENDOR_DIR . 'autoload.php' ) ) {
 		}
 	} );
 }
-
-
-?>

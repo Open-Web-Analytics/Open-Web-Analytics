@@ -134,8 +134,7 @@ define( 'OWA_DB_TYPE', 'mysqli' );     // force the legacy driver
 define( 'OWA_DB_TYPE', 'pdo_mysql' );  // force MySQL over PDO
 ```
 
-Third-party drivers dropped in at `plugins/db/owa_db_<type>.php` are unaffected
-in selection, but note that the driver interface gained an optional `$params`
+Third-party drivers (`owa_db_<type>`) are unaffected in selection, but note that the driver interface gained an optional `$params`
 argument on `query()`, `get_results()` and `get_row()`. A driver that overrides
 those with the old signature will need it added.
 
@@ -434,7 +433,6 @@ so no tool could check it. Reading a never-set key through `$view` raises an
 
 - third-party module templates (`modules/<Module>/templates/`)
 - site-owner overrides (`modules/<Module>/templates/local/`)
-- custom themes (`OWA_THEMES_DIR`)
 
 A `$this->` call fails with `Using $this when not in object context`. A bare
 variable read is undefined — a warning, `null`, or the `foreach` fatal above.
@@ -501,12 +499,43 @@ class names — `OWA\Module\<Module>\Entity\<Name>`, `...\Controller\<Name>`,
 `...\Metric\<Name>` — and raises an error naming the class it looked for when
 there is none.
 
-**Still works.**
+**Third-party database drivers are autoloaded.** `db_type = <type>` loads the
+class `owa_db_<type> extends \OWA\Core\Db`, as in 1.x, but OWA no longer
+requires it from `plugins/db/owa_db_<type>.php`: an autoloader has to find it,
+such as a module's `composer.json` `autoload` section, which `composer install`
+merges. Without one, the error log says `No database driver for <type>`. A
+validator `owa_<name>Validation` is found the same way; nothing reads
+`plugins/validations/`.
 
-- **Third-party database drivers.** A driver at `plugins/db/owa_db_<type>.php`
-  declaring `class owa_db_<type> extends \OWA\Core\Db` is still loaded for
-  `db_type = <type>`. The class name is the plugin's own; only its base class
-  changed.
+**Path and version constants are gone.** 1.x defined these in `owa_env.php`.
+v2.0 defines none of them; `\OWA\Core\Env` answers instead:
+
+| 1.x constant | v2.0 |
+| --- | --- |
+| `OWA_PATH`, `OWA_BASE_DIR` | `\OWA\Core\Env::root()` (no trailing slash) |
+| `OWA_DIR`, `OWA_BASE_CLASSES_DIR` | `\OWA\Core\Env::root() . '/'` |
+| `OWA_MODULES_DIR` | `\OWA\Core\Env::modulesDir()` |
+| `OWA_BASE_MODULE_DIR` | `\OWA\Core\Env::modulesDir() . 'Base/'` |
+| `OWA_BASE_CLASS_DIR` | none: classes are autoloaded |
+| `OWA_CONF_DIR` | `\OWA\Core\Env::confDir()` |
+| `OWA_VENDOR_DIR` | `\OWA\Core\Env::vendorDir()` |
+| `OWA_VERSION` | `\OWA\Core\Env::version()` |
+| `OWA_DATA_DIR` | `\OWA\Core\Env::dataDir()` (the `data_dir` setting) |
+| `OWA_CACHE_DIR` | `\OWA\Core\Env::cacheDir()` (the `cache_dir` setting) |
+| `OWA_PLUGIN_DIR` | none: `plugins/` is not read (see above) |
+| `OWA_THEMES_DIR` | none: themes are removed, with the `theme` setting |
+
+The directories end in a slash. `OWA_DATA_DIR` and `OWA_CACHE_DIR` are now
+optional settings in `owa-config.php`: 1.x defined `OWA_DATA_DIR` before the
+config file loaded, so a value there was ignored with an "already defined"
+warning. `OWA_DATA_DIR` moves the error log, the file event queue (with its
+archive and dead letters), the caches, downloaded user-agent patterns and GeoIP
+data; `OWA_CACHE_DIR` moves only the caches. `owa_env.php` still exists and
+only loads the autoloader; `owa.php` includes it. Also removed:
+`\OWA\Core\CoreAPI::getInstance( $class, $path )` (call `$class::getInstance()`)
+and the unread `plugin_dir` setting. A module's `registerAction()` file argument
+is now relative to that module's own directory, as `registerImplementation()`'s
+is, and may be omitted.
 
 ---
 

@@ -43,9 +43,9 @@
  * the database. A stored error_log_file or report_wrapper is an RCE primitive,
  * so that list stays as a test asserting this file agrees with it.
  *
- * TWO SETTINGS ARE DECLARED WITH NO DEFAULT although the code has one:
- * config_file and plugin_dir. getDefaultSettingsArray() builds
- * those from OWA_DIR, so their value depends on where the installation lives
+ * THREE SETTINGS ARE DECLARED WITH NO DEFAULT although the code has one:
+ * config_file, data_dir and cache_dir. The code builds those from the
+ * installation's directory (Core\Env), so their value depends on where it lives
  * -- baking one into a static file made the declaration disagree with the code
  * the moment the checkout moved, which the configless CI run caught by running
  * from a temporary directory. The code default still applies; the declaration
@@ -111,6 +111,7 @@ return array(
         'assets_url' => array( 'default' => '', 'description' => 'Where the built static files under public/ are served from, set by OWA_ASSETS_URL: the report screens\' scripts, styles, fonts and images, the tracker and its chunks, and the Profiles\' tracking bundles. Empty is the public URL followed by public/.' ),
         'async_log_dir' => array( 'default' => '', 'description' => 'The directory the file event queue writes its batch files to. Empty uses owa-data/logs/.' ),
         'base_url' => array( 'default' => '' ),
+        'cache_dir' => array( 'description' => 'The directory of the file cache. Set by OWA_CACHE_DIR; defaults to caches/ in the data directory.' ),
         'cacheType' => array( 'default' => '', 'description' => 'Which object cache backend is in use: file or memcached. Set by the File Cache or Memcached Cache module when it is active; empty means none.' ),
         'cache_objects' => array( 'default' => false, 'description' => 'Whether OWA keeps looked-up objects, such as parsed user agents, in its object cache between requests. Off by default; the File Cache module turns it on.' ),
         'capabilities' => array( 'default' => array( 'admin' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce', 'edit_settings', 'edit_sites', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ), 'analyst' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce' ), 'viewer' => array( 'install_schema', 'view_site_list', 'view_reports' ), 'everyone' => array( 'install_schema' ) ), 'description' => 'Which capabilities each user role has, as role => list of capabilities.' ),
@@ -121,6 +122,7 @@ return array(
         'cookie_domain' => array( 'default' => false, 'internal' => true ),
         'cookie_persistence' => array( 'default' => true, 'description' => 'Whether the cookies OWA\'s server sets, such as the login cookie, outlast the browser session. Off makes them session cookies.' ),
         'cube_rebuild_window_days' => array( 'default' => 7, 'description' => 'How many recent days of the reporting cube stay in daily partitions that partition-rotate will not merge, so events arriving late for those days are cheap to rebuild. Default 7.' ),
+        'data_dir' => array( 'description' => 'The directory OWA writes to: its logs, the file event queue, downloaded user-agent patterns and GeoIP data, and by default its caches. Set by OWA_DATA_DIR; defaults to owa-data/ in the OWA directory.' ),
         'attribution_lookback_days' => array(
             'default'  => 90,
             'storable' => true,
@@ -391,7 +393,6 @@ return array(
         'partition_detail_months' => array( 'default' => 36, 'description' => 'How many recent months of a partitioned table keep their fine-grained partitions before partition-rotate may merge older ones. Default 36.' ),
         'partition_max_partitions' => array( 'default' => 0, 'description' => 'The most partitions partition-rotate lets one table hold. 0 uses the built-in ceiling of 400.' ),
         'password_length' => array( 'default' => 4 ),
-        'plugin_dir' => array(),
         'public_path' => array( 'default' => '', 'description' => 'The filesystem path of OWA\'s public/ directory. Empty uses public/ inside the OWA directory.' ),
         'public_url' => array( 'default' => '', 'description' => 'The URL of the OWA directory, ending in a slash. Links, assets and tracker URLs are built from it.' ),
         'query_string_filters' => array(
@@ -412,7 +413,7 @@ return array(
         /*
          * COMPUTED AT BOOT, never stored, and declared anyway.
          *
-         * setupPaths() derives these from OWA_DIR and the configured main_url,
+         * setupPaths() derives these from the configured public URL,
          * and RequestContainer/Browscap read them back. They have no literal
          * default, so generating this file from getDefaultSettingsArray() did
          * not produce them -- and a key read on a module that HAS declared is a
@@ -487,7 +488,6 @@ return array(
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Spam Threshold is a number of at least 0.1 with at most one decimal place, or blank.' ),
         ),
         'start_page' => array( 'default' => 'base.reportingHome', 'description' => 'The screen OWA opens after login, and when index.php is requested with no action. Default base.reportingHome.' ),
-        'theme' => array( 'default' => '', 'description' => 'A directory under the themes directory whose templates override module templates. Empty uses none.' ),
         /*
          * 'timezone' is a type of its own, not a select with 400 options in the
          * declaration. The list is the IANA zones grouped by country, built from

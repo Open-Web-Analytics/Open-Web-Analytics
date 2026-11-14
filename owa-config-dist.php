@@ -160,6 +160,21 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 //define('OWA_ASSETS_URL', 'https://cdn.example.com/owa/');
 
 /**
+ * DATA DIRECTORIES
+ *
+ *   OWA_DATA_DIR   where OWA writes: its error log, the file event queue,
+ *                  downloaded user-agent patterns and GeoIP data, and the
+ *                  caches. Default: owa-data/ in this directory.
+ *   OWA_CACHE_DIR  the file cache. Default: caches/ in the data directory.
+ *
+ * The web server user and the user that runs cli.php both write there, so both
+ * need write access to it and to its logs/ and caches/.
+ */
+
+//define('OWA_DATA_DIR', '/var/lib/owa/');
+//define('OWA_CACHE_DIR', '/var/cache/owa/');
+
+/**
  * DEBUG
  *
  * Writes debug lines to OWA's error log as well as notices and errors, routes

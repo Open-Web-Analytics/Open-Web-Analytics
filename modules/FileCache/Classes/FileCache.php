@@ -57,7 +57,7 @@ class FileCache extends \OWA\Core\CacheType {
             
         } else {
 	        
-            $this->cache_dir = OWA_CACHE_DIR;
+            $this->cache_dir = \OWA\Core\Env::cacheDir();
         }
         
         if ( array_key_exists( 'cache_id', $params ) && $params['cache_id'] ) {

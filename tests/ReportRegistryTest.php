@@ -65,7 +65,7 @@ final class ReportRegistryTest extends TestCase
 
         $this->assertNotEmpty( $registered, 'no report is registered from a file; this would pass vacuously' );
 
-        foreach ( glob( OWA_DIR . 'modules/Base/reports/*.json' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/Base/reports/*.json' ) as $file ) {
 
             $this->assertContains( realpath( $file ), $registered,
                 basename( $file ) . ' is in the reports directory but nothing registers it' );
@@ -118,7 +118,7 @@ final class ReportRegistryTest extends TestCase
             }
         }
 
-        $this->assertArrayHasKey( OWA_MODULES_DIR . 'Base/Controller/ReportsRest.php', $files,
+        $this->assertArrayHasKey( \OWA\Core\Env::modulesDir() . 'Base/Controller/ReportsRest.php', $files,
             'no controllers were found -- this asserts nothing without them' );
 
         foreach ( $files as $file => $module_name ) {
@@ -304,7 +304,7 @@ final class ReportRegistryTest extends TestCase
      */
     public function testRegistrationIsNotDoneByTheConstructor(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . 'Core/Module.php' );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/Core/Module.php' );
 
         $constructor = substr( $src, strpos( $src, 'function __construct' ) );
         $constructor = substr( $constructor, 0, strpos( $constructor, "\n    }" ) );

@@ -67,7 +67,7 @@ final class TrackerEventNamesAreAcceptedTest extends IngestionTestCase
     public static function emittedEventNames(): array
     {
         $contracts = json_decode( (string) file_get_contents(
-            OWA_DIR . 'tests/fixtures/beacon_contracts.json' ), true );
+            \OWA\Core\Env::root() . '/tests/fixtures/beacon_contracts.json' ), true );
 
         $names = array();
 

@@ -72,7 +72,7 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         // TODO: move this all into the coreAPI::logEvent method. We really don't need the overhead of a controller for this.
 
-        $teh = \OWA\Core\CoreAPI::getInstance( \OWA\Module\Base\Classes\TrackingEventHelpers::class, OWA_BASE_CLASS_DIR.'trackingEventHelpers.php');
+        $teh = \OWA\Module\Base\Classes\TrackingEventHelpers::getInstance();
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
 

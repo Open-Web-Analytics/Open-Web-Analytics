@@ -81,7 +81,7 @@ final class HelloModuleExampleTest extends TestCase
      */
     public function testItsReportDefinitionIsValid(): void
     {
-        $file = OWA_DIR . 'modules/Hello/reports/hello-dashboard.json';
+        $file = \OWA\Core\Env::root() . '/modules/Hello/reports/hello-dashboard.json';
 
         $this->assertFileExists( $file );
 

@@ -221,7 +221,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testAnEditDoesNotWriteThePropertyKind(): void
     {
         $body = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/PropertyEdit.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Controller/PropertyEdit.php' );
 
         $edit = substr( $body, (int) strpos( $body, 'if ( $propertyId ) {' ) );
         $edit = substr( $edit, 0, (int) strpos( $edit, '} else {' ) );
@@ -245,7 +245,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testTheKindIsAskedOnAddAndStatedOnEdit(): void
     {
         $body = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/property_profile.php' );
+            \OWA\Core\Env::root() . '/modules/Base/templates/property_profile.php' );
 
         $this->assertStringContainsString( '$owa_isNew', $body,
             'The Property form does not distinguish the add path from the edit path, so the '
@@ -301,7 +301,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testTheSiteControlReplacesTheOldSelect(): void
     {
         $js = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
+            \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.report.js' );
 
         $this->assertStringContainsString( '#owa_siteControl', $js );
 
@@ -316,7 +316,7 @@ final class PropertyAdminScreensTest extends TestCase
             . 'undefined and the guard around it skips silently, so the report would keep '
             . 'loading while ignoring the site.' );
 
-        $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
+        $template = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/site_control.php' );
 
         foreach ( array( 'owa_siteControlOrgs', 'owa_siteControlProperties' ) as $column ) {
 
@@ -344,7 +344,7 @@ final class PropertyAdminScreensTest extends TestCase
          * The tracker id is listed beside each Profile on the roster, because
          * it is the value that goes in a tag.
          */
-        $roster = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/property_profiles.php' );
+        $roster = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/property_profiles.php' );
 
         $this->assertStringContainsString(
             "\$owa_prof['site_id']", $roster,
@@ -407,7 +407,7 @@ final class PropertyAdminScreensTest extends TestCase
 
                 list( $module, $name ) = array_pad( explode( '.', $action, 2 ), 2, '' );
 
-                $dir = OWA_DIR . 'modules/' . \OWA\Core\Lib::moduleDirName( $module ) . '/';
+                $dir = \OWA\Core\Env::root() . '/modules/' . \OWA\Core\Lib::moduleDirName( $module ) . '/';
 
                 foreach ( array( $dir . 'View/' . ucfirst( $name ) . '.php',
                                  $dir . ucfirst( $name ) . 'View.php' ) as $view ) {
@@ -478,7 +478,7 @@ final class PropertyAdminScreensTest extends TestCase
     /** Each tier is reachable from the control, which is the only way in now. */
     public function testEveryTierIsReachableFromTheControl(): void
     {
-        $template = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/site_control.php' );
+        $template = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/site_control.php' );
 
         /*
          * base.goalEventDefinitions is NOT in this list any more.
@@ -517,7 +517,7 @@ final class PropertyAdminScreensTest extends TestCase
             'No way from a Property to a new Profile.' );
         $this->assertSame( array( 'propertyId' => 'p' ), end( $profiles )['params'] ?? null );
 
-        $roster = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/property_profiles.php' );
+        $roster = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/property_profiles.php' );
 
         foreach ( array( 'base.sitesProfile', 'base.profileSettings', 'base.sitesInvocation' ) as $action ) {
 
@@ -536,13 +536,13 @@ final class PropertyAdminScreensTest extends TestCase
     public function testTheHierarchyScreensUseTheControlNotTheSettingsNav(): void
     {
         $wrapper = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/options_hierarchy.php' );
+            \OWA\Core\Env::root() . '/modules/Base/templates/options_hierarchy.php' );
 
         // The control is drawn in the header; the wrapper keeps the slot it
         // moves into on a narrow screen.
         $this->assertStringContainsString( 'owa_railSiteControl', $wrapper );
         $this->assertStringContainsString( "include( 'site_control.php' )",
-            (string) file_get_contents( OWA_DIR . 'modules/Base/templates/header.php' ) );
+            (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/header.php' ) );
         $this->assertStringNotContainsString(
             'view->panels', $wrapper,
             'The hierarchy wrapper renders the settings panels.' );
@@ -550,7 +550,7 @@ final class PropertyAdminScreensTest extends TestCase
         foreach ( array( 'OrganizationProfile', 'PropertyProfile', 'SitesProfile' ) as $screen ) {
 
             $src = (string) file_get_contents(
-                OWA_DIR . "modules/Base/Controller/{$screen}.php" );
+                \OWA\Core\Env::root() . "/modules/Base/Controller/{$screen}.php" );
 
             $this->assertStringContainsString(
                 "base.optionsHierarchy", $src,
@@ -567,7 +567,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testTheFanOutIsHiddenUntilOpened(): void
     {
-        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+        $css = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/owa.report.css' );
 
         /*
          * Anchored to the start of a line. Unanchored, this matched
@@ -594,7 +594,7 @@ final class PropertyAdminScreensTest extends TestCase
             'Nothing shows the panel when the tile is clicked.' );
 
         $js = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
+            \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.report.js' );
 
         /*
          * SINGLE quoted. $panel is a real variable in this test, so in double
@@ -669,7 +669,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testTheNavIsRenderedUnderTheControl(): void
     {
         $wrapper = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/options_hierarchy.php' );
+            \OWA\Core\Env::root() . '/modules/Base/templates/options_hierarchy.php' );
 
         // In the slide-out menu the control sits above the nav: the tile says
         // which thing the nav is about.
@@ -682,7 +682,7 @@ final class PropertyAdminScreensTest extends TestCase
             'The nav is above the tile; the tile is what says which thing the nav is about.' );
 
         // On a desktop it is in the header, right of the logo and left of the nav.
-        $header = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/header.php' );
+        $header = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/header.php' );
 
         $this->assertLessThan( strpos( $header, 'site_control.php' ), strpos( $header, 'owa_logo' ) );
         $this->assertLessThan( strpos( $header, 'owa_navigation' ), strpos( $header, 'site_control.php' ) );
@@ -866,7 +866,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         foreach ( $screens as $template => $term ) {
 
-            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+            $body = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/' . $template );
 
             $this->assertStringContainsString(
                 'owa_panelIntro', $body, "$template does not say what the screen is for." );
@@ -905,7 +905,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         foreach ( $templates as $template ) {
 
-            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+            $body = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/' . $template );
 
             /*
              * Visible text only: the HTML without PHP, tags and comments, and
@@ -960,7 +960,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         foreach ( $templates as $template ) {
 
-            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+            $body = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/' . $template );
 
             $after = substr( $body, strrpos( $body, 'type="submit"' ) );
             $after = preg_replace( '/<\?php.*?\?>/s', ' ', $after );
@@ -982,7 +982,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testTheTileSitsAtTheSameHeightEverywhere(): void
     {
-        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+        $css = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/owa.report.css' );
 
         $this->assertSame(
             0, substr_count( $css, '.owa_reportContainer .owa_siteControl' ),
@@ -1011,7 +1011,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testThePaneSetsTheMeasureNotTheContent(): void
     {
-        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+        $css = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/owa.report.css' );
 
         $panel = substr( $css, strpos( $css, "\n.owa_hierarchyContent #panel {" ) );
         $panel = substr( $panel, 0, strpos( $panel, "\n}" ) );
@@ -1022,7 +1022,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         foreach ( array( 'organization_profile.php', 'property_profile.php' ) as $template ) {
 
-            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+            $body = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/' . $template );
 
             $this->assertStringNotContainsString(
                 'width:550px', $body,
@@ -1037,14 +1037,14 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testSettingsScreensHaveNoBreadcrumb(): void
     {
-        $this->assertFileDoesNotExist( OWA_DIR . 'modules/Base/templates/hierarchy_breadcrumb.php' );
+        $this->assertFileDoesNotExist( \OWA\Core\Env::root() . '/modules/Base/templates/hierarchy_breadcrumb.php' );
 
         $wrapper = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/options_hierarchy.php' );
+            \OWA\Core\Env::root() . '/modules/Base/templates/options_hierarchy.php' );
 
         $this->assertStringNotContainsString( 'breadcrumb', $wrapper );
 
-        $view = (string) file_get_contents( OWA_DIR . 'modules/Base/View/OptionsHierarchy.php' );
+        $view = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/View/OptionsHierarchy.php' );
 
         $this->assertStringNotContainsString( 'hierarchy_tier', $view );
         $this->assertStringContainsString(
@@ -1058,7 +1058,7 @@ final class PropertyAdminScreensTest extends TestCase
         foreach ( array( 'organization_profile.php', 'property_profile.php',
                          'property_access.php', 'profile_settings.php' ) as $template ) {
 
-            $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/' . $template );
+            $body = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/' . $template );
 
             $this->assertSame(
                 1, substr_count( $body, 'owa_panelIntro' ),
@@ -1087,7 +1087,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testGridsAreQuieterThanTheHeadingAboveThem(): void
     {
-        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+        $css = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/owa.report.css' );
 
         $this->assertStringContainsString(
             '.owa_hierarchyContent #panel table.management th', $css,
@@ -1126,7 +1126,7 @@ final class PropertyAdminScreensTest extends TestCase
     /** Goal Event Definitions renders in the pane like every other hierarchy screen. */
     public function testGoalEventDefinitionsUsesThePaneConvention(): void
     {
-        $body = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/goal_event_definitions.php' );
+        $body = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/goal_event_definitions.php' );
 
         $this->assertStringContainsString(
             '<div id="panel">', $body,
@@ -1146,7 +1146,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testAPropertyAndAProfileCanBeAdded(): void
     {
         $template = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/templates/site_control.php' );
+            \OWA\Core\Env::root() . '/modules/Base/templates/site_control.php' );
 
         $this->assertSame(
             1, substr_count( $template, 'class="owa_siteControlAdd' ),
@@ -1158,7 +1158,7 @@ final class PropertyAdminScreensTest extends TestCase
             'The Properties column has no add link, only per-row edit links.' );
 
         /* The Profile is added to the Property whose roster it is. */
-        $roster = (string) file_get_contents( OWA_DIR . 'modules/Base/templates/property_profiles.php' );
+        $roster = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/property_profiles.php' );
 
         $this->assertStringContainsString(
             "'do' => 'base.sitesProfile', 'propertyId' => \$view->propertyId", $roster,
@@ -1183,7 +1183,7 @@ final class PropertyAdminScreensTest extends TestCase
             ( (array) $data->getValue( $controller ) )['propertyId'] ?? null,
             'The add form arrived carrying an id, so it would edit something.' );
 
-        $src = (string) file_get_contents( OWA_DIR . 'modules/Base/Controller/PropertyEdit.php' );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/Controller/PropertyEdit.php' );
 
         $this->assertStringContainsString(
             "if ( \$this->getParam( 'propertyId' ) ) {", $src,
@@ -1207,7 +1207,7 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testHelpTextIsNotOffsetFromItsField(): void
     {
-        $css = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' );
+        $css = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/owa.report.css' );
 
         $rule = substr( $css, strpos( $css, '.owa_hierarchyContent #panel .form-instructions {' ) );
         $rule = substr( $rule, 0, strpos( $rule, "\n}" ) );
@@ -1278,7 +1278,7 @@ final class PropertyAdminScreensTest extends TestCase
         foreach ( array( 'OptionsGeneral', 'OptionsModules' ) as $screen ) {
 
             $src = (string) file_get_contents(
-                OWA_DIR . "modules/Base/Controller/{$screen}.php" );
+                \OWA\Core\Env::root() . "/modules/Base/Controller/{$screen}.php" );
 
             $this->assertStringContainsString( 'base.optionsHierarchy', $src );
         }
@@ -1293,14 +1293,14 @@ final class PropertyAdminScreensTest extends TestCase
      */
     public function testTheOldSettingsMenuIsGone(): void
     {
-        $this->assertFileDoesNotExist( OWA_DIR . 'modules/Base/View/Options.php' );
-        $this->assertFileDoesNotExist( OWA_DIR . 'modules/Base/templates/options.php' );
+        $this->assertFileDoesNotExist( \OWA\Core\Env::root() . '/modules/Base/View/Options.php' );
+        $this->assertFileDoesNotExist( \OWA\Core\Env::root() . '/modules/Base/templates/options.php' );
 
         /* Including the module screens -- they are settings like any other. */
         foreach ( array( 'modules/MaxmindGeoip/Controller/OptionsGeoip.php',
                          'modules/Hello/Controller/ExampleSettingsController.php' ) as $module ) {
 
-            $src = (string) file_get_contents( OWA_DIR . $module );
+            $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $module );
 
             $this->assertStringContainsString(
                 'base.optionsHierarchy', $src,

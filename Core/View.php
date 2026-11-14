@@ -449,7 +449,7 @@ class View extends \OWA\Core\Base {
     /**
      * The ?version= a built asset is requested with.
      *
-     * OWA_VERSION is 'master' in a source checkout, the same string for every
+     * Env::VERSION is 'master' in a source checkout, the same string for every
      * build, so a browser kept the stylesheet and scripts it already had across
      * a deploy. The built file's modification time changes with each build.
      */
@@ -458,7 +458,7 @@ class View extends \OWA\Core\Base {
         $file  = \OWA\Core\CoreAPI::getSetting( 'base', 'public_path' ) . $path;
         $mtime = is_file( $file ) ? filemtime( $file ) : false;
 
-        return $mtime ? OWA_VERSION . '.' . $mtime : OWA_VERSION;
+        return $mtime ? \OWA\Core\Env::version() . '.' . $mtime : \OWA\Core\Env::version();
     }
 
     function setCss($path, $version = null, $deps = array(), $ie_only = false) {
@@ -474,7 +474,7 @@ class View extends \OWA\Core\Base {
         $url = sprintf('%s?version=%s', \OWA\Core\CoreAPI::configSingleton()->assetsUrl().$path, $version);
         $this->css[$uid]['url'] = $url;
         // build file system path just in case we need to concatenate the JS into a single file.
-        $fs_path = OWA_MODULES_DIR.$path;
+        $fs_path = \OWA\Core\Env::modulesDir() . $path;
         $this->css[$uid]['path'] = $fs_path;
         $this->css[$uid]['deps'] = $deps;
         $this->css[$uid]['version'] = $version;
@@ -496,7 +496,7 @@ class View extends \OWA\Core\Base {
         $this->js[$uid]['url'] = $url;
 
         // build file system path just in case we need to concatenate the JS into a single file.
-        $fs_path = OWA_MODULES_DIR.$path;
+        $fs_path = \OWA\Core\Env::modulesDir() . $path;
         $this->js[$uid]['path'] = $fs_path;
         $this->js[$uid]['deps'] = $deps;
         $this->js[$uid]['version'] = $version;

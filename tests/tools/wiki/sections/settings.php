@@ -68,7 +68,7 @@ return function ( $arg = null ) {
             $class = 'OWA\\Module\\' . $dir . '\\Module';
             $m     = ( new ReflectionClass( $class ) )->newInstanceWithoutConstructor();
             $m->name = $name;
-            $m->path = OWA_MODULES_DIR . $dir . '/';
+            $m->path = \OWA\Core\Env::modulesDir() . $dir . '/';
             $m->registerActions();
         }
 

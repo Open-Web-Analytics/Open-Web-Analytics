@@ -28,11 +28,11 @@ final class BaseKnowsNothingOfDomstreamTest extends TestCase
         $offenders = [];
 
         foreach (['Core', 'modules/Base', 'conf'] as $dir) {
-            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(OWA_DIR . $dir,
+            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(\OWA\Core\Env::root() . '/' . $dir,
                 FilesystemIterator::SKIP_DOTS));
 
             foreach ($files as $file) {
-                $path = substr($file->getPathname(), strlen(OWA_DIR));
+                $path = substr($file->getPathname(), strlen(\OWA\Core\Env::root() . '/'));
 
                 // Build output names what the build produced, the module's chunk
                 // included: public/base/dist/ and the tracker manifest's
@@ -69,7 +69,7 @@ final class BaseKnowsNothingOfDomstreamTest extends TestCase
     public function testEveryExceptionStillApplies(): void
     {
         foreach (array_keys(self::V1) as $path) {
-            $this->assertNotEmpty(preg_grep('/dom\.?stream/i', (array) @file(OWA_DIR . $path)),
+            $this->assertNotEmpty(preg_grep('/dom\.?stream/i', (array) @file(\OWA\Core\Env::root() . '/' . $path)),
                 "$path no longer mentions recordings; drop it from the exceptions");
         }
     }

@@ -45,7 +45,7 @@ final class UrlCanonicalisationTest extends TestCase
     /** The setting's default is that list, so an install that sets nothing folds them. */
     public function testTheSettingsDefaultIsTheList(): void
     {
-        $declared = (include OWA_DIR . 'modules/Base/settings.php')['settings']['directory_index_pages'] ?? [];
+        $declared = (include \OWA\Core\Env::root() . '/modules/Base/settings.php')['settings']['directory_index_pages'] ?? [];
 
         $this->assertSame(V2Event::DIRECTORY_INDEX_PAGES, $declared['default'] ?? null);
         $this->assertSame(['install'], $declared['scopes'] ?? null, 'install-wide, not per Profile');

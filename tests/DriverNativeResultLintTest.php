@@ -35,8 +35,8 @@ final class DriverNativeResultLintTest extends TestCase
 {
     public static function setUpBeforeClass(): void
     {
-        // Source scanning needs no database, but it does need OWA_DIR -- and
-        // the portable-pair assertion needs the drivers autoloadable.
+        // Source scanning needs no database; the portable-pair assertion
+        // needs the drivers autoloadable.
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
@@ -65,7 +65,7 @@ final class DriverNativeResultLintTest extends TestCase
     /** @return string[] repo-relative paths of the PHP we ship */
     private function shippedPhpFiles(): array
     {
-        $root = rtrim(OWA_DIR, '/');
+        $root = \OWA\Core\Env::root();
         $out  = array();
 
         $skip = array('vendor', 'node_modules', 'tests', '.git', 'public', 'build',
@@ -107,7 +107,7 @@ final class DriverNativeResultLintTest extends TestCase
                 continue;
             }
 
-            $source = (string) file_get_contents(OWA_DIR . $relative);
+            $source = (string) file_get_contents(\OWA\Core\Env::root() . '/' . $relative);
 
             foreach (self::NATIVE_CALLS as $needle => $why) {
 

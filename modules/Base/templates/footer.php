@@ -8,7 +8,7 @@
 ?>
 <div class="owa_footer">
     <?php if ( $view->getCurrentUser()->isAuthenticated() ):?>
-    <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Open Web Analytics version %s' ), OWA_VERSION ) );?>
+    <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Open Web Analytics version %s' ), \OWA\Core\Env::version() ) );?>
     <?php else:?>
     Open Web Analytics
     <?php endif;?>

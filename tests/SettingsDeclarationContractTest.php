@@ -53,7 +53,7 @@ final class SettingsDeclarationContractTest extends TestCase
     /** @return array<string,mixed> */
     private function baseDeclaration(): array
     {
-        $file = OWA_DIR . 'modules/Base/settings.php';
+        $file = \OWA\Core\Env::root() . '/modules/Base/settings.php';
 
         $this->assertFileExists( $file, 'Base must ship a declaration' );
 
@@ -201,7 +201,7 @@ final class SettingsDeclarationContractTest extends TestCase
      */
     public function testEverySettingTheCodePersistsIsDeclaredStorable(): void
     {
-        $roots = array( OWA_DIR . 'Core', OWA_DIR . 'modules', OWA_DIR . 'tests' );
+        $roots = array( \OWA\Core\Env::root() . '/Core', \OWA\Core\Env::root() . '/modules', \OWA\Core\Env::root() . '/tests' );
 
         $found = array();
 
@@ -278,7 +278,7 @@ final class SettingsDeclarationContractTest extends TestCase
      */
     public function testEverySettingTheCodeReadsIsDeclared(): void
     {
-        $roots = array( OWA_DIR . 'Core', OWA_DIR . 'modules' );
+        $roots = array( \OWA\Core\Env::root() . '/Core', \OWA\Core\Env::root() . '/modules' );
 
         $found = array();
 
@@ -354,7 +354,7 @@ final class SettingsDeclarationContractTest extends TestCase
         };
 
         $this->assertMatchesRegularExpression( "#groupFieldSets\(\s*'tracking_tag'\s*\)#",
-            (string) file_get_contents( OWA_DIR . 'modules/Base/Controller/SitesEditTagSettings.php' ),
+            (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/Controller/SitesEditTagSettings.php' ),
             'the Profile\'s Tracking Tag screen saves the tracking_tag group' );
 
         return array(

@@ -24,7 +24,7 @@ class TrackerDefaults {
 
         if ( self::$defaults === null ) {
 
-            $decoded = json_decode( (string) @file_get_contents( OWA_DIR . self::FILE ), true );
+            $decoded = json_decode( (string) @file_get_contents( \OWA\Core\Env::root() . '/' . self::FILE ), true );
 
             self::$defaults = is_array( $decoded ) ? $decoded : array();
         }

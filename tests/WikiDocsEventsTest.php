@@ -19,7 +19,7 @@ final class WikiDocsEventsTest extends TestCase
     private static function generate( string $section ): string
     {
         $cmd = escapeshellarg( PHP_BINARY ) . ' -d display_startup_errors=0 '
-             . escapeshellarg( OWA_DIR . 'tests/tools/wiki/generate.php' ) . ' '
+             . escapeshellarg( \OWA\Core\Env::root() . '/tests/tools/wiki/generate.php' ) . ' '
              . escapeshellarg( $section ) . ' 2>&1';
 
         exec( $cmd, $lines, $status );
@@ -32,7 +32,7 @@ final class WikiDocsEventsTest extends TestCase
 
     private static function registry(): array
     {
-        $config = json_decode( file_get_contents( OWA_DIR . 'modules/Base/config/tracking_properties.json' ), true );
+        $config = json_decode( file_get_contents( \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json' ), true );
 
         self::assertIsArray( $config );
         self::assertNotEmpty( $config );
@@ -48,7 +48,7 @@ final class WikiDocsEventsTest extends TestCase
 
     private static function events(): array
     {
-        $declared = include OWA_DIR . 'modules/Base/config/tracking_events.php';
+        $declared = include \OWA\Core\Env::root() . '/modules/Base/config/tracking_events.php';
 
         self::assertIsArray( $declared );
 
@@ -140,7 +140,7 @@ final class WikiDocsEventsTest extends TestCase
 
     public function testAnUnknownEventIsRefused(): void
     {
-        $cmd = escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( OWA_DIR . 'tests/tools/wiki/generate.php' )
+        $cmd = escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( \OWA\Core\Env::root() . '/tests/tools/wiki/generate.php' )
              . ' event-properties-no_such_event 2>&1';
 
         exec( $cmd, $lines, $status );

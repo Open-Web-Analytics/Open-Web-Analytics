@@ -29,7 +29,7 @@ final class WikiDocsReportingTest extends TestCase
         if ( ! isset( self::$out[ $name ] ) ) {
 
             $cmd = escapeshellarg( PHP_BINARY ) . ' -d display_startup_errors=0 '
-                 . escapeshellarg( OWA_DIR . 'tests/tools/wiki/generate.php' )
+                 . escapeshellarg( \OWA\Core\Env::root() . '/tests/tools/wiki/generate.php' )
                  . ' ' . escapeshellarg( $name ) . ' 2>/dev/null';
 
             exec( $cmd, $lines, $status );
@@ -63,8 +63,8 @@ final class WikiDocsReportingTest extends TestCase
      */
     public function testThePickerOffersThePeriodsTheServerAccepts(): void
     {
-        $src = (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.periodpicker.js' )
-             . (string) file_get_contents( OWA_DIR . 'modules/Base/src/reporting/v1/owa.report.js' );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.periodpicker.js' )
+             . (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.report.js' );
 
         // Words for the reader (a calendar day's spoken name says "today")
         // are text, not period keys.
@@ -119,7 +119,7 @@ final class WikiDocsReportingTest extends TestCase
         $md    = self::section( 'report-row-actions' );
         $named = 0;
 
-        foreach ( glob( OWA_DIR . 'modules/*/reports/*.json' ) as $path ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $path ) {
 
             if ( basename( dirname( $path, 2 ) ) === 'Hello' ) {
                 continue; // OWA_WIKI_EXCLUDED_MODULES
@@ -165,7 +165,7 @@ final class WikiDocsReportingTest extends TestCase
     public function testEveryCapabilityIsListedWithItsRoles(): void
     {
         $md    = self::section( 'capabilities' );
-        $decl  = include OWA_DIR . 'modules/Base/settings.php';
+        $decl  = include \OWA\Core\Env::root() . '/modules/Base/settings.php';
         $roles = $decl['settings']['capabilities']['default'];
 
         $this->assertNotEmpty( $roles );

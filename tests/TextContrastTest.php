@@ -83,7 +83,7 @@ final class TextContrastTest extends TestCase
 
         foreach ( self::CSS as $file ) {
 
-            $css = preg_replace( '#/\*.*?\*/#s', '', (string) file_get_contents( OWA_DIR . 'modules/Base/css/' . $file ) );
+            $css = preg_replace( '#/\*.*?\*/#s', '', (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/' . $file ) );
 
             preg_match_all( '/([^{}]+)\{([^{}]*)\}/', $css, $rules, PREG_SET_ORDER );
 
@@ -183,7 +183,7 @@ final class TextContrastTest extends TestCase
     /** White on the button reads at 4.5:1 at rest and on hover; the logo keeps its orange. */
     public function testTheButtonFillCarriesWhiteText(): void
     {
-        $owa = (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.css' );
+        $owa = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/owa.css' );
 
         preg_match( '/\n\.owa-button \{[^}]*background-color:\s*var\(--owa-accent-fill,\s*(#[0-9a-f]{6})\)/i', $owa, $rest );
         preg_match( '/\.owa-button:hover,\s*\.owa-button:active \{[^}]*background-color:\s*var\(--owa-accent-fill-hover,\s*(#[0-9a-f]{6})\)/i', $owa, $hover );
@@ -195,7 +195,7 @@ final class TextContrastTest extends TestCase
         $this->assertGreaterThanOrEqual( 4.5, self::ratio( '#ffffff', $hover[1] ) );
 
         // The tokens and the fallbacks are the same colours.
-        preg_match( '/:root \{([^}]*)\}/', (string) file_get_contents( OWA_DIR . 'modules/Base/css/owa.report.css' ), $root );
+        preg_match( '/:root \{([^}]*)\}/', (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/owa.report.css' ), $root );
         $this->assertStringContainsString( '--owa-accent-fill: ' . $rest[1] . ';', $root[1] ?? '' );
         $this->assertStringContainsString( '--owa-accent-fill-hover: ' . $hover[1] . ';', $root[1] ?? '' );
     }
@@ -207,7 +207,7 @@ final class TextContrastTest extends TestCase
 
         foreach ( self::CSS as $file ) {
 
-            $css = preg_replace( '#/\*.*?\*/#s', '', (string) file_get_contents( OWA_DIR . 'modules/Base/css/' . $file ) );
+            $css = preg_replace( '#/\*.*?\*/#s', '', (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/css/' . $file ) );
 
             preg_match_all( '/([^{}]+)\{([^{}]*)\}/', $css, $rules, PREG_SET_ORDER );
 

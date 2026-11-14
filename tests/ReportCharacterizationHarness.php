@@ -75,7 +75,7 @@ final class ReportCharacterizationHarness
     {
         $names = self::definitionIds();
 
-        foreach ( glob( OWA_DIR . 'modules/Base/Controller/Report*.php' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/Base/Controller/Report*.php' ) as $file ) {
 
             $name = basename( $file, '.php' );
 
@@ -113,7 +113,7 @@ final class ReportCharacterizationHarness
     {
         $ids = array();
 
-        foreach ( glob( OWA_DIR . 'modules/Base/reports/*.json' ) as $file ) {
+        foreach ( glob( \OWA\Core\Env::root() . '/modules/Base/reports/*.json' ) as $file ) {
             $ids[] = basename( $file, '.json' );
         }
 
@@ -126,7 +126,7 @@ final class ReportCharacterizationHarness
     public static function paramsFor( string $name ): array
     {
         $src = (string) file_get_contents(
-            OWA_DIR . 'modules/Base/Controller/' . $name . '.php' );
+            \OWA\Core\Env::root() . '/modules/Base/Controller/' . $name . '.php' );
 
         preg_match_all( "/getParam\(\s*'([a-zA-Z_]+)'\s*\)/", $src, $m );
         $params = $m[1];
@@ -266,7 +266,7 @@ final class ReportCharacterizationHarness
     /** Absolute path to a report's definition file. */
     public static function definitionPath( string $id ): string
     {
-        return OWA_DIR . 'modules/Base/reports/' . $id . '.json';
+        return \OWA\Core\Env::root() . '/modules/Base/reports/' . $id . '.json';
     }
 
     /**

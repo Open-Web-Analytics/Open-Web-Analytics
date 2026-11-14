@@ -219,7 +219,7 @@ abstract class Module {
     function __construct() {
 		
 		// runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
-		$this->path = OWA_MODULES_DIR . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
+		$this->path = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
 		
         //parent::__construct();
 		
@@ -543,7 +543,7 @@ abstract class Module {
 
         foreach ( \OWA\Core\CoreAPI::getPresentModules() as $dir ) {
 
-            $file = OWA_DIR . 'modules' . DIRECTORY_SEPARATOR . $dir
+            $file = \OWA\Core\Env::modulesDir() . $dir
                   . DIRECTORY_SEPARATOR . 'settings.php';
 
             if ( ! file_exists( $file ) ) {
@@ -1039,7 +1039,7 @@ abstract class Module {
     function update() {
 
         // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment)
-        $files = \OWA\Core\Lib::listDir(OWA_DIR.'modules'.'/'.\OWA\Core\Lib::moduleDirName($this->name).'/'.'Update', false);
+        $files = \OWA\Core\Lib::listDir(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($this->name) . '/Update', false);
         //print_r($files);
 
         $current_schema_version = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
@@ -1616,13 +1616,13 @@ abstract class Module {
      *
      * @param    $action_name    string    the name of the action used as the value in the 'do' url param
      * @param    $class_name     string    the name of the controller class
-     * @param    $file            string    the path to the file housing the class
+     * @param    $file            string    the class's file, relative to this module's directory, or ''
      *
      */
-    protected function registerAction( $action_name, $class_name, $file ) {
+    protected function registerAction( $action_name, $class_name, $file = '' ) {
 		
 		$s = \OWA\Core\CoreAPI::serviceSingleton();
-    	$s->setMapValue( 'actions', $action_name, ['class_name' => $class_name, 'file' => OWA_BASE_MODULE_DIR . $file ] );
+    	$s->setMapValue( 'actions', $action_name, ['class_name' => $class_name, 'file' => $file === '' ? '' : $this->path . $file ] );
 
     }
     

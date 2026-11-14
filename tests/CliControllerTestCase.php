@@ -179,7 +179,7 @@ abstract class CliControllerTestCase extends TestCase
         if (!class_exists($class)) {
             $path = ($controllerFile[0] === '/')
                 ? $controllerFile
-                : OWA_BASE_MODULE_DIR . $controllerFile;
+                : \OWA\Core\Env::modulesDir() . 'Base/' . $controllerFile;
             require_once($path);
         }
 

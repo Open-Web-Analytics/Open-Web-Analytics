@@ -160,7 +160,7 @@ class Base {
         $msg = array();
 
         if (empty($_owa_messages)) {
-            require(OWA_DIR.'conf/messages.php');
+            require(\OWA\Core\Env::confDir() . 'messages.php');
         }
 
         if ( $code && array_key_exists( $code, $_owa_messages ) ) {

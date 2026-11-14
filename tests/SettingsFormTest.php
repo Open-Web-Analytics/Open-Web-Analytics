@@ -457,7 +457,7 @@ final class SettingsFormTest extends TestCase
     public function testAZoneListedUnderSeveralCountriesSelectsOnce(): void
     {
         /** @var array<string, array<string>> $timezones */
-        require(OWA_DIR . 'conf/country2Timezones.php');
+        require(\OWA\Core\Env::root() . '/conf/country2Timezones.php');
 
         $countries = 0;
 
@@ -509,12 +509,12 @@ final class SettingsFormTest extends TestCase
              * The CODE, not the prose. Both templates explain in a comment what
              * they used to do, and `config[` appears in that explanation.
              */
-            $code = php_strip_whitespace(OWA_DIR . $template);
+            $code = php_strip_whitespace(\OWA\Core\Env::root() . '/' . $template);
 
             $this->assertStringNotContainsString('config[', $code,
                 $template . ' assembles a submit name by hand; the renderer knows it');
 
-            $src = (string) file_get_contents(OWA_DIR . $template);
+            $src = (string) file_get_contents(\OWA\Core\Env::root() . '/' . $template);
 
             $this->assertStringContainsString('SettingsForm::fieldSet', $src,
                 $template . ' must build its fields from the registry');

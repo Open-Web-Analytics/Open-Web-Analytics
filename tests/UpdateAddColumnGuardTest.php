@@ -26,7 +26,7 @@ use PHPUnit\Framework\TestCase;
 final class UpdateAddColumnGuardTest extends TestCase
 {
     /**
-     * The install root, resolved from this file rather than from OWA_DIR.
+     * The install root, resolved from this file rather than from Core\Env.
      *
      * A data provider runs BEFORE any bootstrap, so the constant does not exist
      * yet -- and a provider that throws reports as "the data provider is

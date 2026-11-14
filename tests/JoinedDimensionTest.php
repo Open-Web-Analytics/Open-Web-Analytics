@@ -216,7 +216,7 @@ final class JoinedDimensionTest extends TestCase
     /** And the alias substitution is unaffected for every legal separator. */
     public function testTheAliasSubstitutionSurvivesEveryDeclaredSeparator(): void
     {
-        $declared = (array) (include OWA_DIR . 'modules/Base/config/dimensions.php')['dimensions'];
+        $declared = (array) (include \OWA\Core\Env::root() . '/modules/Base/config/dimensions.php')['dimensions'];
 
         foreach ($declared as $name => $d) {
 
@@ -412,7 +412,7 @@ final class JoinedDimensionTest extends TestCase
      */
     public function testEveryDeclaredJoinedDimensionResolves(): void
     {
-        $declared = (array) (include OWA_DIR . 'modules/Base/config/dimensions.php')['dimensions'];
+        $declared = (array) (include \OWA\Core\Env::root() . '/modules/Base/config/dimensions.php')['dimensions'];
 
         $joined = array_keys(array_filter($declared, fn($d) => isset($d['parts'])));
 

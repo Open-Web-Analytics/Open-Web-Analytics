@@ -56,7 +56,7 @@ class Cache {
 	    
 	    // this is here before this class seems to load before modules can register implementations...
 	    $s = \OWA\Core\CoreAPI::serviceSingleton();
-	    $s->setMapValue('object_cache_types', 'memory', [ MemoryCache::class, OWA_BASE_CLASS_DIR.'MemoryCache.php', [] ] );
+	    $s->setMapValue('object_cache_types', 'memory', [ MemoryCache::class, '', [] ] );
 	    
 	    $this->cache_conf = [
 		    

@@ -20,7 +20,7 @@ final class BeaconWireNamesTest extends TestCase
     /** @return array<string,string> tracker property => wire key, parsed from WireNames.js */
     private function trackerTable(): array
     {
-        $js = (string) file_get_contents( OWA_DIR . 'modules/Base/src/tracker/WireNames.js' );
+        $js = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/tracker/WireNames.js' );
 
         $this->assertSame( 1, preg_match( '/export const WIRE_NAMES = \{(.*?)\n\};/s', $js, $m ),
             'WIRE_NAMES not found in WireNames.js' );
@@ -42,7 +42,7 @@ final class BeaconWireNamesTest extends TestCase
     {
         $out = array();
 
-        foreach ( (array) ( include OWA_DIR . 'conf/beacon_compat.php' )['renames'] as $entry ) {
+        foreach ( (array) ( include \OWA\Core\Env::root() . '/conf/beacon_compat.php' )['renames'] as $entry ) {
 
             if ( $entry['role'] === 'wire' ) {
 

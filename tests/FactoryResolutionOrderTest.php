@@ -35,7 +35,7 @@ final class FactoryResolutionOrderTest extends TestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessageMatches('/pre-PSR-4/');
 
-        \OWA\Core\Lib::factory( OWA_BASE_DIR . '/modules/Base/Classes', 'owa_', 'no_such_class' );
+        \OWA\Core\Lib::factory( \OWA\Core\Env::root() . '/modules/Base/Classes', 'owa_', 'no_such_class' );
     }
 
     /** Lib::factory derives the namespace from the directory it was given. */
@@ -43,11 +43,11 @@ final class FactoryResolutionOrderTest extends TestCase
     {
         $this->assertSame(
             'OWA\\Module\\Base\\Classes\\Event',
-            \OWA\Core\Lib::conventionalClass( OWA_BASE_DIR . '/modules/Base/Classes/', 'owa_', 'event' ) );
+            \OWA\Core\Lib::conventionalClass( \OWA\Core\Env::root() . '/modules/Base/Classes/', 'owa_', 'event' ) );
 
         $this->assertSame(
             'OWA\\Core\\Db\\PdoMysql',
-            \OWA\Core\Lib::conventionalClass( OWA_BASE_DIR . '/Core/Db/', 'owa_', 'pdo_mysql' ) );
+            \OWA\Core\Lib::conventionalClass( \OWA\Core\Env::root() . '/Core/Db/', 'owa_', 'pdo_mysql' ) );
     }
 
     /**
@@ -59,7 +59,7 @@ final class FactoryResolutionOrderTest extends TestCase
     public function testAnAlreadyBuiltNameIsDeclined(): void
     {
         $this->assertNull(
-            \OWA\Core\Lib::conventionalClass( OWA_BASE_DIR . '/modules/Base/', '', 'owa_reportController' ) );
+            \OWA\Core\Lib::conventionalClass( \OWA\Core\Env::root() . '/modules/Base/', '', 'owa_reportController' ) );
     }
 
     /** A directory outside the tree names no namespace. */
@@ -73,6 +73,6 @@ final class FactoryResolutionOrderTest extends TestCase
     public function testAMissingClassResolvesToNull(): void
     {
         $this->assertNull(
-            \OWA\Core\Lib::conventionalClass( OWA_BASE_DIR . '/modules/Base/Classes/', 'owa_', 'no_such_class' ) );
+            \OWA\Core\Lib::conventionalClass( \OWA\Core\Env::root() . '/modules/Base/Classes/', 'owa_', 'no_such_class' ) );
     }
 }

@@ -208,13 +208,13 @@ final class SettingsPersistenceTest extends TestCase
         );
 
         // async_error_log_file, async_log_file, async_lock_file, db_class_dir,
-        // module_dir, templates_dir, search_engines.ini and query_strings.ini
-        // were on this list too. They were removed in v2.0 with nothing left
-        // that reads them, so a stored value has no effect.
+        // module_dir, templates_dir, search_engines.ini, query_strings.ini and
+        // plugin_dir were on this list too. They were removed in v2.0 with
+        // nothing left that reads them, so a stored value has no effect.
         $original = [
-            'error_log_file','async_log_dir',
+            'error_log_file','async_log_dir','data_dir','cache_dir',
             'report_wrapper','db_type','db_host','db_port','db_name',
-            'db_user','db_password','plugin_dir',
+            'db_user','db_password',
             'public_path','configuration_id','schema_version',
             'install_complete','is_active',
         ];
