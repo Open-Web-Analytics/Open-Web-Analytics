@@ -53,8 +53,10 @@ A browser reporting Global Privacy Control (`navigator.globalPrivacyControl`)
 is now treated like one reporting Do Not Track: the tracker runs no command and
 sends nothing.
 
-**Way back:** the tracker option `honorPrivacySignals`, queued before the page
-view, turns off both checks:
+**Way back:** the Tracking Tag setting **Honor Privacy Signals**, at the
+install, a Property or an Observation Profile, turns off both checks; the
+Profile's bundle and classic tag then carry the tracker option. A tag can also
+queue the option itself, before the page view:
 
 ```js
 owa_cmds.push(['setOption', 'honorPrivacySignals', false]);
