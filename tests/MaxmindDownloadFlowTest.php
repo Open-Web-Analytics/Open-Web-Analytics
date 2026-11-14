@@ -52,7 +52,10 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
     protected function tearDown(): void {
 
-        foreach ( glob( $this->dir . '*' ) ?: array() as $path ) {
+        // Dotfiles too: the download-attempt marker is one.
+        foreach ( array_diff( scandir( $this->dir ) ?: array(), array( '.', '..' ) ) as $name ) {
+
+            $path = $this->dir . $name;
             is_dir( $path ) ? $this->removeTree( $path ) : @unlink( $path );
         }
 
@@ -135,6 +138,11 @@ final class MaxmindDownloadFlowTest extends TestCase {
                     return $this->options['download_fails'];
                 }
 
+                if ( isset( $this->options['download_junk'] ) ) {
+                    file_put_contents( $destination, 'NOT-AN-ARCHIVE' );
+                    return (int) filesize( $destination );
+                }
+
                 copy( $this->fixture, $destination );
 
                 return (int) filesize( $destination );
@@ -144,6 +152,8 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
                 $this->head_requests++;
 
+                $this->check_status = isset( $this->options['check_status'] ) ? $this->options['check_status'] : 0;
+
                 return isset( $this->options['remote_mtime'] ) ? $this->options['remote_mtime'] : 0;
             }
 
@@ -152,8 +162,21 @@ final class MaxmindDownloadFlowTest extends TestCase {
                 foreach ( (array) $lines as $line ) { $this->messages[] = $line; }
             }
 
-            protected function refuse( $msg ) { $this->messages[] = $msg; return null; }
-            protected function fail( $msg )   { $this->messages[] = $msg; return null; }
+            // The outcome the parent would record, without its notice().
+            protected function refuse( $msg ) { return $this->outcome( 'refused', $msg ); }
+            protected function fail( $msg )   { return $this->outcome( 'failed', $msg ); }
+            protected function skip( $msg )   { return $this->outcome( 'ok', $msg ); }
+
+            private function outcome( $outcome, $msg ) {
+
+                $this->messages[]  = $msg;
+                $this->cli_outcome = $outcome;
+                $this->cli_message = $this->cli_message ?: $msg;
+
+                return null;
+            }
+
+            public function outcomeIs() { return $this->getCliOutcome()['outcome']; }
 
             public function said( $needle ) {
 
@@ -227,6 +250,8 @@ final class MaxmindDownloadFlowTest extends TestCase {
         $this->assertSame( 0, $c->downloads, 'nothing to fetch, so nothing should be fetched' );
         $this->assertSame( 'EXISTING', file_get_contents( $this->dir . 'GeoLite2-City.mmdb' ) );
         $this->assertTrue( $c->said( 'Already current' ) );
+        $this->assertSame( 'refused', $c->outcomeIs(), 'by hand, an already current copy is a refusal' );
+        $this->assertTrue( $c->said( '--force' ) );
     }
 
     public function testANewerRemoteCopyIsDownloaded(): void {
@@ -244,6 +269,167 @@ final class MaxmindDownloadFlowTest extends TestCase {
         $this->assertSame( 'FIXTURE-DATABASE-CONTENTS',
             file_get_contents( $this->dir . 'GeoLite2-City.mmdb' ),
             'a newer remote copy must replace the local one' );
+    }
+
+    /** By hand, an update check with no answer still downloads. */
+    public function testByHandACheckWithNoAnswerDownloads(): void {
+
+        file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'EXISTING' );
+
+        $c = $this->controller( array( 'params' => $this->withKey() ) );
+        $c->action();
+
+        $this->assertSame( 1, $c->head_requests );
+        $this->assertSame( 1, $c->downloads );
+    }
+
+    // -----------------------------------------------------------------------
+    // Scheduled runs (scheduled=1, the refresh-geoip-db job)
+    // -----------------------------------------------------------------------
+
+    private function scheduled( array $options = array() ) {
+
+        return $this->controller( array_merge(
+            array( 'params' => $this->withKey( array( 'scheduled' => 1 ) ) ), $options ) );
+    }
+
+    private function localCopy( $age ) {
+
+        file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'EXISTING' );
+        touch( $this->dir . 'GeoLite2-City.mmdb', time() - $age );
+    }
+
+    private function marker() {
+
+        return $this->dir . '.GeoLite2-City.download-attempt';
+    }
+
+    /** Most weeks: the job did its work, so System Health shows success, not a refusal. */
+    public function testAScheduledRunWithACurrentCopyIsASuccess(): void {
+
+        $this->localCopy( 0 );
+
+        $c = $this->scheduled( array( 'remote_mtime' => time() - 86400 ) );
+        $c->action();
+
+        $this->assertSame( 0, $c->downloads );
+        $this->assertSame( 'ok', $c->outcomeIs() );
+        $this->assertStringStartsWith( 'Already current', $c->getCliOutcome()['message'],
+            'the job history records why nothing was downloaded' );
+        $this->assertFalse( $c->said( '--force' ), 'the hint is for a person at a terminal' );
+    }
+
+    public function testAScheduledRunWithoutAKeySkipsAsASuccess(): void {
+
+        $config      = \OWA\Core\CoreAPI::configSingleton();
+        $previous_db = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'db_license_key' );
+        $previous_ws = \OWA\Core\CoreAPI::getSetting( 'maxmind_geoip', 'ws_license_key' );
+
+        $config->set( 'maxmind_geoip', 'db_license_key', '' );
+        $config->set( 'maxmind_geoip', 'ws_license_key', '' );
+
+        $c = $this->controller( array( 'params' => array( 'scheduled' => 1 ) ) );
+        $c->action();
+
+        $config->set( 'maxmind_geoip', 'db_license_key', $previous_db );
+        $config->set( 'maxmind_geoip', 'ws_license_key', $previous_ws );
+
+        $this->assertSame( 0, $c->head_requests );
+        $this->assertSame( 0, $c->downloads );
+        $this->assertSame( 'ok', $c->outcomeIs() );
+        $this->assertCount( 1, $c->messages, 'one line saying why' );
+        $this->assertStringContainsString( 'no MaxMind licence key', $c->messages[0] );
+    }
+
+    public function testAScheduledRunDownloadsANewerCopy(): void {
+
+        $this->localCopy( 86400 * 7 );
+
+        $c = $this->scheduled( array( 'remote_mtime' => time() - 3600 ) );
+        $c->action();
+
+        $this->assertSame( 1, $c->head_requests );
+        $this->assertSame( 1, $c->downloads );
+        $this->assertSame( 'ok', $c->outcomeIs() );
+        $this->assertSame( 'FIXTURE-DATABASE-CONTENTS', file_get_contents( $this->dir . 'GeoLite2-City.mmdb' ) );
+        $this->assertFileDoesNotExist( $this->marker(), 'an installed download leaves no marker' );
+    }
+
+    public function testAScheduledRunWithNoLocalCopyDownloadsWithoutAsking(): void {
+
+        $c = $this->scheduled();
+        $c->action();
+
+        $this->assertSame( 0, $c->head_requests );
+        $this->assertSame( 1, $c->downloads );
+        $this->assertFileExists( $this->dir . 'GeoLite2-City.mmdb' );
+    }
+
+    /**
+     * No answer from the update check: a failure, retried by the scheduler
+     * with another free HEAD, never a download spent on a copy that may be
+     * current.
+     */
+    public function testAScheduledRunDoesNotDownloadWhenTheCheckGetsNoAnswer(): void {
+
+        $this->localCopy( 86400 );
+
+        foreach ( array(
+            0   => 'Could not reach MaxMind',
+            200 => 'gave no Last-Modified date',
+            401 => 'rejected the licence key',
+        ) as $status => $said ) {
+
+            $c = $this->scheduled( array( 'check_status' => $status ) );
+            $c->action();
+
+            $this->assertSame( 1, $c->head_requests );
+            $this->assertSame( 0, $c->downloads, "HTTP $status" );
+            $this->assertSame( 'failed', $c->outcomeIs(), "HTTP $status" );
+            $this->assertTrue( $c->said( $said ), "HTTP $status" );
+            $this->assertSame( 'EXISTING', file_get_contents( $this->dir . 'GeoLite2-City.mmdb' ) );
+        }
+    }
+
+    /**
+     * The scheduler retries a failed job hourly. A download that did not
+     * install is not downloaded again for a day, except by hand.
+     */
+    public function testAScheduledRunDoesNotRepeatADownloadThatDidNotInstall(): void {
+
+        $first = $this->scheduled( array( 'download_junk' => 1 ) );
+        $first->action();
+
+        $this->assertSame( 1, $first->downloads );
+        $this->assertSame( 'failed', $first->outcomeIs() );
+        $this->assertFileExists( $this->marker() );
+
+        $retry = $this->scheduled();
+        $retry->action();
+
+        $this->assertSame( 0, $retry->downloads, 'the hourly retry must not spend another download' );
+        $this->assertSame( 'failed', $retry->outcomeIs() );
+        $this->assertTrue( $retry->said( 'did not install' ) );
+
+        touch( $this->marker(), time() - \OWA\Module\MaxmindGeoip\Controller\UpdateGeoipDbCli::RETRY_DOWNLOAD_AFTER - 1 );
+
+        $next_day = $this->scheduled();
+        $next_day->action();
+
+        $this->assertSame( 1, $next_day->downloads, 'a day later it downloads again' );
+        $this->assertSame( 'ok', $next_day->outcomeIs() );
+        $this->assertFileDoesNotExist( $this->marker() );
+    }
+
+    public function testByHandADownloadThatDidNotInstallCanBeRetriedAtOnce(): void {
+
+        $this->scheduled( array( 'download_junk' => 1 ) )->action();
+
+        $c = $this->controller( array( 'params' => $this->withKey() ) );
+        $c->action();
+
+        $this->assertSame( 1, $c->downloads );
+        $this->assertSame( 'FIXTURE-DATABASE-CONTENTS', file_get_contents( $this->dir . 'GeoLite2-City.mmdb' ) );
     }
 
     public function testForceDownloadsEvenWhenCurrent(): void {
