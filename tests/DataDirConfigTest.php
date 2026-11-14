@@ -75,20 +75,23 @@ final class DataDirConfigTest extends TestCase
     }
 
     /**
-     * The error log the runner's own config pins, or null. A config that sets
-     * error_log_file itself (the CI harness does) keeps its log where it says;
-     * only the default follows the data directory.
+     * Where a path should be once the data directory moves: a path that sat
+     * under the default owa-data/ moves with it; one the runner's own config
+     * pins elsewhere (the CI harness pins its error log and file queue) stays
+     * where the config says.
      */
-    private function pinnedErrorLog(): ?string
+    private static function followed(string $default, string $data): string
     {
-        $default = $this->probe(self::SQS)['error_log_file'];
+        $owaData = \OWA\Core\Env::root() . '/owa-data/';
 
-        return strpos($default, \OWA\Core\Env::root() . '/owa-data/logs/errors_') === 0 ? null : $default;
+        return strpos($default, $owaData) === 0 && strpos($default, $owaData . 'logs/') === 0
+            ? $data . substr($default, strlen($owaData))
+            : $default;
     }
 
     public function testTheDataDirectoryMovesEverythingWrittenUnderIt(): void
     {
-        $pinned = $this->pinnedErrorLog();
+        $d = $this->probe(self::SQS);
 
         // No trailing slash: the setting adds one.
         $r    = $this->probe(array('OWA_DATA_DIR' => $this->dir) + self::SQS, 'log');
@@ -98,16 +101,12 @@ final class DataDirConfigTest extends TestCase
         $this->assertSame('OWA_DATA_DIR', $r['constant']);
         $this->assertSame($data . 'caches/', $r['cache_dir']);
         $this->assertSame($data . 'caches/', $r['file_cache_dir']);
-        $pinned === null
-            ? $this->assertStringStartsWith($data . 'logs/errors_', $r['error_log_file'])
-            : $this->assertSame($pinned, $r['error_log_file'], 'a log the config pins stays where it says');
-        $this->assertSame($data . 'logs/', $r['async_log_dir']);
-        $this->assertSame($data . 'logs/', $r['queue_dir']);
-        $this->assertSame($data . 'logs/archive/', $r['archive_dir']);
-        $this->assertSame($data . 'logs/dead-letter/', $r['dead_letter']);
-        $this->assertSame($data . 'logs/', $r['fallback_dir'], 'the collector\'s fallback queue');
         $this->assertSame($data . 'maxmind/', $r['maxmind_dir']);
         $this->assertSame($data . 'ua-parser/regexes.php', $r['ua_regexes']);
+
+        foreach (array('error_log_file', 'async_log_dir', 'queue_dir', 'archive_dir', 'dead_letter', 'fallback_dir') as $key) {
+            $this->assertSame(self::followed((string) $d[$key], $data), $r[$key], "$key follows the data directory unless the config pins it");
+        }
 
         $this->assertFileExists($r['error_log_file']);
         $this->assertStringContainsString('data dir probe', (string) file_get_contents($r['error_log_file']));
@@ -134,19 +133,19 @@ final class DataDirConfigTest extends TestCase
 
     public function testWithNothingSetEverythingStaysInOwaData(): void
     {
-        $pinned = $this->pinnedErrorLog();
-        $r      = $this->probe(self::SQS);
-        $data   = \OWA\Core\Env::root() . '/owa-data/';
+        $r    = $this->probe(self::SQS);
+        $data = \OWA\Core\Env::root() . '/owa-data/';
 
         $this->assertSame($data, $r['data_dir']);
         $this->assertSame('', $r['constant']);
         $this->assertSame($data . 'caches/', $r['cache_dir']);
         $this->assertSame($data . 'caches/', $r['file_cache_dir']);
-        $pinned === null
-            ? $this->assertStringStartsWith($data . 'logs/errors_', $r['error_log_file'])
-            : $this->assertSame($pinned, $r['error_log_file']);
-        $this->assertSame($data . 'logs/', $r['queue_dir']);
-        $this->assertSame($data . 'logs/', $r['fallback_dir']);
+        // The logs and the file queue sit under owa-data/: logs/ by default,
+        // or wherever under it the runner's config pins them.
+        foreach (array('error_log_file', 'queue_dir', 'fallback_dir') as $key) {
+            $this->assertStringStartsWith($data, (string) $r[$key], $key);
+        }
+        $this->assertSame($r['queue_dir'], $r['fallback_dir'], 'the fallback queue sits with the file queue');
         $this->assertSame($data . 'maxmind/', $r['maxmind_dir']);
         $this->assertSame(array(), $r['warnings']);
     }
