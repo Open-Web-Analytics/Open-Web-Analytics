@@ -197,6 +197,61 @@ test.describe('a Profile tracking bundle @selfhost-only', () => {
     });
 
     /**
+     * A browser sending Global Privacy Control is left untracked until the
+     * Profile turns Honor Privacy Signals off on the Tracking Tag screen, whose
+     * save republishes the bundle with the option.
+     */
+    test('a Profile that does not honor privacy signals tracks a browser sending one', async ({ page }) => {
+        const root = installRoot(test.info().project.use.baseURL);
+        const url = root + 'tests/e2e/bundle_page.html';
+        const beacons = beaconsOf(page);
+
+        const setting = () => page.locator('[data-ui="setting:base.tracker_honor_privacy_signals"]');
+        const sw = () => setting().getByRole('switch');
+        const gotoTag = async () => {
+            await page.goto(`?owa_do=base.sitesInvocation&owa_siteId=${SITE}`, { waitUntil: 'networkidle' });
+            await page.locator('details[id="base.trackingPrivacy"] > summary').click();
+        };
+        const saveTag = () => Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.getByRole('button', { name: 'Save and republish' }).click(),
+        ]);
+        const views = () => beacons.filter((q) => q.get('e_t') === 'page_view').length;
+
+        await page.addInitScript(() => Object.defineProperty(Navigator.prototype, 'globalPrivacyControl',
+            { configurable: true, get: () => true }));
+        await page.route(url, (route) => route.fulfill({ contentType: 'text/html', body: pageWith(root, []) }));
+
+        await page.goto(url, { waitUntil: 'load' });
+        await page.waitForTimeout(2000);
+        expect(views()).toBe(0);
+
+        await adminLogin(page);
+        await gotoTag();
+        await expect(sw()).not.toBeChecked();
+
+        try {
+            await sw().check();
+            await setting().getByRole('combobox', { includeHidden: true }).selectOption('0');
+            await saveTag();
+
+            await page.goto(url, { waitUntil: 'load' });
+            await expect.poll(views, { timeout: 15_000 }).toBe(1);
+        } finally {
+            await gotoTag();
+            if (await sw().isChecked()) {
+                await sw().uncheck();
+                await saveTag();
+            }
+        }
+
+        await page.goto(url, { waitUntil: 'load' });
+        await page.waitForTimeout(2000);
+        expect(views()).toBe(1);
+        await page.unrouteAll({ behavior: 'ignoreErrors' });
+    });
+
+    /**
      * The Tracking Tag screen says where the bundle is and whether it is current,
      * and what publishing read back. php -S reads no .htaccess, so here it sends
      * no cache header and the screen must say so.
