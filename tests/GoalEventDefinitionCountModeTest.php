@@ -91,8 +91,8 @@ final class GoalEventDefinitionCountModeTest extends TestCase
             ],
         ]);
 
-        $this->assertStringContainsString('<td class="owa_goalEventCountMode">Once per event</td>', $out);
-        $this->assertStringContainsString('<td class="owa_goalEventCountMode">Once per session</td>', $out);
+        $this->assertMatchesRegularExpression('#<td class="owa_goalEventCountMode"[^>]*>Once per event</td>#', $out);
+        $this->assertMatchesRegularExpression('#<td class="owa_goalEventCountMode"[^>]*>Once per session</td>#', $out);
     }
 
     /* ---------------- helpers ---------------- */

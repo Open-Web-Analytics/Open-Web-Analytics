@@ -16,11 +16,10 @@
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, adminLogin } = require('./fixtures');
 
-/** The reporting UI's selected colour, #1874CD. */
-const REPORT_BLUE = 'rgb(24, 116, 205)';
-
 /** The current item's fill, #eef4fb. */
 const CURRENT_FILL = 'rgb(238, 244, 251)';
+// The current item's text: the report blue darkened to read at 4.5:1 on its fill.
+const CURRENT_TEXT = 'rgb(15, 85, 150)';
 
 /** A report inside a section, and a second one beside it. */
 const REPORT = { id: 'pages', label: 'Pages', section: 'Content' };
@@ -69,7 +68,7 @@ test.describe('the navigation', () => {
         await expect(current).toHaveCount(1);
         await expect(current).toHaveText(REPORT.section);
         await expect(current).toHaveAttribute('aria-current', 'page');
-        expect(await looks(current)).toEqual({ color: REPORT_BLUE, fill: CURRENT_FILL });
+        expect(await looks(current)).toEqual({ color: CURRENT_TEXT, fill: CURRENT_FILL });
     });
 
     test("the column is the section's reports, its own first, and marks the one you are on", async ({ page }) => {
@@ -86,7 +85,7 @@ test.describe('the navigation', () => {
 
         await expect(current).toHaveCount(1);
         await expect(current).toHaveText(REPORT.label);
-        expect(await looks(current)).toEqual({ color: REPORT_BLUE, fill: CURRENT_FILL });
+        expect(await looks(current)).toEqual({ color: CURRENT_TEXT, fill: CURRENT_FILL });
     });
 
     test('the mark follows the report being viewed', async ({ page }) => {
