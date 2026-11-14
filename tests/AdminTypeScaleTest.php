@@ -50,6 +50,22 @@ final class AdminTypeScaleTest extends TestCase
     }
 
     /**
+     * A metric box's large number is 34px on desktop and at most 32px on a
+     * phone, after the phone's larger root, so a value such as 71.43% fits a
+     * box a third of the screen wide.
+     */
+    public function testAMetricBoxNumberIsSmallerOnAPhone(): void
+    {
+        $report = $this->css('owa.report.css');
+        $this->assertSame(1, preg_match('/p\.owa_metricInfoboxLargeNumber, span\.owa_metricInfoboxLargeNumber, \.owa \.action_infobox \.action_value \{[^}]*font-size:\s*([\d.]+)rem/', $report, $desktop));
+        $this->assertSame(34.0, (float) $desktop[1] * 16);
+
+        $this->assertSame(1, preg_match('/@media \(max-width: 600px\) \{\s*p\.owa_metricInfoboxLargeNumber, span\.owa_metricInfoboxLargeNumber \{\s*font-size:\s*([\d.]+)rem/', $report, $phone));
+        preg_match('/@media \(max-width: 600px\) \{\s*html \{ font-size: ([\d.]+)%; \}/', $this->css('owa.css'), $root);
+        $this->assertLessThanOrEqual(32.0, (float) $phone[1] * 16 * (float) $root[1] / 100);
+    }
+
+    /**
      * No text size is in px, so none is deaf to the root. A px value inside
      * max() is a floor, as a phone's 16px fields are.
      */

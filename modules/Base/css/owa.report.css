@@ -348,6 +348,15 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     white-space:nowrap;
 }
 
+/* A phone's metric box is about a third of the screen wide, so the large
+   number is 30px there against 34px on desktop, and a value such as 71.43%
+   fits its box. In rem, so it still follows the browser's text size. */
+@media (max-width: 600px) {
+    p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
+        font-size: 1.6875rem;
+    }
+}
+
 .owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid var(--owa-accent);}
 
 .kpiInfobox {
