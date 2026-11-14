@@ -208,6 +208,9 @@ final class SettingsFormTest extends TestCase
             '<label class="title" for="owa-setting-zz_form_test-words">Some Words</label>', $html);
         $this->assertStringContainsString(
             'name="owa_config[zz_form_test.words]" value="abc" id="owa-setting-zz_form_test-words"', $html);
+        $this->assertStringContainsString('<div class="setting" id="words" data-ui="setting:zz_form_test.words">', $html);
+        $this->assertStringNotContainsString('setting-inherited', $html, 'an install setting is its control, with no inherited text');
+        $this->assertStringNotContainsString(' hidden', $html);
     }
 
     /**
