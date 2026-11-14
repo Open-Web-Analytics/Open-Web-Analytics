@@ -97,6 +97,20 @@ describe( 'a trend drawn at a width', () => {
         expect( plotted.xaxis.ticks ).toBe( 10 );
     } );
 
+    test( 'a larger root, a phone\'s or the browser\'s text size, gives each label more room', () => {
+        document.documentElement.style.fontSize = '20px';
+
+        try {
+            draw( 346, paths );
+        } finally {
+            document.documentElement.style.fontSize = '';
+        }
+
+        expect( OWA.areaChart.rootScale() ).toBe( 1 );
+        expect( plotted.legend.noColumns ).toBe( 2 );
+        expect( plotted.xaxis.ticks ).toBe( 3 );
+    } );
+
     test( 'a compared line has no entry, so it takes no column', () => {
         const c = draw( 1000, [ 'Total', 'Chrome' ] );
 
