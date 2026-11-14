@@ -31,7 +31,7 @@ namespace OWA\Module\Sqs\Classes;
  * (Sqs::urlFromCredentials()). Otherwise GetQueueUrl, once per process.
  *
  * Queues are created by the install that drains them, never by log.php: on a
- * logging node a missing queue is a failed send, and the beacon goes to the
+ * collector a missing queue is a failed send, and the beacon goes to the
  * file intake (TrackerIngest::send()).
  */
 class SqsQueue implements \OWA\Core\IntakeQueue {

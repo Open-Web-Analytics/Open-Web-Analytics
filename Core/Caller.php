@@ -94,11 +94,28 @@ class Caller extends \OWA\Core\Base {
             \OWA\Core\CoreAPI::debug( 'Host: '.$_SERVER['HTTP_HOST'] );
         }
              
+        /*
+         * THE REQUEST AND THE SERVER'S ROLE, before anything is read from the
+         * database: a request the role does not serve, or a configuration it
+         * cannot run on, is refused here (ServerRole::bootProblem()), and a
+         * role without a database reads no stored settings.
+         */
+        $request_type = self::requestTypeFrom( $config );
+        $this->c->set( 'base', 'request_type', $request_type );
+
+        $problem = \OWA\Core\ServerRole::bootProblem( $request_type );
+
+        if ( $problem ) {
+
+            $this->e->setHandler();
+            \OWA\Core\ServerRole::refuse( $request_type, $problem );
+        }
+
         // load config values from DB
         // Applies config from db or cache
         // check here is needed for installs when the configuration table does not exist.
                
-        if ( $this->c->isConfigFilePresent() && ! \OWA\Core\CoreAPI::getSetting('base', 'useStaticConfigOnly') && ! defined( 'OWA_INSTALLING' ) )  {
+        if ( $this->c->isConfigFilePresent() && \OWA\Core\ServerRole::readsStoredSettings() && ! defined( 'OWA_INSTALLING' ) )  {
             
             $this->c->load( $this->c->get( 'base', 'configuration_id' ) );
         }
@@ -144,6 +161,21 @@ class Caller extends \OWA\Core\Base {
         $this->params = $this->service->request->getAllOwaParams();
     }
     
+    /**
+     * The request type a caller names in its configuration (request_type, at
+     * the top or under 'base'); one that names none keeps the current one.
+     *
+     * @param array|null $config
+     * @return string
+     */
+    private static function requestTypeFrom( $config ) {
+
+        $config = (array) $config;
+        $type   = $config['base']['request_type'] ?? $config['request_type'] ?? null;
+
+        return $type !== null && $type !== '' ? (string) $type : \OWA\Core\RequestType::current();
+    }
+
     /**
      * Handles OWA internal page/action requests
      *

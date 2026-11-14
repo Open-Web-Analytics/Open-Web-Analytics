@@ -60,11 +60,11 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
 
             // Boot in the REST role, matching api/index.php's entry point.
             $GLOBALS['owa_test_rest_instance'] = new owa([
-                'instance_role' => 'rest_api',
+                'request_type' => 'rest',
             ]);
         }
 
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'rest_api');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'rest');
     }
 
     protected function setUp(): void

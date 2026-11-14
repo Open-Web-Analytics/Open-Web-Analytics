@@ -110,7 +110,18 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
     public function testACommandWithNoArgumentsSaysSo(): void
     {
         $this->assertSame([], \OWA\Module\Base\Controller\FlushCacheCli::usage()['arguments']);
-        $this->assertMatchesRegularExpression('/### flush-cache\n\n.+\n\n```bash\nphp cli.php cmd=flush-cache\n```\n\nTakes no arguments\./', $this->section('cli'));
+        $this->assertMatchesRegularExpression('/### flush-cache\n\n(?:.+\n\n)+```bash\nphp cli.php cmd=flush-cache\n```\n\nTakes no arguments\./', $this->section('cli'));
+    }
+
+    /** Each section names the server roles the command runs on (Controller\Cli::serverRoles()). */
+    public function testEachSectionNamesTheServerRolesItRunsOn(): void
+    {
+        $md = $this->section('cli');
+
+        $this->assertStringContainsString("### schedule-run\n", $md);
+        $this->assertMatchesRegularExpression('/### schedule-run\n\n(?:.+\n\n)*?Runs on server roles: `full`, `worker`\.\n/', $md);
+        $this->assertMatchesRegularExpression('/### change-password\n\n(?:.+\n\n)*?Runs on server roles: `full`, `worker`, `console`\.\n/', $md);
+        $this->assertMatchesRegularExpression('/### server-check\n\n(?:.+\n\n)*?Runs on server roles: `full`, `collector`, `worker`, `console`, `api`\.\n/', $md);
     }
 
     /*

@@ -49,7 +49,7 @@ class Cli extends \OWA\Core\AdminController {
      */
     function __construct($params) {
 
-        if ( \OWA\Core\CoreAPI::getSetting('base', 'request_mode') === 'cli' ) {
+        if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::CLI ) ) {
 
             return parent::__construct($params);
 
@@ -58,6 +58,20 @@ class Cli extends \OWA\Core\AdminController {
             \OWA\Core\CoreAPI::notice("Controller not called from CLI");
             exit;
         }
+    }
+
+    /**
+     * The server roles this command runs under (Core\ServerRole); cli.php
+     * refuses it on any other. full runs every command. A command a
+     * collector, console or api server may run names that role.
+     *
+     * Static, like usage(): cli.php asks before the controller is built.
+     *
+     * @return string[]
+     */
+    public static function serverRoles() {
+
+        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER );
     }
 
     /**
@@ -100,6 +114,12 @@ class Cli extends \OWA\Core\AdminController {
 
     /** @var string */
     protected $cli_message = '';
+
+    /** @var bool whether a failure of this command makes cli.php exit 1 */
+    protected $exit_on_failure = false;
+
+    /** @var int the exit code cli.php ends with: 1 once a command that opted in has failed. */
+    public static $exit_code = 0;
 
     /**
      * The job lock held for this run, when the scheduler is running us.
@@ -146,6 +166,11 @@ class Cli extends \OWA\Core\AdminController {
 
         $this->cli_outcome = 'failed';
         $this->cli_message = $this->cli_message ?: $msg;
+
+        if ( $this->exit_on_failure ) {
+
+            self::$exit_code = 1;
+        }
 
         \OWA\Core\CoreAPI::notice( $msg );
 

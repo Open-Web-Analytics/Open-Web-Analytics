@@ -62,7 +62,7 @@ class AdminController extends \OWA\Core\Controller {
     function acceptedAuthMethods() {
 
         if ( $this->auth_methods !== null
-             || \OWA\Core\CoreAPI::getSetting( 'base', 'request_mode' ) !== 'web_app' ) {
+             || ! \OWA\Core\RequestType::isWebApp() ) {
 
             return parent::acceptedAuthMethods();
         }

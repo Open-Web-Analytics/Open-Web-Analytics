@@ -30,7 +30,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * application's query string reaching OWA's dispatcher when OWA is embedded in
  * someone else's request. So dropping the prefix cannot mean "accept anything"
  * -- it means accepting bare names only for the entry points that own their
- * query string, identified by instance_role.
+ * query string, identified by request_type.
  */
 final class ParamNamespaceTest extends TestCase
 {

@@ -56,9 +56,11 @@ class ScheduleRunCli extends SchedulerCli {
 
         $started = time();
 
-        if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'scheduler_enabled' ) ) {
+        $role = \OWA\Core\ServerRole::current();
 
-            return $this->refuse( 'The scheduler is disabled (OWA_SCHEDULER_ENABLED). Nothing will run.' );
+        if ( ! $role->runsScheduler() ) {
+
+            return $this->refuse( sprintf( 'This server (role %s) does not run the scheduler. Nothing will run.', $role->name() ) );
         }
 
         // Checked once, here, rather than being discovered separately by every

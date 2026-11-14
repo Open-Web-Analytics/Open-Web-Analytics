@@ -9,22 +9,22 @@ namespace OWA\Module\Base\Classes;
 
 /**
  * The tracker-ingest intake (PLAN 2.30.3, 2.30.4): beacons on their way into
- * ingest, through whichever IntakeQueue tracker_ingest_queue_type names.
+ * ingest, through the IntakeQueue of the configured backend (backend()).
  *
- * log.php's path decides between two modes. QUEUED (queue_tracker_ingest)
- * sends every beacon to the intake and ingests nothing in the request. DIRECT
- * ingests in the request, and a beacon whose ingest failed -- a write that
- * rolled back -- is sent to the intake to be retried, in either mode.
+ * log.php's path decides between two modes. QUEUED (queue_tracking_events,
+ * and always on a collector) sends every beacon to the intake and ingests
+ * nothing in the request. DIRECT ingests in the request, and a beacon whose
+ * ingest failed -- a write that rolled back -- is sent to the intake to be
+ * retried, in either mode.
  *
- * The drain is generic over the contract: drain-tracker-ingest every minute,
- * or, with tracker_ingest_drain = external, a module's own consumer calling
- * ingestMessage() per message.
+ * The drain is drain-tracker-ingest every minute, on the servers whose role
+ * runs the scheduler.
  *
  * THE FILE FALLBACK. When the intake is not the file queue -- SQS -- a beacon
  * it refuses (a timeout, a missing queue, an outage) is written to the file
  * queue in async_log_dir instead, and logged as an error. forwardFallback()
  * sends those on to the intake once it answers again; drain-tracker-ingest
- * runs it before each drain, and a logging node with no scheduler runs
+ * runs it before each drain, and a collector runs
  * `cmd=drain-tracker-ingest forward_only=1` from cron. A beacon sent twice
  * -- one SQS took after all, then forwarded -- is ingested once: ingest skips
  * an event whose id is already stored (EventRawHandlers::alreadyIngested()).
@@ -68,41 +68,55 @@ class TrackerIngest {
     /** @var \OWA\Core\IntakeQueue|null the file fallback to use with $queue. TESTS ONLY. */
     public static $fallback = null;
 
+    /** @var string|null a queue type to use instead of the configured backend. TESTS ONLY. */
+    public static $backend = null;
+
     // ---------------------------------------------------------------------
     // Settings
     // ---------------------------------------------------------------------
 
     /**
-     * Whether beacons are queued rather than ingested in the request.
-     *
-     * queue_tracker_ingest, and when that is unset the 1.x names, which some
-     * installs set in owa-config.php: queue_incoming_tracking_events, and
-     * queue_events (OWA_QUEUE_EVENTS).
+     * Whether beacons are queued rather than ingested in the request:
+     * queue_tracking_events (OWA_QUEUE_TRACKING_EVENTS), and always on a
+     * collector, which has no database to write them to.
      *
      * @return bool
      */
     public static function isQueued() {
 
-        $value = \OWA\Core\CoreAPI::getSetting( 'base', 'queue_tracker_ingest' );
-
-        if ( $value !== null && $value !== '' ) {
-
-            return (bool) $value;
-        }
-
-        return (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'queue_incoming_tracking_events' )
-            || (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'queue_events' );
-    }
-
-    /** Whether the scheduler drains the intake, or something outside OWA does. */
-    public static function isDrainedExternally() {
-
-        return \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_ingest_drain' ) === 'external';
+        return \OWA\Core\ServerRole::current()->queuesTrackingEvents()
+            || (bool) \OWA\Core\CoreAPI::getSetting( 'base', 'queue_tracking_events' );
     }
 
     /**
-     * The intake: the implementation tracker_ingest_queue_type names, built
-     * with the intake's own registration.
+     * The queue type beacons wait in: the file queue, unless a queue module's
+     * own constant configures another (ModuleActivation::queueBackends()),
+     * such as sqs by OWA_SQS_QUEUE_URL.
+     *
+     * @return string
+     * @throws \Exception when two are configured; boot refuses that first
+     */
+    public static function backend() {
+
+        if ( self::$backend !== null ) {
+
+            return self::$backend;
+        }
+
+        $backends = \OWA\Core\ModuleActivation::queueBackends();
+
+        if ( count( $backends ) > 1 ) {
+
+            throw new \Exception( sprintf( 'Two queue backends are configured (%s): set one.',
+                implode( ', ', $backends ) ) );
+        }
+
+        return $backends ? (string) array_key_first( $backends ) : 'file';
+    }
+
+    /**
+     * The intake: the backend's implementation, built with the intake's own
+     * registration.
      *
      * @return \OWA\Core\IntakeQueue
      * @throws \Exception when the type is unknown or does not meet the contract
@@ -116,7 +130,7 @@ class TrackerIngest {
             return self::$queue;
         }
 
-        $type = (string) ( \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_ingest_queue_type' ) ?: 'file' );
+        $type = self::backend();
 
         if ( isset( $built[ $type ] ) ) {
 
@@ -129,7 +143,7 @@ class TrackerIngest {
 
         if ( ! $implementation ) {
 
-            throw new \Exception( sprintf( 'tracker_ingest_queue_type is "%s", and no module registers that queue type.', $type ) );
+            throw new \Exception( sprintf( 'The queue backend is "%s", and no module registers that queue type.', $type ) );
         }
 
         $map['queue_type'] = $type;

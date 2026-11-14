@@ -38,11 +38,11 @@ final class TrackerIngestFallbackTest extends TestCase
     {
         $this->dir = sys_get_temp_dir() . '/owa-fallback-' . bin2hex(random_bytes(4)) . '/';
 
-        foreach (array(array('sqs', 'region'), array('base', 'instance_role'), array('base', 'tracker_ingest_queue_type')) as [$m, $k]) {
+        foreach (array(array('sqs', 'region'), array('base', 'request_type')) as [$m, $k]) {
             $this->saved["$m.$k"] = \OWA\Core\CoreAPI::getSetting($m, $k);
         }
         \OWA\Core\CoreAPI::setSetting('sqs', 'region', 'us-east-1');
-        \OWA\Core\CoreAPI::setSetting('base', 'instance_role', 'logger');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'tracking');
     }
 
     protected function tearDown(): void
@@ -150,8 +150,8 @@ final class TrackerIngestFallbackTest extends TestCase
 
     public function testTheFileQueueHasNoFallback(): void
     {
-        \OWA\Core\CoreAPI::setSetting('base', 'tracker_ingest_queue_type', 'file');
-
+        // No queue module's constant is set in this process: the backend is the file queue.
+        $this->assertSame('file', TrackerIngest::backend());
         $this->assertNull(TrackerIngest::fallback());
     }
 

@@ -222,16 +222,16 @@ final class AjaxControllerTest extends RestControllerTestCase
     public function testTheRuleIsInherited(): void
     {
         $c    = $this->endpoint();
-        $mode = \OWA\Core\CoreAPI::getSetting('base', 'request_mode');
+        $mode = \OWA\Core\CoreAPI::getSetting('base', 'request_type');
 
-        \OWA\Core\CoreAPI::setSetting('base', 'request_mode', 'web_app');
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
 
         try {
             $this->assertInstanceOf(\OWA\Core\AdminController::class, $c);
             $this->assertSame(array('cookies'), $c->acceptedAuthMethods());
             $this->assertTrue((bool) $c->is_nonce_required);
         } finally {
-            \OWA\Core\CoreAPI::setSetting('base', 'request_mode', $mode);
+            \OWA\Core\CoreAPI::setSetting('base', 'request_type', $mode);
         }
     }
 }
