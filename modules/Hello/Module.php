@@ -74,7 +74,7 @@ class Module extends \OWA\Core\Module {
     function registerAdminPanels() {
 
         $this->registerSettingsPage(array( 'do'      => 'hello.exampleSettings',
-                                          'title'   => 'Hello World!',
+                                          'title'   => \OWA\Core\CoreAPI::t( 'Hello World!' ),
                                           'section' => 'Instance',
                                           'order'   => 30));
 
@@ -102,7 +102,7 @@ class Module extends \OWA\Core\Module {
         // reportRef() builds the link to a registered report, so the nav cannot
         // name a report that does not exist.
         $this->addNavigationSubGroup(
-            'Hello World', $this->reportRef( 'hello-dashboard' ), 'Hello Dashboard' );
+            'Hello World', $this->reportRef( 'hello-dashboard' ), \OWA\Core\CoreAPI::t( 'Hello Dashboard' ) );
     }
 
     /**

@@ -3,7 +3,7 @@
 <html lang="<?php $view->out( \OWA\Core\Strings::htmlLang() ); ?>">
 <head>
     <meta charset="UTF-8">
-    <title>Open Web Analytics - Overlay</title>
+    <title><?php $view->out( \OWA\Core\CoreAPI::t( 'Open Web Analytics - Overlay' ) ); ?></title>
 </head>
 <body style="text-align: center">
 <iframe src="<?php $view->safeHref($view->url); ?>" width="100%" height="100%"></iframe>

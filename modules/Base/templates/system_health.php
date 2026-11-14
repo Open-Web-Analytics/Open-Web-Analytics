@@ -9,11 +9,14 @@ require_once __DIR__ . '/cube_status_badge.php';
 
 $owa_s = (array) $view->sections;
 ?>
-<h1 class="panel_headline">System Health</h1>
+<h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'System Health' ) ); ?></h1>
 <div id="panel">
 
 <div class="owa_panelIntro">
-    The scheduler and its jobs, the job queue, the beacon queue, the Profiles' tracking bundles, and the installation. <b>Action needed</b> means something has stopped until someone acts; <b>Attention</b> means something to look at that the next run, or time, may resolve.
+    <?php $view->out( \OWA\Core\CoreAPI::t( 'The scheduler and its jobs, the job queue, the beacon queue, the Profiles\' tracking bundles, and the installation.' ) ); ?>
+    <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s means something has stopped until someone acts; %2$s means something to look at that the next run, or time, may resolve.' ),
+        '<b>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Action needed' ), ENT_QUOTES, 'UTF-8' ) . '</b>',
+        '<b>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Attention' ), ENT_QUOTES, 'UTF-8' ) . '</b>' ); ?>
 </div>
 
 <?php foreach ( array( 'scheduler', 'jobs', 'queue', 'intake', 'bundles', 'data', 'install' ) as $owa_key ): ?>
@@ -43,7 +46,7 @@ $owa_s = (array) $view->sections;
 
     <?php if ( $owa_key === 'jobs' && ! empty( $owa_sec['rows'] ) ): ?>
     <table class="management">
-        <tr><th>Job</th><th>Schedule</th><th>Last run</th><th>Outcome</th><th>Next</th></tr>
+        <tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Job' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Schedule' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Last run' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Outcome' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Next' ) ); ?></th></tr>
         <?php foreach ( $owa_sec['rows'] as $owa_r ): ?>
         <tr>
             <td><?php echo owa_cube_status_badge( $owa_r['level'] ); ?> <code<?php if ( $owa_r['description'] !== '' ): ?> title="<?php $view->out( $owa_r['description'] ); ?>"<?php endif; ?>><?php $view->out( $owa_r['name'] ); ?></code></td>
@@ -59,11 +62,9 @@ $owa_s = (array) $view->sections;
     <?php if ( $owa_key === 'queue' ): ?>
     <?php $owa_q = (array) $owa_sec['stats']; ?>
     <div class="owa_panelIntro">
-        Due <?php $view->out( (string) $owa_q['due'] ); ?>,
-        delayed <?php $view->out( (string) $owa_q['delayed'] ); ?>,
-        running <?php $view->out( (string) $owa_q['running'] ); ?>,
-        failed <?php $view->out( (string) $owa_q['failed'] ); ?>,
-        done in the last week <?php $view->out( (string) $owa_q['done'] ); ?>.
+        <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Due %1$s, delayed %2$s, running %3$s, failed %4$s, done in the last week %5$s.' ),
+            (string) $owa_q['due'], (string) $owa_q['delayed'], (string) $owa_q['running'],
+            (string) $owa_q['failed'], (string) $owa_q['done'] ) ); ?>
         <?php if ( $owa_q['oldest_due_age'] !== null ): ?>
             <?php $owa_wait = intdiv( (int) $owa_q['oldest_due_age'], 60 );
                   $view->out( sprintf( \OWA\Core\CoreAPI::tn( 'The oldest due job has waited %d minute.', 'The oldest due job has waited %d minutes.', $owa_wait ), $owa_wait ) ); ?>
@@ -71,7 +72,7 @@ $owa_s = (array) $view->sections;
     </div>
         <?php if ( ! empty( $owa_sec['failed'] ) ): ?>
         <table class="management">
-            <tr><th>Failed job</th><th>Command</th><th>Attempts</th><th>Error</th></tr>
+            <tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Failed job' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Command' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Attempts' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Error' ) ); ?></th></tr>
             <?php foreach ( $owa_sec['failed'] as $owa_j ): ?>
             <tr>
                 <td><code><?php $view->out( (string) $owa_j['id'] ); ?></code></td>
@@ -86,7 +87,7 @@ $owa_s = (array) $view->sections;
 
     <?php if ( $owa_key === 'bundles' && ! empty( $owa_sec['rows'] ) ): ?>
     <table class="management">
-        <tr><th>Profile</th><th>Bundle</th><th>Published</th></tr>
+        <tr><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Profile' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Bundle' ) ); ?></th><th><?php $view->out( \OWA\Core\CoreAPI::t( 'Published' ) ); ?></th></tr>
         <?php foreach ( $owa_sec['rows'] as $owa_b ): ?>
         <tr>
             <td><?php $view->out( $owa_b['name'] !== '' ? $owa_b['name'] : $owa_b['site_id'] ); ?><br><code><?php $view->out( $owa_b['site_id'] ); ?></code></td>
@@ -100,13 +101,13 @@ $owa_s = (array) $view->sections;
     <?php if ( $owa_key === 'intake' && isset( $owa_sec['type'] ) ): ?>
     <div class="owa_panelIntro">
         <?php if ( $owa_sec['queued'] ): ?>
-        Beacons are queued (<code><?php $view->out( $owa_sec['type'] ); ?></code>) and drained every minute.
+        <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Beacons are queued (%s) and drained every minute.' ), '<code>' . htmlspecialchars( (string) $owa_sec['type'], ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?>
         <?php else: ?>
-        Beacons are written as they arrive; only a failed write is queued
-        (<code><?php $view->out( $owa_sec['type'] ); ?></code>), to retry a minute later.
+        <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Beacons are written as they arrive; only a failed write is queued (%s), to retry a minute later.' ), '<code>' . htmlspecialchars( (string) $owa_sec['type'], ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?>
         <?php endif; ?>
-        Waiting <?php $view->out( $owa_sec['waiting'] === null ? 'unknown' : (string) $owa_sec['waiting'] ); ?>,
-        dead letters <?php $view->out( $owa_sec['dead'] === null ? 'unknown' : (string) $owa_sec['dead'] ); ?>.
+        <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Waiting %1$s, dead letters %2$s.' ),
+            $owa_sec['waiting'] === null ? \OWA\Core\CoreAPI::t( 'unknown' ) : (string) $owa_sec['waiting'],
+            $owa_sec['dead'] === null ? \OWA\Core\CoreAPI::t( 'unknown' ) : (string) $owa_sec['dead'] ) ); ?>
     </div>
     <?php endif; ?>
 </fieldset>

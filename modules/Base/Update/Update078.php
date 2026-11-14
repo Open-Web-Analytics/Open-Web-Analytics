@@ -133,7 +133,7 @@ class Update078 extends \OWA\Core\Update {
 
         if ( $rewritten ) {
 
-            $this->e->notice( sprintf( 'Goal metrics renamed in %d saved report(s).', $rewritten ) );
+            $this->e->notice( sprintf( 'Goal metrics renamed in %d saved %s.', $rewritten, \OWA\Core\Lib::plural( $rewritten, 'report', 'reports' ) ) );
         }
 
         return true;

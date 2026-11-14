@@ -44,7 +44,7 @@ class Error extends \OWA\Core\View {
     function render($data) {
 
         // Set Page title
-        $this->t->set('page_title', 'Error');
+        $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'Error' ));
 
         if($this->is_subview === true):
             $this->t->set_template('wrapper_blank.php');

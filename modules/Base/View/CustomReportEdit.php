@@ -16,7 +16,7 @@ class CustomReportEdit extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Custom Report Builder' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'Custom Report Builder' ) );
 
         $this->body->set_template( 'custom_report_edit.php' );
 

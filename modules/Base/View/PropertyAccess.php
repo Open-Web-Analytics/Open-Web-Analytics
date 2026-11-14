@@ -6,7 +6,7 @@ class PropertyAccess extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Property Access Management' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'Property Access Management' ) );
         $this->body->set_template( 'property_access.php' );
         $this->body->set( 'property', $this->get( 'property' ) );
         $this->body->set( 'propertyId', $this->get( 'propertyId' ) );

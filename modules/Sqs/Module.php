@@ -81,7 +81,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerSettingsPage( array(
             'do'        => 'sqs.optionsSqs',
-            'title'     => 'AWS SQS',
+            'title'     => \OWA\Core\CoreAPI::t( 'AWS SQS' ),
             'section'   => 'Instance',
             'order'     => 20,
             'fieldsets' => array( 'sqs.connection' ),
@@ -89,7 +89,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerSettingsFieldSet( array(
             'id'       => 'sqs.connection',
-            'legend'   => 'Connection',
+            'legend'   => \OWA\Core\CoreAPI::t( 'Connection' ),
             'settings' => array( 'region' ),
         ) );
     }

@@ -180,7 +180,7 @@ class CustomReports extends \OWA\Core\ReportController {
 
         $this->setSubview( 'base.customReports' );
         $this->setView( 'base.report' );
-        $this->set( 'title', 'Custom reports' );
+        $this->set( 'title', \OWA\Core\CoreAPI::t( 'Custom reports' ) );
 
         /*
          * New sits on the title's line, because it acts on the whole screen.
@@ -202,7 +202,7 @@ class CustomReports extends \OWA\Core\ReportController {
                 array(
                     'url'   => ( new \OWA\Core\Template( null, array( 'link_state' => $state ) ) )
                                    ->makeLink( array( 'do' => 'base.customReportEdit' ), true ),
-                    'label' => 'New',
+                    'label' => \OWA\Core\CoreAPI::t( 'New' ),
                     'icon'  => 'fa-plus',
                     'class' => 'owa_newCustomReport is-primary',
                 ),
@@ -238,8 +238,8 @@ class CustomReports extends \OWA\Core\ReportController {
 
         $kinds = array(
             'report' => array(
-                'label'  => 'Report',
-                'hint'   => 'Tables, trends and totals laid out on a grid. You pick the metrics and dimensions for each widget.',
+                'label'  => \OWA\Core\CoreAPI::t( 'Report' ),
+                'hint'   => \OWA\Core\CoreAPI::t( 'Tables, trends and totals laid out on a grid. You pick the metrics and dimensions for each widget.' ),
                 'icon'   => 'fas fa-th-large',
                 'params' => array( 'do' => 'base.customReportEdit' ),
             ),
@@ -248,8 +248,8 @@ class CustomReports extends \OWA\Core\ReportController {
         foreach ( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES as $key => $label ) {
 
             $kinds[ $key ] = array(
-                'label'  => $label,
-                'hint'   => \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $key ] ?? '',
+                'label'  => \OWA\Core\Strings::translate( $label ),
+                'hint'   => \OWA\Core\Strings::translate( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $key ] ?? '' ),
                 'icon'   => \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $key ] ?? '',
                 'params' => array( 'do' => 'base.visualizationEdit', 'visualizationType' => $key ),
             );

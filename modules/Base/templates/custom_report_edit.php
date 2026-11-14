@@ -73,11 +73,11 @@ $owa_max        = (int) $view->get('max_widgets');
                  */
             ?>
             <div class="owa_builderFieldLabel">
-                <label for="customReportName">Report name</label>
-                <span class="owa_builderRequired">Required</span>
+                <label for="customReportName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Report name' ) ); ?></label>
+                <span class="owa_builderRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span>
             </div>
             <input type="text" id="customReportName" name="customReportName"
-                   placeholder="Untitled report"
+                   placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'Untitled report' ) ); ?>"
                    value="<?php $view->out( $owa_name ); ?>" />
         </div>
 
@@ -92,14 +92,14 @@ $owa_max        = (int) $view->get('max_widgets');
                    aria-describedby="isSharedHint"
                    <?php echo $owa_is_shared ? 'checked="checked"' : ''; ?> />
             <span class="owa_switchTrack" aria-hidden="true"></span>
-            Shared in everyone's list
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'Shared in everyone\'s list' ) ); ?>
         </label>
-        <span id="isSharedHint" class="owa_srOnly">Anyone you send the link to can open it either way.</span>
+        <span id="isSharedHint" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Anyone you send the link to can open it either way.' ) ); ?></span>
 
         <div class="owa_editorActions">
             <a class="owa_button" id="customReportCancel" href="<?php echo $owa_id
                 ? $view->makeLink( array( 'do' => 'base.report', 'reportId' => 'custom-' . $owa_id ), true )
-                : $view->makeLink( array( 'do' => 'base.customReports' ), true ); ?>">Cancel</a>
+                : $view->makeLink( array( 'do' => 'base.customReports' ), true ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></a>
             <?php
                 /*
                  * Disabled in the MARKUP as well as by draw(), so a new report
@@ -107,7 +107,7 @@ $owa_max        = (int) $view->get('max_widgets');
                  * empty definition.
                  */
             ?>
-            <input type="submit" id="customReportSubmit" class="owa_button is-primary" value="Save report"
+            <input type="submit" id="customReportSubmit" class="owa_button is-primary" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save report' ) ); ?>"
                    <?php echo empty( $owa_definition['widgets'] ) ? 'disabled="disabled"' : ''; ?> />
         </div>
     </div>
@@ -121,7 +121,7 @@ $owa_max        = (int) $view->get('max_widgets');
     <p id="customReportBlocker" class="owa_builderBlocker" role="status" style="display:none;"></p>
 
     <div class="owa_editorSectionHead">
-        <h2>Layout</h2>
+        <h2><?php $view->out( \OWA\Core\CoreAPI::t( 'Layout' ) ); ?></h2>
         <span class="owa_builderBudget" id="widgetBudget"></span>
     </div>
 
@@ -132,9 +132,8 @@ $owa_max        = (int) $view->get('max_widgets');
          */
     ?>
     <div id="customReportEmpty" class="owa_builderEmpty" style="display:none;">
-        <span class="owa_builderEmptyTitle">Nothing in this report yet.</span>
-        <span class="owa_builderEmptyBody">Add a table, a chart, or a row of totals.
-            A report cannot be saved empty.</span>
+        <span class="owa_builderEmptyTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Nothing in this report yet.' ) ); ?></span>
+        <span class="owa_builderEmptyBody"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add a table, a chart, or a row of totals. A report cannot be saved empty.' ) ); ?></span>
     </div>
 
     <?php
@@ -155,9 +154,9 @@ $owa_max        = (int) $view->get('max_widgets');
             'customReportId' => $owa_id,
         ), false, '', false, true ); ?>"
            data-owa-confirm
-           data-owa-confirm-title="Delete this report?"
-           data-owa-confirm-body="This is final. Unlike a Profile, a custom report is not archived."
-           data-owa-confirm-proceed="Delete report">Delete this report</a>
+           data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this report?' ) ); ?>"
+           data-owa-confirm-body="<?php $view->out( \OWA\Core\CoreAPI::t( 'This is final. Unlike a Profile, a custom report is not archived.' ) ); ?>"
+           data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete report' ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this report' ) ); ?></a>
     </div>
     <?php endif; ?>
 </form>
@@ -189,7 +188,7 @@ $owa_max        = (int) $view->get('max_widgets');
                 <span class="owa_typeChoiceText">
                     <span class="owa_typeChoiceName"><?php $view->out( $owa_label ); ?></span>
                     <span class="owa_typeChoiceHint"><?php
-                        $view->out( \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_HINTS[ $owa_key ] ?? '' ); ?></span>
+                        $view->out( \OWA\Core\Strings::translate( \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_HINTS[ $owa_key ] ?? '' ) ); ?></span>
                 </span>
             </button>
         </li>
@@ -210,38 +209,38 @@ $owa_max        = (int) $view->get('max_widgets');
         <div>
             <div class="owa_widgetPanelKind"><span id="dlgTypePill"></span> &middot;
                 <button type="button" class="owa_linkButton" id="dlgChangeType"
-                        aria-label="Change the widget type">change</button></div>
-            <h2 id="dlgHeading">Widget settings</h2>
+                        aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Change the widget type' ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'change' ) ); ?></button></div>
+            <h2 id="dlgHeading"><?php $view->out( \OWA\Core\CoreAPI::t( 'Widget settings' ) ); ?></h2>
         </div>
-        <button type="button" class="owa_iconButton" id="dlgClose" aria-label="Close" title="Close"><i class="fas fa-times" aria-hidden="true"></i></button>
+        <button type="button" class="owa_iconButton" id="dlgClose" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Close' ) ); ?>" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Close' ) ); ?>"><i class="fas fa-times" aria-hidden="true"></i></button>
     </div>
 
     <div class="owa_widgetPanelBody">
 
         <div class="owa_builderField">
-            <label for="dlgTitle">Name</label>
+            <label for="dlgTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?></label>
             <input type="text" id="dlgTitle" />
         </div>
 
         <div class="owa_builderFieldRow">
             <?php // Filled by renderSpanChoices(), which adds the widget's own width if it is not one of these. ?>
             <fieldset class="owa_builderField" id="dlgColspanField">
-                <legend>Width</legend>
+                <legend><?php $view->out( \OWA\Core\CoreAPI::t( 'Width' ) ); ?></legend>
                 <div class="owa_seg" id="dlgWidth"></div>
             </fieldset>
 
             <div class="owa_builderField owa_builderNote" id="dlgWidthNote" style="display:none;"></div>
 
             <fieldset class="owa_builderField">
-                <legend>Height</legend>
+                <legend><?php $view->out( \OWA\Core\CoreAPI::t( 'Height' ) ); ?></legend>
                 <div class="owa_seg" id="dlgHeight"></div>
             </fieldset>
         </div>
 
         <div class="owa_builderField" id="dlgMetricsField">
             <div class="owa_builderFieldLabel">
-                <label for="dlgMetrics" id="dlgMetricsLabel">Metrics</label>
-                <span class="owa_builderRequired" id="dlgMetricsRequired">Required</span>
+                <label for="dlgMetrics" id="dlgMetricsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Metrics' ) ); ?></label>
+                <span class="owa_builderRequired" id="dlgMetricsRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span>
             </div>
             <select id="dlgMetrics" class="owa_builderChosen" multiple="multiple"></select>
             <div class="owa_builderHelp" id="dlgMetricsHelp"></div>
@@ -249,8 +248,8 @@ $owa_max        = (int) $view->get('max_widgets');
 
         <div class="owa_builderField" id="dlgDimensionsField">
             <div class="owa_builderFieldLabel">
-                <label for="dlgDimensions" id="dlgDimensionsLabel">Dimensions</label>
-                <span class="owa_builderRequired" id="dlgDimensionsRequired">Required</span>
+                <label for="dlgDimensions" id="dlgDimensionsLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Dimensions' ) ); ?></label>
+                <span class="owa_builderRequired" id="dlgDimensionsRequired"><?php $view->out( \OWA\Core\CoreAPI::t( 'Required' ) ); ?></span>
             </div>
             <select id="dlgDimensions" class="owa_builderChosen" multiple="multiple"></select>
             <div class="owa_builderHelp" id="dlgDimensionsHelp"></div>
@@ -266,10 +265,10 @@ $owa_max        = (int) $view->get('max_widgets');
              */
         ?>
         <div class="owa_builderField" id="dlgSortField">
-            <label for="dlgSortBy">Sort</label>
+            <label for="dlgSortBy"><?php $view->out( \OWA\Core\CoreAPI::t( 'Sort' ) ); ?></label>
             <div class="owa_builderSort">
                 <select id="dlgSortBy"></select>
-                <select id="dlgSortDir" aria-label="Sort direction"></select>
+                <select id="dlgSortDir" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Sort direction' ) ); ?>"></select>
             </div>
         </div>
 
@@ -281,7 +280,7 @@ $owa_max        = (int) $view->get('max_widgets');
              */
         ?>
         <div class="owa_builderField" id="dlgFiltersField">
-            <span class="owa_builderLabel" id="dlgFiltersLabel">Filters</span>
+            <span class="owa_builderLabel" id="dlgFiltersLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filters' ) ); ?></span>
             <?php
                 $owa_fp = array(
                     'pills' => 'dlgFilters', 'add' => 'dlgAddFilter', 'form' => 'dlgFilterForm',
@@ -301,7 +300,7 @@ $owa_max        = (int) $view->get('max_widgets');
              */
         ?>
         <div class="owa_builderField" id="dlgLinkField" style="display:none;">
-            <label for="dlgLinkReport">Rows link to</label>
+            <label for="dlgLinkReport"><?php $view->out( \OWA\Core\CoreAPI::t( 'Rows link to' ) ); ?></label>
             <select id="dlgLinkReport"></select>
             <div class="owa_builderHelp" id="dlgLinkHelp"></div>
         </div>
@@ -314,14 +313,14 @@ $owa_max        = (int) $view->get('max_widgets');
         ?>
         <div class="owa_builderFieldRow" id="dlgMoreField" style="display:none;">
             <div class="owa_builderField">
-                <label for="dlgMoreReport">Full report link</label>
+                <label for="dlgMoreReport"><?php $view->out( \OWA\Core\CoreAPI::t( 'Full report link' ) ); ?></label>
                 <select id="dlgMoreReport"></select>
-                <div class="owa_builderHelp">Shown beside the widget's name, or at the foot of a card.</div>
+                <div class="owa_builderHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'Shown beside the widget\'s name, or at the foot of a card.' ) ); ?></div>
             </div>
 
             <div class="owa_builderField">
-                <label for="dlgMoreLabel">Link text</label>
-                <input type="text" id="dlgMoreLabel" placeholder="<?php $view->out( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL ); ?>" />
+                <label for="dlgMoreLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Link text' ) ); ?></label>
+                <input type="text" id="dlgMoreLabel" placeholder="<?php $view->out( \OWA\Module\Base\Classes\CustomReports::shownMoreLabel( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL ) ); ?>" />
             </div>
         </div>
 
@@ -329,8 +328,8 @@ $owa_max        = (int) $view->get('max_widgets');
     </div>
 
     <div class="owa_widgetPanelFoot">
-        <button type="button" class="owa_button" id="dlgCancel">Cancel</button>
-        <button type="button" class="owa_button is-primary" id="dlgApply">Apply</button>
+        <button type="button" class="owa_button" id="dlgCancel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></button>
+        <button type="button" class="owa_button is-primary" id="dlgApply"><?php $view->out( \OWA\Core\CoreAPI::t( 'Apply' ) ); ?></button>
     </div>
 </aside>
 
@@ -369,10 +368,99 @@ $owa_max        = (int) $view->get('max_widgets');
     var NEW_COLSPANS = <?php echo json_encode( (object) \OWA\Module\Base\Classes\CustomReports::NEW_WIDGET_COLSPANS ); ?>;
 
     // The widths and heights the panel offers, and how a card says them.
-    var WIDTHS       = <?php echo json_encode( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::WIDTHS ), \OWA\Module\Base\Classes\CustomReports::WIDTHS ) ); ?>;
-    var HEIGHTS      = <?php echo json_encode( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::HEIGHTS ), \OWA\Module\Base\Classes\CustomReports::HEIGHTS ) ); ?>;
-    var WIDTH_WORDS  = { 12: 'Full width', 8: 'Two thirds', 6: 'Half width', 4: 'One third', 3: 'One quarter' };
-    var HEIGHT_WORDS = { 1: 'short', 2: 'tall' };
+    var WIDTHS       = <?php echo json_encode( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::WIDTHS ), array_values( \OWA\Module\Base\Classes\CustomReports::translatedTable( \OWA\Module\Base\Classes\CustomReports::WIDTHS ) ) ) ); ?>;
+    var HEIGHTS      = <?php echo json_encode( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::HEIGHTS ), array_values( \OWA\Module\Base\Classes\CustomReports::translatedTable( \OWA\Module\Base\Classes\CustomReports::HEIGHTS ) ) ) ); ?>;
+    var WIDTH_WORDS  = <?php echo json_encode( array(
+        12 => \OWA\Core\CoreAPI::t( 'Full width' ),
+        8  => \OWA\Core\CoreAPI::t( 'Two thirds' ),
+        6  => \OWA\Core\CoreAPI::t( 'Half width' ),
+        4  => \OWA\Core\CoreAPI::t( 'One third' ),
+        3  => \OWA\Core\CoreAPI::t( 'One quarter' ),
+    ), JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
+    var HEIGHT_WORDS = <?php echo json_encode( array( 1 => \OWA\Core\CoreAPI::t( 'short' ), 2 => \OWA\Core\CoreAPI::t( 'tall' ) ), JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
+
+    /*
+     * The words this script writes, translated. %s, or %1$s and %2$s, is a
+     * value filled in by say(). A counted phrase has a form per count, chosen
+     * by tn() for each count the script can meet.
+     */
+    var TEXT = <?php echo json_encode( array(
+        'widgetN'           => \OWA\Core\CoreAPI::t( 'Widget %s' ),
+        'widget'            => \OWA\Core\CoreAPI::t( 'Widget' ),
+        'nameNotFound'      => \OWA\Core\CoreAPI::t( 'Name not found.' ),
+        'typeToSearch'      => \OWA\Core\CoreAPI::t( 'Type to search…' ),
+        'move'              => \OWA\Core\CoreAPI::t( 'Move %s' ),
+        'dragHint'          => \OWA\Core\CoreAPI::t( 'Drag to move, or use the arrow keys' ),
+        'edit'              => \OWA\Core\CoreAPI::t( 'Edit' ),
+        'editN'             => \OWA\Core\CoreAPI::t( 'Edit %s' ),
+        'remove'            => \OWA\Core\CoreAPI::t( 'Remove' ),
+        'removeN'           => \OWA\Core\CoreAPI::t( 'Remove %s' ),
+        'spanOf'            => \OWA\Core\CoreAPI::t( '%1$s of %2$s' ),
+        'addWidget'         => \OWA\Core\CoreAPI::t( 'Add a widget' ),
+        'changeType'        => \OWA\Core\CoreAPI::t( 'Change the widget type' ),
+        'dragToReorder'     => \OWA\Core\CoreAPI::t( 'drag to reorder' ),
+        'noMetrics'         => \OWA\Core\CoreAPI::t( 'No metrics chosen yet' ),
+        'metricsBy'         => \OWA\Core\CoreAPI::t( '%1$s by %2$s' ),
+        'filtered'          => \OWA\Core\CoreAPI::t( 'filtered: %s' ),
+        'rowsLinkTo'        => \OWA\Core\CoreAPI::t( 'rows link to %s' ),
+        'moved'             => \OWA\Core\CoreAPI::t( '%1$s, position %2$s of %3$s.' ),
+        'addOneWidget'      => \OWA\Core\CoreAPI::t( 'Add at least one widget before saving.' ),
+        'giveName'          => \OWA\Core\CoreAPI::t( 'Give the report a name before saving.' ),
+        'hasNoMetrics'      => \OWA\Core\CoreAPI::t( '%s has no metrics.' ),
+        'fullWidthNote'     => \OWA\Core\CoreAPI::t( '%s is always full width, so it has room for its own filter and dimension controls.' ),
+        'metric'            => \OWA\Core\CoreAPI::t( 'Metric' ),
+        'metrics'           => \OWA\Core\CoreAPI::t( 'Metrics' ),
+        'required'          => \OWA\Core\CoreAPI::t( 'Required.' ),
+        'oneMetric'         => \OWA\Core\CoreAPI::t( 'The one metric this %s draws.' ),
+        'trendMetricsAbove' => \OWA\Core\CoreAPI::t( 'Up to %s. The first is charted; all of them are drawn as boxes above it.' ),
+        'trendMetricsUnder' => \OWA\Core\CoreAPI::t( 'Up to %s. The first is charted; all of them are drawn as boxes under it.' ),
+        'upTo'              => \OWA\Core\CoreAPI::t( 'Up to %s.' ),
+        'breakOutBy'        => \OWA\Core\CoreAPI::t( 'Break out by' ),
+        'breakOutHelp'      => \OWA\Core\CoreAPI::t( 'Optional. Each value becomes its own line over the total; the six largest are drawn. %1$s is always over %2$s.' ),
+        'dimension'         => \OWA\Core\CoreAPI::t( 'Dimension' ),
+        'dimensions'        => \OWA\Core\CoreAPI::t( 'Dimensions' ),
+        'oneDimension'      => \OWA\Core\CoreAPI::t( 'The one dimension its rows are grouped by.' ),
+        'upToDimensions'    => \OWA\Core\CoreAPI::t( 'Up to %s. Each one is another column.' ),
+        'totalsOnly'        => \OWA\Core\CoreAPI::t( '%s shows totals for the period, so there is nothing to group by.' ),
+        'noRowLink'         => \OWA\Core\CoreAPI::t( 'Nothing — rows are not links' ),
+        'rowLinkHelp'       => \OWA\Core\CoreAPI::t( 'Each %s becomes a link to the report that details it.' ),
+        'noLink'            => \OWA\Core\CoreAPI::t( 'No link' ),
+        'unsorted'          => \OWA\Core\CoreAPI::t( 'Unsorted' ),
+        'zToA'              => \OWA\Core\CoreAPI::t( 'Z to A' ),
+        'highestFirst'      => \OWA\Core\CoreAPI::t( 'Highest first' ),
+        'aToZ'              => \OWA\Core\CoreAPI::t( 'A to Z' ),
+        'lowestFirst'       => \OWA\Core\CoreAPI::t( 'Lowest first' ),
+        'chooseMetric'      => \OWA\Core\CoreAPI::t( 'Choose a metric.' ),
+        'chooseMetrics'     => \OWA\Core\CoreAPI::t( 'Choose at least one metric.' ),
+        'chooseDimension'   => \OWA\Core\CoreAPI::t( 'Choose a dimension.' ),
+        'rowsTall'      => array_map( function ( $owa_n ) {
+            return \OWA\Core\CoreAPI::tn( '%d row tall', '%d rows tall', $owa_n );
+        }, array_combine( range( 1, \OWA\Core\ReportGrid::MAX_ROWSPAN ), range( 1, \OWA\Core\ReportGrid::MAX_ROWSPAN ) ) ),
+        'rows'          => array_map( function ( $owa_n ) {
+            return \OWA\Core\CoreAPI::tn( '%d row', '%d rows', $owa_n );
+        }, array_combine( range( 1, \OWA\Core\ReportGrid::MAX_ROWSPAN ), range( 1, \OWA\Core\ReportGrid::MAX_ROWSPAN ) ) ),
+        // Counted by the most a report may hold, the figure the phrase ends on.
+        'budget'        => \OWA\Core\CoreAPI::tn( '%1$s of %2$s widget', '%1$s of %2$s widgets', $owa_max ),
+    ), JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
+
+    /** A TEXT pattern with its %s, %d or %1$s placeholders filled, in order. */
+    function say( pattern ) {
+
+        var values = Array.prototype.slice.call( arguments, 1 );
+        var next   = 0;
+
+        return String( pattern ).replace( /%(?:(\d+)\$)?([sd%])/g, function ( match, position, kind ) {
+            return kind === '%' ? '%' : String( values[ position ? position - 1 : next++ ] );
+        } );
+    }
+
+    /** A counted TEXT phrase for n: the form tn() chose for n, or for the largest count it was given. */
+    function sayCount( forms, n ) {
+
+        var keys = Object.keys( forms );
+
+        return say( forms[ n ] || forms[ keys[ keys.length - 1 ] ], n );
+    }
 
     /*
      * dimension -> the reports a row of it can lead to.
@@ -616,7 +704,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         var widget = {
             type: type,
-            title: 'Widget ' + ( index + 1 ),
+            title: say( TEXT.widgetN, index + 1 ),
             rowspan: 1,
             query: {}
         };
@@ -870,8 +958,8 @@ $owa_max        = (int) $view->get('max_widgets');
 
         jQuery( selector ).chosen( {
             width: '100%',
-            no_results_text: 'Name not found.',
-            placeholder_text_multiple: 'Type to search…',
+            no_results_text: TEXT.nameNotFound,
+            placeholder_text_multiple: TEXT.typeToSearch,
         } );
     }
 
@@ -899,7 +987,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
             var colspan = colspanOf( widget );
             var rowspan = Number( widget.rowspan ) || 1;
-            var title   = widget.title || ( 'Widget ' + ( i + 1 ) );
+            var title   = widget.title || say( TEXT.widgetN, i + 1 );
 
             var $block = jQuery( '<div class="owa_builderBlock" draggable="true">' )
                 .attr( 'data-index', i )
@@ -910,7 +998,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
             $block.append( jQuery( '<div class="owa_builderBlockKind">' )
                 .append( jQuery( '<button type="button" class="owa_builderMove">' )
-                    .attr( { 'aria-label': 'Move ' + title, title: 'Drag to move, or use the arrow keys' } )
+                    .attr( { 'aria-label': say( TEXT.move, title ), title: TEXT.dragHint } )
                     .append( '<i class="fas fa-grip-vertical" aria-hidden="true"></i>' ) )
                 .append( jQuery( '<i aria-hidden="true">' ).attr( 'class', TYPE_ICONS[ widget.type ] || '' ) )
                 .append( jQuery( '<span class="owa_builderBlockType">' )
@@ -934,14 +1022,14 @@ $owa_max        = (int) $view->get('max_widgets');
 
             $block.append( jQuery( '<div class="owa_builderBlockFoot">' )
                 .append( jQuery( '<span class="owa_builderBlockSpan">' ).text(
-                    ( WIDTH_WORDS[ colspan ] || ( colspan + ' of ' + COLUMNS ) )
-                    + ' · ' + ( HEIGHT_WORDS[ rowspan ] || ( rowspan + ' rows tall' ) ) ) )
+                    ( WIDTH_WORDS[ colspan ] || say( TEXT.spanOf, colspan, COLUMNS ) )
+                    + ' · ' + ( HEIGHT_WORDS[ rowspan ] || sayCount( TEXT.rowsTall, rowspan ) ) ) )
                 .append( jQuery( '<span class="owa_builderBlockTools">' )
                     .append( jQuery( '<button type="button" class="owa_iconButton owa_builderEdit">' )
-                        .attr( { 'aria-label': 'Edit ' + title, title: 'Edit' } )
+                        .attr( { 'aria-label': say( TEXT.editN, title ), title: TEXT.edit } )
                         .append( '<i class="fas fa-pencil-alt" aria-hidden="true"></i>' ) )
                     .append( jQuery( '<button type="button" class="owa_iconButton owa_builderRemove">' )
-                        .attr( { 'aria-label': 'Remove ' + title, title: 'Remove' } )
+                        .attr( { 'aria-label': say( TEXT.removeN, title ), title: TEXT.remove } )
                         .append( '<i class="fas fa-times" aria-hidden="true"></i>' ) ) ) );
 
             $canvas.append( $block );
@@ -952,15 +1040,15 @@ $owa_max        = (int) $view->get('max_widgets');
             $canvas.append(
                 jQuery( '<button type="button" id="addWidget" class="owa_builderAdd">' )
                     .append( '<i class="fas fa-plus" aria-hidden="true"></i>' )
-                    .append( jQuery( '<span>' ).text( 'Add a widget' ) ) );
+                    .append( jQuery( '<span>' ).text( TEXT.addWidget ) ) );
         }
 
         $canvas.toggleClass( 'owa_builderCanvasEmpty', ! widgets.length );
 
         jQuery( '#customReportEmpty' ).toggle( ! widgets.length );
 
-        jQuery( '#widgetBudget' ).text( widgets.length + ' of ' + MAX + ' widgets'
-            + ( widgets.length > 1 ? ' · drag to reorder' : '' ) );
+        jQuery( '#widgetBudget' ).text( say( TEXT.budget, widgets.length, MAX )
+            + ( widgets.length > 1 ? ' · ' + TEXT.dragToReorder : '' ) );
 
         refreshSaveState();
     }
@@ -990,15 +1078,15 @@ $owa_max        = (int) $view->get('max_widgets');
         var dims    = names( query.dimensions ).map( labelOf );
 
         if ( ! metrics.length ) {
-            return 'No metrics chosen yet';
+            return TEXT.noMetrics;
         }
 
-        var parts = [ metrics.join( ', ' ) + ( dims.length ? ' by ' + dims.join( ', ' ) : '' ) ];
+        var parts = [ dims.length ? say( TEXT.metricsBy, metrics.join( ', ' ), dims.join( ', ' ) ) : metrics.join( ', ' ) ];
 
         var filters = OWA.filterPills.parse( widget.constraints || '' ).map( filterWords );
 
         if ( filters.length ) {
-            parts.push( 'filtered: ' + filters.join( ', ' ) );
+            parts.push( say( TEXT.filtered, filters.join( ', ' ) ) );
         }
 
         var linkTo = ( ( widget.link || {} ).template || {} ).reportId;
@@ -1008,7 +1096,7 @@ $owa_max        = (int) $view->get('max_widgets');
             var target = ( LINK_TARGETS[ names( query.dimensions )[0] ] || [] ).filter(
                 function ( t ) { return t.id === linkTo; } )[0];
 
-            parts.push( 'rows link to ' + ( target ? target.label : linkTo ) );
+            parts.push( say( TEXT.rowsLinkTo, target ? target.label : linkTo ) );
         }
 
         return parts.join( ' · ' );
@@ -1038,7 +1126,7 @@ $owa_max        = (int) $view->get('max_widgets');
         draw();
 
         jQuery( '#customReportMoved' ).text(
-            ( moved.title || 'Widget' ) + ', position ' + ( to + 1 ) + ' of ' + widgets.length + '.' );
+            say( TEXT.moved, moved.title || TEXT.widget, to + 1, widgets.length ) );
 
         return true;
     }
@@ -1056,7 +1144,7 @@ $owa_max        = (int) $view->get('max_widgets');
     function saveBlocker() {
 
         if ( ! widgets.length ) {
-            return 'Add at least one widget before saving.';
+            return TEXT.addOneWidget;
         }
 
         /*
@@ -1064,7 +1152,7 @@ $owa_max        = (int) $view->get('max_widgets');
          * report" placeholder makes an empty one look filled in.
          */
         if ( ! jQuery.trim( jQuery( '#customReportName' ).val() || '' ) ) {
-            return 'Give the report a name before saving.';
+            return TEXT.giveName;
         }
 
         /*
@@ -1081,8 +1169,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
                 if ( ! widgetMetrics( widgets[ i ] ).length ) {
 
-                    return ( widgets[ i ].title || ( 'Widget ' + ( i + 1 ) ) )
-                         + ' has no metrics.';
+                    return say( TEXT.hasNoMetrics, widgets[ i ].title || say( TEXT.widgetN, i + 1 ) );
                 }
             }
         }
@@ -1308,8 +1395,8 @@ $owa_max        = (int) $view->get('max_widgets');
 
             if ( ! list.some( function ( c ) { return c[0] === current; } ) ) {
                 list.push( [ current, name === 'dlgWidth'
-                    ? ( WIDTH_WORDS[ current ] || ( current + ' of ' + COLUMNS ) )
-                    : ( current + ' rows' ) ] );
+                    ? ( WIDTH_WORDS[ current ] || say( TEXT.spanOf, current, COLUMNS ) )
+                    : sayCount( TEXT.rows, current ) ] );
                 list.sort( function ( a, b ) { return a[0] - b[0]; } );
             }
 
@@ -1352,8 +1439,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         jQuery( '#dlgWidthNote' )
             .toggle( isFullWidth( type ) )
-            .text( name + ' is always full width, so it has room for '
-                 + 'its own filter and dimension controls.' );
+            .text( say( TEXT.fullWidthNote, name ) );
 
         /*
          * A metric SET, or one metric.
@@ -1365,7 +1451,7 @@ $owa_max        = (int) $view->get('max_widgets');
          */
         var oneMetric = isSingleMetric( type );
 
-        jQuery( '#dlgMetricsLabel' ).text( oneMetric ? 'Metric' : 'Metrics' );
+        jQuery( '#dlgMetricsLabel' ).text( oneMetric ? TEXT.metric : TEXT.metrics );
 
         /*
          * THERE IS NO LONGER ANYTHING TO LEAVE THIS EMPTY FOR.
@@ -1377,7 +1463,7 @@ $owa_max        = (int) $view->get('max_widgets');
          * would be refused on save -- so both halves go and the field says the
          * one thing that is now true of every type: it has to be answered.
          */
-        var required = ' Required.';
+        var required = ' ' + TEXT.required;
 
         /*
          * ...and the mark beside the label says the same thing at a glance.
@@ -1390,12 +1476,11 @@ $owa_max        = (int) $view->get('max_widgets');
         jQuery( '#dlgMetricsRequired' ).toggle( ! reportMetrics );
 
         jQuery( '#dlgMetricsHelp' ).text( oneMetric
-            ? 'The one metric this ' + name.toLowerCase() + ' draws.' + required
+            ? say( TEXT.oneMetric, name.toLowerCase() ) + required
             : ( type === 'trend' || type === 'trend-card'
-                ? 'Up to ' + MAX_METRICS + '. The first is charted; all of them are '
-                  + 'drawn as boxes ' + ( type === 'trend-card' ? 'above' : 'under' ) + ' it.'
+                ? say( type === 'trend-card' ? TEXT.trendMetricsAbove : TEXT.trendMetricsUnder, MAX_METRICS )
                   + required
-                : 'Up to ' + MAX_METRICS + '.' + required ) );
+                : say( TEXT.upTo, MAX_METRICS ) + required ) );
 
         var fixed = fixedDimension( type );
 
@@ -1416,12 +1501,9 @@ $owa_max        = (int) $view->get('max_widgets');
 
             // A trend: the axis is settled, and what is offered is the
             // breakdown whose values become the lines.
-            jQuery( '#dlgDimensionsLabel' ).text( 'Break out by' );
+            jQuery( '#dlgDimensionsLabel' ).text( TEXT.breakOutBy );
 
-            jQuery( '#dlgDimensionsHelp' ).text(
-                'Optional. Each value becomes its own line over the total; the '
-              + 'six largest are drawn. '
-              + name + ' is always over ' + fixed + '.' );
+            jQuery( '#dlgDimensionsHelp' ).text( say( TEXT.breakOutHelp, name, fixed ) );
 
             /*
              * ...unless it may add none, in which case the field is hidden by
@@ -1431,16 +1513,16 @@ $owa_max        = (int) $view->get('max_widgets');
 
         } else {
 
-            jQuery( '#dlgDimensionsLabel' ).text( single ? 'Dimension' : 'Dimensions' );
+            jQuery( '#dlgDimensionsLabel' ).text( single ? TEXT.dimension : TEXT.dimensions );
 
             jQuery( '#dlgDimensionsHelp' ).text( single
-                ? 'The one dimension its rows are grouped by.'
-                : 'Up to ' + MAX_DIMENSIONS + '. Each one is another column.' );
+                ? TEXT.oneDimension
+                : say( TEXT.upToDimensions, MAX_DIMENSIONS ) );
         }
 
         jQuery( '#dlgDimensionNote' )
             .toggle( ! picksDimensions( type ) )
-            .text( name + ' shows totals for the period, so there is nothing to group by.' );
+            .text( say( TEXT.totalsOnly, name ) );
 
         // A sort orders rows, and these types have none to order.
 
@@ -1488,7 +1570,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         // No link is the default, and has to stay reachable -- it is how one
         // already set is taken off again.
-        $select.append( jQuery( '<option>' ).attr( 'value', '' ).text( 'Nothing — rows are not links' ) );
+        $select.append( jQuery( '<option>' ).attr( 'value', '' ).text( TEXT.noRowLink ) );
 
         targets.forEach( function ( target ) {
 
@@ -1497,8 +1579,7 @@ $owa_max        = (int) $view->get('max_widgets');
                 .text( target.label ) );
         } );
 
-        jQuery( '#dlgLinkHelp' ).text(
-            'Each ' + dimension + ' becomes a link to the report that details it.' );
+        jQuery( '#dlgLinkHelp' ).text( say( TEXT.rowLinkHelp, dimension ) );
     }
 
     /**
@@ -1537,7 +1618,7 @@ $owa_max        = (int) $view->get('max_widgets');
             return;
         }
 
-        $select.append( jQuery( '<option>' ).attr( 'value', '' ).text( 'No link' ) );
+        $select.append( jQuery( '<option>' ).attr( 'value', '' ).text( TEXT.noLink ) );
 
         targets.forEach( function ( target ) {
 
@@ -1584,7 +1665,7 @@ $owa_max        = (int) $view->get('max_widgets');
         }
 
         var $by = jQuery( '#dlgSortBy' ).empty()
-            .append( jQuery( '<option value="">' ).text( 'Unsorted' ) );
+            .append( jQuery( '<option value="">' ).text( TEXT.unsorted ) );
 
         options.forEach( function ( name ) {
             $by.append( jQuery( '<option>' ).attr( 'value', name ).text( labelOf( name ) ) );
@@ -1596,8 +1677,8 @@ $owa_max        = (int) $view->get('max_widgets');
             && DIMENSIONS.some( function ( c ) { return c.name === dialogSort; } );
 
         jQuery( '#dlgSortDir' ).empty()
-            .append( jQuery( '<option value="desc">' ).text( isDimension ? 'Z to A' : 'Highest first' ) )
-            .append( jQuery( '<option value="asc">' ).text( isDimension ? 'A to Z' : 'Lowest first' ) )
+            .append( jQuery( '<option value="desc">' ).text( isDimension ? TEXT.zToA : TEXT.highestFirst ) )
+            .append( jQuery( '<option value="asc">' ).text( isDimension ? TEXT.aToZ : TEXT.lowestFirst ) )
             .val( dialogSortDesc ? 'desc' : 'asc' )
             .prop( 'disabled', dialogSort === '' );
 
@@ -1629,8 +1710,8 @@ $owa_max        = (int) $view->get('max_widgets');
          */
         if ( ! reportMetrics && ! ( jQuery( '#dlgMetrics' ).val() || [] ).length ) {
 
-            return isSingleMetric( type ) ? 'Choose a metric.'
-                                          : 'Choose at least one metric.';
+            return isSingleMetric( type ) ? TEXT.chooseMetric
+                                          : TEXT.chooseMetrics;
         }
 
         /*
@@ -1641,7 +1722,7 @@ $owa_max        = (int) $view->get('max_widgets');
         if ( isSingleField( type ) && picksDimensions( type )
              && ! ( jQuery( '#dlgDimensions' ).val() || [] ).length ) {
 
-            return 'Choose a dimension.';
+            return TEXT.chooseDimension;
         }
 
         return filters.problem();
@@ -1871,7 +1952,7 @@ $owa_max        = (int) $view->get('max_widgets');
         autoOpen: false,
         modal: true,
         width: Math.min( 760, jQuery( window ).width() - 32 ),
-        title: 'Add a widget',
+        title: TEXT.addWidget,
         appendTo: '.owa',
         dialogClass: 'owa_typeDialogFrame'
     } );
@@ -1888,14 +1969,14 @@ $owa_max        = (int) $view->get('max_widgets');
             jQuery( this ).toggleClass( 'is-current', current ).attr( 'aria-current', current ? 'true' : null );
         } );
 
-        jQuery( '#typeDialog' ).dialog( 'option', 'title', 'Change the widget type' ).dialog( 'open' );
+        jQuery( '#typeDialog' ).dialog( 'option', 'title', TEXT.changeType ).dialog( 'open' );
     } );
 
     jQuery( '#typeDialog' ).on( 'dialogclose', function () {
 
         changingType = false;
 
-        jQuery( '#typeDialog' ).dialog( 'option', 'title', 'Add a widget' );
+        jQuery( '#typeDialog' ).dialog( 'option', 'title', TEXT.addWidget );
         jQuery( '#typeDialog .owa_typeChoice' ).removeClass( 'is-current' ).removeAttr( 'aria-current' );
     } );
 

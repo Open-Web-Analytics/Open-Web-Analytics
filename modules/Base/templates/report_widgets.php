@@ -393,7 +393,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <div class="owa_reportSectionHeader"><h2 class="owa_reportSectionTitle"><?php $view->out( $owa_w['title'] ); ?></h2><?php
             if ( $owa_more && ! $owa_moreAtFoot ): ?><span class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
                 'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
-                $view->out( $owa_w['more']['label'] ?? 'View Full Report' ); ?></a></span><?php endif; ?></div>
+                $view->out( isset( $owa_w['more']['label'] ) ? \OWA\Module\Base\Classes\CustomReports::shownMoreLabel( $owa_w['more']['label'] ) : \OWA\Core\CoreAPI::t( 'View Full Report' ) ); ?></a></span><?php endif; ?></div>
 <?php endif; ?>
 
 <?php if ( in_array( ( $owa_w['type'] ?? '' ), array( 'trend', 'trend-card' ), true ) ): ?>
@@ -727,8 +727,8 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <div class="relatedReports">
             <ul>
                 <li>
-                    <a href="<?php echo $owa_hm_url; ?>" target="_blank">Heatmap Overlay</a>
-                     - click visualization map.
+                    <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%s - click visualization map.' ),
+                        '<a target="_blank" href="' . $owa_hm_url . '">' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Heatmap Overlay' ), ENT_QUOTES, 'UTF-8' ) . '</a>' ); ?>
                 </li>
             </ul>
         </div>
@@ -859,11 +859,11 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php if ( $owa_moreAtFoot && ( $owa_w['type'] ?? '' ) === 'grid-card' ): ?>
         <div class="owa_moreLinks owa_cardFoot"><a data-ui="card-full-report" href="<?php echo $view->makeLink( array(
             'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
-            $view->out( $owa_w['more']['label'] ?? \OWA\Core\CoreAPI::t( 'Full report' ) ); ?></a></div>
+            $view->out( isset( $owa_w['more']['label'] ) ? \OWA\Module\Base\Classes\CustomReports::shownMoreLabel( $owa_w['more']['label'] ) : \OWA\Core\CoreAPI::t( 'Full report' ) ); ?></a></div>
 <?php elseif ( $owa_moreAtFoot ): ?>
         <div class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
             'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
-            $view->out( $owa_w['more']['label'] ?? 'View Full Report' ); ?></a></div>
+            $view->out( isset( $owa_w['more']['label'] ) ? \OWA\Module\Base\Classes\CustomReports::shownMoreLabel( $owa_w['more']['label'] ) : \OWA\Core\CoreAPI::t( 'View Full Report' ) ); ?></a></div>
 <?php endif; ?>
 
     </div>

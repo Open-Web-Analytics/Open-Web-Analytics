@@ -602,18 +602,18 @@ class ReportController extends \OWA\Core\AdminController {
                 'order'      => $i,
                 'priviledge' => 'view_reports',
                 'icon_class' => 'fas fa-star',
-                'heading'    => 'Favorites',
+                'heading'    => \OWA\Core\CoreAPI::t( 'Favorites' ),
             );
         }
 
         $nav['Custom Reports'] = array(
             'ref'        => array( 'do' => 'base.customReports' ),
-            'anchortext' => 'Custom Reports',
+            'anchortext' => \OWA\Core\CoreAPI::t( 'Custom Reports' ),
             'order'      => 999,
             'priviledge' => 'view_site_list',
             'icon_class' => 'fa fa-th-list',
             // The rail's column lists the roster first, under this name.
-            'overview_label' => 'All reports',
+            'overview_label' => \OWA\Core\CoreAPI::t( 'All reports' ),
             'keeps_column'   => true,
             'current_for'    => array(
                 array( 'do' => 'base.report', 'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . '*' ),

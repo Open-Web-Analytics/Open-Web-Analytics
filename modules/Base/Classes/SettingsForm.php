@@ -256,13 +256,32 @@ class SettingsForm {
             $control );
     }
 
-    /** What each level is called where a screen names it. */
-    const LEVEL_NAMES = array(
-        'install'      => 'install',
-        'organization' => 'Organization',
-        'property'     => 'Property',
-        'profile'      => 'Observation Profile',
-    );
+    /**
+     * What a level is called where a screen names it ("Set at the %s level."),
+     * in the locale in use; a level it does not know, as given.
+     *
+     * @param  string $level install, organization, property or profile
+     * @return string
+     */
+    public static function levelName( $level ) {
+
+        switch ( $level ) {
+
+            case 'install':
+                return \OWA\Core\CoreAPI::t( 'install', 'settings level' );
+
+            case 'organization':
+                return \OWA\Core\CoreAPI::t( 'Organization', 'settings level' );
+
+            case 'property':
+                return \OWA\Core\CoreAPI::t( 'Property', 'settings level' );
+
+            case 'profile':
+                return \OWA\Core\CoreAPI::t( 'Observation Profile', 'settings level' );
+        }
+
+        return (string) $level;
+    }
 
     /**
      * One fieldset for a level below the install, as HTML.
@@ -446,7 +465,7 @@ class SettingsForm {
             return '';
         }
 
-        $level = self::LEVEL_NAMES[ $state['from'] ] ?? $state['from'];
+        $level = self::levelName( $state['from'] );
         $shown = self::displayValue( $args, $state['inherited'] );
         $label = self::label( $key, $args );
 
@@ -1022,10 +1041,10 @@ class SettingsForm {
     protected static function constantNote( $constant ) {
 
         return sprintf(
-            '<div class="description" style="opacity:.75">Set by <code>%s</code> in '
-          . '<code>owa-config.php</code>, which overrides any value stored here. Change '
-          . 'it there, or remove the constant to edit it from this page.</div>',
-            self::esc( $constant ) );
+            '<div class="description" style="opacity:.75">%s</div>',
+            sprintf( self::esc( \OWA\Core\CoreAPI::t( 'Set by %1$s in %2$s, which overrides any value stored here. '
+                . 'Change it there, or remove the constant to edit it from this page.' ) ),
+                '<code>' . self::esc( $constant ) . '</code>', '<code>owa-config.php</code>' ) );
     }
 
     /**

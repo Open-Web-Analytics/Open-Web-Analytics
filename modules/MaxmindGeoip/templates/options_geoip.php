@@ -11,42 +11,39 @@
 // before this page existed.
 ?>
 <fieldset name="owa-geoip-status" class="options">
-<legend>Status</legend>
+<legend><?php $view->out( \OWA\Core\CoreAPI::t( 'Status' ) ); ?></legend>
 
     <div class="setting" id="geoip_status">
-        <div class="title">Database</div>
+        <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Database' ) ); ?></div>
         <div class="description">
         <?php if ( $view->db_present ): ?>
-            <?php echo htmlspecialchars( basename( (string) $view->db_file ), ENT_QUOTES, 'UTF-8' ); ?>
-            is in place, last updated
-            <?php echo htmlspecialchars( gmdate( 'j M Y', (int) $view->db_updated ), ENT_QUOTES, 'UTF-8' ); ?>.
-            MaxMind publish updates twice a week. An out-of-date database does not fail: it returns locations that may have changed since, and reports show no sign of it.
+            <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '%1$s is in place, last updated %2$s.' ),
+                basename( (string) $view->db_file ), gmdate( 'j M Y', (int) $view->db_updated ) ) ); ?>
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'MaxMind publish updates twice a week. An out-of-date database does not fail: it returns locations that may have changed since, and reports show no sign of it.' ) ); ?>
         <?php else: ?>
-            <strong>No database is installed</strong>, so lookups cannot resolve a location.
-            Expected at <?php echo htmlspecialchars( (string) $view->db_file, ENT_QUOTES, 'UTF-8' ); ?>.
+            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$sNo database is installed%2$s, so lookups cannot resolve a location.' ), '<strong>', '</strong>' ); ?>
+            <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Expected at %s.' ), (string) $view->db_file ) ); ?>
         <?php endif; ?>
         </div>
     </div>
 
     <div class="setting" id="geoip_key">
-        <div class="title">Licence key</div>
+        <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Licence key' ) ); ?></div>
         <div class="description">
         <?php if ( $view->has_key ): ?>
-            A key is set, so the database can be downloaded and refreshed.
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'A key is set, so the database can be downloaded and refreshed.' ) ); ?>
         <?php else: ?>
-            <strong>No key is set</strong>, so the database cannot be downloaded. The field
-            below is where it goes.
+            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$sNo key is set%2$s, so the database cannot be downloaded. The field below is where it goes.' ), '<strong>', '</strong>' ); ?>
         <?php endif; ?>
         </div>
     </div>
 
     <div class="setting" id="geoip_refresh">
-        <div class="title">Updating</div>
+        <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Updating' ) ); ?></div>
         <div class="description">
-            Downloading runs from the command line, because it fetches tens of megabytes and can take
-            longer than a web request is allowed to:<br>
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'Downloading runs from the command line, because it fetches tens of megabytes and can take longer than a web request is allowed to:' ) ); ?><br>
             <code>php cli.php cmd=update-geoip-db</code><br>
-            It checks with MaxMind first and does nothing if your copy is already current.
+            <?php $view->out( \OWA\Core\CoreAPI::t( 'It checks with MaxMind first and does nothing if your copy is already current.' ) ); ?>
         </div>
     </div>
 
@@ -72,7 +69,7 @@ foreach ( $view->settings_fieldsets as $set ) {
     <?php // This module's own save action, which returns here afterwards. ?>
     <?php echo $view->createNonceFormField('maxmind_geoip.optionsGeoipUpdate');?>
 
-    <BUTTON class="owa-button" type="submit" name="action" value="maxmind_geoip.optionsGeoipUpdate">Update Options</BUTTON>
+    <BUTTON class="owa-button" type="submit" name="action" value="maxmind_geoip.optionsGeoipUpdate"><?php $view->out( \OWA\Core\CoreAPI::t( 'Update Options' ) ); ?></BUTTON>
     <input type="hidden" name="module" value="maxmind_geoip">
 
 </form>

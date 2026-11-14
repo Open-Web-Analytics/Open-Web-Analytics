@@ -99,12 +99,12 @@ class Status {
 
             $earliest = Cubes::earliestDay( $property_id );
 
-            $out['checks'][] = self::check( 'cube', 'Cube',
+            $out['checks'][] = self::check( 'cube', \OWA\Core\CoreAPI::t( 'Cube' ),
                 $scheduler['level'] === self::RED ? self::RED : self::YELLOW,
                 $earliest
-                    ? sprintf( 'Not created yet. Raw holds data from %s; the next scheduled build creates '
-                             . 'the cube and builds from that day.', self::day( $earliest ) )
-                    : 'Not created yet, and nothing has been collected.' );
+                    ? sprintf( \OWA\Core\CoreAPI::t( 'Not created yet. Raw holds data from %s; the next scheduled build creates '
+                             . 'the cube and builds from that day.' ), self::day( $earliest ) )
+                    : \OWA\Core\CoreAPI::t( 'Not created yet, and nothing has been collected.' ) );
 
             $out['level'] = self::worst( $out['checks'] );
 
@@ -334,13 +334,13 @@ class Status {
 
         if ( $scheduler_down ) {
 
-            return 'the scheduled build is not running';
+            return \OWA\Core\CoreAPI::t( 'the scheduled build is not running' );
         }
 
         if ( $table !== '' && $last_status === 'failed'
                 && strpos( $last_message, $table . ' stopped at' ) !== false ) {
 
-            return 'the last build stopped on this Property\'s cube';
+            return \OWA\Core\CoreAPI::t( 'the last build stopped on this Property\'s cube' );
         }
 
         return '';
@@ -404,25 +404,25 @@ class Status {
 
         if ( $health ) {
 
-            return self::check( 'scheduler', 'Scheduled build', self::RED,
-                $health['headline'] . ' Cubes are built only by the scheduler, so reports will not '
-              . 'update until it runs. Add this cron entry: '
-              . \OWA\Module\Base\Classes\SchedulerHealth::cronLine() );
+            return self::check( 'scheduler', \OWA\Core\CoreAPI::t( 'Scheduled build' ), self::RED,
+                sprintf( \OWA\Core\CoreAPI::t( '%1$s Cubes are built only by the scheduler, so reports will not '
+                    . 'update until it runs. Add this cron entry: %2$s' ),
+                    $health['headline'], \OWA\Module\Base\Classes\SchedulerHealth::cronLine() ) );
         }
 
         if ( $job['running'] ) {
 
-            return self::check( 'scheduler', 'Scheduled build', self::GREEN, 'Running now.' );
+            return self::check( 'scheduler', \OWA\Core\CoreAPI::t( 'Scheduled build' ), self::GREEN, \OWA\Core\CoreAPI::t( 'Running now.' ) );
         }
 
         if ( $job['reason'] !== null ) {
 
-            return self::check( 'scheduler', 'Scheduled build', self::RED, $job['reason'] );
+            return self::check( 'scheduler', \OWA\Core\CoreAPI::t( 'Scheduled build' ), self::RED, $job['reason'] );
         }
 
-        return self::check( 'scheduler', 'Scheduled build', self::GREEN, $job['next']
-            ? 'On schedule. Next run ' . \OWA\Module\Base\Classes\JobStatus::readable( $job['next'] ) . '.'
-            : 'On schedule.' );
+        return self::check( 'scheduler', \OWA\Core\CoreAPI::t( 'Scheduled build' ), self::GREEN, $job['next']
+            ? sprintf( \OWA\Core\CoreAPI::t( 'On schedule. Next run %s.' ), \OWA\Module\Base\Classes\JobStatus::readable( $job['next'] ) )
+            : \OWA\Core\CoreAPI::t( 'On schedule.' ) );
     }
 
     /**
@@ -438,8 +438,8 @@ class Status {
 
         if ( ! $row || empty( $row['last_run_at'] ) ) {
 
-            return self::check( 'last_build', 'Last build', self::YELLOW,
-                'The scheduled build has never run.' );
+            return self::check( 'last_build', \OWA\Core\CoreAPI::t( 'Last build' ), self::YELLOW,
+                \OWA\Core\CoreAPI::t( 'The scheduled build has never run.' ) );
         }
 
         $when    = \OWA\Module\Base\Classes\JobStatus::readable( $row['last_run_at'] );
@@ -450,13 +450,14 @@ class Status {
             $mine = substr( $message, strpos( $message, $table . ' stopped at' ) );
             $mine = strtok( $mine, ';' );
 
-            return self::check( 'last_build', 'Last build', self::RED, sprintf(
-                'Stopped at %s: %s. The next scheduled build resumes there; it is retried at every run.',
+            return self::check( 'last_build', \OWA\Core\CoreAPI::t( 'Last build' ), self::RED, sprintf(
+                \OWA\Core\CoreAPI::t( 'Stopped at %s: %s. The next scheduled build resumes there; it is retried at every run.' ),
                 $when, rtrim( substr( $mine, strlen( $table . ' stopped at ' ) ), '. ' ) ) );
         }
 
-        return self::check( 'last_build', 'Last build', self::GREEN, sprintf( '%s, %s.',
-            $when, ( $row['last_status'] ?? '' ) === 'failed' ? 'failed on another cube' : 'ok' ) );
+        return self::check( 'last_build', \OWA\Core\CoreAPI::t( 'Last build' ), self::GREEN, sprintf(
+            ( $row['last_status'] ?? '' ) === 'failed' ? \OWA\Core\CoreAPI::t( '%s, failed on another cube.' ) : \OWA\Core\CoreAPI::t( '%s, ok.' ),
+            $when ) );
     }
 
     /** Whether everything before yesterday is settled. */
@@ -464,14 +465,14 @@ class Status {
 
         if ( $behind_from === null ) {
 
-            return self::check( 'built', 'Built through', self::GREEN,
-                'Up to date: every day before yesterday is settled.' );
+            return self::check( 'built', \OWA\Core\CoreAPI::t( 'Built through' ), self::GREEN,
+                \OWA\Core\CoreAPI::t( 'Up to date: every day before yesterday is settled.' ) );
         }
 
-        return self::check( 'built', 'Built through', $stuck ? self::RED : self::YELLOW, sprintf(
-            'Behind from %s. %s', self::day( $behind_from ), $stuck
-                ? 'The scheduled build is not reaching it -- see above.'
-                : 'The next scheduled build rebuilds from there.' ) );
+        return self::check( 'built', \OWA\Core\CoreAPI::t( 'Built through' ), $stuck ? self::RED : self::YELLOW, sprintf( $stuck
+                ? \OWA\Core\CoreAPI::t( 'Behind from %s. The scheduled build is not reaching it -- see above.' )
+                : \OWA\Core\CoreAPI::t( 'Behind from %s. The next scheduled build rebuilds from there.' ),
+            self::day( $behind_from ) ) );
     }
 
     /** Rows in the catch-all, how far the lead reaches, and whether today is a daily partition. */
@@ -481,10 +482,11 @@ class Status {
 
         if ( $facts['catch_all_rows'] > 0 ) {
 
-            return self::check( 'partitions', 'Partitions', self::RED, sprintf(
-                '%s rows are in the catch-all partition %s, which no build can rebuild. The dated '
-              . 'partitions have run out: run cmd=partition-rotate.',
-                number_format( $facts['catch_all_rows'] ), $facts['catch_all'] ) );
+            return self::check( 'partitions', \OWA\Core\CoreAPI::t( 'Partitions' ), self::RED, sprintf(
+                \OWA\Core\CoreAPI::tn( '%s row is in the catch-all partition %s, which no build can rebuild. The dated '
+              . 'partitions have run out: run cmd=partition-rotate.', '%s rows are in the catch-all partition %s, which no build can rebuild. The dated '
+              . 'partitions have run out: run cmd=partition-rotate.', $facts['catch_all_rows'] ),
+                \OWA\Core\Strings::formatNumber( $facts['catch_all_rows'] ), $facts['catch_all'] ) );
         }
 
         $lead_days = $facts['lead_end']
@@ -493,28 +495,32 @@ class Status {
 
         if ( $lead_days < self::LEAD_RED_DAYS ) {
 
-            return self::check( 'partitions', 'Partitions', self::RED, sprintf(
-                'Dated partitions end %s, %d day(s) away; after that rows land in the catch-all. '
+            return self::check( 'partitions', \OWA\Core\CoreAPI::t( 'Partitions' ), self::RED, sprintf(
+                \OWA\Core\CoreAPI::tn( 'Dated partitions end %s, %d day away; after that rows land in the catch-all. '
               . 'Run cmd=partition-rotate, which the rotate-partitions job does daily.',
-                $facts['lead_end'] ? self::day( $facts['lead_end'] ) : 'now', $lead_days ) );
+                'Dated partitions end %s, %d days away; after that rows land in the catch-all. '
+              . 'Run cmd=partition-rotate, which the rotate-partitions job does daily.', $lead_days ),
+                $facts['lead_end'] ? self::day( $facts['lead_end'] ) : \OWA\Core\CoreAPI::t( 'now' ), $lead_days ) );
         }
 
         if ( $lead_days < self::LEAD_YELLOW_DAYS ) {
 
-            return self::check( 'partitions', 'Partitions', self::YELLOW, sprintf(
-                'Dated partitions end %s, %d days away. The rotate-partitions job normally keeps a year '
-              . 'ahead; check that it is running.', self::day( $facts['lead_end'] ), $lead_days ) );
+            return self::check( 'partitions', \OWA\Core\CoreAPI::t( 'Partitions' ), self::YELLOW, sprintf(
+                \OWA\Core\CoreAPI::tn( 'Dated partitions end %s, %d day away. The rotate-partitions job normally keeps a year '
+              . 'ahead; check that it is running.', 'Dated partitions end %s, %d days away. The rotate-partitions job normally keeps a year '
+              . 'ahead; check that it is running.', $lead_days ), self::day( $facts['lead_end'] ), $lead_days ) );
         }
 
         if ( ! $facts['today_daily'] ) {
 
-            return self::check( 'partitions', 'Partitions', self::YELLOW,
-                'Today is not in a daily partition, so every build rewrites a whole period. '
-              . 'cmd=partition-rotate carves the daily front back.' );
+            return self::check( 'partitions', \OWA\Core\CoreAPI::t( 'Partitions' ), self::YELLOW,
+                \OWA\Core\CoreAPI::t( 'Today is not in a daily partition, so every build rewrites a whole period. '
+              . 'cmd=partition-rotate carves the daily front back.' ) );
         }
 
-        return self::check( 'partitions', 'Partitions', self::GREEN, sprintf(
-            '%d partitions, from %s; daily through %s; dated through %s; catch-all empty.',
+        return self::check( 'partitions', \OWA\Core\CoreAPI::t( 'Partitions' ), self::GREEN, sprintf(
+            \OWA\Core\CoreAPI::tn( '%d partition, from %s; daily through %s; dated through %s; catch-all empty.',
+                '%d partitions, from %s; daily through %s; dated through %s; catch-all empty.', $facts['count'] ),
             $facts['count'], self::day( $facts['first'] ), self::day( $facts['daily_through'] ),
             self::day( (int) date( 'Ymd', strtotime( $facts['lead_end'] . ' -1 day' ) ) ) ) );
     }
@@ -540,18 +546,21 @@ class Status {
 
         if ( $failed ) {
 
-            return self::check( 'dimensions', 'Custom dimensions', self::YELLOW, sprintf(
-                '%d could not be added to the cube; the Custom Dimensions screen says why.', $failed ) );
+            return self::check( 'dimensions', \OWA\Core\CoreAPI::t( 'Custom dimensions' ), self::YELLOW, sprintf(
+                \OWA\Core\CoreAPI::tn( '%d could not be added to the cube; the Custom Dimensions screen says why.',
+                    '%d could not be added to the cube; the Custom Dimensions screen says why.', $failed ), $failed ) );
         }
 
         if ( $pending ) {
 
-            return self::check( 'dimensions', 'Custom dimensions', self::YELLOW, sprintf(
-                '%d waiting for their column, added at the next build or within fifteen minutes.', $pending ) );
+            return self::check( 'dimensions', \OWA\Core\CoreAPI::t( 'Custom dimensions' ), self::YELLOW, sprintf(
+                \OWA\Core\CoreAPI::tn( '%d waiting for its column, added at the next build or within fifteen minutes.',
+                    '%d waiting for their column, added at the next build or within fifteen minutes.', $pending ), $pending ) );
         }
 
-        return self::check( 'dimensions', 'Custom dimensions', self::GREEN,
-            $all ? sprintf( '%d registered, all reportable.', count( $all ) ) : 'None registered.' );
+        return self::check( 'dimensions', \OWA\Core\CoreAPI::t( 'Custom dimensions' ), self::GREEN,
+            $all ? sprintf( \OWA\Core\CoreAPI::tn( '%d registered, reportable.', '%d registered, all reportable.', count( $all ) ), count( $all ) )
+                 : \OWA\Core\CoreAPI::t( 'None registered.' ) );
     }
 
     /**
@@ -627,7 +636,7 @@ class Status {
 
         $ts = strtotime( (string) $yyyymmdd );
 
-        return $ts ? date( 'j M Y', $ts ) : (string) $yyyymmdd;
+        return $ts ? \OWA\Core\Strings::formatDate( $ts, 'dMMMy', 'j M Y' ) : (string) $yyyymmdd;
     }
 
     protected static function check( $key, $label, $level, $detail ) {

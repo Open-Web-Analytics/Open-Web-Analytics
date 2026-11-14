@@ -83,6 +83,21 @@ class MetricSets {
     );
 
     /**
+     * One of SETS with its label in the locale in use. The labels are a
+     * Strings::LABEL_TABLES table, catalogued from SETS.
+     *
+     * @param  string $key
+     * @return array
+     */
+    public static function translatedSet( $key ) {
+
+        $set          = self::SETS[ $key ];
+        $set['label'] = \OWA\Core\Strings::translate( $set['label'] );
+
+        return $set;
+    }
+
+    /**
      * Every metric set available for a Property, keyed by name.
      *
      * Each is: label, metrics, chartMetric.
@@ -106,7 +121,7 @@ class MetricSets {
             return $sets;
         }
 
-        $sets[ self::DEFAULT_KEY ] = self::SETS[ self::DEFAULT_KEY ];
+        $sets[ self::DEFAULT_KEY ] = self::translatedSet( self::DEFAULT_KEY );
 
         /*
          * Goal events, when the Property has an active goal event definition to
@@ -115,12 +130,12 @@ class MetricSets {
          */
         if ( self::hasActiveGoalEventDefinition( $propertyId ) ) {
 
-            $sets['goals'] = self::SETS['goals'];
+            $sets['goals'] = self::translatedSet( 'goals' );
         }
 
         if ( \OWA\Core\CoreAPI::getSetting( 'base', 'enableEcommerceReporting', 'property', (string) $propertyId ) ) {
 
-            $sets['ecommerce'] = self::SETS['ecommerce'];
+            $sets['ecommerce'] = self::translatedSet( 'ecommerce' );
         }
 
         return $sets;

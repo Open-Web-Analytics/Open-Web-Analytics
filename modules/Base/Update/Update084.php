@@ -130,7 +130,7 @@ class Update084 extends \OWA\Core\Update {
             return false;
         }
 
-        $this->e->notice( sprintf( '%s: %d row(s) removed; %s replaces it.', self::OLD, count( $rows ), self::NAME ) );
+        $this->e->notice( sprintf( '%s: %d %s removed; %s replaces it.', self::OLD, count( $rows ), \OWA\Core\Lib::plural( count( $rows ), 'row', 'rows' ), self::NAME ) );
 
         return true;
     }

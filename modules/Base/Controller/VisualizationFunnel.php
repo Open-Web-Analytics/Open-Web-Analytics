@@ -138,7 +138,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
             $this->set( 'funnel', array() );
             $this->setSubview( 'base.visualizationFunnel' );
-            $this->setTitle( 'Funnel' );
+            $this->setTitle( \OWA\Core\CoreAPI::t( 'Funnel' ) );
 
             return;
         }

@@ -861,7 +861,7 @@ class Dimensions {
         if ( isset( $in_this_call[ $column ] ) ) {
 
             return array( 'error' => sprintf(
-                'two of these derive the same column, %s.', $column ) );
+                \OWA\Core\CoreAPI::t( 'two of these derive the same column, %s.' ), $column ) );
         }
 
         $label = isset( $request['label'] ) && $request['label'] !== ''

@@ -42,7 +42,7 @@ class Install extends \OWA\Core\View {
     function render($data) {
 
         //page title
-        $this->t->set('page_title', 'Installation');
+        $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'Installation' ));
 
         // load wrapper template
         $this->t->set_template('wrapper_public.php');
@@ -50,7 +50,7 @@ class Install extends \OWA\Core\View {
         $this->body->set_template('install.php');
 
         $this->setCss("base/css/owa.css");
-        $this->body->set('headline', 'Welcome to the Open Web Analytics Installation Wizard');
+        $this->body->set('headline', \OWA\Core\CoreAPI::t( 'Welcome to the Open Web Analytics Installation Wizard' ));
         $this->body->set('step', $data['subview']);
         $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }

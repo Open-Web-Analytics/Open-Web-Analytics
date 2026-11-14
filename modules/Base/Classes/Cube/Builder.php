@@ -1637,8 +1637,8 @@ class Builder {
         }
 
         \OWA\Core\CoreAPI::notice( sprintf(
-            'Cube build: %s: %d row(s) reached raw during the build; the next run builds them in.',
-            $span['name'], $missing ) );
+            'Cube build: %s: %d %s raw during the build; the next run builds %s in.',
+            $span['name'], $missing, \OWA\Core\Lib::plural( $missing, 'row reached', 'rows reached' ), \OWA\Core\Lib::plural( $missing, 'it', 'them' ) ) );
 
         return null;
     }

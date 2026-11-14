@@ -9,26 +9,27 @@
  */
 require_once __DIR__ . '/cube_status_badge.php';
 ?>
-<h1 class="panel_headline">Reporting Cubes</h1>
+<h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'Reporting Cubes' ) ); ?></h1>
 <div id="panel">
 
 <div class="owa_panelIntro">
-    Each Property's reports read its reporting cube, which the scheduled build keeps up to date.
-    <b>Action needed</b> means reports are wrong or will stop updating until someone acts;
-    <b>Attention</b> means something the next scheduled build, or time, will resolve.
+    <?php $view->out( \OWA\Core\CoreAPI::t( 'Each Property\'s reports read its reporting cube, which the scheduled build keeps up to date.' ) ); ?>
+    <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s means reports are wrong or will stop updating until someone acts; %2$s means something the next scheduled build, or time, will resolve.' ),
+        '<b>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Action needed' ), ENT_QUOTES, 'UTF-8' ) . '</b>',
+        '<b>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Attention' ), ENT_QUOTES, 'UTF-8' ) . '</b>' ); ?>
 </div>
 
 <?php if ( ! $view->cubes ): ?>
 
-    <div class="owa_panelIntro">No Property has collected anything yet, so there are no cubes.</div>
+    <div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'No Property has collected anything yet, so there are no cubes.' ) ); ?></div>
 
 <?php else: ?>
 
 <table class="management">
     <tr>
-        <th>Status</th>
-        <th>Property</th>
-        <th>Summary</th>
+        <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Status' ) ); ?></th>
+        <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Property' ) ); ?></th>
+        <th><?php $view->out( \OWA\Core\CoreAPI::t( 'Summary' ) ); ?></th>
         <th style="width:1%"></th>
     </tr>
     <?php foreach ( $view->cubes as $owa_cube ): ?>
@@ -54,12 +55,12 @@ require_once __DIR__ . '/cube_status_badge.php';
             <?php if ( $owa_first ): ?>
                 <b><?php $view->out( $owa_first['label'] ); ?>:</b> <?php $view->out( $owa_first['detail'] ); ?>
             <?php else: ?>
-                Every check passes.
+                <?php $view->out( \OWA\Core\CoreAPI::t( 'Every check passes.' ) ); ?>
             <?php endif; ?>
         </td>
         <td>
             <a href="<?php echo $view->makeLink( array(
-                'do' => 'base.cubeStatusDetail', 'propertyId' => $owa_cube['property_id'] ) ); ?>">Details</a>
+                'do' => 'base.cubeStatusDetail', 'propertyId' => $owa_cube['property_id'] ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Details' ) ); ?></a>
         </td>
     </tr>
     <?php endforeach; ?>

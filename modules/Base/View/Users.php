@@ -33,9 +33,9 @@ class Users extends \OWA\Core\View {
     function render() {
         
         //page title
-        $this->t->set('page_title', 'User Roster');
+        $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'User Roster' ));
         $this->body->set_template('users.php');
-        $this->body->set('headline', 'User Roster');
+        $this->body->set('headline', \OWA\Core\CoreAPI::t( 'User Roster' ));
         $this->body->set('users', $this->get('users'));
     }
 }

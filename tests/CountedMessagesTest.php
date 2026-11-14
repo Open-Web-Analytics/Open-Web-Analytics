@@ -70,8 +70,9 @@ final class CountedMessagesTest extends TestCase
     }
 
     /**
-     * No message writes a count's noun as "job(s)": the CLI commands and Core
-     * say it in the form the count takes, and System Health through tn().
+     * No message writes a count's noun as "job(s)": operator output (CLI,
+     * updates, logs) says it in the form the count takes (Lib::plural()), and
+     * what a person reads in the UI through tn().
      *
      * @dataProvider sourcesWithCounts
      */
@@ -95,7 +96,10 @@ final class CountedMessagesTest extends TestCase
             glob(\OWA\Core\Env::root() . '/modules/*/Controller/*.php'),
             glob(\OWA\Core\Env::root() . '/Core/*.php'),
             glob(\OWA\Core\Env::root() . '/Core/*/*.php'),
-            [\OWA\Core\Env::root() . '/modules/Base/Classes/SystemHealth.php']
+            glob(\OWA\Core\Env::root() . '/modules/*/Classes/*.php'),
+            glob(\OWA\Core\Env::root() . '/modules/*/Classes/*/*.php'),
+            glob(\OWA\Core\Env::root() . '/modules/*/Update/*.php'),
+            glob(\OWA\Core\Env::root() . '/modules/*/templates/*.php')
         );
 
         $out = [];

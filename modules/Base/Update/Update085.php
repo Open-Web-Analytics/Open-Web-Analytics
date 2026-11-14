@@ -105,7 +105,7 @@ class Update085 extends \OWA\Core\Update {
             return false;
         }
 
-        $this->e->notice( sprintf( 'Retired settings: %d row(s) removed.', count( $rows ) ) );
+        $this->e->notice( sprintf( 'Retired settings: %d %s removed.', count( $rows ), \OWA\Core\Lib::plural( count( $rows ), 'row', 'rows' ) ) );
 
         return true;
     }

@@ -41,7 +41,7 @@ class UsersPasswordEntry extends \OWA\Core\View {
     function render($data) {
 
         $this->t->set_template('wrapper_public.php');
-        $this->t->set('page_title', 'OWA Password Entry');
+        $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'OWA Password Entry' ));
         $this->body->set_template('users_change_password.php');
         $this->body->set('headline', $this->getMsg(3005));
         $this->body->set('key', $this->get('key'));

@@ -44,6 +44,6 @@ jQuery(document).ready(function() {
 
 <?php else: ?>
     <?php if ($view->show_error):?>
-    <div class="owa_status-msg">No data to display.</div>
+    <div class="owa_status-msg"><?php $view->out( \OWA\Core\CoreAPI::t( 'No data to display.' ) );?></div>
     <?php endif;?>
 <?php endif;?>

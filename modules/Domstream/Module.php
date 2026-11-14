@@ -101,8 +101,8 @@ class Module extends \OWA\Core\Module {
         $this->registerSettingsFieldSet( array(
             'id'       => 'trackingTag',
             'group'    => 'tracking_tag',
-            'legend'   => 'Page interaction recording',
-            'description' => 'Pointer movement, clicks and key presses, recorded so a visit can be played back.',
+            'legend'   => \OWA\Core\CoreAPI::t( 'Page interaction recording' ),
+            'description' => \OWA\Core\CoreAPI::t( 'Pointer movement, clicks and key presses, recorded so a visit can be played back.' ),
             'settings' => array( 'record', 'sample_rate' ),
         ) );
 
@@ -183,7 +183,7 @@ class Module extends \OWA\Core\Module {
     function addRowActions( $actions ) {
 
         $actions['recordings'] = array(
-            'label'    => 'Recordings',
+            'label'    => \OWA\Core\CoreAPI::t( 'Recordings' ),
             'description' => "Recordings, filtered to the page's path.",
             'reportId' => 'domstreams',
             'params'   => array( 'pagePath' => 'pagePath' ),
@@ -202,7 +202,7 @@ class Module extends \OWA\Core\Module {
 
     function registerNavigation() {
 
-        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'domstreams' ), 'Recordings', 7 );
+        $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'domstreams' ), \OWA\Core\CoreAPI::t( 'Recordings' ), 7 );
     }
 
     function registerApiMethods() {

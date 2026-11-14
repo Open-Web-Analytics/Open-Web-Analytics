@@ -34,7 +34,7 @@ jQuery( function () {
 
 <?php if ( isset($view->validation_errors) ):?>
 <div class="error">
-    <span class="inline_h2">The form that you completed had some errors:</span>
+    <span class="inline_h2"><?php $view->out( \OWA\Core\CoreAPI::t( 'The form that you completed had some errors:' ) ); ?></span>
     <ul>
         <?php foreach ($view->validation_errors as $validation_error): ?>
         <li>

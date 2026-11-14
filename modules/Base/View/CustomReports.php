@@ -16,7 +16,7 @@ class CustomReports extends \OWA\Core\View {
 
     function render() {
 
-        $this->t->set( 'page_title', 'Custom reports' );
+        $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'Custom reports' ) );
 
         $this->body->set_template( 'custom_reports.php' );
 

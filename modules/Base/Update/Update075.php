@@ -218,8 +218,8 @@ class Update075 extends \OWA\Core\Update {
             }
         }
 
-        $this->e->notice( sprintf( 'Goal conversions: %d flagged event(s) now have conversion rows; %d meet no goal event and keep their flag.',
-            $converted, $unmatched ) );
+        $this->e->notice( sprintf( 'Goal conversions: %d flagged %s conversion rows; %d %s no goal event and %s their flag.',
+            $converted, \OWA\Core\Lib::plural( $converted, 'event now has', 'events now have' ), $unmatched, \OWA\Core\Lib::plural( $unmatched, 'meets', 'meet' ), \OWA\Core\Lib::plural( $unmatched, 'keeps', 'keep' ) ) );
 
         if ( $first !== null ) {
 

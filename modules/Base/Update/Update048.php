@@ -96,8 +96,8 @@ class Update048 extends \OWA\Core\Update {
         if ( $orphans ) {
 
             $this->e->notice( sprintf(
-                'Deleted %d goal event condition(s) belonging to no goal event',
-                count( $orphans ) ) );
+                'Deleted %d goal event %s belonging to no goal event',
+                count( $orphans ), \OWA\Core\Lib::plural( count( $orphans ), 'condition', 'conditions' ) ) );
         }
 
         return true;

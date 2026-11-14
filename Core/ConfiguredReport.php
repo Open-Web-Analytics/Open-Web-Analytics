@@ -676,7 +676,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      */
     function action() {
 
-        $d = $this->definition;
+        $d = self::translated( $this->definition );
 
         $values = $this->resolveParams();
 
@@ -878,6 +878,42 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         }
 
         return $values;
+    }
+
+    /**
+     * A definition with what a reader sees in the locale in use: the
+     * Strings::REPORT_KEYS of the report and Strings::REPORT_WIDGET_KEYS of
+     * each widget. Translated before {name} is replaced, so a translation keeps
+     * the placeholder.
+     *
+     * @param  array $definition a decoded report definition
+     * @return array
+     */
+    public static function translated( array $definition ) {
+
+        foreach ( \OWA\Core\Strings::REPORT_KEYS as $key ) {
+
+            if ( isset( $definition[ $key ] ) && is_string( $definition[ $key ] ) && $definition[ $key ] !== '' ) {
+
+                $definition[ $key ] = \OWA\Core\Strings::translate( $definition[ $key ] );
+            }
+        }
+
+        if ( isset( $definition['widgets'] ) && is_array( $definition['widgets'] ) ) {
+
+            foreach ( $definition['widgets'] as $i => $widget ) {
+
+                foreach ( \OWA\Core\Strings::REPORT_WIDGET_KEYS as $key ) {
+
+                    if ( is_array( $widget ) && isset( $widget[ $key ] ) && is_string( $widget[ $key ] ) && $widget[ $key ] !== '' ) {
+
+                        $definition['widgets'][ $i ][ $key ] = \OWA\Core\Strings::translate( $widget[ $key ] );
+                    }
+                }
+            }
+        }
+
+        return $definition;
     }
 
     /**

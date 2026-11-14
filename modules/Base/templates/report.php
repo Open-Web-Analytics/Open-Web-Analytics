@@ -28,7 +28,7 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                     <?php // On a narrow screen: the logo, which the header gives up to the menu button, and the close button. ?>
                     <div class="owa_reportNavRailHead">
                         <span class="owa_railLogo"><?php include( 'logo_image.php' );?></span>
-                        <button type="button" class="owa_reportNavClose" aria-label="Hide the report menu">
+                        <button type="button" class="owa_reportNavClose" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Hide the report menu' ) );?>">
                             <i class="fas fa-times" aria-hidden="true"></i>
                         </button>
                     </div>
@@ -170,11 +170,11 @@ OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson
                     <?php if ( $owa_asOf ): ?>
                     <div id="owa_reportAsOf" class="owa_reportAsOf<?php echo $owa_asOf['warning'] ? ' owa_reportAsOfStale' : ''; ?>"
                          data-timezone="<?php $view->out( $owa_asOf['timezone'] ); ?>">
-                        Data as of <span class="owa_reportAsOfTime">&hellip;</span>
+                        <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Data as of %s' ), '<span class="owa_reportAsOfTime">&hellip;</span>' ); ?>
                         <?php if ( $owa_asOf['warning'] ): ?>
                             &mdash; <?php $view->out( $owa_asOf['warning'] ); ?><?php if ( $owa_asOf['can_view'] ): ?>
                             (<a href="<?php echo $view->makeLink( array( 'do' => 'base.cubeStatusDetail',
-                                'propertyId' => $owa_asOf['property_id'] ) ); ?>">details</a>)<?php endif; ?>
+                                'propertyId' => $owa_asOf['property_id'] ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'details' ) ); ?></a>)<?php endif; ?>
                         <?php endif; ?>
                     </div>
                     <?php endif; ?>

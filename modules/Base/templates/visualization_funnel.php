@@ -42,12 +42,12 @@ foreach ( $owa_steps as $owa_s ) {
     ?>
     <span class="owa_reportControl">
         <div class="autoRefreshControl" id="funnelScopeSwitch">
-            <span class="label">Counting:</span>
+            <span class="label"><?php $view->out( \OWA\Core\CoreAPI::t( 'Counting:' ) ); ?></span>
             <span class="buttons">
                 <input type="radio" name="funnelscope" id="funnel-scope-visitor"<?php if ($owa_scope !== 'session'): ?> checked="checked"<?php endif; ?> />
-                <label for="funnel-scope-visitor">Visitors</label>
+                <label for="funnel-scope-visitor"><?php $view->out( \OWA\Core\CoreAPI::t( 'Visitors' ) ); ?></label>
                 <input type="radio" name="funnelscope" id="funnel-scope-session"<?php if ($owa_scope === 'session'): ?> checked="checked"<?php endif; ?> />
-                <label for="funnel-scope-session">Visits</label>
+                <label for="funnel-scope-session"><?php $view->out( \OWA\Core\CoreAPI::t( 'Visits' ) ); ?></label>
             </span>
             <div style="clear:both;"></div>
         </div>
@@ -65,7 +65,7 @@ foreach ( $owa_steps as $owa_s ) {
          */
     ?>
     <span class="owa_reportControl">
-        <span class="label">Filter:</span>
+        <span class="label"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filter:' ) ); ?></span>
         <span id="funnelFilter" class="constraintPicker"></span>
     </span>
 
@@ -83,8 +83,9 @@ foreach ( $owa_steps as $owa_s ) {
 </div>
 
 <?php if ( $view->get('funnel_saved_filter') ): ?>
-<p class="owa_funnelSavedFilter">Counts only where <?php
-    $view->out( implode( ', and ', (array) $view->get('funnel_saved_filter') ) ); ?>.</p>
+<p class="owa_funnelSavedFilter"><?php
+    $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Counts only where %s.' ),
+        implode( \OWA\Core\CoreAPI::t( ', and ' ), (array) $view->get('funnel_saved_filter') ) ) ); ?></p>
 <?php endif; ?>
 
 <?php if ( $view->get('funnel_segment_error') ): ?>
@@ -133,16 +134,16 @@ foreach ( $owa_steps as $owa_s ) {
                 <div class="owa_funnelBar" style="height:<?php $view->out($owa_h, false);?>%;" title="<?php $view->out($owa_count);?> <?php $view->out($owa_label);?>"></div>
             </div>
 
-            <div class="owa_funnelStepNumber">Step <?php $view->out($owa_step['step_number']);?></div>
+            <div class="owa_funnelStepNumber"><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Step %s' ), $owa_step['step_number'] ) );?></div>
             <div class="funnelStepName"><?php $view->out($owa_step['name']);?></div>
             <div class="funnelStepCount"><?php $view->out($owa_count);?> <span class="visitorCountLabel"><?php $view->out($owa_label);?></span></div>
             <div class="funnelStepPath"><?php $view->out($owa_step['summary'] ?? '');?></div>
 
             <?php if ( $owa_k > 0 ):?>
             <div class="owa_funnelDrop">
-                <?php $view->out($owa_step['visitor_percentage']);?> continued
+                <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '%s continued' ), $owa_step['visitor_percentage'] ) );?>
                 <?php if ( $owa_drop > 0 ):?>
-                <span class="secondaryText">(<?php $view->out($owa_drop);?> dropped)</span>
+                <span class="secondaryText"><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '(%s dropped)' ), $owa_drop ) );?></span>
                 <?php endif;?>
             </div>
             <?php endif;?>
@@ -154,7 +155,7 @@ foreach ( $owa_steps as $owa_s ) {
 </div>
 
 <div class="owa_reportSectionContent">
-    <div class="owa_reportSectionHeader"><h2 class="owa_reportSectionTitle">Funnel Steps</h2></div>
+    <div class="owa_reportSectionHeader"><h2 class="owa_reportSectionTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Funnel Steps' ) ); ?></h2></div>
     <?php
         /*
          * The same grid every other report draws, fed the steps directly rather
@@ -170,8 +171,9 @@ foreach ( $owa_steps as $owa_s ) {
 
 <?php else:?>
 <div class="owa_reportSectionContent">
-    This visualization has no steps yet.
-    <a href="<?php echo $view->makeLink( array( 'do' => 'base.visualizationEdit', 'visualizationId' => $view->visualization_id ), true ); ?>">Add some</a>.
+    <?php $view->out( \OWA\Core\CoreAPI::t( 'This visualization has no steps yet.' ) ); ?>
+    <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$sAdd some%2$s.' ),
+        '<a href="' . $view->makeLink( array( 'do' => 'base.visualizationEdit', 'visualizationId' => $view->visualization_id ), true ) . '">', '</a>' ); ?>
 </div>
 <?php endif;?>
 

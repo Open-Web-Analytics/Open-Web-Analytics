@@ -34,9 +34,9 @@ class InstallStart extends \OWA\Core\View {
 
         $this->body->set_template('install_start.php');
         //page title
-        $this->t->set('page_title', 'OWA Installation Start');
+        $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'OWA Installation Start' ));
         // fetch admin links from all modules
-        $this->body->set('headline', 'Get Started...');
+        $this->body->set('headline', \OWA\Core\CoreAPI::t( 'Get Started...' ));
         $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }

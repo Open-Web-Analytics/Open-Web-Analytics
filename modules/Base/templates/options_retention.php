@@ -19,6 +19,6 @@ foreach ( $view->settings_fieldsets as $set ) {
 ?>
     <?php echo $view->createNonceFormField( 'base.optionsRetentionUpdate' );?>
     <input type="hidden" name="module" value="base">
-    <BUTTON class="owa-button" type="submit" name="action" value="base.optionsRetentionUpdate">Save</BUTTON>
+    <BUTTON class="owa-button" type="submit" name="action" value="base.optionsRetentionUpdate"><?php $view->out( \OWA\Core\CoreAPI::t( 'Save' ) ); ?></BUTTON>
 </form>
 </div>

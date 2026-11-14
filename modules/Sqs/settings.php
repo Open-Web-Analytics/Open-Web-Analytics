@@ -39,8 +39,8 @@ return array(
             'type'        => 'text',
             'pattern'     => '/^[a-z]{2}(-gov)?-[a-z]+-\d$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'An AWS region looks like us-east-1.' ),
-            'label'       => 'AWS Region',
-            'description' => 'The region the tracker-ingest queues live in, such as us-east-1.',
+            'label'       => \OWA\Core\CoreAPI::t( 'AWS Region' ),
+            'description' => \OWA\Core\CoreAPI::t( 'The region the tracker-ingest queues live in, such as us-east-1.' ),
         ),
 
         /*
