@@ -32,7 +32,7 @@
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
 import { dialogFit } from './owa.dialog.js';
-import { metricInfoButton } from './owa.metricinfo.js';
+import { closeMetricInfo, describeMetric } from './owa.metricinfo.js';
 import { describeChange } from './owa.periodpicker.js';
 
 OWA.resultSet = function( attributes ) {
@@ -959,8 +959,8 @@ OWA.resultSetExplorer.prototype = {
             .off( 'click.owaChartMetric' )
             .on( 'click.owaChartMetric', '.owa_metricInfobox', function ( e ) {
 
-                // A box's description button opens its description, nothing more.
-                if ( ! that.areaChart || jQuery( e.target ).closest( '.owa_metricInfoToggle, .owa_metricInfoPop' ).length ) {
+                // A box's name opens its description, nothing more.
+                if ( ! that.areaChart || jQuery( e.target ).closest( '.owa_metricDescribed, .owa_metricInfoPop' ).length ) {
 
                     return;
                 }
@@ -2309,38 +2309,56 @@ OWA.dataGrid.prototype = {
         var sorted = rs.sortColumn === col.name;
         var desc   = sorted && rs.sortOrder === 'desc';
 
-        var $label = jQuery( '<span class="owa_gridSortLabel"></span>' ).text( col.label );
-
-        var $button = jQuery( '<button type="button" class="owa_gridSort"></button>' );
-
-        if ( sorted ) {
-            $button.append( '<i class="fas ' + ( desc ? 'fa-arrow-down' : 'fa-arrow-up' ) + '" aria-hidden="true"></i>' );
-        }
-
-        $button.append( $label );
-
         /*
          * A metric sorts largest first, a dimension A to Z; a second click on
          * the sorted column turns it round.
          */
-        $button.on( 'click', function () {
+        var order = sorted
+            ? ( desc ? 'asc' : 'desc' )
+            : ( col.kind === 'metric' ? 'desc' : 'asc' );
 
-            var order = sorted
-                ? ( desc ? 'asc' : 'desc' )
-                : ( col.kind === 'metric' ? 'desc' : 'asc' );
+        var sort = function () {
 
+            closeMetricInfo();
             that.emit( 'sort_column_change', [ col.name, order ] );
-        } );
+        };
 
         if ( ! meta || ! meta.description ) {
-            return $button;
+
+            var $label  = jQuery( '<span class="owa_gridSortLabel"></span>' ).text( col.label );
+            var $button = jQuery( '<button type="button" class="owa_gridSort"></button>' );
+
+            if ( sorted ) {
+                $button.append( '<i class="fas ' + ( desc ? 'fa-arrow-down' : 'fa-arrow-up' ) + '" aria-hidden="true"></i>' );
+            }
+
+            return $button.append( $label ).on( 'click', sort );
         }
 
-        // The description has its own control beside the sort button
-        // (owa.metricinfo.js), so a tap on the name still sorts.
-        return jQuery( '<span class="owa_gridHeadWithInfo"></span>' )
-            .append( $button )
-            .append( metricInfoButton( col.label, meta.description ) );
+        /*
+         * A metric with a description: the name opens the description
+         * (owa.metricinfo.js) and the arrow after it sorts. The arrow is
+         * always there on the sorted column, in the sort's direction; on the
+         * others it shows while the heading is hovered, has focus, or has its
+         * description open -- which is how a touch screen reaches it. Unsorted,
+         * it points down: a metric sorts largest first.
+         */
+        var $th = function () { return $name.closest( 'th' ); };
+
+        var $name = jQuery( '<button type="button" class="owa_gridHeadLabel"></button>' ).text( col.label );
+
+        describeMetric( $name[0], meta.description, {
+            within: function () { return $th()[0]; },
+            onOpen: function () { $th().addClass( 'is-describing' ); },
+            onClose: function () { $th().removeClass( 'is-describing' ); }
+        } );
+
+        var $arrow = jQuery( '<button type="button" class="owa_gridSortArrow" data-ui="grid-sort"></button>' )
+            .attr( 'aria-label', OWA.util.sprintf( OWA.l( 'Sort by %s' ), col.label ) )
+            .append( '<i class="fas ' + ( sorted && ! desc ? 'fa-arrow-up' : 'fa-arrow-down' ) + '" aria-hidden="true"></i>' )
+            .on( 'click', sort );
+
+        return jQuery( '<span class="owa_gridHeadDescribed"></span>' ).append( $name, $arrow );
     },
 
     dimensionHeading : function ( rs, col, slot, lists, last ) {

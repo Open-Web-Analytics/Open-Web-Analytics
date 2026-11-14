@@ -207,15 +207,17 @@ describe('a press on a box', () => {
 
 describe('a box\'s description', () => {
 
-    test('is behind a button on a box whose metric has one', () => {
+    test('a box whose metric has one: its name is the button that opens it', () => {
         const { track } = draw(['sessions', 'pageViews']);
 
-        const info = $(track).find('[data-ui="kpi:sessions"] [data-ui="metric-info"]');
-        expect(info.length).toBe(1);
-        expect(info.attr('aria-label')).toBe('About SESSIONS');
-        expect(info.attr('aria-expanded')).toBe('false');
+        const name = $(track).find('[data-ui="kpi:sessions"] .owa_metricInfoboxLabel > button');
+        expect(name.length).toBe(1);
+        expect(name.text()).toBe('SESSIONS');
+        expect(name.attr('aria-expanded')).toBe('false');
 
-        expect($(track).find('[data-ui="kpi:pageViews"] [data-ui="metric-info"]').length).toBe(0);
+        // None: the name is text.
+        expect($(track).find('[data-ui="kpi:pageViews"] .owa_metricInfoboxLabel > button').length).toBe(0);
+        expect($(track).find('[data-ui="kpi:pageViews"] .owa_metricInfoboxLabel').text()).toBe('PAGEVIEWS');
     });
 
     test('opening it does not chart the metric', () => {
@@ -230,21 +232,37 @@ describe('a box\'s description', () => {
 
         OWA.resultSetExplorer.prototype.bindMetricBoxes.call(explorer, 'w');
 
-        const info = track.querySelector('[data-ui="kpi:sessions"] [data-ui="metric-info"]');
-        info.click();
+        const name = track.querySelector('[data-ui="kpi:sessions"] .owa_metricInfoboxLabel > button');
+        name.click();
         jest.runAllTimers();
 
         expect(changed).toEqual([]);
-        expect(info.getAttribute('aria-expanded')).toBe('true');
-        expect(document.getElementById(info.getAttribute('aria-controls')).textContent).toBe('The number of sessions.');
+        expect(name.getAttribute('aria-expanded')).toBe('true');
+        expect(document.getElementById(name.getAttribute('aria-controls')).textContent).toBe('The number of sessions.');
 
         // A press on the description is not a press on the box either.
-        document.getElementById(info.getAttribute('aria-controls')).click();
+        document.getElementById(name.getAttribute('aria-controls')).click();
         expect(changed).toEqual([]);
 
         // The rest of the box still does.
         track.querySelector('[data-ui="kpi:sessions"] .owa_metricInfoboxLargeNumber').click();
         expect(changed).toEqual(['sessions']);
+
+        jest.useRealTimers();
+    });
+
+    test('a mouse resting on the name opens it', () => {
+        jest.useFakeTimers();
+
+        const { track } = draw(['sessions']);
+        const name = track.querySelector('[data-ui="kpi:sessions"] .owa_metricInfoboxLabel > button');
+        const e = new Event('pointerenter');
+        Object.defineProperty(e, 'pointerType', { value: 'mouse' });
+
+        name.dispatchEvent(e);
+        jest.advanceTimersByTime(200);
+
+        expect(name.getAttribute('aria-expanded')).toBe('true');
 
         jest.useRealTimers();
     });

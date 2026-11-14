@@ -3445,38 +3445,30 @@ li.constraintRow {
 /* ---------------------------------------------------------------------------
  * A metric's description
  *
- * An (i) button after a metric's name, on a grid heading or a metric box,
- * opens its description in a box under it (owa.metricinfo.js). A press, not a
- * hover, so a touch screen shows it too.
+ * A metric's name with a dotted underline, on a grid heading or a metric box,
+ * is a button that opens its description in a box under it
+ * (owa.metricinfo.js): on hover with a mouse, and on a click or a tap.
  * ------------------------------------------------------------------------- */
 
-.owa_metricInfoToggle {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    margin: 0 0 0 2px;
+.owa_metricDescribed {
+    position: relative;
+    margin: 0;
     padding: 0;
     border: 0;
-    border-radius: 50%;
     background: transparent;
-    color: #6b7280;
-    font-size: 13px;
-    line-height: 1;
-    vertical-align: middle;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+    text-decoration: underline dotted #9ca3af;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
     cursor: pointer;
 }
 
-.owa_metricInfoToggle:hover,
-.owa_metricInfoToggle[aria-expanded="true"] {
-    color: #1874CD;
-}
-
-.owa_metricInfoToggle:focus-visible {
+.owa_metricDescribed:focus-visible {
     outline: 2px solid #1874CD;
-    outline-offset: 1px;
+    outline-offset: 2px;
+    border-radius: 2px;
 }
 
 /* Placed against the window by owa.metricinfo.js, so a row or table that
@@ -5341,8 +5333,9 @@ li.constraintRow {
 
     .owa .owa_metricCarouselArrow { width: 44px; min-height: 44px; }
 
-    /* 44px without making the line it sits on taller. */
-    .owa_metricInfoToggle { width: 44px; height: 44px; margin: -12px -12px -12px -6px; }
+    /* A name's tap area is 44px tall, over the lines round it rather than
+       making its own line taller. */
+    .owa_metricDescribed::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 
     .owa .owa_chartGranularity { height: 44px; font-size: 16px; }
 

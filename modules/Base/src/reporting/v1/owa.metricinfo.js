@@ -1,25 +1,33 @@
 import { OWA } from './owa.js';
 
 /**
- * A metric's description, behind an (i) button beside its name.
+ * A metric's description, opened from the metric's name.
  *
- * Shown on a tap or a click rather than on hover, so a touch screen shows it
- * too. The button is its own control: beside a grid heading's sort button,
- * not inside it, and inside a metric box without choosing that box.
+ * The name is a button with a dotted underline: a grid heading's label, a
+ * metric box's label. Hovering it with a mouse shows the description, and
+ * leaving the name and the description hides it again after a moment, so the
+ * pointer can cross from one to the other. A click or a tap shows it and
+ * keeps it open until Escape, a press anywhere else, or the name again.
  *
- * The description opens in a box placed under the button (above it when the
+ * The description opens in a box placed under the name (above it when the
  * window has more room there), kept 8px inside the window. It is inserted
- * after the button, so a screen reader reads it next, and it is a polite
- * status region filled once it is in the page, so opening it is announced.
+ * after the name, so a screen reader reads it next, and it is a polite status
+ * region filled once it is in the page, so opening it is announced.
  *
- * One is open at a time. Escape, a press anywhere but the button or the box,
- * or the button again closes it.
+ * One is open at a time.
  */
 
 var current = null;
 var seq = 0;
+var closing = null;
 
 var GUTTER = 8;
+
+/** How long a pointer rests on a name before its description opens. */
+export var HOVER_OPEN = 120;
+
+/** How long after the pointer leaves the name and the description it closes. */
+export var HOVER_CLOSE = 200;
 
 /**
  * The description of a metric, from the metrics a result set relates
@@ -46,7 +54,7 @@ export function metricDescription( rs, name ) {
 
 /**
  * Where the box goes: left and top (or bottom, when it opens upwards) in
- * window pixels, for a button at `r` and a box `width` by `height`.
+ * window pixels, for a name at `r` and a box `width` by `height`.
  */
 export function placeInfo( r, width, height, win ) {
 
@@ -64,7 +72,35 @@ export function placeInfo( r, width, height, win ) {
     };
 }
 
+function cancelClose() {
+
+    if ( closing ) {
+        clearTimeout( closing );
+        closing = null;
+    }
+}
+
+/** A hover-opened description closes a moment after the pointer leaves. */
+function closeSoon( trigger ) {
+
+    cancelClose();
+
+    if ( current && current.trigger === trigger && ! current.pinned ) {
+        closing = setTimeout( function () {
+            closing = null;
+            closeMetricInfo();
+        }, HOVER_CLOSE );
+    }
+}
+
+export function isMetricInfoOpen( trigger ) {
+
+    return !! current && ( ! trigger || current.trigger === trigger );
+}
+
 export function closeMetricInfo( refocus ) {
+
+    cancelClose();
 
     if ( ! current ) {
         return;
@@ -79,20 +115,25 @@ export function closeMetricInfo( refocus ) {
         c.pop.parentNode.removeChild( c.pop );
     }
 
-    c.button.setAttribute( 'aria-expanded', 'false' );
-    c.button.removeAttribute( 'aria-controls' );
+    c.trigger.setAttribute( 'aria-expanded', 'false' );
+    c.trigger.removeAttribute( 'aria-controls' );
+
+    if ( c.options.onClose ) {
+        c.options.onClose();
+    }
 
     if ( refocus ) {
-        c.button.focus();
+        c.trigger.focus();
     }
 }
 
-export function openMetricInfo( button ) {
+/**
+ * Open `trigger`'s description. Pinned stays open when the pointer leaves;
+ * not pinned is a hover.
+ */
+export function openMetricInfo( trigger, pinned, options ) {
 
-    if ( current && current.button === button ) {
-        closeMetricInfo();
-        return null;
-    }
+    options = options || {};
 
     closeMetricInfo();
 
@@ -101,24 +142,28 @@ export function openMetricInfo( button ) {
     pop.id = 'owa_metricInfo-' + ( ++seq );
     pop.className = 'owa_metricInfoPop';
     pop.setAttribute( 'role', 'status' );
-    pop.setAttribute( 'data-ui', 'metric-info-text' );
+    pop.setAttribute( 'data-ui', 'metric-description' );
 
-    button.parentNode.insertBefore( pop, button.nextSibling );
-    button.setAttribute( 'aria-expanded', 'true' );
-    button.setAttribute( 'aria-controls', pop.id );
+    trigger.parentNode.insertBefore( pop, trigger.nextSibling );
+    trigger.setAttribute( 'aria-expanded', 'true' );
+    trigger.setAttribute( 'aria-controls', pop.id );
 
     var place = function () {
 
-        var p = placeInfo( button.getBoundingClientRect(), pop.offsetWidth, pop.offsetHeight, window );
+        var p = placeInfo( trigger.getBoundingClientRect(), pop.offsetWidth, pop.offsetHeight, window );
 
         pop.style.left   = p.left + 'px';
         pop.style.top    = p.top === null ? 'auto' : p.top + 'px';
         pop.style.bottom = p.bottom === null ? 'auto' : p.bottom + 'px';
     };
 
+    // A press inside the trigger's own area (a grid heading, with its sort
+    // arrow) is not a press elsewhere.
     var outside = function ( e ) {
 
-        if ( ! pop.contains( e.target ) && ! button.contains( e.target ) ) {
+        var within = ( options.within && options.within() ) || trigger;
+
+        if ( ! pop.contains( e.target ) && ! within.contains( e.target ) ) {
             closeMetricInfo();
         }
     };
@@ -131,23 +176,30 @@ export function openMetricInfo( button ) {
         }
     };
 
+    var enter = function ( e ) { if ( e.pointerType === 'mouse' ) { cancelClose(); } };
+    var leave = function ( e ) { if ( e.pointerType === 'mouse' ) { closeSoon( trigger ); } };
+
     // A live region announces what changes in it, so it is in the page,
     // empty, before the text arrives.
     var fill = setTimeout( function () {
-        pop.textContent = button.getAttribute( 'data-description' ) || '';
+        pop.textContent = trigger.getAttribute( 'data-description' ) || '';
         place();
     }, 50 );
 
     place();
 
+    pop.addEventListener( 'pointerenter', enter );
+    pop.addEventListener( 'pointerleave', leave );
     window.addEventListener( 'scroll', place, true );
     window.addEventListener( 'resize', place );
     document.addEventListener( 'pointerdown', outside, true );
     document.addEventListener( 'keydown', keys );
 
     current = {
-        button: button,
+        trigger: trigger,
         pop: pop,
+        pinned: !! pinned,
+        options: options,
         off: function () {
             clearTimeout( fill );
             window.removeEventListener( 'scroll', place, true );
@@ -157,35 +209,78 @@ export function openMetricInfo( button ) {
         }
     };
 
+    if ( options.onOpen ) {
+        options.onOpen();
+    }
+
     return pop;
 }
 
 /**
- * The (i) button for a metric called `label` with `description`.
+ * Make `trigger`, a button holding a metric's name, open `description`.
  *
- * @return HTMLButtonElement
+ * @param HTMLElement trigger
+ * @param string      description
+ * @param object      options  within: a function returning the element a
+ *                             press inside of keeps it open (default the
+ *                             trigger); onOpen, onClose: called as it opens
+ *                             and closes
+ * @return HTMLElement the trigger
  */
-export function metricInfoButton( label, description ) {
+export function describeMetric( trigger, description, options ) {
 
-    var button = document.createElement( 'button' );
+    var opening = null;
 
-    button.type = 'button';
-    button.className = 'owa_metricInfoToggle';
-    button.setAttribute( 'aria-label', OWA.util.sprintf( OWA.l( 'About %s' ), label ) );
-    button.setAttribute( 'aria-expanded', 'false' );
-    button.setAttribute( 'data-ui', 'metric-info' );
-    button.setAttribute( 'data-description', description );
-    button.innerHTML = '<i class="fas fa-info-circle" aria-hidden="true"></i>';
+    trigger.classList.add( 'owa_metricDescribed' );
+    trigger.setAttribute( 'aria-expanded', 'false' );
+    trigger.setAttribute( 'data-description', description );
 
-    button.addEventListener( 'click', function () { openMetricInfo( button ); } );
+    trigger.addEventListener( 'pointerenter', function ( e ) {
 
-    return button;
+        if ( e.pointerType !== 'mouse' ) {
+            return;
+        }
+
+        cancelClose();
+
+        if ( ! isMetricInfoOpen( trigger ) ) {
+            opening = setTimeout( function () { openMetricInfo( trigger, false, options ); }, HOVER_OPEN );
+        }
+    } );
+
+    trigger.addEventListener( 'pointerleave', function ( e ) {
+
+        if ( e.pointerType !== 'mouse' ) {
+            return;
+        }
+
+        clearTimeout( opening );
+        closeSoon( trigger );
+    } );
+
+    trigger.addEventListener( 'click', function ( e ) {
+
+        e.preventDefault();
+        clearTimeout( opening );
+
+        if ( ! isMetricInfoOpen( trigger ) ) {
+            openMetricInfo( trigger, true, options );
+        } else if ( current.pinned ) {
+            closeMetricInfo();
+        } else {
+            current.pinned = true;
+            cancelClose();
+        }
+    } );
+
+    return trigger;
 }
 
 OWA.metricInfo = {
-    button: metricInfoButton,
+    describe: describeMetric,
     open: openMetricInfo,
     close: closeMetricInfo,
+    isOpen: isMetricInfoOpen,
     description: metricDescription,
     place: placeInfo
 };

@@ -6,7 +6,7 @@ const { FIXTURE, adminLogin, login, ui } = require('./fixtures');
  * nothing wider than the screen, dialogs wholly on it, a roster's actions in
  * reach, fields that do not make iOS zoom, 44px targets, the period sheet in
  * landscape, a trend whose legend wraps instead of scrolling the widget, a row
- * of metric boxes that swipes, and a metric's description opened by a tap.
+ * of metric boxes that swipes, and a metric's description opened from its name.
  *
  * Elements are found by role and label, then by data-ui; never by a styling
  * class (CONTRIBUTING.md).
@@ -188,6 +188,7 @@ for (const [name, device] of [['phone', PHONE], ['phone held sideways', LANDSCAP
             const controls = {
                 'row actions': ui(grid, 'grid-row-actions').first(),
                 'sort heading': grid.locator('thead').getByRole('button', { name: 'Sessions', exact: true }),
+                'sort arrow': grid.locator('thead').getByRole('button', { name: /^Sort by /, includeHidden: true }).first(),
                 'rows per page': grid.getByRole('combobox', { name: 'Rows per page' }),
                 'previous page': grid.getByRole('button', { name: 'Previous page' }),
                 'next page': grid.getByRole('button', { name: 'Next page' }),
@@ -359,42 +360,64 @@ test.describe('on a phone', () => {
     });
 
     /*
-     * A heading's description is behind its own button, opened by a tap: it
-     * shows on the screen and the column's sort stays as it was.
+     * A heading's name opens its description and does not sort. The tap also
+     * shows that heading's sort arrow, which is how a phone sorts a column
+     * that is not sorted.
      */
-    test('a heading\'s (i) shows the description on the screen and does not sort', async ({ page }) => {
+    test('a heading\'s name shows its description and does not sort; its arrow then sorts', async ({ page }) => {
         await adminLogin(page);
         await page.goto(report('pages'), { waitUntil: 'networkidle' });
 
         const grid = ui(page, 'grid').last();
         await expect(ui(grid, 'grid-row').first()).toBeVisible({ timeout: 20_000 });
 
-        const heading = grid.getByRole('columnheader').filter({ has: page.getByRole('button', { name: /^About / }) }).first();
-        const info = heading.getByRole('button', { name: /^About / });
-        const sort = await heading.getAttribute('aria-sort');
+        // A column with a description that is not the sorted one.
+        const heading = grid.getByRole('columnheader')
+            .filter({ has: page.getByRole('button', { name: /^Sort by /, includeHidden: true }) })
+            .and(grid.locator('th[aria-sort="none"]')).first();
+        const label = heading.getByRole('button').first();
+        const sortArrow = heading.getByRole('button', { name: /^Sort by /, includeHidden: true });
+        const column = await heading.getAttribute('data-column');
 
-        await info.scrollIntoViewIfNeeded();
-        const s = await size(info);
-        expect(s.w).toBeGreaterThanOrEqual(44);
-        expect(s.h).toBeGreaterThanOrEqual(44);
+        await expect(sortArrow).toBeHidden();
+        await label.scrollIntoViewIfNeeded();
+        await label.tap();
 
-        await info.tap();
-
-        const text = ui(page, 'metric-info-text');
+        const text = ui(page, 'metric-description');
         await expect(text).toBeVisible();
         await expect(text).not.toBeEmpty();
-        await expect(info).toHaveAttribute('aria-expanded', 'true');
+        await expect(label).toHaveAttribute('aria-expanded', 'true');
 
         const box = await text.boundingBox();
         expect(box.x).toBeGreaterThanOrEqual(0);
         expect(box.x + box.width).toBeLessThanOrEqual(PHONE.viewport.width);
 
         await page.waitForTimeout(500);
-        expect(await heading.getAttribute('aria-sort'), 'the (i) sorted the column').toBe(sort);
+        await expect(heading, 'the name sorted the column').toHaveAttribute('aria-sort', 'none');
 
-        await page.getByRole('heading', { level: 1 }).first().tap();
-        await expect(text).toBeHidden();
-        await expect(info).toHaveAttribute('aria-expanded', 'false');
+        await expect(sortArrow).toBeVisible();
+        expect((await size(sortArrow)).h).toBeGreaterThanOrEqual(44);
+        expect(await sortArrow.evaluate((el) => parseFloat(getComputedStyle(el, '::before').width))).toBeGreaterThanOrEqual(44);
+
+        await sortArrow.tap();
+        await expect(grid.locator(`th[data-column="${column}"]`)).toHaveAttribute('aria-sort', 'descending');
+    });
+
+    test('a metric box\'s name shows its description and does not chart the metric', async ({ page }) => {
+        await adminLogin(page);
+        const row = await metricRow(page);
+
+        const chart = page.locator('[data-ui^="chart:"]').first();
+        await expect(chart).toHaveAttribute('aria-label', /./, { timeout: 20_000 });
+        const before = await chart.getAttribute('aria-label');
+
+        const box = row.locator('[data-ui^="kpi:"]').filter({ has: page.getByRole('button') }).nth(1);
+        await box.getByRole('button').tap();
+
+        await expect(ui(page, 'metric-description')).toBeVisible();
+        await expect(ui(page, 'metric-description')).not.toBeEmpty();
+        await page.waitForTimeout(500);
+        expect(await chart.getAttribute('aria-label'), 'the name charted the metric').toBe(before);
     });
 
     test('refused a page, a signed-in user still has the menu', async ({ page }) => {
@@ -404,6 +427,38 @@ test.describe('on a phone', () => {
         await expect(page.getByText('Your account does not have access to this page.')).toBeVisible();
         await page.getByRole('button', { name: 'Show the menu' }).click();
         await expect(ui(page, 'nav:Dashboard')).toBeVisible();
+    });
+});
+
+test.describe('with a mouse', () => {
+
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    /* The sorted column's arrow is always there; another column's shows on hover. */
+    test('a heading shows its sort arrow on hover; the sorted column\'s always', async ({ page }) => {
+        await adminLogin(page);
+        await page.goto(report('pages'), { waitUntil: 'networkidle' });
+
+        const grid = ui(page, 'grid').last();
+        await expect(ui(grid, 'grid-row').first()).toBeVisible({ timeout: 20_000 });
+
+        const arrows = grid.getByRole('columnheader').filter({ has: page.getByRole('button', { name: /^Sort by /, includeHidden: true }) });
+        const sorted = arrows.and(grid.locator('th:not([aria-sort="none"])')).first();
+        const other = arrows.and(grid.locator('th[aria-sort="none"]')).first();
+
+        await page.mouse.move(0, 0);
+        await expect(sorted.getByRole('button', { name: /^Sort by /, includeHidden: true })).toBeVisible();
+        await expect(other.getByRole('button', { name: /^Sort by /, includeHidden: true })).toBeHidden();
+
+        const widthBefore = (await other.boundingBox()).width;
+        await other.hover();
+        await expect(other.getByRole('button', { name: /^Sort by /, includeHidden: true })).toBeVisible();
+        expect((await other.boundingBox()).width, 'the heading moved when its arrow showed').toBe(widthBefore);
+
+        // Hovering the name shows the description; it does not sort.
+        await other.getByRole('button').first().hover();
+        await expect(ui(page, 'metric-description')).toBeVisible();
+        await expect(other).toHaveAttribute('aria-sort', 'none');
     });
 });
 

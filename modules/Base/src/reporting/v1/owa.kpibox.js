@@ -3,7 +3,7 @@
 import * as jQuery from 'jquery';
 import { OWA } from './owa.js';
 import { describeChange } from './owa.periodpicker.js';
-import { metricDescription, metricInfoButton } from './owa.metricinfo.js';
+import { describeMetric, metricDescription } from './owa.metricinfo.js';
 
 OWA.kpiBox = function( options ) {
 
@@ -285,7 +285,13 @@ OWA.kpiBox.prototype = {
                 '<div id ="%s" class="owa_metricInfobox%s" data-metric="%s" data-ui="kpi:%s" style="--owa-kpi-min-width:%s;--owa-kpi-width:%s">',
                 item.dom_id, width === 'auto' ? '' : ' owa_metricInfoboxFixed', item.name,
                 OWA.util.escapeHtml( item.name ), this.options.minWidth, width );
-            html += OWA.util.sprintf('<p class="owa_metricInfoboxLabel">%s</p>', item.label);
+            var description = metricDescription( resultSet, item.name );
+
+            // A name with a description is the button that opens it
+            // (owa.metricinfo.js); the rest of the box charts the metric.
+            html += OWA.util.sprintf( description
+                ? '<p class="owa_metricInfoboxLabel"><button type="button">%s</button></p>'
+                : '<p class="owa_metricInfoboxLabel">%s</p>', item.label );
             html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>',
                 OWA.util.escapeHtml( OWA.util.metricText( item ) ) );
 
@@ -298,13 +304,9 @@ OWA.kpiBox.prototype = {
 
             jQuery('#' + con_id ).append( html );
 
-            var description = metricDescription( resultSet, item.name );
-
             if ( description ) {
 
-                var $label = jQuery( '#' + item.dom_id + ' > .owa_metricInfoboxLabel' );
-
-                $label.append( ' ', metricInfoButton( $label.text().trim(), description ) );
+                describeMetric( jQuery( '#' + item.dom_id + ' > .owa_metricInfoboxLabel > button' )[0], description );
             }
 
             if ( this.options.showSparklines ) {
