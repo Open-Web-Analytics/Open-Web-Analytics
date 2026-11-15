@@ -836,6 +836,10 @@ test.describe('admin: the site control fan-out', () => {
 
         // Clicked at the ROW's edge, not on the words -- so this covers the
         // stretch and the destination together, which is how someone uses it.
+        // Scrolled into view first: with more Properties than the panel shows,
+        // the last row sits below its fold, still "visible", and a click at its
+        // coordinates lands on nothing.
+        await row.scrollIntoViewIfNeeded();
         const box = await row.boundingBox();
 
         await Promise.all([

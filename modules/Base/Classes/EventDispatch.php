@@ -126,27 +126,52 @@ class EventDispatch {
      */
     private $next_observer_id = 0;
 
-    function attach($event_name, $observer) {
+    /**
+     * @param string|array $event_name
+     * @param mixed        $observer
+     * @param string|null  $key  names a registration that is made once: a
+     *                           second attach() with the same key and event
+     *                           is skipped. See Core\Module::registerEventHandler().
+     */
+    function attach($event_name, $observer, $key = null) {
 
-        $id = ++$this->next_observer_id;
-        // Register event names for this handler
-        if(is_array($event_name)) {
+        $names = array();
 
-            foreach ($event_name as $k => $name) {
+        foreach ( (array) $event_name as $name ) {
 
-                $this->listenersByEventType[$name][] = $id;
+            if ( $key !== null && isset( $this->attached_keys[ $name ][ $key ] ) ) {
+
+                continue;
             }
 
-        } else {
+            $names[] = $name;
+        }
 
-            $this->listenersByEventType[$event_name][] = $id;
+        if ( ! $names ) {
+
+            return true;
+        }
+
+        $id = ++$this->next_observer_id;
+
+        foreach ( $names as $name ) {
+
+            $this->listenersByEventType[$name][] = $id;
+
+            if ( $key !== null ) {
+
+                $this->attached_keys[ $name ][ $key ] = $id;
+            }
         }
 
         $this->listeners[$id] = $observer;
-               
+
         return true;
     }
-    
+
+    /** @var array<string,array<string,int>> event => registration key => observer id */
+    private $attached_keys = array();
+
     /**
      * Attach
      *

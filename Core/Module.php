@@ -325,6 +325,16 @@ abstract class Module {
      */
     function registerEventHandler($event_name, $handler_name, $method = 'notify', $dir = 'handlers') {
 
+        /*
+         * Once per module, event and handler. A module attaches its handlers
+         * when it is constructed, and constructing one again -- to activate
+         * it, to read what it registers -- attached every handler a second
+         * time, so each event was handled twice for the rest of the process:
+         * a beacon's raw rows written twice, a blocked beacon counted twice.
+         * The handler is a new object each time, so it is known by its class.
+         */
+        $key = $this->name . '|' . ( is_object( $handler_name ) ? get_class( $handler_name ) : $dir . '/' . $handler_name ) . '::' . $method;
+
         if (!is_object($handler_name)) {
 
             //$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
@@ -332,7 +342,7 @@ abstract class Module {
         }
 
         $eq = \OWA\Core\CoreAPI::getEventDispatch();
-        $eq->attach($event_name, array($handler_name, $method));
+        $eq->attach($event_name, array($handler_name, $method), $key);
 
         return true;
     }

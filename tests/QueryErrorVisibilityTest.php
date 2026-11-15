@@ -28,6 +28,17 @@ final class QueryErrorVisibilityTest extends TestCase {
     }
 
     /**
+     * Each case starts under the cap. The driver logs at most
+     * QUERY_ERROR_LOG_LIMIT refused statements a process, and every test that
+     * ran before this one in the suite counts towards it: a couple of hundred
+     * files in, a refused statement here was past the cap and logged nothing.
+     */
+    protected function setUp(): void {
+
+        ( new ReflectionProperty( \OWA\Core\Db::class, 'query_error_count' ) )->setValue( null, 0 );
+    }
+
+    /**
      * Records what was logged and at which level, standing in for the error
      * singleton the driver would normally use.
      */
