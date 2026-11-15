@@ -12,7 +12,7 @@ server does not let PHP write the file, copy <code>owa-config-dist.php</code> to
         <div class="owa_installField">
             <label>Public URL</label>
             <span class="owa_installInput">
-                <input type="text"size="50" name="<?php echo $view->getNs();?>public_url" value="<?php echo $view->public_url;?>">
+                <input type="text"size="50" name="<?php echo $view->getNs();?>public_url" value="<?php $view->out( $view->public_url );?>">
             </span>
             <span class="owa_installHint">This is the web URL of OWA's base directory.</span>
         </div>
@@ -33,7 +33,7 @@ server does not let PHP write the file, copy <code>owa-config-dist.php</code> to
         <div class="owa_installField">
             <label>Database Host</label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="<?php echo $view->getNs();?>db_host" value="<?php echo $view->config['db_host'] ?? '';?>">
+                <input type="text"size="30" name="<?php echo $view->getNs();?>db_host" value="<?php $view->out( $view->config['db_host'] ?? '' );?>">
             </span>
             <span class="owa_installHint">This is the host that your database resides on. Localhost is ok.</span>
         </div>
@@ -41,7 +41,7 @@ server does not let PHP write the file, copy <code>owa-config-dist.php</code> to
         <div class="owa_installField">
             <label>Database Port</label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="<?php echo $view->getNs();?>db_port" value="<?php echo (!empty($view->config['db_port']) ? $view->config['db_port'] : 3306);?>">
+                <input type="text"size="30" name="<?php echo $view->getNs();?>db_port" value="<?php $view->out( ! empty( $view->config['db_port'] ) ? $view->config['db_port'] : 3306 );?>">
             </span>
             <span class="owa_installHint">(optional) The port of your database. Will default to port 3306 if you leave this empty.</span>
         </div>
@@ -49,7 +49,7 @@ server does not let PHP write the file, copy <code>owa-config-dist.php</code> to
         <div class="owa_installField">
             <label>Database Name</label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="<?php echo $view->getNs();?>db_name" value="<?php echo $view->config['db_name'] ?? '';?>">
+                <input type="text"size="30" name="<?php echo $view->getNs();?>db_name" value="<?php $view->out( $view->config['db_name'] ?? '' );?>">
             </span>
             <span class="owa_installHint">This is the name of the database to install tables into.</span>
         </div>
@@ -57,7 +57,7 @@ server does not let PHP write the file, copy <code>owa-config-dist.php</code> to
         <div class="owa_installField">
             <label>Database User</label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="<?php echo $view->getNs();?>db_user" value="<?php echo $view->config['db_user'] ?? '';?>">
+                <input type="text"size="30" name="<?php echo $view->getNs();?>db_user" value="<?php $view->out( $view->config['db_user'] ?? '' );?>">
             </span>
             <span class="owa_installHint">This is the user name to connect to the database.</span>
         </div>
@@ -65,7 +65,7 @@ server does not let PHP write the file, copy <code>owa-config-dist.php</code> to
         <div class="owa_installField">
             <label>Database Password</label>
             <span class="owa_installInput">
-                <input type="password"size="30" name="<?php echo $view->getNs();?>db_password" value="<?php echo $view->config['db_password'] ?? '';?>">
+                <input type="password"size="30" name="<?php echo $view->getNs();?>db_password" value="<?php $view->out( $view->config['db_password'] ?? '' );?>">
             </span>
             <span class="owa_installHint">This is the password to connect to the database.</span>
         </div>

@@ -44,7 +44,9 @@ class InstallCheckEnv extends \OWA\Core\Controller\Install {
          */
         $config_file = $this->c->get( 'base', 'config_file' );
 
-        $checks = \OWA\Module\Base\Classes\EnvironmentCheck::all( $config_file );
+        // Paths relative to OWA's directory: anyone can open this page
+        // before OWA is installed.
+        $checks = \OWA\Module\Base\Classes\EnvironmentCheck::all( $config_file, true );
 
         /*
          * The database connection, only when there is already a config file
@@ -61,7 +63,7 @@ class InstallCheckEnv extends \OWA\Core\Controller\Install {
                 'Database connection',
                 $connected ? 'connected' : 'failed',
                 $connected,
-                'Check the database settings in ' . $config_file . '.' );
+                'Check the database settings in ' . basename( (string) $config_file ) . '.' );
         }
 
         $failed = array_values( array_filter( $checks, static function ( $check ) {

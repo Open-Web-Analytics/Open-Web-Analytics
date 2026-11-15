@@ -35,25 +35,19 @@ namespace OWA\Module\Base\Controller;
 // needed??
 class InstallFinish extends \OWA\Core\Controller\Install {
 
+    /**
+     * Writes nothing, and shows nothing of the install.
+     *
+     * It set the install-complete flag, on a GET with no nonce: the flag is set
+     * by base.installBase, in the same transaction as the admin and the first
+     * site (InstallManager::finishInstall()), and base.installBase renders the
+     * finish screen itself. An installed site never gets here
+     * (Core\Controller\Install::doAction() redirects); anyone else is sent to
+     * the start.
+     */
     function action() {
 
-        // Persist install complete flag.
-        $this->c->persistSetting('base', 'install_complete', true);
-        $save_status = $this->c->save();
-
-        if ($save_status == true) {
-            $this->e->notice('Install Complete Flag added to configuration');
-        } else {
-            $this->e->notice('Could not persist Install Complete Flag to the Database');
-        }
-
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->getByPk('id', '1');
-        $this->setView('base.install');
-        $this->setSubview('base.installFinish');
-        $this->set('site_id', $site->get('site_id'));
-        $this->set('u', $this->getParam('u'));
-        $this->set('p', $this->getParam('p'));
+        $this->setRedirectAction( 'base.installStart' );
     }
 }
 
