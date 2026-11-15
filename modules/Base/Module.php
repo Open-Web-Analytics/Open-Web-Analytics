@@ -420,7 +420,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
         $this->registerAction( 'base.cubeRebuildCli',                'OWA\\Module\\Base\\Controller\\CubeRebuildCli',             'Controller/CubeRebuildCli.php' );
         $this->registerAction( 'base.v1DropCli',                     'OWA\\Module\\Base\\Controller\\V1DropCli',                   'Controller/V1DropCli.php' );
-        $this->registerAction( 'base.flushCacheCli',                 'OWA\\Module\\Base\\Controller\\FlushCacheCli',                'Controller/FlushCacheCli.php' );
         $this->registerAction( 'base.stringsExtractCli',             'OWA\\Module\\Base\\Controller\\StringsExtractCli',            'Controller/StringsExtractCli.php' );
         $this->registerAction( 'base.updateUaRegexesCli',                 'OWA\\Module\\Base\\Controller\\UpdateUaRegexesCli',                'Controller/UpdateUaRegexesCli.php' );
         $this->registerAction( 'base.installBase',                   'OWA\\Module\\Base\\Controller\\InstallBase',                  'Controller/InstallBase.php' );
@@ -439,7 +438,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.moduleDeactivateCli',           'OWA\\Module\\Base\\Controller\\ModuleDeactivateCli',          'Controller/ModuleDeactivateCli.php' );
         $this->registerAction( 'base.moduleInstallCli',              'OWA\\Module\\Base\\Controller\\ModuleInstallCli',             'Controller/ModuleInstallCli.php' );
         $this->registerAction( 'base.notifyNewSession',              'OWA\\Module\\Base\\Controller\\NotifyNewSession',             'Controller/NotifyNewSession.php' );
-        $this->registerAction( 'base.optionsFlushCache',             'OWA\\Module\\Base\\Controller\\OptionsFlushCache',            'Controller/OptionsFlushCache.php' );
         $this->registerAction( 'base.optionsGeneral',                'OWA\\Module\\Base\\Controller\\OptionsGeneral',               'Controller/OptionsGeneral.php' );
         $this->registerAction( 'base.visualizations',                'OWA\\Module\\Base\\Controller\\Visualizations',              'Controller/Visualizations.php' );
         $this->registerAction( 'base.visualizationSave',             'OWA\\Module\\Base\\Controller\\VisualizationSave',           'Controller/VisualizationSave.php' );
@@ -556,7 +554,6 @@ class Module extends \OWA\Core\Module {
     function registerCliCommands() {
 
         $this->registerCliCommand('update', 'base.updatesApplyCli');
-        $this->registerCliCommand('flush-cache', 'base.flushCacheCli');
         $this->registerCliCommand('strings-extract', 'base.stringsExtractCli');
         $this->registerCliCommand('v1-drop', 'base.v1DropCli');
         $this->registerCliCommand('fetch-notifications', 'base.notificationsFetchCli');

@@ -470,12 +470,12 @@ final class ScheduleCliTest extends CliControllerTestCase
     public function testConfigCanAddAJob()
     {
         $jobs = $this->jobsWith([
-            'nightly-flush' => ['command' => 'flush-cache', 'schedule' => '@daily'],
+            'nightly-prune' => ['command' => 'jobs-prune', 'schedule' => '@daily'],
         ]);
 
-        $this->assertArrayHasKey('nightly-flush', $jobs);
-        $this->assertSame('flush-cache', $jobs['nightly-flush']['command']);
-        $this->assertSame('config', $jobs['nightly-flush']['source']);
+        $this->assertArrayHasKey('nightly-prune', $jobs);
+        $this->assertSame('jobs-prune', $jobs['nightly-prune']['command']);
+        $this->assertSame('config', $jobs['nightly-prune']['source']);
     }
 
     /**
@@ -493,31 +493,31 @@ final class ScheduleCliTest extends CliControllerTestCase
     public function testTheConfigKeyIsTheJobNameNotTheCommand()
     {
         $jobs = $this->jobsWith([
-            'nightly-cache-flush' => ['command' => 'flush-cache', 'schedule' => '@daily'],
+            'nightly-job-prune' => ['command' => 'jobs-prune', 'schedule' => '@daily'],
 
             // Keyed by the COMMAND. There is no job of this name, so this is
             // read as a NEW job -- which needs a schedule, has none, and is
-            // refused. What it must not do is reach nightly-cache-flush.
-            'flush-cache'         => ['params' => ['reached' => 'the wrong job']],
+            // refused. What it must not do is reach nightly-job-prune.
+            'jobs-prune'         => ['params' => ['reached' => 'the wrong job']],
         ]);
 
-        $this->assertArrayHasKey('nightly-cache-flush', $jobs);
-        $this->assertSame([], $jobs['nightly-cache-flush']['params'],
+        $this->assertArrayHasKey('nightly-job-prune', $jobs);
+        $this->assertSame([], $jobs['nightly-job-prune']['params'],
             'an entry keyed by the command name must not modify the job that runs it');
 
-        $this->assertArrayNotHasKey('flush-cache', $jobs,
+        $this->assertArrayNotHasKey('jobs-prune', $jobs,
             'a key that is neither a registered job nor a complete new entry is refused');
 
         // ...and the name does reach it.
         $jobs = $this->jobsWith([
-            'nightly-cache-flush' => [
-                'command'  => 'flush-cache',
+            'nightly-job-prune' => [
+                'command'  => 'jobs-prune',
                 'schedule' => '@daily',
                 'params'   => ['reached' => 'the right job'],
             ],
         ]);
 
-        $this->assertSame(['reached' => 'the right job'], $jobs['nightly-cache-flush']['params']);
+        $this->assertSame(['reached' => 'the right job'], $jobs['nightly-job-prune']['params']);
     }
 
     public function testTheSameCommandCanBeScheduledTwice()
@@ -545,13 +545,13 @@ final class ScheduleCliTest extends CliControllerTestCase
     {
         $cases = [
             'no command'        => ['schedule' => '@daily'],
-            'no schedule'       => ['command' => 'flush-cache'],
+            'no schedule'       => ['command' => 'jobs-prune'],
             'unknown command'   => ['command' => 'no-such-command', 'schedule' => '@daily'],
             'not an array'      => 'nonsense',
         ];
 
         foreach ($cases as $label => $spec) {
-            $jobs = $this->jobsWith(['broken' => $spec, 'ok-one' => ['command' => 'flush-cache', 'schedule' => '@daily']]);
+            $jobs = $this->jobsWith(['broken' => $spec, 'ok-one' => ['command' => 'jobs-prune', 'schedule' => '@daily']]);
 
             $this->assertArrayNotHasKey('broken', $jobs, "$label should be refused");
             $this->assertArrayHasKey('ok-one', $jobs, "$label must not take the other jobs down");
@@ -812,7 +812,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         // Registered but never due: a schedule in the past cannot recur.
         \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
-            $name => ['command' => 'flush-cache', 'schedule' => '0 0 1 1 *'],
+            $name => ['command' => 'jobs-prune', 'schedule' => '0 0 1 1 *'],
         ]);
 
         $ctrl = $this->runner(['dry-run' => false, 'job' => $name]);
@@ -850,7 +850,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'busy',
-            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            ['command' => 'jobs-prune', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
             null,
             ['job_name' => 'busy', 'owner' => 'x', 'acquired_at' => $now - 60, 'expires_at' => $now + 3600],
             \OWA\Core\Cron::parse('@daily'), $now, false, true, $now,
@@ -866,7 +866,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'stuck',
-            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            ['command' => 'jobs-prune', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
             null,
             ['job_name' => 'stuck', 'owner' => 'x', 'acquired_at' => $now - 99999, 'expires_at' => $now - 60],
             \OWA\Core\Cron::parse('@daily'), $now, false, true, $now,
@@ -893,7 +893,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'lonely',
-            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            ['command' => 'jobs-prune', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
             $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $long_ago,
         ]);
 
@@ -918,7 +918,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'lonely',
-            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            ['command' => 'jobs-prune', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
             $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $now - 30,
         ]);
 
@@ -941,7 +941,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'sad',
-            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            ['command' => 'jobs-prune', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
             $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $long_ago,
         ]);
 
@@ -964,7 +964,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'gone',
-            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            ['command' => 'jobs-prune', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
             $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $long_ago,
         ]);
 
@@ -978,7 +978,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'fresh',
-            ['command' => 'flush-cache', 'schedule' => '* * * * *', 'params' => [], 'source' => 'code'],
+            ['command' => 'jobs-prune', 'schedule' => '* * * * *', 'params' => [], 'source' => 'code'],
             null, null, \OWA\Core\Cron::parse('* * * * *'), $now, false, true, $now,
         ]);
 
@@ -990,7 +990,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     {
         $reason = $this->callProtected($this->statusCli(), 'diagnose', [
             'wonky',
-            ['command' => 'flush-cache', 'schedule' => 'every thursday-ish', 'params' => [], 'source' => 'config'],
+            ['command' => 'jobs-prune', 'schedule' => 'every thursday-ish', 'params' => [], 'source' => 'config'],
             null, null, null, time(), false, true, time(),
         ]);
 
@@ -1280,7 +1280,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $db   = \OWA\Core\CoreAPI::dbSingleton();
 
         \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
-            $name => ['command' => 'flush-cache', 'schedule' => '* * * * *'],
+            $name => ['command' => 'jobs-prune', 'schedule' => '* * * * *'],
         ]);
 
         $ctrl = $this->runner();
@@ -1313,7 +1313,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $name = $this->track('owa_test_defer_' . bin2hex(random_bytes(3)));
 
         \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
-            $name => ['command' => 'flush-cache', 'schedule' => '* * * * *'],
+            $name => ['command' => 'jobs-prune', 'schedule' => '* * * * *'],
         ]);
 
         $ctrl = $this->runner();
@@ -1566,7 +1566,7 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $reason = (string) $this->callProtected($this->statusCli(), 'diagnose', [
             'lonely',
-            ['command' => 'flush-cache', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            ['command' => 'jobs-prune', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
             $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, false, 0,
         ]);
 

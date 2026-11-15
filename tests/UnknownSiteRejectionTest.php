@@ -168,7 +168,7 @@ final class UnknownSiteRejectionTest extends TestCase
      *
      * Tested in the negative direction on purpose. Going the other way -- delete
      * the site, expect a miss -- does not work: Entity::getByColumn() caches
-     * rows it finds, independently of the cache_objects setting, so a deleted
+     * rows it finds for the rest of the process, so a deleted
      * site still loads. Only positive results are cached, which is what makes
      * this feature safe: an unknown site is never cached, so a site created a
      * moment ago is recognised on the very next event rather than after an

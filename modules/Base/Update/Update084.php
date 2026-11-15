@@ -28,8 +28,8 @@ namespace OWA\Module\Base\Update;
  *
  * RAW SQL on owa_setting, as Update080: the settings entity cache could
  * otherwise answer for a row this has just changed, and a test can point the
- * whole update at a scratch table. Neither direction touches the object cache;
- * `php cli.php cmd=flush-cache` clears it.
+ * whole update at a scratch table. Neither direction touches the object cache,
+ * which lasts only for the request.
  *
  * A log_robots set in owa-config.php is not a row, and is not read any more.
  *

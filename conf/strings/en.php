@@ -317,7 +317,6 @@ return array(
     'Bundle' => 'Bundle',
     'Bundle ID or package name is required.' => 'Bundle ID or package name is required.',
     'Bundles are served with Cache-Control "%s", so a browser may keep an old one after a change. OWA\'s .htaccess sets no-cache for them when Apache reads .htaccess (AllowOverride) and has mod_headers or mod_expires.' => 'Bundles are served with Cache-Control "%s", so a browser may keep an old one after a change. OWA\'s .htaccess sets no-cache for them when Apache reads .htaccess (AllowOverride) and has mod_headers or mod_expires.',
-    'Cache directory' => 'Cache directory',
     'Cache header unknown' => 'Cache header unknown',
     'Cached by browsers' => 'Cached by browsers',
     'Campaign' => 'Campaign',

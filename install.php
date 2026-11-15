@@ -32,7 +32,6 @@ require_once(__DIR__ . '/owa.php');
 
 // Initialize owa
 //define('OWA_DEBUG', true);
-define('OWA_CACHE_OBJECTS', false);
 define('OWA_INSTALLING', true);
 
 // On a fresh install there is no owa-config.php yet, so OWA_DB_TYPE is undefined.

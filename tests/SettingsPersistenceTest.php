@@ -208,11 +208,11 @@ final class SettingsPersistenceTest extends TestCase
         );
 
         // async_error_log_file, async_log_file, async_lock_file, db_class_dir,
-        // module_dir, templates_dir, search_engines.ini, query_strings.ini and
-        // plugin_dir were on this list too. They were removed in v2.0 with
-        // nothing left that reads them, so a stored value has no effect.
+        // module_dir, templates_dir, search_engines.ini, query_strings.ini,
+        // plugin_dir and cache_dir were on this list too. They were removed in
+        // v2.0 with nothing left that reads them, so a stored value has no effect.
         $original = [
-            'error_log_file','async_log_dir','data_dir','cache_dir',
+            'error_log_file','async_log_dir','data_dir',
             'report_wrapper','db_type','db_host','db_port','db_name',
             'db_user','db_password',
             'public_path','configuration_id','schema_version',
@@ -331,7 +331,7 @@ final class SettingsPersistenceTest extends TestCase
      * Base's declaration says nothing about other modules.
      *
      * What they store is their own schema_version and is_active -- losing
-     * fileCache.is_active=false would silently re-enable a module that was
+     * sqs.is_active=false would silently re-enable a module that was
      * deliberately disabled, and losing a module's schema_version would re-run
      * its updates. A key named identically to one of Base's static settings is
      * not covered by Base's declaration.
@@ -348,7 +348,7 @@ final class SettingsPersistenceTest extends TestCase
         $this->assertArrayNotHasKey('report_wrapper', $static['hello'] ?? [],
             'an identically named key in another module is not covered by Base');
 
-        foreach (['domstream' => 'is_active', 'fileCache' => 'is_active'] as $module => $key) {
+        foreach (['domstream' => 'is_active', 'sqs' => 'is_active'] as $module => $key) {
 
             $this->assertTrue($c->mayPersistInstallWide($module, $key),
                 "$module.$key must stay storable, or a disabled module cannot "
@@ -384,7 +384,7 @@ final class SettingsPersistenceTest extends TestCase
         );
 
         $c->db_settings['hello']         = ['schema_version' => 1, 'is_active' => true];
-        $c->db_settings['fileCache']     = ['is_active' => false];
+        $c->db_settings['sqs']           = ['is_active' => false];
         $c->db_settings['maxmind_geoip'] = ['schema_version' => 1, 'is_active' => false];
 
         $removed = $c->pruneRedundantPersistedSettings();
@@ -398,7 +398,7 @@ final class SettingsPersistenceTest extends TestCase
 
         $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['hello'],
             'a module that declares nothing is left alone entirely');
-        $this->assertSame(['is_active' => false], $c->db_settings['fileCache']);
+        $this->assertSame(['is_active' => false], $c->db_settings['sqs']);
         $this->assertSame(['schema_version' => 1, 'is_active' => false], $c->db_settings['maxmind_geoip'],
             'and a module that DOES declare still keeps its bootstrap state');
     }

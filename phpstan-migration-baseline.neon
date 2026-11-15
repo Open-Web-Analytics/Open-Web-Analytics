@@ -298,12 +298,6 @@ parameters:
 			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/Base/Controller/OptionsFlushCache.php
-
-		-
-			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
 			path: modules/Base/Controller/OptionsModules.php
 
 		-
@@ -511,12 +505,6 @@ parameters:
 			path: modules/Domstream/Module.php
 
 		-
-			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/FileCache/Module.php
-
-		-
 			message: '#^Instantiated class Client not found\.$#'
 			identifier: class.notFound
 			count: 1
@@ -533,18 +521,6 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: modules/MaxmindGeoip/Module.php
-
-		-
-			message: '#^Call to an undefined static method OWA\\Core\\CacheType\:\:__construct\(\)\.$#'
-			identifier: staticMethod.notFound
-			count: 2
-			path: modules/MemcachedCache/Classes/MemcachedCache.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/MemcachedCache/Module.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'

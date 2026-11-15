@@ -57,7 +57,7 @@ namespace OWA\Module\Base\Update;
  * is read the way CustomReports::hydrate() reads it.
  *
  * Neither direction touches the object cache, which can still hold a report
- * as it was; `php cli.php cmd=flush-cache` clears it.
+ * as it was for the rest of the request.
  *
  * Each direction runs twice to the same result: up() converts only the steps
  * of the old kinds, and down() reads a record it then empties.

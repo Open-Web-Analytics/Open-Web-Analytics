@@ -335,6 +335,20 @@ Update085 deletes the stored rows of `is_embedded_admin_user_password_reset`,
 `resolve_hosts` and `fetch_refering_page_info`. No module declares them, so
 their values were ignored. The update's down() puts them back.
 
+### The object cache lasts one request
+
+The File Cache and Memcached modules are removed. Rows OWA looks up are kept
+for the rest of the request and read from the database again by the next one.
+The persistent tier saved about a third of a millisecond a lookup and was off by
+default; it could serve a row up to a week out of date.
+
+Also removed: `OWA_CACHE_OBJECTS`, `OWA_CACHE_DIR`, the `cache_objects`,
+`cacheType`, `cache_dir`, `default_cache_expiration_period`, `memcachedServers`
+and `memcachedPersistantConnections` settings, `php cli.php cmd=flush-cache`,
+and the installer's check of `caches/`. A config file that still defines either
+constant is not an error. `owa-data/caches/` is no longer written, and can be
+deleted.
+
 ### Server roles: `OWA_SERVER_ROLE`
 
 A server's role says which requests it serves. With nothing set it is `full`,
@@ -521,16 +535,15 @@ v2.0 defines none of them; `\OWA\Core\Env` answers instead:
 | `OWA_VENDOR_DIR` | `\OWA\Core\Env::vendorDir()` |
 | `OWA_VERSION` | `\OWA\Core\Env::version()` |
 | `OWA_DATA_DIR` | `\OWA\Core\Env::dataDir()` (the `data_dir` setting) |
-| `OWA_CACHE_DIR` | `\OWA\Core\Env::cacheDir()` (the `cache_dir` setting) |
+| `OWA_CACHE_DIR` | none: there is no file cache (see "The object cache lasts one request") |
 | `OWA_PLUGIN_DIR` | none: `plugins/` is not read (see above) |
 | `OWA_THEMES_DIR` | none: themes are removed, with the `theme` setting |
 
-The directories end in a slash. `OWA_DATA_DIR` and `OWA_CACHE_DIR` are now
-optional settings in `owa-config.php`: 1.x defined `OWA_DATA_DIR` before the
-config file loaded, so a value there was ignored with an "already defined"
-warning. `OWA_DATA_DIR` moves the error log, the file event queue (with its
-archive and dead letters), the caches, downloaded user-agent patterns and GeoIP
-data; `OWA_CACHE_DIR` moves only the caches. `owa_env.php` still exists and
+The directories end in a slash. `OWA_DATA_DIR` is now an optional setting in
+`owa-config.php`: 1.x defined it before the config file loaded, so a value there
+was ignored with an "already defined" warning. It moves the error log, the file
+event queue (with its archive and dead letters), downloaded user-agent patterns
+and GeoIP data. `owa_env.php` still exists and
 only loads the autoloader; `owa.php` includes it. Also removed:
 `\OWA\Core\CoreAPI::getInstance( $class, $path )` (call `$class::getInstance()`)
 and the unread `plugin_dir` setting. A module's `registerAction()` file argument
@@ -542,7 +555,7 @@ is, and may be omitted.
 ### 3. Lowercase module directories — REMOVED in v2.0
 
 **What changed.** A module is a PascalCase directory (`modules/Base/`,
-`modules/MemcachedCache/`) holding an autoloadable `OWA\Module\<Dir>\Module`
+`modules/MaxmindGeoip/`) holding an autoloadable `OWA\Module\<Dir>\Module`
 class, with one class per file in `Entity/`, `Controller/`, `View/`, `Classes/`
 and so on.
 

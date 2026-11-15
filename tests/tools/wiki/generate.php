@@ -61,7 +61,7 @@ if ( ! defined( 'OWA_DB_TYPE' ) && ! file_exists( \OWA\Core\Env::root() . '/owa-
  * activates.
  *
  * The configuration takes runtime names, which do not follow from the
- * directory (FileCache is fileCache, MaxmindGeoip is maxmind_geoip), so each is
+ * directory (MaxmindGeoip is maxmind_geoip), so each is
  * read from its Module.php. Nothing can be instantiated to ask before boot.
  *
  * @return array module name => array( 'is_active' => true )

@@ -163,16 +163,14 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * DATA DIRECTORIES
  *
  *   OWA_DATA_DIR   where OWA writes: its error log, the file event queue,
- *                  downloaded user-agent patterns and GeoIP data, and the
- *                  caches. Default: owa-data/ in this directory.
- *   OWA_CACHE_DIR  the file cache. Default: caches/ in the data directory.
+ *                  and downloaded user-agent patterns and GeoIP data.
+ *                  Default: owa-data/ in this directory.
  *
  * The web server user and the user that runs cli.php both write there, so both
- * need write access to it and to its logs/ and caches/.
+ * need write access to it and to its logs/.
  */
 
 //define('OWA_DATA_DIR', '/var/lib/owa/');
-//define('OWA_CACHE_DIR', '/var/cache/owa/');
 
 /**
  * DEBUG
@@ -184,14 +182,6 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 
 //define('OWA_DEBUG', true);
  
-/**
- * OBJECT CACHING
- *
- * Override setting to cache objects. Caching will increase performance.
- */
-
-//define('OWA_CACHE_OBJECTS', true);
-
 /**
  * CONFIGURATION ID
  *

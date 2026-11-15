@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Update;
  *
  * Neither direction touches the object cache, which is keyed by table name. An
  * entry cached under the names being restored is stale if a definition changed
- * while the other names were in use; `php cli.php cmd=flush-cache` clears it.
+ * while the other names were in use, for the rest of that request.
  *
  * NOT CLI-ONLY. A rename is instant, and the funnels are a handful of rows.
  */

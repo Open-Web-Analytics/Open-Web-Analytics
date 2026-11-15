@@ -43,8 +43,8 @@
  * the database. A stored error_log_file or report_wrapper is an RCE primitive,
  * so that list stays as a test asserting this file agrees with it.
  *
- * THREE SETTINGS ARE DECLARED WITH NO DEFAULT although the code has one:
- * config_file, data_dir and cache_dir. The code builds those from the
+ * TWO SETTINGS ARE DECLARED WITH NO DEFAULT although the code has one:
+ * config_file and data_dir. The code builds those from the
  * installation's directory (Core\Env), so their value depends on where it lives
  * -- baking one into a static file made the declaration disagree with the code
  * the moment the checkout moved, which the configless CI run caught by running
@@ -111,9 +111,6 @@ return array(
         'assets_url' => array( 'default' => '', 'description' => 'Where the built static files under public/ are served from, set by OWA_ASSETS_URL: the report screens\' scripts, styles, fonts and images, the tracker and its chunks, and the Profiles\' tracking bundles. Empty is the public URL followed by public/.' ),
         'async_log_dir' => array( 'default' => '', 'description' => 'The directory the file event queue writes its batch files to. Empty uses owa-data/logs/.' ),
         'base_url' => array( 'default' => '' ),
-        'cache_dir' => array( 'description' => 'The directory of the file cache. Set by OWA_CACHE_DIR; defaults to caches/ in the data directory.' ),
-        'cacheType' => array( 'default' => '', 'description' => 'Which object cache backend is in use: file or memcached. Set by the File Cache or Memcached Cache module when it is active; empty means none.' ),
-        'cache_objects' => array( 'default' => false, 'description' => 'Whether OWA keeps looked-up objects, such as parsed user agents, in its object cache between requests. Off by default; the File Cache module turns it on.' ),
         'capabilities' => array( 'default' => array( 'admin' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce', 'edit_settings', 'edit_sites', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ), 'analyst' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce' ), 'viewer' => array( 'install_schema', 'view_site_list', 'view_reports' ), 'everyone' => array( 'install_schema' ) ), 'description' => 'Which capabilities each user role has, as role => list of capabilities.' ),
         'capabilitiesThatRequireSiteAccess' => array( 'default' => array( 'view_reports', 'view_reports_ecommerce', 'edit_sites' ), 'description' => 'The capabilities a user holds only on the sites they have been given access to, rather than on every site.' ),
         'clean_query_string' => array( 'default' => true ),
@@ -206,7 +203,6 @@ return array(
         'db_supported_types' => array( 'default' => array( 'mysql' => 'MySQL / MariaDB' ), 'internal' => true ),
         'db_type' => array( 'default' => 'mysql', 'description' => 'The database driver: mysql (PDO where available, otherwise mysqli), mysqli or pdo_mysql. Default mysql.' ),
         'db_user' => array( 'default' => '', 'description' => 'The user name OWA connects to the database as.' ),
-        'default_cache_expiration_period' => array( 'default' => 604800, 'description' => 'How long a parsed user agent stays in the object cache, in seconds. Default 604800 (7 days).' ),
         // The default_page rows Update080 removed, and the install row it wrote, for its down().
         'default_page_before_080' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'default_reporting_period' => array( 'default' => 'last_seven_days', 'description' => 'The date range a report shows when none is chosen. Default last_seven_days.' ),
@@ -314,8 +310,6 @@ return array(
         'mailer-use-smtp' => array( 'default' => false, 'description' => 'Whether OWA sends e-mail through an SMTP server instead of PHP\'s mail(). Off by default.' ),
         'mailer-username' => array( 'default' => '', 'description' => 'The user name for the SMTP server, used with mailer-password.' ),
         'maxCustomVars' => array( 'default' => 5, 'description' => 'How many numbered custom variables (cv1, cv2 and so on) a beacon may carry. Default 5.' ),
-        'memcachedPersistantConnections' => array( 'default' => true ),
-        'memcachedServers' => array( 'default' => array() ),
         'modules' => array( 'default' => array( 'base' ) ),
         'nonce_expiration_period' => array( 'default' => 7200, 'description' => 'The length, in seconds, of the time window a form nonce is issued for. Default 7200 (2 hours).' ),
         'notice_email' => array(

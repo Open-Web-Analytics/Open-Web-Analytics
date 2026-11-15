@@ -129,7 +129,7 @@ final class CliInvocationTest extends TestCase {
         $cmd = sprintf(
             'REQUEST_METHOD=GET SERVER_PROTOCOL=HTTP/1.1 QUERY_STRING=%s REDIRECT_STATUS=1 SCRIPT_FILENAME=%s '
           . '%s -d register_argc_argv=On %s 2>&1',
-            escapeshellarg( 'cmd=flush-cache' ),
+            escapeshellarg( 'cmd=instance-info' ),
             escapeshellarg( $cli ),
             escapeshellarg( $php_cgi ),
             escapeshellarg( $cli )

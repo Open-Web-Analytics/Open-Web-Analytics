@@ -655,10 +655,9 @@ class Entity {
         
         if($this->isCachable()) {
             $cache = \OWA\Core\CoreAPI::cacheSingleton();
-            $cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
             // The row's values, not this object: a caller goes on changing
             // the object, and what it has not saved is not the row.
-            $cache->set($this->getTableName(), $col.$this->get( $col ), $this->_getProperties(), $this->getCacheExpirationPeriod());
+            $cache->set($this->getTableName(), $col.$this->get( $col ), $this->_getProperties());
         }
     }
     
@@ -924,7 +923,6 @@ class Entity {
         
         if ($this->isCachable()) {
             $cache = \OWA\Core\CoreAPI::cacheSingleton();
-            $cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
             $cache_obj = $cache->get($this->getTableName(), $col.$value);
         }
             
@@ -1017,35 +1015,17 @@ class Entity {
     }
     
     /**
-     * Sets the entity as cachable for some period of time
-     *
-     * @todo    make this use the getSetting method but that requires a refactoring of
-     *            the entity abstract class to not use an entity in it's constructor
+     * Keep rows of this entity for the rest of the request once looked up.
+     * See \OWA\Module\Base\Classes\Cache: there is no cache beyond the request.
      */
-    function setCachable($seconds = '') {
-    
+    function setCachable() {
+
         $this->_tableProperties['cacheable'] = true;
-        
-        // set cache expiration period
-        if (!$seconds) {
-            // remove hard coded value. fix this see note above.
-            //$seconds = owa_coreAPI::getSetting('base', 'default_cache_expiration_period');
-            $seconds = 604800;
-        }
-        
-        $this->setCacheExpirationPeriod($seconds);
     }
-    
+
     function isCachable() {
-        
-        //if (owa_coreAPI::getSetting('base', 'cache_objects')) {
-            if (array_key_exists('cacheable', $this->_tableProperties)) {
-                return $this->_tableProperties['cacheable'];
-            //}
-        } else {
-            return false;
-        }
-        
+
+        return ! empty( $this->_tableProperties['cacheable'] );
     }
     
     function setPrimaryKey($col) {
@@ -1485,20 +1465,6 @@ class Entity {
         return strlen( $value ) > 120 ? substr( $value, 0, 120 ) . '...' : $value;
     }
     
-    function setCacheExpirationPeriod($seconds) {
-        
-        $this->_tableProperties['cache_expiration_period'] = $seconds;
-    }
-    
-    function getCacheExpirationPeriod() {
-        
-        if (array_key_exists('cache_expiration_period', $this->_tableProperties)) {
-            return $this->_tableProperties['cache_expiration_period'];
-        } else {
-            // default of thirty days
-            return (3600);
-        }
-    }
     
     function getName() {
         

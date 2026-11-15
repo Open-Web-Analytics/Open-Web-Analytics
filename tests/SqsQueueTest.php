@@ -29,19 +29,14 @@ final class SqsQueueTest extends TestCase
     /** @var array<int, array{0:string,1:array}> command name and its arguments, in order */
     private array $sent = array();
 
-    private string $cache;
-
     /** @var array<string,mixed> */
     private array $saved = array();
 
     protected function setUp(): void
     {
-        $this->cache = sys_get_temp_dir() . '/owa-sqs-' . bin2hex(random_bytes(4)) . '/';
-
-        foreach (array(array('base', 'cache_dir'), array('sqs', 'region'), array('base', 'request_type')) as [$m, $k]) {
+        foreach (array(array('sqs', 'region'), array('base', 'request_type')) as [$m, $k]) {
             $this->saved["$m.$k"] = \OWA\Core\CoreAPI::getSetting($m, $k);
         }
-        \OWA\Core\CoreAPI::setSetting('base', 'cache_dir', $this->cache);
         \OWA\Core\CoreAPI::setSetting('sqs', 'region', 'us-east-1');
 
         $this->mock = new MockHandler();
@@ -56,8 +51,6 @@ final class SqsQueueTest extends TestCase
             [$m, $k] = explode('.', $id);
             \OWA\Core\CoreAPI::setSetting($m, $k, $value);
         }
-
-        exec('rm -rf ' . escapeshellarg($this->cache));
     }
 
     /** Queue SDK answers; each records the command it answered. */
@@ -189,7 +182,7 @@ final class SqsQueueTest extends TestCase
         $this->assertSame('AccessDenied', $q->lastError());
     }
 
-    /** Without the constant or a provisioning record, GetQueueUrl once per queue object, and no file anywhere. */
+    /** Without the constant or a provisioning record, GetQueueUrl once per queue object. */
     public function testTheUrlIsLookedUpOnceWhenNothingNamesIt(): void
     {
         $this->answers(array('QueueUrl' => self::MAIN), array(), array());
@@ -199,7 +192,6 @@ final class SqsQueueTest extends TestCase
         $q->send(self::envelope('b'));
 
         $this->assertSame(array('GetQueueUrl', 'SendMessage', 'SendMessage'), array_column($this->sent, 0));
-        $this->assertDirectoryDoesNotExist($this->cache . 'sqs', 'the URL is not kept in a file');
     }
 
     /** What provisioning recorded names both queues: no lookup at all. */

@@ -5,10 +5,9 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * OWA_DATA_DIR and OWA_CACHE_DIR in owa-config.php move what OWA writes
- * (Core\Env::dataDir(), Core\Env::cacheDir()): the error log, the file event
- * queue with its archive and dead letters, the collector's fallback queue, the
- * file cache, GeoIP data and downloaded user-agent patterns.
+ * OWA_DATA_DIR in owa-config.php moves what OWA writes (Core\Env::dataDir()):
+ * the error log, the file event queue with its archive and dead letters, the
+ * collector's fallback queue, GeoIP data and downloaded user-agent patterns.
  *
  * SUBPROCESS, because the constants are read once at boot: each case runs
  * fixtures/data_dir_probe.php with its constants prepended
@@ -37,7 +36,7 @@ final class DataDirConfigTest extends TestCase
 
         $this->dir = sys_get_temp_dir() . '/owa-data-dir-' . getmypid() . '-' . bin2hex(random_bytes(4));
 
-        foreach (array('logs', 'caches', 'ua-parser') as $sub) {
+        foreach (array('logs', 'ua-parser') as $sub) {
             mkdir($this->dir . '/' . $sub, 0777, true);
         }
 
@@ -99,8 +98,6 @@ final class DataDirConfigTest extends TestCase
 
         $this->assertSame($data, $r['data_dir']);
         $this->assertSame('OWA_DATA_DIR', $r['constant']);
-        $this->assertSame($data . 'caches/', $r['cache_dir']);
-        $this->assertSame($data . 'caches/', $r['file_cache_dir']);
         $this->assertSame($data . 'maxmind/', $r['maxmind_dir']);
         $this->assertSame($data . 'ua-parser/regexes.php', $r['ua_regexes']);
 
@@ -114,21 +111,9 @@ final class DataDirConfigTest extends TestCase
 
     public function testDefiningItRaisesNoWarning(): void
     {
-        $r = $this->probe(array('OWA_DATA_DIR' => $this->dir, 'OWA_CACHE_DIR' => $this->dir . '/caches/'));
+        $r = $this->probe(array('OWA_DATA_DIR' => $this->dir));
 
         $this->assertSame(array(), $r['warnings']);
-    }
-
-    public function testTheCacheDirectoryMovesOnlyTheCache(): void
-    {
-        $cache = $this->dir . '/elsewhere/';
-        mkdir($cache);
-
-        $r = $this->probe(array('OWA_CACHE_DIR' => rtrim($cache, '/')));
-
-        $this->assertSame($cache, $r['cache_dir']);
-        $this->assertSame($cache, $r['file_cache_dir']);
-        $this->assertSame(\OWA\Core\Env::root() . '/owa-data/', $r['data_dir']);
     }
 
     public function testWithNothingSetEverythingStaysInOwaData(): void
@@ -138,8 +123,6 @@ final class DataDirConfigTest extends TestCase
 
         $this->assertSame($data, $r['data_dir']);
         $this->assertSame('', $r['constant']);
-        $this->assertSame($data . 'caches/', $r['cache_dir']);
-        $this->assertSame($data . 'caches/', $r['file_cache_dir']);
         // The logs and the file queue sit under owa-data/: logs/ by default,
         // or wherever under it the runner's config pins them.
         foreach (array('error_log_file', 'queue_dir', 'fallback_dir') as $key) {

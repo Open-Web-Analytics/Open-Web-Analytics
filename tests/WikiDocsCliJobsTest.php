@@ -109,8 +109,8 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
 
     public function testACommandWithNoArgumentsSaysSo(): void
     {
-        $this->assertSame([], \OWA\Module\Base\Controller\FlushCacheCli::usage()['arguments']);
-        $this->assertMatchesRegularExpression('/### flush-cache\n\n(?:.+\n\n)+```bash\nphp cli.php cmd=flush-cache\n```\n\nTakes no arguments\./', $this->section('cli'));
+        $this->assertSame([], \OWA\Module\Base\Controller\NotificationsFetchCli::usage()['arguments']);
+        $this->assertMatchesRegularExpression('/### fetch-notifications\n\n(?:.+\n\n)+```bash\nphp cli.php cmd=fetch-notifications\n```\n\nTakes no arguments\./', $this->section('cli'));
     }
 
     /** Each section names the server roles the command runs on (Controller\Cli::serverRoles()). */
@@ -135,7 +135,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         $this->assertStringNotContainsString('| Command |', $md);
         $this->assertMatchesRegularExpression(
             '/### custom-dimension-register\n\n.+\n\nRequires the `edit_modules` capability\.\n/', $md);
-        $this->assertDoesNotMatchRegularExpression('/### flush-cache\n\n.+\n\nRequires the /', $md);
+        $this->assertDoesNotMatchRegularExpression('/### fetch-notifications\n\n.+\n\nRequires the /', $md);
     }
 
     public function testCapabilityIsReadUpTheClassChain(): void
@@ -143,7 +143,7 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
         // Declared on CustomDimensionsCli, the parent.
         $this->assertSame('edit_modules', owa_wiki_cli_capability(\OWA\Module\Base\Controller\CustomDimensionRegisterCli::class));
         $this->assertSame('edit_sites', owa_wiki_cli_capability(\OWA\Module\Base\Controller\SitesAddCli::class));
-        $this->assertNull(owa_wiki_cli_capability(\OWA\Module\Base\Controller\FlushCacheCli::class));
+        $this->assertNull(owa_wiki_cli_capability(\OWA\Module\Base\Controller\NotificationsFetchCli::class));
     }
 
     public function testEveryRegisteredJobIsInTheTable(): void

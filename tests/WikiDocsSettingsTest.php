@@ -101,7 +101,7 @@ final class WikiDocsSettingsTest extends TestCase
      */
     private const UNREAD = array(
         'base|action_url', 'base|base_url', 'base|clean_query_string', 'base|db_force_new_connections',
-        'base|memcachedPersistantConnections', 'base|memcachedServers', 'base|modules', 'base|password_length',
+        'base|modules', 'base|password_length',
         'base|site_id', 'base|source_param',
     );
 
@@ -136,7 +136,7 @@ final class WikiDocsSettingsTest extends TestCase
             $this->assertArrayHasKey( $id, $fields, "$id is no longer declared; take it off UNREAD" );
         }
 
-        $this->assertGreaterThan( 100, $checked );
+        $this->assertGreaterThan( 90, $checked );
     }
 
     public function testInternalSettingsAreLeftOut(): void
@@ -168,8 +168,8 @@ final class WikiDocsSettingsTest extends TestCase
                 "$key should name $constant" );
         }
 
-        // Optional constants: the row names them although this boot defines neither.
-        foreach ( array( 'data_dir' => 'OWA_DATA_DIR', 'cache_dir' => 'OWA_CACHE_DIR' ) as $key => $constant ) {
+        // An optional constant: the row names it although this boot does not define it.
+        foreach ( array( 'data_dir' => 'OWA_DATA_DIR' ) as $key => $constant ) {
             $this->assertStringContainsString( '`' . $constant . '`', (string) self::rowFor( $base, $key ),
                 "$key should name $constant" );
         }

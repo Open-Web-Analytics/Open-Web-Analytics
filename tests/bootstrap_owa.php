@@ -42,30 +42,6 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
     owa_test_pause_scheduler();
 
     /*
-     * The install's persistent cache, for removals only.
-     *
-     * With the File Cache module on, as on a development install, every row
-     * the suite loaded was written into the install's cache directory when
-     * the process ended -- fixture Profiles and Properties the tests then
-     * deleted among them, left there for a week. So the suite neither writes
-     * to it nor reads from it. Its removals still go through: the scheduler's
-     * cron and the CLI processes some tests start cache fixtures too, and a
-     * test deleting one through its entity is what clears those files.
-     */
-    $cache = \OWA\Core\CoreAPI::cacheSingleton();
-    $cold  = $cache->getColdCache();
-
-    if ($cold) {
-        $cache->cold = new class($cold) extends \OWA\Core\CacheType {
-            private $store;
-            public function __construct($store) { $this->store = $store; }
-            function get($collection, $id) { return false; }
-            function set($collection, $id, $value) { return false; }
-            function remove($collection, $id) { return $this->store->remove($collection, $id); }
-        };
-    }
-
-    /*
      * PHPUnit must see PHP's warnings. Under OWA_DEBUG, which the dev config
      * defines, booting installs OWA's own PHP error handler, which writes a
      * warning to the log and returns -- so a warning that fails CI (where
@@ -155,28 +131,6 @@ function owa_test_pause_scheduler(): void
  * nothing else: the handler is installed immediately before the round-trip and
  * restored immediately after, including on the throw path.
  */
-/**
- * A cache directory for an OWA process a test starts, removed when the suite ends.
- *
- * A child process boots the install as a person would, File Cache and all,
- * and caches whatever Profiles exist while it runs -- a test's fixtures among
- * them. Given OWA_CACHE_DIR (tests/fixtures/role_constants_prepend.php
- * defines it), it caches here instead of in the install's own directory.
- */
-function owa_test_child_cache_dir(): string
-{
-    $dir = sys_get_temp_dir() . '/owa-test-cache-' . getmypid() . '/';
-
-    if (!is_dir($dir)) {
-        mkdir($dir, 0700, true);
-        register_shutdown_function(static function () use ($dir) {
-            exec('rm -rf ' . escapeshellarg($dir));
-        });
-    }
-
-    return $dir;
-}
-
 function owa_test_db_available(): bool
 {
     set_error_handler(static function () { return true; });

@@ -5,8 +5,8 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * The 1.x path and version constants are gone (Core\Env answers instead), and
- * OWA_DATA_DIR, OWA_CACHE_DIR and OWA_MAXMIND_DATA_DIR are owa-config.php's
+ * The 1.x path and version constants are gone (Core\Env answers instead), as
+ * are the file cache's, and OWA_DATA_DIR and OWA_MAXMIND_DATA_DIR are owa-config.php's
  * alone: no code defines them, or a value in the config file would be ignored
  * with an "already defined" warning, as 1.x's OWA_DATA_DIR was.
  */
@@ -16,9 +16,11 @@ final class RemovedEnvConstantsTest extends TestCase
         'OWA_PATH', 'OWA_DIR', 'OWA_BASE_DIR', 'OWA_BASE_CLASSES_DIR', 'OWA_BASE_MODULE_DIR',
         'OWA_BASE_CLASS_DIR', 'OWA_PLUGIN_DIR', 'OWA_CONF_DIR', 'OWA_THEMES_DIR', 'OWA_VERSION',
         'OWA_VENDOR_DIR', 'OWA_MODULES_DIR', 'OWA_TEMPLATE_DIR',
+        // The file cache is removed.
+        'OWA_CACHE_DIR', 'OWA_CACHE_OBJECTS',
     );
 
-    private const CONFIG_ONLY = array( 'OWA_DATA_DIR', 'OWA_CACHE_DIR', 'OWA_MAXMIND_DATA_DIR' );
+    private const CONFIG_ONLY = array( 'OWA_DATA_DIR', 'OWA_MAXMIND_DATA_DIR' );
 
     /** @return iterable<string> every PHP file of the tree, tests included */
     private static function files(): iterable
