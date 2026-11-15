@@ -452,15 +452,15 @@
 
 .owa_gridBar {
     display: block;
-    height: 4px;
-    border-radius: 2px;
+    height: 2px;
+    border-radius: 1px;
     background: #f1f3f6;
 }
 
 .owa_gridBarFill {
     display: block;
-    height: 4px;
-    border-radius: 2px;
+    height: 2px;
+    border-radius: 1px;
     background: #1874CD;
 }
 
@@ -678,6 +678,40 @@
 }
 
 /* ---- a card's Show more: a bar across the card, a chevron in its middle - */
+
+/* ---- a card's summary: what it counts, then the total ------------------ */
+
+.owa_grid .owa_cardSummary {
+    margin: 0 0 16px;
+}
+
+.owa_grid .owa_cardExplain {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--owa-text-muted, #6b7280);
+}
+
+.owa_grid .owa_cardTotal {
+    margin: 12px 0 0;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0 8px;
+}
+
+.owa_grid .owa_cardTotalNumber {
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: #111827;
+    font-variant-numeric: tabular-nums;
+}
+
+.owa_grid .owa_cardTotal .owa_gridChange {
+    display: inline;
+    font-size: 0.8125rem;
+}
 
 /* The grid fills the card's body, so the bar sits on the card's floor. */
 .owa_grid.is-card {

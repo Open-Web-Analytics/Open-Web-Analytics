@@ -39,12 +39,6 @@
                 "dimensions": "transactionId",
                 "sort": "transactionRevenue-"
             },
-            "constraints": [
-                {
-                    "dimension": "eventName",
-                    "value": "purchase"
-                }
-            ],
             "more": {
                 "reportId": "transactions"
             }

@@ -734,6 +734,61 @@ describe('the bar', () => {
 });
 
 /**
+ * A card says what it counts and its total, above its rows: its metric by
+ * its dimension, its own filters, and the metric's total over every row with
+ * its change when compared.
+ */
+describe('a card\'s summary', () => {
+
+    const CARD = { compact: true, showExplorerControls: false };
+
+    test('names the metric and the dimension, and shows the total, not the sum of the rows shown', () => {
+        const { $root } = draw(resultSet(), CARD);
+
+        expect($root.find('[data-ui="card-explain"]').text()).toBe('Sessions by Browser');
+        // 60 + 30 + 10 shown; the total is the server's, over every row.
+        expect($root.find('[data-ui="card-total"] .owa_cardTotalNumber').text()).toBe('100');
+        expect($root.find('[data-ui="card-total"] .owa_gridChange')).toHaveLength(0);
+    });
+
+    test('says the card\'s own filters, not the report\'s', () => {
+        const rs = resultSet({ constraints: 'medium==referral,osName!=(not set),browserType=@fox' });
+        const { $root } = draw(rs, Object.assign({ ownConstraints: 'medium==referral,osName!=(not set)' }, CARD));
+
+        expect($root.find('[data-ui="card-explain"]').text())
+            .toBe('Sessions by Browser, where Medium is referral and Operating System has a value');
+    });
+
+    test('shows the change when the report is compared', () => {
+        const rs = resultSet({ rs: {
+            aggregates: { sessions: { name: 'sessions', value: 100, formatted_value: '100', compare_value: 125, compare_formatted_value: '125', change: -0.2 } },
+            compare: { compare: 'previous_period', startDate: '20261001', endDate: '20261031' },
+        } });
+        const { $root } = draw(rs, CARD);
+        const $change = $root.find('[data-ui="card-total"] .owa_gridChange');
+
+        expect($change).toHaveLength(1);
+        expect($change.hasClass('is-down')).toBe(true);
+        expect($change.text()).toContain('20');
+    });
+
+    test('a card with no rows still says what it counts, and its total', () => {
+        const rs = resultSet({ rows: [], rs: { aggregates: { sessions: { name: 'sessions', value: 0, formatted_value: '0' } } } });
+        const { $root } = draw(rs, CARD);
+
+        expect($root.find('[data-ui="card-explain"]').text()).toBe('Sessions by Browser');
+        expect($root.find('.owa_cardTotalNumber').text()).toBe('0');
+        expect($root.find('.owa_gridEmpty')).toHaveLength(1);
+    });
+
+    test('a full-width grid has no summary: its Total row is the total', () => {
+        const { $root } = draw(resultSet(), {});
+
+        expect($root.find('[data-ui="card-summary"]')).toHaveLength(0);
+    });
+});
+
+/**
  * A card has no pager. A bar under its rows asks for the same query again from
  * the first row with as many more rows as the card first showed.
  */

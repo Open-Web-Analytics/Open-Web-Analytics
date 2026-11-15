@@ -72,12 +72,6 @@
             "more": {
                 "reportId": "pages"
             },
-            "constraints": [
-                {
-                    "dimension": "eventName",
-                    "value": "page_view"
-                }
-            ],
             "rowActions": [
                 "heatmap",
                 "pathHeatmap",

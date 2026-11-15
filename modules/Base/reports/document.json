@@ -38,10 +38,6 @@
                 {
                     "dimension": "pagePath",
                     "fromParam": "pagePath"
-                },
-                {
-                    "dimension": "eventName",
-                    "value": "page_view"
                 }
             ],
             "link": {
@@ -72,10 +68,6 @@
                 {
                     "dimension": "pagePath",
                     "fromParam": "pagePath"
-                },
-                {
-                    "dimension": "eventName",
-                    "value": "page_view"
                 }
             ],
             "link": {
