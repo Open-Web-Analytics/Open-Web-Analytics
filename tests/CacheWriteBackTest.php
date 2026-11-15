@@ -5,12 +5,14 @@ require_once __DIR__ . '/bootstrap_owa.php';
 use PHPUnit\Framework\TestCase;
 
 /**
- * What the cache writes to its persistent store when a request ends.
+ * When the cache writes to its persistent store, and what it writes.
  *
- * Cache::set() marks a key to be written at the end of the request. A key
- * removed after that was written anyway, as whatever the warm cache held for
- * it -- nothing -- so every row a request loaded and then deleted left a file
- * holding null behind.
+ * It wrote when the request ended: every key set during the request, as the
+ * warm cache held it then. A long process wrote back rows as they were when it
+ * read them, over changes saved in the meantime; a key set then removed was
+ * written anyway, as null; and the entity cached was the caller's own object,
+ * unsaved changes and all. Now a value is written when it is cached, and an
+ * entity caches its row's values.
  */
 final class CacheWriteBackTest extends TestCase
 {
@@ -34,41 +36,62 @@ final class CacheWriteBackTest extends TestCase
         return $cache;
     }
 
-    public function testAKeySetIsWrittenAtTheEnd(): void
+    public function testAKeyIsWrittenWhenItIsSet(): void
     {
         $store = $this->store();
         $cache = $this->cache($store);
 
         $cache->set('owa_site', 'id1', ['name' => 'kept']);
-        $cache->persistCache();
 
-        $this->assertSame([['name' => 'kept']], array_values($store->written));
+        $this->assertSame([['name' => 'kept']], array_values($store->written),
+            'the value waited for the end of the request');
     }
 
-    public function testAKeySetThenRemovedIsNotWrittenAtTheEnd(): void
+    public function testNothingIsWrittenWhenTheRequestEnds(): void
+    {
+        $store = $this->store();
+        $cache = $this->cache($store);
+
+        $cache->set('owa_site', 'id1', ['name' => 'first']);
+        $store->written = [];
+
+        $cache->persistCache();
+
+        $this->assertSame([], $store->written,
+            'the end of the request wrote back what the process had read');
+    }
+
+    public function testAKeySetThenRemovedIsGoneFromTheStore(): void
     {
         $store = $this->store();
         $cache = $this->cache($store);
 
         $cache->set('owa_site', 'id1', ['name' => 'gone']);
-        $cache->set('owa_site', 'id2', ['name' => 'kept']);
         $cache->remove('owa_site', 'id1');
         $cache->persistCache();
 
-        $this->assertSame([['name' => 'kept']], array_values($store->written),
-            'a removed key was written back at the end of the request');
-        $this->assertCount(1, $store->removed, 'the removal still reaches the store');
+        $this->assertSame([$cache->hash('id1')], array_map(fn($k) => substr($k, strlen('owa_site/')), $store->removed));
+        $this->assertNull($cache->get('owa_site', 'id1'));
     }
 
-    public function testNothingIsWrittenForAKeyTheWarmCacheNoLongerHolds(): void
+    public function testParsingAUserAgentCachesNothing(): void
     {
         $store = $this->store();
-        $cache = $this->cache($store);
+        $cache = \OWA\Core\CoreAPI::cacheSingleton();
+        $saved = $cache->cold;
+        $cache->cold = $store;
 
-        $cache->set('owa_site', 'id1', ['name' => 'x']);
-        $cache->warm->remove('owa_site', $cache->hash('id1'));
-        $cache->persistCache();
+        $ua = 'Mozilla/5.0 (X11; Linux x86_64) invented-agent/' . bin2hex(random_bytes(4));
 
-        $this->assertSame([], $store->written, 'a null was written for a key with nothing in it');
+        try {
+            \OWA\Core\CoreAPI::supportClassFactory('base', 'browscap', $ua);
+            $held = $cache->get('browscap', $ua);
+        } finally {
+            $cache->cold = $saved;
+        }
+
+        $this->assertSame([], $store->written,
+            'a user agent was cached: one entry per agent anyone cares to send');
+        $this->assertNull($held, 'a user agent was cached, to be written for the next request');
     }
 }

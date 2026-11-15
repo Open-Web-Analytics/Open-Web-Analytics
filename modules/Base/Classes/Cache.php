@@ -36,8 +36,6 @@ class Cache {
     var $cache;
     var $statistics = array('warm' => 0, 'cold' => 0, 'miss' => 0, 'replaced' => 0, 'added' => 0, 'removed' => 0, 'dirty' => 0, 'persisted' => 0);
     var $cache_id = 1; // default cache id
-    var $dirty_collections;
-    var $dirty_objs = array();
     var $collection_expiration_periods = [];
     var $e;
     var $warm;
@@ -95,44 +93,38 @@ class Cache {
 	    return $this->cold;
     }
             
+    /**
+     * Cache a value, in the persistent store too, NOW.
+     *
+     * It used to be marked and written when the request ended. A process
+     * that ran for minutes -- a cube rebuild, a queue worker -- then wrote
+     * back a row as it was when it read it, over the change someone saved in
+     * the meantime, and that copy was served for the cache's week.
+     */
     function set( $collection, $key, $value, $expires = '' ) {
-    
+
         $hkey = $this->hash($key);
-        //$this->cache[$collection][$hkey] = $value;
         $this->warm->set( $collection, $hkey, $value );
-        
+
         $this->debug(sprintf('Added Object to Cache - Collection: %s, id: %s', $collection, $hkey));
         $this->statistics['added']++;
-        $this->dirty_objs[$collection][$hkey] = $hkey;
-        $this->dirty_collections[$collection] = true;
-        $this->statistics['dirty']++;
-            
-    }
-    
-    function replace( $collection, $key, $value ) {
-    
-        $hkey = $this->hash($key);
-        //$this->cache[$collection][$hkey] = $value;
-        $this->warm->set( $collection, $hkey, $value );
-        $this->debug(sprintf('Replacing Object in Cache - Collection: %s, id: %s', $collection, $hkey));
-        $this->statistics['replaced']++;
-        
-        // check to make sure the dirty collection exists and object is not already in there.
-        if (!empty($this->dirty_objs[$collection])) {
-            if(!in_array($hkey, $this->dirty_objs[$collection])) {
-                $this->dirty_objs[$collection][] = $hkey;
-                $this->dirty_collections[$collection] = true;
-                        $this->statistics['dirty']++;
-            }
-        } else {
-            $this->dirty_objs[$collection][] = $hkey;
-            $this->dirty_collections[$collection] = true;
-                $this->statistics['dirty']++;
+
+        $cold = $this->getColdCache();
+
+        if ( $cold ) {
+
+            $cold->set( $collection, $hkey, $value );
+            $this->statistics['persisted']++;
         }
-            
-        
     }
-    
+
+    function replace( $collection, $key, $value ) {
+
+        $this->statistics['replaced']++;
+
+        $this->set( $collection, $key, $value );
+    }
+
     function get( $collection, $key ) {
         
         $id = $this->hash($key);
@@ -177,13 +169,7 @@ class Cache {
         //unset($this->cache[$collection][$id]);
         $this->warm->remove( $collection, $id );
 
-        // Not written at the end of the request either: persistCache() would
-        // write what the warm cache now holds for it, which is nothing.
-        if ( isset( $this->dirty_objs[ $collection ] ) ) {
 
-            $this->dirty_objs[ $collection ] = array_diff( $this->dirty_objs[ $collection ], array( $id ) );
-        }
-        
         $cold = $this->getColdCache();
         
         if ( $cold ) {
@@ -192,48 +178,15 @@ class Cache {
         }
     }
     
+    /**
+     * Nothing is left to write when a request ends: set() writes as it goes.
+     * Kept for a caller of the old interface.
+     */
     function persistCache() {
-        
-        $this->debug("starting to persist cache...");
-        
-        $cold = $this->getColdCache();
-        
-        if ( $cold ) {
-        
-	        // check for dirty objects
-	        if (!empty($this->dirty_objs)) {
-	            
-	            \OWA\Core\CoreAPI::debug( 'Dirty objects per collection:', array_map( 'count', (array) $this->dirty_objs ) );
-	            
-	            // persist dirty objects
-	            foreach ($this->dirty_objs as $collection => $ids) {
-	                
-	                foreach ($ids as $id) {
 
-	                    $value = $this->warm->get( $collection, $id );
-
-	                    // Gone from the warm cache: nothing to keep.
-	                    if ( $value === null ) {
-
-	                        continue;
-	                    }
-
-	                    $cold->set( $collection, $id, $value );
-	                    $this->statistics['persisted']++;
-	                }
-	            }
-	            
-	        } else {
-	            $this->debug("There seem to be no dirty objects in the cache to persist.");
-	        }
-	    } else {
-		    
-		    $this->debug("There is no cold cache to persist to.");
-	    }
+        return true;
     }
-    
 
-    
     /**
      * Store specific implementation of flushing the cold cache store
      */

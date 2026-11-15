@@ -98,6 +98,29 @@ final class EntityCacheEveryKeyTest extends TestCase
             'a load by site_id returned a deleted Profile');
     }
 
+    public function testAnUnsavedChangeIsNotWhatTheNextLoadSees(): void
+    {
+        $stored = $this->byId()->get('name');
+
+        // Loaded from the database, so this is the entity that gets cached.
+        \OWA\Core\CoreAPI::cacheSingleton()->remove('owa_site', 'id' . $this->site->get('id'));
+        $site = $this->byId();
+        $site->set('name', 'Never saved');
+
+        $this->assertSame($stored, $this->byId()->get('name'),
+            'a change nobody saved came back from the cache');
+    }
+
+    public function testTheCacheHoldsTheRowsValues(): void
+    {
+        $this->byId();
+
+        $cached = \OWA\Core\CoreAPI::cacheSingleton()->get('owa_site', 'id' . $this->site->get('id'));
+
+        $this->assertIsArray($cached, 'the cache holds an entity object, not the row');
+        $this->assertSame((string) $this->site->get('site_id'), (string) $cached['site_id']);
+    }
+
     public function testADeleteByAnotherColumnIsSeenByALoadById(): void
     {
         $this->assertTrue($this->byId()->wasPersisted());

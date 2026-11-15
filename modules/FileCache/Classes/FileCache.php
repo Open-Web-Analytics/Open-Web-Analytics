@@ -87,9 +87,42 @@ class FileCache extends \OWA\Core\CacheType {
            
         // load from cache file
         } else {
-            return unserialize(base64_decode(substr(@ file_get_contents($cache_file), strlen($this->cache_file_header), -strlen($this->cache_file_footer))));
+
+            /*
+             * Plain data only. Entities cache a row's values and nothing else
+             * stores objects, so a file that rebuilds into one is either from
+             * before rows were cached as values or not this cache's -- and
+             * unserialize() building whatever class a file names is how a
+             * writable cache directory becomes code execution.
+             */
+            $value = unserialize(
+                base64_decode(substr(@ file_get_contents($cache_file), strlen($this->cache_file_header), -strlen($this->cache_file_footer))),
+                array( 'allowed_classes' => false ) );
+
+            if ( is_object( $value ) || ( is_array( $value ) && self::holdsObject( $value ) ) ) {
+
+                $this->removeCacheFile( $cache_file );
+
+                return false;
+            }
+
+            return $value;
         }
 
+    }
+
+    /** Whether an unserialized array holds an object at any depth. */
+    private static function holdsObject( array $value ) {
+
+        foreach ( $value as $item ) {
+
+            if ( is_object( $item ) || ( is_array( $item ) && self::holdsObject( $item ) ) ) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     function set( $collection, $id, $value ) {

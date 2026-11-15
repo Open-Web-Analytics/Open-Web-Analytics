@@ -656,7 +656,9 @@ class Entity {
         if($this->isCachable()) {
             $cache = \OWA\Core\CoreAPI::cacheSingleton();
             $cache->setCollectionExpirationPeriod($this->getTableName(), $this->getCacheExpirationPeriod());
-            $cache->set($this->getTableName(), $col.$this->get( $col ), $this, $this->getCacheExpirationPeriod());
+            // The row's values, not this object: a caller goes on changing
+            // the object, and what it has not saved is not the row.
+            $cache->set($this->getTableName(), $col.$this->get( $col ), $this->_getProperties(), $this->getCacheExpirationPeriod());
         }
     }
     
@@ -926,10 +928,12 @@ class Entity {
             $cache_obj = $cache->get($this->getTableName(), $col.$value);
         }
             
-        if (!empty($cache_obj)) {
-        
-            $cache_obj_properties = $cache_obj->_getProperties();
-            $this->setProperties($cache_obj_properties);
+        // A row's values. Anything else -- an entity object cached before
+        // rows were cached as values, which a file cache now refuses to
+        // rebuild -- is a miss, and the row is read again.
+        if ( is_array( $cache_obj ) && $cache_obj ) {
+
+            $this->setProperties( $cache_obj );
             $this->wasPersisted = true;
                     
         } else {
