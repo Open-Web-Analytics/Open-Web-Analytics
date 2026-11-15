@@ -3461,6 +3461,15 @@ class Db extends \OWA\Core\Base {
         return $this->query(OWA_SQL_END_TRANSACTION);
     }
 
+    /**
+     * Abandons the open transaction: the installer's last step rolls back its
+     * writes when one of them fails (InstallManager::finishInstall()).
+     */
+    function rollbackTransaction() {
+
+        return $this->query(OWA_SQL_ROLLBACK_TRANSACTION);
+    }
+
     function count($column_name) {
 
         return sprintf(OWA_SQL_COUNT, $column_name);
