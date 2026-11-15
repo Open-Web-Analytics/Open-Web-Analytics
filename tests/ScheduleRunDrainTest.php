@@ -36,10 +36,11 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
         parent::tearDown();
     }
 
+    /** The job's status, or '' once its row is gone. */
     private function jobStatus(string $id): string
     {
-        return (string) ((array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            'SELECT status FROM ' . self::TABLE . ' WHERE id = ?', array($id)))['status'];
+        return (string) (((array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            'SELECT status FROM ' . self::TABLE . ' WHERE id = ?', array($id)))['status'] ?? '');
     }
 
     private function drain(): void
