@@ -28,6 +28,10 @@
     # here anymore -- the moved tracker pins its publicPath to public/base/dist/, so it
     # never requests owa.vendors/heatmap/player from the module tree. Nothing else under
     # modules/ is served.
+    #
+    # public/ is ALSO granted by public/.htaccess, without an expression. A server that
+    # reads `Require` but not `<If>` -- reported on shared hosting running LiteSpeed --
+    # otherwise denies every stylesheet and script: the pages load, unstyled.
     <If "%{REQUEST_URI} =~ m#/(api/|public/|modules/base/dist/owa\.tracker\.js$|modules/base/js/owa\.tracker-combined-min\.js$)#">
         Require all granted
     </If>
