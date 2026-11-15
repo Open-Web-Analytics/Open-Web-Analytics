@@ -190,9 +190,11 @@ class InstallManager extends \OWA\Core\Base {
             return false;
         }
         
-        // can DB connection be made?
+        // Can a connection be made? Asked quietly: on the installer's first
+        // page a config whose details do not connect means "not installed",
+        // and the environment check reports the failure.
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        if ( ! $db->connect() ) {
+        if ( ! $db->canConnect() ) {
             
             return false;
         }
