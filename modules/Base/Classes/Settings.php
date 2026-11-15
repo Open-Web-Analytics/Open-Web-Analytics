@@ -3028,6 +3028,7 @@ namespace OWA\Module\Base\Classes;
                 'default_page_before_080'           => array(),
                 'log_robots_before_084'             => array(),
                 'retired_settings_before_085'       => array(),
+                'cache_settings_before_086'         => array(),
                 'v1_tables_dropped'                 => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.

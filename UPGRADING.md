@@ -349,6 +349,10 @@ and the installer's check of `caches/`. A config file that still defines either
 constant is not an error. `owa-data/caches/` is no longer written, and can be
 deleted.
 
+Update086 deletes the stored rows of the two modules and of those settings, so
+an install that ran the File Cache no longer lists `fileCache` as an active
+module. The update's down() puts them back.
+
 ### Server roles: `OWA_SERVER_ROLE`
 
 A server's role says which requests it serves. With nothing set it is `full`,
