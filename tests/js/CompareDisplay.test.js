@@ -157,4 +157,41 @@ describe( 'a trend compared to another period', () => {
     test( 'no comparison, no second line', () => {
         expect( new OWA.areaChart().singleSeries( resultSet( [ [ '20261102', 10 ] ] ), 'date', 'pageViews' ).series ).toHaveLength( 1 );
     } );
+
+    test( 'this week on a Sunday: the period is one day, the compared line the whole week before', () => {
+        const rs = resultSet( [ [ '20261115', 5 ] ],
+            [ [ '20261115', '20261108', 4 ], [ '20261116', '20261109', 6 ], [ '20261121', '20261114', 9 ] ] );
+
+        rs.timePeriod = { startDate: '20261115', endDate: '20261115', axisEndDate: '20261121' };
+        rs.compare.startDate = '20261108';
+        rs.compare.endDate   = '20261114';
+
+        const chart = new OWA.areaChart();
+        const built = chart.singleSeries( rs, 'date', 'pageViews' );
+        const line  = built.series.find( ( s ) => s.isCompare );
+        const own   = built.series.find( ( s ) => ! s.isCompare );
+
+        expect( own.data ).toEqual( [ [ day( '20261115' ), 5 ] ] );
+        expect( line.data.map( ( p ) => p[0] ) ).toEqual(
+            [ '20261115', '20261116', '20261117', '20261118', '20261119', '20261120', '20261121' ].map( day ) );
+        expect( line.data.map( ( p ) => p[1] ) ).toEqual( [ 4, 6, 0, 0, 0, 0, 9 ] );
+        expect( line.dashed ).toBe( true );
+
+        // Hovering Wednesday finds the compared point there, past today.
+        chart.dataseries = built.series;
+        expect( chart.nearestX( day( '20261118' ) + 3600000 ) ).toBe( day( '20261118' ) );
+    } );
+
+    test( 'the compared line stops where the comparison does: March against February', () => {
+        const rs = resultSet( [ [ '20260301', 1 ] ], [] );
+
+        rs.timePeriod = { startDate: '20260301', endDate: '20260331', axisEndDate: '20260331' };
+        rs.compare.startDate = '20260201';
+        rs.compare.endDate   = '20260228';
+
+        const line = new OWA.areaChart().singleSeries( rs, 'date', 'pageViews' ).series.find( ( s ) => s.isCompare );
+
+        expect( line.data ).toHaveLength( 28 );
+        expect( line.data[27][0] ).toBe( day( '20260328' ) );
+    } );
 } );
