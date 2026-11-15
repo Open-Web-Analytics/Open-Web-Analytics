@@ -37,8 +37,16 @@ class FileCache extends \OWA\Core\CacheType {
     var $lock_file_name = 'cache.lock';
     var $cache_file_header = "<?php \n /*";
     var $cache_file_footer = "*/ \n ?>";
-    var $file_perms = 0750;
-    var $dir_perms = 0750;
+    /*
+     * Group read and write, setgid on directories. The web server and the
+     * CLI may run as different users sharing a group, and both read, write
+     * and remove entries. 0750 dropped the group's write and the setgid the
+     * cache root carries, so each user's files were closed to the other: an
+     * edit saved over the web could not remove what a CLI process had cached.
+     * Nothing here is executed, so nothing is executable.
+     */
+    var $file_perms = 0660;
+    var $dir_perms = 02770;
     var $mutex;
   
 
@@ -127,50 +135,52 @@ class FileCache extends \OWA\Core\CacheType {
 
     function set( $collection, $id, $value ) {
 
-        if ( $this->acquire_lock() ) {
-            $this->makeCacheCollectionDir($collection);
-            \OWA\Core\CoreAPI::debug(' writing file for: '.$collection.$id);
-            // create collection dir
-            $collection_dir = $this->makeCollectionDirPath($collection);
-            // asemble cache file name
-            $cache_file = $collection_dir.$id.'.php';
+        if ( ! $this->acquire_lock() ) {
 
-            $this->removeCacheFile($cache_file);
+            \OWA\Core\CoreAPI::debug("could not persist item to cache due to failure acquiring lock.");
 
-            $temp_cache_file = tempnam($collection_dir, 'tmp_'.$id);
+            return false;
+        }
 
-            $data = $this->cache_file_header.base64_encode(serialize($value)).$this->cache_file_footer;
+        $written = false;
 
+        if ( $this->makeCacheCollectionDir( $collection ) ) {
 
-            // open the temp cache file for writing
-            $tcf_handle = @fopen($temp_cache_file, 'w');
+            $collection_dir = $this->makeCollectionDirPath( $collection );
+            $cache_file     = $collection_dir . $id . '.php';
+            $temp_file      = @ tempnam( $collection_dir, 'tmp_' . $id );
 
-            if ( false === $tcf_handle ) {
-                \OWA\Core\CoreAPI::debug('could not acquire temp file handler');
-            } else {
+            /*
+             * tempnam() falls back to the system temp directory when the one
+             * it is given will not take a file, and the rename below then
+             * fails -- leaving a copy of the entry in /tmp on every write.
+             */
+            if ( $temp_file !== false && realpath( dirname( $temp_file ) ) !== realpath( $collection_dir ) ) {
 
-                fputs($tcf_handle, $data);
-
-                fclose($tcf_handle);
-
-                if (!@ rename($temp_cache_file, $cache_file)) {
-
-                    if (!@ copy($temp_cache_file, $cache_file)) {
-                        \OWA\Core\CoreAPI::debug('could not rename or copy temp file to cache file');
-                    } else {
-                        @ unlink($temp_cache_file);
-                        \OWA\Core\CoreAPI::debug('removing temp cache file');
-                    }
-                }
-
-                @ chmod($cache_file, $this->file_perms);
-                \OWA\Core\CoreAPI::debug('changing file permissions on cache file');
+                @ unlink( $temp_file );
+                $temp_file = false;
             }
 
-            $this->release_lock();
-        } else {
-            \OWA\Core\CoreAPI::debug("could not persist item to cache due to failure acquiring lock.");
+            if ( $temp_file !== false ) {
+
+                $data = $this->cache_file_header . base64_encode( serialize( $value ) ) . $this->cache_file_footer;
+
+                if ( @ file_put_contents( $temp_file, $data ) !== false && @ rename( $temp_file, $cache_file ) ) {
+
+                    @ chmod( $cache_file, $this->file_perms );
+                    $written = true;
+
+                } else {
+
+                    @ unlink( $temp_file );
+                    \OWA\Core\CoreAPI::debug( 'could not write cache file ' . $cache_file );
+                }
+            }
         }
+
+        $this->release_lock();
+
+        return $written;
     }
 
     function remove( $collection, $id ) {
@@ -183,34 +193,45 @@ class FileCache extends \OWA\Core\CacheType {
         return $this->cache_dir.$this->cache_id.'/'.$collection.'/';
     }
 
+    /**
+     * Make the collection's directory if it is not there.
+     *
+     * @return bool whether the directory is there and takes files
+     */
     function makeCacheCollectionDir($collection) {
 
-        // check to see if the caches directory is writable, return if not.
-        if (!is_writable($this->cache_dir)) {
-            return;
+        if ( ! is_writable( $this->cache_dir ) ) {
+
+            return false;
         }
 
-        // localize the cache directory based on some id passed from caller
+        foreach ( array( $this->cache_dir . $this->cache_id . '/', $this->makeCollectionDirPath( $collection ) ) as $dir ) {
 
-        if (!file_exists($this->cache_dir.$this->cache_id)) {
+            if ( ! is_dir( $dir ) ) {
 
-            mkdir($this->cache_dir.$this->cache_id);
-            chmod($this->cache_dir.$this->cache_id, $this->dir_perms);
+                if ( ! @ mkdir( $dir ) && ! is_dir( $dir ) ) {
+
+                    return false;
+                }
+
+                @ chmod( $dir, $this->dir_perms );
+
+            // One made with the old 0750, by this user: brought up to date. Any
+            // other mode is someone's choice and is left alone.
+            } elseif ( ( fileperms( $dir ) & 07777 ) === 0750
+                    && function_exists( 'posix_geteuid' ) && fileowner( $dir ) === posix_geteuid() ) {
+
+                @ chmod( $dir, $this->dir_perms );
+            }
+
+            // An empty index.php, so a server that lists directories lists nothing.
+            if ( ! file_exists( $dir . 'index.php' ) && @ touch( $dir . 'index.php' ) ) {
+
+                @ chmod( $dir . 'index.php', $this->file_perms );
+            }
         }
 
-        $collection_dir = $this->makeCollectionDirPath($collection);
-
-        if (!file_exists($collection_dir)) {
-
-            mkdir($collection_dir);
-            chmod($collection_dir, $this->dir_perms);
-        }
-
-        if (!file_exists($collection_dir."index.php")) {
-
-            touch($collection_dir."index.php");
-            chmod($collection_dir."index.php", $this->file_perms);
-        }
+        return is_writable( $this->makeCollectionDirPath( $collection ) );
     }
 
     function removeCacheFile($cache_file) {
@@ -226,36 +247,25 @@ class FileCache extends \OWA\Core\CacheType {
         }
     }
 
+    /**
+     * Remove every entry, and any temp file a failed write left.
+     *
+     * The directories, their index.php and the lock file stay: they are the
+     * cache's structure, not its entries.
+     */
     function flush() {
 
-        $tld = $this->readDir($this->cache_dir);
+        foreach ( (array) glob( $this->cache_dir . '*/*/*' ) as $file ) {
 
+            $name = basename( $file );
 
-        if ( array_key_exists( 'files', $tld ) ) {
+            if ( is_file( $file ) && $name !== 'index.php'
+                    && ( substr( $name, -4 ) === '.php' || strpos( $name, 'tmp_' ) === 0 ) ) {
 
-            //$this->deleteFiles($tld['files']);
-        }
-
-        foreach ($tld['dirs'] as $k => $dir) {
-
-            $sld = $this->readDir($dir);
-
-            if ( array_key_exists( 'files', $sld ) ) {
-
-                $this->deleteFiles( $sld['files'] );
-            }
-
-            foreach ( $sld['dirs'] as $sk => $sdir ) {
-
-                $ssld = $this->readDir( $sdir );
-
-                if ( array_key_exists( 'files', $ssld ) ) {
-
-                    $this->deleteFiles( $ssld['files'] );
-                }
+                @ unlink( $file );
             }
         }
-        
+
         return true;
     }
 
@@ -274,54 +284,6 @@ class FileCache extends \OWA\Core\CacheType {
         // Release write lock.
         flock($this->mutex, LOCK_UN);
         fclose($this->mutex);
-    }
-
-    function readDir($dir) {
-
-        \OWA\Core\CoreAPI::debug( "Reading cache file list from: ". $dir );
-
-        $data = array();
-
-        if ($handle = opendir($dir)) {
-
-             while (($file = readdir($handle)) !== false) {
-
-                if (is_dir($dir.$file)) {
-
-                    if (strpos($file, '.') === false) {
-                        $data['dirs'][] = $dir.$file.'/';
-                    }
-                } else {
-                    if (strpos($file, '.php') == true) {
-                        $data['files'][] = $dir.$file;
-                    }
-
-                    if (strpos($file, '.lock') == true) {
-                        $data['files'][] = $dir.$file;
-                    }
-                }
-            }
-
-        }
-
-         closedir($handle);
-        return $data;
-    }
-
-    function deleteFiles($files) {
-
-        if (!empty($files)) {
-
-            foreach ($files as $file) {
-                \OWA\Core\CoreAPI::debug("About to unlink cache file: ".$file);
-                unlink($file);
-            }
-
-        } else {
-            \OWA\Core\CoreAPI::debug('No Cache Files to delete.');
-        }
-
-        return true;
     }
 
 }

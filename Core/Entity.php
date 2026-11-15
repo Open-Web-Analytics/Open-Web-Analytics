@@ -1495,7 +1495,7 @@ class Entity {
         if (array_key_exists('cache_expiration_period', $this->_tableProperties)) {
             return $this->_tableProperties['cache_expiration_period'];
         } else {
-            // default of thirty days
+            // An hour. setCachable() sets a week on every cached entity, so this is not reached by one.
             return (3600);
         }
     }

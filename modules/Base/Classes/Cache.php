@@ -268,9 +268,11 @@ class Cache {
         $cold = $this->getColdCache();
         
         if ( $cold ) {
-	        
-        	$cold->getCollectionExpirationPeriod($collection_name);
+
+        	return $cold->getCollectionExpirationPeriod($collection_name);
         }
+
+        return false;
     }
     
 }
