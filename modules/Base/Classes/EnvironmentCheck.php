@@ -55,7 +55,30 @@ class EnvironmentCheck {
      * @param string $config_file  path to owa-config.php
      * @return array[] each ['name','value','passed','msg']
      */
-    public static function all( $config_file ) {
+    /**
+     * A path as a check shows it: in full for cmd=instance-info, relative to
+     * OWA's directory for the web installer, which anyone can open before OWA
+     * is installed.
+     */
+    private static function shown( $path, $relative ) {
+
+        $path = (string) $path;
+
+        if ( ! $relative ) {
+
+            return $path;
+        }
+
+        $root = rtrim( (string) OWA_DIR, '/' ) . '/';
+
+        return strpos( $path, $root ) === 0 ? substr( $path, strlen( $root ) ) : basename( rtrim( $path, '/' ) ) . ( substr( $path, -1 ) === '/' ? '/' : '' );
+    }
+
+    /**
+     * @param string $config_file
+     * @param bool   $relative    paths relative to OWA's directory (the web installer)
+     */
+    public static function all( $config_file, $relative = false ) {
 
         $checks = array();
 
@@ -107,7 +130,7 @@ class EnvironmentCheck {
                 $label,
                 is_writable( $path ) ? 'writable' : 'not writable',
                 is_writable( $path ),
-                sprintf( 'Make %s writable by the user your web server runs as.', $path ) );
+                sprintf( 'Make %s writable by the user your web server runs as.', self::shown( $path, $relative ) ) );
         }
 
         /*
@@ -131,10 +154,10 @@ class EnvironmentCheck {
                 : ( is_writable( $config_dir ) ? 'can be created' : 'cannot be created' ),
             $config_ok,
             file_exists( $config_file )
-                ? sprintf( 'Make %s readable by the user your web server runs as.', $config_file )
+                ? sprintf( 'Make %s readable by the user your web server runs as.', self::shown( $config_file, $relative ) )
                 : sprintf( 'Make %s writable so the installer can create owa-config.php, or '
                          . 'copy owa-config-dist.php to owa-config.php yourself and fill it in.',
-                           $config_dir ) );
+                           $relative ? 'the directory owa-config.php goes in' : $config_dir ) );
 
         // The two directories a source checkout does not come with.
         $checks[] = self::check(

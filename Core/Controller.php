@@ -888,7 +888,10 @@ class Controller extends \OWA\Core\Base {
 
     function verifyNonce($nonce, $action = '') {
             
-        $action = $action ?: $this->getParam('do') ?: $this->getParam('action');
+        // `action` before `do`, as the dispatcher reads them
+        // (CoreAPI::performAction): the nonce is checked against the action
+        // that runs, not another named beside it.
+        $action = $action ?: $this->getParam('action') ?: $this->getParam('do');
 
         $matching_nonce = \OWA\Core\CoreAPI::createNonce($action);
         \OWA\Core\CoreAPI::debug("passed nonce: $nonce | matching nonce: $matching_nonce");
