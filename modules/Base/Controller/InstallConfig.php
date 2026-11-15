@@ -41,6 +41,27 @@ class InstallConfig extends \OWA\Core\Controller\Install {
         $this->setNonceRequired();
     }
 
+    /**
+     * Nothing to configure once owa-config.php exists: a hand-written file, or
+     * the one this step wrote. The environment check goes on to the defaults
+     * when the file connects, and says what to correct when it does not.
+     *
+     * Before validation and the nonce, so a post here never reaches the
+     * database with the existing file's details (its "create database" path
+     * would otherwise name the configured database in its errors).
+     */
+    function doAction() {
+
+        if ( $this->c->isConfigFilePresent() && ! $this->isInstallComplete() ) {
+
+            $this->setRedirectAction( 'base.installCheckEnv' );
+
+            return $this->data;
+        }
+
+        return parent::doAction();
+    }
+
     public function validate()
     {
         //required params

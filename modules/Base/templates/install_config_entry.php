@@ -10,7 +10,7 @@
         <div class="owa_installField">
             <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Public URL' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="50" name="public_url" value="<?php echo $view->public_url;?>">
+                <input type="text"size="50" name="public_url" value="<?php $view->out( $view->public_url );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'This is the web URL of OWA\'s base directory.' ) ); ?></span>
         </div>
@@ -31,7 +31,7 @@
         <div class="owa_installField">
             <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Host' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="db_host" value="<?php echo $view->config['db_host'] ?? '';?>">
+                <input type="text"size="30" name="db_host" value="<?php $view->out( $view->config['db_host'] ?? '' );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'This is the host that your database resides on. Localhost is ok.' ) ); ?></span>
         </div>
@@ -39,7 +39,7 @@
         <div class="owa_installField">
             <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Port' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="db_port" value="<?php echo (!empty($view->config['db_port']) ? $view->config['db_port'] : 3306);?>">
+                <input type="text"size="30" name="db_port" value="<?php $view->out( ! empty( $view->config['db_port'] ) ? $view->config['db_port'] : 3306 );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( '(optional) The port of your database. Will default to port 3306 if you leave this empty.' ) ); ?></span>
         </div>
@@ -65,7 +65,7 @@
         <div class="owa_installField">
             <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database User' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="db_user" value="<?php echo $view->config['db_user'] ?? '';?>">
+                <input type="text"size="30" name="db_user" value="<?php $view->out( $view->config['db_user'] ?? '' );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'This is the user name to connect to the database.' ) ); ?></span>
         </div>
@@ -73,7 +73,7 @@
         <div class="owa_installField">
             <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Password' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="password"size="30" name="db_password" value="<?php echo $view->config['db_password'] ?? '';?>">
+                <input type="password"size="30" name="db_password" value="<?php $view->out( $view->config['db_password'] ?? '' );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'This is the password to connect to the database.' ) ); ?></span>
         </div>

@@ -94,32 +94,37 @@ class InstallCli extends \OWA\Core\Controller\Cli {
             // schema was installed successfully
             if ($status === true) {
 
-                //create admin user
-                $im->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
+                /*
+                 * The admin, the first site and the install-complete flag are
+                 * saved together or not at all (InstallManager::finishInstall()):
+                 * a run that fails part way can be run again.
+                 */
+                $site_id = $im->finishInstall( function () use ( $im ) {
 
-                // create default site
-                $im->createDefaultSite(
-                        $this->getParam('domain'),
-                        $this->getParam('domain'),
-                        $this->getParam('description'),
-                        $this->getParam('site_family')
-                );
+                    $im->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
 
-                // Persist install complete flag.
-                $this->c->persistSetting('base', 'install_complete', true);
-                $save_status = $this->c->save();
+                    return $im->createDefaultSite(
+                            $this->getParam('domain'),
+                            $this->getParam('domain'),
+                            $this->getParam('description'),
+                            $this->getParam('site_family')
+                    );
+                } );
 
-                if ($save_status === true) {
-                    $this->e->notice('Install Completed.');
+                if ( ! $site_id ) {
 
-                    // Without the scheduler no report shows anything: say so where
-                    // the install is run, as the web installer's last page does.
-                    $this->e->notice('Add this to the crontab of the user that owns the OWA files, '
-                        . 'or reports stay empty: ' . \OWA\Module\Base\Classes\SchedulerHealth::cronLine());
-                    $this->e->notice('Then check it with: php cli.php cmd=schedule-status');
-                } else {
-                    $this->e->notice('Could not persist Install Complete Flag to the Database');
+                    $this->e->notice('The install did not complete, and nothing was saved. Check the error log, then run this command again.');
+
+                    return false;
                 }
+
+                $this->e->notice('Install Completed.');
+
+                // Without the scheduler no report shows anything: say so where
+                // the install is run, as the web installer's last page does.
+                $this->e->notice('Add this to the crontab of the user that owns the OWA files, '
+                    . 'or reports stay empty: ' . \OWA\Module\Base\Classes\SchedulerHealth::cronLine());
+                $this->e->notice('Then check it with: php cli.php cmd=schedule-status');
 
             // schema was not installed successfully
             } else {

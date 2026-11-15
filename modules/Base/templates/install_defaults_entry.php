@@ -1,11 +1,6 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <h2><?php $view->out( \OWA\Core\CoreAPI::t( 'Your first Property' ) ); ?></h2>
 
-<?php if ( $view->db_server !== '' ): ?>
-<p class="owa_publicIntro"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Connected to %1$s, database %2$s.' ),
-    htmlspecialchars( (string) $view->db_server, ENT_QUOTES, 'UTF-8' ),
-    '<code>' . htmlspecialchars( (string) $view->db_name, ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?></p>
-<?php endif; ?>
 <p class="owa_publicIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'A Property is the website or application you want to track.' ) ); ?></p>
 <div id="configSettings">
     <form method="POST">
