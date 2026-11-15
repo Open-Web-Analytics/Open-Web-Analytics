@@ -1,9 +1,0 @@
-# The built assets: stylesheets, scripts, fonts and images the browser fetches.
-#
-# The root .htaccess denies everything and grants this tree back with an <If>
-# expression. A directory's own Require replaces the one it inherits, so this grants
-# it on a server that reads Require but not <If> -- reported on shared hosting
-# running LiteSpeed, where the pages loaded with no styles.
-<IfModule mod_authz_core.c>
-    Require all granted
-</IfModule>
