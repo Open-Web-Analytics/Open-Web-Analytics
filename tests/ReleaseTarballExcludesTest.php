@@ -26,7 +26,7 @@ final class ReleaseTarballExcludesTest extends TestCase {
         'playwright*.config.js',
         'jest.config.js',
         'babel.config.js',
-        'webpack.config.js',
+        'webpack*.js',
         'phpunit.xml',
         'phpstan*.neon',
         'composer.json',
