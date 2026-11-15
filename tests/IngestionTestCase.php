@@ -41,6 +41,9 @@ abstract class IngestionTestCase extends TestCase
     /** @var bool whether setServerUserAgent() overrode the server UA this test */
     private $serverUaOverridden = false;
 
+    /** @var array<string, array{0:string,1:string}> site and visitor of every event fired */
+    private $fired = [];
+
     protected function setUp(): void
     {
         if (!owa_test_db_available()) {
@@ -60,6 +63,24 @@ abstract class IngestionTestCase extends TestCase
             }
         }
         $this->cleanup = [];
+
+        /*
+         * And every raw and acquisition row of a visitor this test fired an
+         * event for. trackForCleanup() takes only the rows a test read back,
+         * and an event fired just to set something up -- a purchase before
+         * its refund -- was never read back, so its rows stayed.
+         */
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
+        foreach ($this->fired as [$site, $visitor]) {
+            try {
+                $db->query('DELETE FROM owa_event_raw WHERE site_id = ? AND visitor_id = ?', [$site, $visitor]);
+                $db->query('DELETE FROM owa_visitor_acquisition WHERE site_id = ? AND visitor_id = ?', [$site, $visitor]);
+            } catch (\Throwable $ex) {
+                // best-effort cleanup
+            }
+        }
+        $this->fired = [];
 
         // Restore any server-side UA override so it can't leak into the next
         // test (the browscap object is memoized on the service singleton for
@@ -211,6 +232,11 @@ abstract class IngestionTestCase extends TestCase
         // Registering it makes the fixture match what a real tracked site is.
         if (!empty($props['site_id'])) {
             $this->ensureSiteRegistered((string) $props['site_id']);
+        }
+
+        if (!empty($props['site_id']) && !empty($props['visitor_id'])) {
+            $key = $props['site_id'] . ':' . $props['visitor_id'];
+            $this->fired[$key] = [(string) $props['site_id'], (string) $props['visitor_id']];
         }
 
         $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
