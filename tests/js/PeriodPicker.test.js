@@ -21,6 +21,7 @@ const PRESETS = [
     { key: 'yesterday', label: 'Yesterday', startDate: '20261108', endDate: '20261108' },
     { key: 'last_28_days', label: 'Last 28 days', startDate: '20261013', endDate: '20261109' },
     { key: 'last_month', label: 'Last month', startDate: '20261001', endDate: '20261031' },
+    { key: 'this_week', label: 'This week (Sun – today)', startDate: '20261108', endDate: '20261109', axisEndDate: '20261114' },
 ];
 
 const COMPARES = [
@@ -66,7 +67,14 @@ describe( 'state', () => {
         s.preset = 'last_month';
         settle( s, PRESETS );
         expect( s.main ).toEqual( [ '20261001', '20261031' ] );
-        expect( s.cmp ).toEqual( [ '20260831', '20260930' ] );
+        // A whole month against the whole month before.
+        expect( s.cmp ).toEqual( [ '20260901', '20260930' ] );
+
+        // This week on its second day, against the whole week before.
+        s.preset = 'this_week';
+        settle( s, PRESETS );
+        expect( s.main ).toEqual( [ '20261108', '20261109' ] );
+        expect( s.cmp ).toEqual( [ '20261101', '20261107' ] );
 
         const c = initialState( config( { compare: 'date_range', compareStartDate: '20250101', compareEndDate: '20250131' } ) );
         expect( c ).toMatchObject( { cmpKey: 'custom', cmp: [ '20250101', '20250131' ] } );

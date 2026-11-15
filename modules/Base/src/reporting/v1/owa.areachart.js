@@ -414,8 +414,14 @@ OWA.areaChart.prototype = {
         // tabs change.
         jQuery( selector ).remove();
         
-        // if there is data, plot it.
-        if ( resultSet.resultsRows.length > 0 ) {
+        /*
+         * If there is data, plot it. A compared trend is plotted whatever
+         * either period holds: the comparison follows the period chosen, and
+         * its line is drawn at zero where nothing happened.
+         */
+        var compared = !! ( resultSet.timePeriod && resultSet.compare );
+
+        if ( resultSet.resultsRows.length > 0 || compared ) {
 
             series = this.options.series;
 
@@ -697,9 +703,12 @@ OWA.areaChart.prototype = {
      * Hours, days or months, matching whatever the chart is drawn over, so
      * the granularity control still means something on an empty report.
      *
+     * wholeAxis: to the axis's end (periodAxis()), past today, for the
+     * compared line -- "this week" is compared to the whole week before.
+     *
      * @return {points, x_type} or null when there is no period to draw against
      */
-    zeroFilled : function ( resultSet, x_name ) {
+    zeroFilled : function ( resultSet, x_name, wholeAxis ) {
 
         var period = ( resultSet && resultSet.timePeriod ) || null;
 
@@ -719,7 +728,7 @@ OWA.areaChart.prototype = {
         };
 
         var start = asDate( period.startDate );
-        var end   = asDate( period.endDate );
+        var end   = asDate( ( wholeAxis && period.axisEndDate ) || period.endDate );
 
         if ( isNaN( start.getTime() ) || isNaN( end.getTime() ) || end < start ) {
 
@@ -735,7 +744,7 @@ OWA.areaChart.prototype = {
              * remaining hours have not happened, so they are not zeroes.
              * currentHour is the server's, in the zone the hours are read in.
              */
-            var now  = period.currentHour ? String( period.currentHour ) : '';
+            var now  = period.currentHour && ! wholeAxis ? String( period.currentHour ) : '';
             var last = now ? Date.UTC( now.substring( 0, 4 ) * 1, ( now.substring( 4, 6 ) * 1 ) - 1,
                 now.substring( 6, 8 ) * 1, now.substring( 8, 10 ) * 1 ) : Infinity;
 
@@ -808,6 +817,9 @@ OWA.areaChart.prototype = {
             ] );
         }
 
+        // No rows: the axis is the x dimension's, over the period.
+        x_type = x_type || this.axisType( resultSet, x_name );
+
         var xs = this.periodXs( resultSet, x_name, x_type );
 
         if ( xs ) {
@@ -823,7 +835,8 @@ OWA.areaChart.prototype = {
         }
 
         var series  = [ this.areaSeries( resultSet.getMetricLabel( y_name ), data ) ];
-        var compare = this.compareSeries( resultSet, x_name, y_name, x_type, xs );
+        var compare = this.compareSeries( resultSet, x_name, y_name, x_type,
+            xs && this.compareXs( resultSet, this.periodXs( resultSet, x_name, x_type, true ), x_type ) );
 
         if ( compare ) {
 
@@ -835,6 +848,34 @@ OWA.areaChart.prototype = {
             points: data.length,
             x_type: x_type
         };
+    },
+
+    /**
+     * The x values the compared line is drawn at: the whole axis, as far as
+     * the comparison reaches. On a Sunday "this week" is one day and its
+     * comparison the whole week before, so the compared line runs to
+     * Saturday while the period's stops at today. March against February
+     * stops after the 28th rather than drawing three days of zero.
+     */
+    compareXs : function ( resultSet, xs, x_type ) {
+
+        var cmp = resultSet && resultSet.compare;
+
+        if ( ! xs || ! cmp || ! cmp.startDate || ! cmp.endDate || x_type === 'yyyymm' ) {
+
+            return xs;
+        }
+
+        var at = function ( yyyymmdd ) {
+
+            var t = String( yyyymmdd );
+
+            return Date.UTC( t.substring( 0, 4 ) * 1, ( t.substring( 4, 6 ) * 1 ) - 1, t.substring( 6, 8 ) * 1 );
+        };
+
+        var days = Math.round( ( at( cmp.endDate ) - at( cmp.startDate ) ) / 86400000 ) + 1;
+
+        return isNaN( days ) ? xs : xs.slice( 0, x_type === 'yyyymmddhh' ? days * 24 : days );
     },
 
     /**
@@ -977,9 +1018,12 @@ OWA.areaChart.prototype = {
         var main = collect( this.rowsResultSet.resultsRows );
         var cmp  = cmpRs ? collect( cmpRs.rows ) : null;
 
-        var dataOf = function ( entry ) {
+        // A comparison's lines run as far as the total's does (compareXs()).
+        var cmpXs = totalCompare ? totalCompare.data.map( function ( p ) { return p[0]; } ) : xs;
 
-            return xs.map( function ( x ) {
+        var dataOf = function ( entry, at ) {
+
+            return ( at || xs ).map( function ( x ) {
 
                 return [ x, entry && entry.points.hasOwnProperty( x ) ? entry.points[ x ] : 0 ];
             } );
@@ -1008,13 +1052,13 @@ OWA.areaChart.prototype = {
                 compares.push( {
                     isCompare: true,
                     compareOf: i + 1,
-                    data: dataOf( cmp[ key ] ),
+                    data: dataOf( cmp[ key ], cmpXs ),
                     compareDates: cmp[ key ] ? cmp[ key ].when : {},
                     tooltipLabel: row.label,
-                    dashed: xs.length > 1,
+                    dashed: cmpXs.length > 1,
                     lines: { show: true, fill: false, lineWidth: 1.5 },
                     shadowSize: 0,
-                    points: one
+                    points: cmpXs.length === 1 ? one || { show: true, fill: true, radius: 3 } : undefined
                 } );
             }
         } );
@@ -1201,6 +1245,9 @@ OWA.areaChart.prototype = {
             byValue[ key ].points[ x ] = ( byValue[ key ].points[ x ] || 0 ) + y;
             byValue[ key ].total += y;
         }
+
+        // No rows: the axis is the x dimension's, over the period.
+        x_type = x_type || this.axisType( resultSet, x_name );
 
         // Days nobody visited, too, at zero.
         ( this.periodXs( resultSet, x_name, x_type ) || [] ).forEach( function ( x ) {
@@ -1557,9 +1604,17 @@ OWA.areaChart.prototype = {
      * Left out, flot joined the intervals either side of it, a line drawn
      * straight over the absence; left empty, a ratio's line broke there.
      */
-    periodXs : function ( resultSet, x_name, x_type ) {
+    /** The x type a dimension is drawn as over the period (zeroFilled()), or ''. */
+    axisType : function ( resultSet, x_name ) {
 
         var period = this.zeroFilled( resultSet, x_name );
+
+        return period ? period.x_type : '';
+    },
+
+    periodXs : function ( resultSet, x_name, x_type, wholeAxis ) {
+
+        var period = this.zeroFilled( resultSet, x_name, wholeAxis );
 
         if ( ! period || period.x_type !== x_type ) {
             return null;
@@ -2125,11 +2180,24 @@ OWA.areaChart.prototype = {
         return 0;
     },
 
-    /** The x of the point nearest to x on the chart's axis, or null. */
+    /**
+     * The x of the point nearest to x on the chart's axis, or null. The
+     * compared line counts too: it runs past today (compareXs()), and its
+     * days there have values to show.
+     */
     nearestX : function ( x ) {
 
-        var data = ( this.dataseries && this.dataseries[ this.firstLine() ] || {} ).data || [];
-        var best = null;
+        var first = this.firstLine();
+        var data  = ( this.dataseries && this.dataseries[ first ] || {} ).data || [];
+        var best  = null;
+
+        ( this.dataseries || [] ).forEach( function ( s ) {
+
+            if ( s.isCompare && ( s.compareOf || 0 ) === first ) {
+
+                data = data.concat( s.data || [] );
+            }
+        } );
 
         data.forEach( function ( p ) {
 

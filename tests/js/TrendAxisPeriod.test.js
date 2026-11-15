@@ -114,6 +114,37 @@ describe( 'a trend\'s x axis', () => {
         expect( plot.series[0].data ).toHaveLength( 11 );
     } );
 
+    test( 'an empty this week on Sunday still draws last week, across the whole axis', () => {
+        const week = { period: 'this_week', startDate: '20261115', endDate: '20261115', axisEndDate: '20261121' };
+        const rs   = resultSet( 'date', 'yyyymmdd', [], week );
+
+        rs.compare = { compare: 'previous_period', startDate: '20261108', endDate: '20261114', aggregates: {},
+            rows: [ [ '20261116', '20261109', 3 ], [ '20261118', '20261111', 5 ] ].map( ( [ d, real, v ] ) => ( {
+                date: { value: d, compare_period_value: real, data_type: 'yyyymmdd' },
+                visits: { value: v, data_type: 'integer' },
+            } ) ) };
+
+        const plot = generate( rs, 'date' );
+        const own  = plot.series.find( ( s ) => ! s.isCompare );
+        const cmp  = plot.series.find( ( s ) => s.isCompare );
+
+        expect( own.data ).toEqual( [ [ day( 2026, 11, 15 ), 0 ] ] );
+        expect( cmp.data.map( ( p ) => p[1] ) ).toEqual( [ 0, 3, 0, 5, 0, 0, 0 ] );
+        expect( plot.xaxis.max ).toBe( day( 2026, 11, 21 ) );
+    } );
+
+    test( 'a comparison with nothing in either period is still a line, at zero to Saturday', () => {
+        const week = { period: 'this_week', startDate: '20261115', endDate: '20261115', axisEndDate: '20261121' };
+        const rs   = resultSet( 'date', 'yyyymmdd', [], week );
+
+        rs.compare = { compare: 'previous_period', startDate: '20261108', endDate: '20261114', aggregates: {}, rows: [] };
+
+        const cmp = generate( rs, 'date' ).series.find( ( s ) => s.isCompare );
+
+        expect( cmp.data ).toHaveLength( 7 );
+        expect( cmp.data.every( ( p ) => p[1] === 0 ) ).toBe( true );
+    } );
+
     test( 'an empty this month is zero to today on an axis to the month\'s end', () => {
         const month = { period: 'this_month', startDate: '20261101', endDate: '20261114', axisEndDate: '20261130' };
 

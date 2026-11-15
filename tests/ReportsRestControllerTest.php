@@ -303,6 +303,38 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->assertSame('previous_period', $self['compare'] ?? null, $resp['data']['self']);
     }
 
+    /**
+     * A trend with nothing in the period still carries the comparison's rows:
+     * they are a line of their own. This week on a Sunday with no visits yet
+     * still draws last week.
+     */
+    public function testAnEmptyTrendStillCarriesTheComparisonsRows(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $d = fn (int $ago) => date('Ymd', strtotime("-$ago days"));
+
+        $this->seedPageViews($site, [[$d(7), '/a', 2], [$d(5), '/a', 4]]);
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            ['metrics' => 'pageViews', 'dimensions' => 'date', 'sort' => 'date',
+             'period' => 'date_range', 'startDate' => $d(0), 'endDate' => $d(0),
+             'compare' => 'date_range', 'compareStartDate' => $d(7), 'compareEndDate' => $d(1), 'siteId' => $site]
+        );
+
+        $this->assertSame(201, $resp['status'], $resp['raw']);
+        $this->assertSame([], $resp['data']['resultsRows'] ?? []);
+
+        // Moved onto the period's days: the comparison's 1st and 3rd.
+        $this->assertSame([[$d(0), $d(7), 2], [date('Ymd', strtotime('+2 days')), $d(5), 4]], array_map(
+            fn ($r) => [(string) $r['date']['value'], (string) $r['date']['compare_period_value'], (int) $r['pageViews']['value']],
+            $resp['data']['compare']['rows'] ?? []));
+        $this->assertSame(6, (int) $resp['data']['aggregates']['pageViews']['compare_value']);
+    }
+
     public function testNoComparisonLeavesTheResultAsItWas(): void
     {
         $this->authenticateAs('admin');

@@ -32,11 +32,15 @@ final class TimePeriodCompareTest extends TestCase
         $this->assertSame( $want, TimePeriod::compareRange( $key, $start, $end ) );
     }
 
+    /**
+     * Whole calendar months are the exception: their previous period is the
+     * months before, as long as those are (testWholeMonthsStepBackWholeMonths).
+     */
     public function testACompareRangeIsAsLongAsThePeriodExceptAcrossAFebruary29(): void
     {
         foreach ( array_keys( TimePeriod::COMPARE_PERIODS ) as $key ) {
 
-            foreach ( array( array( '20261013', '20261109' ), array( '20260301', '20260331' ), array( '20261109', '20261109' ) ) as [ $s, $e ] ) {
+            foreach ( array( array( '20261013', '20261109' ), array( '20260302', '20260331' ), array( '20261109', '20261109' ) ) as [ $s, $e ] ) {
 
                 [ $cs, $ce ] = TimePeriod::compareRange( $key, $s, $e );
 
@@ -46,6 +50,68 @@ final class TimePeriodCompareTest extends TestCase
                 $this->assertLessThan( $s, $cs, "$key must be earlier than the period" );
             }
         }
+    }
+
+    /**
+     * A month, a quarter or a year against the one before it, whatever their
+     * lengths: November against October, March against February.
+     */
+    public function testWholeMonthsStepBackWholeMonths(): void
+    {
+        $cases = array(
+            array( '20261101', '20261130', '20261001', '20261031' ),
+            array( '20260301', '20260331', '20260201', '20260228' ),
+            array( '20261001', '20261231', '20260701', '20260930' ),
+            array( '20260101', '20261231', '20250101', '20251231' ),
+            array( '20260101', '20260131', '20251201', '20251231' ),
+        );
+
+        foreach ( $cases as [ $s, $e, $cs, $ce ] ) {
+
+            $this->assertSame( array( $cs, $ce ), TimePeriod::compareRange( 'previous_period', $s, $e ), "$s-$e" );
+        }
+
+        // Not ending on a month's last day: the days before.
+        $this->assertSame( array( '20261017', '20261031' ), TimePeriod::compareRange( 'previous_period', '20261101', '20261115' ) );
+    }
+
+    /**
+     * "This ..." periods are compared over their whole week, month, quarter
+     * or year, however much of it has gone: on a Sunday, the whole week
+     * before; on the 15th, the whole month before.
+     */
+    public function testAThisPeriodIsComparedToTheWholePeriodBefore(): void
+    {
+        $cases = array(
+            array( 'this_week',       '2026-11-15', '20261108', '20261114' ),   // a Sunday
+            array( 'this_week',       '2026-11-18', '20261108', '20261114' ),   // a Wednesday
+            array( 'this_month',      '2026-11-01', '20261001', '20261031' ),
+            array( 'this_month',      '2026-11-15', '20261001', '20261031' ),
+            array( 'quarter_to_date', '2026-11-15', '20260701', '20260930' ),
+            array( 'this_year',       '2026-11-15', '20250101', '20251231' ),
+            array( 'today',           '2026-11-15', '20261114', '20261114' ),
+            array( 'last_seven_days', '2026-11-15', '20261102', '20261108' ),
+        );
+
+        foreach ( $cases as [ $period, $today, $cs, $ce ] ) {
+
+            $tp      = new TimePeriod();
+            $tp->now = ( new DateTimeImmutable( $today . ' 08:15' ) )->getTimestamp();
+            $tp->set( $period );
+
+            $this->assertSame(
+                array( 'compare' => 'previous_period', 'startDate' => $cs, 'endDate' => $ce ),
+                $tp->getCompareFromMap( array( 'compare' => 'previous_period' ) ),
+                "$period on $today" );
+        }
+
+        // The picker previews the same range from each preset's axisEndDate.
+        $tp      = new TimePeriod();
+        $tp->now = ( new DateTimeImmutable( '2026-11-15 08:15' ) )->getTimestamp();
+
+        $week = array_values( array_filter( $tp->getPresets(), fn ( $p ) => $p['key'] === 'this_week' ) )[0];
+
+        $this->assertSame( array( '20261115', '20261115', '20261121' ), array( $week['startDate'], $week['endDate'], $week['axisEndDate'] ) );
     }
 
     public function testMatchDayOfWeekKeepsTheWeekday(): void
