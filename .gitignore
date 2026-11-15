@@ -8,6 +8,7 @@ node_modules/
 # `npm run build`; shipped in the release tarball, never committed. The tracker family
 # used to build to modules/base/dist/ but now lands here with everything else. See
 # webpack.config.js / build.manifest.json.
+# public/.htaccess is written by the build too (webpack.public-htaccess.js).
 public/
 /.phpunit.cache/
 /test-results/

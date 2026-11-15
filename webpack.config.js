@@ -5,6 +5,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
 const CopyPlugin = require('copy-webpack-plugin');
+const { PublicHtaccessPlugin } = require('./webpack.public-htaccess.js');
 
 // --- Per-module asset build registration ---------------------------------
 //
@@ -396,6 +397,12 @@ function discoverConfigs(dir = modulesDir) {
 				configForPackage(moduleName, moduleDir, pkg, contributions[pkg.name], lazyContributions[pkg.name])
 			);
 		}
+	}
+
+	// Every config writes public/.htaccess, so a build of one package
+	// (--config-name) writes it too. See webpack.public-htaccess.js.
+	for (const config of configs) {
+		config.plugins = (config.plugins || []).concat(new PublicHtaccessPlugin(__dirname));
 	}
 
 	return configs;
