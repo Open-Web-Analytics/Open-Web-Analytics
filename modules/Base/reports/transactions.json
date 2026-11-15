@@ -24,13 +24,7 @@
                 "dimensions": "transactionId",
                 "sort": "transactionRevenue-",
                 "resultsPerPage": 25
-            },
-            "constraints": [
-                {
-                    "dimension": "eventName",
-                    "value": "purchase"
-                }
-            ]
+            }
         }
     ]
 }

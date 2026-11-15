@@ -552,6 +552,29 @@ class Metric extends \OWA\Core\Base {
         $this->condition = $condition;
     }
 
+    /**
+     * The condition as a WHERE test: [qualified column, value, operator], or
+     * null when there is none or it cannot be rendered. For a query whose
+     * every metric shares it (ResultSetManager::sharedMetricCondition()).
+     *
+     * @return array|null
+     */
+    function conditionWhere() {
+
+        if ( ! $this->hasCondition() || $this->renderCondition() === '' ) {
+
+            return null;
+        }
+
+        $operator = isset( $this->condition['operator'] ) ? (string) $this->condition['operator'] : '=';
+
+        return array(
+            $this->qualify( $this->condition['column'] ),
+            $this->condition['value'],
+            $operator === '<>' ? '!=' : $operator,
+        );
+    }
+
     /** @return bool */
     function hasCondition() {
 

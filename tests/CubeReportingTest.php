@@ -642,6 +642,57 @@ final class CubeReportingTest extends TestCase
     }
 
     /**
+     * Metrics that all count by one condition read only the rows it holds
+     * for: page views by page path lists the pages that were viewed. /buy has
+     * events but no page view, and came back at 0 when the condition was
+     * tested only inside the count. Every count and the total are unchanged.
+     *
+     * When the metrics differ -- page views beside every event, or a ratio
+     * over sessions, or a filter on another metric -- the rows are every
+     * row, as before.
+     */
+    public function testMetricsSharingAConditionReadOnlyItsRows(): void
+    {
+        $rows = function (string $metrics, string $constraint = ''): array {
+
+            $rsm = $this->manager($metrics, 'pagePath');
+
+            if ($constraint !== '') {
+                $rsm->setConstraints($rsm->parseConstraintsString($constraint));
+            }
+
+            $rs = $rsm->getResults();
+
+            $this->assertSame([], (array) $rs->errors, $metrics);
+
+            $out = [];
+
+            foreach ($rs->getResultsRows() as $row) {
+                $out[$row['pagePath']['value']] = (int) $row[ explode(',', $metrics)[0] ]['value'];
+            }
+
+            ksort($out);
+
+            return [$out, (int) $rs->aggregates[ explode(',', $metrics)[0] ]['value']];
+        };
+
+        $this->assertSame([['/one' => 2, '/two' => 2], 4], $rows('pageViews'));
+
+        // Not shared: every path, /buy at 0 page views.
+        $this->assertArrayHasKey('/buy', $rows('pageViews,eventCount')[0]);
+        $this->assertArrayHasKey('/buy', $rows('pageViewsPerSession')[0]);
+        $this->assertArrayHasKey('/buy', $rows('pageViews', 'eventCount>0')[0]);
+
+        $rsm = $this->manager('pageViews', 'pagePath');
+        $rsm->getResults();
+        $this->assertNotNull($rsm->sharedMetricCondition());
+
+        $rsm = $this->manager('pageViews,eventCount', 'pagePath');
+        $rsm->getResults();
+        $this->assertNull($rsm->sharedMetricCondition());
+    }
+
+    /**
      * The metrics compute what the fixture holds.
      *
      * Six events over two visitors -- one new with a four-event session, one

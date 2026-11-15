@@ -811,6 +811,94 @@ class ResultSetManager extends \OWA\Core\Base {
 
             $this->applyConstraint($constraint, $db, $entity);
         }
+
+        /*
+         * The metrics' own condition, when they all share one, in the WHERE
+         * clause too. Page Views by page path counts page_view rows; tested
+         * only inside the count, every path with any event came back, the
+         * ones nobody viewed at 0. In the WHERE clause they do not, and every
+         * count is what it was. Not a constraint: nobody asked for it, so a
+         * report does not say it (internal, unlike the request's own).
+         */
+        $shared = $db === $this->db && ! $this->segment ? $this->sharedMetricCondition() : null;
+
+        if ( $shared ) {
+
+            $db->where( $shared[0], $shared[1], $shared[2], 'owa_metric_condition' );
+        }
+    }
+
+    /**
+     * The condition every metric of the query counts by, as a WHERE test --
+     * [qualified column, value, operator] -- or null when any metric counts
+     * every row or two count by different conditions. A ratio is its two
+     * metrics: pages per session is page views over sessions, and sessions
+     * have no condition.
+     *
+     * @return array|null
+     */
+    function sharedMetricCondition() {
+
+        if ( ! $this->baseEntity || empty( $this->metrics ) ) {
+
+            return null;
+        }
+
+        $objects = $this->metricObjectsByEntityMap[ $this->baseEntity->getName() ] ?? array();
+        $names   = array();
+
+        /*
+         * Every metric the statement reads: the ones asked for, and any a
+         * filter (HAVING) or a sort names. Page views by page path filtered
+         * on eventCount>1 counts every event of a path, and keeping only
+         * page_view rows would change that count.
+         */
+        $read = (array) $this->metrics;
+
+        foreach ( (array) $this->getConstraints() as $constraint ) {
+
+            if ( isset( $constraint['name'] ) && $this->isMetric( $constraint['name'] ) ) {
+
+                $read[] = $constraint['name'];
+            }
+        }
+
+        foreach ( (array) ( $this->params['orderby'] ?? array() ) as $sort ) {
+
+            if ( isset( $sort[0] ) && $this->isMetric( $sort[0] ) ) {
+
+                $read[] = $sort[0];
+            }
+        }
+
+        foreach ( array_unique( $read ) as $name ) {
+
+            if ( array_key_exists( $name, $this->calculatedMetrics ) ) {
+
+                $names = array_merge( $names, (array) $this->calculatedMetrics[ $name ]->getChildMetrics() );
+
+            } else {
+
+                $names[] = $name;
+            }
+        }
+
+        $shared = null;
+
+        foreach ( array_unique( $names ) as $name ) {
+
+            $where = isset( $objects[ $name ] ) && method_exists( $objects[ $name ], 'conditionWhere' )
+                ? $objects[ $name ]->conditionWhere() : null;
+
+            if ( ! $where || ( $shared !== null && $where !== $shared ) ) {
+
+                return null;
+            }
+
+            $shared = $where;
+        }
+
+        return $shared;
     }
 	
 	/**

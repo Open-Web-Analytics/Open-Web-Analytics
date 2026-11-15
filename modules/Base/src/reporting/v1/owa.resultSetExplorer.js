@@ -1383,6 +1383,26 @@ OWA.dataGrid.OPERATOR_PHRASES = {
 };
 
 /**
+ * A filter in words, as its chip reads: "Medium is referral", "Visit Start
+ * has a value". labelOf names the dimension.
+ */
+OWA.dataGrid.filterWords = function ( c, labelOf ) {
+
+    var phrase = OWA.dataGrid.EMPTY_TESTS[ c.operator ]
+              || OWA.dataGrid.OPERATOR_PHRASES[ c.operator ]
+              || c.operator;
+
+    var form = c.value !== ''
+        ? OWA.l( '%1$s %2$s %3$s', 'filter chip: field, condition, value' )
+        : OWA.l( '%1$s %2$s', 'filter chip: field, condition' );
+
+    // The value goes where the sentence puts %3$s, after the rest is filled.
+    return form.split( '%3$s' ).map( function ( part ) {
+        return OWA.util.sprintf( part, labelOf( c.name ), OWA.translate( phrase ) );
+    } ).join( c.value );
+};
+
+/**
  * A <label> holding a control where its sentence puts %s, so a translation
  * can put the words before the control, after it, or both.
  *
@@ -1798,6 +1818,10 @@ OWA.dataGrid.prototype = {
             $grid.append( $bar );
         }
 
+        if ( this.options.compact ) {
+            $grid.append( this.cardSummary( rs ) );
+        }
+
         if ( ! rows.length ) {
 
             $grid.append( jQuery( '<p class="owa_gridEmpty"></p>' )
@@ -1822,6 +1846,61 @@ OWA.dataGrid.prototype = {
             $grid.addClass( 'is-card' );
             this.showMore( rs, $grid );
         }
+    },
+
+    /**
+     * A card's summary, above its rows: what it counts, and the total.
+     *
+     * "Sessions by Session Source, where Session Medium is referral": the
+     * card's metric, what its rows are, and its own filters (the report's
+     * are on the report). A metric's own condition is not one of them: the
+     * server adds it to the query (ResultSetManager::sharedMetricCondition()),
+     * nobody asked for it, so it is not said. Then the metric's total over every row, not only
+     * the ones shown, with its change when the report is compared.
+     *
+     * Empty when the result set has no total for the metric.
+     */
+    cardSummary : function ( rs ) {
+
+        var self    = rs.self ? new OWA.uri( rs.self ) : null;
+        var param   = function ( name ) {
+            return self ? String( self.getQueryParam( name ) || '' ) : '';
+        };
+        var metric  = jQuery.trim( param( 'metrics' ).split( ',' )[0] || '' );
+        var dims    = param( 'dimensions' ).split( ',' ).map( jQuery.trim ).filter( Boolean );
+        var agg     = metric && rs.aggregates ? rs.aggregates[ metric ] : null;
+        var that    = this;
+        var labelOf = function ( name ) { return that.labelOf( rs, name ); };
+
+        if ( ! agg ) {
+            return jQuery();
+        }
+
+        var what = dims.length
+            ? OWA.util.sprintf( OWA.l( '%1$s by %2$s', 'a card: its metric by its dimension' ),
+                labelOf( metric ), labelOf( dims[0] ) )
+            : labelOf( metric );
+
+        var filters = OWA.dataGrid.parseConstraints( this.options.ownConstraints || '' ).map( function ( c ) {
+            return OWA.dataGrid.filterWords( c, labelOf );
+        } );
+
+        if ( filters.length ) {
+
+            what = OWA.util.sprintf( OWA.l( '%1$s, where %2$s', 'a card: what it counts, then its filters' ),
+                what, filters.join( OWA.l( ' and ', 'between two filters' ) ) );
+        }
+
+        var $total = jQuery( '<p class="owa_cardTotal" data-ui="card-total"></p>' )
+            .append( jQuery( '<span class="owa_cardTotalNumber"></span>' ).text( OWA.util.metricText( agg ) ) );
+
+        if ( rs.compare && agg.hasOwnProperty( 'compare_value' ) ) {
+            $total.append( OWA.dataGrid.changeEl( agg, rs.compare ) );
+        }
+
+        return jQuery( '<div class="owa_cardSummary" data-ui="card-summary"></div>' )
+            .append( jQuery( '<p class="owa_cardExplain" data-ui="card-explain"></p>' ).text( what ) )
+            .append( $total );
     },
 
     /**
