@@ -137,7 +137,7 @@ abstract class Pdo extends \OWA\Core\Db
                 $this->connection_status = false;
                 $this->connect_failed    = true;
 
-                $this->e->alert( 'Could not connect to database.' );
+                $this->connectFailed();
 
                 return false;
             }
@@ -154,7 +154,7 @@ abstract class Pdo extends \OWA\Core\Db
 
         if ( ! $this->connection_status ) {
 
-            $this->e->alert('Could not connect to database.');
+            $this->connectFailed();
         }
 
         return $this->connection_status;

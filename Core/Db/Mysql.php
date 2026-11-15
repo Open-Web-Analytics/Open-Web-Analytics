@@ -113,7 +113,7 @@ class Mysql extends \OWA\Core\Db {
                 $this->connection_status = false;
                 $this->connect_failed = true;
 
-                $this->e->alert( 'Could not connect to database.' );
+                $this->connectFailed();
 
                 return false;
             }
@@ -148,7 +148,7 @@ class Mysql extends \OWA\Core\Db {
 
         if ( ! $this->connection ) {
 
-            $this->e->alert('Could not connect to database.');
+            $this->connectFailed();
             $this->connection_status = false;
             return false;
 
