@@ -56,6 +56,30 @@ class Update086 extends \OWA\Core\Update {
     /** @var string|null the settings table to use instead of the install's. TESTS ONLY. */
     public $table = null;
 
+    /** @var object|null the settings to keep in step instead of the install's. TESTS ONLY. */
+    public $settings = null;
+
+    /**
+     * The settings this process saves, which must agree with the table.
+     *
+     * Boot loads every row of a module with no settings.php, fileCache's
+     * included, and the update run saves its settings when it ends. Deleted
+     * from the table only, the rows were written straight back; restored to
+     * the table only, the save's pruning would delete them again.
+     *
+     * None with a scratch table and no stand-in: the install's own settings
+     * are not the ones being changed.
+     */
+    private function settings() {
+
+        if ( $this->settings ) {
+
+            return $this->settings;
+        }
+
+        return $this->table ? null : \OWA\Core\CoreAPI::configSingleton();
+    }
+
     private function table() {
 
         return $this->table ?: \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName();
@@ -117,6 +141,18 @@ class Update086 extends \OWA\Core\Update {
             return false;
         }
 
+        $settings = $this->settings();
+
+        foreach ( $rows as $row ) {
+
+            $row = (array) $row;
+
+            if ( $settings && $row['scope_type'] === 'install' ) {
+
+                $settings->removeSetting( $row['module'], $row['name'] );
+            }
+        }
+
         $this->e->notice( sprintf( 'Object cache settings: %d %s removed.', count( $rows ), \OWA\Core\Lib::plural( count( $rows ), 'row', 'rows' ) ) );
 
         return true;
@@ -132,6 +168,8 @@ class Update086 extends \OWA\Core\Update {
             return true;
         }
 
+        $settings = $this->settings();
+
         foreach ( (array) ( $record['rows'] ?? array() ) as $row ) {
 
             if ( ! $this->restoreRow( (array) $row ) ) {
@@ -139,6 +177,12 @@ class Update086 extends \OWA\Core\Update {
                 $this->e->notice( sprintf( 'Restoring setting row %s failed.', $row['id'] ?? '' ) );
 
                 return false;
+            }
+
+            if ( $settings && $row['scope_type'] === 'install' ) {
+
+                $settings->db_settings[ $row['module'] ][ $row['name'] ] =
+                    @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
             }
         }
 

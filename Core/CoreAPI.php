@@ -1103,13 +1103,13 @@ class CoreAPI {
         return $s;
     }
 
-    public static function cacheSingleton( $params = [] ) {
+    public static function cacheSingleton() {
 
         static $cache;
 
         if ( empty ( $cache ) ) {
-	        
-            $cache = new \OWA\Module\Base\Classes\Cache( $params );
+
+            $cache = new \OWA\Module\Base\Classes\Cache();
         }
 
         return $cache;

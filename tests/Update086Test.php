@@ -130,6 +130,36 @@ final class Update086Test extends TestCase
         $this->assertSame($before, $this->rows());
     }
 
+    /**
+     * The settings the update process saves are kept in step: boot loaded
+     * fileCache's rows, and a save of the old values put them straight back.
+     */
+    public function testTheSettingsInMemoryFollowTheTable(): void
+    {
+        $this->requireDb();
+
+        $config = new class {
+            public $db_settings = ['fileCache' => ['is_active' => true, 'schema_version' => 1], 'base' => ['timezone' => 'UTC']];
+            public function removeSetting($module, $key) { unset($this->db_settings[$module][$key]); }
+        };
+        $this->update->settings = $config;
+
+        $this->row('install', '1', 'is_active', true, 5, 'fileCache');
+        $this->row('install', '1', 'schema_version', 1, 6, 'fileCache');
+        $this->row('property', '42', 'cacheType', 'file', 7);
+
+        $this->assertTrue($this->update->up());
+        $this->assertSame(['fileCache' => [], 'base' => ['timezone' => 'UTC']], $config->db_settings,
+            'the deleted rows are still held, and the closing save writes them back');
+
+        $this->assertTrue($this->update->down());
+        $held = $config->db_settings['fileCache'];
+        ksort($held);
+        $this->assertSame(['is_active' => true, 'schema_version' => 1], $held,
+            'the restored rows are not held, and the closing save prunes them again');
+        $this->assertArrayNotHasKey('cacheType', $config->db_settings['base'], 'a property row is not an install setting');
+    }
+
     /** Every row of the two modules and every retired base row goes, at every scope, others stay; down() is the exact inverse. */
     public function testTheCacheRowsGoAndComeBack(): void
     {
