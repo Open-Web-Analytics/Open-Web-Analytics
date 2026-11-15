@@ -29,6 +29,14 @@ $shop_campaign = array( 'campaign', 'regex', '^(.*(([^a-df-z]|^)shop|shopping).*
 
 $email = array( 'email', 'e-mail', 'e_mail', 'e mail' );
 
+// A social source: a site on the social list, or a tag a network adds to its
+// own links -- Instagram's utm_source=ig, and Threads' ig_text_<where>.
+$social = array( 'any' => array(
+	array( 'source', 'in_list', 'social' ),
+	array( 'source', 'equals', 'ig' ),
+	array( 'source', 'starts_with', 'ig_text_' ),
+) );
+
 return array(
 	array( 'channel' => 'Direct', 'all' => array(
 		array( 'source', 'equals', '(direct)' ),
@@ -42,7 +50,7 @@ return array(
 		$paid,
 	) ),
 	array( 'channel' => 'Paid Search', 'all' => array( array( 'source', 'in_list', 'search' ), $paid ) ),
-	array( 'channel' => 'Paid Social', 'all' => array( array( 'source', 'in_list', 'social' ), $paid ) ),
+	array( 'channel' => 'Paid Social', 'all' => array( $social, $paid ) ),
 	array( 'channel' => 'Paid Video', 'all' => array( array( 'source', 'in_list', 'video' ), $paid ) ),
 	array( 'channel' => 'Display', 'any' => array(
 		array( 'medium', 'one_of', array( 'display', 'banner', 'expandable', 'interstitial', 'cpm' ) ),
@@ -54,7 +62,7 @@ return array(
 	) ),
 	array( 'channel' => 'Organic Shopping', 'any' => array( array( 'source', 'in_list', 'shopping' ), $shop_campaign ) ),
 	array( 'channel' => 'Organic Social', 'any' => array(
-		array( 'source', 'in_list', 'social' ),
+		$social,
 		array( 'medium', 'one_of', array( 'social', 'social-network', 'social-media', 'sm', 'social network', 'social media' ) ),
 	) ),
 	array( 'channel' => 'Organic Video', 'any' => array(
