@@ -37,6 +37,19 @@ class InstallCli extends \OWA\Core\Controller\Cli {
         return parent::__construct($params);
     }
 
+    /** A password given must be one that can be changed to: at least 6 characters. */
+    public function validate()
+    {
+        if ( (string) $this->getParam('password') !== '' ) {
+
+            $this->addValidation('password_length', $this->getParam('password'), 'stringLength', [
+                'operator' => '>=',
+                'length'   => 6,
+                'errorMsg' => 'The password must be at least 6 characters.',
+            ]);
+        }
+    }
+
     function action() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -56,26 +69,42 @@ class InstallCli extends \OWA\Core\Controller\Cli {
             // schema was installed successfully
             if ($status === true) {
 
-                //create admin user
-                //owa_coreAPI::debug('password: '.owa_lib::encryptPassword( $this->c->get('base', 'db_password') ) );
-                $im->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->c->get('base', 'db_password') );
+                /*
+                 * The admin's password is password=, or one generated here and
+                 * printed once. It used to be the database password from
+                 * owa-config.php, so whoever could read that file could sign in
+                 * as the admin.
+                 *
+                 * The admin, the first site and the install-complete flag are
+                 * saved together or not at all (InstallManager::finishInstall()).
+                 */
+                $password = (string) $this->getParam('password');
+                $created  = '';
 
-                // create default site
-                $im->createDefaultSite(
-                        $this->getParam('domain'),
-                        $this->getParam('domain'),
-                        $this->getParam('description'),
-                        $this->getParam('site_family')
-                );
+                $site_id = $im->finishInstall( function () use ( $im, $password, &$created ) {
 
-                // Persist install complete flag.
-                $this->c->persistSetting('base', 'install_complete', true);
-                $save_status = $this->c->save();
+                    $created = $im->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $password );
 
-                if ($save_status === true) {
-                    $this->e->notice('Install Completed.');
-                } else {
-                    $this->e->notice('Could not persist Install Complete Flag to the Database');
+                    return $im->createDefaultSite(
+                            $this->getParam('domain'),
+                            $this->getParam('domain'),
+                            $this->getParam('description'),
+                            $this->getParam('site_family')
+                    );
+                } );
+
+                if ( ! $site_id ) {
+
+                    $this->e->notice('The install did not complete, and nothing was saved. Check the error log, then run this command again.');
+
+                    return false;
+                }
+
+                $this->e->notice('Install Completed.');
+
+                if ( $created && $password === '' ) {
+
+                    echo sprintf( "Admin password (generated, shown once): %s\n", $created );
                 }
 
             // schema was not installed successfully
