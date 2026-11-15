@@ -690,8 +690,9 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
     /**
      * A trend of one day is drawn by hour, on a 12-hour clock, and today's
-     * stops at the hour it is now. Today because the seeded visits are on
-     * other days: an empty day is still drawn over its hours, as zeroes.
+     * line stops at the hour it is now on an axis that runs to 11pm. Today
+     * because the seeded visits are on other days: an empty day is still
+     * drawn over its hours, as zeroes.
      */
     test('a one-day trend is drawn by hour', async ({ page }) => {
         await page.goto(
@@ -710,6 +711,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
                 x: chart.xDimension,
                 hours: xs.map((t) => new Date(t).getUTCHours()),
                 now: String(window.siteTrend.resultSet.timePeriod.currentHour),
+                axis: [chart.flotOptions.xaxis.min, chart.flotOptions.xaxis.max]
+                    .map((t) => new Date(t).getUTCHours()),
                 labels: Array.from(document.querySelectorAll('#trend-chart .flot-x-axis .flot-tick-label'))
                     .map((l) => l.textContent.trim()),
                 options: Array.from(document.querySelectorAll('#trend-chart .owa_chartGranularity option'))
@@ -724,6 +727,9 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         // Midnight to the hour it is now, one point each.
         const nowHour = Number(drawn.now.substring(8, 10));
         expect(drawn.hours).toEqual(Array.from({ length: nowHour + 1 }, (_, h) => h));
+
+        // The axis is the whole day, whatever hour it is.
+        expect(drawn.axis).toEqual([0, 23]);
 
         expect(drawn.labels[0]).toBe('12am');
         expect(drawn.labels.every((l) => /^\d{1,2}(am|pm)$/.test(l))).toBe(true);
