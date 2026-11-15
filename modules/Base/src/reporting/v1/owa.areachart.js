@@ -1462,7 +1462,11 @@ OWA.areaChart.prototype = {
         };
     },
 
-    /** How many days the result set's period covers, or null when it has none. */
+    /**
+     * How many days the chart's axis covers (periodAxis()), or null when the
+     * result set has no period. "This month" on the 3rd queries three days
+     * and is drawn over thirty.
+     */
     periodDays : function ( resultSet ) {
 
         var period = resultSet && resultSet.timePeriod;
@@ -1479,7 +1483,7 @@ OWA.areaChart.prototype = {
             return Date.UTC( t.substring( 0, 4 ) * 1, ( t.substring( 4, 6 ) * 1 ) - 1, t.substring( 6, 8 ) * 1 );
         };
 
-        return Math.round( ( day( period.endDate ) - day( period.startDate ) ) / 86400000 ) + 1;
+        return Math.round( ( day( period.axisEndDate || period.endDate ) - day( period.startDate ) ) / 86400000 ) + 1;
     },
 
     /**

@@ -209,6 +209,15 @@ describe('the granularity control', () => {
             .toEqual(['dateHour', 'date', 'yearMonth']);
     });
 
+    test('counts the axis, not the days queried', () => {
+        // This week on its first day: a week's axis, hours still offered.
+        expect(drawn({ startDate: '20261115', endDate: '20261115', axisEndDate: '20261121' }, 'date'))
+            .toEqual(['dateHour', 'date', 'yearMonth']);
+        // This month on the 3rd: three days queried, thirty drawn.
+        expect(drawn({ startDate: '20261101', endDate: '20261103', axisEndDate: '20261130' }, 'date'))
+            .toEqual(['date', 'yearMonth']);
+    });
+
     test('does not offer hours over a longer period', () => {
         expect(drawn({ startDate: '20261022', endDate: '20261030' }, 'date')).toEqual(['date', 'yearMonth']);
         expect(drawn({ startDate: '20261001', endDate: '20261030' }, 'date')).toEqual(['date', 'yearMonth']);
