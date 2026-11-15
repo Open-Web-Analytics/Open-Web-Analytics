@@ -680,7 +680,40 @@ class TimePeriod {
         // in, so a trend by hour of today stops at the hour it has reached.
         $info['currentHour'] = (int) date( 'YmdH' );
 
+        $info['axisEndDate'] = $this->getAxisEndDate();
+
         return $info;
+    }
+
+    /**
+     * The last day a trend's x axis runs to, as yyyymmdd.
+     *
+     * The week, month, quarter or year a "this ..." period is part of ends
+     * after today, and the axis runs to its last day while the line stops at
+     * today. Every other period's axis ends on its end date.
+     */
+    function getAxisEndDate() {
+
+        $start = $this->startDate->getTimestamp();
+
+        list( $y, $m, $d ) = array_map( 'intval', explode( ' ', date( 'Y n j', $start ) ) );
+
+        switch ( $this->period ) {
+
+            case 'this_week':
+                return date( 'Ymd', mktime( 0, 0, 0, $m, $d + 6, $y ) );
+
+            case 'this_month':
+                return date( 'Ymd', mktime( 0, 0, 0, $m + 1, 0, $y ) );
+
+            case 'quarter_to_date':
+                return date( 'Ymd', mktime( 0, 0, 0, $m + 3, 0, $y ) );
+
+            case 'this_year':
+                return date( 'Ymd', mktime( 0, 0, 0, 12, 31, $y ) );
+        }
+
+        return $this->endDate->getYyyymmdd();
     }
 
     function _setDifferences() {

@@ -89,6 +89,65 @@ final class TimePeriodCalendarTest extends TestCase
             sprintf('%s is wrong at %d of %d instants in %s', $period, count($wrong), 365 * 3, date_default_timezone_get()));
     }
 
+    /** The last day a trend's axis runs to: the period's end, or its calendar unit's for "this ...". */
+    private static function axisEnd(string $period, DateTimeImmutable $today, DateTimeImmutable $last): DateTimeImmutable
+    {
+        $w = (int) $today->format('w');
+        $y = (int) $today->format('Y');
+        $m = (int) $today->format('n');
+
+        $day = fn(int $year, int $month, int $dom) => (new DateTimeImmutable())->setDate($year, $month, $dom)->setTime(0, 0, 0);
+
+        switch ($period) {
+            case 'this_week':       return $today->modify('+' . (6 - $w) . ' days');
+            case 'this_month':      return $day($y, $m + 1, 0);
+            case 'quarter_to_date': return $day($y, intdiv($m - 1, 3) * 3 + 4, 0);
+            case 'this_year':       return $day($y, 12, 31);
+        }
+
+        return $last;
+    }
+
+    /**
+     * @dataProvider periods
+     */
+    public function testEveryDayOfAYearGivesTheAxisEnd(string $period): void
+    {
+        $wrong = [];
+
+        $today = (new DateTimeImmutable())->setDate(2026, 1, 1)->setTime(0, 0, 0);
+
+        for ($i = 0; $i < 365; $i++, $today = $today->modify('+1 day')) {
+
+            foreach ([[0, 30], [23, 30]] as [$h, $min]) {
+
+                $tp = new TimePeriod();
+                $tp->now = $today->setTime($h, $min)->getTimestamp();
+                $tp->set($period);
+
+                [, $last] = self::expected($period, $today);
+
+                $want = self::axisEnd($period, $today, $last)->format('Ymd');
+                $got  = $tp->getAllInfo()['axisEndDate'];
+
+                if ($got !== $want) {
+                    $wrong[] = sprintf('now %s: want %s, got %s', $today->setTime($h, $min)->format('Y-m-d H:i'), $want, $got);
+                }
+            }
+        }
+
+        $this->assertSame([], array_slice($wrong, 0, 5),
+            sprintf('%s axis end is wrong at %d of %d instants', $period, count($wrong), 365 * 2));
+    }
+
+    public function testADateRangeAxisEndsOnItsEndDate(): void
+    {
+        $tp = new TimePeriod();
+        $tp->setFromMap(['period' => 'date_range', 'startDate' => '20261103', 'endDate' => '20261109']);
+
+        $this->assertSame('20261109', $tp->getAllInfo()['axisEndDate']);
+    }
+
     /** The test is only worth anything in a zone with daylight saving. */
     public function testTheZoneChangesItsClocks(): void
     {

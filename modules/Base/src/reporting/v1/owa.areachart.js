@@ -448,13 +448,10 @@ OWA.areaChart.prototype = {
 
             this.setupAreaChart( series, dom_id );
 
-            var num_ticks = built.points;
+            var span = this.periodAxis( resultSet, built.x_type );
 
-            // reduce number of x axis ticks if data set has too many points.
-            if ( num_ticks > 10 ) {
-
-                num_ticks = 10;
-            }
+            // One tick an interval of the axis, ten at most.
+            var num_ticks = Math.min( 10, span ? span.intervals : built.points );
 
             this.flotOptions = {
 
@@ -514,6 +511,12 @@ OWA.areaChart.prototype = {
             };
 
             this.xType = built.x_type;
+
+            if ( span ) {
+
+                this.flotOptions.xaxis.min = span.min;
+                this.flotOptions.xaxis.max = span.max;
+            }
 
             if ( built.x_type === 'yyyymmddhh' ) {
 
@@ -614,6 +617,8 @@ OWA.areaChart.prototype = {
 
             if ( zero ) {
 
+                var zeroSpan = this.periodAxis( resultSet, zero.x_type );
+
                 this.dataseries = [ this.areaSeries( '', zero.points ) ];
 
                 this.flotOptions = {
@@ -626,9 +631,9 @@ OWA.areaChart.prototype = {
                     yaxis: { min: 0, max: 1, tickDecimals: 0 },
                     xaxis: Object.assign( {
                         mode: 'time',
-                        ticks: Math.min( 10, zero.points.length ),
+                        ticks: Math.min( 10, zeroSpan ? zeroSpan.intervals : zero.points.length ),
                         tickLength: 0
-                    }, this.flotDates( zero.x_type === 'yyyymm' ? this.options.monthTick : this.options.dayTick ) ),
+                    }, zeroSpan ? { min: zeroSpan.min, max: zeroSpan.max } : {}, this.flotDates( zero.x_type === 'yyyymm' ? this.options.monthTick : this.options.dayTick ) ),
                     grid: { show: this.options.showGrid, hoverable: true,
                             borderWidth: 0, borderColor: null,
                             color: this.options.gridColor, tickColor: this.options.tickColor },
@@ -1478,6 +1483,72 @@ OWA.areaChart.prototype = {
     },
 
     /**
+     * The x axis a trend is drawn against: the whole period, whatever the rows.
+     *
+     * From the first interval of the period to the last interval of its
+     * axisEndDate -- the end of the week, month, quarter or year a "this ..."
+     * period is part of, and the period's own end date otherwise. A day by
+     * hour runs to 11pm. The line stops at today, or at the hour it is now
+     * (zeroFilled()); the axis does not.
+     *
+     * @return {min, max, intervals} or null when the period cannot be read
+     */
+    periodAxis : function ( resultSet, x_type ) {
+
+        var period = ( resultSet && resultSet.timePeriod ) || null;
+
+        if ( ! period || ! period.startDate || ! period.endDate ) {
+
+            return null;
+        }
+
+        var at = function ( yyyymmdd ) {
+
+            var t = String( yyyymmdd );
+
+            return Date.UTC( t.substring( 0, 4 ) * 1, ( t.substring( 4, 6 ) * 1 ) - 1, t.substring( 6, 8 ) * 1 );
+        };
+
+        var min = at( period.startDate );
+        var max = at( period.axisEndDate || period.endDate );
+
+        if ( isNaN( min ) || isNaN( max ) || max < min ) {
+
+            return null;
+        }
+
+        var HOUR = 3600000;
+        var DAY  = 24 * HOUR;
+
+        if ( x_type === 'yyyymmddhh' ) {
+
+            max += 23 * HOUR;
+
+            return { min: min, max: max, intervals: Math.round( ( max - min ) / HOUR ) + 1 };
+        }
+
+        if ( x_type === 'yyyymmdd' ) {
+
+            return { min: min, max: max, intervals: Math.round( ( max - min ) / DAY ) + 1 };
+        }
+
+        if ( x_type === 'yyyymm' ) {
+
+            var first = new Date( min );
+            var last  = new Date( max );
+
+            return {
+                min: Date.UTC( first.getUTCFullYear(), first.getUTCMonth(), 1 ),
+                max: Date.UTC( last.getUTCFullYear(), last.getUTCMonth(), 1 ),
+                intervals: ( last.getUTCFullYear() - first.getUTCFullYear() ) * 12
+                    + last.getUTCMonth() - first.getUTCMonth() + 1
+            };
+        }
+
+        return null;
+    },
+
+    /**
      * Every interval of the period, in order, as x values -- or null when the
      * period cannot be read or is not what the chart is drawn over.
      *
@@ -1885,11 +1956,15 @@ OWA.areaChart.prototype = {
         if ( this.xType === 'yyyymmddhh' && this.flotOptions.xaxis ) {
 
             var xs = ( this.dataseries[0] && this.dataseries[0].data || [] ).map( function ( p ) { return p[0]; } );
+            var xaxis = this.flotOptions.xaxis;
 
-            if ( xs.length ) {
+            if ( xaxis.min !== undefined && xaxis.max !== undefined ) {
 
-                this.flotOptions.xaxis.ticks = this.hourTicks(
-                    xs[0], xs[ xs.length - 1 ], width || 600 );
+                xaxis.ticks = this.hourTicks( xaxis.min, xaxis.max, width || 600 );
+
+            } else if ( xs.length ) {
+
+                xaxis.ticks = this.hourTicks( xs[0], xs[ xs.length - 1 ], width || 600 );
             }
 
         } else if ( this.flotOptions.xaxis && this.flotOptions.xaxis.mode === 'time' ) {
