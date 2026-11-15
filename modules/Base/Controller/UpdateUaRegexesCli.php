@@ -94,7 +94,7 @@ class UpdateUaRegexesCli extends \OWA\Core\Controller\Cli {
         // written after fetching 200KB is a worse experience than being told
         // first, and the answer does not depend on the download.
         //
-        // The installer checks owa-data/logs/ and owa-data/caches/, but not
+        // The installer checks owa-data/logs/, but not
         // owa-data itself -- nothing needed to create a directory there until
         // now. So this cannot assume a passing install check covers it.
         $problem = $this->whyNotWritable( $dir );

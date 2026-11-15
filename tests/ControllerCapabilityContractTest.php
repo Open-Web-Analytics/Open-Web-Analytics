@@ -85,7 +85,6 @@ final class ControllerCapabilityContractTest extends TestCase
 
         // CLI-only. Core\Controller\Cli::__construct() exits unless
         // request_type === 'cli', so these are not web-reachable.
-        'FlushCacheCli',
         'InstallCli',
         'UpdatesApplyCli',
         // Runs from the scheduler and the shell only, like the others here.

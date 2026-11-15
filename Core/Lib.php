@@ -20,17 +20,15 @@ class Lib {
      *
      * The module runtime name ($module->name, the DB persist key, the dotted-id
      * prefix, the ?do= route segment) stays lowercase forever -- e.g. 'base',
-     * 'maxmind_geoip', 'fileCache'. Its filesystem home, however, is now the
-     * PascalCase PSR-4 namespace segment: 'Base', 'MaxmindGeoip', 'FileCache'.
+     * 'maxmind_geoip', 'sqs'. Its filesystem home, however, is now the
+     * PascalCase PSR-4 namespace segment: 'Base', 'MaxmindGeoip', 'Sqs'.
      * This is the single seam that maps one to the other. The transform matches
      * exactly how the top-level module namespaces were derived during the PSR-4
      * migration: upper-case the first letter of each underscore-delimited word,
      * then drop the underscores.
      *
      *   base          -> Base
-     *   fileCache     -> FileCache      (already camel; ucwords leaves it, _ strip is a no-op)
      *   maxmind_geoip -> MaxmindGeoip
-     *   memcachedCache-> MemcachedCache
      *   sqs           -> Sqs
      *
      * The transform is idempotent on its own output ('Base' -> 'Base'). Only the

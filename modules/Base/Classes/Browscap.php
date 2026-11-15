@@ -50,8 +50,6 @@ class Browscap extends \OWA\Core\Base {
      * @var string
      */
     var $ua;
-    var $cache;
-    var $cacheExpiration;
 
     function __construct( $ua = '' ) {
 
@@ -59,11 +57,6 @@ class Browscap extends \OWA\Core\Base {
 
         // set user agent
         $this->ua = $ua;
-
-        // init cache
-        $this->cache = \OWA\Core\CoreAPI::cacheSingleton();
-        $this->cacheExpiration = \OWA\Core\CoreAPI::getSetting('base', 'default_cache_expiration_period');
-        $this->cache->setCollectionExpirationPeriod('browscap', $this->cacheExpiration);
 
         //lookup UA
         $this->browser = $this->lookup( $this->ua );
@@ -73,51 +66,24 @@ class Browscap extends \OWA\Core\Base {
 
     function lookup( $user_agent ) {
 
-        $cap = null;
-
+        /*
+         * Parsed every time, not cached.
+         *
+         * With a persistent cache on, each user agent was kept in a file of
+         * its own for a week, and nothing removed a file whose agent never
+         * came back -- so anyone sending agents of their own invention to
+         * log.php added a file per request, without limit, each one written
+         * under the cache's single lock. The parse is what an installation
+         * without the File Cache module has always done; a process parses a
+         * request's agent once (Service::getBrowscap() keeps the result).
+         */
         \OWA\Core\CoreAPI::profile( $this, __FUNCTION__, __LINE__ );
-		\OWA\Core\CoreAPI::debug('looking in cache for browscap');
-		
-		// check cache
-        $cap = $this->cache->get( 'browscap', $this->ua );
-        
-        if ( $cap ) {
-	        
-	        return $cap;
-	        
-        } else {
-	        
-        	// load parser
-            $custom_db = self::regexesFile();
 
-            if ( $custom_db ) {
+        $custom_db = self::regexesFile();
 
-                $parser = Parser::create($custom_db);
+        $parser = $custom_db ? Parser::create( $custom_db ) : Parser::create();
 
-            } else {
-	            
-                $parser = Parser::create();
-            }
-
-            $cap = $parser->parse( $this->ua );
-
-                
-	        if ( $cap ) {
-	
-	            if ( \OWA\Core\CoreAPI::getSetting('base', 'cache_objects') ) {
-	
-	                $family = $cap->ua->family;
-	
-	                if (  $family != 'Default Browser' ) {
-	
-	                    $this->cache->set( 'browscap', $this->ua, $cap, $this->cacheExpiration );
-	                }
-	            }
-	            
-	            return $cap;
-	        }
-	
-	    }
+        return $parser->parse( $this->ua );
     }
 
     /**

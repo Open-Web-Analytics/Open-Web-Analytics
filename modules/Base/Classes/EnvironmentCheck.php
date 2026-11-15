@@ -87,9 +87,8 @@ class EnvironmentCheck {
         }
 
         /*
-         * Where OWA writes: the data directory (OWA_DATA_DIR, else owa-data/),
-         * its logs/, and the cache directory (OWA_CACHE_DIR, else caches/ in
-         * the data directory). The data directory itself need only exist: what
+         * Where OWA writes: the data directory (OWA_DATA_DIR, else owa-data/)
+         * and its logs/. The data directory itself need only exist: what
          * writes directly under it (update-ua-regexes, update-geoip-db) checks
          * for itself.
          */
@@ -104,7 +103,6 @@ class EnvironmentCheck {
 
         foreach ( array(
             \OWA\Core\CoreAPI::t( 'Log directory' )   => array( $data . 'logs/', '`logs/` in the data directory is writable.' ),
-            \OWA\Core\CoreAPI::t( 'Cache directory' ) => array( \OWA\Core\Env::cacheDir(), 'The cache directory is writable: `caches/` in the data directory, or `OWA_CACHE_DIR`.' ),
         ) as $label => list( $path, $requires ) ) {
 
             $checks[] = self::check(

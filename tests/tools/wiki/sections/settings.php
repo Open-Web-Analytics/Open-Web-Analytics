@@ -105,7 +105,7 @@ return function ( $arg = null ) {
     $mechanical = Module::mechanicalSettings();
     $fields     = $registry['fields'];
 
-    // A constant can supply a key no module declares (data_dir, cache_dir).
+    // A constant can supply a key no module declares (data_dir).
     foreach ( $constants as $id => $const ) {
         if ( ! isset( $fields[ $id ] ) ) {
             $fields[ $id ] = array();

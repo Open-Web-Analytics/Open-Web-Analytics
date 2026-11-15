@@ -39,18 +39,15 @@ if ( in_array( 'log', $argv, true ) ) {
 
 $queue    = new \OWA\Module\Base\Classes\FileEventQueue( array() );
 $fallback = \OWA\Module\Base\Classes\TrackerIngest::fallback();
-$cache    = new \OWA\Module\FileCache\Classes\FileCache( array() );
 
 echo 'PROBE ' . json_encode( array(
     'data_dir'       => \OWA\Core\Env::dataDir(),
-    'cache_dir'      => \OWA\Core\Env::cacheDir(),
     'error_log_file' => \OWA\Core\CoreAPI::getSetting( 'base', 'error_log_file' ),
     'async_log_dir'  => \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ),
     'queue_dir'      => $queue->queue_dir,
     'archive_dir'    => $queue->archive_path,
     'dead_letter'    => $queue->deadLetterQueue()->queue_dir,
     'fallback_dir'   => $fallback ? $fallback->queue_dir : null,
-    'file_cache_dir' => $cache->cache_dir,
     'maxmind_dir'    => \OWA\Module\MaxmindGeoip\Classes\Maxmind::dataDir(),
     'ua_regexes'     => \OWA\Module\Base\Classes\Browscap::regexesFile(),
     'constant'       => \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( 'base', 'data_dir' ),

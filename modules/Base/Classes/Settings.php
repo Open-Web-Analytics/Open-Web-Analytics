@@ -358,20 +358,13 @@ namespace OWA\Module\Base\Classes;
      function applyConfigConstants() {
 
         /*
-         * WHERE OWA WRITES (Env::dataDir(), Env::cacheDir()). Optional: the
-         * data directory defaults to owa-data/ in the OWA directory, and the
-         * cache directory to caches/ in the data directory, wherever that is.
+         * WHERE OWA WRITES (Env::dataDir()). Optional: the data directory
+         * defaults to owa-data/ in the OWA directory.
          */
         if ( defined( 'OWA_DATA_DIR' ) && (string) OWA_DATA_DIR !== '' ) {
             $this->setFromConfigConstant( 'base', 'data_dir', \OWA\Core\Env::withSlash( OWA_DATA_DIR ), 'OWA_DATA_DIR');
         } else {
             $this->set( 'base', 'data_dir', \OWA\Core\Env::defaultDataDir() );
-        }
-
-        if ( defined( 'OWA_CACHE_DIR' ) && (string) OWA_CACHE_DIR !== '' ) {
-            $this->setFromConfigConstant( 'base', 'cache_dir', \OWA\Core\Env::withSlash( OWA_CACHE_DIR ), 'OWA_CACHE_DIR');
-        } else {
-            $this->set( 'base', 'cache_dir', $this->get( 'base', 'data_dir' ) . 'caches/' );
         }
 
         /* FACT-TABLE PARTITIONING */
@@ -447,14 +440,6 @@ namespace OWA\Module\Base\Classes;
 
         if (defined('OWA_CONFIGURATION_ID')) {
             $this->setFromConfigConstant( 'base', 'configuration_id', OWA_CONFIGURATION_ID, 'OWA_CONFIGURATION_ID');
-        }
-
-        /* OBJECT CACHING */
-
-        // Looks for object cache config constant
-        // must comebefore user db values are fetched from db
-        if (defined('OWA_CACHE_OBJECTS')) {
-            $this->setFromConfigConstant( 'base', 'cache_objects', OWA_CACHE_OBJECTS, 'OWA_CACHE_OBJECTS');
         }
 
         /* SERVER ROLE */
@@ -2953,7 +2938,6 @@ namespace OWA\Module\Base\Classes;
                 'cookie_domain'                        => false,
                 'cookie_persistence'                => true,  // Controls persistence of cookies, only for use in europe needed
                 'is_active'                            => true,
-                'cache_objects'                        => false,
                 'log_named_users'                    => true,
                 'log_visitor_pii'                    => true,
                 'excluded_ips'                        => '',
@@ -2962,7 +2946,6 @@ namespace OWA\Module\Base\Classes;
                 'start_page'                        => 'base.reportingHome',
                 // A page path's last segment named here is dropped: /store/index.html is /store.
                 'directory_index_pages'             => \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES,
-                'default_cache_expiration_period'    => 604800,
                 'nonce_expiration_period'            => 7200,
                 'default_reporting_period'            => 'last_seven_days',
                 /*
@@ -3022,9 +3005,6 @@ namespace OWA\Module\Base\Classes;
                 'enableEcommerceReporting'            => false, // move to site settings
                 'currencyLocal'                        => 'en_US', // move to site settings
                 'currencyISO3'                        => 'USD',   // move to site settings
-                'memcachedServers'                    => array(),
-                'memcachedPersistantConnections'    => true,
-                'cacheType'                            => '', // file, memory, memcache
                 'disabledEndpoints'                    => array(),
                 'disableAllEndpoints'                => false,
                 // Scheduler. Jobs themselves are registered in code by each
@@ -3048,6 +3028,7 @@ namespace OWA\Module\Base\Classes;
                 'default_page_before_080'           => array(),
                 'log_robots_before_084'             => array(),
                 'retired_settings_before_085'       => array(),
+                'cache_settings_before_086'         => array(),
                 'v1_tables_dropped'                 => false,
                 'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
                 'archive_old_events'                => true, // used by event queues to archive processed events.

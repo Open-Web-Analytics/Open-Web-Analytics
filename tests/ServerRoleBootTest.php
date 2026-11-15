@@ -39,8 +39,6 @@ final class ServerRoleBootTest extends TestCase
     /** @return array{code:int, stdout:string, stderr:string} */
     private function exec(array $constants, array $args): array
     {
-        $constants += array('OWA_CACHE_DIR' => owa_test_child_cache_dir());
-
         $cmd = array_merge(array(PHP_BINARY, '-d', 'auto_prepend_file=' . self::PREPEND), $args);
         $env = array_merge(getenv(), array('OWA_PROBE_CONSTANTS' => json_encode($constants)));
 

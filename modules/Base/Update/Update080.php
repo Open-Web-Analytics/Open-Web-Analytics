@@ -45,7 +45,7 @@ namespace OWA\Module\Base\Update;
  * RAW SQL on owa_setting, as Update070, record included: the settings entity
  * cache could otherwise answer for a row this has just changed, and a test can
  * point the whole update at a scratch table. Neither direction touches the
- * object cache; `php cli.php cmd=flush-cache` clears it.
+ * object cache, which lasts only for the request.
  *
  * NOT CLI-ONLY. A handful of rows.
  */

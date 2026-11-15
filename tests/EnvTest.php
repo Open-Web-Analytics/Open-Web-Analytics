@@ -8,9 +8,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Core\Env: where the installation is, and which release.
  *
- * The data and cache directories here are this process's, booted with the
- * install's own owa-config.php; DataDirConfigTest boots with OWA_DATA_DIR
- * and OWA_CACHE_DIR set.
+ * The data directory here is this process's, booted with the install's own
+ * owa-config.php; DataDirConfigTest boots with OWA_DATA_DIR set.
  */
 final class EnvTest extends TestCase
 {
@@ -65,26 +64,11 @@ final class EnvTest extends TestCase
         $this->assertSame(Env::defaultDataDir(), Env::dataDir());
     }
 
-    public function testTheCacheDirectoryDefaultsToCachesInTheDataDirectory(): void
-    {
-        if (defined('OWA_DATA_DIR') || defined('OWA_CACHE_DIR')) {
-            $this->markTestSkipped('this install sets OWA_DATA_DIR or OWA_CACHE_DIR');
-        }
-
-        $this->assertSame(Env::dataDir() . 'caches/', Env::cacheDir());
-    }
-
-    public function testBothFollowTheirSettings(): void
+    public function testTheDataDirectoryFollowsItsSetting(): void
     {
         $this->setForTest('data_dir', '/srv/owa-data');
-        $this->setForTest('cache_dir', '');
 
         $this->assertSame('/srv/owa-data/', Env::dataDir());
-        $this->assertSame('/srv/owa-data/caches/', Env::cacheDir(), 'an empty cache_dir follows the data directory');
-
-        $this->setForTest('cache_dir', '/var/cache/owa');
-
-        $this->assertSame('/var/cache/owa/', Env::cacheDir());
     }
 
     public function testWithSlashEndsInExactlyOne(): void

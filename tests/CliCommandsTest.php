@@ -20,7 +20,7 @@ require_once(__DIR__ . '/CliControllerTestCase.php');
  *                safe and IS covered below.)
  *
  * Everything else is either safe to fully round-trip (add-site, change-password,
- * flush-cache, the module activate/deactivate/install commands against the
+ * the module activate/deactivate/install commands against the
  * schema-less 'hello' sample module, and the crawl/queue maintenance commands
  * which no-op on an empty working set) or is asserted at the contract level
  * (command is registered + capability gate + argument validation).
@@ -51,7 +51,6 @@ final class CliCommandsTest extends CliControllerTestCase
     {
         return [
             'update'                     => ['update',                     'base.updatesApplyCli'],
-            'flush-cache'                => ['flush-cache',                'base.flushCacheCli'],
             'drain-tracker-ingest'       => ['drain-tracker-ingest',       'base.drainTrackerIngestCli'],
             'tracker-ingest-replay'      => ['tracker-ingest-replay',      'base.trackerIngestReplayCli'],
             'tracker-ingest-provision'   => ['tracker-ingest-provision',   'base.trackerIngestProvisionCli'],
@@ -239,25 +238,6 @@ final class CliCommandsTest extends CliControllerTestCase
     }
 
     // =================================================================
-    // flush-cache  (owa_flushCacheCliController, no capability -- maintenance)
-    // =================================================================
-
-    public function testFlushCacheRuns(): void
-    {
-        // flush-cache takes no args and has no side effect worth asserting on a
-        // fresh cache; the contract is simply that it runs without error and
-        // does not route to an error/redirect view.
-        $result = $this->runCommand(
-            \OWA\Module\Base\Controller\FlushCacheCli::class,
-            'flushCacheCli.php',
-            []
-        );
-
-        $this->assertNull($result['view'],
-            'flush-cache should run cleanly with no error view.');
-    }
-
-    // =================================================================
     // Module lifecycle: activate / deactivate / install-module
     // (cap: edit_modules) -- exercised against the schema-less 'hello'
     // sample module so there are no tables to create/drop. Each test
@@ -312,18 +292,10 @@ final class CliCommandsTest extends CliControllerTestCase
         // modules and returned false otherwise -- so deactivating an already
         // inactive module fataled with deactivate()-on-bool. It now loads a
         // fresh instance via moduleClassFactory() like activate/install do.
-        // 'fileCache' ships inactive, so this is a harmless no-op to drive.
-        $module = 'fileCache';
-        if ((bool) \OWA\Core\CoreAPI::getSetting($module, 'is_active')) {
-            $this->markTestSkipped("Expected {$module} to be inactive for this regression.");
-        }
-
-        // Building the module runs its init(), and fileCache's turns object
-        // caching on for the rest of the process. A CLI run exits straight
-        // after; this process goes on to run every later test, so it is put
-        // back.
-        $caching = \OWA\Core\CoreAPI::getSetting('base', 'cache_objects');
-        $type    = \OWA\Core\CoreAPI::getSetting('base', 'cacheType');
+        // hello, made inactive first: a harmless no-op to drive.
+        $module  = 'hello';
+        $restore = $this->snapshotHelloActive();
+        \OWA\Core\CoreAPI::deactivateModule($module);
 
         try {
             $result = $this->runCommand(
@@ -331,15 +303,14 @@ final class CliCommandsTest extends CliControllerTestCase
                 'moduleDeactivateCli.php',
                 ['module' => $module]
             );
+            $active = (bool) \OWA\Core\CoreAPI::getSetting($module, 'is_active');
         } finally {
-            \OWA\Core\CoreAPI::setSetting('base', 'cache_objects', $caching);
-            \OWA\Core\CoreAPI::setSetting('base', 'cacheType', $type);
+            $restore();
         }
 
         $this->assertNull($result['view'],
             'Deactivating a not-boot-loaded module should run cleanly, not fatal.');
-        $this->assertFalse((bool) \OWA\Core\CoreAPI::getSetting($module, 'is_active'),
-            "{$module} should remain inactive after a no-op deactivate.");
+        $this->assertFalse($active, "{$module} should remain inactive after a no-op deactivate.");
     }
 
     public function testInstallModuleActivatesHello(): void

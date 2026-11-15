@@ -13,11 +13,9 @@ namespace OWA\Core;
  * The code directories follow from this file's location: it lives in Core/,
  * one level below the root.
  *
- * The data and cache directories are settings (base.data_dir, base.cache_dir),
- * set at boot by Settings::applyConfigConstants() from the optional
- * OWA_DATA_DIR and OWA_CACHE_DIR in owa-config.php. Without them the data
- * directory is owa-data/ under the root and the cache directory is caches/
- * under the data directory.
+ * The data directory is a setting (base.data_dir), set at boot by
+ * Settings::applyConfigConstants() from the optional OWA_DATA_DIR in
+ * owa-config.php. Without it the data directory is owa-data/ under the root.
  *
  * root() has no trailing slash; every directory ends in one.
  */
@@ -70,14 +68,6 @@ final class Env {
         $dir = (string) CoreAPI::getSetting( 'base', 'data_dir' );
 
         return $dir === '' ? self::defaultDataDir() : self::withSlash( $dir );
-    }
-
-    /** The file cache. The base.cache_dir setting. */
-    public static function cacheDir(): string {
-
-        $dir = (string) CoreAPI::getSetting( 'base', 'cache_dir' );
-
-        return $dir === '' ? self::dataDir() . 'caches/' : self::withSlash( $dir );
     }
 
     /** A directory path ending in exactly one slash. */

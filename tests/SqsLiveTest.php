@@ -33,11 +33,10 @@ final class SqsLiveTest extends TestCase
             return;
         }
 
-        foreach (array(array('base', 'cache_dir'), array('sqs', 'region')) as [$m, $k]) {
+        foreach (array(array('sqs', 'region')) as [$m, $k]) {
             self::$saved["$m.$k"] = \OWA\Core\CoreAPI::getSetting($m, $k);
         }
 
-        \OWA\Core\CoreAPI::setSetting('base', 'cache_dir', sys_get_temp_dir() . '/owa-sqs-live-' . getmypid() . '/');
         \OWA\Core\CoreAPI::setSetting('sqs', 'region', getenv('OWA_TEST_SQS_REGION') ?: 'us-east-1');
 
         self::$queue = new SqsQueue(array(
