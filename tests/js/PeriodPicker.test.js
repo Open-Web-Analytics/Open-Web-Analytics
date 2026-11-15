@@ -21,7 +21,7 @@ const PRESETS = [
     { key: 'yesterday', label: 'Yesterday', startDate: '20261108', endDate: '20261108' },
     { key: 'last_28_days', label: 'Last 28 days', startDate: '20261013', endDate: '20261109' },
     { key: 'last_month', label: 'Last month', startDate: '20261001', endDate: '20261031' },
-    { key: 'this_week', label: 'This week (Sun – today)', startDate: '20261108', endDate: '20261109', axisEndDate: '20261114' },
+    { key: 'this_week', label: 'This week (Sun – Sat)', startDate: '20261108', endDate: '20261109', axisEndDate: '20261114' },
 ];
 
 const COMPARES = [
@@ -70,10 +70,11 @@ describe( 'state', () => {
         // A whole month against the whole month before.
         expect( s.cmp ).toEqual( [ '20260901', '20260930' ] );
 
-        // This week on its second day, against the whole week before.
+        // This week on its second day: the whole week, not the days so far,
+        // against the whole week before.
         s.preset = 'this_week';
         settle( s, PRESETS );
-        expect( s.main ).toEqual( [ '20261108', '20261109' ] );
+        expect( s.main ).toEqual( [ '20261108', '20261114' ] );
         expect( s.cmp ).toEqual( [ '20261101', '20261107' ] );
 
         const c = initialState( config( { compare: 'date_range', compareStartDate: '20250101', compareEndDate: '20250131' } ) );
@@ -181,6 +182,15 @@ describe( 'the control', () => {
         click( $( '.owa_periodTrigger' ) );
         expect( $( '.owa_periodPanel' ) ).not.toBeNull();
         expect( $( '.owa_periodTrigger' ).getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+    } );
+
+    test( 'this week on its second day shows the whole week, Sunday to Saturday, and the whole week before', () => {
+        make( { period: 'this_week', startDate: '20261108', endDate: '20261109', compare: 'previous_period' } );
+
+        const range = $( '.owa_periodTriggerRange' ).textContent;
+        expect( range ).toMatch( /8/ );
+        expect( range ).toMatch( /14/ );
+        expect( $( '.owa_periodTriggerCompare' ).textContent ).toMatch( /1.*7/ );
     } );
 
     test( 'Custom date range is last, under Fixed, after the Relative presets', () => {

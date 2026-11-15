@@ -2516,7 +2516,8 @@ OWA.areaChart.prototype = {
         };
 
         return [
-            entry( names.periods[ period.period ], period.startDate, period.endDate ),
+            // The whole period, as the picker shows it, not the days so far.
+            entry( names.periods[ period.period ], period.startDate, period.axisEndDate || period.endDate ),
             entry( names.compares[ compare.compare ], compare.startDate, compare.endDate )
         ];
     },
