@@ -61,13 +61,15 @@ test.describe('install: web wizard creating its own database', () => {
             page.locator('input[name="save_button"]').click(),
         ]);
 
-        // The defaults step names the server and the database it connected to.
+        // On to the defaults step.
         // The site field: the login form, where a wrong redirect lands, has a
         // user_id field too.
         await expect(page.locator('input[name="domain"]')).toBeVisible();
-        const connected = await page.locator('body').innerText();
-        expect(connected).toMatch(/Connected to (MySQL|MariaDB) \d+\.\d+/);
-        expect(connected).toContain(name);
+        // The defaults step names neither the database server nor the
+        // database: anyone can open it before OWA is installed.
+        const defaults = await page.locator('body').innerText();
+        expect(defaults).not.toMatch(/Connected to (MySQL|MariaDB)/);
+        expect(defaults).not.toContain(name);
 
         await page.fill('input[name="domain"]', INFO.install_site);
         await page.selectOption('select[name="timezone"]', 'Europe/London');

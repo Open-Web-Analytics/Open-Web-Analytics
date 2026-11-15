@@ -56,7 +56,30 @@ class EnvironmentCheck {
      * @param string $config_file  path to owa-config.php
      * @return array[] each ['name','value','passed','msg']
      */
-    public static function all( $config_file ) {
+    /**
+     * A path as a check shows it: in full for cmd=instance-info and System
+     * Health, relative to OWA's directory for the web installer, which anyone
+     * can open before OWA is installed.
+     */
+    private static function shown( $path, $relative ) {
+
+        $path = (string) $path;
+
+        if ( ! $relative ) {
+
+            return $path;
+        }
+
+        $root = rtrim( (string) \OWA\Core\Env::root(), '/' ) . '/';
+
+        return strpos( $path, $root ) === 0 ? substr( $path, strlen( $root ) ) : basename( rtrim( $path, '/' ) ) . ( substr( $path, -1 ) === '/' ? '/' : '' );
+    }
+
+    /**
+     * @param string $config_file
+     * @param bool   $relative    paths relative to OWA's directory (the web installer)
+     */
+    public static function all( $config_file, $relative = false ) {
 
         $checks = array();
 
@@ -96,9 +119,9 @@ class EnvironmentCheck {
 
         $checks[] = self::check(
             \OWA\Core\CoreAPI::t( 'Data directory' ),
-            sprintf( '%s (%s)', $data, is_dir( $data ) ? ( is_writable( $data ) ? \OWA\Core\CoreAPI::t( 'writable' ) : \OWA\Core\CoreAPI::t( 'not writable' ) ) : \OWA\Core\CoreAPI::t( 'missing' ) ),
+            sprintf( '%s (%s)', self::shown( $data, $relative ), is_dir( $data ) ? ( is_writable( $data ) ? \OWA\Core\CoreAPI::t( 'writable' ) : \OWA\Core\CoreAPI::t( 'not writable' ) ) : \OWA\Core\CoreAPI::t( 'missing' ) ),
             is_dir( $data ),
-            sprintf( \OWA\Core\CoreAPI::t( 'Create %s, or set OWA_DATA_DIR in owa-config.php to a directory that exists.' ), $data ),
+            sprintf( \OWA\Core\CoreAPI::t( 'Create %s, or set OWA_DATA_DIR in owa-config.php to a directory that exists.' ), self::shown( $data, $relative ) ),
             'The data directory exists: `owa-data/` in the OWA directory, or `OWA_DATA_DIR`.' );
 
         foreach ( array(
@@ -107,9 +130,9 @@ class EnvironmentCheck {
 
             $checks[] = self::check(
                 $label,
-                sprintf( '%s (%s)', $path, is_writable( $path ) ? \OWA\Core\CoreAPI::t( 'writable' ) : \OWA\Core\CoreAPI::t( 'not writable' ) ),
+                sprintf( '%s (%s)', self::shown( $path, $relative ), is_writable( $path ) ? \OWA\Core\CoreAPI::t( 'writable' ) : \OWA\Core\CoreAPI::t( 'not writable' ) ),
                 is_writable( $path ),
-                sprintf( \OWA\Core\CoreAPI::t( 'Make %s writable by the user your web server runs as.' ), $path ),
+                sprintf( \OWA\Core\CoreAPI::t( 'Make %s writable by the user your web server runs as.' ), self::shown( $path, $relative ) ),
                 $requires );
         }
 
@@ -134,10 +157,10 @@ class EnvironmentCheck {
                 : ( is_writable( $config_dir ) ? \OWA\Core\CoreAPI::t( 'can be created' ) : \OWA\Core\CoreAPI::t( 'cannot be created' ) ),
             $config_ok,
             file_exists( $config_file )
-                ? sprintf( \OWA\Core\CoreAPI::t( 'Make %s readable by the user your web server runs as.' ), $config_file )
+                ? sprintf( \OWA\Core\CoreAPI::t( 'Make %s readable by the user your web server runs as.' ), self::shown( $config_file, $relative ) )
                 : sprintf( \OWA\Core\CoreAPI::t( 'Make %s writable so the installer can create owa-config.php, or '
                          . 'copy owa-config-dist.php to owa-config.php yourself and fill it in.' ),
-                           $config_dir ),
+                           $relative ? \OWA\Core\CoreAPI::t( 'the directory owa-config.php goes in' ) : $config_dir ),
             '`owa-config.php` exists and is readable, or its directory is writable so the installer can create it.' );
 
         // The two directories a source checkout does not come with.

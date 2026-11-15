@@ -100,21 +100,21 @@ final class InstallDatabaseTest extends TestCase
         $this->assertStringContainsString('MySQL / MariaDB', $html);
     }
 
-    /** The defaults step names the server and database it connected to, and says nothing when it has neither. */
-    public function testTheDefaultsStepNamesTheConnection(): void
+    /**
+     * The defaults step names neither the database server nor the database:
+     * anyone can open it before OWA is installed.
+     */
+    public function testTheDefaultsStepNamesNoDatabase(): void
     {
-        $render = function (string $server, string $name): string {
-            $t = new \OWA\Core\Template('base');
-            $t->set('defaults', []);
-            $t->set('db_server', $server);
-            $t->set('db_name', $name);
-            $this->assertTrue($t->set_template('install_defaults_entry.php'));
-            return (string) $t->fetch();
-        };
+        $t = new \OWA\Core\Template('base');
+        $t->set('defaults', []);
+        $t->set('db_server', 'MariaDB 10.11.6');
+        $t->set('db_name', 'owa_org_123456789');
+        $this->assertTrue($t->set_template('install_defaults_entry.php'));
+        $html = (string) $t->fetch();
 
-        $this->assertStringContainsString(
-            'Connected to MariaDB 10.11.6, database <code>owa_org_123456789</code>.',
-            $render('MariaDB 10.11.6', 'owa_org_123456789'));
-        $this->assertStringNotContainsString('Connected to', $render('', ''));
+        $this->assertStringNotContainsString('Connected to', $html);
+        $this->assertStringNotContainsString('owa_org_123456789', $html);
+        $this->assertStringNotContainsString('MariaDB', $html);
     }
 }

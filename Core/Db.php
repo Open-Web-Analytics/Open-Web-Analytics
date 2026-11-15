@@ -313,6 +313,50 @@ class Db extends \OWA\Core\Base {
         return false;
     }
 
+    /** While true, a failed connect logs nothing: canConnect() is asking. */
+    protected $quiet_connect = false;
+
+    /**
+     * Whether a connection can be made, without logging a failure.
+     *
+     * For a caller asking a question rather than needing the database: the
+     * installer's first page asks whether OWA is already installed, and with
+     * an owa-config.php whose details do not connect the answer is "no", not
+     * an alert in the log. The environment check is where a failed connection
+     * is reported.
+     *
+     * The driver's own PHP warning is held back too: mysqli raises one
+     * ("Connection refused", "Access denied") as well as returning false.
+     *
+     * @return bool
+     */
+    function canConnect() {
+
+        $this->quiet_connect = true;
+
+        set_error_handler( static function () { return true; }, E_WARNING );
+
+        try {
+
+            return (bool) $this->connect();
+
+        } finally {
+
+            restore_error_handler();
+
+            $this->quiet_connect = false;
+        }
+    }
+
+    /** Log a failed connect, unless canConnect() is asking. */
+    protected function connectFailed() {
+
+        if ( ! $this->quiet_connect ) {
+
+            $this->e->alert( 'Could not connect to database.' );
+        }
+    }
+
     function close() {
 
         return false;

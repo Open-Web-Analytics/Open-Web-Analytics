@@ -177,13 +177,73 @@ class InstallManager extends \OWA\Core\Base {
         $site->set('domain', $domain);
         $site->set('site_family', $site_family);
 
-        if ($site->create()) {
-            $this->e->notice('Created default site.');
-        } else {
+        if ( ! $site->create() ) {
+
+            // false, so the install step can roll back (finishInstall()).
             $this->e->notice('Creation of default site failed.');
+
+            return false;
         }
 
+        $this->e->notice('Created default site.');
+
         return $site->get('site_id');
+    }
+
+    /** Whether the install has an admin user. */
+    function hasAdminUser() {
+
+        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
+        $u->getByColumn('role', \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE);
+
+        return (bool) $u->get('id');
+    }
+
+    /**
+     * The install's writes after the schema, all or none: the admin user, the
+     * first site, the settings (the reporting timezone with them) and the
+     * install-complete flag.
+     *
+     * One transaction, so a failure part way leaves the schema and nothing
+     * else, and running the step again finishes the install. The schema is not
+     * in it: MySQL commits CREATE TABLE on the spot, and installSchema() is
+     * CREATE TABLE IF NOT EXISTS, so a second run of it is harmless.
+     *
+     * @param callable $writes does the writes; returns the site_id, or false
+     * @return string|false the site_id, or false when nothing was saved
+     */
+    function finishInstall( callable $writes ) {
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->beginTransaction();
+
+        try {
+
+            $site_id = $writes();
+
+            if ( ! $site_id || ! $this->hasAdminUser() ) {
+
+                throw new \RuntimeException( 'the admin user or the first site was not created' );
+            }
+
+            \OWA\Core\CoreAPI::configSingleton()->persistSetting( 'base', 'install_complete', true );
+
+            if ( ! \OWA\Core\CoreAPI::configSingleton()->save() ) {
+
+                throw new \RuntimeException( 'the settings were not saved' );
+            }
+
+            $db->endTransaction();
+
+            return $site_id;
+
+        } catch ( \Throwable $e ) {
+
+            $db->rollbackTransaction();
+            $this->e->notice( 'Install not completed, nothing saved: ' . $e->getMessage() . '.' );
+
+            return false;
+        }
     }
 
     function checkDbConnection() {
@@ -207,9 +267,11 @@ class InstallManager extends \OWA\Core\Base {
             return false;
         }
         
-        // can DB connection be made?
+        // Can a connection be made? Asked quietly: on the installer's first
+        // page a config whose details do not connect means "not installed",
+        // and the environment check reports the failure.
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        if ( ! $db->connect() ) {
+        if ( ! $db->canConnect() ) {
             
             return false;
         }

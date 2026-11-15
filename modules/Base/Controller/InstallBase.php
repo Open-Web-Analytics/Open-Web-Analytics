@@ -107,50 +107,58 @@ class InstallBase extends \OWA\Core\Controller\Install {
              * twice, the second time as a sub-step nobody asked about.
              */
 
-            $this->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
-
-            $site_id = $this->createDefaultSite( self::domainOnly( $this->getParam('domain') ) );
-
             /*
-             * Persisted here, with the rest of the install, because the choice
-             * is NOT retroactive: yyyymmdd and the nine date-part columns are
-             * derived in this timezone and written into every fact row, so
-             * changing it later re-buckets new rows while history keeps the old
-             * boundaries -- and nothing records which zone a row was derived
-             * under. Asking at install is the only point where the answer costs
-             * nothing.
-             *
-             * Guarded against a bad value rather than trusted: this arrives from
-             * a form, and date_default_timezone_set() on an unknown identifier
-             * would leave every subsequent date derivation on whatever the
-             * previous default was.
+             * The admin, the first site, the timezone and the install-complete
+             * flag are saved together or not at all (finishInstall()): a step
+             * that fails part way can be run again.
              */
-            $timezone = $this->getParam('timezone');
+            $site_id = $this->im->finishInstall( function () {
 
-            /*
-             * A constant in owa-config.php already decides this, and wins on
-             * every boot, so storing a value here would be inert -- and would
-             * quietly take effect if the constant were ever removed. The form
-             * renders the field disabled in that case; this is the half that
-             * does not depend on the browser having honoured it.
-             */
-            if ( $this->c->configFileConstantFor( 'base', 'timezone' ) ) {
+                $this->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
 
-                $this->e->notice( 'Timezone supplied by a config file constant; not storing the submitted value.' );
+                $site_id = $this->createDefaultSite( self::domainOnly( $this->getParam('domain') ) );
 
-            } elseif ( $timezone && in_array( $timezone, \DateTimeZone::listIdentifiers(), true ) ) {
+                /*
+                 * Persisted here, with the rest of the install, because the choice
+                 * is NOT retroactive: yyyymmdd and the nine date-part columns are
+                 * derived in this timezone and written into every fact row, so
+                 * changing it later re-buckets new rows while history keeps the old
+                 * boundaries -- and nothing records which zone a row was derived
+                 * under. Asking at install is the only point where the answer costs
+                 * nothing.
+                 *
+                 * Guarded against a bad value rather than trusted: this arrives from
+                 * a form, and date_default_timezone_set() on an unknown identifier
+                 * would leave every subsequent date derivation on whatever the
+                 * previous default was.
+                 */
+                $timezone = $this->getParam('timezone');
 
-                $this->c->persistSetting('base', 'timezone', $timezone);
-            }
+                /*
+                 * A constant in owa-config.php already decides this, and wins on
+                 * every boot, so storing a value here would be inert -- and would
+                 * quietly take effect if the constant were ever removed. The form
+                 * renders the field disabled in that case; this is the half that
+                 * does not depend on the browser having honoured it.
+                 */
+                if ( $this->c->configFileConstantFor( 'base', 'timezone' ) ) {
 
-            // Set install complete flag.
-            $this->c->persistSetting('base', 'install_complete', true);
-            $save_status = $this->c->save();
+                    $this->e->notice( 'Timezone supplied by a config file constant; not storing the submitted value.' );
 
-            if ($save_status == true) {
-                $this->e->notice('Install Complete Flag added to configuration');
-            } else {
-                $this->e->notice('Could not add Install Complete Flag to configuration.');
+                } elseif ( $timezone && in_array( $timezone, \DateTimeZone::listIdentifiers(), true ) ) {
+
+                    $this->c->persistSetting('base', 'timezone', $timezone);
+                }
+
+                return $site_id;
+            } );
+
+            if ( ! $site_id ) {
+
+                $this->set('error_msg', \OWA\Core\CoreAPI::t( 'The install did not complete, and nothing was saved. Check the error log, then submit this form again.' ));
+                $this->errorAction();
+
+                return;
             }
 
             // fire install complete event.

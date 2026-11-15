@@ -954,7 +954,10 @@ class Controller extends \OWA\Core\Base {
 
     function verifyNonce($nonce, $action = '') {
             
-        $action = $action ?: $this->getParam('do') ?: $this->getParam('action');
+        // `action` before `do`, as the dispatcher reads them
+        // (CoreAPI::performAction): the nonce is checked against the action
+        // that runs, not another named beside it.
+        $action = $action ?: $this->getParam('action') ?: $this->getParam('do');
 
         /*
          * The current window and the one before it. A window is a fixed bucket
