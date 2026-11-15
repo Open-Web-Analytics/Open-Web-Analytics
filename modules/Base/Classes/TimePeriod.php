@@ -109,7 +109,10 @@ class TimePeriod {
      * browser to preview the range; tests/fixtures/compare-ranges.json holds
      * cases both are tested against.
      *
-     * - previous_period: the same number of days, immediately before.
+     * - previous_period: the same number of days, immediately before. A range
+     *   of whole calendar months -- a month, a quarter, a year -- steps back
+     *   whole months instead: November against October, not the 30 days
+     *   before November.
      * - previous_period_dow: moved back by the length rounded up to whole
      *   weeks, so each day lines up with the same weekday.
      * - previous_year: the same dates a year earlier; 29 February becomes the
@@ -137,6 +140,18 @@ class TimePeriod {
         switch ( $key ) {
 
             case 'previous_period':
+
+                if ( $s->format( 'j' ) === '1' && $e->format( 'j' ) === $e->format( 't' ) ) {
+
+                    $months = ( (int) $e->format( 'Y' ) * 12 + (int) $e->format( 'n' ) )
+                        - ( (int) $s->format( 'Y' ) * 12 + (int) $s->format( 'n' ) ) + 1;
+
+                    return array(
+                        $s->modify( "-$months months" )->format( 'Ymd' ),
+                        $e->modify( 'first day of this month' )->modify( "-$months months" )->format( 'Ymt' ),
+                    );
+                }
+
                 $back = $days;
                 break;
 
@@ -190,6 +205,8 @@ class TimePeriod {
                 'label'     => $p['label'],
                 'startDate' => $tp->getStartDate()->getYyyymmdd(),
                 'endDate'   => $tp->getEndDate()->getYyyymmdd(),
+                // What a comparison is worked out over (getCompareFromMap()).
+                'axisEndDate' => $tp->getAxisEndDate(),
             );
         }
 
@@ -357,7 +374,12 @@ class TimePeriod {
             return array( 'compare' => 'date_range', 'startDate' => $start, 'endDate' => trim( (string) $map['compareEndDate'] ) );
         }
 
-        $r = self::compareRange( $compare, $this->startDate->getYyyymmdd(), $this->endDate->getYyyymmdd() );
+        /*
+         * Over the axis, not the days so far: "this week" on a Sunday is
+         * compared to the whole week before, "this month" to the whole month
+         * before (getAxisEndDate()).
+         */
+        $r = self::compareRange( $compare, $this->startDate->getYyyymmdd(), $this->getAxisEndDate() );
 
         return $r ? array( 'compare' => $compare, 'startDate' => $r[0], 'endDate' => $r[1] ) : null;
     }

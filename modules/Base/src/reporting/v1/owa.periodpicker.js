@@ -74,8 +74,21 @@ export function compareRange( key, start, end ) {
 
     switch ( key ) {
 
-        case 'previous_period':
+        case 'previous_period': {
+            // Whole calendar months step back whole months.
+            const last = ( ymd ) => new Date( Date.UTC( +ymd.substr( 0, 4 ), +ymd.substr( 4, 2 ), 0 ) ).getUTCDate();
+
+            if ( +start.substr( 6, 2 ) === 1 && +end.substr( 6, 2 ) === last( end ) ) {
+                const sm = +start.substr( 0, 4 ) * 12 + +start.substr( 4, 2 ) - 1;
+                const em = +end.substr( 0, 4 ) * 12 + +end.substr( 4, 2 ) - 1;
+                const n  = em - sm + 1;
+                return [
+                    toYmd( Date.UTC( Math.floor( ( sm - n ) / 12 ), ( sm - n ) % 12, 1 ) ),
+                    toYmd( Date.UTC( Math.floor( ( em - n ) / 12 ), ( em - n ) % 12 + 1, 0 ) ),
+                ];
+            }
             return [ addDays( start, -days ), addDays( end, -days ) ];
+        }
 
         case 'previous_period_dow': {
             const back = Math.ceil( days / 7 ) * 7;
@@ -242,8 +255,14 @@ export function initialState( config ) {
  * Bring the dates in line with the choice: a preset's dates are the server's,
  * a relative comparison's are worked out from the period. A Custom date range
  * keeps whatever dates it holds.
+ *
+ * A comparison is worked out over the preset's axisEndDate, as on the server
+ * (TimePeriod::getCompareFromMap()): "this week" on a Sunday is compared to
+ * the whole week before.
  */
 export function settle( state, presets ) {
+
+    let axisEnd = '';
 
     if ( state.preset !== 'custom' ) {
 
@@ -252,12 +271,13 @@ export function settle( state, presets ) {
         if ( p ) {
 
             state.main = [ p.startDate, p.endDate ];
+            axisEnd    = p.axisEndDate || '';
         }
     }
 
     if ( state.cmpKey !== 'custom' || ! state.cmp[0] || ! state.cmp[1] ) {
 
-        state.cmp = compareRange( state.cmpKey !== 'custom' ? state.cmpKey : 'previous_period', state.main[0], state.main[1] ) || [ '', '' ];
+        state.cmp = compareRange( state.cmpKey !== 'custom' ? state.cmpKey : 'previous_period', state.main[0], axisEnd || state.main[1] ) || [ '', '' ];
     }
 
     return state;

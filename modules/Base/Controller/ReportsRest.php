@@ -264,7 +264,14 @@ class ReportsRest extends \OWA\Core\ReportController {
          */
         $totals = $this->resultSetManager( $over + array( 'dimensions' => '', 'sort' => '' ) )->getResults();
 
-        if ( ! $dims || empty( $rs->resultsRows ) ) {
+        /*
+         * With no rows of its own, a query has nothing to match -- except a
+         * trend, whose comparison is a line of its own (CompareMerger): "this
+         * week" on a quiet Sunday morning still draws last week.
+         */
+        $trend = (bool) array_intersect( $dims, array_keys( \OWA\Module\Base\Classes\CompareMerger::TIME_AXIS ) );
+
+        if ( ! $dims || ( empty( $rs->resultsRows ) && ! $trend ) ) {
 
             return \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $totals, array(),
                 array( $rsm->timePeriod->getStartDate()->getYyyymmdd(), $rsm->timePeriod->getEndDate()->getYyyymmdd() ),
