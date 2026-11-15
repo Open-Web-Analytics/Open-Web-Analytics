@@ -1088,6 +1088,14 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertSame( $trend, \OWA\Core\ConfiguredReport::trendQuery( $trend, $week ) );
         $this->assertSame( $trend, \OWA\Core\ConfiguredReport::trendQuery( $trend, null ) );
 
+        // This week on its first day, This month on the 1st: one day queried,
+        // an axis of a week or a month, so by day.
+        foreach ( array( '20261121', '20261130' ) as $axisEnd ) {
+
+            $this->assertSame( $trend, \OWA\Core\ConfiguredReport::trendQuery( $trend,
+                self::period( '20261115', '20261115', $axisEnd ) ), "axis to $axisEnd" );
+        }
+
         $broken = \OWA\Core\ConfiguredReport::trendQuery(
             array( 'dimensions' => 'date, medium', 'sort' => 'date-' ), $day );
 
@@ -1098,6 +1106,33 @@ final class ReportDefinitionFormatTest extends TestCase
         $months = array( 'dimensions' => 'yearMonth', 'sort' => 'yearMonth' );
 
         $this->assertSame( $months, \OWA\Core\ConfiguredReport::trendQuery( $months, $day ) );
+    }
+
+    /**
+     * By the axis, not the dates queried. On its first day "this week" and
+     * "this month" query one day, and their axis is the week or the month:
+     * by hour, the day's hours sat in the first 24 of 168. Today is by hour.
+     */
+    public function testAOneDayStartOfAWeekOrMonthIsByDay(): void
+    {
+        $trend = array( 'metrics' => 'sessions', 'dimensions' => 'date', 'sort' => 'date' );
+
+        $cases = array(
+            array( 'this_week',  '2026-11-15', 'date' ),     // a Sunday
+            array( 'this_month', '2026-11-01', 'date' ),
+            array( 'this_year',  '2026-01-01', 'date' ),
+            array( 'today',      '2026-11-15', 'dateHour' ),
+            array( 'yesterday',  '2026-11-16', 'dateHour' ),
+        );
+
+        foreach ( $cases as list( $name, $today, $x ) ) {
+
+            $tp      = new \OWA\Module\Base\Classes\TimePeriod();
+            $tp->now = ( new DateTimeImmutable( $today . ' 08:15' ) )->getTimestamp();
+            $tp->set( $name );
+
+            $this->assertSame( $x, \OWA\Core\ConfiguredReport::trendQuery( $trend, $tp )['dimensions'], "$name on $today" );
+        }
     }
 
     /**
@@ -1174,7 +1209,7 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /** A stand-in for a TimePeriod: only its two dates are read. */
-    private static function period( string $start, string $end ): object
+    private static function period( string $start, string $end, ?string $axisEnd = null ): object
     {
         $date = function ( string $yyyymmdd ) {
             return new class( $yyyymmdd ) {
@@ -1183,10 +1218,11 @@ final class ReportDefinitionFormatTest extends TestCase
             };
         };
 
-        return new class( $date( $start ), $date( $end ) ) {
-            public function __construct( private object $s, private object $e ) {}
+        return new class( $date( $start ), $date( $end ), $axisEnd ?? $end ) {
+            public function __construct( private object $s, private object $e, private string $a ) {}
             public function getStartDate() { return $this->s; }
             public function getEndDate() { return $this->e; }
+            public function getAxisEndDate() { return $this->a; }
         };
     }
 

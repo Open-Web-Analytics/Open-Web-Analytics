@@ -511,10 +511,14 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     /**
      * A trend's query for the period being reported on.
      *
-     * Over one day a trend by `date` is a single point, so it is charted by
-     * hour: `date` becomes `dateHour` as the x dimension and in a sort that
-     * names it. A breakdown after the x dimension, and a trend over anything
-     * but `date`, are left as they are.
+     * When the chart's axis is one day, a trend by `date` is a single point,
+     * so it is charted by hour: `date` becomes `dateHour` as the x dimension
+     * and in a sort that names it. A breakdown after the x dimension, and a
+     * trend over anything but `date`, are left as they are.
+     *
+     * The AXIS, not the dates queried: on a Sunday "this week" is one day,
+     * but its axis is the whole week (TimePeriod::getAxisEndDate()), and by
+     * hour that put today's hours in the first 24 of 168.
      *
      * @param  array       $query  a trend widget's query
      * @param  object|null $period the report's TimePeriod
@@ -522,8 +526,14 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      */
     public static function trendQuery( array $query, $period ) {
 
-        if ( ! $period
-             || $period->getStartDate()->getYyyymmdd() !== $period->getEndDate()->getYyyymmdd() ) {
+        if ( ! $period ) {
+
+            return $query;
+        }
+
+        $start = $period->getStartDate()->getYyyymmdd();
+
+        if ( $start !== $period->getEndDate()->getYyyymmdd() || $start !== $period->getAxisEndDate() ) {
 
             return $query;
         }
