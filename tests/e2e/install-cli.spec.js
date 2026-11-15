@@ -39,8 +39,8 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
         expect(prepared.db_name).toBe(INFO.scratch_db_cli);
 
         // 2. Run the real CLI installer. cli.php parses key=value args and maps
-        //    cmd=install -> base.installCli. The admin password becomes the
-        //    config's OWA_DB_PASSWORD (so we assert the USER exists, not a pass).
+        //    cmd=install -> base.installCli. The admin password is generated
+        //    and printed once (so we assert the USER exists, not a pass).
         const repoRoot = path.join(__dirname, '..', '..');
         const out = execFileSync(
             'php',

@@ -117,9 +117,13 @@ final class InstallLastStepTest extends TestCase
         $this->assertStringNotContainsString("'Check the database settings in ' . \$config_file", $env);
     }
 
-    public function testTheCliInstallNeverUsesTheDatabasePassword(): void
+    /** cmd=install generates the admin's password and prints it once; it takes none. */
+    public function testTheCliInstallGeneratesTheAdminPassword(): void
     {
-        $this->assertStringNotContainsString("get('base', 'db_password')",
-            $this->source('modules/Base/Controller/InstallCli.php'));
+        $src = $this->source('modules/Base/Controller/InstallCli.php');
+
+        $this->assertStringNotContainsString("get('base', 'db_password')", $src);
+        $this->assertStringNotContainsString("getParam('password')", $src);
+        $this->assertMatchesRegularExpression("/createAdminUser\\([^;]*, ''\\s*\\)/", $src);
     }
 }

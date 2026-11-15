@@ -37,19 +37,6 @@ class InstallCli extends \OWA\Core\Controller\Cli {
         return parent::__construct($params);
     }
 
-    /** A password given must be one that can be changed to: at least 6 characters. */
-    public function validate()
-    {
-        if ( (string) $this->getParam('password') !== '' ) {
-
-            $this->addValidation('password_length', $this->getParam('password'), 'stringLength', [
-                'operator' => '>=',
-                'length'   => 6,
-                'errorMsg' => 'The password must be at least 6 characters.',
-            ]);
-        }
-    }
-
     function action() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -70,20 +57,19 @@ class InstallCli extends \OWA\Core\Controller\Cli {
             if ($status === true) {
 
                 /*
-                 * The admin's password is password=, or one generated here and
-                 * printed once. It used to be the database password from
-                 * owa-config.php, so whoever could read that file could sign in
-                 * as the admin.
+                 * The admin's password is generated here and printed once. It
+                 * used to be the database password from owa-config.php, so
+                 * whoever could read that file could sign in as the admin.
                  *
                  * The admin, the first site and the install-complete flag are
                  * saved together or not at all (InstallManager::finishInstall()).
                  */
-                $password = (string) $this->getParam('password');
-                $created  = '';
+                $created = '';
 
-                $site_id = $im->finishInstall( function () use ( $im, $password, &$created ) {
+                $site_id = $im->finishInstall( function () use ( $im, &$created ) {
 
-                    $created = $im->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $password );
+                    // No password: createAdminUser() generates one and returns it.
+                    $created = $im->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), '' );
 
                     return $im->createDefaultSite(
                             $this->getParam('domain'),
@@ -102,7 +88,7 @@ class InstallCli extends \OWA\Core\Controller\Cli {
 
                 $this->e->notice('Install Completed.');
 
-                if ( $created && $password === '' ) {
+                if ( $created ) {
 
                     echo sprintf( "Admin password (generated, shown once): %s\n", $created );
                 }
