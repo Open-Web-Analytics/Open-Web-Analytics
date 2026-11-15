@@ -12,6 +12,8 @@ return [
 	['domain' => 'reddit'],
 	['domain' => 'tiktok'],
 	['domain' => 'threads.net'],
+	['domain' => 'threads.com'],
+	['domain' => 'com.laurencedawson.reddit_sync'],
 	['domain' => 'bsky.app'],
 	['domain' => 'mastodon.social'],
 	['domain' => 'tumblr'],
