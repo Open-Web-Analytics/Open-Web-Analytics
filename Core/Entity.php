@@ -665,7 +665,13 @@ class Entity {
      *
      */
     function update($where = '') {
-        
+
+        $key   = empty( $where ) ? 'id' : $where;
+        $value = $this->get( $key );
+
+        // Read before the UPDATE is built: the Db object builds one statement at a time.
+        $before = $this->storedRowsIfCached( $key, $value );
+
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->updateTable($this->getTableName());
         
@@ -697,18 +703,13 @@ class Entity {
             }
         }
         
-        if(empty($where)):
-            $id = $this->get('id');
-            $db->where('id', $id);
-            
-        else:
-            $db->where($where, $this->get($where));
-        endif;
-        
+        $db->where( $key, $value );
+
         // Persist object
         $status = $db->executeQuery();
         // Add to Cache
         if ($status === true) {
+            $this->forgetCached( $before );
             $this->addToCache();
             $this->dirty = [];
         }
@@ -725,7 +726,13 @@ class Entity {
      * @return boolean
      */
     function partialUpdate($named_properties, $where) {
-        
+
+        $key   = empty( $where ) ? 'id' : $where;
+        $value = $this->get( $key );
+
+        // Read before the UPDATE is built: the Db object builds one statement at a time.
+        $before = $this->storedRowsIfCached( $key, $value );
+
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->updateTable($this->getTableName());
         
@@ -736,21 +743,76 @@ class Entity {
             }
         }
         
-        if(empty($where)):
-            $db->where('id', $this->get('id'));
-        else:
-            $db->where($where, $this->get($where));
-        endif;
-        
+        $db->where( $key, $value );
+
         // Persist object
         $status = $db->executeQuery();
         // Add to Cache
         if ($status == true) {
+            $this->forgetCached( $before );
             $this->addToCache();
             $this->dirty = [];
         }
         
         return $status;
+    }
+
+    /**
+     * The rows as stored that a write by $col = $value is about to change, or
+     * none when this entity is not cached.
+     *
+     * @param string $col
+     * @param mixed  $value
+     * @return array[]
+     */
+    protected function storedRowsIfCached( $col, $value ) {
+
+        // Db::where() drops an empty value, which would read the whole table.
+        if ( ! $this->isCachable() || \OWA\Core\Lib::isEmpty( $value ) ) {
+
+            return array();
+        }
+
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( $this->getTableName() );
+        $db->selectColumn( '*' );
+        $db->where( $col, $value );
+
+        return (array) $db->getAllRows();
+    }
+
+    /**
+     * Drop every cached copy of these rows.
+     *
+     * getByColumn() caches a row under the column it was looked up by, as
+     * column . value: a site loaded by site_id and by id is cached twice. A
+     * write used to refresh or drop the id entry only, so the copy under
+     * site_id kept the old values -- an archived Profile still active, a
+     * deleted one still loading -- until it expired, an hour later with a
+     * cache that outlives the request. Every column of each row is dropped,
+     * since any of them can have been the one a lookup used.
+     *
+     * @param array[] $rows as stored, before the write
+     */
+    protected function forgetCached( array $rows ) {
+
+        if ( ! $rows || ! $this->isCachable() ) {
+
+            return;
+        }
+
+        $cache = \OWA\Core\CoreAPI::cacheSingleton();
+
+        foreach ( $rows as $row ) {
+
+            foreach ( (array) $row as $col => $value ) {
+
+                if ( is_scalar( $value ) && (string) $value !== '' ) {
+
+                    $cache->remove( $this->getTableName(), $col . $value );
+                }
+            }
+        }
     }
     
     
@@ -774,6 +836,8 @@ class Entity {
             return false;
         }
 
+        $before = $this->storedRowsIfCached( $col, $value );
+
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->deleteFrom($this->getTableName());
         
@@ -784,9 +848,9 @@ class Entity {
         // Delete from Cache
         if ( $status ){
             if ($this->isCachable()) {
-                \OWA\Core\CoreAPI::debug('about to remove from cache');
                 $cache = \OWA\Core\CoreAPI::cacheSingleton();
                 $cache->remove($this->getTableName(), $col.$value);
+                $this->forgetCached( $before );
             }
         }
         

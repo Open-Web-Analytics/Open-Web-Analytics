@@ -37,7 +37,10 @@ final class InstanceInfoCliTest extends TestCase
      */
     private function report(string $extra = ''): string
     {
-        $cmd = escapeshellarg(PHP_BINARY) . ' '
+        // Its cache in a directory of the suite's (owa_test_child_cache_dir()).
+        $cmd = 'OWA_PROBE_CONSTANTS=' . escapeshellarg(json_encode(['OWA_CACHE_DIR' => owa_test_child_cache_dir()])) . ' '
+             . escapeshellarg(PHP_BINARY) . ' '
+             . '-d auto_prepend_file=' . escapeshellarg(__DIR__ . '/fixtures/role_constants_prepend.php') . ' '
              . escapeshellarg($this->root() . '/cli.php')
              . ' cmd=instance-info' . ($extra ? ' ' . $extra : '') . ' 2>&1';
 

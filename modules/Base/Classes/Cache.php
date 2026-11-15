@@ -176,6 +176,13 @@ class Cache {
         $id = $this->hash($key);
         //unset($this->cache[$collection][$id]);
         $this->warm->remove( $collection, $id );
+
+        // Not written at the end of the request either: persistCache() would
+        // write what the warm cache now holds for it, which is nothing.
+        if ( isset( $this->dirty_objs[ $collection ] ) ) {
+
+            $this->dirty_objs[ $collection ] = array_diff( $this->dirty_objs[ $collection ], array( $id ) );
+        }
         
         $cold = $this->getColdCache();
         
@@ -202,8 +209,16 @@ class Cache {
 	            foreach ($this->dirty_objs as $collection => $ids) {
 	                
 	                foreach ($ids as $id) {
-		                
-	                    $cold->set( $collection, $id, $this->warm->get( $collection, $id ) );
+
+	                    $value = $this->warm->get( $collection, $id );
+
+	                    // Gone from the warm cache: nothing to keep.
+	                    if ( $value === null ) {
+
+	                        continue;
+	                    }
+
+	                    $cold->set( $collection, $id, $value );
 	                    $this->statistics['persisted']++;
 	                }
 	            }
