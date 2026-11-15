@@ -104,7 +104,6 @@ final class InstallLastStepTest extends TestCase
     public function testInstallerPagesShowPathsRelativeToOwa(): void
     {
         $shown = new ReflectionMethod(\OWA\Module\Base\Classes\EnvironmentCheck::class, 'shown');
-        $shown->setAccessible(true);
 
         $this->assertSame('owa-data/logs/', $shown->invoke(null, \OWA\Core\Env::root() . '/owa-data/logs/', true));
         $this->assertSame('owa-config.php', $shown->invoke(null, \OWA\Core\Env::root() . '/owa-config.php', true));
