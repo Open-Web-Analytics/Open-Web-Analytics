@@ -16,7 +16,7 @@ require( '../../modules/Base/src/reporting/v1/owa.areachart.js' );
 /**
  * A trend's x axis runs the whole period, not the rows.
  *
- * Today by hour runs to 11pm, and This week, This month, Quarter to date and
+ * Today by hour runs to 11pm, and This week, This month, This quarter and
  * This year run to the last day of the week, month, quarter or year. The line
  * stops at today, or at the hour it is now.
  */

@@ -256,13 +256,11 @@ export function initialState( config ) {
  * a relative comparison's are worked out from the period. A Custom date range
  * keeps whatever dates it holds.
  *
- * A comparison is worked out over the preset's axisEndDate, as on the server
- * (TimePeriod::getCompareFromMap()): "this week" on a Sunday is compared to
- * the whole week before.
+ * A preset's dates run to its axisEndDate, and its comparison is worked out
+ * over them, as on the server (TimePeriod::getCompareFromMap()): "this week"
+ * on a Sunday is the 15th to the 21st, compared to the whole week before.
  */
 export function settle( state, presets ) {
-
-    let axisEnd = '';
 
     if ( state.preset !== 'custom' ) {
 
@@ -270,14 +268,15 @@ export function settle( state, presets ) {
 
         if ( p ) {
 
-            state.main = [ p.startDate, p.endDate ];
-            axisEnd    = p.axisEndDate || '';
+            // The whole period, not the days so far: "this week" is Sunday to
+            // Saturday on the button, in the fields and on the calendar.
+            state.main = [ p.startDate, p.axisEndDate || p.endDate ];
         }
     }
 
     if ( state.cmpKey !== 'custom' || ! state.cmp[0] || ! state.cmp[1] ) {
 
-        state.cmp = compareRange( state.cmpKey !== 'custom' ? state.cmpKey : 'previous_period', state.main[0], axisEnd || state.main[1] ) || [ '', '' ];
+        state.cmp = compareRange( state.cmpKey !== 'custom' ? state.cmpKey : 'previous_period', state.main[0], state.main[1] ) || [ '', '' ];
     }
 
     return state;
