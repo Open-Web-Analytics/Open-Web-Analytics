@@ -39,7 +39,7 @@ final class TemplateLatentVarTest extends TestCase
             /** @var array<int, array<string, mixed>> every makeApiLink() param set, in order */
             public array $apiCalls = [];
 
-            function makeApiLink($params = array(), $add_state = false) {
+            function makeApiLink($params = array(), $add_state = false, $method = 'GET') {
 
                 $this->apiCalls[] = $params;
                 return 'API?sort=' . ($params['sort'] ?? '<none>');

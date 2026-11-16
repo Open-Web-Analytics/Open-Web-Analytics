@@ -551,11 +551,16 @@ class Template extends TemplateEngine {
         return $this->makeLink( $params, true, $this->config['rest_api_url'] );
     }
 
-    function makeApiLink($params = array(), $add_state = false) {
+    /**
+     * A REST link with a nonce for the HTTP method the page sends it with.
+     *
+     * @param string $method GET, POST, DELETE, ...
+     */
+    function makeApiLink($params = array(), $add_state = false, $method = 'GET') {
 
         $url = $this->config['rest_api_url'];
 
-        $params['nonce'] = \OWA\Core\CoreAPI::createRestApiNonce( $params['version'], $params['module'], $params['do'] );
+        $params['nonce'] = \OWA\Core\CoreAPI::createRestApiNonce( $params['version'], $params['module'], $params['do'], $method );
 
         return $this->makeLink($params, $add_state, $url);
     }

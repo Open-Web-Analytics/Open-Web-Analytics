@@ -3019,9 +3019,21 @@ class CoreAPI {
         return $nonce;
     }
     
-    public static function createRestApiNonce( $version, $module, $do ) {
-        
-        return self::createNonce( $version . $module . $do );
+    /**
+     * A nonce for one REST route and one HTTP method: one minted for a GET of
+     * a route is not accepted on a POST or DELETE of it.
+     *
+     * @param string $method GET, POST, DELETE, ...
+     */
+    public static function createRestApiNonce( $version, $module, $do, $method = 'GET' ) {
+
+        return self::createNonce( self::restApiNonceAction( $version, $module, $do, $method ) );
+    }
+
+    /** What a REST nonce is minted for and checked against (Controller::doAction()). */
+    public static function restApiNonceAction( $version, $module, $do, $method ) {
+
+        return strtoupper( (string) $method ) . ' ' . $version . $module . $do;
     }
 
     public static function saltedHash( $data, $scheme, $hash_type = 'md5' ) {
