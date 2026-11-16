@@ -58,14 +58,18 @@ class OverlayToken {
 
     /**
      * Request parameters a token is also bound to, beside its action and
-     * resource: the Profile and Property, and what it may ask of them.
+     * resource: the Profile and Property, what it may ask of them, and the
+     * dates it may ask about. A key absent when the token was minted must be
+     * absent from the request.
      *
      * It was bound to the constraints alone, so for five minutes it answered
      * any query with those constraints -- any Property the minting user could
      * see, any metrics, any dimensions. It sits in the URL fragment on the
      * tracked site, where any other script on that page can read it.
      */
-    const SCOPE = array( 'siteId', 'propertyId', 'metrics', 'dimensions' );
+    const SCOPE = array( 'siteId', 'propertyId', 'metrics', 'dimensions',
+        'period', 'startDate', 'endDate', 'startTime', 'endTime',
+        'compare', 'compareStartDate', 'compareEndDate' );
 
     /**
      * Mints a token authorising exactly one action on one resource.
