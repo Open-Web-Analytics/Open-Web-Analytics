@@ -59,6 +59,18 @@ final class ScheduleCliTest extends CliControllerTestCase
         return $m->invokeArgs($ctrl, $args);
     }
 
+    /**
+     * Midday today in the install's timezone. A diagnosis of a @daily job
+     * given the real time reads as "due, within the grace" in the first
+     * JobStatus::MIN_GRACE seconds after midnight.
+     */
+    private function middayToday(): int
+    {
+        $tz = new \DateTimeZone(\OWA\Module\Base\Classes\JobStatus::timezone());
+
+        return (new \DateTimeImmutable('today 12:00', $tz))->getTimestamp();
+    }
+
     private function runner(array $params = []): object
     {
         return new \OWA\Module\Base\Controller\ScheduleRunCli($params);
@@ -906,7 +918,7 @@ final class ScheduleCliTest extends CliControllerTestCase
      */
     public function testDiagnosisBlamesTheDispatcherOnlyByElimination()
     {
-        $now  = time();
+        $now  = $this->middayToday();
         $long_ago = $now - (40 * 86400);
 
         $row = [
@@ -931,7 +943,7 @@ final class ScheduleCliTest extends CliControllerTestCase
      */
     public function testDiagnosisDoesNotBlameTheDispatcherWhenAnotherJobJustRan()
     {
-        $now      = time();
+        $now      = $this->middayToday();
         $long_ago = $now - (40 * 86400);
 
         $row = [
@@ -953,7 +965,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     /** A failing job is reported as failing, with when and why. */
     public function testDiagnosisReportsAFailingJob()
     {
-        $now      = time();
+        $now      = $this->middayToday();
         $long_ago = $now - (40 * 86400);
 
         $row = [
@@ -976,7 +988,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     /** A failing job's diagnosis says its retries back off, not that it runs at every tick. */
     public function testDiagnosisOfAFailingJobDescribesTheBackOff()
     {
-        $now      = time();
+        $now      = $this->middayToday();
         $long_ago = $now - (40 * 86400);
 
         $row = [
@@ -999,7 +1011,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     /** A first run that never finished has no last_finished_at at all, and is reported. */
     public function testDiagnosisReportsAFirstRunThatNeverFinished()
     {
-        $now      = time();
+        $now      = $this->middayToday();
         $long_ago = $now - (40 * 86400);
 
         $row = [
@@ -1115,7 +1127,7 @@ final class ScheduleCliTest extends CliControllerTestCase
     /** A crashed run is distinguishable from a failed one. */
     public function testDiagnosisReportsARunThatNeverFinished()
     {
-        $now      = time();
+        $now      = $this->middayToday();
         $long_ago = $now - (40 * 86400);
 
         $row = [
