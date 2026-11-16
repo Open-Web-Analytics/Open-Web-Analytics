@@ -400,7 +400,62 @@ installer's select added, `https://www.example.com`. Update088 removes a
 leading `http://` or `https://` and trailing slashes from `owa_site.domain` and
 `owa_property.domain`; its down() puts each value back. A domain typed or sent
 with a scheme (the settings screens, `POST /v1/sites`, `cmd=add-site`, the
-installer) is stored without it.
+installer) is stored without it. A heatmap opens its page on the scheme and
+host the page's clicks recorded, and on the domain over https when none did.
+
+### The API key and request signature are refused
+
+1.x signed a REST request in with the user's API key (`apiKey`, or the
+`X-API-KEY` header) and an HMAC of the request URL (`signature`, or
+`X-SIGNATURE`). **2.0 accepts neither.** A request that carries one is answered
+401 with a message naming application passwords, and is not signed in by any
+other credential it also carries.
+
+**Instead.** An application password, sent in the `Authorization` header
+(`Bearer <token>`, or Basic with the user name and the token). Each user makes
+them under My Preferences → Application passwords, or with
+`php cli.php cmd=app-password-create`; each can be read-only and revoked on its
+own. A script that calls the API with an API key, including a WordPress
+plugin's server-side calls, needs an application password instead.
+
+**Also removed:** the API Key row on the user edit screen, and the `api_key`
+column of `owa_user`, which Update089 drops. Its down() adds the column back
+with every user's key.
+
+### Report periods
+
+The predefined periods are those the date range panel lists: `today`,
+`yesterday`, `this_week`, `last_seven_days`, `last_week`, `last_28_days`,
+`last_thirty_days`, `this_month`, `last_month`, `last_90_days`,
+`quarter_to_date`, `this_year` and `last_year`, and `date_range` with its own
+dates.
+
+| 1.x period | 2.0 |
+|---|---|
+| `same_day_last_week`, `same_week_last_year`, `same_month_last_year` | A report link naming one opens on the default reporting period. The REST API refuses them. |
+| `last_half_hour`, `last_hour`, `last_24_hours`, `time_range` | Refused as not a reporting period, by the report screens and the REST API. |
+
+A `default_reporting_period` setting that names any of them is read as
+`last_seven_days`.
+
+### The command line: exit codes and arguments
+
+`cli.php` exits **0** when a command did what it was asked or declined on
+purpose, **1** when it failed (including a command this server's role does not
+run, and pending schema updates), and **2** when the command line is wrong: no
+`cmd=`, a command that does not exist, an argument the command does not take, or
+a value it cannot read. 1.x exited 1 only for a command line it could not
+parse or one with no `cmd=`, and 0 otherwise.
+
+A command takes only the arguments its `usage()` declares. Given any other, it
+does nothing, prints which it does not take, and exits 2. A scheduled job whose
+`params` in `OWA_SCHEDULED_JOBS` name an argument its command does not take is
+recorded as failed and not run.
+
+These 1.x commands are not in 2.0: `processEventQueue`,
+`flush-processed-events`, `flush-cache`, `clear-field-values`,
+`rederive-dimension-ids`, `backfill-visitor-acquisition`, `repair-geo-encoding`
+and `update-document`.
 
 ### Server roles: `OWA_SERVER_ROLE`
 
@@ -414,7 +469,7 @@ configuration of each.
 | `full` (default) | log.php, index.php, api/, the CLI, install.php | yes | yes |
 | `collector` | log.php, and `cmd=drain-tracker-ingest forward_only=1` | no | none: every beacon is queued, and a queue other than the file queue is required (`OWA_SQS_QUEUE_URL`) |
 | `worker` | the CLI, every command | yes | yes |
-| `console` | index.php, and the CLI commands for users, app passwords, sites, modules, the cache and `schedule-status` | no | yes |
+| `console` | index.php, and the CLI commands for passwords, app passwords, sites, modules and `schedule-status` | no | yes |
 | `api` | api/ | no | yes |
 
 A comma list combines roles (`console,api`). `cmd=server-check` and
@@ -574,8 +629,8 @@ merges. Without one, the error log says `No database driver for <type>`. A
 validator `owa_<name>Validation` is found the same way; nothing reads
 `plugins/validations/`.
 
-**Path and version constants are gone.** 1.x defined these in `owa_env.php`.
-v2.0 defines none of them; `\OWA\Core\Env` answers instead:
+**Path and version constants are gone.** 1.x defined these. v2.0 defines
+none of them; `\OWA\Core\Env` answers instead:
 
 | 1.x constant | v2.0 |
 | --- | --- |
@@ -713,31 +768,6 @@ notice, and nothing in OWA uses `eval()` any more.
 form refuse a key no module declares (in its `settings.php`, `storable` and with
 `install` among its scopes). A module that stored an undeclared key in 1.x must
 declare it.
-
----
-
-### 7. The API key and request signature — REMOVED in v2.0
-
-**What changed.** 1.x signed a REST request in with the user's API key
-(`apiKey`, or the `X-API-KEY` header) and an HMAC of the request URL
-(`signature`, or `X-SIGNATURE`). **v2.0 does not accept either.** A request
-that carries one is answered 401 with a message naming application passwords,
-and is not signed in by any other credential it also carries.
-
-**Why.** The key was long-lived, carried the whole account, travelled in
-URLs, and its signature stayed valid for the rest of the UTC day and was
-computed over a URL built from the request's Host header.
-
-**Instead.** An application password, sent in the `Authorization` header
-(`Bearer <token>`, or Basic with the user name and the token). Each user makes
-them under My Preferences → Application passwords, or with
-`php cli.php cmd=app-password-create`; each can be read-only and revoked on its
-own. A script that calls the API with an API key, including a WordPress
-plugin's server-side calls, needs an application password instead.
-
-**Also removed:** the API Key row on the user edit screen, and the `api_key`
-column of `owa_user`, which Update089 drops. Its down() adds the column back
-with every user's key.
 
 ---
 

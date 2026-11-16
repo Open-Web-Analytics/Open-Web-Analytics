@@ -1396,3 +1396,123 @@ describe('the scroll cue', () => {
         expect(frame.style.getPropertyValue('--owa-grid-lead')).toBe('0px');
     });
 });
+
+/**
+ * A compared grid lists the rows of both periods (ReportsRest): the period's
+ * own, then the rows only the comparison has. In those a count is 0 and
+ * changed by -100%, and any other metric has no value; the comparison's
+ * number is in the change's title.
+ */
+describe('a compared grid\'s rows only the comparison has', () => {
+
+    const COMPARE = { compare: 'previous_period', startDate: '20261001', endDate: '20261031' };
+    const CARD = { compact: true, showExplorerControls: false };
+
+    const metric = (name, value, formatted, compareValue, change) => cell(name, 'metric', value, formatted,
+        { formatted_value: formatted, compare_value: compareValue, compare_formatted_value: compareValue === null ? null : String(compareValue), change });
+
+    // A row of the period, compared.
+    const own = (browser, sessions, was) => ({
+        browserType: cell('browserType', 'dimension', browser),
+        sessions: metric('sessions', sessions, String(sessions), was, was ? (sessions - was) / was : null),
+        bounceRate: metric('bounceRate', 0.5, '50.00%', 0.4, 0.25),
+    });
+
+    // A row only the comparison has, as the server sends it.
+    const only = (browser, was) => ({
+        browserType: cell('browserType', 'dimension', browser),
+        sessions: metric('sessions', 0, '0', was, -1),
+        bounceRate: metric('bounceRate', null, null, 0.3, null),
+    });
+
+    const compared = (rows, extra) => resultSet({
+        rows,
+        rs: Object.assign({
+            compare: COMPARE,
+            relatedMetrics: { 'Site Usage': [
+                { name: 'sessions', label: 'Sessions', metric_type: 'count' },
+                { name: 'bounceRate', label: 'Bounce Rate', metric_type: 'ratio' },
+            ] },
+            aggregates: {
+                sessions: { name: 'sessions', value: 90, formatted_value: '90', compare_value: 120, compare_formatted_value: '120', change: -0.25 },
+                bounceRate: { name: 'bounceRate', value: 0.5, formatted_value: '50.00%', compare_value: 0.4, compare_formatted_value: '40.00%', change: 0.25 },
+            },
+        }, extra || {}),
+    });
+
+    const cells = ($root, i, column) => $root.find('tbody tr.owa_gridRow').eq(i).find('td[data-column="' + column + '"]');
+    const number = ($td) => $td.contents().filter(function () { return this.nodeType === 3; }).first().text().trim();
+
+    test('come after the period\'s own: a count of 0 down 100%, a ratio a dash with no change', () => {
+        const { $root } = draw(compared([own('Chrome', 60, 50), own('Safari', 30, null), only('Firefox', 12)]));
+
+        expect(texts($root.find('tbody tr.owa_gridRow td[data-column="browserType"]'))).toEqual(['Chrome', 'Safari', 'Firefox']);
+
+        const $sessions = cells($root, 2, 'sessions');
+        expect(number($sessions)).toBe('0');
+        expect($sessions.find('.owa_gridChange').hasClass('is-down')).toBe(true);
+        expect($sessions.find('.owa_gridChange').text()).toBe('▼ 100.0%');
+        expect($sessions.find('.owa_gridChange').attr('title')).toMatch(/: 12$/);
+
+        const $bounce = cells($root, 2, 'bounceRate');
+        expect(number($bounce)).toBe('—');
+        expect($bounce.find('.owa_gridChange').hasClass('is-flat')).toBe(true);
+        expect($bounce.find('.owa_gridChange').text()).toBe('—');
+        expect($bounce.find('.owa_gridChange').attr('title')).toMatch(/: 0.3$/);
+
+        expect($root.find('tbody tr.owa_gridRow').eq(2).find('.owa_gridRowNum').text()).toBe('3');
+    });
+
+    test('offer the row\'s actions by its value', () => {
+        const actions = [{ id: 'detail', label: 'Detail', href: '?do=base.report&browserType=__OWA_ROW_browserType__',
+            params: { browserType: 'browserType' }, first: '' }];
+        const { $root } = draw(compared([own('Chrome', 60, 50), only('Firefox', 12)]), { rowActions: actions });
+
+        $root.find('tbody tr.owa_gridRow').eq(1).find('.owa_gridRowActions').trigger('click');
+
+        expect($('.owa_gridRowActionsMenu a').attr('href')).toBe('?do=base.report&browserType=Firefox');
+    });
+
+    test('a card of an empty period lists them, with its total of 0 and no "no data"', () => {
+        const rs = compared([only('Firefox', 12), only('Edge', 3)], {
+            aggregates: { sessions: { name: 'sessions', value: 0, formatted_value: '0', compare_value: 15, compare_formatted_value: '15', change: -1 } },
+        });
+        const { $root } = draw(rs, CARD);
+
+        expect($root.find('.owa_gridEmpty')).toHaveLength(0);
+        expect(texts($root.find('tbody tr.owa_gridRow td[data-column="browserType"]'))).toEqual(['Firefox', 'Edge']);
+        expect(number(cells($root, 0, 'sessions'))).toBe('0');
+        expect(cells($root, 0, 'sessions').find('.owa_gridChange').text()).toBe('▼ 100.0%');
+
+        expect($root.find('[data-ui="card-explain"]').text()).toBe('Sessions by Browser');
+        expect($root.find('[data-ui="card-total"] .owa_cardTotalNumber').text()).toBe('0');
+        expect($root.find('[data-ui="card-total"] .owa_gridChange').text()).toBe('▼ 100.0%');
+
+        // Every value is 0, so there are no bars to draw against the largest.
+        expect($root.find('.owa_gridBarRow')).toHaveLength(0);
+    });
+
+    test('a card\'s Show more reaches them after the period\'s own', () => {
+        const page = (shown) => {
+            const all = [own('Chrome', 60, 50), own('Safari', 30, 20), only('Firefox', 12), only('Edge', 3)];
+            const rows = all.slice(0, shown);
+            return compared(rows, { resultsPerPage: shown, resultsReturned: rows.length, resultsTotal: all.length,
+                total_pages: Math.ceil(all.length / shown), next: all.length > shown ? 'n' : undefined });
+        };
+
+        const { $root, events } = draw(page(2), CARD);
+        const bar = () => $root.find('[data-ui="grid-show-more"]');
+
+        expect(bar().attr('aria-label')).toBe('Show 2 more rows');
+        bar().trigger('click');
+        expect(events).toEqual([['show_more', 4]]);
+
+        $root.trigger('new_result_set', [page(4)]);
+
+        expect(texts($root.find('tbody tr.owa_gridRow td[data-column="browserType"]'))).toEqual(['Chrome', 'Safari', 'Firefox', 'Edge']);
+        expect(number(cells($root, 3, 'sessions'))).toBe('0');
+        expect(cells($root, 3, 'sessions').find('.owa_gridChange').text()).toBe('▼ 100.0%');
+        expect(bar()).toHaveLength(0);
+        expect($root.children('[data-ui="grid-status"]').text()).toBe('Showing 4 of 4 rows');
+    });
+});

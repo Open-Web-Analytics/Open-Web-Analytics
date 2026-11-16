@@ -2669,19 +2669,71 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * The rows of the groups the metric constraints keep, as a WHERE test:
      * array( SQL, bindings ), or null when there are no dimensions to group by.
      *
-     * The grid's query -- its FROM, WHERE, GROUP BY and HAVING -- selecting each
-     * group's key, and the row's key IN those. The key holds every dimension,
-     * each marked as a value or as NULL, so a group whose dimension is unset is
-     * kept like any other and never matches one holding ''.
+     * The row's key (groupKeySql()) IN the keys of the grid's own groups
+     * (groupKeysQuery()), HAVING included.
      *
      * @param object $bm the base entity
      * @return array|null
      */
     function keptGroupsCondition( $bm ) {
 
+        $key   = $this->groupKeySql();
+        $inner = $key ? $this->groupKeysQuery() : null;
+
+        if ( ! $inner ) {
+
+            return null;
+        }
+
+        return array( sprintf( '%s IN (SELECT owa_group_key FROM (%s) owa_kept)', $key, $inner[0] ), $inner[1] );
+    }
+
+    /**
+     * A row's group as SQL: every dimension's column, each marked as a value
+     * ('v' and the value) or as NULL ('n'), joined by CHAR(31). A group whose
+     * dimension is unset has a key like any other, and never the key of one
+     * holding ''. Null with no dimensions.
+     *
+     * @return string|null
+     */
+    function groupKeySql() {
+
+        $parts = array();
+
+        foreach ( $this->groupColumns() as $column ) {
+
+            $parts[] = sprintf( "COALESCE(CONCAT('v', %s), 'n')", $column );
+        }
+
+        return $parts ? sprintf( 'CONCAT_WS(CHAR(31), %s)', implode( ', ', $parts ) ) : null;
+    }
+
+    /**
+     * A result row's group key, as groupKeySql() computes it in SQL.
+     *
+     * @param array $row        a row of resultsRows: name => cell
+     * @param array $dimensions the dimensions it is grouped by
+     * @return string
+     */
+    public static function groupKeyOf( array $row, array $dimensions ) {
+
+        $parts = array();
+
+        foreach ( $dimensions as $name ) {
+
+            $value   = isset( $row[ $name ] ) && is_array( $row[ $name ] ) ? $row[ $name ]['value'] : null;
+            $parts[] = $value === null ? 'n' : 'v' . (string) $value;
+        }
+
+        return implode( "\x1f", $parts );
+    }
+
+    /** The columns of the query's dimensions, in their order. */
+    private function groupColumns() {
+
         $columns = array();
 
-        foreach ( $this->dimensions as $dimension_name ) {
+        foreach ( (array) $this->dimensions as $dimension_name ) {
 
             $dim = $this->lookupDimension( $dimension_name, $this->baseEntity );
 
@@ -2691,24 +2743,32 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             }
         }
 
-        if ( ! $columns ) {
+        return $columns;
+    }
+
+    /**
+     * The query's groups as SQL selecting each one's key (groupKeySql()) as
+     * owa_group_key: its FROM, WHERE, GROUP BY and HAVING, without the
+     * pagination. array( SQL, bindings ), or null when there are no
+     * dimensions to group by or no table to read.
+     *
+     * @return array|null
+     */
+    function groupKeysQuery() {
+
+        $bm  = $this->baseEntity ?: $this->chooseBaseEntity();
+        $key = $bm ? $this->groupKeySql() : null;
+
+        if ( ! $key ) {
 
             return null;
         }
 
-        $parts = array();
-
-        foreach ( $columns as $column ) {
-
-            $parts[] = sprintf( "COALESCE(CONCAT('v', %s), 'n')", $column );
-        }
-
-        $key = sprintf( 'CONCAT_WS(CHAR(31), %s)', implode( ', ', $parts ) );
-
+        // The alias written in, not passed: passed, it is escaped, which opens a connection.
         $inner = \OWA\Core\CoreAPI::dbFactory();
-        $inner->selectColumn( $key, 'owa_group_key' );
+        $inner->selectColumn( $key . ' AS owa_group_key' );
 
-        foreach ( $columns as $column ) {
+        foreach ( $this->groupColumns() as $column ) {
 
             $inner->groupBy( $column );
         }
@@ -2737,7 +2797,128 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         $sql = $inner->generateSelectQuerySql();
 
-        return array( sprintf( '%s IN (SELECT owa_group_key FROM (%s) owa_kept)', $key, $sql ), $inner->getBindings() );
+        return array( $sql, $inner->getBindings() );
+    }
+
+    /**
+     * How many groups -- rows, unpaged -- the query has.
+     *
+     * @return int
+     */
+    function countGroups() {
+
+        $inner = $this->groupKeysQuery();
+
+        if ( ! $inner ) {
+
+            return 0;
+        }
+
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $row = $db->withSelectTimeLimit( self::QUERY_SECONDS, function () use ( $db, $inner ) {
+            return $db->get_row( sprintf( 'SELECT COUNT(*) AS n FROM (%s) owa_groups', $inner[0] ), $inner[1] );
+        } );
+
+        return (int) ( $row['n'] ?? 0 );
+    }
+
+    /** @var string[]|null the group keys the rows are restricted to; see restrictToGroups() */
+    private $group_keys = null;
+
+    /** @var ResultSetManager|null the query whose groups the rows leave out; see excludeGroupsOf() */
+    private $excluded_groups_of = null;
+
+    /** @var array|null [ offset, count ] of the rows to read; see setRowWindow() */
+    private $row_window = null;
+
+    /** @var bool whether the totals are left unread; see setRowsOnly() */
+    private $rows_only = false;
+
+    /**
+     * Only the rows of these groups (groupKeyOf()). A NULL dimension value is
+     * a key like any other, and a request's own filter on the dimension stays.
+     *
+     * @param string[] $keys
+     */
+    function restrictToGroups( array $keys ) {
+
+        $this->group_keys = array_values( array_unique( array_map( 'strval', $keys ) ) );
+    }
+
+    /**
+     * Only the rows of groups $other has none of: by its FROM, WHERE and
+     * HAVING (groupKeysQuery()), over all its rows, not a page of them.
+     *
+     * @param ResultSetManager $other grouped by the same dimensions
+     */
+    function excludeGroupsOf( ResultSetManager $other ) {
+
+        $this->excluded_groups_of = $other;
+    }
+
+    /**
+     * Read $count rows from row $offset, with no read-ahead: the result set
+     * holds all of them, and has no next page.
+     *
+     * @param int $offset
+     * @param int $count  at least 1
+     */
+    function setRowWindow( $offset, $count ) {
+
+        $this->row_window = array( max( 0, (int) $offset ), max( 1, (int) $count ) );
+        $this->limit      = $this->row_window[1];
+        $this->page       = 1;
+    }
+
+    /** Leave the totals (aggregates) unread: the caller uses the rows only. */
+    function setRowsOnly( $rows_only = true ) {
+
+        $this->rows_only = (bool) $rows_only;
+    }
+
+    /**
+     * restrictToGroups() and excludeGroupsOf() as WHERE tests on the rows'
+     * query.
+     *
+     * @param object $db
+     */
+    function applyGroupConditions( $db ) {
+
+        if ( $this->group_keys === null && ! $this->excluded_groups_of ) {
+
+            return;
+        }
+
+        $key = $this->groupKeySql();
+
+        if ( ! $key ) {
+
+            return;
+        }
+
+        if ( $this->group_keys !== null ) {
+
+            if ( $this->group_keys ) {
+
+                $db->whereSql( 'owa_group_keys', sprintf( '%s IN (%s)', $key,
+                    implode( ', ', array_fill( 0, count( $this->group_keys ), '?' ) ) ), $this->group_keys );
+
+            } else {
+
+                $db->whereSql( 'owa_group_keys', '1 = 0' );
+            }
+        }
+
+        if ( $this->excluded_groups_of ) {
+
+            $inner = $this->excluded_groups_of->groupKeysQuery();
+
+            if ( $inner ) {
+
+                $db->whereSql( 'owa_excluded_groups', sprintf( '%s NOT IN (SELECT owa_group_key FROM (%s) owa_excluded)',
+                    $key, $inner[0] ), $inner[1] );
+            }
+        }
     }
 
     function computeDimensionalRows( $bm ) {
@@ -2761,6 +2942,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         
         $this->applyConstraints();
 
+        $this->applyGroupConditions( $this->db );
+
         // set from table
         if ( $this->segment ) {
             
@@ -2783,8 +2966,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             $this->resultSet->setPage( $this->page );
         }
         
+        if ( $this->row_window ) {
+
+            // setRowWindow(): these rows, no read-ahead.
+            $this->db->limit( $this->row_window[1] );
+
         // if there is a limit set then respect the limit and try to paginate the results by over querying
-        if ( $this->getLimit() ) {
+        } elseif ( $this->getLimit() ) {
 	        
             // query for more than we need
             \OWA\Core\CoreAPI::debug('applying limit of: ' . $this->getLimit() );
@@ -2817,7 +3005,11 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
           $this->db->limit( $this->getLimit() );
         }
         
-        if ( ! empty( $this->page ) ) {
+        if ( $this->row_window ) {
+
+            $this->db->offset( $this->row_window[0] );
+
+        } elseif ( ! empty( $this->page ) ) {
 
             $this->db->offset( $this->calculateOffset() );
             
@@ -2900,7 +3092,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             \OWA\Core\CoreAPI::debug("Using $bname as fact table entity for this result set.");
 
             // generate aggregate results
-            $results = $this->computeAggregates( $bm );
+            $results = $this->rows_only ? null : $this->computeAggregates( $bm );
             
             // merge into result set
             if ( $results ) {
