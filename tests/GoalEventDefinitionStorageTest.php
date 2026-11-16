@@ -301,7 +301,17 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $this->assertNotSame( '', $problem( 'Page_View' ), 'event_type compares case-blind: its rows would count as page views' );
         $this->assertNotSame( '', $problem( 'Session_Start' ), 'its row would take the id of the beacon\'s session_start row' );
         $this->assertNotSame( '', $problem( 'FIRST_VISIT' ) );
-        $this->assertNotSame( '', $problem( 'DomStream' ), 'a module\'s event is OWA\'s too' );
+
+        // A module's event is OWA's too: one registered here, so the case holds whichever modules are on.
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+        $s->setMapValue( 'event_processors', \OWA\Core\CoreAPI::trackingDispatchName( 'zz_module_event' ), 'base.processEvent' );
+
+        try {
+            $this->assertNotSame( '', $problem( 'ZZ_Module_Event' ), 'a module\'s event is OWA\'s too' );
+        } finally {
+            $s->setMapValue( 'event_processors', \OWA\Core\CoreAPI::trackingDispatchName( 'zz_module_event' ), null );
+        }
+
         $this->assertSame( array( 7 => 'Page_View_2' ), \OWA\Module\Base\Entity\GoalEventDefinition::eventNames(
             array( array( 'id' => 7, 'property_id' => 1, 'name' => 'Page View' ) ) ), 'renamed from 1.x like click is' );
         $this->assertNotSame( '', $problem( 'has-a-hyphen' ) );
