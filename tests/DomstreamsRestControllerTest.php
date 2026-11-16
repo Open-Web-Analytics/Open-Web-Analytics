@@ -81,12 +81,12 @@ final class DomstreamsRestControllerTest extends RestControllerTestCase
 
         $resp = $this->call(['siteId' => $site['site_id'], 'recording_id' => self::RECORDING]);
 
-        $this->assertSame(201, $resp['status']);
-        $this->assertSame('domstream.domstreamsRest', $resp['view']);
-        $this->assertTrue(class_exists(\OWA\Module\Domstream\View\DomstreamsRest::class));
+        $this->assertEnvelope($resp, 201);
 
         $recording = \OWA\Module\Domstream\Controller\DomstreamsRestController::recording(
             $site['site_id'], self::RECORDING);
+
+        $this->assertSame(json_decode(json_encode($recording), true), $resp['data'], 'the payload is the recording');
 
         $this->assertSame([
             [0, 'm', 10, 10], [7, 'c', 10, 10, 'a', 'buy', ''],

@@ -178,9 +178,11 @@ class ReportsRest extends \OWA\Core\ReportController {
 		 */
 		$response = $this->data['response'] ?? null;
 
+		$status = 201;
+
 		if ( is_object( $response ) && ! empty( $response->request_errors ) ) {
 
-			http_response_code(422);
+			$status = 422;
 
 		} elseif ( is_object( $response ) && ! empty( $response->notReady ) ) {
 
@@ -189,14 +191,10 @@ class ReportsRest extends \OWA\Core\ReportController {
 			 * it asks about is not in a state to answer yet. Not 201 with no
 			 * rows, which is how a real zero looks.
 			 */
-			http_response_code(409);
-
-		} else {
-
-			http_response_code(201);
+			$status = 409;
 		}
 
-		$this->setView( 'base.reportsRest' );
+		$this->restResponse( $status, 'response' );
 	}
 	
     function errorAction() {
