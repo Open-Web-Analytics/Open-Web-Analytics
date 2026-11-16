@@ -42,6 +42,8 @@ class Update062 extends \OWA\Core\Update {
 
     var $is_cli_mode_required = true;
 
+    var $down_does_not_restore = 'the 1.x file queue lines it moved to its update062-v1-queue archive file: they stay there.';
+
     /** The table prefix v1 is read under; a test reads a fixture's. */
     var $prefix = 'owa_';
 
