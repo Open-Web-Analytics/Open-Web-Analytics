@@ -147,7 +147,7 @@ class TrackerIngest {
         }
 
         $map['queue_type'] = $type;
-        $queue = \OWA\Core\Lib::simpleFactory( $implementation[0], $implementation[1], $map );
+        $queue = \OWA\Core\Lib::simpleFactory( $implementation[0], '', $map );
 
         if ( ! $queue instanceof \OWA\Core\IntakeQueue ) {
 

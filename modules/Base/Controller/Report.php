@@ -534,7 +534,7 @@ class Report extends \OWA\Core\AdminController {
         }
 
         $target = \OWA\Core\Lib::simpleFactory(
-            $action_map['class_name'], $action_map['file'], $this->params );
+            $action_map['class_name'], '', $this->params );
 
         if ( ! $target || ! method_exists( $target, 'doAction' ) ) {
 

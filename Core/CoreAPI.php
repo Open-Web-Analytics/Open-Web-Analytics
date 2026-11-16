@@ -1913,7 +1913,7 @@ class CoreAPI {
             return self::actionNotResolved( $action, self::isActionName( $action ) ? 404 : 400 );
         }
 
-        $controller = \OWA\Core\Lib::simpleFactory( $action_map['class_name'], $action_map['file'], $params );
+        $controller = \OWA\Core\Lib::simpleFactory( $action_map['class_name'], '', $params );
 
 		return \OWA\Core\CoreAPI::runController( $controller );
     }
@@ -2170,7 +2170,7 @@ class CoreAPI {
 
         if ( ! ( $message instanceof $class ) ) {
 	        
-            $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+            $event = new \OWA\Module\Base\Classes\Event();
             $event->setProperties( $message );
             $event->setEventType( $event_type );
             
@@ -2787,7 +2787,7 @@ class CoreAPI {
                     }
                     
                     $params['rest_route'] = $route;
-                    $controller = \OWA\Core\Lib::simpleFactory( $route['class_name'], $route['file'], $params );					
+                    $controller = \OWA\Core\Lib::simpleFactory( $route['class_name'], '', $params );					
                     return \OWA\Core\CoreAPI::runController( $controller );
                 
                 } else {
@@ -2916,7 +2916,7 @@ class CoreAPI {
                      && isset( $implementation[1] )
                 ) {
                     \OWA\Core\CoreAPI::debug( 'Queue implementation:', $implementation );
-                    $queues[ $name ] = \OWA\Core\Lib::simpleFactory( $implementation[0], $implementation[1], $map );
+                    $queues[ $name ] = \OWA\Core\Lib::simpleFactory( $implementation[0], '', $map );
 
                 } else {
 

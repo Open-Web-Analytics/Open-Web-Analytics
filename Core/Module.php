@@ -1603,15 +1603,13 @@ abstract class Module {
      * Registers a Web Action and ontroller Implementation
      *
      * @param    $action_name    string    the name of the action used as the value in the 'do' url param
-     * @param    $class_name     string    the name of the controller class
-     * @param    $file            string    the class's file, relative to this module's directory, or ''
-     *
+     * @param    $class_name     string    the name of the controller class, PSR-4 autoloadable
+     * @param    $file           string    ignored: a class file path, which modules written before
+     *                                     PSR-4 still pass
      */
     protected function registerAction( $action_name, $class_name, $file = '' ) {
-		
-		$s = \OWA\Core\CoreAPI::serviceSingleton();
-    	$s->setMapValue( 'actions', $action_name, ['class_name' => $class_name, 'file' => $file === '' ? '' : $this->path . $file ] );
 
+        \OWA\Core\CoreAPI::serviceSingleton()->setMapValue( 'actions', $action_name, array( 'class_name' => $class_name ) );
     }
     
     /**
@@ -1622,20 +1620,20 @@ abstract class Module {
      * @param	 $version		 string	   the version namespace of the route
      * @param    $route__name    string    the name of the action used as the value in the 'do' param of the request
      * @param	 $request_method string	   the HTTP request method.
-     * @param    $class_name     string    the class name of the controller
-     * @param    $file           string    the module path to the file housing the class
-     *
+     * @param    $class_name     string    the class name of the controller, PSR-4 autoloadable
+     * @param    $params         array     the route's configuration, e.g. params_order. A module
+     *                                     written before PSR-4 passes a class file path here and the
+     *                                     configuration after it; the path is ignored.
      */
-    function registerRestApiRoute( $version, $route_name, $request_method, $class_name, $file, $params = [] ) {
-		
-		if ( $file ) {
-		
-			$file = $this->path . $file;				
-		}
-		
-		$s = \OWA\Core\CoreAPI::serviceSingleton();
-		
-		$s->setRestApiRoute( $this->name, $version, $route_name, $request_method, array( 'class_name' => $class_name, 'file' => $file, 'conf' => $params ) );
+    function registerRestApiRoute( $version, $route_name, $request_method, $class_name, $params = [], $legacy_params = [] ) {
+
+        if ( is_string( $params ) ) {
+
+            $params = $legacy_params;
+        }
+
+        \OWA\Core\CoreAPI::serviceSingleton()->setRestApiRoute( $this->name, $version, $route_name, $request_method,
+            array( 'class_name' => $class_name, 'conf' => $params ) );
     }
 
     function registerCliCommand($command, $class) {
@@ -1736,16 +1734,20 @@ abstract class Module {
      *
      * @param    $type	string	the type/category of implementation		actions|event_queues
      * @param    $key  string	the key name of the specific implmentation
-     * @param    $class_name     string    the name of the class
-     * @param    $file           string    the partial path to the file housing the class withing the module dir
-     *
+     * @param    $class_name     string    the name of the class, PSR-4 autoloadable
+     * @param    $params         array     passed to the class's constructor. A module written before
+     *                                     PSR-4 passes a class file path here and the array after it;
+     *                                     the path is ignored.
      */
-    function registerImplementation($type, $key, $class_name, $file, $params = []) {
+    function registerImplementation( $type, $key, $class_name, $params = [], $legacy_params = [] ) {
 
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-        $file = $this->path . $file;
-        $class_info = array($class_name, $file, $params);
-        $s->setMapValue($type, $key, $class_info);
+        if ( is_string( $params ) ) {
+
+            $params = $legacy_params;
+        }
+
+        // The second element was the class file; it is kept, empty, so the shape does not change.
+        \OWA\Core\CoreAPI::serviceSingleton()->setMapValue( $type, $key, array( $class_name, '', $params ) );
     }
 
     /**

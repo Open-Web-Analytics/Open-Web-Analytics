@@ -276,32 +276,20 @@ class Lib {
         return new $class($constructorArguments);
     }
 
+    /**
+     * An instance of a class named in full, which must be autoloadable.
+     *
+     * @param string $class_name
+     * @param string $file_path  ignored: a class file path, which callers written before PSR-4 still pass
+     * @param mixed  $args       the constructor's argument
+     */
     public static function simpleFactory( $class_name, $file_path = '', $args = '' ) {
 
-        /*
-         * PSR-4 FIRST (see factory() above).
-         *
-         * The class name arrives already built -- 'owa_cache' -- so there are
-         * no parts to work from, but the FILE PATH names the directory and the
-         * file names the class: modules/Base/Classes/cache.php is
-         * OWA\Module\Base\Classes\Cache.
-         */
-        if ( $file_path ) {
-
-            $nsClass = self::conventionalClass(
-                dirname( $file_path ), '', basename( $file_path, '.php' ) );
-
-            if ( $nsClass !== null ) {
-                return new $nsClass( $args );
-            }
-        }
-
-        // THEN the name as given, which must already be loadable.
         if ( ! class_exists( $class_name ) ) {
 
             throw new \Exception( sprintf(
-                'No class %s (from %s). A class must be PSR-4 autoloadable; the pre-PSR-4 '
-              . 'owa_* file convention was removed in v2.0 (UPGRADING.md).', $class_name, $file_path ) );
+                'No class %s. A class must be PSR-4 autoloadable; the pre-PSR-4 '
+              . 'owa_* file convention was removed in v2.0 (UPGRADING.md).', $class_name ) );
         }
 
         return new $class_name( $args );
