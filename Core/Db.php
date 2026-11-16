@@ -606,7 +606,6 @@ class Db extends \OWA\Core\Base {
     function _insertQuery() {
 
         $this->resetBindings();
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         $params = $this->_fetchSqlParams('set_values');
 
         $count = count($params);
@@ -631,11 +630,8 @@ class Db extends \OWA\Core\Base {
 
             endif;
         }
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         $this->_setSql(sprintf(OWA_SQL_INSERT_ROW, $this->_sqlParams['table'], $sql_cols, $sql_values));
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         $ret = $this->_query();
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         return $ret;
 
     }

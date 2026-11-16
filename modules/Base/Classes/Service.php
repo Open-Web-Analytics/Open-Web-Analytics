@@ -50,16 +50,9 @@ class Service extends \OWA\Core\Base {
     var $denormalizedDimensions = array();
     var $browscap;
     var $geolocation;
-    var $formatters = array();
     var $restApiRoutes = array();
 
     function __construct() {
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
-
-    }
-
-    function __destruct() {
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
     }
 
     function initializeFramework() {
@@ -74,7 +67,6 @@ class Service extends \OWA\Core\Base {
             $this->_loadEntities();
             $this->_loadMetrics();
             $this->_loadDimensions();
-            $this->_loadFormatters();
             $this->_loadEventProcessors();
             $this->setInit();
 
@@ -464,16 +456,6 @@ class Service extends \OWA\Core\Base {
         }
     }
 
-    function _loadFormatters() {
-
-        foreach ($this->modules as $k => $module) {
-
-            if (is_array($module->formatters)) {
-                $this->formatters = array_merge($this->formatters, $module->formatters);
-            }
-        }
-    }
-
     function _loadEventProcessors() {
 
         $processors = array();
@@ -692,13 +674,6 @@ class Service extends \OWA\Core\Base {
             if (array_key_exists($entity, $this->denormalizedDimensions[$name])) {
                 return $this->denormalizedDimensions[$name][$entity];
             }
-        }
-    }
-
-    function getFormatter($name) {
-
-        if (array_key_exists($name, $this->formatters)) {
-            return $this->formatters[$name];
         }
     }
 

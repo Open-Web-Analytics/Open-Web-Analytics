@@ -77,7 +77,6 @@ class Browscap extends \OWA\Core\Base {
          * without the File Cache module has always done; a process parses a
          * request's agent once (Service::getBrowscap() keeps the result).
          */
-        \OWA\Core\CoreAPI::profile( $this, __FUNCTION__, __LINE__ );
 
         $custom_db = self::regexesFile();
 

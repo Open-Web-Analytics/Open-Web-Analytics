@@ -175,11 +175,7 @@ abstract class Pdo extends \OWA\Core\Db
 
         if ( $this->connection_status == false ) {
 
-            \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
-
             $connected = $this->connect();
-
-            \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
 
             if ( ! $connected ) {
 
@@ -195,8 +191,6 @@ abstract class Pdo extends \OWA\Core\Db
 
         $this->result     = array();
         $this->new_result = false;
-
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
 
         try {
 
@@ -285,8 +279,6 @@ abstract class Pdo extends \OWA\Core\Db
 
             return false;
         }
-
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
 
         $this->last_statement = $statement;
 

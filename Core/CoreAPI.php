@@ -2889,16 +2889,6 @@ class CoreAPI {
     }
 	
 	
-    public static function profile($that = '', $function = '', $line = '', $msg = '') {
-
-        return;
-    }
-
-    public static function profileDisplay() {
-        
-		return;
-    }
-
     public static function getEventDispatch() {
 
 

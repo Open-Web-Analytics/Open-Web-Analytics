@@ -2147,17 +2147,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         if (array_key_exists($type, $this->formatters)) {
 
-            $formatter = $this->formatters[$type];
-
-        } else {
-            $s = \OWA\Core\CoreAPI::serviceSingleton();
-            $formatter = $s->getFormatter($type);
-        }
-
-        // If we found a formatter, use it
-        if (!empty($formatter)) {
-
-            $value = call_user_func($formatter, $value);
+            $value = call_user_func($this->formatters[$type], $value);
         }
 
         return $value;

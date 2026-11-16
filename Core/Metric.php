@@ -445,8 +445,7 @@ class Metric extends \OWA\Core\Base {
      * extends this class -- called setChildMetric() on an object that had no
      * such method. Its 'calculated' type has therefore never worked: supported
      * on paper, fatal on first use, and never registered by anything, so nobody
-     * found out. Held here so any metric can be calculated; CalculatedMetric
-     * keeps only the flag that says it is.
+     * found out. Held here so any metric can be calculated.
      */
     var $child_metrics = array();
 

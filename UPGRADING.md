@@ -749,14 +749,15 @@ Pinned by `tests/ActionResolutionTest.php`.
 - `addAdminPanel()`: use `registerSettingsPage()`.
 - `uninstall()`, which was an empty stub nothing called.
 - `registerMetrics()`, an empty hook.
+- `registerFormatter()`. No module registered a formatter; a result set
+  formats the data types it declares, and a report widget names its column
+  formatters in `formatters`.
+- `_addHandler()`: use `registerEventHandler()`.
 
 **`Caller` methods removed:** `placeHelperPageTags()`,
 `handleHelperPageTagsRequest()`, `handleRequestFromUrl()` and
 `setErrorHandler()`. The tracking tag comes from a Profile's Tracking Tag
 screen, or `CoreAPI::getJsTrackerBundleTag()`.
-
-`registerFormatter()` stays: `ResultSetManager` falls back to a module's
-formatter for a data type it does not format itself.
 
 **Formula metrics removed.** A `calculated` metric declares a `ratio`
 (`numerator`, `denominator`, optional `precision`) or a difference (`minuend`,
