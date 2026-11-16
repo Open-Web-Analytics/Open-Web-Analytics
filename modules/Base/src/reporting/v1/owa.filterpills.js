@@ -144,7 +144,7 @@ OWA.filterPills.split = function ( clause ) {
             var part = {
                 name:  jQuery.trim( clause.slice( 0, at ) ),
                 op:    ops[ i ],
-                value: jQuery.trim( clause.slice( at + ops[ i ].length ) )
+                value: OWA.dataGrid.readConstraintValue( jQuery.trim( clause.slice( at + ops[ i ].length ) ) )
             };
 
             if ( OWA.filterPills.EMPTY_TESTS.hasOwnProperty( part.op + part.value ) ) {
@@ -169,7 +169,8 @@ OWA.filterPills.parse = function ( str ) {
 OWA.filterPills.stringify = function ( filters ) {
 
     return filters.map( function ( f ) {
-        return f.name + f.op + ( OWA.filterPills.EMPTY_TESTS.hasOwnProperty( f.op ) ? '' : f.value );
+        return f.name + f.op + ( OWA.filterPills.EMPTY_TESTS.hasOwnProperty( f.op ) ? ''
+            : OWA.dataGrid.constraintValue( f.value ) );
     } ).join( ',' );
 };
 

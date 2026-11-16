@@ -65,6 +65,32 @@ final class ConstraintRefusalTest extends TestCase
         $this->assertSame('Tom &amp; Jerry', $parsed[0]['value'] ?? null);
     }
 
+    /**
+     * A clause with no operator is refused, not dropped: dropped, the query
+     * ran without it. Commas with nothing between them say nothing.
+     */
+    public function testAClauseWithNoOperatorIsRefused(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
+
+        $parsed = $rsm->parseConstraintsString('pagePath==/a,b,eventName==click,,');
+
+        $this->assertSame(['pagePath', 'eventName'], array_column($parsed, 'name'));
+        $this->assertSame(['"b" is not a constraint: it needs a name, an operator and a value.'], $rsm->request_errors);
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
+        $rsm->parseConstraintsString('==direct');
+        $this->assertCount(1, $rsm->request_errors, 'an operator with no name before it');
+    }
+
+    /** A value holding the operator keeps it: the clause splits at the first. */
+    public function testAValueMayHoldItsOperator(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
+
+        $this->assertSame('a==b', $rsm->parseConstraintsString('pageTitle==a==b')[0]['value'] ?? null);
+    }
+
     public function testAValidDimensionConstraintIsApplied(): void
     {
         $rsm = $this->rsm();

@@ -691,25 +691,72 @@ class ResultSetManager extends \OWA\Core\Base {
      */
     function parseConstraintsString($string) {
 
-        $constraints = explode(',', $string);
+        $constraints = explode(',', (string) $string);
         $constraint_array = array();
 
         foreach($constraints as $constraint) {
+
+            // Nothing between two commas, or after the last, says nothing.
+            if ( trim( $constraint ) === '' ) {
+
+                continue;
+            }
+
+            $parsed = false;
 
             foreach ($this->constraint_operators as $operator) {
 
                 if (strpos($constraint, $operator)) {
 
-                    list ($name, $value) = explode($operator, $constraint);
-                    // As written: stored values are the text that was sent, so a
-                    // filter on "Tom &amp; Jerry" means those characters.
-                    $constraint_array[] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+                    // At the first operator: the value may hold one too.
+                    list ($name, $value) = explode($operator, $constraint, 2);
+                    // As written, less the escapes constraintValue() adds: stored
+                    // values are the text that was sent, so a filter on
+                    // "Tom &amp; Jerry" means those characters.
+                    $constraint_array[] = array('name' => $name, 'value' => self::readConstraintValue( $value ), 'operator' => $operator);
+                    $parsed = true;
                     break;
                 }
+            }
+
+            // Refused, not dropped: dropped, the query ran without it.
+            if ( ! $parsed ) {
+
+                $this->addRequestError( sprintf( \OWA\Core\CoreAPI::t(
+                    '"%s" is not a constraint: it needs a name, an operator and a value.' ), $constraint ) );
             }
         }
 
         return $constraint_array;
+    }
+
+    /**
+     * A value as a constraints string holds it: each % as %25 and each comma
+     * as %2C, so a comma in a value does not end its clause. A link carries
+     * the string urlencoded as well: PHP's decoding of the query string
+     * removes that, and parseConstraintsString() these.
+     *
+     * @param  string $value
+     * @return string
+     */
+    public static function constraintValue( $value ) {
+
+        return str_replace( array( '%', ',' ), array( '%25', '%2C' ), (string) $value );
+    }
+
+    /**
+     * A constraint's value with constraintValue()'s escapes read back. Any
+     * other % is the value's own.
+     *
+     * @param  string $value
+     * @return string
+     */
+    public static function readConstraintValue( $value ) {
+
+        return (string) preg_replace_callback( '/%(25|2C)/i', static function ( $m ) {
+
+            return $m[1] === '25' ? '%' : ',';
+        }, (string) $value );
     }
 
     function getConstraints() {
