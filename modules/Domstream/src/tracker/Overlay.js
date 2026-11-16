@@ -13,7 +13,7 @@ import { Util } from '../../../Base/src/common/Util.js';
 
 OWA.registerOverlayMode( 'loadPlayer', () => {
 
-    Util.loadCss( OWA.getSetting( 'baseUrl' ) + 'public/base/css/owa.overlay.css', function () {} );
+    Util.loadCss( OWA.getAssetsUrl() + 'base/css/owa.overlay.css', function () {} );
 
     import( /* webpackChunkName: "owa.player" */ './Player.js' ).then( ( { Player } ) => {
 

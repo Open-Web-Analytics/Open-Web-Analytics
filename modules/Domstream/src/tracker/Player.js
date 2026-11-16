@@ -176,16 +176,14 @@ class Player {
     /** A CSS selector for an element the recording names, or '' if it names none. */
     static selector( tag, id, name ) {
 
-        var esc = ( value ) => ( window.CSS && CSS.escape ) ? CSS.escape( value ) : String( value ).replace( /[^\w-]/g, '\\$&' );
-
         if ( id ) {
 
-            return '#' + esc( id );
+            return '#' + CSS.escape( id );
         }
 
         if ( name ) {
 
-            return ( tag ? esc( tag ) : '' ) + '[name="' + String( name ).replace( /"/g, '\\"' ) + '"]';
+            return ( tag ? CSS.escape( tag ) : '' ) + '[name="' + CSS.escape( name ) + '"]';
         }
 
         return '';
@@ -233,7 +231,7 @@ class Player {
         jQuery( '#owa_overlay_hidden' ).hide();
 
         jQuery( 'body' ).append( '<div id="owa-cursor"><img src="'
-            + OWA_instance.getSetting( 'baseUrl' ) + 'public/base/i/cursor2.png"></div>' );
+            + OWA_instance.getAssetsUrl() + 'base/i/cursor2.png"></div>' );
 
         jQuery( '.owa_overlay_control' ).click( function () {
             jQuery( '.owa_overlay_control' ).removeClass( 'active' );

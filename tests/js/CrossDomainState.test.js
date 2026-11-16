@@ -105,6 +105,70 @@ describe('cross-domain state: source-side serialization', () => {
         const decoded = Util.base64_decode(Util.urldecode(token));
         expect(decoded).toContain('visitor-post');
     });
+
+    test('shareStateByPost keeps a fragment the form action already has', () => {
+        const t = newTracker();
+        OWA.setState('v', 'visitor_id', 'visitor-post', true, 'json');
+        const form = { action: 'https://other.example/handler#done', submit() {} };
+
+        t.shareStateByPost(form);
+
+        expect(form.action).toMatch(/^https:\/\/other\.example\/handler#done,owa_state\.[^#,]+$/);
+    });
+});
+
+/*
+ * shareStateByLink() to a URL on this document: jsdom performs a fragment-only
+ * navigation, so the URL it went to is readable from window.location.
+ */
+describe('cross-domain state: shareStateByLink', () => {
+
+    function here() {
+        return window.location.href.split('#')[0];
+    }
+
+    function linkAndArrive(url) {
+        const source = newTracker();
+        OWA.setState('v', 'visitor_id', 'linked-visitor', true, 'json');
+        source.shareStateByLink(url);
+        const arrivedAt = window.location.href;
+
+        ['v', 's', 'c', 'b'].forEach(store => OWA.clearState(store));
+        const dest = newTracker();
+        dest.checkForLinkedState();
+
+        return arrivedAt;
+    }
+
+    test('a URL without a fragment gets the state as its fragment', () => {
+        const arrivedAt = linkAndArrive(here());
+
+        expect(arrivedAt.startsWith(here() + '#owa_state.')).toBe(true);
+        expect(OWA.getState('v').visitor_id).toBe('linked-visitor');
+    });
+
+    test('a URL with a fragment keeps it and gets the state after it', () => {
+        const arrivedAt = linkAndArrive(here() + '#section-2');
+
+        expect(arrivedAt.startsWith(here() + '#section-2,owa_state.')).toBe(true);
+        expect(OWA.getState('v').visitor_id).toBe('linked-visitor');
+    });
+
+    test('the page linking from having a fragment does not stop the state being sent', () => {
+        window.location.hash = 'on-this-page';
+
+        const arrivedAt = linkAndArrive(here());
+
+        expect(arrivedAt.startsWith(here() + '#owa_state.')).toBe(true);
+        expect(OWA.getState('v').visitor_id).toBe('linked-visitor');
+    });
+
+    test('a URL ending in an empty fragment gets the state as its fragment', () => {
+        const t = newTracker();
+
+        expect(t.addSharedStateToUrl('https://other.example/p#', 'TOKEN'))
+            .toBe('https://other.example/p#owa_state.TOKEN');
+    });
 });
 
 describe('cross-domain state: destination-side restoration', () => {

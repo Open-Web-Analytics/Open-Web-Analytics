@@ -36,23 +36,35 @@ final class MillisecondsFormatterTest extends TestCase
     }
 
     /**
-     * IT DOES NOT WRAP AT 24 HOURS.
-     *
-     * The reason this is not formatSeconds(): that is
-     * date("G:i:s", mktime(0,0,$s)), which reads an hour-of-day back out, so 25
-     * hours renders as 1:00:00. Harmless for the per-visit averages it was
-     * written for -- and wrong for totalEngagementTime, which is a sum across a
+     * IT DOES NOT WRAP AT 24 HOURS. totalEngagementTime is a sum across a
      * whole reporting period and passes a day routinely.
      */
     public function testItDoesNotWrapAtADay(): void
     {
         $this->assertSame('1d 0:00:00', $this->rsm()->formatMilliseconds(86400000));
         $this->assertSame('1d 1:01:01', $this->rsm()->formatMilliseconds(90061000));
+    }
 
-        // The bug being avoided, asserted so the reason stays visible.
-        $this->assertSame('1:00:00', $this->rsm()->formatSeconds(90000),
-            'formatSeconds wraps 25 hours to 1:00:00 -- this is why milliseconds '
-          . 'does not delegate to it');
+    /** Seconds read in the same format, a day or more included. */
+    public function testSecondsReadTheSameAsMilliseconds(): void
+    {
+        $rsm = $this->rsm();
+
+        foreach ( [ 0, 59, 247, 3600, 86399, 86400, 90000, 90061, '330', 1.5 ] as $s ) {
+
+            $this->assertSame( $rsm->formatMilliseconds( $s * 1000 ), $rsm->formatSeconds( $s ),
+                "formatSeconds($s)" );
+        }
+
+        $this->assertSame( '1d 1:00:00', $rsm->formatSeconds( 90000 ) );
+        $this->assertSame( '1d 1:00:00', $rsm->formatValue( 'timestamp', 90000 ) );
+    }
+
+    public function testSecondsAbsenceIsUntouched(): void
+    {
+        $this->assertNull( $this->rsm()->formatSeconds( null ) );
+        $this->assertSame( '', $this->rsm()->formatSeconds( '' ) );
+        $this->assertNull( $this->rsm()->formatValue( 'timestamp', null ) );
     }
 
     /** Absence stays absence; the dimension renderer decides the label. */

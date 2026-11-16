@@ -285,6 +285,17 @@ class OWA {
     }
     
     /**
+     * The URL of OWA's public/ directory, ending in '/': window.owa_assetsUrl
+     * when the page sets it, otherwise baseUrl + 'public/'.
+     *
+     * @return {string}
+     */
+    getAssetsUrl() {
+
+        return window.owa_assetsUrl || this.getSetting('baseUrl') + 'public/';
+    }
+
+    /**
      * Run `fn( params )` when an overlay session names `action`.
      *
      * @param {string}   action
@@ -303,7 +314,7 @@ class OWA {
         var that = this;
         
         // load css for heatmap class
-        Util.loadCss(( window.owa_assetsUrl || this.getSetting('baseUrl') + 'public/' ) + 'base/css/owa.overlay.css', function(){});
+        Util.loadCss( this.getAssetsUrl() + 'base/css/owa.overlay.css', function(){});
         
         // dynamic import of the Heatmap class
 	    import(/* webpackChunkName: "owa.heatmap" */ '../tracker/Heatmap.js').then( ( { Heatmap } ) => { 
@@ -535,43 +546,29 @@ class OWA {
 	/**
 	 * Remove an Action callback
 	 *
-	 * Must be the exact same callback signature.
-	 * Note: Anonymous functions can not be removed.
-	 * @param tag		The tag specified by applyFilters
+	 * Removes every registration of that function under the tag, whatever its
+	 * priority. It must be the same function object that was added, so an
+	 * anonymous function passed inline can not be removed.
+	 * @param tag		The tag specified by doAction
 	 * @param callback	The callback function to remove
 	 */
 	removeAction( tag, callback ) {
 		
-		this.hooks.actions[ tag ] = this.hooks.actions[ tag ] || [];
-
-	    this.hooks.actions[ tag ].forEach( function( filter, i ) {
-		    
-	        if( filter.callback === callback ) {
-	            this.hooks.actions[ tag ].splice(i, 1);
-	        }
-	        
-	    });
+		this.hooks.actions[ tag ] = ( this.hooks.actions[ tag ] || [] ).filter( ( hook ) => hook.callback !== callback );
 	}
 	
 	/**
 	 * Remove a Filter callback
 	 *
-	 * Must be the exact same callback signature.
-	 * Note: Anonymous functions can not be removed.
+	 * Removes every registration of that function under the tag, whatever its
+	 * priority. It must be the same function object that was added, so an
+	 * anonymous function passed inline can not be removed.
 	 * @param tag		The tag specified by applyFilters
 	 * @param callback	The callback function to remove
 	 */
-	removeFilter( tag, callabck ) {
-		
-		this.hooks.filters[ tag ] = this.hooks.filters[ tag ] || [];
-	
-	    this.hooks.filters[ tag ].forEach( function( filter, i ) {
-		    
-	        if( filter.callback === callback ) {
-	            this.hooks.filters[ tag ].splice(i, 1);
-	        }
-	        
-	    });
+	removeFilter( tag, callback ) {
+
+		this.hooks.filters[ tag ] = ( this.hooks.filters[ tag ] || [] ).filter( ( hook ) => hook.callback !== callback );
 	}
 }
 
