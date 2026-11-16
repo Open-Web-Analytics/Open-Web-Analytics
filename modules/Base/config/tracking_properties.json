@@ -169,6 +169,40 @@
         ],
         "note": "Read at the edge so a queued beacon is scored with the headers it arrived with: the drain's $_SERVER is not the beacon's. Stored by nothing; Classes\\Spam\\Score reads it as one of the request's headers. A beacon cannot set it, since set_by request means admitRequestParams() refuses a parameter that names it. Not HTTP_REFERER, which the tracker sends as p_r and which is the page's referrer."
     },
+    "arrived_page_location": {
+        "description": "The page URL as the beacon carried it, decoded once. The campaign tags, page_path and page_query are read from it. Not stored.",
+        "internal": true,
+        "set_by": "request",
+        "from": [
+            "p_l"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "url",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::arrivedPageLocation"
+        ],
+        "note": "Set by log.php (TrackingEventHelpers::admitBeaconParams()) from the request parameter, after PHP's one decode. page_location is that value decoded once more, the form it has always been stored in; a second decode cuts a URL at an encoded & or #, so what is parsed out of the URL is parsed from this. Request-set, so a beacon cannot name it, and it rides the queue envelope to the drain. Absent on an event built in process, which then reads page_location. Stored by nothing."
+    },
+    "arrived_referer": {
+        "description": "The page's referrer as the beacon carried it, decoded once. referer_query is read from it. Not stored.",
+        "internal": true,
+        "set_by": "request",
+        "from": [
+            "p_r"
+        ],
+        "events": [
+            "*"
+        ],
+        "data_type": "url",
+        "required": false,
+        "callbacks": [
+            "OWA\\Module\\Base\\Classes\\TrackingEventHelpers::arrivedReferer"
+        ],
+        "note": "As arrived_page_location, for HTTP_REFERER (referer_url)."
+    },
     "received_page_location": {
         "description": "The page URL exactly as the beacon carried it, before OWA cleans or canonicalises it. Read by spam detection and not stored.",
         "internal": true,

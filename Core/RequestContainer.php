@@ -358,35 +358,6 @@ class RequestContainer {
         }
     }
 
-    function decodeRequestParams() {
-
-        $params = array();
-        // Apply caller specific params
-        foreach ($this->owa_params as $k => $v) {
-            if (is_array($v)) {
-                array_walk_recursive($v, array($this, 'arrayUrlDecode'));
-                $params[$k] = $v;
-            } else {
-                $params[$k] = is_null($v)?$v:rawurldecode($v);
-            }
-        }
-
-        // clean params after decode
-        //$params = owa_lib::inputFilter($params);
-        // replace owa params
-        $this->owa_params = $params;
-        //debug
-        // Names only, as for the request's own params.
-        \OWA\Core\CoreAPI::debug( 'Decoded OWA params: ' . implode( ', ', array_keys( (array) $this->owa_params ) ) );
-        return;
-
-    }
-
-    function arrayUrlDecode(&$val, $index) {
-        
-        rawurldecode($val);
-    }
-
     public function getTimestamp() {
 
         return $this->timestamp;
