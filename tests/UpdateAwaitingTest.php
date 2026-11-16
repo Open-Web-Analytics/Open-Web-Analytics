@@ -24,7 +24,8 @@ final class UpdateAwaitingTest extends TestCase
         };
         $u->stop_for = $awaiting;
         $u->module_name = 'zz_awaiting_test';
-        $u->schema_version = 1;
+        // The next update of a module with no recorded version, which reads as 1.
+        $u->schema_version = 2;
 
         return $u;
     }

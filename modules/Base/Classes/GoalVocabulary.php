@@ -197,6 +197,9 @@ class GoalVocabulary {
         'ad'           => 'tagged_ad',
         'search_terms' => 'tagged_search_terms',
         'search_term'  => 'tagged_search_terms',
+        // 1.x's browser was the user agent's version (resolveBrowserVersion);
+        // the family was browser_type, which is still a column.
+        'browser'      => 'browser_version',
     );
 
     /** Labels that do not survive being prettified from the column name. */

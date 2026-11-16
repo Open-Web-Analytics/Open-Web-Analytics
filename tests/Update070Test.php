@@ -6,7 +6,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * enableEcommerceReporting moves from the Profile to the Property, and down()
- * gives every Profile back the value it answered with.
+ * puts back every row up() removed or wrote.
  */
 final class Update070Test extends TestCase
 {
@@ -164,13 +164,34 @@ final class Update070Test extends TestCase
         $this->assertSame($after, $this->rows());
     }
 
+    /** down() is the exact inverse, the Property rows up() wrote or created included. */
+    public function testDownIsTheExactInverse(): void
+    {
+        $before = $this->rows();
+
+        $this->assertTrue($this->update->up());
+        $this->assertArrayHasKey('install:1:' . \OWA\Module\Base\Update\Update070::BEFORE, $this->rows(), 'kept for down()');
+
+        $this->assertTrue($this->update->up(), 'up again');
+
+        $this->assertTrue($this->update->down());
+        $this->assertSame($before, $this->rows(), 'the exact inverse');
+
+        $this->assertTrue($this->update->down(), 'down again');
+        $this->assertSame($before, $this->rows());
+    }
+
     /**
-     * Each Profile answers, after down(), as its Property did after up(): the
-     * code before this reads the Profile's row first.
+     * An installation that ran up() before the record was kept: each Profile
+     * answers, after down(), as its Property did after up(), since the code
+     * before this reads the Profile's row first.
      */
-    public function testDownGivesEachProfileItsPropertysValue(): void
+    public function testWithNoRecordDownGivesEachProfileItsPropertysValue(): void
     {
         $this->assertTrue($this->update->up());
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("DELETE FROM %s WHERE name = ?", self::TABLE),
+            [\OWA\Module\Base\Update\Update070::BEFORE]);
+
         $this->assertTrue($this->update->down());
 
         foreach ([self::ON, self::OFF, self::NUL] as $site) {
@@ -183,6 +204,11 @@ final class Update070Test extends TestCase
         $after = $this->rows();
         $this->assertTrue($this->update->down(), 'down is idempotent too');
         $this->assertSame($after, $this->rows());
+    }
+
+    public function testTheRecordIsDeclared(): void
+    {
+        $this->assertTrue(\OWA\Core\CoreAPI::configSingleton()->isRegistered('base', \OWA\Module\Base\Update\Update070::BEFORE));
     }
 
     /** up, down, up ends where one up does. */

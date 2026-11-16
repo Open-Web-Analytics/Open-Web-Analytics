@@ -56,6 +56,51 @@ class Update084 extends \OWA\Core\Update {
     /** @var string|null the settings table to use instead of the install's. TESTS ONLY. */
     public $table = null;
 
+    /** @var object|null the settings to keep in step instead of the install's. TESTS ONLY. */
+    public $settings = null;
+
+    /**
+     * The settings this process saves, which must agree with the table.
+     *
+     * spam_threshold is loaded at boot, and the update run saves its settings when
+     * it ends: that save prunes an eager install row the settings do not hold.
+     * Written to the table only, the row up() wrote was deleted again; restored
+     * to the table only, so was the row down() put back.
+     *
+     * None with a scratch table and no stand-in: the install's own settings
+     * are not the ones being changed.
+     */
+    private function settings() {
+
+        if ( $this->settings ) {
+
+            return $this->settings;
+        }
+
+        return $this->table ? null : \OWA\Core\CoreAPI::configSingleton();
+    }
+
+    /** Hold this value of base.<name> in the settings, or nothing when it is null. */
+    private function hold( $name, $value ) {
+
+        $settings = $this->settings();
+
+        if ( ! $settings ) {
+
+            return;
+        }
+
+        if ( $value === null ) {
+
+            $settings->removeSetting( 'base', $name );
+
+            return;
+        }
+
+        $settings->db_settings['base'][ $name ] = $value;
+        $settings->set( 'base', $name, $value );
+    }
+
     private function table() {
 
         return $this->table ?: \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName();
@@ -118,6 +163,8 @@ class Update084 extends \OWA\Core\Update {
                 return false;
             }
 
+            $this->hold( self::NAME, '' );
+
             $this->e->notice( sprintf( '%s was on, so %s is blank: no beacon is blocked as spam. Set a threshold '
                 . 'in Settings > General to block them.', self::OLD, self::NAME ) );
         }
@@ -169,6 +216,9 @@ class Update084 extends \OWA\Core\Update {
 
                 return false;
             }
+
+            $this->hold( self::NAME, $record['threshold'] === null ? null
+                : @unserialize( (string) $record['threshold']['value'], array( 'allowed_classes' => false ) ) );
         }
 
         if ( $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), array( $this->installId( self::BEFORE ) ) ) === false ) {
