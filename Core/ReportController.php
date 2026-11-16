@@ -391,9 +391,13 @@ class ReportController extends \OWA\Core\AdminController {
          */
         $reportId = $this->getParam('reportId');
 
-        $this->dom_id = $reportId
-            ? 'report-' . str_replace( array( '.', '_' ), '-', (string) $reportId )
-            : str_replace('.', '-', (string) $this->getParam('do'));
+        /*
+         * Letters, digits and hyphens only: the id is written into the page,
+         * in a script and an attribute, and comes from the request.
+         */
+        $this->dom_id = preg_replace( '/[^A-Za-z0-9-]/', '-', $reportId
+            ? 'report-' . (string) $reportId
+            : (string) $this->getParam('do') );
         $this->data['dom_id'] = $this->dom_id;
         $this->data['do'] = $this->getParam('do');
 

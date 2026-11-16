@@ -192,7 +192,11 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         $this->mode('rest');
 
         $this->assertNull($this->screen()->acceptedAuthMethods());
-        $this->assertNull((new \OWA\Module\Base\Controller\ReportsRest(array()))->acceptedAuthMethods());
+
+        // The reports route names its credentials: the API's, and the overlay
+        // token an overlay reads it with (no other route takes one).
+        $this->assertSame(array('overlay_token', 'app_password', 'api_key', 'cookies'),
+            (new \OWA\Module\Base\Controller\ReportsRest(array()))->acceptedAuthMethods());
     }
 
     /** A CLI command is an AdminController too, and runs as the user the CLI signs in. */

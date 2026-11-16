@@ -884,7 +884,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php foreach ( $owa_rses as $owa_rseName => $owa_rseVar ): ?>
     owaSet_<?php echo $owa_setVar; ?>.addRse('<?php $view->out( $owa_rseName, false ); ?>', <?php echo $owa_rseVar; ?>);
 <?php endforeach; ?>
-    OWA.items['<?php echo $view->dom_id; ?>'].addTab( owaSet_<?php echo $owa_setVar; ?> );
+    OWA.items['<?php $view->out( $view->dom_id ); ?>'].addTab( owaSet_<?php echo $owa_setVar; ?> );
 </script>
 <?php endif; ?>
 <?php endforeach; ?>
@@ -892,6 +892,6 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php if ( $owa_multiSet ): ?>
 </div>
 <script>
-    OWA.items['<?php echo $view->dom_id; ?>'].createTabs();
+    OWA.items['<?php $view->out( $view->dom_id ); ?>'].createTabs();
 </script>
 <?php endif; ?>
