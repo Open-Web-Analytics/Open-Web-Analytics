@@ -25,11 +25,18 @@ final class Update056Test extends TestCase
 
     private array $conditionIds = [];
 
+    /** @var array|null the install's record of Update056 before the test, every column */
+    private ?array $record = null;
+
     protected function setUp(): void
     {
         if ( ! owa_test_db_available() ) {
             $this->markTestSkipped( 'OWA database not reachable.' );
         }
+
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT * FROM %s WHERE id = ?', $this->settingTable() ),
+            [ $this->recordId() ] );
+        $this->record = $row ? (array) $row : null;
 
         $this->renames = new \OWA\Module\Base\Update\Update076();
         $this->assertTrue( $this->renames->down(), 'the goal tables under their names before Update076' );
@@ -61,6 +68,14 @@ final class Update056Test extends TestCase
         $db->query( sprintf( "DELETE FROM %s WHERE module = 'base' AND name = 'goal_groups' AND scope_id = 'owa-update056-probe'",
             \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName() ) );
 
+        // The record as the test found it: up() above kept the fixture in it.
+        $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->settingTable() ), [ $this->recordId() ] );
+
+        if ( $this->record !== null ) {
+            $db->query( sprintf( 'INSERT INTO %s (%s) VALUES (%s)', $this->settingTable(), implode( ', ', array_keys( $this->record ) ),
+                implode( ', ', array_fill( 0, count( $this->record ), '?' ) ) ), array_values( $this->record ) );
+        }
+
         $this->assertTrue( $this->renames->up(), 'the goal tables renamed back' );
     }
 
@@ -72,12 +87,76 @@ final class Update056Test extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
+        $this->seed();
+
+        $this->assertCount( 2, $this->conditionRows(), 'the fixture wrote both conditions' );
+
+        $this->assertTrue( $this->update->up() );
+
+        $this->assertSame( array( $this->conditionIds['match'] ),
+            array_column( $this->conditionRows(), 'id' ),
+            'the start condition must be deleted, not turned into a match condition' );
+
+        $this->assertFalse( $this->hasColumn( $this->conditionTable(), 'role' ) );
+        $this->assertFalse( $this->hasColumn( $this->goalEventTable(), 'goal_group' ) );
+
+        $this->assertSame( array(), (array) $db->get_results( sprintf(
+            "SELECT id FROM %s WHERE module = 'base' AND name = 'goal_groups' AND scope_id = 'owa-update056-probe'",
+            $this->settingTable() ) ) );
+    }
+
+    /** down() restores the shape, role's index included; up() runs twice. */
+    public function testDownRestoresTheColumnsAndUpIsRepeatable(): void
+    {
+        $this->assertTrue( $this->hasColumn( $this->goalEventTable(), 'goal_group' ) );
+        $this->assertTrue( $this->hasColumn( $this->conditionTable(), 'role' ) );
+        $this->assertTrue( \OWA\Core\CoreAPI::dbSingleton()->indexExists( $this->conditionTable(), 'role' ) );
+
+        $this->assertTrue( $this->update->up() );
+        $this->assertTrue( $this->update->up() );
+
+        $this->assertFalse( $this->hasColumn( $this->conditionTable(), 'role' ) );
+    }
+
+    /** down() puts back every row and value up() removed, and removes its record. */
+    public function testDownIsTheExactInverse(): void
+    {
+        $this->seed();
+        $before = $this->fixtureRows();
+        $this->assertCount( 4, $before, 'two conditions, the goal event, the labels' );
+
+        $this->assertTrue( $this->update->up() );
+        $this->assertTrue( $this->update->up(), 'up again' );
+        $this->assertCount( 2, $this->fixtureRows(), 'the start condition and the labels are gone' );
+
+        $this->assertTrue( $this->update->down() );
+        $this->assertSame( $before, $this->fixtureRows(), 'the exact inverse' );
+        $this->assertNull( \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT id FROM %s WHERE id = ?', $this->settingTable() ),
+            [ $this->recordId() ] ) );
+
+        $this->assertTrue( $this->update->down(), 'down again' );
+        $this->assertSame( $before, $this->fixtureRows() );
+    }
+
+    /** The record is declared, so nothing refuses to read it back. */
+    public function testTheRecordIsDeclared(): void
+    {
+        $this->assertTrue( \OWA\Core\CoreAPI::configSingleton()->isRegistered( 'base', \OWA\Module\Base\Update\Update056::BEFORE ) );
+    }
+
+    /* ---------------- helpers ---------------- */
+
+    /** A goal event in group 2 with a match and a start condition, and a Profile's goal group labels. */
+    private function seed(): void
+    {
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+
         $this->goalEventId = (string) \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )
             ->generateId( 'goal_event:update056-probe:' . uniqid( '', true ) );
 
         $db->query( sprintf(
             "INSERT INTO %s (id, property_id, name, goal_group, is_active, trigger_event_type)
-             VALUES ('%s', 'owa-update056-probe', 'Probe', '2', 1, 'page_view')",
+             VALUES ('%s', 9056, 'Probe', '2', 1, 'page_view')",
             $this->goalEventTable(), $this->goalEventId ) );
 
         foreach ( array( 'match' => '', 'start' => 'start' ) as $key => $role ) {
@@ -95,42 +174,46 @@ final class Update056Test extends TestCase
 
         $settings = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
         $db->query( sprintf(
-            "INSERT INTO %s (id, scope_type, scope_id, module, name, value)
-             VALUES ('%s', 'profile', 'owa-update056-probe', 'base', 'goal_groups', '%s')",
+            "INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)
+             VALUES ('%s', 'profile', 'owa-update056-probe', 'base', 'goal_groups', '%s', 0, 1)",
             $settings->getTableName(),
             $settings->generateId( 'setting:update056-probe:' . uniqid( '', true ) ),
             $db->prepare( serialize( array( 1 => 'Sale' ) ) ) ) );
-
-        $this->assertCount( 2, $this->conditionRows(), 'the fixture wrote both conditions' );
-
-        $this->assertTrue( $this->update->up() );
-
-        $this->assertSame( array( $this->conditionIds['match'] ),
-            array_column( $this->conditionRows(), 'id' ),
-            'the start condition must be deleted, not turned into a match condition' );
-
-        $this->assertFalse( $this->hasColumn( $this->conditionTable(), 'role' ) );
-        $this->assertFalse( $this->hasColumn( $this->goalEventTable(), 'goal_group' ) );
-
-        $this->assertSame( array(), (array) $db->get_results( sprintf(
-            "SELECT id FROM %s WHERE module = 'base' AND name = 'goal_groups' AND scope_id = 'owa-update056-probe'",
-            $settings->getTableName() ) ) );
     }
 
-    /** down() restores the shape, role's index included; up() runs twice. */
-    public function testDownRestoresTheColumnsAndUpIsRepeatable(): void
+    /** @return array<string,array> every row this test wrote, every column, keyed by table and id */
+    private function fixtureRows(): array
     {
-        $this->assertTrue( $this->hasColumn( $this->goalEventTable(), 'goal_group' ) );
-        $this->assertTrue( $this->hasColumn( $this->conditionTable(), 'role' ) );
-        $this->assertTrue( \OWA\Core\CoreAPI::dbSingleton()->indexExists( $this->conditionTable(), 'role' ) );
+        $db  = \OWA\Core\CoreAPI::dbSingleton();
+        $out = [];
 
-        $this->assertTrue( $this->update->up() );
-        $this->assertTrue( $this->update->up() );
+        foreach ( (array) $db->get_results( sprintf( "SELECT * FROM %s WHERE goal_event_id = '%s' ORDER BY id",
+                $this->conditionTable(), $this->goalEventId ) ) as $row ) {
+            $out[ 'condition:' . ( (array) $row )['id'] ] = (array) $row;
+        }
 
-        $this->assertFalse( $this->hasColumn( $this->conditionTable(), 'role' ) );
+        foreach ( (array) $db->get_results( sprintf( "SELECT * FROM %s WHERE id = '%s'", $this->goalEventTable(), $this->goalEventId ) ) as $row ) {
+            $out[ 'goal_event:' . ( (array) $row )['id'] ] = (array) $row;
+        }
+
+        foreach ( (array) $db->get_results( sprintf( "SELECT * FROM %s WHERE module = 'base' AND name = 'goal_groups' AND scope_id = 'owa-update056-probe'",
+                $this->settingTable() ) ) as $row ) {
+            $out[ 'setting:' . ( (array) $row )['id'] ] = (array) $row;
+        }
+
+        return $out;
     }
 
-    /* ---------------- helpers ---------------- */
+    private function settingTable(): string
+    {
+        return \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName();
+    }
+
+    private function recordId(): string
+    {
+        return (string) \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->makeId(
+            'install', '1', 'base', \OWA\Module\Base\Update\Update056::BEFORE );
+    }
 
     private function goalEventTable(): string
     {

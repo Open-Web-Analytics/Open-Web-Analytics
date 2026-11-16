@@ -205,8 +205,8 @@ class Controller extends \OWA\Core\Base {
             
             if ($do != 'base.updatesApply' && !defined('OWA_INSTALLING') && !defined('OWA_UPDATING')) {
 
-                if ( \OWA\Core\CoreAPI::isUpdateRequired() ) {
-	            	
+                if ( $this->pendingUpdateStopsAction() ) {
+
 	            	return $this->updateAction();
 	            }
             }
@@ -531,6 +531,25 @@ class Controller extends \OWA\Core\Base {
     function needsCurrentSchema() {
 
         return \OWA\Core\ServerRole::current()->hasDatabase();
+    }
+
+    /**
+     * Whether a pending update stops this action. An admin screen stops for any
+     * pending update, so it shows the update notice. The CLI and the REST API
+     * stop only for a schema behind the code: an update pending only for a new
+     * tracker build (Base\Module::isUpToDate()) leaves the schema they need, so
+     * the scheduler, the queue drain and the REST API keep running.
+     *
+     * @return bool
+     */
+    protected function pendingUpdateStopsAction() {
+
+        if ( \OWA\Core\RequestType::isWebApp() ) {
+
+            return (bool) \OWA\Core\CoreAPI::isUpdateRequired();
+        }
+
+        return (bool) \OWA\Core\CoreAPI::isSchemaUpdateRequired();
     }
 
     function isAdmin() {

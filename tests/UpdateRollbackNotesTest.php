@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class UpdateRollbackNotesTest extends TestCase
 {
-    const LOSSY = array( 48, 49, 52, 53, 54, 56, 68, 75 );
+    const LOSSY = array( 48, 49, 52, 53, 54, 62, 68, 70, 75 );
 
     public function testEachLossyRollbackSaysWhatItDoesNotRestore(): void
     {
@@ -24,9 +24,13 @@ final class UpdateRollbackNotesTest extends TestCase
 
     public function testAnExactInverseSaysNothing(): void
     {
-        $vars = get_class_vars( \OWA\Module\Base\Update\Update074::class );
+        // Update056 keeps what it deletes in goal_groups_before_056.
+        foreach ( array( \OWA\Module\Base\Update\Update056::class, \OWA\Module\Base\Update\Update074::class ) as $class ) {
 
-        $this->assertSame( '', $vars['down_does_not_restore'] );
+            $vars = get_class_vars( $class );
+
+            $this->assertSame( '', $vars['down_does_not_restore'], $class );
+        }
     }
 
     public function testTheRollbackSaysItBeforeRunningDown(): void
