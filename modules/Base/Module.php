@@ -643,11 +643,11 @@ class Module extends \OWA\Core\Module {
         // nothing in the documentation could show which one OWA_SCHEDULED_JOBS
         // keys on. It keys on the name.
         //
-        // Registered with EMPTY params on purpose: no keep=, so nothing is ever
-        // deleted. An installation that wants retention states it in
-        // OWA_SCHEDULED_JOBS, which is the deliberate act it should be.
-        // Retention must never arrive as a side effect of turning the scheduler
-        // on. ScheduleCliTest pins the empty array for exactly that reason.
+        // Registered with EMPTY params. partition-rotate takes no retention
+        // argument: it applies raw_retention_months and each Property's
+        // cube_retention_months, both 0 (keep everything) by default, so an
+        // installation deletes history only once an administrator sets one.
+        // ScheduleCliTest pins the empty array.
         //
         // DAILY, NOT MONTHLY. Every piece of work this job does is triggered by
         // a period AGEING -- a lead running short, a month passing out of the
