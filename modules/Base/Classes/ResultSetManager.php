@@ -691,25 +691,72 @@ class ResultSetManager extends \OWA\Core\Base {
      */
     function parseConstraintsString($string) {
 
-        $constraints = explode(',', $string);
+        $constraints = explode(',', (string) $string);
         $constraint_array = array();
 
         foreach($constraints as $constraint) {
+
+            // Nothing between two commas, or after the last, says nothing.
+            if ( trim( $constraint ) === '' ) {
+
+                continue;
+            }
+
+            $parsed = false;
 
             foreach ($this->constraint_operators as $operator) {
 
                 if (strpos($constraint, $operator)) {
 
-                    list ($name, $value) = explode($operator, $constraint);
-                    // As written: stored values are the text that was sent, so a
-                    // filter on "Tom &amp; Jerry" means those characters.
-                    $constraint_array[] = array('name' => $name, 'value' => $value, 'operator' => $operator);
+                    // At the first operator: the value may hold one too.
+                    list ($name, $value) = explode($operator, $constraint, 2);
+                    // As written, less the escapes constraintValue() adds: stored
+                    // values are the text that was sent, so a filter on
+                    // "Tom &amp; Jerry" means those characters.
+                    $constraint_array[] = array('name' => $name, 'value' => self::readConstraintValue( $value ), 'operator' => $operator);
+                    $parsed = true;
                     break;
                 }
+            }
+
+            // Refused, not dropped: dropped, the query ran without it.
+            if ( ! $parsed ) {
+
+                $this->addRequestError( sprintf( \OWA\Core\CoreAPI::t(
+                    '"%s" is not a constraint: it needs a name, an operator and a value.' ), $constraint ) );
             }
         }
 
         return $constraint_array;
+    }
+
+    /**
+     * A value as a constraints string holds it: each % as %25 and each comma
+     * as %2C, so a comma in a value does not end its clause. A link carries
+     * the string urlencoded as well: PHP's decoding of the query string
+     * removes that, and parseConstraintsString() these.
+     *
+     * @param  string $value
+     * @return string
+     */
+    public static function constraintValue( $value ) {
+
+        return str_replace( array( '%', ',' ), array( '%25', '%2C' ), (string) $value );
+    }
+
+    /**
+     * A constraint's value with constraintValue()'s escapes read back. Any
+     * other % is the value's own.
+     *
+     * @param  string $value
+     * @return string
+     */
+    public static function readConstraintValue( $value ) {
+
+        return (string) preg_replace_callback( '/%(25|2C)/i', static function ( $m ) {
+
+            return $m[1] === '25' ? '%' : ',';
+        }, (string) $value );
     }
 
     function getConstraints() {
@@ -811,6 +858,17 @@ class ResultSetManager extends \OWA\Core\Base {
 
             $this->applyConstraint($constraint, $db, $entity);
         }
+
+        $this->applySharedMetricCondition( $db );
+    }
+
+    /**
+     * The metrics' shared condition (sharedMetricCondition()) as a WHERE test
+     * on the query this manager runs.
+     *
+     * @param object $db
+     */
+    function applySharedMetricCondition( $db ) {
 
         /*
          * The metrics' own condition, when they all share one, in the WHERE
@@ -1801,7 +1859,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * The day the clocks go back is still 24 values of dateHour: its repeated
      * hour groups as one. The day difference alone is one short -- a week of
      * days is seven apart and eight long -- and sorted by date the row it cut
-     * was today's.
+     * was today's. By yearMonth or year, the days too: a period has no more
+     * months or years than days.
      *
      * A query by anything else is paginated instead (DEFAULT_RESULTS_PER_PAGE,
      * computeDimensionalRows()), and does not reach here.
@@ -1824,11 +1883,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $days;
     }
 
-    /** Whether the query is by date or dateHour: one row per day or hour of the period. */
+    /** The dimensions a trend is drawn over: one row per interval of the period. */
+    const TREND_AXES = array( 'date', 'dateHour', 'yearMonth', 'year' );
+
+    /** Whether the query is by a trend's axis (TREND_AXES), so bounded by the period rather than paged. */
     function isByDate() {
 
-        return in_array( 'date', (array) $this->dimensions, true )
-            || in_array( 'dateHour', (array) $this->dimensions, true );
+        return (bool) array_intersect( self::TREND_AXES, (array) $this->dimensions );
     }
 
     function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
@@ -2506,9 +2567,38 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
     
     function computeAggregates( $bm ) {
-	    
-        // generates where clause based on metrics and dimensions
-        $this->applyConstraints();
+
+        /*
+         * A FILTER ON A METRIC KEEPS GROUPS, so the totals are of the groups it
+         * keeps. As HAVING on this query, which has no GROUP BY, it tested the
+         * grand total: pageViews>50 by page path gave the total of every page,
+         * or no total at all. The groups are found by the grid's own grouping
+         * and the totals read only their rows (keptGroupsCondition()), so a
+         * distinct count is distinct across them, not a sum of each group's.
+         */
+        $metric_constraints = $this->dimensions ? $this->metricConstraints() : array();
+
+        if ( $metric_constraints ) {
+
+            foreach ( array_diff_key( (array) $this->getConstraints(), $metric_constraints ) as $constraint ) {
+
+                $this->applyConstraint( $constraint, $this->db );
+            }
+
+            $this->applySharedMetricCondition( $this->db );
+
+            $kept = $this->keptGroupsCondition( $bm );
+
+            if ( $kept ) {
+
+                $this->db->whereSql( 'owa_kept_groups', $kept[0], $kept[1] );
+            }
+
+        } else {
+
+            // generates where clause based on metrics and dimensions
+            $this->applyConstraints();
+        }
         
         // generates select statement from metrics
         $this->applyMetrics();
@@ -2555,10 +2645,105 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $results;
     }
     
+    /**
+     * The request's constraints on metrics, by their key.
+     *
+     * @return array
+     */
+    function metricConstraints() {
+
+        $out = array();
+
+        foreach ( (array) $this->getConstraints() as $key => $constraint ) {
+
+            if ( isset( $constraint['name'] ) && $this->isMetric( $constraint['name'] ) ) {
+
+                $out[ $key ] = $constraint;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The rows of the groups the metric constraints keep, as a WHERE test:
+     * array( SQL, bindings ), or null when there are no dimensions to group by.
+     *
+     * The grid's query -- its FROM, WHERE, GROUP BY and HAVING -- selecting each
+     * group's key, and the row's key IN those. The key holds every dimension,
+     * each marked as a value or as NULL, so a group whose dimension is unset is
+     * kept like any other and never matches one holding ''.
+     *
+     * @param object $bm the base entity
+     * @return array|null
+     */
+    function keptGroupsCondition( $bm ) {
+
+        $columns = array();
+
+        foreach ( $this->dimensions as $dimension_name ) {
+
+            $dim = $this->lookupDimension( $dimension_name, $this->baseEntity );
+
+            if ( $dim ) {
+
+                $columns[] = $dim['column'];
+            }
+        }
+
+        if ( ! $columns ) {
+
+            return null;
+        }
+
+        $parts = array();
+
+        foreach ( $columns as $column ) {
+
+            $parts[] = sprintf( "COALESCE(CONCAT('v', %s), 'n')", $column );
+        }
+
+        $key = sprintf( 'CONCAT_WS(CHAR(31), %s)', implode( ', ', $parts ) );
+
+        $inner = \OWA\Core\CoreAPI::dbFactory();
+        $inner->selectColumn( $key, 'owa_group_key' );
+
+        foreach ( $columns as $column ) {
+
+            $inner->groupBy( $column );
+        }
+
+        // The grid's WHERE and HAVING, the HAVING now over its groups.
+        foreach ( (array) $this->getConstraints() as $constraint ) {
+
+            $this->applyConstraint( $constraint, $inner );
+        }
+
+        $shared = ! $this->segment ? $this->sharedMetricCondition() : null;
+
+        if ( $shared ) {
+
+            $inner->where( $shared[0], $shared[1], $shared[2], 'owa_metric_condition' );
+        }
+
+        if ( $this->segment ) {
+
+            $inner->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+
+        } else {
+
+            $inner->selectFrom( $bm->getTableName(), $bm->getTableAlias() );
+        }
+
+        $sql = $inner->generateSelectQuerySql();
+
+        return array( sprintf( '%s IN (SELECT owa_group_key FROM (%s) owa_kept)', $key, $sql ), $inner->getBindings() );
+    }
+
     function computeDimensionalRows( $bm ) {
 
         /*
-         * A query by anything but date or dateHour that names no page size gets
+         * A query by anything but a trend's axis that names no page size gets
          * DEFAULT_RESULTS_PER_PAGE, and pages. It fell to the date range below,
          * which limits by the period -- one row a day, a sound bound only for a
          * query BY day -- so a breakdown over the last seven days stopped at

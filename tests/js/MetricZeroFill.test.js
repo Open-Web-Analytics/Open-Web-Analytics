@@ -78,7 +78,7 @@ describe('a trend over days with no rows', () => {
     });
 
     test('a breakdown has every day of the period', () => {
-        const rs = resultSet([['20261022', 2]], 'distinct_count');
+        const rs = resultSet([['20261022', 2]], 'count');
         rs.resultsRows[0].medium = { value: 'organic', formatted_value: 'organic' };
 
         const built = chart().seriesByDimension(rs, 'date', 'metric', 'medium');

@@ -1367,6 +1367,11 @@ class Builder {
          *     alternative -- sorting them last -- would move a real exit onto
          *     an older event.
          *
+         * A goal row (GoalMarking::goalEvent()) has its trigger's event_seq
+         * and ts but not the session values the registry stamps only on real
+         * events (tagged_*, prior_touch_*), so it sorts after every other row
+         * at that place: FIRST_VALUE reads the trigger, never the goal row.
+         *
          * `id` stays the final tiebreak so the sort is deterministic: it is
          * derived from the event's own inputs, so a rebuild reaches the same
          * answer as the build before it.
@@ -1374,10 +1379,10 @@ class Builder {
         return sprintf(
             'SELECT %s FROM %s w WHERE w.yyyymmdd >= %d AND w.yyyymmdd < %d%s '
           . 'WINDOW session_w AS (PARTITION BY w.site_id, w.visitor_id, w.session_id '
-          . 'ORDER BY COALESCE(w.event_seq, 0), w.ts, w.id '
+          . 'ORDER BY COALESCE(w.event_seq, 0), w.ts, COALESCE(w.is_goal_event, 0), w.id '
           . 'ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING), '
           . 'session_to_row AS (PARTITION BY w.site_id, w.visitor_id, w.session_id '
-          . 'ORDER BY COALESCE(w.event_seq, 0), w.ts, w.id '
+          . 'ORDER BY COALESCE(w.event_seq, 0), w.ts, COALESCE(w.is_goal_event, 0), w.id '
           . 'ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)',
             implode( ', ', $columns ),
             $this->tables['raw'],

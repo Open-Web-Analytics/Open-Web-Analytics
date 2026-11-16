@@ -1520,7 +1520,8 @@ OWA.dataGrid.parseConstraints = function ( str ) {
                     value = '';
                 }
 
-                list.push( { name: clause.slice( 0, at ), operator: op, value: value } );
+                list.push( { name: clause.slice( 0, at ), operator: op,
+                    value: OWA.dataGrid.readConstraintValue( value ) } );
 
                 return;
             }
@@ -1566,8 +1567,26 @@ OWA.dataGrid.emptyText = function ( rs, own ) {
 OWA.dataGrid.formatConstraints = function ( list ) {
 
     return ( list || [] ).map( function ( c ) {
-        return c.name + c.operator + ( c.value || '' );
+        return c.name + c.operator + OWA.dataGrid.constraintValue( c.value || '' );
     } ).join( ',' );
+};
+
+/**
+ * A value as a constraints string holds it: each % as %25 and each comma as
+ * %2C, so a comma in a value does not end its clause
+ * (ResultSetManager::constraintValue()).
+ */
+OWA.dataGrid.constraintValue = function ( value ) {
+
+    return String( value ).replace( /%/g, '%25' ).replace( /,/g, '%2C' );
+};
+
+/** A constraint's value with constraintValue()'s escapes read back; any other % is its own. */
+OWA.dataGrid.readConstraintValue = function ( value ) {
+
+    return String( value ).replace( /%(25|2C)/gi, function ( m, hex ) {
+        return hex === '25' ? '%' : ',';
+    } );
 };
 
 /**
@@ -3183,12 +3202,12 @@ OWA.constraintBuilder.prototype = {
 
                         if ( OWA.util.strpos( a[i], operator ) ) {
 
-                            var b = a[i].split(operator);
+                            var at = a[i].indexOf( operator );
 
                             var c = {
-                                'name':     b[0],
+                                'name':     a[i].slice( 0, at ),
                                 'operator': operator,
-                                'value':    b[1]
+                                'value':    OWA.dataGrid.readConstraintValue( a[i].slice( at + operator.length ) )
                             };
 
                             c_array.push(c);
@@ -3419,7 +3438,7 @@ OWA.constraintBuilder.prototype = {
 
                     } else if ( value ) {
                     //constraints += OWA.util.sprintf('%s%s%s,' name, operator, value);
-                        constraints += name + operator + value;
+                        constraints += name + operator + OWA.dataGrid.constraintValue( value );
 
                         if (index < jQuery(builder_selector + ' > ul > li').length - 1 ) {
                         //if (index < jQuery(this).siblings().length - 1 ) {
