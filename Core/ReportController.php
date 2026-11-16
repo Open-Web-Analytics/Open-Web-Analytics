@@ -408,12 +408,7 @@ class ReportController extends \OWA\Core\AdminController {
          */
         $metricSets = \OWA\Core\MetricSets::forProperty( $propertyId );
 
-        $tabs = \OWA\Core\MetricSets::toLegacyTabs( $metricSets );
-
         $this->set('metricSets', $metricSets);
-
-        $this->set('tabs', $tabs);
-        $this->set('tabs_json', json_encode($tabs));
 
         $this->set('top_level_report_nav', self::reportNavigation( $propertyId ));
     }

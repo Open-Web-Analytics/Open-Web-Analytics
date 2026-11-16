@@ -99,32 +99,6 @@ final class MetricSetsTest extends TestCase
     }
 
     /**
-     * The legacy shape is derived from the same source, so the two renderers
-     * cannot disagree about what a Property offers while both exist.
-     */
-    public function testTheLegacyShapeIsDerivedNotDuplicated(): void
-    {
-        $sets = array(
-            'site_usage' => array( 'label' => 'Site Usage', 'metrics' => 'sessions', 'chartMetric' => 'sessions' ),
-            'ecommerce'  => array( 'label' => 'e-commerce', 'metrics' => 'transactions', 'chartMetric' => 'transactions' ),
-        );
-
-        $tabs = \OWA\Core\MetricSets::toLegacyTabs( $sets );
-
-        $this->assertSame( array_keys( $sets ), array_keys( $tabs ),
-            'the same sets, in the same order' );
-
-        $this->assertSame( 'Site Usage', $tabs['site_usage']['tab_label'] );
-        $this->assertSame( 'sessions', $tabs['site_usage']['metrics'] );
-        $this->assertSame( 'sessions', $tabs['site_usage']['trendchartmetric'] );
-
-        // Present but empty: the template indexes it, and a missing key is a
-        // warning on every render. Nothing reads the value.
-        $this->assertArrayHasKey( 'sort', $tabs['site_usage'] );
-        $this->assertSame( '', $tabs['site_usage']['sort'] );
-    }
-
-    /**
      * A report is handed the sets, so a widget renderer can read them without
      * going back to the Property.
      */
@@ -145,11 +119,6 @@ final class MetricSetsTest extends TestCase
 
         $this->assertArrayHasKey( 'metricSets', $data );
         $this->assertArrayHasKey( \OWA\Core\MetricSets::DEFAULT_KEY, $data['metricSets'] );
-
-        // ...and the legacy array the older templates read is still there,
-        // built from the same source.
-        $this->assertArrayHasKey( 'tabs', $data );
-        $this->assertSame( array_keys( $data['metricSets'] ), array_keys( $data['tabs'] ) );
     }
 
     /**

@@ -1131,20 +1131,6 @@ class Template extends TemplateEngine {
         return true;
     }
 
-
-
-
-
-
-
-    function renderDimension($template, $properties) {
-
-        $t = new \OWA\Core\Template;
-        $t->set('properties', $properties);
-        $t->set_template($template);
-        return $t->fetch();
-    }
-
     /**
      * Creates a hidden nonce form field
      *

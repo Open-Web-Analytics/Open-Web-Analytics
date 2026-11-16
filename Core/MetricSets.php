@@ -32,9 +32,7 @@ namespace OWA\Core;
  * (Update056).
  *
  * Extracted from ReportController::pre(), where this was built inline as
- * `$tabs`. One source, two consumers: the widget renderer reads the shape
- * below, and toLegacyTabs() derives the array the older report templates still
- * read. When those templates are gone, so is that method.
+ * `$tabs`.
  *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
@@ -157,35 +155,4 @@ class MetricSets {
         return ! empty( $row['present'] );
     }
 
-    /**
-     * The same sets in the shape the older report templates read.
-     *
-     * They index `tab_label` and `trendchartmetric`, and one of them reads
-     * `sort`. Kept so both renderers work from one source while the conversion
-     * is in progress; it goes when the last template that reads it does.
-     *
-     * @param array $sets
-     * @return array
-     */
-    public static function toLegacyTabs( array $sets ) {
-
-        $tabs = array();
-
-        foreach ( $sets as $key => $set ) {
-
-            $tabs[ $key ] = array(
-                'tab_label'        => $set['label'],
-                'metrics'          => $set['metrics'],
-                // Never read -- see forProperty(). Present because the template
-                // indexes it, and a missing key is a warning on every render.
-                'sort'             => '',
-                // Same reasoning as `sort` above: a set that arrives without one
-                // is a missing key on every render, not a fatal. Report
-                // definitions get a default filled in before they reach here.
-                'trendchartmetric' => $set['chartMetric'] ?? '',
-            );
-        }
-
-        return $tabs;
-    }
 }

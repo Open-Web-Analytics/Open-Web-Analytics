@@ -15,11 +15,12 @@ const { FIXTURE, login, openReport, openReportNoTabs } = require('./fixtures');
  *
  * WHICH REPORTS GET TABS
  * ----------------------
- * Tabs are a property of the SUBVIEW, not of the setting:
+ * Tabs are a property of the REPORT DEFINITION, not of the setting.
+ * report_widgets.php draws one tab per metric set unless the definition names
+ * its own `metrics`:
  *
- *   base.reportDimension       -> report_dimensionalTrend.php     TABS
- *   base.reportDimensionDetail -> report_dimensionDetail.php      TABS
- *   base.reportSimpleDimensional -> report_dimensionDetailNoTabs.php   none
+ *   browsers.json -- no `metrics`, measured by the sets    TABS
+ *   pages.json    -- `metrics`: pageViews,sessions         none
  *
  * That split is deliberate and is not a bug: the tabbed reports are
  * session-based (Site Usage and e-commerce are per-visit
@@ -119,7 +120,7 @@ test.describe('e-commerce reporting', () => {
         await openReport(page, { reportId: 'browsers' });
         await expect(page.locator('#report-tabs > div[id^="tab_"]').first()).toBeAttached();
 
-        // Content-based -> deliberately no tabs (report_dimensionDetailNoTabs).
+        // Content-based -> deliberately no tabs (pages.json names its own metrics).
         // Uses the no-tabs helper: openReport() waits for #report-tabs.ui-tabs,
         // a widget these pages never build.
         await openReportNoTabs(page, { reportId: 'pages' });
@@ -162,9 +163,7 @@ test.describe('e-commerce reporting', () => {
         // This report reads commerce totals off the SESSION, not off the fact
         // tables -- SessionCommerceSummaryHandlers rolls them up onto the
         // session row when a transaction arrives. The fixture therefore attaches
-        // its transactions to the sessions seeded for the same day and runs the
-        // SAME owa_coreAPI::summarize() calls the handler uses, so these totals
-        // are the ones the application would have written itself.
+        // its transactions to the sessions seeded for the same day.
         expect(text).toMatch(new RegExp(EXPECTED.totalRevenue.toFixed(2).replace('.', '\\.')));
         expect(text).toContain('Transactions');
         expect(text).toContain('Revenue Per Session');

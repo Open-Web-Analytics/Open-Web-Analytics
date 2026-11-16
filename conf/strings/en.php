@@ -844,7 +844,6 @@ return array(
     'No data for this period' => 'No data for this period',
     'No data for this period.' => 'No data for this period.',
     'No data matches these filters.' => 'No data matches these filters.',
-    'No data to display.' => 'No data to display.',
     'No events in the last 30 minutes' => 'No events in the last 30 minutes',
     'No favorites yet. Star a report to add it here.' => 'No favorites yet. Star a report to add it here.',
     'No job named "%s" is registered.' => 'No job named "%s" is registered.',
