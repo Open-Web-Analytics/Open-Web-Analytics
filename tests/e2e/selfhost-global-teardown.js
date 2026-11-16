@@ -14,9 +14,24 @@
  * Teardown must not throw on a cleanup hiccup and mask the real test result -- with
  * ONE exception: if `down` cannot restore the live config the box is left down, so
  * that is rethrown. A failed unseed is only logged.
+ *
+ * Playwright runs this even when globalSetup threw, so `up` may never have run and
+ * owa-config.php may still be the live one (in a git worktree, a symlink to another
+ * install's config). The seeder deletes from whatever database the config names,
+ * so it runs only while the config is the one `up` wrote (`owned`).
  */
 const { execFileSync } = require('child_process');
 const path = require('path');
+
+/** Whether owa-config.php is the one `up` wrote. */
+function configIsOurs(harness) {
+    try {
+        execFileSync('php', [harness, 'owned'], { stdio: 'ignore' });
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
 
 module.exports = async () => {
     const harness = path.join(__dirname, 'selfhost_harness.php');
@@ -24,10 +39,14 @@ module.exports = async () => {
 
     // 1. Remove fixtures (best effort -- the scratch DB is about to be dropped
     //    anyway, so a hiccup here doesn't matter, but do it for symmetry/logs).
-    try {
-        execFileSync('php', [seeder, 'teardown'], { stdio: 'inherit' });
-    } catch (e) {
-        console.error('[selfhost-global-teardown] fixture teardown failed:', e.message);
+    if (!configIsOurs(harness)) {
+        console.error('[selfhost-global-teardown] owa-config.php is not the scratch config: fixtures not removed.');
+    } else {
+        try {
+            execFileSync('php', [seeder, 'teardown'], { stdio: 'inherit' });
+        } catch (e) {
+            console.error('[selfhost-global-teardown] fixture teardown failed:', e.message);
+        }
     }
 
     // 2. Tear the install down + restore the live config. If THIS fails, the box

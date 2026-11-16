@@ -52,6 +52,8 @@
  */
 
 // ---- Fixed identifiers / defaults (kept in sync with playwright.selfhost.config.js) ----
+require __DIR__ . '/selfhost_marker.php';
+
 const SCRATCH_DB_DEFAULT = 'owa_e2e_selfhost';
 const CONFIG_FILE = 'owa-config.php';
 const BACKUP_FILE = 'owa-config.php.e2e-selfhost-bak';
@@ -88,8 +90,15 @@ switch ($cmd) {
     case 'doctor':  out(doctor($repoRoot));  break;
     case 'info':    out(info());             break;
     case 'baseurl': echo baseUrl() . "\n";   break;
+    // Exit 0 when owa-config.php is the one `up` wrote, 1 otherwise: the
+    // teardown unseeds only then, since the seeder writes to whatever
+    // database the config names.
+    case 'owned':
+        $owned = owa_e2e_selfhost_config_is_ours($repoRoot . CONFIG_FILE);
+        out(['owned' => $owned]);
+        exit($owned ? 0 : 1);
     default:
-        fwrite(STDERR, "Unknown command '$cmd'. Use: up | down | doctor | info | baseurl\n");
+        fwrite(STDERR, "Unknown command '$cmd'. Use: up | down | doctor | info | baseurl | owned\n");
         exit(2);
 }
 
@@ -439,7 +448,10 @@ function writeConfig(string $repoRoot, array $creds, string $db): void
     // (The closing tag is written only as a string literal below, never in a
     // comment: a close-tag sequence ends PHP mode even inside a // comment, so
     // spelling it out here would do to this file what it warns about.)
+    // SELFHOST_CONFIG_MARKER is what selfhost_router.php waits for before
+    // php -S runs any of OWA.
     $override = "\n"
+        . SELFHOST_CONFIG_MARKER . "\n"
         . "// Added by tests/e2e/selfhost_harness.php -- keeps this run's queue and\n"
         . "// error log out of the live install's owa-data/logs/.\n"
         . "\$this->set('base', 'async_log_dir', \\OWA\\Core\\Env::root() . '/' . " . var_export(SCRATCH_LOG_DIR, true) . ");\n"
@@ -562,9 +574,12 @@ function down(string $repoRoot): array
         }
         $done['config_restored'] = true;
     } else {
-        // No backup: CI (no live config was ever stashed). Remove our scratch
-        // config so the checkout is left clean.
-        if (file_exists($config)) { @unlink($config); $done['config_removed'] = true; }
+        // No backup: CI (no live config was ever stashed), or `up` never ran.
+        // Remove our scratch config so the checkout is left clean -- and only
+        // ours: a config `up` did not write (a worktree's symlink, left in place
+        // because setup stopped before stashing it) is not this run's to remove.
+        if (owa_e2e_selfhost_config_is_ours($config)) { @unlink($config); $done['config_removed'] = true; }
+        elseif (file_exists($config) || is_link($config)) { $done['config_restored'] = 'not ours, left in place'; }
         else { $done['config_restored'] = 'no backup, no config'; }
     }
 
