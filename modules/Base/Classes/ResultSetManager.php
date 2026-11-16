@@ -812,6 +812,17 @@ class ResultSetManager extends \OWA\Core\Base {
             $this->applyConstraint($constraint, $db, $entity);
         }
 
+        $this->applySharedMetricCondition( $db );
+    }
+
+    /**
+     * The metrics' shared condition (sharedMetricCondition()) as a WHERE test
+     * on the query this manager runs.
+     *
+     * @param object $db
+     */
+    function applySharedMetricCondition( $db ) {
+
         /*
          * The metrics' own condition, when they all share one, in the WHERE
          * clause too. Page Views by page path counts page_view rows; tested
@@ -2506,9 +2517,38 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
     
     function computeAggregates( $bm ) {
-	    
-        // generates where clause based on metrics and dimensions
-        $this->applyConstraints();
+
+        /*
+         * A FILTER ON A METRIC KEEPS GROUPS, so the totals are of the groups it
+         * keeps. As HAVING on this query, which has no GROUP BY, it tested the
+         * grand total: pageViews>50 by page path gave the total of every page,
+         * or no total at all. The groups are found by the grid's own grouping
+         * and the totals read only their rows (keptGroupsCondition()), so a
+         * distinct count is distinct across them, not a sum of each group's.
+         */
+        $metric_constraints = $this->dimensions ? $this->metricConstraints() : array();
+
+        if ( $metric_constraints ) {
+
+            foreach ( array_diff_key( (array) $this->getConstraints(), $metric_constraints ) as $constraint ) {
+
+                $this->applyConstraint( $constraint, $this->db );
+            }
+
+            $this->applySharedMetricCondition( $this->db );
+
+            $kept = $this->keptGroupsCondition( $bm );
+
+            if ( $kept ) {
+
+                $this->db->whereSql( 'owa_kept_groups', $kept[0], $kept[1] );
+            }
+
+        } else {
+
+            // generates where clause based on metrics and dimensions
+            $this->applyConstraints();
+        }
         
         // generates select statement from metrics
         $this->applyMetrics();
@@ -2555,6 +2595,101 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $results;
     }
     
+    /**
+     * The request's constraints on metrics, by their key.
+     *
+     * @return array
+     */
+    function metricConstraints() {
+
+        $out = array();
+
+        foreach ( (array) $this->getConstraints() as $key => $constraint ) {
+
+            if ( isset( $constraint['name'] ) && $this->isMetric( $constraint['name'] ) ) {
+
+                $out[ $key ] = $constraint;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The rows of the groups the metric constraints keep, as a WHERE test:
+     * array( SQL, bindings ), or null when there are no dimensions to group by.
+     *
+     * The grid's query -- its FROM, WHERE, GROUP BY and HAVING -- selecting each
+     * group's key, and the row's key IN those. The key holds every dimension,
+     * each marked as a value or as NULL, so a group whose dimension is unset is
+     * kept like any other and never matches one holding ''.
+     *
+     * @param object $bm the base entity
+     * @return array|null
+     */
+    function keptGroupsCondition( $bm ) {
+
+        $columns = array();
+
+        foreach ( $this->dimensions as $dimension_name ) {
+
+            $dim = $this->lookupDimension( $dimension_name, $this->baseEntity );
+
+            if ( $dim ) {
+
+                $columns[] = $dim['column'];
+            }
+        }
+
+        if ( ! $columns ) {
+
+            return null;
+        }
+
+        $parts = array();
+
+        foreach ( $columns as $column ) {
+
+            $parts[] = sprintf( "COALESCE(CONCAT('v', %s), 'n')", $column );
+        }
+
+        $key = sprintf( 'CONCAT_WS(CHAR(31), %s)', implode( ', ', $parts ) );
+
+        $inner = \OWA\Core\CoreAPI::dbFactory();
+        $inner->selectColumn( $key, 'owa_group_key' );
+
+        foreach ( $columns as $column ) {
+
+            $inner->groupBy( $column );
+        }
+
+        // The grid's WHERE and HAVING, the HAVING now over its groups.
+        foreach ( (array) $this->getConstraints() as $constraint ) {
+
+            $this->applyConstraint( $constraint, $inner );
+        }
+
+        $shared = ! $this->segment ? $this->sharedMetricCondition() : null;
+
+        if ( $shared ) {
+
+            $inner->where( $shared[0], $shared[1], $shared[2], 'owa_metric_condition' );
+        }
+
+        if ( $this->segment ) {
+
+            $inner->selectFrom( $this->generateSegmentQuery( $bm ), $bm->getTableAlias() );
+
+        } else {
+
+            $inner->selectFrom( $bm->getTableName(), $bm->getTableAlias() );
+        }
+
+        $sql = $inner->generateSelectQuerySql();
+
+        return array( sprintf( '%s IN (SELECT owa_group_key FROM (%s) owa_kept)', $key, $sql ), $inner->getBindings() );
+    }
+
     function computeDimensionalRows( $bm ) {
 
         /*

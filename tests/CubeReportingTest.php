@@ -642,6 +642,45 @@ final class CubeReportingTest extends TestCase
     }
 
     /**
+     * A filter on a metric keeps groups, and the totals are of the groups it
+     * keeps: summed for a count, distinct across them for a distinct count,
+     * and a ratio of those. eventCount>2 keeps /one (three events, the first
+     * visitor's) and /two (three, both visitors'); /buy (two) goes.
+     */
+    public function testTheTotalsOfAMetricFilteredGridAreOfTheGroupsItKeeps(): void
+    {
+        $totals = function (string $constraint, string $dimensions = 'pagePath'): array {
+
+            $rsm = $this->manager('eventCount,totalUsers,sessions,eventsPerSession', $dimensions);
+            $rsm->setConstraints($rsm->parseConstraintsString($constraint));
+
+            $rs = $rsm->getResults();
+
+            $this->assertSame([], (array) $rs->errors, $constraint);
+
+            $out = [];
+
+            foreach (['eventCount', 'totalUsers', 'sessions', 'eventsPerSession'] as $name) {
+                $out[$name] = isset($rs->aggregates[$name]) ? (float) $rs->aggregates[$name]['value'] : null;
+            }
+
+            return $out;
+        };
+
+        $this->assertSame(['eventCount' => 6.0, 'totalUsers' => 2.0, 'sessions' => 2.0, 'eventsPerSession' => 3.0],
+            $totals('eventCount>2'), 'the first visitor is in both groups and counted once');
+
+        $this->assertSame(['eventCount' => 2.0, 'totalUsers' => 1.0, 'sessions' => 1.0, 'eventsPerSession' => 2.0],
+            $totals('eventCount<3'), 'a total below the grand total\'s');
+
+        // Beside a dimension filter, and by two dimensions.
+        $this->assertSame(['eventCount' => 3.0, 'totalUsers' => 2.0, 'sessions' => 2.0, 'eventsPerSession' => 1.5],
+            $totals('eventCount>2,pagePath==/two'));
+        $this->assertSame(['eventCount' => 6.0, 'totalUsers' => 2.0, 'sessions' => 2.0, 'eventsPerSession' => 3.0],
+            $totals('eventCount>1', 'pagePath,eventName'), 'the session_start and the click go');
+    }
+
+    /**
      * Metrics that all count by one condition read only the rows it holds
      * for: page views by page path lists the pages that were viewed. /buy has
      * events but no page view, and came back at 0 when the condition was
