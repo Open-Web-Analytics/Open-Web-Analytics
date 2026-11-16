@@ -75,6 +75,8 @@ describe( 'the grid\'s rows, more than a page of them', () => {
         jest.spyOn( $, 'getJSON' ).mockImplementation( ( u, d, done ) => {
             asked.push( u );
             done( { data: pages[ new URL( u ).searchParams.get( 'page' ) || 1 ] } );
+
+            return $.Deferred().resolve().promise();
         } );
 
         const chart = new OWA.areaChart();
