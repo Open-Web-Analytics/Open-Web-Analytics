@@ -51,6 +51,8 @@ namespace OWA\Module\Base\Update;
  */
 class Update080 extends \OWA\Core\Update {
 
+    use SettingRows;
+
     var $schema_version = 80;
 
     var $is_cli_mode_required = false;
@@ -67,63 +69,10 @@ class Update080 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
-    /** @var string|null the settings table to use instead of the install's. TESTS ONLY. */
-    public $table = null;
-
-    /** @var object|null the settings to keep in step instead of the install's. TESTS ONLY. */
-    public $settings = null;
-
-    /**
-     * The settings this process saves, which must agree with the table.
-     *
-     * directory_index_pages is loaded at boot, and the update run saves its settings when
-     * it ends: that save prunes an eager install row the settings do not hold.
-     * Written to the table only, the row up() wrote was deleted again; restored
-     * to the table only, so was the row down() put back.
-     *
-     * None with a scratch table and no stand-in: the install's own settings
-     * are not the ones being changed.
-     */
-    private function settings() {
-
-        if ( $this->settings ) {
-
-            return $this->settings;
-        }
-
-        return $this->table ? null : \OWA\Core\CoreAPI::configSingleton();
-    }
-
-    /** Hold this value of base.<name> in the settings, or nothing when it is null. */
-    private function hold( $name, $value ) {
-
-        $settings = $this->settings();
-
-        if ( ! $settings ) {
-
-            return;
-        }
-
-        if ( $value === null ) {
-
-            $settings->removeSetting( 'base', $name );
-
-            return;
-        }
-
-        $settings->db_settings['base'][ $name ] = $value;
-        $settings->set( 'base', $name, $value );
-    }
-
-    private function table() {
-
-        return $this->table ?: \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName();
-    }
-
     function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->table();
+        $table = $this->settingTable();
 
         $rows = (array) $db->get_results( sprintf( "SELECT * FROM %s WHERE module = 'base' AND name = ?", $table ),
             array( self::OLD ) );
@@ -238,7 +187,7 @@ class Update080 extends \OWA\Core\Update {
     function down() {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $table  = $this->table();
+        $table  = $this->settingTable();
         $record = $this->record();
 
         if ( ! $record ) {
@@ -273,7 +222,7 @@ class Update080 extends \OWA\Core\Update {
                 : @unserialize( (string) $record['index']['value'], array( 'allowed_classes' => false ) ) );
         }
 
-        if ( $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), array( $this->installId( self::BEFORE ) ) ) === false ) {
+        if ( ! $this->deleteRecord() ) {
 
             $this->e->notice( sprintf( 'Removing %s failed.', self::BEFORE ) );
 
@@ -281,70 +230,6 @@ class Update080 extends \OWA\Core\Update {
         }
 
         return true;
-    }
-
-    /** What up() kept, or an empty array. */
-    private function record() {
-
-        $row = $this->row( self::BEFORE );
-
-        if ( ! $row ) {
-
-            return array();
-        }
-
-        $record = @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
-
-        return is_array( $record ) ? $record : array();
-    }
-
-    /** An install row of base.<name>, every column, or null. */
-    private function row( $name ) {
-
-        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT * FROM %s WHERE id = ?', $this->table() ),
-            array( $this->installId( $name ) ) );
-
-        return $row ? (array) $row : null;
-    }
-
-    private function installId( $name ) {
-
-        return (string) \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->makeId(
-            'install', self::INSTALL_SCOPE_ID, 'base', $name );
-    }
-
-    /** Upsert an install row of base.<name> holding this serialized value. */
-    private function writeInstallRow( $name, $value, $autoload ) {
-
-        return \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
-            'INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)'
-          . " VALUES (?, 'install', ?, 'base', ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?", $this->table() ),
-            array( $this->installId( $name ), self::INSTALL_SCOPE_ID, $name, $value, (int) $autoload, time(), $value ) ) !== false;
-    }
-
-    /** A row put back exactly as SELECT * read it. */
-    private function restoreRow( array $row ) {
-
-        $columns = array_keys( $row );
-
-        foreach ( $columns as $column ) {
-
-            // Names the table gave, but they are interpolated, so only plain ones.
-            if ( ! preg_match( '/^[a-z_]+$/', (string) $column ) ) {
-
-                return false;
-            }
-        }
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
-        if ( $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->table() ), array( (string) $row['id'] ) ) === false ) {
-
-            return false;
-        }
-
-        return $db->query( sprintf( 'INSERT INTO %s (%s) VALUES (%s)', $this->table(), implode( ', ', $columns ),
-            implode( ', ', array_fill( 0, count( $columns ), '?' ) ) ), array_values( $row ) ) !== false;
     }
 }
 

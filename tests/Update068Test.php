@@ -25,7 +25,7 @@ final class Update068Test extends TestCase
         }
 
         $this->update = new \OWA\Module\Base\Update\Update068();
-        $this->update->table = self::TABLE;
+        $this->update->tables = ['queue_item' => self::TABLE];
 
         \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::TABLE);
         $this->update->down();

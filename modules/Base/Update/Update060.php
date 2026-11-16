@@ -64,7 +64,7 @@ class Update060 extends \OWA\Core\Update {
     /** @return string|null the table, or null where it does not exist */
     private function table() {
 
-        $table = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' )->getTableName();
+        $table = $this->tableFor( 'base.visitor_acquisition' );
 
         return \OWA\Core\CoreAPI::dbSingleton()->tableExists( $table ) ? $table : null;
     }

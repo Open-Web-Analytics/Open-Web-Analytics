@@ -74,7 +74,7 @@ final class Update088Test extends TestCase
         $db->query(sprintf('INSERT INTO %s (id, site_id, domain) VALUES (100, ?, NULL)', self::SITES), ['app-site']);
         $db->query(sprintf("INSERT INTO %s (id, domain) VALUES (100, '')", self::PROPERTIES));
 
-        $this->update->tables = ['site' => self::SITES, 'property' => self::PROPERTIES];
+        $this->update->tables = ['base.site' => self::SITES, 'base.property' => self::PROPERTIES];
     }
 
     /** @return array<string,array<string,string|null>> table => id => domain */

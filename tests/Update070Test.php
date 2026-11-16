@@ -64,7 +64,7 @@ final class Update070Test extends TestCase
         $this->row('profile', self::ON, serialize('example.test'), 'domain_aliases');
 
         $this->update = new \OWA\Module\Base\Update\Update070();
-        $this->update->table = self::TABLE;
+        $this->update->tables = ['base.setting' => self::TABLE];
     }
 
     protected function tearDown(): void

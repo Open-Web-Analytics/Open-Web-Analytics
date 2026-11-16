@@ -25,7 +25,7 @@ final class Update089Test extends TestCase
     protected function setUp(): void
     {
         $this->update = new Update089();
-        $this->update->table = self::TABLE;
+        $this->update->tables = ['base.user' => self::TABLE];
     }
 
     protected function tearDown(): void

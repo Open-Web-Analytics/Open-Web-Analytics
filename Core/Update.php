@@ -71,6 +71,14 @@ class Update extends \OWA\Core\Base {
      */
     var $awaiting = '';
 
+    /**
+     * Tables to use instead of the install's, by the key tableFor() is given.
+     * TESTS ONLY.
+     *
+     * @var array<string,string>
+     */
+    public $tables = array();
+
     function __construct() {
 
         return parent::__construct();
@@ -79,6 +87,29 @@ class Update extends \OWA\Core\Base {
     function isCliModeRequired() {
 
         return $this->is_cli_mode_required;
+    }
+
+    /**
+     * The table an update reads and writes for this key: the one $tables holds
+     * for it, else the entity's table for a module.entity key, else the key
+     * under the table prefix (a table no entity describes any more).
+     *
+     * @param  string $key 'module.entity', or a bare table name
+     * @return string
+     */
+    public function tableFor( $key ) {
+
+        if ( isset( $this->tables[ $key ] ) ) {
+
+            return $this->tables[ $key ];
+        }
+
+        if ( strpos( $key, '.' ) !== false ) {
+
+            return \OWA\Core\CoreAPI::entityFactory( $key )->getTableName();
+        }
+
+        return \OWA\Core\Entity::TABLE_PREFIX . $key;
     }
 
     /**

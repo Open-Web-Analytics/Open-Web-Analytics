@@ -97,12 +97,6 @@ class Update076 extends \OWA\Core\Update {
         return true;
     }
 
-    /** A table's name under the install's prefix. */
-    private function table( $name ) {
-
-        return \OWA\Core\Entity::TABLE_PREFIX . $name;
-    }
-
     /**
      * Whether a table is under both its names, said before anything is renamed
      * so neither direction stops part way.
@@ -116,10 +110,10 @@ class Update076 extends \OWA\Core\Update {
 
         foreach ( self::TABLES as $old => $new ) {
 
-            if ( $db->tableExists( $this->table( $old ) ) && $db->tableExists( $this->table( $new ) ) ) {
+            if ( $db->tableExists( $this->tableFor( $old ) ) && $db->tableExists( $this->tableFor( $new ) ) ) {
 
                 $this->e->notice( sprintf( 'Both %s and %s exist, so neither is renamed. Move the rows of one'
-                    . ' into the other, drop it, and run the update again.', $this->table( $old ), $this->table( $new ) ) );
+                    . ' into the other, drop it, and run the update again.', $this->tableFor( $old ), $this->tableFor( $new ) ) );
 
                 $found = true;
             }
@@ -138,8 +132,8 @@ class Update076 extends \OWA\Core\Update {
     private function renameTable( $from, $to ) {
 
         $db   = \OWA\Core\CoreAPI::dbSingleton();
-        $from = $this->table( $from );
-        $to   = $this->table( $to );
+        $from = $this->tableFor( $from );
+        $to   = $this->tableFor( $to );
 
         if ( ! $db->tableExists( $from ) ) {
 
@@ -169,7 +163,7 @@ class Update076 extends \OWA\Core\Update {
     private function renameColumn( $table, $from, $to ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->table( $table );
+        $table = $this->tableFor( $table );
 
         if ( ! $db->tableExists( $table ) || ! $this->hasColumn( $table, $from ) ) {
 
@@ -215,7 +209,7 @@ class Update076 extends \OWA\Core\Update {
     private function renameStepKeys( $from, $to ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->table( 'custom_report' );
+        $table = $this->tableFor( 'custom_report' );
 
         $rows = (array) $db->get_results( sprintf( 'SELECT id, definition FROM %s WHERE definition LIKE ?', $table ),
             array( '%' . $from . '%' ) );

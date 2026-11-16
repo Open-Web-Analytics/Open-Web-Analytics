@@ -36,6 +36,8 @@ namespace OWA\Module\Base\Update;
  */
 class Update086 extends \OWA\Core\Update {
 
+    use SettingRows;
+
     var $schema_version = 86;
 
     var $is_cli_mode_required = false;
@@ -53,38 +55,6 @@ class Update086 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
-    /** @var string|null the settings table to use instead of the install's. TESTS ONLY. */
-    public $table = null;
-
-    /** @var object|null the settings to keep in step instead of the install's. TESTS ONLY. */
-    public $settings = null;
-
-    /**
-     * The settings this process saves, which must agree with the table.
-     *
-     * Boot loads every row of a module with no settings.php, fileCache's
-     * included, and the update run saves its settings when it ends. Deleted
-     * from the table only, the rows were written straight back; restored to
-     * the table only, the save's pruning would delete them again.
-     *
-     * None with a scratch table and no stand-in: the install's own settings
-     * are not the ones being changed.
-     */
-    private function settings() {
-
-        if ( $this->settings ) {
-
-            return $this->settings;
-        }
-
-        return $this->table ? null : \OWA\Core\CoreAPI::configSingleton();
-    }
-
-    private function table() {
-
-        return $this->table ?: \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName();
-    }
-
     /** The rows this deletes, as a WHERE clause, and its parameters. */
     private static function where() {
 
@@ -101,7 +71,7 @@ class Update086 extends \OWA\Core\Update {
     function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->table();
+        $table = $this->settingTable();
 
         list( $where, $params ) = self::where();
 
@@ -186,8 +156,7 @@ class Update086 extends \OWA\Core\Update {
             }
         }
 
-        if ( \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->table() ),
-                array( $this->recordId() ) ) === false ) {
+        if ( ! $this->deleteRecord() ) {
 
             $this->e->notice( sprintf( 'Removing %s failed.', self::BEFORE ) );
 
@@ -195,62 +164,6 @@ class Update086 extends \OWA\Core\Update {
         }
 
         return true;
-    }
-
-    /** What up() kept, or an empty array. */
-    private function record() {
-
-        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT value FROM %s WHERE id = ?', $this->table() ),
-            array( $this->recordId() ) );
-
-        if ( ! $row ) {
-
-            return array();
-        }
-
-        $record = @unserialize( (string) ( (array) $row )['value'], array( 'allowed_classes' => false ) );
-
-        return is_array( $record ) ? $record : array();
-    }
-
-    private function recordId() {
-
-        return (string) \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->makeId(
-            'install', self::INSTALL_SCOPE_ID, 'base', self::BEFORE );
-    }
-
-    /** Upsert the install row of the record. */
-    private function writeRecord( $value ) {
-
-        return \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
-            'INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)'
-          . " VALUES (?, 'install', ?, 'base', ?, ?, 0, ?) ON DUPLICATE KEY UPDATE value = ?", $this->table() ),
-            array( $this->recordId(), self::INSTALL_SCOPE_ID, self::BEFORE, $value, time(), $value ) ) !== false;
-    }
-
-    /** A row put back exactly as SELECT * read it. */
-    private function restoreRow( array $row ) {
-
-        $columns = array_keys( $row );
-
-        foreach ( $columns as $column ) {
-
-            // Names the table gave, but they are interpolated, so only plain ones.
-            if ( ! preg_match( '/^[a-z_]+$/', (string) $column ) ) {
-
-                return false;
-            }
-        }
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
-        if ( $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->table() ), array( (string) $row['id'] ) ) === false ) {
-
-            return false;
-        }
-
-        return $db->query( sprintf( 'INSERT INTO %s (%s) VALUES (%s)', $this->table(), implode( ', ', $columns ),
-            implode( ', ', array_fill( 0, count( $columns ), '?' ) ) ), array_values( $row ) ) !== false;
     }
 }
 

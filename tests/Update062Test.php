@@ -418,10 +418,10 @@ final class Update062Test extends TestCase
         $this->queueDir();
 
         $q = new \OWA\Module\Base\Update\Update068();
-        $q->table = V1Schema::PREFIX . 'queue_item';
+        $q->tables = ['queue_item' => V1Schema::PREFIX . 'queue_item'];
         $q->down();
         \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
-            "INSERT INTO %s (id, status) VALUES (1, 'unhandled'), (2, 'unhandled'), (3, 'broken')", $q->table));
+            "INSERT INTO %s (id, status) VALUES (1, 'unhandled'), (2, 'unhandled'), (3, 'broken')", $q->tableFor('queue_item')));
 
         $this->assertSame(array('file_lines' => 0, 'queue_rows' => 2), $this->update->undrainedV1Queue(),
             'only rows still awaiting a retry are counted');

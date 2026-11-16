@@ -45,7 +45,7 @@ final class Update087Test extends TestCase
 
         $this->assertNotFalse($db->query(sprintf("INSERT INTO %s (user_id, role) VALUES ('owa-test-087', 'viewer')", self::TABLE)));
 
-        $this->update->table = self::TABLE;
+        $this->update->tables = ['base.user' => self::TABLE];
     }
 
     private function hasColumn(): bool

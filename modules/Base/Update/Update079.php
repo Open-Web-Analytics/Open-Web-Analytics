@@ -79,7 +79,7 @@ class Update079 extends \OWA\Core\Update {
     function up( $force = false ) {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $table  = $this->table( 'custom_report' );
+        $table  = $this->tableFor( 'custom_report' );
         $before = (array) \OWA\Core\CoreAPI::getSetting( 'base', self::BEFORE );
 
         $rows = (array) $db->get_results( sprintf( 'SELECT id, name, definition FROM %s WHERE definition LIKE ?', $table ),
@@ -151,7 +151,7 @@ class Update079 extends \OWA\Core\Update {
     function down() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->table( 'custom_report' );
+        $table = $this->tableFor( 'custom_report' );
 
         foreach ( (array) \OWA\Core\CoreAPI::getSetting( 'base', self::BEFORE ) as $id => $record ) {
 
@@ -357,8 +357,8 @@ class Update079 extends \OWA\Core\Update {
         }
 
         $db          = \OWA\Core\CoreAPI::dbSingleton();
-        $definitions = $this->table( 'goal_event_definition' );
-        $conditions  = $this->table( 'goal_event_definition_condition' );
+        $definitions = $this->tableFor( 'goal_event_definition' );
+        $conditions  = $this->tableFor( 'goal_event_definition_condition' );
 
         if ( ! $ids || ! $db->tableExists( $definitions ) ) {
 
@@ -403,12 +403,6 @@ class Update079 extends \OWA\Core\Update {
         }
 
         return $out;
-    }
-
-    /** A table's name under the install's prefix. */
-    private function table( $name ) {
-
-        return \OWA\Core\Entity::TABLE_PREFIX . $name;
     }
 
     /** A stored definition decoded, as CustomReports::hydrate() reads one. */

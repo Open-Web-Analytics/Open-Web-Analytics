@@ -34,7 +34,7 @@ final class Update084Test extends TestCase
         $db->query(sprintf('CREATE TABLE %s LIKE %s', self::TABLE,
             \OWA\Core\CoreAPI::entityFactory('base.setting')->getTableName()));
 
-        $this->update->table = self::TABLE;
+        $this->update->tables = ['base.setting' => self::TABLE];
     }
 
     protected function tearDown(): void
@@ -197,7 +197,7 @@ final class Update084Test extends TestCase
         $this->assertTrue((bool) $c->config_from_db, 'boot read the store, so save() prunes');
 
         $this->keepInstallRows(['log_robots', 'spam_threshold', Update084::BEFORE]);
-        $this->update->table = null;
+        $this->update->tables = [];
 
         // No threshold stored: up() creates the row.
         $c->removeSetting('base', 'spam_threshold');
