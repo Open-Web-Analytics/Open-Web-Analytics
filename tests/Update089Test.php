@@ -7,7 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Update089: owa_user.api_key is dropped, and down() puts the column back in
- * its place with every user's value. On a scratch copy of the user table.
+ * its place, empty. On a scratch copy of the user table.
  */
 final class Update089Test extends TestCase
 {
@@ -33,7 +33,6 @@ final class Update089Test extends TestCase
         if (owa_test_db_available()) {
             $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->query('DROP TABLE IF EXISTS ' . self::TABLE);
-            $db->query('DROP TABLE IF EXISTS ' . $this->update->backupTable());
         }
     }
 
@@ -51,7 +50,6 @@ final class Update089Test extends TestCase
         $user = \OWA\Core\CoreAPI::entityFactory('base.user')->getTableName();
 
         $db->query('DROP TABLE IF EXISTS ' . self::TABLE);
-        $db->query('DROP TABLE IF EXISTS ' . $this->update->backupTable());
         $this->assertNotFalse($db->query(sprintf('CREATE TABLE %s LIKE %s', self::TABLE, $user)));
 
         if (!$this->hasColumn()) {
@@ -132,61 +130,26 @@ final class Update089Test extends TestCase
 
         $this->assertTrue($this->update->up());
         $this->assertFalse($this->hasColumn());
-        $this->assertTrue(\OWA\Core\CoreAPI::dbSingleton()->tableExists($this->update->backupTable()));
         $after = $this->createStatement();
 
         $this->assertTrue($this->update->up(), 'a second run');
         $this->assertSame($after, $this->createStatement());
-        $this->assertSame(array_keys(self::KEYS), array_keys($this->keysOf($this->update->backupTable())));
     }
 
-    public function testARunThatStoppedAfterTheCopyKeepsTheFirstCopy(): void
+    /** The column comes back defined as it was and where it was, with no keys. */
+    public function testDownAddsTheColumnBackEmpty(): void
     {
         $this->scratchTable();
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $before = $this->keys();
+        $before = $this->createStatement();
 
         $this->assertTrue($this->update->up());
         $this->assertTrue($this->update->down());
 
-        // As if up() had stopped after copying: the kept table is there and so is the column.
-        $this->assertTrue($this->update->up());
-        $this->assertNotFalse($db->query(sprintf('ALTER TABLE %s ADD COLUMN api_key VARCHAR(255) DEFAULT NULL AFTER last_update_date', self::TABLE)));
-        $this->assertNotFalse($db->query(sprintf("UPDATE %s SET api_key = 'changed-after-the-copy'", self::TABLE)));
-
-        $this->assertTrue($this->update->up());
-        $this->assertTrue($this->update->down());
-        $this->assertSame($before, $this->keys());
-    }
-
-    public function testDownIsTheExactInverse(): void
-    {
-        $this->scratchTable();
-        $before     = $this->createStatement();
-        $beforeKeys = $this->keys();
-
-        $this->assertTrue($this->update->up());
-        $this->assertTrue($this->update->down());
-
-        $this->assertSame($before, $this->createStatement(), 'the column is back, defined as it was and where it was');
-        $this->assertSame($beforeKeys, $this->keys(), 'every user has the key they had, NULL and empty included');
-        $this->assertFalse(\OWA\Core\CoreAPI::dbSingleton()->tableExists($this->update->backupTable()), 'down() drops its table');
-
-        $this->assertTrue($this->update->down(), 'down() with nothing to undo');
         $this->assertSame($before, $this->createStatement());
-    }
+        $this->assertSame(array_fill_keys(array_keys(self::KEYS), null), $this->keys());
+        $this->assertNotSame('', $this->update->down_does_not_restore);
 
-    /** @return array<string,string|null> user_id => api_key, from the kept table */
-    private function keysOf(string $backup): array
-    {
-        $out = [];
-
-        foreach ((array) \OWA\Core\CoreAPI::dbSingleton()->get_results(sprintf(
-            'SELECT u.user_id, b.api_key FROM %s b JOIN %s u ON u.id = b.id ORDER BY b.id', $backup, self::TABLE)) as $row) {
-            $row = (array) $row;
-            $out[(string) $row['user_id']] = $row['api_key'];
-        }
-
-        return $out;
+        $this->assertTrue($this->update->down(), 'a second run');
+        $this->assertSame($before, $this->createStatement());
     }
 }

@@ -448,8 +448,6 @@ return array(
         // Set by Update085 when it deleted the rows of 1.x settings nothing reads, so its down() can put them back.
         'retired_settings_before_085' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'cache_settings_before_086' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
-        // Set by Update088 when it removed the scheme from Profile and Property domains, so its down() can put each back.
-        'domains_before_088' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'reserved_words' => array( 'default' => array( 'do' => 'action' ), 'description' => 'Request parameters read under another name, as name => alias. By default a parameter named action is read as do.' ),
         'scheduled_jobs' => array( 'default' => array(), 'description' => 'Changes to the scheduled jobs, keyed by job name: a different schedule or params, a job turned off, or a job of your own.' ),
         'server_role' => array( 'default' => 'full', 'description' => 'What this server does, set by OWA_SERVER_ROLE: full (everything; the default), collector (receives beacons and queues them, with no database), worker (the CLI and the scheduler), console (the admin and report screens) or api (the REST API). A comma list combines roles, such as console,api.' ),

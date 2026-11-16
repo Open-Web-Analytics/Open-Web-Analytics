@@ -7,16 +7,15 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Update088: Profile and Property domains lose the scheme and trailing slash
- * 1.x stored, and down() puts back each value up() changed.
+ * 1.x stored, and down() changes nothing.
  *
- * Against scratch copies of the site, property and settings tables, so the
+ * Against scratch copies of the site and property tables, so the
  * install's own rows are neither read nor changed.
  */
 final class Update088Test extends TestCase
 {
     const SITES      = 'owa_test_update088_site';
     const PROPERTIES = 'owa_test_update088_property';
-    const SETTINGS   = 'owa_test_update088_setting';
 
     /** Stored => what up() makes of it. */
     const DOMAINS = [
@@ -42,7 +41,7 @@ final class Update088Test extends TestCase
     {
         if (owa_test_db_available()) {
             $db = \OWA\Core\CoreAPI::dbSingleton();
-            foreach ([self::SITES, self::PROPERTIES, self::SETTINGS] as $table) {
+            foreach ([self::SITES, self::PROPERTIES] as $table) {
                 $db->query('DROP TABLE IF EXISTS ' . $table);
             }
         }
@@ -56,7 +55,7 @@ final class Update088Test extends TestCase
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach ([self::SITES => 'base.site', self::PROPERTIES => 'base.property', self::SETTINGS => 'base.setting'] as $table => $entity) {
+        foreach ([self::SITES => 'base.site', self::PROPERTIES => 'base.property'] as $table => $entity) {
             $db->query('DROP TABLE IF EXISTS ' . $table);
             $this->assertNotFalse($db->query(sprintf('CREATE TABLE %s LIKE %s', $table,
                 \OWA\Core\CoreAPI::entityFactory($entity)->getTableName())));
@@ -75,8 +74,7 @@ final class Update088Test extends TestCase
         $db->query(sprintf('INSERT INTO %s (id, site_id, domain) VALUES (100, ?, NULL)', self::SITES), ['app-site']);
         $db->query(sprintf("INSERT INTO %s (id, domain) VALUES (100, '')", self::PROPERTIES));
 
-        $this->update->tables       = ['site' => self::SITES, 'property' => self::PROPERTIES];
-        $this->update->settingTable = self::SETTINGS;
+        $this->update->tables = ['site' => self::SITES, 'property' => self::PROPERTIES];
     }
 
     /** @return array<string,array<string,string|null>> table => id => domain */
@@ -94,18 +92,12 @@ final class Update088Test extends TestCase
         return $out;
     }
 
-    private function recordCount(): int
-    {
-        return (int) ((array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            sprintf("SELECT COUNT(*) AS n FROM %s WHERE name = ?", self::SETTINGS), [Update088::BEFORE]))['n'];
-    }
-
     public function testTheModuleAsksForIt(): void
     {
         $this->assertSame(88, $this->update->schema_version);
         $this->assertFalse($this->update->is_cli_mode_required);
         $this->assertGreaterThanOrEqual(88, \OWA\Core\CoreAPI::serviceSingleton()->getModule('base')->required_schema_version);
-        $this->assertTrue(\OWA\Core\CoreAPI::configSingleton()->isRegistered('base', Update088::BEFORE));
+        $this->assertNotSame('', $this->update->down_does_not_restore);
     }
 
     /** The update applies the function every save applies. */
@@ -133,16 +125,9 @@ final class Update088Test extends TestCase
         $after = $this->domains();
         $this->assertSame($expected + ['100' => null], $after[self::SITES]);
         $this->assertSame($expected + ['100' => ''], $after[self::PROPERTIES]);
-        $this->assertSame(1, $this->recordCount());
-
-        $record = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            sprintf('SELECT value FROM %s WHERE name = ?', self::SETTINGS), [Update088::BEFORE]);
 
         $this->assertTrue($this->update->up(), 'a second run');
         $this->assertSame($after, $this->domains());
-        $this->assertSame($record, (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            sprintf('SELECT value FROM %s WHERE name = ?', self::SETTINGS), [Update088::BEFORE]),
-            'a second run keeps the first run\'s record');
     }
 
     public function testNothingToChangeWritesNothing(): void
@@ -155,22 +140,17 @@ final class Update088Test extends TestCase
 
         $this->assertTrue($this->update->up());
         $this->assertSame($before, $this->domains());
-        $this->assertSame(0, $this->recordCount());
     }
 
-    public function testDownRestoresEveryValueExactly(): void
+    /** down() leaves the domains as up() made them. */
+    public function testDownChangesNothing(): void
     {
         $this->scratchTables();
-        $before = $this->domains();
 
         $this->assertTrue($this->update->up());
-        $this->assertTrue($this->update->up());
+        $after = $this->domains();
+
         $this->assertTrue($this->update->down());
-
-        $this->assertSame($before, $this->domains());
-        $this->assertSame(0, $this->recordCount(), 'down() removes its record');
-
-        $this->assertTrue($this->update->down(), 'down() with nothing to undo');
-        $this->assertSame($before, $this->domains());
+        $this->assertSame($after, $this->domains());
     }
 }

@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class UpdateRollbackNotesTest extends TestCase
 {
-    const LOSSY = array( 48, 49, 52, 53, 54, 62, 68, 70, 75 );
+    const LOSSY = array( 48, 49, 52, 53, 54, 62, 68, 70, 75, 88, 89 );
 
     public function testEachLossyRollbackSaysWhatItDoesNotRestore(): void
     {

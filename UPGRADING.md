@@ -398,7 +398,7 @@ A Profile's or Property's domain is a host, with a port when the site is served
 on one: `www.example.com`, `localhost:8080`. 1.x stored the scheme the
 installer's select added, `https://www.example.com`. Update088 removes a
 leading `http://` or `https://` and trailing slashes from `owa_site.domain` and
-`owa_property.domain`; its down() puts each value back. A domain typed or sent
+`owa_property.domain`; its down() leaves them without one. A domain typed or sent
 with a scheme (the settings screens, `POST /v1/sites`, `cmd=add-site`, the
 installer) is stored without it. A heatmap opens its page on the scheme and
 host the page's clicks recorded, and on the domain over https when none did.
@@ -420,7 +420,7 @@ plugin's server-side calls, needs an application password instead.
 
 **Also removed:** the API Key row on the user edit screen, and the `api_key`
 column of `owa_user`, which Update089 drops. Its down() adds the column back
-with every user's key.
+empty.
 
 ### Report periods
 
