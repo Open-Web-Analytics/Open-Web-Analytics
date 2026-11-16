@@ -123,7 +123,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
         OWA.items.domstreamConstraints.setRelatedMetrics( filter.metrics, [] );
         OWA.items.domstreamConstraints.display( filter.constraints || '' );
 
-        jQuery( '#domstreamFilter' ).bind( 'constraint_change', function ( event, constraints ) {
+        jQuery( '#domstreamFilter' ).on( 'constraint_change', function ( event, constraints ) {
             goTo( { 'owa_constraints': constraints } );
         } );
     }

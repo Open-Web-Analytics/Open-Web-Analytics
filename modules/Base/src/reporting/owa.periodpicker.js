@@ -224,8 +224,7 @@ function midSentence( label ) {
 
 function esc( s ) {
 
-    return String( s ).replace( /[&<>"']/g, ( c ) =>
-        ( { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } )[ c ] );
+    return OWA.util.escapeHtml( String( s ) );
 }
 
 /**

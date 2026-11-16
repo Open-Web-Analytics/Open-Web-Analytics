@@ -219,7 +219,7 @@ foreach ( $owa_steps as $owa_s ) {
         OWA.items.funnelConstraints.setRelatedMetrics( funnelFilter.metrics, [] );
         OWA.items.funnelConstraints.display( funnelFilter.constraints || '' );
 
-        jQuery( '#funnelFilter' ).bind( 'constraint_change', function ( event, constraints ) {
+        jQuery( '#funnelFilter' ).on( 'constraint_change', function ( event, constraints ) {
             goTo( { 'owa_constraints': constraints } );
         } );
     }
