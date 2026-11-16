@@ -3167,6 +3167,7 @@ test.describe('custom reports', () => {
             const refused = await theirs.goto(privateUrl, { waitUntil: 'networkidle' });
 
             expect(refused.status()).toBe(404);
+            await expect(theirs.locator('body')).toContainText('The page could not be found.');
             await expect(theirs.locator('.owa_reportTitle')).toHaveCount(0);
             await expect(theirs.locator('body')).not.toContainText(privateName);
         } finally {

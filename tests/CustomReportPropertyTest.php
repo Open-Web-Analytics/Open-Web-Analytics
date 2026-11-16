@@ -437,6 +437,42 @@ final class CustomReportPropertyTest extends TestCase
     }
 
     /**
+     * Through the dispatcher, a refused report is OWA's not-found page with a
+     * 404: one on another Property, and one the reader may not view.
+     */
+    public function testARefusedReportIsTheNotFoundPage(): void
+    {
+        $id     = $this->store(self::P, 'Refused fixture');
+        $viewer = $this->viewer();
+
+        $page = function (string $property) use ($id): array {
+            http_response_code(200);
+            ob_start();
+            $out = CoreAPI::runController(new \OWA\Module\Base\Controller\Report([
+                'reportId'   => 'custom-' . $id,
+                'propertyId' => $property,
+                'period'     => 'last_thirty_days',
+            ]));
+            $html = ob_get_clean() . (string) $out;
+
+            return [$html, http_response_code()];
+        };
+
+        foreach ([
+            'another Property'     => fn () => $page(self::Q),
+            'not shared with them' => fn () => $this->asUser($viewer, fn () => $page(self::P)),
+        ] as $case => $request) {
+            [$html, $code] = $request();
+
+            $this->assertSame(404, $code, $case);
+            $this->assertStringContainsString(CoreAPI::t('The page could not be found.'), $html, $case);
+            $this->assertStringNotContainsString('Refused fixture', $html, $case);
+        }
+
+        http_response_code(200);
+    }
+
+    /**
      * A link to a report keeps working: its id is unchanged, and one naming no
      * Property, or a Profile of the report's, opens it on its own.
      */
