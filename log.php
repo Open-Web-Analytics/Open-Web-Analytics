@@ -122,6 +122,8 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     $owa->e->debug('Logging new tracking event...');
     
     $service = \OWA\Core\CoreAPI::serviceSingleton();
+    // The page URL and referrer before the second decode, which can cut them (TrackingEventHelpers::arrivedUrlIfCut()).
+    $arrived = \OWA\Module\Base\Classes\TrackingEventHelpers::arrivedUrls( $service->request->getAllOwaParams() );
     $service->request->decodeRequestParams();
     $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
     // e_t from the current tracker, event_type from an older one.
@@ -150,7 +152,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     $params = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::REQUEST_PRE,
         $service->request->getAllOwaParams() );
 
-    $params = \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams( $params );
+    $params = \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams( $params ) + $arrived;
 
     $event->setProperties( $params );
 

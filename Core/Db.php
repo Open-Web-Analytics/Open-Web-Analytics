@@ -462,6 +462,20 @@ class Db extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * A WHERE condition written as SQL, for one the operators cannot say. The
+     * SQL is the caller's own, never a request's; $bindings are its values, in
+     * the order of its placeholders.
+     *
+     * @param string $key
+     * @param string $sql
+     * @param array  $bindings
+     */
+    function whereSql( $key, $sql, array $bindings = array() ) {
+
+        $this->_sqlParams['where'][ $key ] = array( 'name' => $sql, 'value' => $bindings, 'operator' => 'sql', 'sql' => true );
+    }
+
     /** As where(), for a metric. */
     function having($name, $value, $operator = '=', $key = null) {
 
@@ -854,6 +868,26 @@ class Db extends \OWA\Core\Base {
             $constraint = $type.' ';
 
             foreach ($params as $k => $v) {
+
+                // whereSql(): its placeholders are in the SQL, so its values bind here, in order.
+                if ( ! empty( $v['sql'] ) ) {
+
+                    foreach ( $v['value'] as $value ) {
+
+                        $this->bindValue( $value );
+                    }
+
+                    $constraint .= '( ' . $v['name'] . ' )';
+
+                    if ( $i < $count - 1 ) {
+
+                        $constraint .= ' AND ';
+                    }
+
+                    $i++;
+
+                    continue;
+                }
 
                 $op = strtolower( $v['operator'] );
 

@@ -77,6 +77,7 @@ final class OverlayLauncherTest extends TestCase
         self::clicks($day, self::SITE, 'https://evil.test/pricing', 5);
         self::clicks($day, self::SITE, 'https://www.example.test/pricing', 2);
         self::clicks($day, self::OTHER, 'https://shop.example.org/pricing?ref=a', 3);
+        self::clicks($day, self::SITE, 'https://www.example.test/a,b%26c', 1, '/a,b%26c');
 
         $builder = new Builder(self::PROPERTY);
 
@@ -143,6 +144,36 @@ final class OverlayLauncherTest extends TestCase
     }
 
     /**
+     * A path holding a comma and an escape reaches the data request whole: the
+     * comma does not end the constraint, and the query counts its click.
+     */
+    public function testAPathWithACommaReachesTheDataRequestWhole(): void
+    {
+        $url = $this->launchPath('/a,b%26c');
+
+        $this->assertStringStartsWith('http://www.example.test/a,b%26c#owa_overlay.', $url);
+
+        $params = json_decode(base64_decode(rawurldecode(substr($url, strpos($url, '#owa_overlay.') + 13))), true);
+        parse_str((string) parse_url($params['api_url'], PHP_URL_QUERY), $q);
+
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
+        $constraints = $rsm->parseConstraintsString($q['constraints'] ?? '');
+
+        $this->assertSame([['name' => 'pagePath', 'value' => '/a,b%26c', 'operator' => '=='],
+            ['name' => 'eventName', 'value' => 'click', 'operator' => '==']], $constraints);
+
+        $rsm->metrics = $rsm->metricsStringToArray('eventCount');
+        $rsm->setPropertyId((string) self::PROPERTY);
+        $rsm->setTimePeriod('last_thirty_days');
+        $rsm->setConstraints($constraints);
+
+        $rs = $rsm->getResults();
+
+        $this->assertSame([], (array) $rs->errors);
+        $this->assertSame(1, (int) ($rs->aggregates['eventCount']['value'] ?? 0));
+    }
+
+    /**
      * A Pages row's heatmap: one exact page, path and query string.
      *
      * Opened on the Profile's own domain -- the Profile with the page's clicks
@@ -198,9 +229,18 @@ final class OverlayLauncherTest extends TestCase
         $this->assertSame('', $this->launchPath('pricing'));
     }
 
-    public function testAPageTheConstraintCannotCarryOpensNothing(): void
+    /** A comma no longer splits the constraint, so a page holding one opens; a relative path does not. */
+    public function testAPageWithACommaOpensAndARelativePathDoesNot(): void
     {
-        $this->assertSame('', $this->launchPage('/pricing?a=1,2'));
+        $url = $this->launchPage('/pricing?a=1,2');
+
+        $this->assertStringStartsWith('http://www.example.test/pricing?a=1,2#owa_overlay.', $url);
+
+        $params = json_decode(base64_decode(rawurldecode(substr($url, strpos($url, '#owa_overlay.') + 13))), true);
+        parse_str((string) parse_url($params['api_url'], PHP_URL_QUERY), $q);
+
+        $this->assertSame('/pricing?a=1,2',
+            (new \OWA\Module\Base\Classes\ResultSetManager())->parseConstraintsString($q['constraints'] ?? '')[0]['value'] ?? null);
         $this->assertSame('', $this->launchPage('pricing'));
     }
 
@@ -255,7 +295,7 @@ final class OverlayLauncherTest extends TestCase
         $user->setAuthStatus(true);
     }
 
-    private static function clicks(int $yyyymmdd, string $site_id, string $url, int $n): void
+    private static function clicks(int $yyyymmdd, string $site_id, string $url, int $n, string $path = '/pricing'): void
     {
         for ($i = 0; $i < $n; $i++) {
             $seq     = ++self::$seq;
@@ -272,7 +312,7 @@ final class OverlayLauncherTest extends TestCase
                 'ts'            => $ts,
                 'yyyymmdd'      => $yyyymmdd,
                 'page_location' => $url,
-                'page_path'     => '/pricing',
+                'page_path'     => $path,
                 'is_goal_event' => 0,
             ]);
 

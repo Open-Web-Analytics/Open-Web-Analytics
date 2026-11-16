@@ -69,6 +69,14 @@ describe('a stored clause', () => {
         expect(OWA.filterPills.stringify(OWA.filterPills.parse(str))).toBe(str);
     });
 
+    test('a value is escaped as the server reads it', () => {
+
+        const f = [{ name: 'pagePath', op: '==', value: '/a,b%' }];
+
+        expect(OWA.filterPills.stringify(f)).toBe('pagePath==/a%2Cb%25');
+        expect(OWA.filterPills.parse(OWA.filterPills.stringify(f))).toEqual(f);
+    });
+
     test('an empty test keeps (not set) as part of its operator', () => {
 
         expect(OWA.filterPills.split('medium==(not set)')).toEqual({ name: 'medium', op: '==(not set)', value: '' });
