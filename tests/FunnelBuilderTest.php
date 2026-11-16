@@ -58,7 +58,7 @@ final class FunnelBuilderTest extends TestCase
         $funnel = new \OWA\Module\Base\Controller\VisualizationFunnel( array( 'constraints' => 'pagePath=@/' ) );
 
         // What pre() does on a request with no period: the default one.
-        $funnel->setTimePeriod( \OWA\Core\CoreAPI::makeTimePeriod( null, array() ) );
+        $funnel->period = \OWA\Core\CoreAPI::makeTimePeriod( null, array() );
 
         $bounds = $this->call( $funnel, 'segment' )->bounds();
 
