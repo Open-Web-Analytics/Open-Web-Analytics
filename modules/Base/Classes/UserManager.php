@@ -87,6 +87,8 @@ class UserManager extends \OWA\Core\Base {
         // The link that set it cannot set it again.
         $u->set('temp_passkey', \OWA\Module\Base\Entity\User::spentTempPasskey() );
         $u->set('password', \OWA\Core\Lib::encryptPassword($user_params['password']));
+        // A new password signs out every session, on every device.
+        $u->endSessions();
         $ret = $u->update();
 
         return $ret ? $u : false;

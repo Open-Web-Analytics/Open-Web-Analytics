@@ -71,6 +71,22 @@ class Auth extends \OWA\Core\Base {
     var $eq;
 
     /**
+     * How long a session cookie is valid from when it is issued, in seconds.
+     */
+    const SESSION_LIFETIME = 172800;
+
+    /**
+     * A request signed in by the cookie with less than this many seconds left
+     * on it is given a fresh one.
+     */
+    const SESSION_REFRESH_BELOW = 86400;
+
+    /**
+     * The `p` cookie: `<expiry>.<hmac>`, expiry a unix timestamp.
+     */
+    const SESSION_CREDENTIAL_PATTERN = '/^([0-9]{1,10})\.([a-f0-9]{64})$/';
+
+    /**
      * Auth class Singleton
      *
      * @return \OWA\Core\Auth
@@ -469,11 +485,19 @@ class Auth extends \OWA\Core\Base {
 
     }
 
-    function authByCookies($user_id, $password) {
+    /**
+     * Sign in by the `u` and `p` cookies (see sessionCredential()).
+     *
+     * A sign-in with less than SESSION_REFRESH_BELOW left is given a fresh `p`,
+     * so a session ends between SESSION_REFRESH_BELOW and SESSION_LIFETIME
+     * after its last request, not at a fixed time after its sign-in.
+     */
+    function authByCookies($user_id, $credential) {
 
         // set credentials
         $this->credentials['user_id'] = \OWA\Module\Base\Classes\Sanitize::cleanUserId( $user_id );
-        $this->credentials['password'] = $password;
+        $this->credentials['password'] = $credential;
+        unset( $this->credentials['new_password'] );
 		\OWA\Core\CoreAPI::debug('auth by cookies');
         // lookup user if not already done.
         if ($this->_is_user == false) {
@@ -483,7 +507,12 @@ class Auth extends \OWA\Core\Base {
             if (!$cu->isAuthenticated()) {
                 // check to see if they are a user.
                 $val = $this->isUser();
-                //print ("val: ". $val);
+
+                if ( $val === true && self::sessionCredentialNeedsRefresh( $credential ) ) {
+
+                    $this->writeSessionCredential();
+                }
+
                 return $val;
             }
         } else {
@@ -495,11 +524,9 @@ class Auth extends \OWA\Core\Base {
 
         // set credentials
         $this->credentials['user_id'] = \OWA\Module\Base\Classes\Sanitize::cleanUserId( $user_id );
-        // must encrypt password to see if it matches whats in the db
-        $this->credentials['password'] = $this->generateAuthCredential( $this->credentials['user_id'], $this->encryptOldPassword( $password ) );
-        // pass plain text password to test with password_verify
+        unset( $this->credentials['password'] );
+        // the typed password, checked against the stored hash
         $this->credentials['new_password'] = $password;
-        //owa_coreAPI::debug(print_r($this->credentials, true));
         $ret = $this->isUser();
 
         if ($ret === true) {
@@ -544,21 +571,46 @@ class Auth extends \OWA\Core\Base {
     }
 
     /**
-     * Saves login credentails to persistant browser cookies
-     * TODO: refactor to use state facility
+     * Writes the session cookies at sign-in: `u`, the user_id, and `p`.
+     *
+     * HttpOnly: nothing in the browser needs them, and with them a script
+     * injected into any OWA page would have the account. Secure on an HTTPS
+     * request (Lib::isHttps()).
      */
     function saveCredentials() {
 
         \OWA\Core\CoreAPI::debug('saving user credentials to cookies');
-        
-        // HttpOnly: nothing in the browser needs them, and with them a script
-        // injected into any OWA page would have the account.
-        \OWA\Core\CoreAPI::createCookie( 'u', $this->u->get('user_id'), time()+3600*24*365*10, '/', '', false, true );
-        \OWA\Core\CoreAPI::createCookie( 'p', $this->generateAuthCredential( $this->credentials['user_id'], $this->u->get('password') ), time()+3600*24*2, '/', '', false, true );
+
+        $this->writeCookie( 'u', $this->u->get('user_id'), time()+3600*24*365*10 );
+        $this->writeSessionCredential();
     }
 
     /**
-     * Removes credentials
+     * Writes `p` for the signed-in user, expiring SESSION_LIFETIME from now.
+     */
+    protected function writeSessionCredential() {
+
+        $expires = time() + self::SESSION_LIFETIME;
+
+        $this->writeCookie( 'p', self::sessionCredential(
+            $this->u->get('user_id'), $this->u->get('session_epoch'), $this->u->get('password'), $expires ), $expires );
+    }
+
+    /** A session cookie: HttpOnly, and Secure on an HTTPS request. */
+    protected function writeCookie( $name, $value, $expires ) {
+
+        $this->emitCookie( $name, $value, $expires, (bool) \OWA\Core\Lib::isHttps(), true );
+    }
+
+    protected function emitCookie( $name, $value, $expires, $secure, $httponly ) {
+
+        \OWA\Core\CoreAPI::createCookie( $name, $value, $expires, '/', '', $secure, $httponly );
+    }
+
+    /**
+     * Removes this browser's `p`. The credential itself stays valid until it
+     * expires; User::endSessions() ends it everywhere.
+     *
      * @return boolean
      */
     function deleteCredentials() {
@@ -593,11 +645,6 @@ class Auth extends \OWA\Core\Base {
     }
 
     /**
-     * Checks to see if the user credentials match a real user object in the DB
-     *
-     * @return boolean
-     */
-    /**
      * The values the old User::generateRandomPassword() gave an account created
      * without a password (a hash prefix). A login with one is refused whatever
      * the stored hash says; the account's owner sets a password through the
@@ -610,6 +657,12 @@ class Auth extends \OWA\Core\Base {
         return is_string( $password ) && preg_match( self::LEGACY_GENERATED_PASSWORD, $password ) === 1;
     }
 
+    /**
+     * Whether the credentials (a typed password, or the `p` cookie) sign in
+     * the user they name. On success the user is the current user.
+     *
+     * @return boolean
+     */
     function isUser() {
 
         // get current user
@@ -618,92 +671,152 @@ class Auth extends \OWA\Core\Base {
         // fetches user object from DB
         $this->getUser();
 
-        if ( $this->credentials['user_id'] === $this->u->get('user_id') ) {
+        if ( $this->credentials['user_id'] !== $this->u->get('user_id') ) {
 
-            // new_password will only be set when using authByInput
-            if ( isset($this->credentials['new_password']) && ! self::isLegacyGeneratedPassword( $this->credentials['new_password'] ) ) {
-                // plain text password matches DB password we can authorize
-                if ( password_verify( $this->credentials['new_password'], $this->u->get('password') ) ) {
-                $this->_is_user = true;
-
-                // set as new current user in service layer
-                $cu->loadNewUserByObject( $this->u );
-                $cu->setAuthStatus(true);
-
-                return true;
-                }
-            }
-
-            //if ($this->credentials['password'] === $this->u->get('password')):
-            if ( $this->isValidAuthCredential( $this->credentials['user_id'], $this->credentials['password'] ) ) {
-                $this->_is_user = true;
-
-                // set as new current user in service layer
-                $cu->loadNewUserByObject( $this->u );
-                $cu->setAuthStatus(true);
-
-                return true;
-            } else {
-                $this->_is_user = false;
-                return false;
-            }
-        } else {
             $this->_is_user = false;
             return false;
         }
-    }
 
-    function isValidAuthCredential( $user_id, $passed_credential ) {
+        // new_password is set only by authByInput; otherwise the credential is the `p` cookie.
+        if ( isset( $this->credentials['new_password'] ) ) {
 
-        $hash = '';
-        $hash = $this->reconstructAuthCredential( $user_id );
-        //print "hash: $hash ";
-        //print "passed credential: $passed_credential ";
-        if ( function_exists('hash_equals') ) {
-
-            return hash_equals( $hash, $passed_credential );
+            $valid = $this->passwordMatches( $this->credentials['new_password'], (string) $this->u->get('password') );
 
         } else {
 
-            if ( $hash === $passed_credential ) {
-
-                return true;
-            }
-        }
-    }
-
-    function reconstructAuthCredential( $user_id ) {
-
-        $u = \OWA\Core\CoreAPI::entityFactory('base.user');
-
-        $u->getByColumn( 'user_id', $user_id );
-
-        $password = $u->get('password');
-        //print "password $password";
-        return $this->generateAuthCredential( $user_id, $password );
-    }
-
-    function generateAuthCredential($user_id, $password, $expiration = '', $scheme = 'auth') {
-
-        $frag = substr($password, 8, 4);
-
-        $key = \OWA\Core\CoreAPI::saltedHash( $user_id . $frag . $expiration, $scheme );
-
-        $algo = 'sha1';
-
-        if ( function_exists( 'hash' ) ) {
-
-            $algo = 'sha256';
-
+            $valid = self::isValidSessionCredential(
+                $this->credentials['password'] ?? null,
+                $this->credentials['user_id'],
+                $this->u->get('session_epoch'),
+                $this->u->get('password')
+            );
         }
 
-        $hash = \OWA\Core\Lib::hash( $algo, $user_id . $expiration, $key );
+        if ( ! $valid ) {
 
-        $credential = $hash; // could add other elements here.
+            $this->_is_user = false;
+            return false;
+        }
 
-        return $credential;
+        $this->_is_user = true;
+
+        // set as new current user in service layer
+        $cu->loadNewUserByObject( $this->u );
+        $cu->setAuthStatus(true);
+
+        return true;
     }
-    
+
+    /**
+     * Whether a typed password is the account's: the stored hash, or, for an
+     * account whose password 1.x stored unsalted, the whole of that hash.
+     */
+    private function passwordMatches( $typed, $stored ) {
+
+        if ( ! is_string( $typed ) || $typed === '' || self::isLegacyGeneratedPassword( $typed ) ) {
+
+            return false;
+        }
+
+        if ( password_verify( $typed, $stored ) ) {
+
+            return true;
+        }
+
+        return $stored !== '' && hash_equals( $stored, $this->encryptOldPassword( $typed ) );
+    }
+
+    /**
+     * The `p` cookie's value.
+     *
+     * The HMAC, with the install's auth secret, covers the user_id, the user's
+     * session_epoch, the expiry and four characters of the password hash. It
+     * stops signing anyone in when it expires, when the epoch moves (sign-out,
+     * a password change: User::endSessions()) or when the password hash
+     * changes.
+     *
+     * @param string $user_id
+     * @param int    $session_epoch
+     * @param string $password_hash
+     * @param int    $expires unix timestamp
+     * @return string
+     */
+    static function sessionCredential( $user_id, $session_epoch, $password_hash, $expires ) {
+
+        $expires = (int) $expires;
+
+        return $expires . '.' . self::sessionHmac( $user_id, $session_epoch, $password_hash, $expires );
+    }
+
+    private static function sessionHmac( $user_id, $session_epoch, $password_hash, $expires ) {
+
+        // Only user_id is free text, and it comes first, so the fields cannot run together.
+        $data = implode( '|', array(
+            (string) $user_id,
+            (int) $session_epoch,
+            (int) $expires,
+            substr( (string) $password_hash, 8, 4 ),
+        ) );
+
+        return hash_hmac( 'sha256', $data, \OWA\Core\CoreAPI::getSalt( 'auth' ) );
+    }
+
+    /**
+     * A `p` value's expiry, or null when the value is not one.
+     *
+     * @param mixed $credential
+     * @return int|null
+     */
+    static function sessionCredentialExpiry( $credential ) {
+
+        if ( ! is_string( $credential ) || ! preg_match( self::SESSION_CREDENTIAL_PATTERN, $credential, $m ) ) {
+
+            return null;
+        }
+
+        return (int) $m[1];
+    }
+
+    /**
+     * Whether a `p` value signs this user in now: well formed, not expired,
+     * and the HMAC of the user's current session_epoch and password hash.
+     *
+     * @param mixed    $credential
+     * @param string   $user_id
+     * @param int      $session_epoch
+     * @param string   $password_hash
+     * @param int|null $now
+     * @return bool
+     */
+    static function isValidSessionCredential( $credential, $user_id, $session_epoch, $password_hash, $now = null ) {
+
+        $expires = self::sessionCredentialExpiry( $credential );
+
+        if ( $expires === null || $expires <= ( $now ?? time() ) ) {
+
+            return false;
+        }
+
+        return hash_equals(
+            self::sessionCredential( $user_id, $session_epoch, $password_hash, $expires ),
+            $credential
+        );
+    }
+
+    /**
+     * Whether a valid `p` value has less than SESSION_REFRESH_BELOW left.
+     *
+     * @param mixed    $credential
+     * @param int|null $now
+     * @return bool
+     */
+    static function sessionCredentialNeedsRefresh( $credential, $now = null ) {
+
+        $expires = self::sessionCredentialExpiry( $credential );
+
+        return $expires !== null && $expires - ( $now ?? time() ) < self::SESSION_REFRESH_BELOW;
+    }
+
     function generateSignature( $requestUrl, $apiKey ) {
 	    
 	    // get the current time zone

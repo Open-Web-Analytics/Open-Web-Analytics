@@ -156,13 +156,13 @@ class MyProfileSave extends \OWA\Core\AdminController {
             }
 
             /*
-             * A PASSWORD CHANGE ENDS THIS SESSION.
+             * A PASSWORD CHANGE ENDS THIS SESSION, and every other.
              *
-             * The auth cookie is md5( user_id . password_hash ) -- see
-             * Auth::saveCredentials() -- so the moment the hash changes the
-             * cookie stops matching and the next request is anonymous. Left
-             * alone, someone who changed their password was silently signed out
-             * on their next click and had no idea why.
+             * updateUserPassword() moves the user's session_epoch, which every
+             * session cookie is signed with (Auth::sessionCredential()), so the
+             * next request with any of them is anonymous. Left alone, someone
+             * who changed their password was silently signed out on their next
+             * click and had no idea why.
              *
              * So it is done deliberately and said out loud: credentials
              * cleared, and back to the login form asking them to sign in with

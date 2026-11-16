@@ -256,10 +256,20 @@ async function adminLogin(page) {
 
 /**
  * Log out through the real logout action and land back on the login form.
- * base.logout clears the auth cookie/session and redirects to base.loginForm.
+ * base.logout without a nonce asks first; its Log out button carries one, and
+ * signs out to base.loginForm. Signed out already, it goes straight there.
  */
 async function logout(page) {
     await page.goto('?owa_do=base.logout', { waitUntil: 'networkidle' });
+
+    const confirm = page.getByRole('button', { name: 'Log out' });
+
+    if (await confirm.count()) {
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            confirm.click(),
+        ]);
+    }
 }
 
 /**
