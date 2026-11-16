@@ -1062,7 +1062,7 @@ class CoreAPI {
 
             foreach ( (array) $db->getAllRows() as $row ) {
 
-                $values[ $row['name'] ] = unserialize( $row['value'] );
+                $values[ $row['name'] ] = unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
             }
         }
 

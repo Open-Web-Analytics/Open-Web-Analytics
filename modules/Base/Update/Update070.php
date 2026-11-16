@@ -76,7 +76,7 @@ class Update070 extends \OWA\Core\Update {
             $rows[ (string) $row['id'] ] = $row;
 
             // NULL is no value: that Profile inherits, like one with no row.
-            $held[ (string) $row['scope_id'] ] = @unserialize( (string) $row['value'] );
+            $held[ (string) $row['scope_id'] ] = @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
         }
 
         if ( ! $rows ) {
@@ -127,7 +127,7 @@ class Update070 extends \OWA\Core\Update {
                 array( $property, self::NAME ) );
 
             $inherited = $own
-                ? (bool) @unserialize( (string) ( (array) $own )['value'] )
+                ? (bool) @unserialize( (string) ( (array) $own )['value'], array( 'allowed_classes' => false ) )
                 : (bool) \OWA\Core\CoreAPI::getSetting( 'base', self::NAME );
 
             $on = false;
