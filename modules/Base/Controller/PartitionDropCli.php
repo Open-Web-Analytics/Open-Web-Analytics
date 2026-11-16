@@ -62,22 +62,18 @@ class PartitionDropCli extends PartitionsCli {
 
         if ( ! $raw ) {
 
-            \OWA\Core\CoreAPI::notice(
+            return $this->usageError(
                 'older-than is required: a date as yyyymmdd, or a period such as 12months, 18m, 2years, 90days.'
             );
-
-            return;
         }
 
         $cutoff = $this->resolveCutoff( $raw );
 
         if ( ! $cutoff ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf(
+            return $this->usageError( sprintf(
                 'Could not read "%s" as a date or period. Use yyyymmdd, or 12months / 18m / 2years / 90days.', $raw
             ) );
-
-            return;
         }
 
         \OWA\Core\CoreAPI::notice( sprintf( 'Retention cutoff: %s (from "%s").', $cutoff, $raw ) );
@@ -125,7 +121,7 @@ class PartitionDropCli extends PartitionsCli {
 
         if ( $only !== '' && ! in_array( $only, array( 'raw', 'cubes' ), true ) ) {
 
-            $this->refuse( sprintf( 'only=%s: use only=raw (event data) or only=cubes (reporting cubes).', $only ) );
+            $this->usageError( sprintf( 'only=%s: use only=raw (event data) or only=cubes (reporting cubes).', $only ) );
 
             return false;
         }

@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { execFileSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 const path = require('path');
 
 /**
@@ -50,30 +50,40 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
         // 2. Run the real CLI installer. cli.php parses key=value args and maps
         //    cmd=install -> base.installCli.
         const repoRoot = path.join(__dirname, '..', '..');
-        const install = (extra) => execFileSync(
-            'php',
-            [
-                'cli.php',
-                'cmd=install',
-                `user_id=${INFO.installcli_admin_id}`,
-                `email_address=${INFO.installcli_admin_id}`,
-                `domain=${INFO.installcli_domain}`,
-                ...extra,
-            ],
-            { cwd: repoRoot, encoding: 'utf8' }
-        );
+        // Its exit code and what it printed. cli.php exits 0 when the command
+        // did what it was asked, 1 when it failed, 2 when the arguments are wrong.
+        const install = (extra) => {
+            const r = spawnSync(
+                'php',
+                [
+                    'cli.php',
+                    'cmd=install',
+                    `user_id=${INFO.installcli_admin_id}`,
+                    `email_address=${INFO.installcli_admin_id}`,
+                    `domain=${INFO.installcli_domain}`,
+                    ...extra,
+                ],
+                { cwd: repoRoot, encoding: 'utf8' }
+            );
+            return { code: r.status, out: `${r.stdout}${r.stderr}` };
+        };
 
         // Without a password it refuses, and installs nothing. The admin's
         // password used to be the database password from owa-config.php.
         const refused = install([]);
-        expect(refused).toMatch(/password for the admin account is required/);
-        expect(refused).not.toMatch(/Install Completed/i);
+        expect(refused.code).toBe(2);
+        expect(refused.out).toMatch(/password for the admin account is required/);
+        expect(refused.out).not.toMatch(/Install Completed/i);
         expect(phpAnswer('assert-cli').checks.install_complete).toBe(false);
 
         // Too short is refused the same way.
-        expect(install(['password=short'])).toMatch(/at least 6 characters/);
+        const short = install(['password=short']);
+        expect(short.code).toBe(2);
+        expect(short.out).toMatch(/at least 6 characters/);
 
-        const out = install(['password=owa-cli-admin-pass']);
+        const installed = install(['password=owa-cli-admin-pass']);
+        const out = installed.out;
+        expect(installed.code, out).toBe(0);
         // The installer logs "Install Completed." on success.
         expect(out).toMatch(/Install Completed|Installation complete/i);
         // ...and the cron line, without which no report shows anything.

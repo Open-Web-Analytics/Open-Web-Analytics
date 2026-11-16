@@ -63,9 +63,14 @@ class ModuleDeactivateCli extends \OWA\Core\Controller\Cli {
         if ( $module ) {
     
             $ret = \OWA\Core\CoreAPI::deactivateModule($module);
-            
+
+            if ( $ret === false ) {
+
+                return $this->fail( sprintf( 'Module %s was not deactivated. See the messages above.', $module ) );
+            }
+
         } else {
-            \OWA\Core\CoreAPI::notice('No module argument was specified. Use module=xxx');
+            return $this->usageError('No module argument was specified. Use module=xxx');
         }
     }
     

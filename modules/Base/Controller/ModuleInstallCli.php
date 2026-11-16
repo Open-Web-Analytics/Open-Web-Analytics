@@ -56,7 +56,7 @@ class ModuleInstallCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $module ) {
 
-            return $this->refuse( 'No module argument was specified. Use module=xxx' );
+            return $this->usageError( 'No module argument was specified. Use module=xxx' );
         }
 
         /*
@@ -74,7 +74,10 @@ class ModuleInstallCli extends \OWA\Core\Controller\Cli {
           . 'Use "cmd=activate module=' . $module . '" instead -- it installs '
           . 'and activates, which is what this command does.' );
 
-        return \OWA\Core\CoreAPI::installModule($module);
+        if ( ! \OWA\Core\CoreAPI::installModule($module) ) {
+
+            return $this->fail( sprintf( 'Module %s was not installed. See the messages above.', $module ) );
+        }
     }
 
 }

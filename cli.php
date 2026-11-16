@@ -51,16 +51,17 @@ require_once(__DIR__ . '/owa.php');
 // Parse the command line. See owa_lib::parseCliArgs() for the accepted forms.
 $params = \OWA\Core\Lib::parseCliArgs($argv);
 
+// Exit codes: 0 done, 1 the command failed, 2 the command line is wrong.
 if (!is_array($params)) {
     fwrite(STDERR, $params . "\n");
-    exit(1);
+    exit(2);
 }
 
 unset($params['action']);
 unset($params['do']);
-if (empty($params)) {
-    fwrite(STDERR, "Arguments required\n");
-    exit(1);
+if (empty($params['cmd'])) {
+    fwrite(STDERR, "Missing a command argument: cmd=<command>\n");
+    exit(2);
 }
 
 // Initialize owa
@@ -82,25 +83,30 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     $s = \OWA\Core\CoreAPI::serviceSingleton();
     $s->loadCliCommands();
 
-    if (array_key_exists('cmd', $params)) {
+    $cmd = $s->getCliCommandClass($params['cmd']);
 
-        $cmd = $s->getCliCommandClass($params['cmd']);
+    // A command runs only on the roles it names (Controller\Cli::serverRoles()).
+    $refused = $cmd ? \OWA\Core\ServerRole::current()->commandProblem($params['cmd'], $cmd) : null;
 
-        // A command runs only on the roles it names (Controller\Cli::serverRoles()).
-        $refused = $cmd ? \OWA\Core\ServerRole::current()->commandProblem($params['cmd'], $cmd) : null;
+    // A command takes only the arguments its usage() declares.
+    $map        = $cmd ? $s->getMapValue('actions', $cmd) : null;
+    $undeclared = is_array($map) && !empty($map['class_name'])
+        ? \OWA\Core\Controller\Cli::undeclaredArguments($map['class_name'], $params)
+        : array();
 
-        if ($refused) {
-            \OWA\Core\ServerRole::refuse('cli', array('status' => 404, 'message' => $refused));
-        } elseif ($cmd) {
-            $params['do'] = $cmd;
-            echo $owa->handleRequest($params);
-            $exit_code = \OWA\Core\Controller\Cli::$exit_code;
-        } else {
-            \OWA\Core\CoreAPI::notice( "Invalid command name.");
-        }
-
+    if (!$cmd) {
+        fwrite(STDERR, sprintf("No command named \"%s\".\n", $params['cmd']));
+        $exit_code = 2;
+    } elseif ($refused) {
+        \OWA\Core\ServerRole::refuse('cli', array('status' => 404, 'message' => $refused));
+    } elseif ($undeclared) {
+        fwrite(STDERR, sprintf("cmd=%s does not take %s. Nothing was done.\n",
+            $params['cmd'], implode(', ', $undeclared)));
+        $exit_code = 2;
     } else {
-        \OWA\Core\CoreAPI::notice("Missing a command argument.");
+        $params['do'] = $cmd;
+        echo $owa->handleRequest($params);
+        $exit_code = \OWA\Core\Controller\Cli::$exit_code;
     }
 
 } else {

@@ -68,12 +68,29 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
     /** A refusal is an answer, not a failure: the job is not retried. */
     public function testARefusedCommandIsDoneNotRetried(): void
     {
-        // jobs-forget with no id refuses.
-        $id = JobQueue::enqueue('jobs-forget');
+        // custom-dimension-apply for a Property with no cube refuses.
+        $id = JobQueue::enqueue('custom-dimension-apply', array('property' => '999999999999'));
 
         $this->drain();
 
         $this->assertSame('done', $this->jobStatus($id));
+    }
+
+    /**
+     * A job given arguments it cannot act on has failed, and is retried; the
+     * failure is the job's, not schedule-run's exit code.
+     */
+    public function testAUsageErrorIsRetriedAndLeavesTheExitCode(): void
+    {
+        // jobs-forget with no id cannot say which job.
+        $id = JobQueue::enqueue('jobs-forget');
+
+        \OWA\Core\Controller\Cli::$exit_code = 0;
+
+        $this->drain();
+
+        $this->assertSame('pending', $this->jobStatus($id));
+        $this->assertSame(0, \OWA\Core\Controller\Cli::$exit_code);
     }
 
     public function testTheJobsCommandsActOnTheQueue(): void

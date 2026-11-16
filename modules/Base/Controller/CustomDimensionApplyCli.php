@@ -62,7 +62,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
 
         if ( $only !== '' && ! ctype_digit( $only ) ) {
 
-            return $this->refuse( 'property=<id> takes a Property id.' );
+            return $this->usageError( 'property=<id> takes a Property id.' );
         }
 
         $existing = \OWA\Module\Base\Classes\Cube\Cubes::existing();

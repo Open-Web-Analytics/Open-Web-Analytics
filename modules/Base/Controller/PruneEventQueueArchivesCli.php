@@ -77,7 +77,17 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
 
         } else {
 
-            $interval = (int) ( $this->getParam( 'interval' ) ?: 86400 );
+            $raw = $this->getParam( 'interval' );
+
+            // Seconds, as digits: (int) "7days" would be 7 seconds.
+            if ( $raw !== null && $raw !== '' && ! ctype_digit( (string) $raw ) ) {
+
+                return $this->usageError( sprintf(
+                    'interval= takes a number of seconds, such as 604800 for a week; got "%s". Nothing was deleted.',
+                    is_string( $raw ) ? $raw : '--interval' ) );
+            }
+
+            $interval = (int) ( $raw ?: 86400 );
         }
 
         $queues = $this->getParam( 'queues' )

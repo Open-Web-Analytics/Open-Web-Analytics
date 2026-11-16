@@ -68,6 +68,11 @@ class ResetSecretsCli extends \OWA\Core\Controller\Cli {
 	        
 	        // create new config file
 	        $new_config = fopen( $temp_file, 'w');
+
+	        if ( $current_config === false || ! $new_config ) {
+
+	            return $this->fail( sprintf( 'Could not read %s or write %s. Nothing was changed.', $config_file, $temp_file ) );
+	        }
 	        
 	      
 	        $mod = false;
@@ -117,7 +122,11 @@ class ResetSecretsCli extends \OWA\Core\Controller\Cli {
 			// if there was a mod makde to the config then make it the new config file.
 			if ( $mod ) {
 				
-			  rename( $temp_file, $config_file );
+			  if ( ! rename( $temp_file, $config_file ) ) {
+
+			      return $this->fail( sprintf( 'Could not replace %s. Nothing was changed.', $config_file ) );
+			  }
+
 			  \OWA\Core\CoreAPI::notice( "Secrets updated successfully." );
 			
 			} else {
@@ -128,7 +137,7 @@ class ResetSecretsCli extends \OWA\Core\Controller\Cli {
 	        
 	    } else {
 		    
-		    \OWA\Core\CoreAPI::debug( "Config file doesn't exist." );
+		    return $this->fail( sprintf( '%s does not exist. Nothing was changed.', $config_file ) );
 	    }
     }
 

@@ -78,7 +78,7 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
 
         if ( ! $keys ) {
 
-            return $this->refuse( 'key=<name> is required, or key=a,b,c to register '
+            return $this->usageError( 'key=<name> is required, or key=a,b,c to register '
                                 . 'several in one rebuild.' );
         }
 

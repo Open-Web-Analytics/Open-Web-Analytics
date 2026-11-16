@@ -42,6 +42,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         // shared with every later test.
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         unset($s->modules['base']->cli_commands['owa-test-lease-stub']);
+        unset($s->modules['base']->cli_commands['owa-test-state-stub']);
 
         // Settings are global; restore anything a case changed.
         \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', []);
@@ -662,24 +663,43 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * partition-rotate reports a refusal rather than looking like a success.
+     * partition-rotate reports arguments it will not act on rather than
+     * looking like a success: a usage error, exit code 2.
      *
      * Before the outcome channel, a refused run and a completed one were
      * indistinguishable to any caller.
      */
     public function testRotateReportsItsRefusals()
     {
-        foreach ([['keep' => '24'], ['raw-months' => 'abc'], ['raw-months' => '12'], ['property' => '1']] as $bad) {
+        foreach ([['keep' => '24'], ['raw-months' => 'abc'], ['raw-months' => '12'], ['property' => '1'],
+                  ['granularity' => 'fortnightly']] as $bad) {
+            \OWA\Core\Controller\Cli::$exit_code = 0;
+
             $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli($bad);
             $ctrl->action();
 
-            $this->assertSame('refused', $ctrl->getCliOutcome()['outcome'], json_encode($bad) . ' should be refused');
+            $this->assertSame('failed', $ctrl->getCliOutcome()['outcome'], json_encode($bad) . ' should be refused');
+            $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code, json_encode($bad));
         }
 
-        $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli(['granularity' => 'fortnightly']);
-        $ctrl->action();
+        \OWA\Core\Controller\Cli::$exit_code = 0;
+    }
 
-        $this->assertSame('refused', $ctrl->getCliOutcome()['outcome']);
+    /** refuse() after a failure leaves the run failed; the first failure sets the exit code. */
+    public function testARefusalDoesNotHideAFailure()
+    {
+        \OWA\Core\Controller\Cli::$exit_code = 0;
+
+        $ctrl = $this->runner();
+        $this->callProtected($ctrl, 'fail', ['it broke']);
+        $this->callProtected($ctrl, 'usageError', ['and the arguments were wrong']);
+        $this->callProtected($ctrl, 'refuse', ['and then it declined']);
+
+        $this->assertSame('failed', $ctrl->getCliOutcome()['outcome']);
+        $this->assertSame('it broke', $ctrl->getCliOutcome()['message']);
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_FAILED, \OWA\Core\Controller\Cli::$exit_code);
+
+        \OWA\Core\Controller\Cli::$exit_code = 0;
     }
 
     /**
@@ -776,14 +796,18 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertStringContainsString('does not run the scheduler', $ctrl->getCliOutcome()['message']);
     }
 
-    /** An unknown job name is refused, with the valid names offered. */
+    /** An unknown job name is a usage error, with the valid names offered. */
     public function testAnUnknownJobNameIsRefused()
     {
+        \OWA\Core\Controller\Cli::$exit_code = 0;
+
         $ctrl = $this->runner(['job' => 'no-such-job']);
         $ctrl->action();
 
         $out = $ctrl->getCliOutcome();
-        $this->assertSame('refused', $out['outcome']);
+        $this->assertSame('failed', $out['outcome']);
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code);
+        \OWA\Core\Controller\Cli::$exit_code = 0;
         $this->assertStringContainsString('rotate-partitions', $out['message'], 'say what the valid names are');
     }
 
@@ -947,6 +971,145 @@ final class ScheduleCliTest extends CliControllerTestCase
 
         $this->assertStringContainsString('Failing since', (string) $reason);
         $this->assertStringContainsString('the disk is full', (string) $reason);
+    }
+
+    /** A failing job's diagnosis says its retries back off, not that it runs at every tick. */
+    public function testDiagnosisOfAFailingJobDescribesTheBackOff()
+    {
+        $now      = time();
+        $long_ago = $now - (40 * 86400);
+
+        $row = [
+            'job_name' => 'sad', 'last_run_slot' => $long_ago, 'last_run_at' => $long_ago,
+            'last_finished_at' => $long_ago, 'last_status' => 'failed', 'last_message' => 'the disk is full',
+            'last_success_at' => $long_ago - 100, 'last_failure_at' => $long_ago,
+            'run_count' => 9, 'failure_count' => 3,
+        ];
+
+        $reason = (string) $this->callProtected($this->statusCli(), 'diagnose', [
+            'sad',
+            ['command' => 'jobs-prune', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $long_ago,
+        ]);
+
+        $this->assertStringNotContainsString('every tick', $reason);
+        $this->assertStringContainsString('from a minute up to an hour', $reason);
+    }
+
+    /** A first run that never finished has no last_finished_at at all, and is reported. */
+    public function testDiagnosisReportsAFirstRunThatNeverFinished()
+    {
+        $now      = time();
+        $long_ago = $now - (40 * 86400);
+
+        $row = [
+            'job_name' => 'gone', 'last_run_slot' => 0, 'last_run_at' => $long_ago,
+            'last_finished_at' => 0, 'last_status' => 'never run', 'last_message' => '-',
+            'last_success_at' => 0, 'last_failure_at' => 0, 'run_count' => 0, 'failure_count' => 0,
+        ];
+
+        $reason = $this->callProtected($this->statusCli(), 'diagnose', [
+            'gone',
+            ['command' => 'jobs-prune', 'schedule' => '@daily', 'params' => [], 'source' => 'code'],
+            $row, null, \OWA\Core\Cron::parse('@daily'), $now, false, true, $long_ago,
+        ]);
+
+        $this->assertStringContainsString('never finished', (string) $reason);
+    }
+
+    /** Register OwaTestStateStubCli as a job and return its name. */
+    private function stateStubJob(array $params): array
+    {
+        $name = $this->track('owa_test_state_' . bin2hex(random_bytes(3)));
+        $s    = \OWA\Core\CoreAPI::serviceSingleton();
+
+        $s->modules['base']->cli_commands['owa-test-state-stub'] = 'base.owaTestStateStub';
+        $s->setMapValue('actions', 'base.owaTestStateStub', [
+            'class_name' => 'OwaTestStateStubCli',
+            'file'       => '',
+        ]);
+
+        \OWA\Core\CoreAPI::setSetting('base', 'scheduled_jobs', [
+            $name => ['command' => 'owa-test-state-stub', 'schedule' => '* * * * *', 'params' => $params + ['job' => $name]],
+        ]);
+
+        $ctrl = $this->runner();
+        $jobs = $this->callProtected($ctrl, 'jobs');
+
+        $this->assertArrayHasKey($name, $jobs);
+
+        OwaTestStateStubCli::$seen = null;
+
+        return [$ctrl, $name, $jobs[$name]];
+    }
+
+    /** A run is recorded as started before it finishes, so one that dies leaves the trace. */
+    public function testARunIsRecordedAsStartedWhileItRuns()
+    {
+        list($ctrl, $name, $job) = $this->stateStubJob([]);
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $this->assertNotNull(OwaTestStateStubCli::$seen, 'the job should have run');
+        $this->assertEqualsWithDelta(time(), (int) OwaTestStateStubCli::$seen['last_run_at'], 10,
+            'last_run_at is written when the run starts');
+        $this->assertLessThan((int) OwaTestStateStubCli::$seen['last_run_at'],
+            (int) OwaTestStateStubCli::$seen['last_finished_at']);
+    }
+
+    /** A job that fails records it; schedule-run's own exit code is not the job's. */
+    public function testAFailingJobLeavesTheDispatchersExitCode()
+    {
+        list($ctrl, $name, $job) = $this->stateStubJob(['fail' => 1]);
+
+        \OWA\Core\Controller\Cli::$exit_code = 0;
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $this->assertSame(0, \OWA\Core\Controller\Cli::$exit_code);
+        $this->assertSame('failed', (string) $this->callProtected($ctrl, 'state', [$name])->get('last_status'));
+    }
+
+    /** A job given an argument its command does not declare fails, and does not run. */
+    public function testAJobGivenAnUndeclaredArgumentFailsWithoutRunning()
+    {
+        list($ctrl, $name, $job) = $this->stateStubJob(['dryrun' => 1]);
+
+        $this->callProtected($ctrl, 'considerJob', [$name, $job, false, false]);
+
+        $state = $this->callProtected($ctrl, 'state', [$name]);
+
+        $this->assertNull(OwaTestStateStubCli::$seen, 'the job must not run');
+        $this->assertSame('failed', (string) $state->get('last_status'));
+        $this->assertStringContainsString('dryrun', (string) $state->get('last_message'));
+    }
+
+    /** Every shipped job's params are arguments its command declares. */
+    public function testEveryShippedJobsParamsAreDeclared()
+    {
+        $s = \OWA\Core\CoreAPI::serviceSingleton();
+
+        foreach ($this->callProtected($this->runner(), 'jobs') as $name => $job) {
+            $map = $s->getMapValue('actions', $s->getCliCommandClass($job['command']));
+
+            $this->assertSame([], \OWA\Core\Controller\Cli::undeclaredArguments($map['class_name'], (array) $job['params']),
+                "job $name passes arguments cmd={$job['command']} does not declare");
+        }
+    }
+
+    /**
+     * An OWA_SCHEDULED_JOBS entry with a key that is not one of the documented
+     * ones is skipped, whole, rather than applied without the misspelt key.
+     */
+    public function testAMisspeltJobKeySkipsTheEntry()
+    {
+        $jobs = $this->jobsWith([
+            'rotate-partitions' => ['schedul' => 'off'],
+            'owa-test-misspelt' => ['command' => 'partition-status', 'schedule' => '@daily', 'param' => ['table' => 'x']],
+        ]);
+
+        $this->assertSame('code', $jobs['rotate-partitions']['source'], 'the override is not applied');
+        $this->assertArrayNotHasKey('owa-test-misspelt', $jobs);
     }
 
     /** A crashed run is distinguishable from a failed one. */
@@ -1616,6 +1779,44 @@ class OwaTestLeaseStubCli extends \OWA\Core\Controller\Cli {
         foreach ( (array) $rows as $row ) {
 
             self::$seen_expiry = (int) ( (array) $row )['expires_at'];
+        }
+    }
+}
+
+
+/**
+ * A command that reads its own job's state row while it runs, and fails when
+ * told to.
+ */
+class OwaTestStateStubCli extends \OWA\Core\Controller\Cli {
+
+    /** @var array|null the state row as the run saw it */
+    public static $seen = null;
+
+    public static function usage() {
+
+        return array( 'description' => 'A test stub that reads its own state row.', 'arguments' => array(
+            'job=<name>' => 'Its job name.',
+            'fail=1'     => 'Fail.',
+        ) );
+    }
+
+    function __construct( $params ) {
+
+        $this->setRequiredCapability( 'edit_modules' );
+
+        parent::__construct( $params );
+    }
+
+    function action() {
+
+        self::$seen = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
+            'SELECT last_run_at, last_finished_at FROM owa_scheduled_job WHERE job_name = ?',
+            array( (string) $this->getParam( 'job' ) ) );
+
+        if ( $this->getParam( 'fail' ) ) {
+
+            return $this->fail( 'told to fail' );
         }
     }
 }
