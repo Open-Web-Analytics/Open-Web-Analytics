@@ -5,6 +5,7 @@ use OWA\Module\Base\Update\Update080;
 use OWA\Module\Base\Classes\V2Event;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/InstallSettingRowsFixture.php';
 
 /**
  * Update080: default_page gives way to directory_index_pages, and down() puts
@@ -15,6 +16,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class Update080Test extends TestCase
 {
+    use InstallSettingRowsFixture;
+
     const TABLE = 'owa_setting_update080_test';
 
     const IN_LIST   = 'update080-in-list';
@@ -43,6 +46,7 @@ final class Update080Test extends TestCase
     protected function tearDown(): void
     {
         if (owa_test_db_available()) {
+            $this->putBackInstallRows();
             \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::TABLE);
         }
     }
@@ -227,5 +231,60 @@ final class Update080Test extends TestCase
         $this->assertTrue($this->update->up());
         $this->assertTrue($this->update->down());
         $this->assertSame($before, $this->rows());
+    }
+
+    /**
+     * The update run ends with Settings::save(), which writes back what the
+     * settings hold and prunes the eager install rows they do not. Against the
+     * install's own table and settings, the list up() wrote and the one down()
+     * put back are both still stored after it.
+     */
+    public function testTheClosingSaveKeepsWhatUpAndDownStored(): void
+    {
+        $this->requireDb();
+
+        $c = \OWA\Core\CoreAPI::configSingleton();
+        $this->assertTrue((bool) $c->config_from_db, 'boot read the store, so save() prunes');
+
+        $this->keepInstallRows(['default_page', 'directory_index_pages', Update080::BEFORE]);
+        $this->update->table = null;
+
+        // No list stored: up() creates the row.
+        $c->removeSetting('base', 'directory_index_pages');
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("DELETE FROM %s WHERE scope_type = 'install' AND module = 'base' AND name IN ('directory_index_pages', ?)",
+            $this->installTable()), [Update080::BEFORE]);
+        $this->writeInstallValue('default_page', self::EXTRA);
+
+        $extended = array_merge(V2Event::DIRECTORY_INDEX_PAGES, [self::EXTRA]);
+
+        $this->assertTrue($this->update->up());
+        $c->save();
+        $this->assertSame($extended, $this->storedInstallValue('directory_index_pages'), 'the list up() wrote');
+        $this->assertSame($extended, $c->get('base', 'directory_index_pages'));
+
+        $this->assertTrue($this->update->down());
+        $c->save();
+        $this->assertNull($this->storedInstallValue('directory_index_pages'), 'up() created it, so down() removes it');
+        $this->assertSame(self::EXTRA, $this->storedInstallValue('default_page'));
+
+        // A list stored before: down() puts it back, in a later process whose
+        // boot loaded the extended one.
+        $stored = ['index.html', self::IN_LIST];
+        $this->writeInstallValue('directory_index_pages', $stored);
+        $c->db_settings['base']['directory_index_pages'] = $stored;
+        $c->set('base', 'directory_index_pages', $stored);
+
+        $this->assertTrue($this->update->up());
+        $c->save();
+        $this->assertSame(array_merge($stored, [self::EXTRA]), $this->storedInstallValue('directory_index_pages'),
+            'the list boot loaded is not written back');
+
+        $c->db_settings['base']['directory_index_pages'] = array_merge($stored, [self::EXTRA]);
+        $c->set('base', 'directory_index_pages', array_merge($stored, [self::EXTRA]));
+
+        $this->assertTrue($this->update->down());
+        $c->save();
+        $this->assertSame($stored, $this->storedInstallValue('directory_index_pages'), 'the list down() put back');
+        $this->assertSame($stored, $c->get('base', 'directory_index_pages'));
     }
 }
