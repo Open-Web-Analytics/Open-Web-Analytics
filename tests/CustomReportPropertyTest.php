@@ -457,6 +457,105 @@ final class CustomReportPropertyTest extends TestCase
         }
     }
 
+    /** Share or un-share a stored report, as its editor's switch does. */
+    private function share(string $id, bool $shared): void
+    {
+        CoreAPI::dbSingleton()->query('UPDATE owa_custom_report SET is_shared = ? WHERE id = ?', [$shared ? 1 : 0, $id]);
+    }
+
+    /** Whether the report page draws this report for the signed-in user. */
+    private function opens(string $id): bool
+    {
+        ob_start();
+        $data = (array) (new \OWA\Module\Base\Controller\Report([
+            'reportId'   => 'custom-' . $id,
+            'propertyId' => self::P,
+            'period'     => 'last_thirty_days',
+        ]))->doAction();
+        ob_end_clean();
+
+        return ! empty($data['subview']) && (string) ($data['custom_report_id'] ?? '') === $id;
+    }
+
+    /**
+     * A report opens for its author, for an administrator, and for anyone else
+     * with view_reports on its Property only while it is shared. Un-sharing it
+     * closes it again, to a link already given out as well.
+     */
+    public function testAReportOpensForItsAuthorAdminsAndOthersOnlyWhileShared(): void
+    {
+        $viewer = $this->viewer();
+        $id     = $this->store(self::P, 'Private');
+
+        $this->assertTrue($this->opens($id), 'an administrator opens it');
+        $this->assertNotNull(CustomReports::viewableOf($id, self::P));
+
+        $this->assertFalse($this->asUser($viewer, fn () => $this->opens($id)), 'unshared: another reader is refused');
+        $this->assertNull($this->asUser($viewer, fn () => CustomReports::viewableOf($id, self::P)));
+
+        $this->share($id, true);
+        $this->assertTrue($this->asUser($viewer, fn () => $this->opens($id)), 'shared: it opens for them');
+
+        $this->share($id, false);
+        $this->assertFalse($this->asUser($viewer, fn () => $this->opens($id)), 'unshared again: closed');
+
+        // Their own, unshared, opens for them.
+        $saved = CustomReports::save(['name' => 'Mine', 'definition' => $this->definition('Mine')],
+            (string) $viewer->get('user_id'), self::P);
+        $this->assertTrue($saved['ok'], (string) $saved['error']);
+        $this->reports[] = $saved['id'];
+
+        $this->assertTrue($this->asUser($viewer, fn () => $this->opens($saved['id'])), 'the author opens their own');
+    }
+
+    public function testMayViewIsTheAuthorASharedReportOrAnAdministrator(): void
+    {
+        $private = ['user_id' => 'a', 'is_shared' => 0];
+        $legacy  = ['user_id' => 'a', 'is_shared' => null];
+        $shared  = ['user_id' => 'a', 'is_shared' => 1];
+
+        $this->assertTrue(CustomReports::mayView($private, 'a'));
+        $this->assertFalse(CustomReports::mayView($private, 'b'));
+        $this->assertFalse(CustomReports::mayView($legacy, 'b'), 'a row from before the column is private');
+        $this->assertTrue(CustomReports::mayView($shared, 'b'));
+        $this->assertTrue(CustomReports::mayView($private, 'b', true));
+        $this->assertFalse(CustomReports::mayView($private, ''));
+        $this->assertFalse(CustomReports::mayView(null, 'a', true));
+        $this->assertFalse(CustomReports::mayEdit($shared, 'b'), 'shared is not editable by others');
+    }
+
+    /** A reader may not star a report they may not open. */
+    public function testAnUnsharedReportOfSomeoneElseIsNotStarred(): void
+    {
+        $viewer = $this->viewer();
+        $id     = $this->store(self::P);
+
+        $this->asUser($viewer, function () use ($id) {
+            (new \OWA\Module\Base\Controller\CustomReportMarkFavorite(['customReportId' => $id, 'propertyId' => self::P]))->action();
+        });
+
+        $this->assertFalse(Favorites::isFavorite($id, (string) $viewer->get('user_id')));
+    }
+
+    /** A funnel follows the same rule: drawn for another reader only while shared. */
+    public function testAnUnsharedFunnelIsNotDrawnForAnotherReader(): void
+    {
+        $viewer = $this->viewer();
+        $id     = $this->storeFunnel(self::P);
+        CoreAPI::dbSingleton()->query("UPDATE owa_custom_report SET user_id = ? WHERE id = ?", [self::AUTHOR, $id]);
+
+        $funnel = function () use ($id) {
+            $c = new \OWA\Module\Base\Controller\VisualizationFunnel(['reportId' => 'custom-' . $id, 'propertyId' => self::P]);
+            $m = new \ReflectionMethod($c, 'visualization');
+
+            return $m->invoke($c);
+        };
+
+        $this->assertNull($this->asUser($viewer, $funnel), 'unshared');
+        $this->share($id, true);
+        $this->assertNotNull($this->asUser($viewer, $funnel), 'shared');
+    }
+
     public function testTheEditorRefusesAnotherPropertysReport(): void
     {
         $id = $this->store(self::P);
@@ -569,7 +668,7 @@ final class CustomReportPropertyTest extends TestCase
     public function testAReaderStarsAReportWithOnlyItsProperty(): void
     {
         $viewer = $this->viewer();
-        $id     = $this->store(self::P);
+        $id     = $this->store(self::P, 'Property fixture', ['is_shared' => 1]);
         $su     = $this->serviceUser($viewer);
 
         $capable = function (array $params) use ($su): bool {

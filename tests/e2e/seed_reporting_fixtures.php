@@ -627,7 +627,8 @@ function e2eKeepOnReportProperty(string $id): void
 }
 
 /**
- * One stored custom report, owned by a user nobody logs in as.
+ * One stored custom report, owned by a user nobody logs in as, and shared, so
+ * a reader can open it and is still not its editor.
  *
  * Written through CustomReports::save() rather than as a raw row, so it is
  * validated the way a real one is and cannot drift from what the builder
@@ -647,6 +648,8 @@ function seedOthersReport(): array
         if (($row['name'] ?? '') === E2E_OTHERS_REPORT_NAME) {
 
             e2eKeepOnReportProperty((string) $row['id']);
+            \OWA\Core\CoreAPI::dbSingleton()->query('UPDATE owa_custom_report SET is_shared = 1 WHERE id = ?',
+                [(string) $row['id']]);
 
             return ['id' => $row['id'], 'owner' => $row['user_id'], 'reused' => true];
         }
@@ -654,6 +657,7 @@ function seedOthersReport(): array
 
     $result = \OWA\Module\Base\Classes\CustomReports::save([
         'name'       => E2E_OTHERS_REPORT_NAME,
+        'is_shared'  => 1,
         'definition' => [
             'title'   => E2E_OTHERS_REPORT_NAME,
             'widgets' => [[

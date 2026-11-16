@@ -64,8 +64,8 @@ class Report extends \OWA\Core\AdminController {
          * A custom report is addressed by the same reportId as any other, under
          * a reserved prefix: `custom-<row id>`. One id space, so every link,
          * bookmark and nav entry keeps working the same way, and a custom
-         * report is shareable by URL for exactly the reason a shipped one is --
-         * the URL is the whole address.
+         * report's URL is its whole address, as a shipped one's is. Who may
+         * open it is decided in renderCustom().
          *
          * Checked BEFORE the registry, so a module cannot register an id in the
          * reserved space and shadow somebody's saved report.
@@ -172,13 +172,9 @@ class Report extends \OWA\Core\AdminController {
     /**
      * Render a user-authored report.
      *
-     * VIEWING IS NOT GATED ON AUTHORSHIP, deliberately. Ownership decides what
-     * the roster LISTS and who may edit; a report reached by its URL renders
-     * for anyone who may view reports on its Property, which is what "shareable
-     * by url" has to mean to be true. It is safe because a custom report is a
-     * saved QUERY, not saved data: every figure in it is one the reader could
-     * already have asked for through the ordinary reporting UI, on that
-     * Property.
+     * Opened by its creator, by anyone once it is shared, and by anyone who may
+     * see every report (CustomReports::mayView()); to anyone else it is not
+     * found, as a report of another Property is.
      *
      * The definition is re-validated on the way OUT, not trusted because it was
      * validated on the way in. Two reasons, and neither is hypothetical: the
@@ -234,7 +230,7 @@ class Report extends \OWA\Core\AdminController {
         $property_id = \OWA\Module\Base\Classes\CustomReports::requestProperty(
             $row_id, $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) ?: $this->getParam( 'site_id' ) );
 
-        $report = \OWA\Module\Base\Classes\CustomReports::loadOf( $row_id, $property_id );
+        $report = \OWA\Module\Base\Classes\CustomReports::viewableOf( $row_id, $property_id );
 
         if ( ! $report ) {
 
@@ -355,12 +351,11 @@ class Report extends \OWA\Core\AdminController {
      * among the scope switch and the filter, which are controls for HOW YOU ARE
      * LOOKING at it; changing what it IS is a different kind of act.
      *
-     * Offered only to someone who may actually edit. Viewing is deliberately
-     * wider than editing -- that is what "shareable by url" means -- so an
-     * ungated control would be offering a reader a link that leads to a
-     * refusal. Asked of mayEdit() against the ROW, which is the same question
-     * the edit screen asks when the link is followed, so the two cannot answer
-     * differently.
+     * Offered only to someone who may actually edit. Viewing is wider than
+     * editing -- a shared report opens for others -- so an ungated control
+     * would be offering a reader a link that leads to a refusal. Asked of
+     * mayEdit() against the ROW, which is the same question the edit screen
+     * asks when the link is followed, so the two cannot answer differently.
      *
      * CoreAPI::isCurrentUserCapable() rather than reaching through
      * getCurrentUser() for isCapable(): it is the house way to ask this, it
@@ -494,8 +489,8 @@ class Report extends \OWA\Core\AdminController {
     }
 
     /**
-     * "Shared" beside the title of a report everyone with access can see, the
-     * tag the custom reports list gives it.
+     * "Shared" beside the title of a report everyone with access to its
+     * Property can open, the tag the custom reports list gives it.
      *
      * @param  array $data    what the target controller returned
      * @param  array $report  the row being rendered

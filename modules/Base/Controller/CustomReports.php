@@ -36,12 +36,9 @@ namespace OWA\Module\Base\Controller;
  *
  * WHAT THE ROSTER FILTERS, AND WHAT IT DOES NOT
  *
- * Ownership decides what is LISTED. An admin sees every report; everyone else
- * sees the ones they created. It does not decide what may be OPENED -- a
- * report reached by its URL renders for anyone who may view reports, which is
- * what makes a custom report shareable. That is safe because a custom report
- * is a saved QUERY rather than saved data: every figure in it is one its reader
- * could already have asked for through the ordinary reporting UI.
+ * Ownership decides what is LISTED and what may be opened, the same set
+ * (CustomReports::mayView()): an admin sees every report; everyone else the
+ * ones they created and the ones their authors have shared.
  *
  * @since owa 1.8.0
  */

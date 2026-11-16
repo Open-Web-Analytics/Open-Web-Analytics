@@ -86,11 +86,15 @@ async function fillFilter(page, { dimension, operator, value }) {
  * Build and save a report with one grid widget.
  * @returns {Promise<string>} the name it was saved under
  */
-async function buildOne(page, label) {
+async function buildOne(page, label, shared = false) {
     const name = reportName(label);
 
     await openBuilder(page);
     await page.fill('#customReportName', name);
+
+    if (shared) {
+        await page.check('#isShared');
+    }
 
     // A new report starts EMPTY, so the widget has to be added. There is
     // nothing to configure until one is.
@@ -2866,10 +2870,9 @@ test.describe('custom reports', () => {
         test.describe('sharing and the roster filter', () => {
 
             /*
-             * Sharing is about being FOUND, not about being allowed: a custom
-             * report opened by its URL already renders for anyone with
-             * view_reports. So these drive the roster, which is the thing the flag
-             * actually changes.
+             * Sharing puts a report on others' lists and opens it for them
+             * (CustomReports::mayView()). These drive the roster; who may open
+             * a report is tested in CustomReportPropertyTest.
              */
 
             test('a new report is private, and the checkbox says what sharing does', async ({ page }) => {
@@ -2880,8 +2883,7 @@ test.describe('custom reports', () => {
                 await expect(box).toBeVisible();
                 await expect(box).not.toBeChecked();
 
-                // The label has to say LISTING rather than access, or it promises a
-                // privacy property it is not providing.
+                // The label names the list it puts the report on.
                 await expect(page.locator('label[for="isShared"]')).toContainText(/list/i);
             });
 
@@ -3042,11 +3044,9 @@ test.describe('custom reports', () => {
         /**
          * ...and the other side of the capability that was broken.
          *
-         * Editing is deliberately NARROWER than viewing: any signed-in reader
-         * with view_reports can open a custom report by URL -- that is what
-         * makes one shareable, and it is safe because a custom report is a
-         * saved QUERY, not saved data. Changing it takes the creator, or
-         * edit_users.
+         * Editing is NARROWER than viewing: a reader with view_reports opens a
+         * custom report its author has shared. Changing it takes the creator,
+         * or edit_users. The fixture report is shared.
          *
          * The companion to the admin test above. That one proves the capability
          * branch GRANTS; this proves it still refuses, so a fix for the first
@@ -3128,8 +3128,8 @@ test.describe('custom reports', () => {
     });
 
     /**
-     * The whole point of "shareable by url": a report built by one person opens
-     * for another, who could not have built it themselves.
+     * A shared report built by one person opens for another, who could not
+     * have built it themselves; an unshared one does not.
      *
      * The second reader gets their own CONTEXT rather than the first one's with
      * the cookies cleared. Clearing cookies mid-test leaves the page on a
@@ -3142,13 +3142,16 @@ test.describe('custom reports', () => {
 
         await loginAs(page, FIXTURE.adminUserId, FIXTURE.adminPassword);
 
-        const name = await buildOne(page, 'Shared');
+        const name = await buildOne(page, 'Shared', true);
 
         // The URL the author lands on IS the share link, and it carries the
         // Property -- view_reports is only ever satisfied against a particular one.
         const url = page.url();
 
         expect(url).toContain('propertyId');
+
+        const privateName = await buildOne(page, 'Private');
+        const privateUrl = page.url();
 
         const reader = await browser.newContext();
         const theirs = await reader.newPage();
@@ -3158,16 +3161,22 @@ test.describe('custom reports', () => {
             await theirs.goto(url, { waitUntil: 'networkidle' });
 
             await expect(theirs.locator('body')).toContainText(name);
+
+            // Not shared: not found for them, link or no link.
+            await theirs.goto(privateUrl, { waitUntil: 'networkidle' });
+
+            await expect(theirs.locator('.owa_reportTitle')).not.toContainText(privateName);
+            await expect(theirs.locator('body')).not.toContainText(privateName);
         } finally {
             await reader.close();
         }
     });
 
     /**
-     * ...and the roster still filters by ownership, so the analyst does not see
-     * it LISTED. Sharing is by link; the roster is what you made.
+     * ...and the roster lists another author's report only once it is shared,
+     * so the analyst does not see an unshared one LISTED.
      */
-    test('a shared report is not listed on the roster of someone who did not make it',
+    test('an unshared report is not listed on the roster of someone who did not make it',
         async ({ page, browser }) => {
 
         await loginAs(page, FIXTURE.adminUserId, FIXTURE.adminPassword);

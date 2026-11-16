@@ -189,6 +189,11 @@ report or a funnel. A star on each row adds it to the reader's favorites, which
 sort to the top and are listed in the Custom Reports column. The old
 `base.visualizations` address opens the same list.
 
+A custom report or funnel opens for its author, for administrators, and for
+anyone else who can view reports on its Property only while it is shared. To
+anyone else it is not found. Turning sharing off closes it to them again,
+links already sent included.
+
 For module and template authors:
 
 - A navigation link may carry a `heading`, which groups it in the column, and an

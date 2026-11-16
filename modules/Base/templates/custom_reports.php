@@ -172,7 +172,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
     </tbody>
 </table>
 
-<p class="owa_rosterNote"><?php $view->out( \OWA\Core\CoreAPI::t( 'Favorites sort to the top and appear in the column on the left. A shared report is in everyone\'s list; any report opens for anyone with its link.' ) ); ?></p>
+<p class="owa_rosterNote"><?php $view->out( \OWA\Core\CoreAPI::t( 'Favorites sort to the top and appear in the column on the left. A shared report is in everyone\'s list and opens for them; an unshared one opens only for its author and administrators.' ) ); ?></p>
 
 <?php else: ?>
     <p class="owa_rosterEmpty">
