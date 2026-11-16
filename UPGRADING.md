@@ -17,6 +17,30 @@ site owners with local template overrides, and anyone maintaining a custom theme
 
 ---
 
+## Moving from 1.x
+
+### Tracking stops from the deploy until the first update has run
+
+2.0 writes each event to `owa_event_raw`, which its first update creates. A
+tracking request that arrives after the 2.0 code is in place and before that
+update has run is dropped, and is not kept to retry. The update takes seconds:
+run `php cli.php cmd=update` straight after deploying. Queueing on 1.x does not
+cover the window, since 2.0 does not read 1.x's queue.
+
+### A 1.x site that queues beacons
+
+Before deploying 2.0, on 1.x: turn queueing off (remove `OWA_QUEUE_EVENTS` from
+`owa-config.php`, or set it to false), then run
+`php cli.php cmd=processEventQueue` until the queue is empty. Lines still in
+1.x's file queue when the update runs are moved, unchanged, to an archive file
+in the queue directory, `update062-v1-queue-<date>-<time>.txt`, and are not
+ingested; the update says how many lines it moved and where. Rolling the update
+back leaves the archive where it is.
+
+To queue beacons on 2.0, define `OWA_QUEUE_TRACKING_EVENTS` after the upgrade.
+
+---
+
 ## Behaviour changes in this release
 
 These are not deprecations — they change what happens on upgrade. Those with a
@@ -31,9 +55,10 @@ bundles that are stale or missing: in the run from the command line, or as a job
 for the scheduler's next minute when applied from the screen. A release that
 changes neither the tracker nor the schema asks for nothing.
 
-Until it is applied, the admin screens show the update notice. Tracking is
-unaffected, and so are scheduled jobs unless the release also changes the
-schema, which stops them until it is applied.
+Until it is applied, the admin screens show the update notice. Tracking,
+scheduled jobs, the other command line commands and the REST API are
+unaffected, unless the release also changes the schema, which stops them until
+it is applied.
 
 ### Tracked text is stored as it was sent
 
@@ -582,9 +607,10 @@ Pinned by `tests/ThirdPartyModuleCompatTest.php`.
 
 **Process queued beacons on 1.x before upgrading.** With queueing on, 1.x
 wrote incoming beacons to a file queue under `owa-data/logs/` as serialized PHP
-objects, which v2.0 does not read. Run `php cli.php cmd=processEventQueue` on
-1.x until it is empty; the upgrade refuses to run while it holds a beacon that
-was never ingested.
+objects, which v2.0 does not read. Turn queueing off on 1.x and run
+`php cli.php cmd=processEventQueue` until the queue is empty (see
+[A 1.x site that queues beacons](#a-1x-site-that-queues-beacons)); the upgrade
+moves any beacon still in it to an archive file, and does not ingest it.
 
 `owa_queue_item` does not stop the upgrade. It held only retries of events whose
 handlers had already failed, and is dropped; the upgrade says how many were

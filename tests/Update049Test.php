@@ -103,6 +103,17 @@ final class Update049Test extends TestCase
             $this->propertiesOf( $id ) );
     }
 
+    /** A 1.14 goal on browser keeps counting: it tested the version, a column still. */
+    public function testABrowserConditionTestsTheBrowserVersion(): void
+    {
+        $id = $this->makeGoal( GoalEventDefinition::TRIGGER_PAGE_VIEW, array(
+            array( 'browser', 'begins', '120.' ) ) );
+
+        $this->assertTrue( $this->update->up() );
+
+        $this->assertSame( array( 'browser_version' ), $this->propertiesOf( $id ) );
+    }
+
     /**
      * IDEMPOTENT. columnFor() answers a column with itself and V2Event::name()
      * leaves a bare v2 name alone, so a second pass finds nothing to do -- which

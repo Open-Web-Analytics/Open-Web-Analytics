@@ -52,24 +52,7 @@ class Update034 extends \OWA\Core\Update {
 
     function up( $force = false ) {
 
-        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'use_32bit_hash' ) ) {
-
-            \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash_before_v2', true );
-        }
-
-        // Cleared first: from here on every derivation, in this update and the
-        // ones after it, is 64-bit.
-        \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', false );
-
-        $ids = new \OWA\Module\Base\Classes\Migration\WideIds();
-        $ok  = $ids->widen();
-
-        foreach ( $ids->report as $line ) {
-
-            $this->e->notice( $line );
-        }
-
-        if ( ! $ok ) {
+        if ( ! self::widenIds() ) {
 
             return false;
         }
@@ -87,6 +70,36 @@ class Update034 extends \OWA\Core\Update {
         }
 
         return true;
+    }
+
+    /**
+     * Stop deriving 32-bit ids, remembering that the installation did, and
+     * re-key the rows still holding one. Also run by Base\Module::update() for
+     * an installation at 34 from a 1.x build whose Update034 did not do it.
+     * Repeated, it finds nothing to do.
+     *
+     * @return bool
+     */
+    public static function widenIds() {
+
+        if ( \OWA\Core\CoreAPI::getSetting( 'base', 'use_32bit_hash' ) ) {
+
+            \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash_before_v2', true );
+        }
+
+        // Cleared first: from here on every derivation, in this update and the
+        // ones after it, is 64-bit.
+        \OWA\Core\CoreAPI::persistSetting( 'base', 'use_32bit_hash', false );
+
+        $ids = new \OWA\Module\Base\Classes\Migration\WideIds();
+        $ok  = $ids->widen();
+
+        foreach ( $ids->report as $line ) {
+
+            \OWA\Core\CoreAPI::notice( $line );
+        }
+
+        return $ok;
     }
 
     /**
