@@ -189,13 +189,6 @@ final class InviteOnlyAccountsTest extends TestCase
             function saveCredentials()
             {
             }
-
-            // The cookie check a refused password falls through to, without a
-            // database.
-            function reconstructAuthCredential( $user_id )
-            {
-                return $this->generateAuthCredential( $user_id, $this->stub->get( 'password' ) );
-            }
         };
 
         return true === $auth->authByInput( 'owa-test-generated', $typed );

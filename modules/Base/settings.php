@@ -266,6 +266,12 @@ return array(
         // Set by Update049 when it switched off goal events it could not migrate, so its
         // down() can switch them back on.
         'goals_switched_off_by_049' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
+        // Set by Update056 when it removed goal groups and start conditions, so its
+        // down() can put them back.
+        'goal_groups_before_056' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
+        // Set by Update070 when it moved enableEcommerceReporting from the Profiles
+        // to their Properties, so its down() can put the rows back.
+        'ecommerce_reporting_before_070' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         'goal_event_names_before_075' => array( 'default' => array(), 'storable' => true, 'internal' => true ),
         // Set by Update079 when it made saved funnel steps event steps, so its down()
         // can give each funnel back the definition it had.

@@ -96,11 +96,27 @@ class Update extends \OWA\Core\Base {
 
         $current_version = $this->c->get($this->module_name, 'schema_version');
 
-        // check to see that you are applying an update that was successfully applied
-
+        /*
+         * Only the next update applies: the one numbered one above the schema.
+         * An update at or below the schema has been applied, and running it
+         * again re-runs it over the changes of every update after it; one
+         * further ahead skips the updates between. --force applies any of them.
+         * No recorded version reads as 1, as Module::getSchemaVersion() does.
+         */
         if ( ! $force ) {
-            if ($current_version === $this->schema_version) {
-                $this->e->notice(sprintf("Aborting %s Update (%s): Update has already been applied.", static::class, $this->module_name));
+
+            $current = empty( $current_version ) ? 1 : (int) $current_version;
+            $seq     = (int) $this->schema_version;
+
+            if ( $current >= $seq ) {
+                $this->e->notice(sprintf("Aborting %s Update (%s): the schema is at %d, so update %d has been applied. Use --force to apply it again.",
+                    static::class, $this->module_name, $current, $seq));
+                return false;
+            }
+
+            if ( $current !== $seq - 1 ) {
+                $this->e->notice(sprintf("Aborting %s Update (%s): the schema is at %d, so update %d is next, not %d. Use --force to apply it out of sequence.",
+                    static::class, $this->module_name, $current, $current + 1, $seq));
                 return false;
             }
         }

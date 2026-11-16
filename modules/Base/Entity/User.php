@@ -66,7 +66,7 @@ class User extends \OWA\Core\Entity {
     /**
      * Credential fields. These are never part of a response payload.
      */
-    protected $private_properties = [ 'password', 'temp_passkey', 'api_key' ];
+    protected $private_properties = [ 'password', 'temp_passkey', 'api_key', 'session_epoch' ];
 
     function __construct() {
     
@@ -107,6 +107,15 @@ class User extends \OWA\Core\Entity {
         $apiKey->setName('api_key');
         $apiKey->setDataType(OWA_DTD_VARCHAR255);
         $this->setProperty($apiKey);
+
+        // Signed into every session cookie (Auth::sessionCredential()); a new
+        // value ends them all. See endSessions(). Update087.
+        $epoch = new \OWA\Module\Base\Classes\DbColumn;
+        $epoch->setName('session_epoch');
+        $epoch->setDataType(OWA_DTD_INT);
+        $epoch->setNotNull();
+        $epoch->setDefaultValue(0);
+        $this->setProperty($epoch);
 
     }
     
@@ -197,6 +206,16 @@ class User extends \OWA\Core\Entity {
     }
 
     
+    /**
+     * Ends every browser session of this user, on every device, from the next
+     * request: each session cookie carries the epoch it was issued under.
+     * Written by the caller's update().
+     */
+    public function endSessions() {
+
+        $this->set( 'session_epoch', (int) $this->get( 'session_epoch' ) + 1 );
+    }
+
     /**
      * @return boolean
      */
