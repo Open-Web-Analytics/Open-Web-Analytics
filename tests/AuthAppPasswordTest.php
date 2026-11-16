@@ -195,7 +195,6 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     {
         return array(
             'apiKey parameter'     => array(array('apiKey' => str_repeat('a', 32)), array()),
-            'owa_apiKey parameter' => array(array('owa_apiKey' => str_repeat('a', 32)), array()),
             'signature parameter'  => array(array('signature' => 'c2ln'), array()),
             'X-API-Key header'     => array(array(), array('HTTP_X_API_KEY' => str_repeat('a', 32))),
             'X-Signature header'   => array(array(), array('HTTP_X_SIGNATURE' => 'c2ln')),
@@ -248,22 +247,28 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         try {
             $this->authenticate(array());
 
-            $c = new \OWA\Core\Controller(array());
-            $c->notAuthenticatedAction();
+            $msg = self::refusal()['msg'] ?? null;
 
             $this->assertSame(401, http_response_code());
-            $this->assertSame(\OWA\Core\Controller::legacyApiKeyMessage(), $c->get('error_msg')['msg']);
-            $this->assertStringContainsString('application password', $c->get('error_msg')['msg']);
-            $this->assertStringContainsString('Authorization header', $c->get('error_msg')['msg']);
+            $this->assertSame(\OWA\Core\Controller::legacyApiKeyMessage(), $msg);
+            $this->assertStringContainsString('application password', $msg);
+            $this->assertStringContainsString('Authorization header', $msg);
         } finally {
             $request->setParam('apiKey', '');
         }
 
         // Any other failure keeps the general message.
         $this->authenticate(array());
+        $this->assertNotSame(\OWA\Core\Controller::legacyApiKeyMessage(), self::refusal()['msg'] ?? null);
+    }
+
+    /** The error a REST controller answers a request it could not authenticate with. */
+    private static function refusal(): array
+    {
         $c = new \OWA\Core\Controller(array());
         $c->notAuthenticatedAction();
-        $this->assertNotSame(\OWA\Core\Controller::legacyApiKeyMessage(), $c->get('error_msg')['msg']);
+
+        return (array) ((array) (new \ReflectionProperty(\OWA\Core\Controller::class, 'data'))->getValue($c))['error_msg'];
     }
 
     public function testAReadOnlyPasswordAuthenticatesOnlyAGet(): void

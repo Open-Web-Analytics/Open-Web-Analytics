@@ -121,10 +121,10 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         $this->mode('rest');
 
         $screen = $this->screen();
-        $screen->doAction();
+        $data = (array) $screen->doAction();
 
         $this->assertFalse($screen->ran);
-        $this->assertSame(\OWA\Core\Controller::legacyApiKeyMessage(), $screen->get('error_msg')['msg'] ?? null);
+        $this->assertSame(\OWA\Core\Controller::legacyApiKeyMessage(), $data['error_msg']['msg'] ?? null);
     }
 
     /** Not tried at all: the branch that writes the session cookies never runs. */
