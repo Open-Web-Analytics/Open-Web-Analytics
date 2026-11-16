@@ -59,6 +59,6 @@ final class ReportsRestPagingInputTest extends TestCase
             $js );
 
         $this->assertStringContainsString( "OWA.getSetting( 'max_results_per_page' )",
-            (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.resultSetExplorer.js' ) );
+            (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/owa.resultSetExplorer.js' ) );
     }
 }

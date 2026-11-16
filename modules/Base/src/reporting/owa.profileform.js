@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 /**
  * The add-a-Profile form shows only the fields the answers make relevant.

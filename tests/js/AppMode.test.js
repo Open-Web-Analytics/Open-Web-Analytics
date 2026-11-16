@@ -1,4 +1,4 @@
-import { AppMode } from '../../modules/Base/src/reporting/v1/owa.appmode.js';
+import { AppMode } from '../../modules/Base/src/reporting/owa.appmode.js';
 
 /**
  * OWA opened from a Home Screen: pull down to refresh, and a reload on coming

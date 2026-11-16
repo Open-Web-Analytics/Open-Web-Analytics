@@ -16,7 +16,7 @@
  * fetched is asked about in general terms rather than let through unasked.
  */
 
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 const RAW = 'base.raw_retention_months';
 const CUBE = 'base.cube_retention_months';

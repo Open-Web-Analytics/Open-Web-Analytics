@@ -1,5 +1,5 @@
-import { handleClick, open, close, OPEN, setColumnHidden, COLUMN_KEY, dismissFlyout, restoreFlyout, DISMISSED } from '../../modules/Base/src/reporting/v1/owa.reportnav.js';
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { handleClick, open, close, OPEN, setColumnHidden, COLUMN_KEY, dismissFlyout, restoreFlyout, DISMISSED } from '../../modules/Base/src/reporting/owa.reportnav.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 /**
  * The report nav behind a menu button on a narrow screen (owa.reportnav.js):

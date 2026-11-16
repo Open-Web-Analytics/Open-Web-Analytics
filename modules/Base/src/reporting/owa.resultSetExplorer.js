@@ -27,10 +27,10 @@
  * @since        owa 1.5.0
  */
 
-// OWA is defined by owa.js; this module augments it (OWA.resultSet = ... etc.). jQuery
+// OWA is defined by owa.format.js; this module augments it (OWA.resultSet = ... etc.). jQuery
 // was supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 import { dialogFit } from './owa.dialog.js';
 import { closeMetricInfo, describeMetric } from './owa.metricinfo.js';
 import { describeChange } from './owa.periodpicker.js';
@@ -51,15 +51,6 @@ OWA.resultSet.prototype = {
             return this.aggregates[name].label;
         } else {
             return 'unknown';
-        }
-    },
-
-    getMetricValue : function(name) {
-        //alert(this.resultSet.aggregates[name].label);
-        if (this.aggregates[name].value.length > 0) {
-            return this.aggregates[name].value;
-        } else {
-            return 0;
         }
     },
 
@@ -358,35 +349,10 @@ OWA.resultSetExplorer.prototype = {
         return this.options[name];
     },
 
-    getAggregates : function() {
-
-        return this.resultSet.aggregates;
-    },
-
     // needed??
     setView : function(name) {
 
         this.view = name;
-    },
-
-    // makesa unqiue idfor each row
-    // needed?
-    makeRowGuid : function(row) {
-
-    },
-
-    getRowValues : function(old) {
-
-        var row = {};
-
-        for (var item in old) {
-
-            if (old.hasOwnProperty(item)) {
-                row[item] = old[item].value;
-            }
-        }
-
-        return row;
     },
 
     loadFromArray : function(json, view) {
@@ -815,31 +781,6 @@ OWA.resultSetExplorer.prototype = {
         this.registerDataChangeSubscriber( dom_id );
     },
 
-    // shows a tool tip for flot charts
-    showTooltip : function(x, y, contents) {
-
-        jQuery('<div id="tooltip">' + contents + '</div>').css( {
-            position: 'absolute',
-            display: 'none',
-            top: y + 5,
-            left: x + 5,
-            border: '1px solid #cccccc',
-            padding: '2px',
-            'background-color': '#ffffff',
-            opacity: 0.90
-        }).appendTo("body").fadeIn(100);
-    },
-    
-    getMetricLabel : function(name) {
-
-        return this.resultSet.getMetricLabel( name );
-    },
-
-    getMetricValue : function(name) {
-
-        return this.resultSet.getMetricValue( name );
-    },
-
     makeShareChart : function ( resultSet, dom_id, options ) {
 
         var chart = new OWA.shareChart();
@@ -1013,44 +954,6 @@ OWA.resultSetExplorer.prototype = {
 
         jQuery( '#' + this.metricBoxesDomId )
             .toggleClass( 'owa_metricBoxesSelectable', $boxes.length > 1 );
-    },
-    
-    makeSparkLine : function(dom_id, options) {
-
-        if ( ! dom_id ) {
-            dom_id = this.dom_id;
-        }
-
-        var sl = new OWA.sparkline();
-        sl.generate( this.resultSet, dom_id, options);
-        //register dom_id as a listener for data change events
-        this.registerDataChangeSubscriber( dom_id );
-    },
-    
-    getApiEndpoint : function() {
-
-        return this.getOption('api_endpoint') || OWA.getSetting('api_endpoint');
-    },
-    
-    makeApiRequestUrl : function(method, options, url) {
-
-        var url = url || this.getApiEndpoint();
-        url += '?';
-        url += 'do=' + method;
-        var count = OWA.util.countObjectProperties(options);
-        var i = 1;
-        for (var option in options) {
-
-            if (options.hasOwnProperty(option)) {
-
-                if (typeof options[option] != 'undefined') {
-                    url += '&' + option + '=' + OWA.util.urlEncode(options[option]);
-                }
-                i++;
-            }
-        }
-
-        return url;
     }
     
 };

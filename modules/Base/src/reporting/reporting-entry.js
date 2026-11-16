@@ -22,11 +22,11 @@
  * used to rewrite those free identifiers -- so the reporting and tracker webpack configs
  * are now a single shared config again (no per-product ProvidePlugin to scope).
  *
- * The seven OWA reporting files are REAL ES modules (Phase 4 renovation): owa.js exports
+ * The seven OWA reporting files are REAL ES modules (Phase 4 renovation): owa.format.js exports
  * the OWA namespace and the six augmenters import it and mutate the same object, and every
- * file imports jQuery explicitly. The import graph orders owa.js before its augmenters
+ * file imports jQuery explicitly. The import graph orders owa.format.js before its augmenters
  * automatically; the side-effect imports below still fix the relative order of the
- * augmenters among themselves. owa.js also publishes window.OWA (see its tail) for the
+ * augmenters among themselves. owa.format.js also publishes window.OWA (see its tail) for the
  * report templates' inline <script> blocks.
  */
 
@@ -67,9 +67,9 @@ import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis
  * also covers what this plugin never could -- a widget whose width changed
  * without the window changing, which is most of them on a container-query grid.
  */
-// OWA reporting namespace: owa.js defines it (exports OWA + publishes window.OWA), the
-// other six import { OWA } and augment it. Import order is load-bearing -- owa.js first.
-import './owa.js';
+// OWA reporting namespace: owa.format.js defines it (exports OWA + publishes window.OWA), the
+// other six import { OWA } and augment it. Import order is load-bearing -- owa.format.js first.
+import './owa.format.js';
 // Width, height and position for every jQuery UI dialog (OWA.dialogFit).
 import './owa.dialog.js';
 import './owa.report.js';
@@ -81,7 +81,7 @@ import './owa.sharechart.js';
 // Filters as pills, in the report editor's widget panel and the funnel builder.
 import './owa.filterpills.js';
 import './owa.kpibox.js';
-// The confirmation an irreversible action gets. Imported after owa.js like the
+// The confirmation an irreversible action gets. Imported after owa.format.js like the
 // rest; it augments OWA and delegates one document-level handler.
 import './owa.confirm.js';
 // The Add dialog on the Application Passwords screen.
@@ -104,4 +104,4 @@ import './owa.funnelbuilder.js';
 import './owa.goalbuilder.js';
 
 // window.jQuery / window.$ are published by vendor-jquery-global.js (first import);
-// window.OWA (the ~166 template references) is published by owa.js itself.
+// window.OWA (the ~166 template references) is published by owa.format.js itself.

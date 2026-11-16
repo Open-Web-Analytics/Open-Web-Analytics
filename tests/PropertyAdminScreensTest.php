@@ -301,7 +301,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testTheSiteControlReplacesTheOldSelect(): void
     {
         $js = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.report.js' );
+            \OWA\Core\Env::root() . '/modules/Base/src/reporting/owa.report.js' );
 
         $this->assertStringContainsString( '#owa_siteControl', $js );
 
@@ -594,7 +594,7 @@ final class PropertyAdminScreensTest extends TestCase
             'Nothing shows the panel when the tile is clicked.' );
 
         $js = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.report.js' );
+            \OWA\Core\Env::root() . '/modules/Base/src/reporting/owa.report.js' );
 
         /*
          * SINGLE quoted. $panel is a real variable in this test, so in double

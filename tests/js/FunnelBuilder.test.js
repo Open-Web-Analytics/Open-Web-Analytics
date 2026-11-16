@@ -9,8 +9,8 @@ jest.mock('jquery', () => {
 });
 
 import { readStep, isBlankStep, renumber, bindStep, STEP_CLASSES, DEFAULT_EVENT }
-    from '../../modules/Base/src/reporting/v1/owa.funnelbuilder.js';
-import { formatResult, SEPARATOR, CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/v1/owa.goalbuilder.js';
+    from '../../modules/Base/src/reporting/owa.funnelbuilder.js';
+import { formatResult, SEPARATOR, CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/owa.goalbuilder.js';
 
 const $ = require('jquery');
 

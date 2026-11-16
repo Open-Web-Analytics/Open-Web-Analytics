@@ -1,7 +1,7 @@
 /**
  * The reporting UI has no client-side template engine.
  *
- * jQote2 was the last hand-copied library under src/reporting/v1/includes. Its
+ * jQote2 was the last hand-copied library under src/reporting/includes. Its
  * one caller, resultSetExplorer.renderTemplate, was reached only through a
  * view variable no controller set, and every template it used to render is
  * markup or a named formatter now. Nothing may call a jqote function, define a
@@ -33,7 +33,7 @@ function walk(dir, out = []) {
 describe('jQote2 is gone', () => {
 
     test('the vendored copy is not in the tree', () => {
-        expect(fs.existsSync(path.join(repoRoot, 'modules/Base/src/reporting/v1/includes')))
+        expect(fs.existsSync(path.join(repoRoot, 'modules/Base/src/reporting/includes')))
             .toBe(false);
     });
 
@@ -47,7 +47,7 @@ describe('jQote2 is gone', () => {
 
     test('resultSetExplorer has no template view', () => {
         const code = fs.readFileSync(
-            path.join(repoRoot, 'modules/Base/src/reporting/v1/owa.resultSetExplorer.js'), 'utf8');
+            path.join(repoRoot, 'modules/Base/src/reporting/owa.resultSetExplorer.js'), 'utf8');
 
         expect(code).not.toMatch(/\btemplate\s*:\s*\{/);
         expect(code).not.toMatch(/\btemplate\s*:\s*'renderTemplate'/);

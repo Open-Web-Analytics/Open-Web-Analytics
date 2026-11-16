@@ -5,9 +5,9 @@ window.jQuery = window.$ = $;
 
 require('jquery-ui-dist/jquery-ui.js');
 
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
-import { dialogFit, refitDialogs } from '../../modules/Base/src/reporting/v1/owa.dialog.js';
-import '../../modules/Base/src/reporting/v1/owa.confirm.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
+import { dialogFit, refitDialogs } from '../../modules/Base/src/reporting/owa.dialog.js';
+import '../../modules/Base/src/reporting/owa.confirm.js';
 
 /**
  * A dialog fits the window it opens in (owa.dialog.js): no wider than the

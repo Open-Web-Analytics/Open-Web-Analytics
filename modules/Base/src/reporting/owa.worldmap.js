@@ -6,7 +6,7 @@
 //
 // Country names come from the SVG and counts from the caller; both are written
 // with textContent.
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 OWA.worldMap = function ( slot, options ) {
 

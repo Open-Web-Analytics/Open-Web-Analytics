@@ -5,14 +5,14 @@ jest.mock( 'jquery', () => {
     return jq;
 } );
 
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 const $ = require( 'jquery' );
 
 global.jQuery = global.$ = $;
 
-require( '../../modules/Base/src/reporting/v1/owa.areachart.js' );
-require( '../../modules/Base/src/reporting/v1/owa.sparkline.js' );
+require( '../../modules/Base/src/reporting/owa.areachart.js' );
+require( '../../modules/Base/src/reporting/owa.sparkline.js' );
 
 const day = ( ymd ) => Date.UTC( +ymd.substr( 0, 4 ), +ymd.substr( 4, 2 ) - 1, +ymd.substr( 6, 2 ) );
 

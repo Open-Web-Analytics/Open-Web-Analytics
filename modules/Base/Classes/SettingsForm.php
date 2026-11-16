@@ -344,7 +344,7 @@ class SettingsForm {
      * switch, off. The control is in the page but hidden and disabled, so it
      * posts nothing. Turning the switch on hides the text and shows the control,
      * enabled and holding the inherited value; turning it off puts that value
-     * back and hides the control again (src/reporting/v1/owa.settingsoverride.js).
+     * back and hides the control again (src/reporting/owa.settingsoverride.js).
      * Saving with the switch on stores the value at this level, and saving with
      * it off removes any value stored here. The switch is the whole decision --
      * a value equal to the inherited one is still an override when the switch

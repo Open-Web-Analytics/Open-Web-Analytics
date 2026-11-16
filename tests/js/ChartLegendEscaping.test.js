@@ -4,13 +4,13 @@ jest.mock( 'jquery', () => {
     return jq;
 } );
 
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 const $ = require( 'jquery' );
 
 global.jQuery = global.$ = $;
 
-require( '../../modules/Base/src/reporting/v1/owa.areachart.js' );
+require( '../../modules/Base/src/reporting/owa.areachart.js' );
 
 /**
  * A chart legend's labels are tracked values -- a page title, a campaign name
@@ -31,7 +31,7 @@ describe( 'a chart legend label', () => {
 
     test( 'is what the chart hands flot as its label formatter', () => {
         const src = require( 'fs' ).readFileSync(
-            require( 'path' ).join( __dirname, '../../modules/Base/src/reporting/v1/owa.areachart.js' ), 'utf8' );
+            require( 'path' ).join( __dirname, '../../modules/Base/src/reporting/owa.areachart.js' ), 'utf8' );
 
         expect( src ).toMatch( /labelFormatter:\s*this\.legendLabel/ );
     } );

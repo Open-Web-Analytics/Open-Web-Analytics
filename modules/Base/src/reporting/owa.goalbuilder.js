@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 /**
  * A condition builder: the property list follows the event. A goal event

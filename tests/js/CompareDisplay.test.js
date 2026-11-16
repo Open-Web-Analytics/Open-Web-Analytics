@@ -13,14 +13,14 @@ jest.mock( 'jquery', () => {
     return jq;
 } );
 
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 const $ = require( 'jquery' );
 
 global.jQuery = global.$ = $;
 
-require( '../../modules/Base/src/reporting/v1/owa.kpibox.js' );
-require( '../../modules/Base/src/reporting/v1/owa.areachart.js' );
+require( '../../modules/Base/src/reporting/owa.kpibox.js' );
+require( '../../modules/Base/src/reporting/owa.areachart.js' );
 
 const COMPARE = { compare: 'previous_period_dow', startDate: '20260915', endDate: '20261012' };
 

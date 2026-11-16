@@ -16,7 +16,7 @@
  * arithmetic is done on UTC midnights, where every day is 24 hours long.
  */
 
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 const DAY = 86400000;
 

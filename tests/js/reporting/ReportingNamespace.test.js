@@ -7,27 +7,19 @@ jest.mock('jquery', () => {
     return jq;
 });
 
-import { OWA } from '../../../modules/Base/src/reporting/v1/owa.js';
+import { OWA } from '../../../modules/Base/src/reporting/owa.format.js';
 
 const fs = require('fs');
 const path = require('path');
 
 /**
- * The reporting bundle prefixes cookie names and nothing of its own.
+ * The reporting bundle's own URLs carry bare parameter names.
  *
- *   config.ns  'owa_'  -- the WIRE namespace. Cookie names, in a jar shared
- *                         with everything else on the domain.
+ *   config.ns  'owa_'  -- the WIRE namespace, shared with the tracker.
  *   OWA's OWN admin/reporting URLs carry bare names: OWA owns the entire query
  *   string.
- *
- * They were a single setting, and that is the trap: OWA.stateManager names its
- * cookies with OWA.getSetting('ns'), while the results explorer builds report
- * URLs from what used to be the same value. Emptying the one setting to get
- * un-prefixed links would silently rename every reporting cookie, orphaning the
- * state OWA had already stored under the old names -- so the two surfaces are
- * pinned separately here.
  */
-describe('the reporting bundle prefixes cookies and not its own URLs', () => {
+describe('the reporting bundle keeps the wire namespace out of its own URLs', () => {
 
     afterEach(() => {
         OWA.setOption('ns', 'owa_');
@@ -35,36 +27,8 @@ describe('the reporting bundle prefixes cookies and not its own URLs', () => {
 
     test('the wire namespace is still owa_, and there is no app namespace', () => {
         expect(OWA.config.ns).toBe('owa_');
-        expect(OWA.util.ns('v')).toBe('owa_v');
         expect('app_ns' in OWA.config).toBe(false);
         expect(OWA.util.appNs).toBeUndefined();
-    });
-
-    /**
-     * The surface that must NOT have moved. A cookie name is shared with the
-     * tracker and with whatever else lives on the domain.
-     */
-    test('state cookies are still written under the wire namespace', () => {
-        const sm = new OWA.stateManager();
-        sm.registerStore('rs', 30, '', 'json');
-        sm.set('rs', 'period', 'last_thirty_days', true, 'json', 30);
-
-        expect(document.cookie).toContain('owa_rs=');
-        // and not bare
-        expect(document.cookie).not.toMatch(/(^|;\s*)rs=/);
-    });
-
-    /**
-     * ...and is read back under the same name, so a rename would not merely
-     * orphan the old cookie, it would orphan it in both directions.
-     */
-    test('state cookies are read back under the wire namespace', () => {
-        document.cookie = 'owa_rt=' + escape(JSON.stringify({ period: 'today' })) + '; path=/';
-
-        const sm = new OWA.stateManager();
-        sm.registerStore('rt', 30, '', 'json');
-
-        expect(sm.getStateFromCookie('rt')).toContain('today');
     });
 
     /**
@@ -78,7 +42,7 @@ describe('the reporting bundle prefixes cookies and not its own URLs', () => {
     describe('the results explorer builds URLs with bare names', () => {
 
         const src = fs.readFileSync(
-            path.join(__dirname, '../../../modules/Base/src/reporting/v1/owa.resultSetExplorer.js'),
+            path.join(__dirname, '../../../modules/Base/src/reporting/owa.resultSetExplorer.js'),
             'utf8'
         );
 
@@ -100,7 +64,6 @@ describe('the reporting bundle prefixes cookies and not its own URLs', () => {
             expect(src).toContain("url.setQueryParam('sort', ");
             expect(src).toContain("url.setQueryParam('constraints', ");
             expect(src).toContain("url.getQueryParam('dimensions')");
-            expect(src).toContain("url += 'do=' + method");
             expect(src).not.toContain('appNs');
         });
     });

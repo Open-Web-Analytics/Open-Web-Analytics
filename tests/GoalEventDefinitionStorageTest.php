@@ -400,7 +400,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /** The builder's script names the picker's custom value as the server does. */
     public function testTheBuilderKnowsTheCustomTriggerValue(): void
     {
-        $source = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.goalbuilder.js' );
+        $source = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/owa.goalbuilder.js' );
 
         $this->assertMatchesRegularExpression( '/export const CUSTOM_TRIGGER = ' . preg_quote(
             "'" . \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM . "';", '/' ) . '/', $source );
