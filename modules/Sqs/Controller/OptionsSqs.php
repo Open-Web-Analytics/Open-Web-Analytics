@@ -29,11 +29,8 @@ class OptionsSqs extends \OWA\Core\AdminController {
         $this->set( 'queued', \OWA\Module\Base\Classes\TrackerIngest::isQueued() );
 
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
         $this->set( 'hierarchy_tier', 0 );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->data['subview'] = 'sqs.optionsSqs';
         $this->data['view_method'] = 'delegate';
 

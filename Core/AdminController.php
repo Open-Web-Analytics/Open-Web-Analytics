@@ -80,6 +80,28 @@ class AdminController extends \OWA\Core\Controller {
     
         return parent::__construct($params);
     }
+
+    /**
+     * The settings chrome a settings screen sits in: the site control, the
+     * settings nav under it, and the base.optionsHierarchy view. Every
+     * settings screen carries it, module screens included.
+     *
+     * @param array  $params     merged into the request's params: the siteId or
+     *                           propertyId the screen resolved, or nothing
+     * @param string $siteId     the Profile the screen is about, as getHierarchyNav() takes it
+     * @param string $propertyId the Property in context, as getHierarchyNav() takes it
+     */
+    protected function settingsChrome( array $params, $siteId = '', $propertyId = '' ) {
+
+        if ( $params ) {
+
+            $this->set( 'params', array_merge( (array) $this->params, $params ) );
+        }
+
+        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
+        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $siteId, $propertyId ) );
+        $this->setView( 'base.optionsHierarchy' );
+    }
 }
 
 ?>

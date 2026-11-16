@@ -33,13 +33,10 @@ class PropertyRetention extends \OWA\Core\AdminController {
 
         $this->set( 'property', $property->_getProperties() );
         $this->set( 'propertyId', $this->getParam( 'propertyId' ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
 
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ), $this->getParam( 'propertyId' ) );
 
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $this->getParam( 'propertyId' ) ) );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array( 'siteId' => $siteId ), '', $this->getParam( 'propertyId' ) );
         $this->setSubview( 'base.propertyRetention' );
     }
 }

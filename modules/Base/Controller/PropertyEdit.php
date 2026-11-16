@@ -271,11 +271,8 @@ class PropertyEdit extends \OWA\Core\AdminController {
 
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ), $propertyId );
 
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->set( 'error_code', 3002 );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array( 'siteId' => $siteId ), '', $propertyId );
         $this->setSubview( 'base.propertyProfile' );
     }
 }
