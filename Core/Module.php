@@ -175,12 +175,6 @@ abstract class Module {
     var $denormalizedDimensions = array();
 
     /**
-     *
-     * @var array
-     */
-    var $formatters = array();
-
-    /**
      * cli_commands
      *
      * @var array
@@ -381,20 +375,6 @@ abstract class Module {
             // register
             \OWA\Core\CoreAPI::registerFilter($filter_name, array($class, $method), $priority);
         }
-    }
-
-    /**
-     * Attaches an event handler to the event queue
-     *
-     * @param array $event_name
-     * @param string $handler_name
-     * @return boolean
-     * @depricated
-     */
-    function _addHandler($event_name, $handler_name) {
-
-        return $this->registerEventHandler($event_name, $handler_name);
-
     }
 
     /**
@@ -1744,19 +1724,6 @@ abstract class Module {
         // on the same minute -- which is the collision the spread exists to
         // avoid, just moved from between installs to within one.
         return $seed . '|' . $job;
-    }
-
-    /**
-     * A formatter for a data type the result sets do not format themselves:
-     * ResultSetManager::formatValue() falls back to it through
-     * Service::getFormatter().
-     *
-     * @param string   $type
-     * @param callable $formatter
-     */
-    function registerFormatter($type, $formatter) {
-
-        $this->formatters[$type] = $formatter;
     }
 
     /**

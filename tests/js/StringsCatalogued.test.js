@@ -714,7 +714,7 @@ describe('the reporting JavaScript', () => {
     test('the sources are found, and the excluded ones are not scanned', () => {
         const files = uiSources().map(relative);
 
-        expect(files).toContain('modules/Base/src/reporting/v1/owa.periodpicker.js');
+        expect(files).toContain('modules/Base/src/reporting/owa.periodpicker.js');
         expect(files.filter((f) => f.includes('/tracker/') || f.includes('/common/'))).toEqual([]);
     });
 

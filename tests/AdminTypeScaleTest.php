@@ -17,7 +17,7 @@ final class AdminTypeScaleTest extends TestCase
         return (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/css/' . $file);
     }
 
-    private const STYLESHEETS = array('owa.css', 'owa.admin.css', 'owa.report.css', 'owa.grid.css', 'owa.shell.css', 'owa.widgets.css');
+    private const STYLESHEETS = array('owa.css', 'owa.admin.css', 'owa.report.css', 'owa.grid.css', 'owa.shell.css');
 
     /** @return array<string,float> each size in px at a 16px root */
     private function scale(): array
@@ -57,7 +57,7 @@ final class AdminTypeScaleTest extends TestCase
     public function testAMetricBoxNumberIsSmallerOnAPhone(): void
     {
         $report = $this->css('owa.report.css');
-        $this->assertSame(1, preg_match('/p\.owa_metricInfoboxLargeNumber, span\.owa_metricInfoboxLargeNumber, \.owa \.action_infobox \.action_value \{[^}]*font-size:\s*([\d.]+)rem/', $report, $desktop));
+        $this->assertSame(1, preg_match('/p\.owa_metricInfoboxLargeNumber, span\.owa_metricInfoboxLargeNumber \{[^}]*font-size:\s*([\d.]+)rem/', $report, $desktop));
         $this->assertSame(34.0, (float) $desktop[1] * 16);
 
         $this->assertSame(1, preg_match('/@media \(max-width: 600px\) \{\s*p\.owa_metricInfoboxLargeNumber, span\.owa_metricInfoboxLargeNumber \{\s*font-size:\s*([\d.]+)rem/', $report, $phone));

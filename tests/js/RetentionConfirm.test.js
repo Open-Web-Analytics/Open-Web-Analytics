@@ -1,5 +1,5 @@
-import { readValues, previewParams, previewUrl, decide, unknownPreview } from '../../modules/Base/src/reporting/v1/owa.retention.js';
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { readValues, previewParams, previewUrl, decide, unknownPreview } from '../../modules/Base/src/reporting/owa.retention.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 /**
  * When a Data Retention save is interrupted to ask, and with what

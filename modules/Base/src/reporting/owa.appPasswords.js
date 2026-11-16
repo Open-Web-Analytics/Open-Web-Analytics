@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 import { dialogFit } from './owa.dialog.js';
 
 /**

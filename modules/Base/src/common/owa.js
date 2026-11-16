@@ -95,12 +95,6 @@ class OWA {
         return this.state.registerStore(name, expiration, length, format, behaviour);
     }
     
-    checkForState( store_name ) {
-    
-        this.initializeStateManager();
-        return this.state.isPresent( store_name );
-    }
-    
     setState(store_name, key, value, is_perminant, format) {
     
         this.initializeStateManager();
@@ -137,12 +131,6 @@ class OWA {
         return this.state.getStoreFormat(store_name);
     }
     
-    setStateStoreFormat(store_name, format) {
-
-        this.initializeStateManager();
-        return this.state.setStoreFormat(store_name, format);
-    }
-
     /**
      * Declare a storage migration, to run once the cookie domain is known and
      * before anything downstream reads state.
@@ -320,8 +308,6 @@ class OWA {
 	    import(/* webpackChunkName: "owa.heatmap" */ '../tracker/Heatmap.js').then( ( { Heatmap } ) => { 
     
 	        that.overlay = new Heatmap();
-            //hm.setParams(p);
-            //hm.options.demoMode = true;
             that.overlay.options.liveMode = true;
             that.overlay.generate();
         });

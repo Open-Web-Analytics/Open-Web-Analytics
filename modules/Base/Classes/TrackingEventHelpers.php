@@ -66,20 +66,6 @@ class TrackingEventHelpers {
     }
 
 
-/*
-    public function setEnvironmentals( $event ) {
-
-        foreach ( $this->environmentals as $k => $v ) {
-            // loop and execute call backs.
-            if (! $event->get( $k ) ) {
-	            
-            	$event->set( $k, call_user_func( $this->environmentals[ $k ][ 'default_value' ][0] ) );
-            }
-        }
-
-    }
-*/
-
     /**
      * @var array<string, bool> guard against re-registering the same property
      * derivation filter. setTrackerProperties() runs on every logEvent() (3x
@@ -1119,14 +1105,6 @@ class TrackingEventHelpers {
         }
     }
 
-/*
-    public function generateIds( $event, $properties ) {
-
-        $this->registerCallbacks( $properties, 0 );
-
-    }
-*/
-
     public function setTrackerProperties( $event, $properties ) {
 
         /*
@@ -1725,31 +1703,6 @@ class TrackingEventHelpers {
     }
 
     
-    
-    static function stripWWWFromDomain( $domain ) {
-
-        $done = false;
-        $part = substr( $domain, 0, 5 );
-        if ($part === '.www.') {
-            //strip .www.
-            $domain = substr( $domain, 5);
-            // add back the leading period
-            $domain = '.'.$domain;
-            $done = true;
-        }
-
-        if ( ! $done ) {
-            $part = substr( $domain, 0, 4 );
-            if ($part === 'www.') {
-                //strip .www.
-                $domain = substr( $domain, 4);
-                $done = true;
-            }
-
-        }
-
-        return $domain;
-    }
     
     static function isSearchEngine( $host ) {
 		

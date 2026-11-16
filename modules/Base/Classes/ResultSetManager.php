@@ -129,7 +129,6 @@ class ResultSetManager extends \OWA\Core\Base {
     var $request_errors = array();
     var $formatters = array();
     var $segment;
-    var $pagination;
     var $resolution = 'day';
     var $timePeriod;
     var $all_columns = [];
@@ -1668,13 +1667,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function getOrder() {
-
-        if (array_key_exists('order', $this->params)) {
-            return $this->params['order'];
-        }
-    }
-
     /*
      * setSort() WAS HERE and did nothing: its one statement was commented out,
      * so every call silently produced an unsorted result. Nothing in the
@@ -1819,10 +1811,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         if (!empty($value)) {
 
             $this->page = $value;
-
-            if (!empty($this->pagination)) {
-                $this->pagination->setPage($value);
-            }
         }
     }
 
@@ -1830,13 +1818,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         if (!empty($value)) {
             $this->params['offset'] = $value;
-        }
-    }
-
-    function setFormat($value) {
-        if (!empty($value)) {
-            $this->format;
-            $this->params['result_format'] = $value;
         }
     }
 
@@ -2016,19 +1997,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
   		}
     }
 
-    function setStartDate($date) {
-
-        if (!empty($date)) {
-            $this->params['startDate'] = $date;
-        }
-    }
-
-    function setEndDate($date) {
-        if (!empty($date)) {
-            $this->params['endDate'] = $date;
-        }
-    }
-
     function applyMetaDataToResults( $results ) {
 
         $new_rows = array();
@@ -2179,17 +2147,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
         if (array_key_exists($type, $this->formatters)) {
 
-            $formatter = $this->formatters[$type];
-
-        } else {
-            $s = \OWA\Core\CoreAPI::serviceSingleton();
-            $formatter = $s->getFormatter($type);
-        }
-
-        // If we found a formatter, use it
-        if (!empty($formatter)) {
-
-            $value = call_user_func($formatter, $value);
+            $value = call_user_func($this->formatters[$type], $value);
         }
 
         return $value;
@@ -2499,13 +2457,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                     }
                 }
             }
-        }
-    }
-
-    function getFormat() {
-
-        if (array_key_exists('result_format', $this->params)) {
-            return $this->params['result_format'];
         }
     }
 

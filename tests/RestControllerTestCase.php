@@ -25,11 +25,19 @@ abstract class RestControllerTestCase extends TestCase
     /** @var string unique per-test suffix so repeat/parallel runs never collide */
     protected $tok;
 
+    /** @var mixed the request_type before this class set it to rest */
+    private static $priorRequestType = null;
+
     /** @var array<int, array{entity:string, value:mixed, col:string}> rows to delete */
     private $cleanup = [];
 
     public static function setUpBeforeClass(): void
     {
+        // Read before the bootstrap below, which itself boots OWA as a REST request.
+        self::$priorRequestType = class_exists(\OWA\Core\CoreAPI::class, false)
+            ? \OWA\Core\CoreAPI::getSetting('base', 'request_type')
+            : null;
+
         if (!defined('OWA_TEST_REST_BOOTSTRAPPED')) {
             define('OWA_TEST_REST_BOOTSTRAPPED', true);
 
@@ -54,6 +62,12 @@ abstract class RestControllerTestCase extends TestCase
         // fails there; the From is a valid, non-deliverable address.
         require_once __DIR__ . '/fixtures/mail_to_nowhere.php';
         owa_test_mail_to_nowhere();
+    }
+
+    /** Put back for the test classes that run after this one. */
+    public static function tearDownAfterClass(): void
+    {
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', self::$priorRequestType ?? \OWA\Core\RequestType::UI);
     }
 
     protected function setUp(): void

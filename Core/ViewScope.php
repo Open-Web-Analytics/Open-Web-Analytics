@@ -72,7 +72,6 @@ namespace OWA\Core;
  * @method mixed out($output, $sanitize = true, $decode_special_entities = false)
  * @method void outMarkup($text, ...$markup)
  * @method array profileTabs($hierarchyNav, $params = [])
- * @method mixed renderDimension($template, $properties)
  * @method mixed safeHref($url, $echo = true)
  * @method mixed setTemplate($file)
  * @method array settingsColumn($hierarchyNav, $params = [])

@@ -112,9 +112,6 @@ class Module extends \OWA\Core\Module {
     function _registerEventHandlers() {
 
 
-        // Clicks
-        //$this->_addHandler('base.click', 'clickHandlers');
-
         return;
 
     }

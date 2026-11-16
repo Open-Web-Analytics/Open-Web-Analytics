@@ -1,4 +1,4 @@
-import '../../modules/Base/src/reporting/v1/owa.settingsoverride.js';
+import '../../modules/Base/src/reporting/owa.settingsoverride.js';
 
 /**
  * The Override switch beside a setting rendered below the install

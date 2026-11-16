@@ -375,12 +375,6 @@ class OWATracker  {
 	
 	    // Configuration options
 	    this.options = OWA.applyFilters('tracker.default_options', {
-	        /** @internal Not read by anything. */
-	        logClicks: true,
-	        /** @internal Not read by anything. */
-	        logPage: true,
-	        /** @internal Not read by anything. */
-	        encodeProperties: false,
 	        /**
 	         * Whether the #fragment is kept as part of the page's URL, both in
 	         * the URL sent and in the URL route changes are compared on. Set it
@@ -527,8 +521,6 @@ class OWATracker  {
 	        logger_endpoint: '',
 	        /** @internal Set by setApiEndpoint(). */
 	        api_endpoint: '',
-	        /** @internal Not read by anything. */
-	        maxCustomVars: 5,
 	        /**
 	         * The longest beacon URL, in characters, sent as a GET. A longer
 	         * event is sent as a POST body.
@@ -1085,17 +1077,6 @@ class OWATracker  {
         return Util.crc32(domain);
     }
 
-    /**
-     * Whether stored state is stamped with a hash of the cookie domain.
-     *
-     * @internal
-     */
-    setCookieDomainHashing(value) {
-	    
-        this.hashCookiesToDomain = value;
-        OWA.setSetting('hashCookiesToDomain', value);
-    }
-
     /** @internal Run by the tracker when it starts. */
     checkForOverlaySession() {
 
@@ -1205,13 +1186,6 @@ class OWATracker  {
         } else {
             return false;
         }
-    }
-
-    dynamicFunc(func){
-        //alert(func[0]);
-        var args = Array.prototype.slice.call(func, 1);
-        //alert(args);
-        this[func[0]].apply(this, args);
     }
 
     /**
@@ -1719,8 +1693,6 @@ class OWATracker  {
                     }
 
                 }, false);
-            } else if(window.attachEvent) {
-                document.attachEvent('onclick', function (e) {that.clickEventHandler(e);});
             }
 
             this.isClickTrackingEnabled = true;
@@ -1736,11 +1708,6 @@ class OWATracker  {
         var event = new OwaEvent
         event.setEventType( 'page_view' );
         return this.logEvent(event);
-    }
-    
-    isObjectType(obj, type) {
-	    
-        return !!(obj && type && type.prototype && obj.constructor == type.prototype.constructor);
     }
     
     /** 
@@ -2092,57 +2059,17 @@ class OWATracker  {
     }
 
     /**
-     * Sets the X coordinate of where in the browser the user clicked
-     *
-     */
-    findPosX(obj) {
-
-        var curleft = 0;
-        if (obj.offsetParent)
-        {
-            while (obj.offsetParent)
-            {
-                curleft += obj.offsetLeft
-                obj = obj.offsetParent;
-            }
-        }
-        else if (obj.x)
-            curleft += obj.x;
-        return curleft;
-    }
-
-    /**
-     * Sets the Y coordinates of where in the browser the user clicked
-     *
-     */
-    findPosY(obj) {
-
-        var curtop = 0;
-        if (obj.offsetParent)
-        {
-            while (obj.offsetParent)
-            {
-                curtop += obj.offsetTop
-                obj = obj.offsetParent;
-            }
-        }
-        else if (obj.y)
-            curtop += obj.y;
-        return curtop;
-    }
-
-    /**
      * Get the HTML elementassociated with an event
      *
      */
     _getTarget(e) {
 
         // Determine the actual html element that generated the event
-        var targ = e.target || e.srcElement;
+        var targ = e.target;
 
         if( typeof targ == 'undefined' || targ==null ) {
 
-            return null; //not all ie events provide srcElement
+            return null;
         }
 
         if (targ.nodeType == 3) {
@@ -2426,9 +2353,6 @@ class OWATracker  {
      * @param {boolean} linksOnly true for a middle-click, which counts only on a link
      */
     clickEventHandler( e, linksOnly ) {
-
-        // hack for IE
-        e = e || window.event;
 
         //clicked DOM element properties
         var clicked = this._getTarget(e);
@@ -3314,22 +3238,7 @@ class OWATracker  {
 
     getScrollingPosition() {
 
-        var position = [0, 0];
-        if (typeof window.pageYOffset != 'undefined') {
-            position = {x: window.pageXOffset, y: window.pageYOffset};
-        } else if (typeof document.documentElement.scrollTop != 'undefined' && document.documentElement.scrollTop > 0) {
-            position = {x: document.documentElement.scrollLeft, y: document.documentElement.scrollTop};
-        } else if (typeof document.body.scrollTop != 'undefined') {
-            position = {x: document.body.scrollLeft, y:    document.body.scrollTop};
-        }
-        return position;
-    }
-
-    bindHoverEvents() {
-
-        //handler = handler || this.hoverEventHandler;
-        //document.onmousemove = handler;
-
+        return { x: window.pageXOffset, y: window.pageYOffset };
     }
 
     // utc epoch in seconds
@@ -3372,17 +3281,6 @@ class OWATracker  {
         this.options[name] = value;
     }
 
-    /** @internal Does nothing; kept for old callers. */
-    setLastEvent(event) {
-	    
-        return;
-    }
-
-    sleep(delay) {
-        var start = new Date().getTime();
-        while (new Date().getTime() < start + delay);
-    }
-
     /**
      * Stop this tracker sending events until restart().
      *
@@ -3415,26 +3313,6 @@ class OWATracker  {
     makeEvent() {
         return new OwaEvent();
     }
-
-    /*
-     * getCampaignProperties() WAS HERE and had no caller left.
-     *
-     * The tracker does not read owa_* tags off the URL at all any more. It
-     * sends nothing of the kind: taggedValue() parses the tags out of page_location
-     * server-side -- where a corrected rule reaches data already collected,
-     * which the browser cannot do. The parse survived only because the
-     * attribution models called it, and they are gone for the same reason:
-     * nothing they computed ever reached the server.
-     */
-
-
-
-
-
-
-
-
-
 
     /**
      * Record what the session arrived from.
@@ -4355,34 +4233,6 @@ class OWATracker  {
         this.setEventProperty( name, value );
     }
 
-    /**
-     * The custom variables that apply to an event, read from the state stores.
-     *
-     * Applied WIDEST SCOPE FIRST -- visitor, then session, then page -- so a
-     * narrower scope overwrites a wider one and page scope always wins. That
-     * ordering IS the scope precedence; nothing else enforces it.
-     *
-     * Collected fresh for every event rather than cached as a global event
-     * property, which is what setCustomVar() used to do. A cached copy is a
-     * second source of truth and behaves like one: it goes stale when a slot is
-     * re-scoped, and it hides the stores from any reader that is not the
-     * tracker that made the call -- so a second tracker on the same page saw
-     * different values, and the page store's contribution was unobservable.
-     *
-     * Bounded by maxCustomVars, matching the rehydration loop this replaced.
-     */
-    /**
-     * Page-scoped properties for this event, read from the 'd' store.
-     *
-     * Anything put in 'd' rides the page's events, so a page-scoped property
-     * added later needs no plumbing here. Two keys are excluded: custom
-     * variables, which span three stores and are collected with their own
-     * precedence, and the state manager's own
-     * bookkeeping -- 'cdh', the cookie domain hash, and 'sv', the format
-     * version (StateManager.VERSION_KEY). Both describe the STORE; neither is
-     * a tracking property, and sending either would put a private
-     * implementation detail in the fact table under its own dimension name.
-     */
     /**
      * Properties that are COPIES of state, read from the stores for this event.
      *

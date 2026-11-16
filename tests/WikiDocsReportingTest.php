@@ -63,8 +63,8 @@ final class WikiDocsReportingTest extends TestCase
      */
     public function testThePickerOffersThePeriodsTheServerAccepts(): void
     {
-        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.periodpicker.js' )
-             . (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.report.js' );
+        $src = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/owa.periodpicker.js' )
+             . (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/src/reporting/owa.report.js' );
 
         // Words for the reader (a calendar day's spoken name says "today")
         // are text, not period keys.

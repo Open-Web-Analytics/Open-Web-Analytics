@@ -105,8 +105,6 @@ class Metric extends \OWA\Core\Base {
      */
     var $db;
     
-    var $pagination;
-    
     var $page;
     
     var $limit;
@@ -137,8 +135,6 @@ class Metric extends \OWA\Core\Base {
             
         //$this->db = owa_coreAPI::dbSingleton();
 
-        //$this->pagination = new owa_pagination;
-        
         return parent::__construct();
     }
     
@@ -192,56 +188,7 @@ class Metric extends \OWA\Core\Base {
         return $this->labels;
     
     }
-    /*
 
-    function getPagination() {
-        
-        $count = $this->calculatePaginationCount();
-        $this->pagination->total_count = $count;
-        return $this->pagination->getPagination();
-    
-    }
-    
-    */
-    function zeroFill(&$array) {
-    
-        array_walk_recursive($array, array($this, 'addzero'));
-        
-        return $array;
-        
-    }
-    
-    function addzero(&$v, $k) {
-        
-        if (empty($v)) {
-            
-            $v = 0;
-            
-        }
-        
-        return;
-    }
-    /*
-
-    function getPeriod() {
-    
-        return $this->params['period'];
-    }
-    
-    function getOrder() {
-    
-        if (array_key_exists('order', $this->params)) {
-            return $this->params['order'];
-        }
-    }
-    
-    function getLimit() {
-        
-        return $this->limit;
-        
-    }
-    
-    */
     function setEntity($name) {
         
         $this->entity = \OWA\Core\CoreAPI::entityFactory($name);
@@ -442,13 +389,6 @@ class Metric extends \OWA\Core\Base {
         return $this->name;
     }
     
-    function getFormat() {
-        
-        if (array_key_exists('result_format', $this->params)) {
-            return $this->params['result_format'];
-        }
-    }
-    
     /**
      * Sets a metric's column
      */
@@ -505,8 +445,7 @@ class Metric extends \OWA\Core\Base {
      * extends this class -- called setChildMetric() on an object that had no
      * such method. Its 'calculated' type has therefore never worked: supported
      * on paper, fatal on first use, and never registered by anything, so nobody
-     * found out. Held here so any metric can be calculated; CalculatedMetric
-     * keeps only the flag that says it is.
+     * found out. Held here so any metric can be calculated.
      */
     var $child_metrics = array();
 

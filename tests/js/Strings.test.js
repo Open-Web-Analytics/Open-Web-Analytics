@@ -1,4 +1,4 @@
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 const fs = require('fs');
 const path = require('path');

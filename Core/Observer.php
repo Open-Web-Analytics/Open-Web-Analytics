@@ -53,20 +53,6 @@ class Observer extends \OWA\Core\Base {
         $this->id = md5(microtime());
     }
     
-    function handleEvent($action) {
-    
-        $data = \OWA\Core\CoreAPI::performAction($action, array('event' => $this->m));
-        return \OWA\Core\CoreAPI::debug(sprintf("Handled Event. Action: %s", $action));
-
-    }
-    
-    function sendMail($email_address, $subject, $msg) {
-
-        mail($email_address, $subject, $msg);
-        \OWA\Core\CoreAPI::debug('Sent e-mail with subject of "'.$subject.'" to: '.$email_address);
-        return;
-    }
-
 }
 
 ?>

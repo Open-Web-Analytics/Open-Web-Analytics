@@ -25,7 +25,7 @@ const fs = require('fs');
  */
 function loadFormatter() {
     const src = fs.readFileSync(
-        path.join(__dirname, '../../../modules/Base/src/reporting/v1/owa.resultSetExplorer.js'),
+        path.join(__dirname, '../../../modules/Base/src/reporting/owa.resultSetExplorer.js'),
         'utf8'
     );
 
@@ -43,7 +43,7 @@ function loadFormatter() {
 
     // eslint-disable-next-line no-new-func
     // OWA for its strings (OWA.l) and escaping, as the bundle has it.
-    const { OWA } = require('../../../modules/Base/src/reporting/v1/owa.js');
+    const { OWA } = require('../../../modules/Base/src/reporting/owa.format.js');
 
     return new Function('OWA', 'return (' + decl.slice(0, end) + ');')(OWA);
 }
@@ -70,7 +70,7 @@ describe('attributionList formatter', () => {
     });
 
     test('labels and headings are in the locale in use', () => {
-        const { OWA } = require('../../../modules/Base/src/reporting/v1/owa.js');
+        const { OWA } = require('../../../modules/Base/src/reporting/owa.format.js');
 
         OWA.config.strings = {
             'Medium': 'Support',

@@ -1,6 +1,6 @@
-// OWA is defined by owa.js; this module augments it (OWA.shareChart = ...).
+// OWA is defined by owa.format.js; this module augments it (OWA.shareChart = ...).
 import * as jQuery from 'jquery';
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 /**
  * A share chart: each value of one dimension as its share of one metric, as a

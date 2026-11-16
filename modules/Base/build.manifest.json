@@ -13,7 +13,7 @@
         {
             "name": "owa.reporting-combined-min.js",
             "type": "js",
-            "entry": "src/reporting/v1/reporting-entry.js",
+            "entry": "src/reporting/reporting-entry.js",
             "outputDir": "../../public/base/dist",
             "splitVendors": false
         },

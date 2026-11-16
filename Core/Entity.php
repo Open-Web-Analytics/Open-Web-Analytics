@@ -233,12 +233,6 @@ class Entity {
     }
     
     
-    function setGuid($string) {
-        
-        return \OWA\Core\Lib::setStringGuid($string);
-        
-    }
-    
     function set($name, $value, $filter = true, $mark_dirty = true ) {
 
         // Columns heal values as they arrive, and one of the things they heal
@@ -720,45 +714,6 @@ class Entity {
     }
     
     /**
-     * Update named list of properties of an existing object
-     *
-     * @param array $named_properties
-     * @param array $where
-     * @return boolean
-     */
-    function partialUpdate($named_properties, $where) {
-
-        $key   = empty( $where ) ? 'id' : $where;
-        $value = $this->get( $key );
-
-        // Read before the UPDATE is built: the Db object builds one statement at a time.
-        $before = $this->storedRowsIfCached( $key, $value );
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->updateTable($this->getTableName());
-        
-        foreach ($named_properties as $v) {
-            
-            if ($this->get($v)){
-                $db->set($v, $this->get($v));
-            }
-        }
-        
-        $db->where( $key, $value );
-
-        // Persist object
-        $status = $db->executeQuery();
-        // Add to Cache
-        if ($status == true) {
-            $this->forgetCached( $before );
-            $this->addToCache();
-            $this->dirty = [];
-        }
-        
-        return $status;
-    }
-
-    /**
      * The rows as stored that a write by $col = $value is about to change, or
      * none when this entity is not cached.
      *
@@ -1035,26 +990,6 @@ class Entity {
         
     }
         
-    function getForeignKeyColumn($entity) {
-        if (array_key_exists('relatedEntities', $this->_tableProperties)) {
-            if (array_key_exists($entity, $this->_tableProperties['relatedEntities'])) {
-                return $this->_tableProperties['relatedEntities'][$entity];
-            }
-        }
-    }
-    
-    function isForeignKeyColumn($col) {
-    
-        if (array_key_exists($col, $this->properties)) {
-            return $this->properties[$col]->isForeignKey();
-        }
-    }
-    
-    function getAllForeignKeys() {
-        
-        return;
-    }
-    
     /**
      * Create Table
      *
@@ -1421,27 +1356,12 @@ class Entity {
     function setProperty($obj) {
         
         $this->properties[$obj->get('name')] = $obj;
-        
-        if ($obj->isForeignKey()) {
-            $fk = $obj->getForeignKey();
-            
-            $this->_tableProperties['relatedEntities'][$fk[0]] = $obj->getName();
-            $this->_tableProperties['foreign_keys'][$obj->getName()] = $fk[0];
-        }
-        
     }
     
     function getProperty($name) {
         if (array_key_exists($name, $this->properties)) {
             return $this->properties[$name];
         }
-    }
-    
-    function generateRandomUid($seed = '') {
-        
-        return \OWA\Core\Lib::generateRandomUid();
-         
-        //return crc32($_SERVER['SERVER_ADDR'].$_SERVER['SERVER_NAME'].getmypid().$this->getTableName().microtime().$seed.rand());
     }
     
     /**
@@ -1454,26 +1374,10 @@ class Entity {
         return \OWA\Core\Lib::setStringGuid($string);
     }
 
-    /**
-     * @param string $value
-     * @return string
-     */
-    protected static function truncateForLog( $value ) {
-
-        $value = (string) $value;
-
-        return strlen( $value ) > 120 ? substr( $value, 0, 120 ) . '...' : $value;
-    }
-    
     
     function getName() {
         
         return $this->name;
-    }
-    
-    function setSummaryLevel($num) {
-        
-        $this->_tableProperties['summary_level'] = $num;
     }
     
     function getSummaryLevel() {

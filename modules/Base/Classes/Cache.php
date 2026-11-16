@@ -75,12 +75,6 @@ class Cache {
         return true;
     }
 
-    function getStats() {
-
-        return sprintf( 'Cache: %d hits, %d misses, %d added, %d removed.',
-            $this->statistics['hits'], $this->statistics['miss'], $this->statistics['added'], $this->statistics['removed'] );
-    }
-
     function hash( $id ) {
 
         return md5( $id );

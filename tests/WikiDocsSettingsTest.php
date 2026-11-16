@@ -100,9 +100,9 @@ final class WikiDocsSettingsTest extends TestCase
      * fails the test below until it is taken off this list.
      */
     private const UNREAD = array(
-        'base|action_url', 'base|base_url', 'base|clean_query_string', 'base|db_force_new_connections',
+        'base|action_url', 'base|base_url', 'base|db_force_new_connections',
         'base|modules', 'base|password_length',
-        'base|site_id', 'base|source_param',
+        'base|site_id',
     );
 
     public function testEveryListedSettingHasADescriptionUnlessNothingReadsIt(): void

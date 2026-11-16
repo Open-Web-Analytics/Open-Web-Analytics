@@ -1,7 +1,7 @@
-// OWA is defined by owa.js; this module augments it (OWA.report = ...). jQuery was
+// OWA is defined by owa.format.js; this module augments it (OWA.report = ...). jQuery was
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 import { PeriodPicker } from './owa.periodpicker.js';
 
 OWA.report = function(dom_id, options) {
@@ -15,21 +15,11 @@ OWA.report = function(dom_id, options) {
     this.properties = {};
     this.tabs = {};
     this.timePeriodControl = '';
-    // container for resultSetExplorer objects
-    this.resultSetExplorers = {};
-    // the dom id of the active tab
-    this.activeTab = '';
     // the oldest "as of" any widget on this page has reported, unix seconds
     this.asOf = null;
 };
 
 OWA.report.prototype = {
-    
-    display : function() {
-        
-        
-        
-    },
     
     /**
      * "Data as of <time>" in the header, where the Live View switch was.
@@ -70,11 +60,6 @@ OWA.report.prototype = {
             el.find( '.owa_reportAsOfTime' ).text( OWA.report.formatAsOf( asOf, el.data( 'timezone' ) ) );
             el.addClass( 'owa_reportAsOfKnown' );
         } );
-    },
-
-    registerResultSetExplorer : function( name, rse ) {
-
-        this.resultSetExplorers[ name ] = rse;
     },
 
     overrideOptions: function( options ) {
@@ -166,12 +151,6 @@ OWA.report.prototype = {
         OWA.initSiteControl();
     },
     
-    reportSetTimePeriod : function(period) {
-
-        this.setPeriod(period);
-        this.reload();
-    },
-    
     reload: function() {
     
         /*
@@ -191,33 +170,6 @@ OWA.report.prototype = {
         window.location.href = url;
     },
         
-    _parseDate: function (date) {
-        
-        
-    },
-    
-    setDateRange: function (startDate, endDate) {
-        
-        this.setProperty( 'startDate', startDate );
-        
-        this.setProperty( 'endDate', endDate );
-        
-        this.removeProperty('period');
-    },
-    
-    setPeriod: function(period) {
-    
-        this.properties.period = period;
-        
-        if ( this.properties.hasOwnProperty( 'startDate' ) ) {
-            delete this.properties[ 'startDate' ];
-        }
-        
-        if ( this.properties.hasOwnProperty( 'endDate' ) ) {
-            delete this.properties[ 'endDate' ];
-        }
-    },
-    
     addTab : function(obj) {
     
         if (obj.dom_id.length > 0 ) {
@@ -268,8 +220,6 @@ OWA.report.prototype = {
 
         OWA.debug('tab selected is: %s', panelId);
         this.tabs[ panelId ].load();
-
-        this.activeTab = panelId;
     },
 
     getPropertyId : function() {
@@ -290,11 +240,6 @@ OWA.report.prototype = {
     getEndDate : function() {
     
         return this.getProperty('endDate');
-    },
-    
-    setRequestProperty : function(name, value) {
-        
-        this.setProperty(name, value);
     },
     
     setProperty : function (name, value) {
@@ -535,11 +480,7 @@ OWA.placeSiteControl = function() {
 
     place();
 
-    if ( narrow.addEventListener ) {
-        narrow.addEventListener( 'change', place );
-    } else {
-        narrow.addListener( place );
-    }
+    narrow.addEventListener( 'change', place );
 };
 
 jQuery(document).ready(function() {

@@ -1,4 +1,4 @@
-import { optionsFor, optionText, helpText, fill, formatResult, setText, triggerName, SEPARATOR, CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/v1/owa.goalbuilder.js';
+import { optionsFor, optionText, helpText, fill, formatResult, setText, triggerName, SEPARATOR, CUSTOM_TRIGGER } from '../../modules/Base/src/reporting/owa.goalbuilder.js';
 
 /**
  * The goal event definition builder's picker (owa.goalbuilder.js): what it

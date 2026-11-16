@@ -1,5 +1,5 @@
 import * as jQueryModule from 'jquery';
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 // Imported both ways the reporting modules import jQuery (default, and as a
 // callable namespace), so whichever module loads this, it gets the function.

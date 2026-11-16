@@ -1,5 +1,5 @@
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
-import '../../modules/Base/src/reporting/v1/owa.worldmap.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
+import '../../modules/Base/src/reporting/owa.worldmap.js';
 
 /**
  * The country map: shaded by count per ISO code, cleared when a country's

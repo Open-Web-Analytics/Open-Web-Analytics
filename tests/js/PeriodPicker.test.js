@@ -8,11 +8,11 @@
  * Apply.
  */
 
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 import {
     PeriodPicker, compareRange, initialState, settle, toParams, calendarTarget,
     pickDay, choosePreset, formatRange, formatDate, toIso, fromIso, parseDateInput, weekStart,
-} from '../../modules/Base/src/reporting/v1/owa.periodpicker.js';
+} from '../../modules/Base/src/reporting/owa.periodpicker.js';
 
 const fixture = require( '../fixtures/compare-ranges.json' );
 

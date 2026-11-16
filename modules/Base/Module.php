@@ -447,7 +447,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.appPasswordRevokeCli',          'OWA\\Module\\Base\\Controller\\AppPasswordRevokeCli',         'Controller/AppPasswordRevokeCli.php' );
         $this->registerAction( 'base.corsPreflight',                 'OWA\\Module\\Base\\Controller\\CorsPreflight',                'Controller/CorsPreflight.php' );
         $this->registerAction( 'base.deleteUserRest',                'OWA\\Module\\Base\\Controller\\DeleteUserRest',               'Controller/DeleteUserRest.php' );
-        $this->registerAction( 'base.entityInstall',                 'OWA\\Module\\Base\\Controller\\EntityInstall',                'Controller/EntityInstall.php' );
         $this->registerAction( 'base.cubeRebuildCli',                'OWA\\Module\\Base\\Controller\\CubeRebuildCli',             'Controller/CubeRebuildCli.php' );
         $this->registerAction( 'base.v1DropCli',                     'OWA\\Module\\Base\\Controller\\V1DropCli',                   'Controller/V1DropCli.php' );
         $this->registerAction( 'base.stringsExtractCli',             'OWA\\Module\\Base\\Controller\\StringsExtractCli',            'Controller/StringsExtractCli.php' );

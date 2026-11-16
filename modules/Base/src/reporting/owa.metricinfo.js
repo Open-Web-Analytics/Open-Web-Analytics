@@ -1,4 +1,4 @@
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 /**
  * A metric's description, opened from the metric's name.

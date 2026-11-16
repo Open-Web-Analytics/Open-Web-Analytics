@@ -16,7 +16,7 @@
  * Only in app mode. In a browser tab nothing here is bound, and the
  * browser's own refresh applies.
  */
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 export var AppMode = {
 

@@ -171,11 +171,7 @@ class Mysql extends \OWA\Core\Db {
   
           if ( $this->connection_status == false) {
 
-              \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
-
               $connected = $this->connect();
-
-              \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
 
                 // Without a connection there is nothing to run the query
                 // against, and every mysqli_* call below would raise on the
@@ -191,8 +187,6 @@ class Mysql extends \OWA\Core\Db {
                 }
           }
   
-          \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
-
         $this->e->debug(sprintf('Query: %s', $sql));
 
         $this->num_queries++;
@@ -206,8 +200,6 @@ class Mysql extends \OWA\Core\Db {
             mysqli_free_result($this->new_result);
         }
 
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__, $sql);
-
         // A bound statement's count is only cleared when someone reads it, so
         // one nobody read would otherwise be reported for the NEXT statement --
         // an unbound DELETE after a bound INSERT answered the INSERT's 1.
@@ -218,7 +210,6 @@ class Mysql extends \OWA\Core\Db {
               ? $this->executeBound( $sql, $params )
               : @mysqli_query( $this->connection, $sql );
     
-            \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
             // Log Errors
     
             if ( mysqli_errno( $this->connection ) ) {
@@ -235,7 +226,6 @@ class Mysql extends \OWA\Core\Db {
                 );
             }
     
-            \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         } catch(\Exception $e) {
             $result = false;
            $this->e->debug(

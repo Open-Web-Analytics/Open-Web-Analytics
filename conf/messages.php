@@ -39,9 +39,7 @@ $_owa_messages = [
     2001 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Enter a valid email address.' )],
     2002 => ['headline' => \OWA\Core\CoreAPI::t( 'Login failed' ), 'message' => \OWA\Core\CoreAPI::t( 'The user name or password is incorrect.' )],
     2003 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Your account does not have access to this page.' )],
-    2004 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Log in to view this page.' )],
     2005 => ['headline' => \OWA\Core\CoreAPI::t( 'This form is no longer valid' ), 'message' => \OWA\Core\CoreAPI::t( 'The form expired or was opened under another account. Start again from the previous screen.' )],
-    2010 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Logged out.' )],
     2011 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The password reset link is not valid.' )],
     2012 => ['headline' => \OWA\Core\CoreAPI::t( 'This link has expired' ), 'message' => \OWA\Core\CoreAPI::t( 'A link to set a password works for a limited time. Use "Forgot your password?" to get a new one.' )],
 
@@ -50,15 +48,8 @@ $_owa_messages = [
     2501 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Module activated.' )],
     2502 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Module deactivated.' )],
     2503 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Options reset to their defaults.' )],
-    // 2504 was declared TWICE -- 'Entity %s Schema Created.' and then 'Goal
-    // Saved.' -- and in a PHP array literal the later key silently wins. The
-    // schema message moved to 2505; the goal one keeps 2504 because
-    // OptionsGoalEdit sets it.
-    2504 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Goal saved.' )],
-    2505 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Schema created for entity %s.' )],
 
-    // Custom reports. Their own codes rather than borrowing 2504, which is why
-    // saving a custom report used to report "Goal Saved."
+    // Custom reports.
     2510 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Custom report created.' )],
     2511 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Custom report saved.' )],
     2512 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Custom report deleted.' )],
@@ -76,11 +67,7 @@ $_owa_messages = [
     3004 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'User account deleted.' )],
     3005 => ['message' => \OWA\Core\CoreAPI::t( 'Enter your new password.' )],
     3006 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Log in with your new password.' )],
-    3007 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The passwords do not match.' )],
-    3008 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The password must be at least %s characters.' )],
     3009 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'A user with that email address already exists.' )],
-    3010 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'No user has that email address.' )],
-    3011 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The user profile could not be updated.' )],
     3012 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Could not connect to the database.' )],
     3013 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'User added, but the invitation email was not sent. Check the mail settings and the error log, then send the user a password reset from the login screen.' )],
     3014 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'This module stays active while its constant is set in owa-config.php.' )],
@@ -94,11 +81,7 @@ $_owa_messages = [
     // say it was. 3205 is the Property's.
     3204 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Observation Profile deleted. An administrator can restore its data.' )],
     3205 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Property and its Observation Profiles deleted. An administrator can restore their data.' )],
-    3206 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'A site with that domain already exists.' )],
-    3207 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Domain is required.' )],
-    // 3209 was shadowed by a duplicate 3208, as 2504 was, and moved to its own code.
     3208 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Remove http:// from the start of the domain.' )],
-    3209 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'That site does not exist.' )],
 
     // Custom dimensions. Registering writes a row; the ALTER happens later, under
     // the cube build's lock, so the column is not there yet.
@@ -115,25 +98,14 @@ $_owa_messages = [
     3220 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Goal event definition deleted.' )],
 
     // Install
-    3300 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Could not connect to the database. Check the connection settings in the configuration file.' )],
-    3301 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'OWA requires PHP 8.2 or later.' )],
     3302 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The database schema could not be installed. See the error log.' )],
-    3303 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Default site added.' )],
-    3304 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Admin user added.' )],
-    3305 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Base database schema installed.' )],
     3306 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'That user ID already exists.' )],
     3307 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'The updates failed. See the error log.' )],
     3308 => ['headline' => \OWA\Core\CoreAPI::t( 'Success' ), 'message' => \OWA\Core\CoreAPI::t( 'Updates applied.' )],
     3309 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Site domain is required.' )],
-    // 'E-mail Address is required.' was shadowed here and moved to 3312, NOT
-    // 3311 -- three controllers set 3311 for the CLI-update message.
     3310 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Password is required.' )],
-    3312 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Email address is required.' )],
     3311 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Apply these updates from the command line: <code>php cli.php cmd=update</code>' )],
     3313 => ['headline' => \OWA\Core\CoreAPI::t( 'Updates are already being applied' ), 'message' => \OWA\Core\CoreAPI::t( 'Another request is applying them. Reload this page in a few minutes.' )],
-
-    // Graph related
-    3500 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'There is no data for this period.' )],
 
     // Report related
     3600 => ['headline' => \OWA\Core\CoreAPI::t( 'Error' ), 'message' => \OWA\Core\CoreAPI::t( 'Unknown error.' )],

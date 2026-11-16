@@ -4,7 +4,7 @@
 // map is OWA.worldMap (owa.worldmap.js).
 // Page titles, paths and campaign names are what visitors' browsers sent, so
 // none of it may reach innerHTML.
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 import './owa.worldmap.js';
 
 OWA.realtime = function ( root, options ) {

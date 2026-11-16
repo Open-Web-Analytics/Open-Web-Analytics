@@ -606,7 +606,6 @@ class Db extends \OWA\Core\Base {
     function _insertQuery() {
 
         $this->resetBindings();
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         $params = $this->_fetchSqlParams('set_values');
 
         $count = count($params);
@@ -631,11 +630,8 @@ class Db extends \OWA\Core\Base {
 
             endif;
         }
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         $this->_setSql(sprintf(OWA_SQL_INSERT_ROW, $this->_sqlParams['table'], $sql_cols, $sql_values));
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         $ret = $this->_query();
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
         return $ret;
 
     }
@@ -994,27 +990,6 @@ class Db extends \OWA\Core\Base {
         }
     }
 
-    function join($type, $table, $as, $foreign_key, $primary_key = '') {
-
-        if (!$primary_key) {
-
-            if (!$as) {
-                    $as = $table;
-            }
-
-            $primary_key = $as.'.id';
-        }
-
-
-
-        $this->_sqlParams['joins'][$as] = array('type' => $type,
-                                             'table' => $table,
-                                             'as' => $as,
-                                             'foreign_key' => $foreign_key,
-                                             'primary_key' => $primary_key);
-
-    }
-
     /**
      * Escape a value for interpolation into a statement.
      *
@@ -1048,40 +1023,6 @@ class Db extends \OWA\Core\Base {
         ) );
     }
 
-    function _makeJoinClause() {
-
-        $params = $this->_fetchSqlParams('joins');
-
-        if (!empty($params)):
-
-            $join_clause = '';
-
-            foreach ($params as $k => $v) {
-
-                if (!empty($v['as'])):
-                    $join_clause .= sprintf(" %s %s AS %s ON %s = %s", $v['type'],
-                                                                 $v['table'],
-                                                                 $v['as'],
-                                                                 $v['foreign_key'],
-                                                                 $v['primary_key']);
-                else:
-                    $join_clause .= sprintf(" %s %s ON %s = %s", $v['type'],
-                                                                 $v['table'],                                                                                                                          $v['foreign_key'],
-                                                                 $v['primary_key']);
-                endif;
-
-
-
-            }
-
-            return $join_clause;
-
-        else:
-            return;
-        endif;
-
-    }
-
     function _makeFromClause() {
 
         $from = '';
@@ -1113,8 +1054,6 @@ class Db extends \OWA\Core\Base {
                 $i++;
 
             }
-
-            $from .= $this->_makeJoinClause();
 
             return $from;
         else:
@@ -1253,11 +1192,6 @@ class Db extends \OWA\Core\Base {
             case 'select':
 
                 $ret = $this->get_results($this->_sql_statement, $this->_bindings);
-
-                if (array_key_exists('result_format', $this->_sqlParams)):
-                    $ret = $this->_formatResults($ret);
-                endif;
-
                 break;
 
             case 'update':
@@ -1275,32 +1209,6 @@ class Db extends \OWA\Core\Base {
         $this->_sqlParams = array();
         $this->resetBindings();
         return $ret;
-
-    }
-
-    function setFormat($value) {
-
-        $this->_sqlParams['result_format'] = $value;
-        return;
-    }
-
-    function _formatResults($results) {
-
-        switch ($this->_sqlParams['result_format']) {
-
-                case "single_array":
-                    return $results[0];
-                    break;
-                case "single_row":
-                    return $results[0];
-                    break;
-                case "inverted_array":
-                    return \OWA\Core\Lib::deconstruct_assoc($results);
-                    break;
-                default:
-                    return $results;
-                    break;
-        }
 
     }
 
@@ -1398,19 +1306,6 @@ class Db extends \OWA\Core\Base {
     function indexExists( $table_name, $column_name ) {
 
         return false;
-    }
-
-    /**
-     * Every non-primary index on the OWA tables.
-     *
-     * Schema introspection is driver-specific. A driver that cannot introspect
-     * reports nothing, so callers see no indexes rather than a wrong answer.
-     *
-     * @return array
-     */
-    function listIndexes() {
-
-        return array();
     }
 
     /**
@@ -2211,28 +2106,6 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Build an empty table with another table's exact structure.
-     *
-     * The copy inherits the target's partitioning, which EXCHANGE PARTITION
-     * then refuses, so removePartitioning() is a required second step.
-     *
-     * @param string $table_name  the table to create
-     * @param string $like        the table to copy the structure of
-     * @return bool
-     */
-    function createTableLike( $table_name, $like ) {
-
-        if ( ! defined( 'OWA_SQL_CREATE_TABLE_LIKE' )
-          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
-          || ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $like ) ) {
-
-            return false;
-        }
-
-        return (bool) $this->query( sprintf( OWA_SQL_CREATE_TABLE_LIKE, $table_name, $like ) );
-    }
-
-    /**
      * Flatten a partitioned table into an ordinary one.
      *
      * Keeps every row: the partitions are merged, not dropped. Against a table
@@ -2864,30 +2737,6 @@ class Db extends \OWA\Core\Base {
         }
 
         return $out;
-    }
-
-    /**
-     * One row by id, optionally narrowed. Test seam for the constrained-load
-     * behaviour in Entity::getByColumn(), which is otherwise reachable only
-     * through the entity registry.
-     *
-     * @param string $table_name
-     * @param mixed  $id
-     * @param array  $constraints
-     * @return array
-     */
-    function getOneRowFromTable( $table_name, $id, $constraints = array() ) {
-
-        $this->selectFrom( $table_name );
-        $this->selectColumn( '*' );
-        $this->where( 'id', $id );
-
-        foreach ( $constraints as $name => $constraint ) {
-
-            $this->where( $name, $constraint['value'], $constraint['operator'] );
-        }
-
-        return (array) $this->getOneRow();
     }
 
     /**

@@ -1,4 +1,4 @@
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 /**
  * A jqGrid formatter's return value becomes the cell's HTML.

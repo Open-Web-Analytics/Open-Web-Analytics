@@ -13,7 +13,7 @@ const { execSync } = require('child_process');
  *   - The seven OWA files are kept as PLAIN (sloppy-mode) scripts, NOT ESM: they
  *     are legacy code full of implicit globals (undeclared `for (x in ...)` loop
  *     vars, bare `y = ...` assigns) that throw under the strict mode ESM forces.
- *     So OWA is shared via a browser global exactly as the old concat did: owa.js
+ *     So OWA is shared via a browser global exactly as the old concat did: owa.format.js
  *     publishes `window.OWA`, and the six augmenters read the bare `OWA` global.
  *     Adding an import/export to any of these files would flip it to strict and
  *     break it -- this test guards that they stay non-ESM.
@@ -34,7 +34,7 @@ describe('reporting bundle build integrity', () => {
     const repoRoot = path.resolve(__dirname, '../../..');
     const configPath = path.join(repoRoot, 'webpack.config.js');
     const manifestPath = path.join(repoRoot, 'modules/Base/build.manifest.json');
-    const srcDir = path.join(repoRoot, 'modules/Base/src/reporting/v1');
+    const srcDir = path.join(repoRoot, 'modules/Base/src/reporting');
     const entryPath = path.join(srcDir, 'reporting-entry.js');
     const bundlePath = path.join(repoRoot, 'public/base/dist/owa.reporting-combined-min.js');
 
@@ -43,10 +43,10 @@ describe('reporting bundle build integrity', () => {
     const reportingPkg = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
         .packages.find((p) => p.name === 'owa.reporting-combined-min.js');
 
-    // The seven hand-written OWA reporting modules. owa.js defines the namespace;
+    // The seven hand-written OWA reporting modules. owa.format.js defines the namespace;
     // the rest augment it. Order here is the ESM import order in reporting-entry.js.
     const OWA_MODULES = [
-        'owa.js', 'owa.report.js', 'owa.resultSetExplorer.js', 'owa.sparkline.js',
+        'owa.format.js', 'owa.report.js', 'owa.resultSetExplorer.js', 'owa.sparkline.js',
         'owa.areachart.js', 'owa.sharechart.js', 'owa.kpibox.js',
     ];
 
@@ -61,23 +61,23 @@ describe('reporting bundle build integrity', () => {
 
     test('the OWA files are real ES modules sharing OWA via import/export', () => {
         // The reporting files are now proper ES modules (Phase 4 renovation), replacing
-        // the earlier sloppy-mode-shared-via-window.OWA scheme. owa.js defines the
+        // the earlier sloppy-mode-shared-via-window.OWA scheme. owa.format.js defines the
         // namespace and `export { OWA }`; the six augmenters `import { OWA } from
-        // './owa.js'` and mutate the same object. Every file imports jQuery explicitly
-        // (was webpack.ProvidePlugin). owa.js STILL publishes window.OWA because the
+        // './owa.format.js'` and mutate the same object. Every file imports jQuery explicitly
+        // (was webpack.ProvidePlugin). owa.format.js STILL publishes window.OWA because the
         // report templates' inline <script> blocks (~166 refs) read the browser global
         // -- that's a template concern, separate from the module-internal sharing.
-        const owaJs = fs.readFileSync(path.join(srcDir, 'owa.js'), 'utf8');
-        expect(owaJs).toMatch(/export\s*\{\s*OWA\s*\}/); // owa.js exports the namespace
+        const owaJs = fs.readFileSync(path.join(srcDir, 'owa.format.js'), 'utf8');
+        expect(owaJs).toMatch(/export\s*\{\s*OWA\s*\}/); // owa.format.js exports the namespace
         expect(owaJs).toMatch(/window\.OWA\s*=\s*OWA/);  // and keeps the template global
 
-        // Every file imports jQuery; every AUGMENTER also imports OWA from owa.js.
+        // Every file imports jQuery; every AUGMENTER also imports OWA from owa.format.js.
         const missingJquery = [];
         const missingOwaImport = [];
         for (const f of OWA_MODULES) {
             const code = fs.readFileSync(path.join(srcDir, f), 'utf8');
             if (!/^\s*import \* as jQuery from 'jquery'/m.test(code)) missingJquery.push(f);
-            if (f !== 'owa.js' && !/^\s*import\s*\{\s*OWA\s*\}\s*from\s*'\.\/owa\.js'/m.test(code)) {
+            if (f !== 'owa.format.js' && !/^\s*import\s*\{\s*OWA\s*\}\s*from\s*'\.\/owa\.format\.js'/m.test(code)) {
                 missingOwaImport.push(f);
             }
         }
@@ -102,7 +102,7 @@ describe('reporting bundle build integrity', () => {
             'jquery-sparkline',
             "'jquery.flot'",                    // flot core
             'jquery.flot/jquery.flot.time.js',
-            './owa.js',
+            './owa.format.js',
             './owa.report.js',
             './owa.kpibox.js',
         ];

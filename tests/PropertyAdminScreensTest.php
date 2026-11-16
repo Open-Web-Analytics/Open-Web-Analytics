@@ -301,7 +301,7 @@ final class PropertyAdminScreensTest extends TestCase
     public function testTheSiteControlReplacesTheOldSelect(): void
     {
         $js = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.report.js' );
+            \OWA\Core\Env::root() . '/modules/Base/src/reporting/owa.report.js' );
 
         $this->assertStringContainsString( '#owa_siteControl', $js );
 
@@ -594,7 +594,7 @@ final class PropertyAdminScreensTest extends TestCase
             'Nothing shows the panel when the tile is clicked.' );
 
         $js = (string) file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/src/reporting/v1/owa.report.js' );
+            \OWA\Core\Env::root() . '/modules/Base/src/reporting/owa.report.js' );
 
         /*
          * SINGLE quoted. $panel is a real variable in this test, so in double
@@ -1198,9 +1198,7 @@ final class PropertyAdminScreensTest extends TestCase
      *
      * owa.css positions .form-instructions at left:150px -- an offset for a
      * layout with labels in a left column. These forms stack label, field, help
-     * text, so that offset pushed the help text out past the field. Its two
-     * siblings, .form-field and .form-value, carry 120px and 380px from the
-     * same era.
+     * text, so that offset pushed the help text out past the field.
      *
      * Reset rather than nudged: overriding only `left` leaves the element
      * positioned, which is the half-fix that looks right until something moves.
@@ -1215,13 +1213,6 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertStringContainsString( 'position: static', $rule,
             'The help text is still positioned, so its inherited left offset applies.' );
         $this->assertStringContainsString( 'left: auto', $rule );
-
-        foreach ( array( '.form-field', '.form-value' ) as $sibling ) {
-
-            $this->assertStringContainsString(
-                '.owa_hierarchyContent #panel ' . $sibling, $css,
-                "$sibling still inherits its left-column offset inside the pane." );
-        }
     }
     /**
      * One settings nav, install-wide options at the top.

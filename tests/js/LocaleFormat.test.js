@@ -1,4 +1,4 @@
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 /**
  * Dates and numbers in the reporting UI are written in the install's locale:
@@ -45,7 +45,7 @@ test('a date is written as the locale writes it', () => {
 });
 
 test('the share chart\'s percentage follows the locale', () => {
-    require('../../modules/Base/src/reporting/v1/owa.sharechart.js');
+    require('../../modules/Base/src/reporting/owa.sharechart.js');
 
     expect(OWA.shareChart.percent(0.004)).toBe('<1%');
 

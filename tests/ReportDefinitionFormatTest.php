@@ -1375,8 +1375,6 @@ final class ReportDefinitionFormatTest extends TestCase
         $data = (array) $controller->doAction();
 
         $data['metricSets'] = $metricSets;
-        $data['tabs']       = \OWA\Core\MetricSets::toLegacyTabs( $metricSets );
-        $data['tabs_json']  = json_encode( $data['tabs'] );
 
         return (string) \OWA\Core\CoreAPI::displayView( $data );
     }
@@ -1921,9 +1919,6 @@ final class ReportDefinitionFormatTest extends TestCase
      * guards on `!== ''` before issuing makeAreaChart, the same way `traffic`
      * suppresses its metric boxes. Defaulting it to the set's first metric --
      * which this briefly did -- hands a chart to a set that asked for none.
-     *
-     * The warning that prompted it was the renderer reading a key that was not
-     * there, which is fixed in MetricSets::toLegacyTabs.
      */
     public function testADeclaredSetKeepsItsChartMetricAbsent(): void
     {
@@ -1979,8 +1974,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $data = (array) $controller->doAction();
 
         $this->assertSame( array( 'roi' ), array_keys( (array) $data['metricSets'] ) );
-        $this->assertStringContainsString( 'Return', (string) $data['tabs_json'],
-            'the legacy tabs the template reads are rebuilt from the resolved sets' );
+        $this->assertSame( 'Return', $data['metricSets']['roi']['label'] );
     }
 
     /** A declared label may carry a placeholder like any other authored string. */

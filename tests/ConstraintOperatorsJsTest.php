@@ -18,8 +18,8 @@ use PHPUnit\Framework\TestCase;
  */
 final class ConstraintOperatorsJsTest extends TestCase
 {
-    private const EXPLORER = 'modules/Base/src/reporting/v1/owa.resultSetExplorer.js';
-    private const PILLS    = 'modules/Base/src/reporting/v1/owa.filterpills.js';
+    private const EXPLORER = 'modules/Base/src/reporting/owa.resultSetExplorer.js';
+    private const PILLS    = 'modules/Base/src/reporting/owa.filterpills.js';
 
     public function testEveryPageGivesTheGridTheServersOperatorsInOrder(): void
     {

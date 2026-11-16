@@ -12,7 +12,7 @@
  * the fallback rather than dropped as legacy.
  */
 
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 var RESET_AFTER_MS = 2000;
 

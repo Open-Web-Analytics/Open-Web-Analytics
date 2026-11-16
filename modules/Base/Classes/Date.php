@@ -124,10 +124,6 @@ class Date {
         return $this->timestamp;
     }
 
-    function getLocalTimestamp() {
-
-        return $this->getTimestamp() + $this->utc_offset;
-    }
 }
 
 

@@ -1,6 +1,6 @@
-// OWA is defined by owa.js; this module augments it (OWA.filterPills = ...).
+// OWA is defined by owa.format.js; this module augments it (OWA.filterPills = ...).
 import * as jQuery from 'jquery';
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 /**
  * Filters as pills: a Filter button, a pill per filter with an X, and a small

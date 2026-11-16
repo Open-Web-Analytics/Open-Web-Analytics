@@ -81,7 +81,6 @@ describe('reporting bundle loads under jsdom', () => {
         expect(typeof OWA).toBe('object');
         // Core reporting objects that owa_view wires into every report page.
         expect(typeof OWA.report).toBe('function');
-        expect(typeof OWA.stateManager).toBe('function');
         expect(typeof OWA.getSetting).toBe('function');
         expect(typeof OWA.setSetting).toBe('function');
         expect(typeof OWA.util).toBe('object');
@@ -102,20 +101,5 @@ describe('reporting bundle loads under jsdom', () => {
         expect(inst.dom_id).toBe('owa_report_fixture');
         // Construction-time invariants the report relies on.
         expect(inst.tabs).toEqual({});
-        expect(inst.resultSetExplorers).toEqual({});
-    });
-
-    test('OWA.stateManager constructs and round-trips a state store', () => {
-        if (!OWA) return;
-        let err = null;
-        try {
-            const sm = new OWA.stateManager();
-            expect(typeof sm.registerStore).toBe('function');
-            expect(typeof sm.set).toBe('function');
-            expect(typeof sm.isPresent).toBe('function');
-        } catch (e) {
-            err = e;
-        }
-        expect(err).toBeNull();
     });
 });

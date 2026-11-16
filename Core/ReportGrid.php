@@ -156,23 +156,6 @@ class ReportGrid {
     }
 
     /**
-     * Whether a widget was asked to be wider than the grid.
-     *
-     * Kept separate from colspan() so the caller can say so -- a definition
-     * asking for 16 of 12 columns is a mistake worth reporting, even though
-     * rendering it as full width is the right recovery.
-     *
-     * @param array $widget
-     * @return bool
-     */
-    public static function isOverWide( $widget ) {
-
-        $widget = (array) $widget;
-
-        return isset( $widget['colspan'] ) && (int) $widget['colspan'] > self::COLUMNS;
-    }
-
-    /**
      * The class attribute for one widget's grid cell.
      *
      * @param array $widget

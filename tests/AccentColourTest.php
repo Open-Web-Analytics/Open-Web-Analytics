@@ -10,7 +10,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class AccentColourTest extends TestCase
 {
-    private const CSS = array( 'owa.css', 'owa.report.css', 'owa.admin.css', 'owa.widgets.css', 'owa.overlay.css' );
+    private const CSS = array( 'owa.css', 'owa.report.css', 'owa.admin.css', 'owa.overlay.css' );
 
     private function css( string $file ): string
     {

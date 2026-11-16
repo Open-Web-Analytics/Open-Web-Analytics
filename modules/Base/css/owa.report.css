@@ -2,9 +2,8 @@
 
 /*ul {margin-left:10px;} */
 .owa {font-family: Helvetica, Arial, sans-serif; width:auto;}
-#report_header {width:100%; margin: 0 0 20px 0; }
 
-.owa_reportTitle, .report_headline {
+.owa_reportTitle {
     font-size:1.875rem;
     line-height:1.25;
     letter-spacing:-0.01em;
@@ -21,9 +20,8 @@
 }
 
 .owa_reportContainer {width:auto; background-color: ; height:;}
-.owa_reportElement {width:100%; text-align:center; vertical-align: top;}
 /* A section's name, and the link to its full report on the same line. */
-.owa_reportSectionHeader, .section_header {
+.owa_reportSectionHeader {
     display:flex;
     align-items:baseline;
     justify-content:space-between;
@@ -65,29 +63,16 @@
     width:auto;
 }
 
-#owa_reportHeader {
-    color:#505050; background-color:#cccccc;
-}
-
 .clear {
     float:none;
     clear:both;
 }
 
-.owa_reportSubSectionLabel {
-    color: #666666;
-    border-top:2px solid #cccccc;
-    font-size: 0.75rem;
-    padding-left:2px;
-    width:80%;
-}
-
-.owa .moreLink, .owa_moreLinks {
+.owa_moreLinks {
 
     text-align:left;
     margin-top:6px;
     padding:2px;
-
 
 }
 
@@ -98,30 +83,15 @@
     list-style-type: none;
 
 }
-.owa_moreLinks a:hover, .owa .moreLink a:hover {
+.owa_moreLinks a:hover {
     border-bottom:2px solid var(--owa-accent);
 }
 
-.owa_moreLinks li a, .owa_moreLinks a, .owa .moreLink a  {
+.owa_moreLinks li a, .owa_moreLinks a {
     border:0px solid #ffffff;
     font-size:0.625rem;
     text-decoration: none;
     padding-left:0px;
-}
-
-.data_table {border-collapse: collapse;margin:0;width:100%;}
-.data_table td {border:2px solid #CCCCCC;  min-width:80px;padding:10px;}
-.col_item_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999;}
-.col_label {background-color:#CCCCCC; font-weight:bold; border-bottom: 2px solid #999999; text-align:center;}
-.data_cell {text-align:center; vertical-align:center;}
-.item_cell {}
-
-.owa_reportHeaderControls {background-color:#ffffff; border-bottom: 1px solid #a0a0a0;height:60px;margin-bottom:20px;}
-
-.owa_reportHeaderControls li {
-
-    border-right: 1px solid #efefef;
-    padding: 30px;
 }
 
 .owa_reportControl {
@@ -131,8 +101,6 @@
     height: 30px;
     padding:5px;
 }
-
-#owa_reportSiteFilter {text-align:; width:100%; }
 #owa_reportSiteFilterSelect {font-size: 0.75rem; width:200px; margin: 0px 20px; 0px 0px;}
 #owa_reportSiteFilterSelect span {font-size: 1.125rem; font-weight: bold; vertical-align: baseline; }
 
@@ -287,18 +255,14 @@
     .owa_periodSwitch::after, .owa_periodChevron { transition: none; }
 }
 
-#report_top_level_nav_ul {width:;}
-
 /* As wide as the rail and column it holds (owa.shell.css). */
 .owa_reportLeftNavColumn {width:1px; margin-right:0px;}
-
-.owa_visitSummaryInfobox {border: 1px solid #cccccc; border-left: 5px solid var(--owa-accent); text-align: left; padding:5px; margin-bottom:5px;}
 
 /*
  * A metric's figure: its name, then the number, with nothing round them. The
  * one a chart above is drawing is underlined in the chart's colour.
  */
-.owa_metricInfobox, .owa .action_infobox {
+.owa_metricInfobox {
     color:#111827;
     background-color: transparent;
     text-align: left;
@@ -312,13 +276,13 @@
 
 }
 
-.owa_metricInfobox p, .owa_metricInfobox span, .owa .action_infobox {
+.owa_metricInfobox p, .owa_metricInfobox span {
     padding:0;
     margin:0px;
 
 }
 
-p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel, .owa .action_infobox .action_name  {
+p.owa_metricInfoboxLabel, span.owa_metricInfoboxLabel {
     color:#6b7280;
     font-size:0.8125rem;
     padding-top:0;
@@ -336,7 +300,7 @@ p.owa_metricInfoboxCompare .is-up { color: #137a3e; font-weight: 600; }
 p.owa_metricInfoboxCompare .is-down { color: #b42318; font-weight: 600; }
 p.owa_metricInfoboxCompare .is-flat { font-weight: 600; }
 
-p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_infobox .action_value {
+p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
     color:#111827;
     font-size:2.125rem;
     letter-spacing:-0.02em;
@@ -357,182 +321,9 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     }
 }
 
-.owa_infobox {width:auto; padding:10px; border:1px solid #efefef; border-left:5px solid var(--owa-accent);}
-
-.kpiInfobox {
-    min-width:200px;
-    width:auto;
-}
-
-.kpiInfoboxLink {
-    text-decoration:none;
-}
-
-.visitSummaryKpi {
-    width:120px;
-    min-width:120px;
-    min-height: 60px;
-}
-
-.owa_visitInfobox {
-    color:#9f9f9f;
-    background-color: #505050;
-    border:1px solid #cccccc;
-    text-align: left;
-    padding:5px;
-    margin:5px;
-    width:350px;
-    border-collapse: collapse;
-    padding:0;
-    margin:0;
-    border-radius: 5px;
-    -moz-border-radius: 5px;
-}
-
-.owa_visitInfoboxItemContainer, .owa_visitInfoboxItem   {
-    background-color: #ffffff;
-    border: 0px solid #A0A0A0;
-    border-collapse: collapse;
-}
-
-.owa_visitInfoboxItem   {
-    width: 50px;
-}
-
-.owa_visitInfoboxItem   {
-    text-align:center;
-    border-left: 1px solid #efefef;
-    border-right: 1px solid #efefef;
-}
-
-.owa_visitInfoboxTitle {
-    color:#A0A0A0;
-    padding:6px;
-    font-size:0.75rem;
-    margin:0px;
-}
-
-.owa_userInfobox {
-    background-color: #ffffff;
-}
-
-.owa_avatar {
-    height: 30px;
-    width: 30px;
-    border: 1px solid #efefef;
-    padding: 2px;
-
-}
-
-.owa_userLabel {
-    width:100px;
-    height:50px;
-}
-
-.owa_userNameLabel {
-    font-size: 0.875rem;
-
-}
-
-.owa_userGeoLabel {
-    font-size: 0.625rem;
-    line-height: 0.8125rem;
-}
-
-.owa_largeNumber {
-    color:#505050;
-    font-size:1.25rem;
-}
-
-.owa_visitInfoboxDocContainer {
-    background-color: #efefef;
-    border: 1px solid #E0E0E0;
-    border-collapse: collapse;
-    width:100%;
-    font-size: 0.625rem;
-}
-
-.owa_icon16x16 {
-    width:20px;
-    padding:3px;
-}
-
-.owa_secondaryText {
-    font-size: 0.625rem;
-    color:#505050;
-}
-
-/* keep this */  
-.owa_genericHorizontalList ul {list-style: none; padding: 0; margin: 0;float:left;padding-top:5px;}
-.owa_genericHorizontalList li {text-decoration: none; float:left; margin: 2px; padding:3px;}
-.owa_genericHorizontalList li a {
-
-    display: block;
-    text-decoration: none;
-    text-align: center;
-}
 
 .owa .relatedReports li {
     padding-bottom: 10px;
-}
-
-.simpleTable {
-    font-size:0.75rem;
-    width:100%;
-}
-
-.simpleTable th {
-    background-color: #efefef;
-    border-bottom: 1px solid #cccccc;
-    border-right: 1px solid #cccccc;
-    padding: 4px 5px 4px 5px;
-}
-
-.simpleTable td {
-    padding:3px 5px 3px 5px;
-    font-size:0.625rem;
-
-}
-
-.metriccell {
-    text-align:right;
-    width:100px;
-}
-
-.owa_dimensionDetail {
-    border: 1px solid #cccccc;
-    width:inherit;
-    height:auto;
-    padding:10px;
-}
-
-.owa_dimensionDetail .title {
-
-    font-size:1.375rem;
-    padding-bottom: 7px;
-}
-
-.owa_dimensionDetail .url {
-
-    font-size:0.875rem;
-    color: #0E774A;
-    padding-bottom:5px;
-}
-
-.owa_dimensionDetail .icon {
-
-    padding-right:10px;
-}
-
-.owa .refererDetailPanel  {
-
-    height:auto;
-}
-
-.owa .refererDetailPanel .snippet {
-    font-size:0.625rem;
-    color: var(--owa-text-muted, #6b7280);
-
 }
 
 .owa .ui-widget {
@@ -694,7 +485,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     display: inline-block;
 }
 
-
 .owa .owa_reportControls .autoRefreshControl .buttons {
     display: inline-block;
     vertical-align: middle;
@@ -804,38 +594,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
     color: var(--owa-text-muted, #6b7280);
 }
 
-.owa .submit-button {
-    border-radius:4px;
-    background-color:var(--owa-accent);
-    padding:10px 10px 10px 10px;
-    color:#ffffff;
-    font-size:0.875rem;
-    font-weight:bold;
-    border: 1px solid #efefef;
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    margin-top: 20px;
-    text-decoration: none;
-
-}
-
-.owa .externalUrl {
-    color: #093;
-    font-size:0.75rem;
-}
-
-.submit-button:hover {
-    color: #000000;
-    border-color: #9f9f9f;
-    -moz-box-shadow:2px 2px 2px #999;
-    box-shadow:2px 2px 2px #999;
-    -webkit-box-shadow:2px 2px 2px #999;
-}
-
-.submit-button a  {
-    text-decoration: none;
-}
-
 .dimensionPicker {
 
     width:175px;
@@ -850,28 +608,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber, .owa .action_
 .dimensionPicker .dim-list ul {
 
     padding-left: 7px;
-}
-
-.dimensionPicker .dimensionListItem {
-
-    color: white;
-    background-color: green;
-    border: 1px solid #efefef;
-    padding:7px;
-    list-style: none;
-}
-
-.dimensionPicker .select-button {
-
-    font-size: 0.625rem;
-    height:;
-
-}
-
-.dimensionPicker .dimensionListItem:hover {
-
-    font-weight: bold;
-    background-color: var(--owa-accent);
 }
 
 .dimensionPicker h4 {
@@ -1073,37 +809,6 @@ li.constraintRow {
     filter: brightness( 0.95 );
 }
 
-/* Still used by the report-level control bar (the funnel's scope switch, the
-   filters of module reports). The GRID's bar no longer has labels at all. */
-.controlItem .label {
-    font-size: 0.625rem;
-    padding-top: 7px;
-    padding-right: 5px;
-}
-
-.controlItem span {
-
-    /* Was float:left, which is what made these stack instead of sharing a row.
-       The bar is flex now and lays its own children out. */
-    float: none;
-}
-
-.controlItem {
-
-    display: inline-block;
-    vertical-align: middle;
-}
-
-.ui-selectmenu {
-
-    height: 1.75em;
-}
-
-.owa .actionInfobox {
-
-    border: 1
-}
-
 .owa img.loading { 
     margin: 5px 5px 5px 30px
 }
@@ -1114,49 +819,6 @@ li.constraintRow {
 .owa #trend-metrics {
     min-height: 70px
 }
-
-.owa .propertyList dl {
-    width:100%;
-     overflow:hidden;
-     background: #efefef;
-     padding:0;
-      margin:0;
-      font-size:0.75rem;
-      margin-bottom:5px;
-}
-
-.owa .propertyList dt {
-    float:left;
-     width:100px; /* adjust the width; make sure the total of both is 100% */
-     background:#6AA9CF;
-     border: 1px solid #6AA9CF;
-     color: #ffffff;
-     padding:4px 5px 4px 5px;
-     margin:0;
-     border-top-left-radius: 5px;
-    border-bottom-left-radius: 5px;
-    -moz-border-radius-topleft: 5px;
-    -moz-border-radius-bottomleft: 5px;
-
-
-}
-
-.owa .propertyList dd {
-    float:left;
-     width:auto; /* adjust the width; make sure the total of both is 100% */
-     background:#ffffff;
-     border: 1px solid #cccccc;
-     padding:4px 10px 4px 10px;
-    margin:0 10px 0 0;
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
-    -moz-border-radius-topright: 5px;
-    -moz-border-radius-bottomright: 5px;
-
-}
-
-
-
 
 /* ---------------------------------------------------------------------------
    Report grid
@@ -3082,7 +2744,6 @@ li.constraintRow {
     width: auto;
     margin: 0;
 
-
     /* Share the row evenly, wrapping once they would go under ~135px. A widget
        showing two metrics gets two half-width boxes rather than two narrow ones
        against a wide gap. */
@@ -3670,64 +3331,6 @@ li.constraintRow {
     width: auto;
 }
 
-/* ---------------------------------------------------------------------------
- * Dimension pills, in the grid's control bar
- *
- * What the grid is grouped by, shown as the thing you edit. The first is the
- * dimension the report is about and carries no remove.
- * ------------------------------------------------------------------------- */
-
-.owa .owa_dimensionPills {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    flex-wrap: wrap;
-    min-width: 0;
-}
-
-.owa .owa_dimPill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 6px 3px 9px;
-    border-radius: 12px;
-    background-color: #e6e6e6;
-    color: #303030;
-    font-size: 0.6875rem;
-    line-height: 1.4;
-    white-space: nowrap;
-}
-
-/* The primary reads as fixed rather than merely lacking a control: a pill that
-   looks the same as its neighbours but has no remove looks broken. */
-.owa .owa_dimPillPrimary {
-    background-color: #ffffff;
-    border: 1px solid #cccccc;
-    padding-right: 9px;
-    color: #505050;
-}
-
-.owa .owa_dimPillRemove {
-    color: var(--owa-text-muted, #6b7280);
-    text-decoration: none;
-    font-size: 0.8125rem;
-    line-height: 1;
-}
-
-.owa .owa_dimPillRemove:hover {
-    color: #c0392b;
-}
-
-.owa .owa_dimPillAdd {
-    display: inline-block;
-    min-width: 130px;
-}
-
-.owa .owa_dimPillAdd .chosen-container {
-    font-size: 0.6875rem;
-}
-
-
 /*
  * THE FILTER DIALOG.
  *
@@ -3748,7 +3351,6 @@ li.constraintRow {
 .owa .owa_filterDialogFrame .ui-dialog-content {
     overflow: visible;
 }
-
 
 /* ---------------------------------------------------------------------------
  * Type scale for the admin and settings screens.
@@ -3844,7 +3446,6 @@ li.constraintRow {
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
 
 .owa_headerSiteControl .owa_siteControlPanel {
     top: 100%;
@@ -4265,18 +3866,6 @@ li.constraintRow {
     padding-top: 8px;
 }
 
-/*
- * The other two offset classes from the same left-column era. Unused by these
- * screens today, but a subview added later would inherit a 120px or 380px shift
- * and land beside its field for the same reason .form-instructions did --
- * cheaper to neutralise here than to rediscover.
- */
-.owa_hierarchyContent #panel .form-field,
-.owa_hierarchyContent #panel .form-value {
-    position: static;
-    left: auto;
-}
-
 /* A form's rows are the page's main rhythm, so they get the same hairline the
    nav groups use rather than the heavier table borders owa.css sets. */
 .owa_hierarchyContent #panel table.management td {
@@ -4408,7 +3997,6 @@ li.constraintRow {
     text-decoration: underline;
 }
 
-
 /* The destructive action at the foot of a hierarchy screen.
  *
  * Set off from the form above it rather than sitting in the same run of
@@ -4462,7 +4050,6 @@ li.constraintRow {
     -moz-box-shadow: none;
     -webkit-box-shadow: none;
 }
-
 
 /* The confirmation an irreversible action gets.
  *
@@ -4629,7 +4216,6 @@ li.constraintRow {
     box-shadow: none;
 }
 
-
 /* ------------------------------------------------------------------
  * Goal event definitions
  * ------------------------------------------------------------------
@@ -4705,10 +4291,6 @@ li.constraintRow {
 .owa_hierarchyContent #panel .owa_largeFormField {
     width: 400px;
     max-width: 100%;
-}
-
-.owa_hierarchyContent #panel .owa_mediumFormField {
-    width: 220px;
 }
 
 .owa_hierarchyContent #panel .owa_shortFormField {
@@ -4806,14 +4388,6 @@ li.constraintRow {
 .owa .owa_statedValue i {
     margin-right: 7px;
     color: var(--owa-text-muted, #6b7280);
-}
-
-/* The sentence under it saying what the kind actually does. Secondary to the
-   value, so it is the same treatment .form-instructions gets. */
-.owa .owa_statedValueHint {
-    color: var(--owa-text-muted, #6b7280);
-    font-size: var(--owa-text-xs);
-    margin-top: 6px;
 }
 
 /* ------------------------------------------------------------------
@@ -4921,7 +4495,6 @@ li.constraintRow {
 .owa_reportAsOfTime {
     white-space: nowrap;
 }
-
 
 /* ------------------------------------------------------------------
  * The realtime screen (report_realtime.php, owa.realtime.js)

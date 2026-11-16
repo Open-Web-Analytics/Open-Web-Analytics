@@ -356,11 +356,6 @@ class Event {
         return $this->dispatchName !== '';
     }
 
-    function setPageTitle($value) {
-
-        $this->set('page_title', $value);
-    }
-
     function setSiteId($value) {
 
         $this->set('siteId', $value);
@@ -376,11 +371,6 @@ class Event {
         }
 
 
-    }
-
-    function setPageType($value) {
-
-        $this->set('page_type', $value);
     }
 
     function getGuid() {

@@ -1,7 +1,7 @@
 /**
  * Read the report table's filter conditions and limits out of its source:
  * the `OWA.dataGrid.<NAME> = <literal>;` assignments in
- * modules/Base/src/reporting/v1/owa.resultSetExplorer.js.
+ * modules/Base/src/reporting/owa.resultSetExplorer.js.
  *
  * Only each assignment's literal is evaluated, never the file: the grid needs
  * jQuery and a document, and its constants are plain literals.
@@ -11,7 +11,7 @@ const fs = require( 'fs' );
 const path = require( 'path' );
 const { literalEnd, ROOT } = require( './tracker_api.js' );
 
-const SOURCE = path.join( ROOT, 'modules/Base/src/reporting/v1/owa.resultSetExplorer.js' );
+const SOURCE = path.join( ROOT, 'modules/Base/src/reporting/owa.resultSetExplorer.js' );
 
 /** The value of `OWA.dataGrid.<name> = <literal>;`, read from the source. */
 function gridConstant( name, src = fs.readFileSync( SOURCE, 'utf8' ) ) {

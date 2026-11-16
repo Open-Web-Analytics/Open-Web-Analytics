@@ -721,11 +721,6 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                 (array) $this->get( 'metricSets' ) );
 
             $this->set( 'metricSets', $sets );
-
-            $tabs = \OWA\Core\MetricSets::toLegacyTabs( $sets );
-
-            $this->set( 'tabs', $tabs );
-            $this->set( 'tabs_json', json_encode( $tabs ) );
         }
 
         /*

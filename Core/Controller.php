@@ -478,22 +478,6 @@ class Controller extends \OWA\Core\Base {
         return \OWA\Core\CoreAPI::isEveryoneCapable( $capability );
     }
 
-    function logEvent($event_type, $properties) {
-
-        $ed = \OWA\Core\CoreAPI::getEventDispatch();
-
-        if (!is_a($properties, \OWA\Module\Base\Classes\Event::class)) {
-
-            $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
-            $event->setProperties($properties);
-            $event->setEventType($event_type);
-        } else {
-            $event = $properties;
-        }
-
-        return $ed->notify( $event );
-    }
-
     function createValidator() {
 
         $this->v = \OWA\Core\CoreAPI::supportClassFactory('base', 'validator');
@@ -626,13 +610,6 @@ class Controller extends \OWA\Core\Base {
         return \OWA\Core\CoreAPI::makeTimePeriod($time_period, $params);
     }
 
-    function setTimePeriod($period) {
-
-        $this->period = $period;
-        $this->set('period', $this->getPeriod());
-        //$this->data['params'] = array_merge($this->data['params'], $period->getPeriodProperties());
-    }
-
 
     function setView($view) {
 
@@ -747,44 +724,6 @@ class Controller extends \OWA\Core\Base {
 	    return \OWA\Core\RequestType::current();
     }
 
-    function mergeParams($array) {
-
-        $this->params = array_merge($this->params, $array);
-
-    }
-
-    /**
-     * redirects borwser to a particular view
-     *
-     * @param string $action
-     * @param bool $pass_params
-     */
-    function redirectBrowser($action, $pass_params = true) {
-
-        $control_params = array('view_method', 'auth_status');
-
-        $get = '';
-
-        $get .= 'do='.$action.'&';
-
-        if ($pass_params === true) {
-
-            foreach ($this->data as $n => $v) {
-
-                if (!in_array($n, $control_params)) {
-
-                    $get .= $n.'='.$v.'&';
-
-                }
-            }
-        }
-
-        $new_url = sprintf(\OWA\Core\CoreAPI::getSetting('base', 'link_template'), \OWA\Core\CoreAPI::getSetting('base', 'main_url'), $get);
-
-        return \OWA\Core\Lib::redirectBrowser($new_url);
-
-    }
-
     /** @param string[] $also_hosts see Lib::resolveRedirectUrl() */
     function redirectBrowserToUrl($url, array $also_hosts = array()) {
 
@@ -794,11 +733,6 @@ class Controller extends \OWA\Core\Base {
     function setStatusCode($code) {
 
         $this->data['status_code'] = $code;
-    }
-
-    function setErrorMsg( $msg ) {
-
-        $this->set( 'error_msg', $msg );
     }
 
     /**
@@ -1040,10 +974,6 @@ class Controller extends \OWA\Core\Base {
     function acceptedAuthMethods() {
 
         return $this->auth_methods;
-    }
-
-    function getSetting($module, $name) {
-        return \OWA\Core\CoreAPI::getSetting($module, $name);
     }
 
 

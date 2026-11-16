@@ -7,18 +7,6 @@ parameters:
 			path: Core/AdminController.php
 
 		-
-			message: '#^Method OWA\\Core\\Auth\:\:authenticateUserByUrlPasskey\(\) invoked with 1 parameter, 2 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: Core/Auth.php
-
-		-
-			message: '#^Undefined variable\: \$u$#'
-			identifier: variable.undefined
-			count: 1
-			path: Core/Auth.php
-
-		-
 			message: '#^Call to an undefined method OWA\\Core\\Controller\:\:action\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -43,70 +31,10 @@ parameters:
 			path: Core/Controller/Install.php
 
 		-
-			message: '#^Method OWA\\Core\\CoreAPI\:\:logEvent\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: Core/CoreAPI.php
-
-		-
-			message: '#^Undefined variable\: \$file$#'
-			identifier: variable.undefined
-			count: 1
-			path: Core/CoreAPI.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_results\(\)\.$#'
-			identifier: method.notFound
-			count: 2
-			path: Core/Db.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Core\\Db\:\:get_row\(\)\.$#'
-			identifier: method.notFound
-			count: 3
-			path: Core/Db.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Core\\Db\:\:query\(\)\.$#'
-			identifier: method.notFound
-			count: 35
-			path: Core/Db.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Core\\Entity\:\:getEntityPropertyList\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: Core/Entity.php
-
-		-
 			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: Core/Metric.php
-
-		-
-			message: '#^Method OWA\\Core\\Module\:\:registerEventHandler\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: Core/Module.php
-
-		-
-			message: '#^Access to an undefined property OWA\\Core\\RequestContainer\:\:\$files\.$#'
-			identifier: property.notFound
-			count: 1
-			path: Core/RequestContainer.php
-
-		-
-			message: '#^Undefined variable\: \$class$#'
-			identifier: variable.undefined
-			count: 1
-			path: Core/Template.php
-
-		-
-			message: '#^Undefined variable\: \$dom_id$#'
-			identifier: variable.undefined
-			count: 1
-			path: Core/Template.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
@@ -115,118 +43,22 @@ parameters:
 			path: Core/Update.php
 
 		-
-			message: '#^Result of method OWA\\Core\\EventQueue\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Classes/DbEventQueue.php
-
-		-
-			message: '#^Method OWA\\Module\\Base\\Classes\\EventDispatch\:\:attachFilter\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: modules/Base/Classes/EventDispatch.php
-
-		-
-			message: '#^Method OWA\\Module\\Base\\Classes\\EventDispatch\:\:notifyUntill\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: modules/Base/Classes/EventDispatch.php
-
-		-
-			message: '#^Undefined variable\: \$event_type$#'
-			identifier: variable.undefined
-			count: 1
-			path: modules/Base/Classes/EventDispatch.php
-
-		-
-			message: '#^Result of method OWA\\Core\\EventQueue\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Classes/FileEventQueue.php
-
-		-
-			message: '#^Result of method OWA\\Core\\EventQueue\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Classes/HttpEventQueue.php
-
-		-
 			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/Base/Classes/InstallManager.php
 
 		-
-			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\PaginatedResultSet\:\:\$periodInfo\.$#'
-			identifier: property.notFound
-			count: 1
-			path: modules/Base/Classes/PaginatedResultSet.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Module\\Base\\Classes\\PaginatedResultSet\:\:resultSetToCsv\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: modules/Base/Classes/PaginatedResultSet.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Module\\Base\\Classes\\ResultSetManager\:\:checkForFactTableRelation\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: modules/Base/Classes/ResultSetManager.php
-
-		-
-			message: '#^Call to an undefined method OWA\\Module\\Base\\Classes\\ResultSetManager\:\:getName\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: modules/Base/Classes/ResultSetManager.php
-
-		-
 			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/Base/Classes/ResultSetManager.php
-
-		-
-			message: '#^Undefined variable\: \$value$#'
-			identifier: variable.undefined
-			count: 1
-			path: modules/Base/Classes/ResultSetManager.php
-
-		-
-			message: '#^Method OWA\\Module\\Base\\Classes\\ServiceUser\:\:isSiteAccessRequiredForCapability\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: modules/Base/Classes/ServiceUser.php
-
-		-
-			message: '#^Method OWA\\Module\\Base\\Classes\\ServiceUser\:\:isSiteAccessible\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: modules/Base/Classes/ServiceUser.php
-
-		-
-			message: '#^Method OWA\\Module\\Base\\Classes\\Settings\:\:isConfigFilePresent\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: modules/Base/Classes/Settings.php
-
-		-
-			message: '#^Method OWA\\Module\\Base\\Classes\\Settings\:\:set\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 2
-			path: modules/Base/Classes/Settings.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/Base/Classes/SiteManager.php
-
-		-
-			message: '#^Access to an undefined property OWA\\Module\\Base\\Classes\\TrackingEventHelpers\:\:\$translations\.$#'
-			identifier: property.notFound
-			count: 1
-			path: modules/Base/Classes/TrackingEventHelpers.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Base\:\:__construct\(\) \(void\) is used\.$#'
@@ -239,18 +71,6 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: modules/Base/Classes/Validator.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Controller/EntityInstall.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Controller/FlushProcessedEventsCli.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
@@ -319,12 +139,6 @@ parameters:
 			path: modules/Base/Controller/ProcessEvent.php
 
 		-
-			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Controller/ProcessEventQueue.php
-
-		-
 			message: '#^Method OWA\\Module\\Base\\Controller\\ProcessRequest\:\:action\(\) should return OWA\\Module\\Base\\Controller\\unknown but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1
@@ -337,22 +151,10 @@ parameters:
 			path: modules/Base/Controller/ProcessRequest.php
 
 		-
-			message: '#^Result of method OWA\\Core\\Controller\\Cli\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Base/Controller/PruneEventQueueArchivesCli.php
-
-		-
 			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
 			path: modules/Base/Controller/SitesAdd.php
-
-		-
-			message: '#^Function exception not found\.$#'
-			identifier: function.notFound
-			count: 1
-			path: modules/Base/Controller/SitesEdit.php
 
 		-
 			message: '#^Result of method OWA\\Core\\AdminController\:\:__construct\(\) \(void\) is used\.$#'
@@ -400,12 +202,6 @@ parameters:
 			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/Base/Controller/UsersProfile.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Controller\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
 			path: modules/Base/Controller/UsersResetPassword.php
 
 		-
@@ -413,12 +209,6 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: modules/Base/Controller/UsersSetPassword.php
-
-		-
-			message: '#^Method OWA\\Module\\Base\\Entity\\User\:\:isDefaultUser\(\) should return bool but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: modules/Base/Entity/User.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Metric\:\:__construct\(\) \(void\) is used\.$#'
@@ -454,12 +244,6 @@ parameters:
 			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
-			path: modules/Base/View/NotifyNewSessionPlainText.php
-
-		-
-			message: '#^Result of method OWA\\Core\\View\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
 			path: modules/Base/View/OptionsModules.php
 
 		-
@@ -467,12 +251,6 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: modules/Base/View/PasswordResetForm.php
-
-		-
-			message: '#^Call to sprintf contains an invalid placeholder\.$#'
-			identifier: argument.sprintf
-			count: 1
-			path: modules/Base/View/Pixel.php
 
 		-
 			message: '#^Result of method OWA\\Core\\View\\Mail\:\:__construct\(\) \(void\) is used\.$#'
@@ -499,18 +277,6 @@ parameters:
 			path: modules/Base/View/UsersSetPassword.php
 
 		-
-			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/Domstream/Module.php
-
-		-
-			message: '#^Instantiated class Client not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: modules/MaxmindGeoip/Classes/Maxmind.php
-
-		-
 			message: '#^Result of method OWA\\Core\\Location\:\:__construct\(\) \(void\) is used\.$#'
 			identifier: staticMethod.void
 			count: 1
@@ -521,12 +287,6 @@ parameters:
 			identifier: staticMethod.void
 			count: 1
 			path: modules/MaxmindGeoip/Module.php
-
-		-
-			message: '#^Result of method OWA\\Core\\Module\:\:__construct\(\) \(void\) is used\.$#'
-			identifier: staticMethod.void
-			count: 1
-			path: modules/RemoteQueue/Module.php
 
 		-
 			message: '#^Result of method OWA\\Core\\Caller\:\:__construct\(\) \(void\) is used\.$#'

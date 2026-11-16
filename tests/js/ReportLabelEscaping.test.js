@@ -5,14 +5,14 @@ jest.mock('jquery', () => {
     return jq;
 });
 
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 
 const $ = require('jquery');
 
 global.jQuery = global.$ = $;
 
-require('../../modules/Base/src/reporting/v1/owa.kpibox.js');
-require('../../modules/Base/src/reporting/v1/owa.resultSetExplorer.js');
+require('../../modules/Base/src/reporting/owa.kpibox.js');
+require('../../modules/Base/src/reporting/owa.resultSetExplorer.js');
 
 /**
  * A metric box's label and the dimension picker's groups and dimensions are

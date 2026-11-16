@@ -7,8 +7,8 @@ jest.mock('jquery', () => {
     return jq;
 });
 
-import { OWA } from '../../../modules/Base/src/reporting/v1/owa.js';
-require('../../../modules/Base/src/reporting/v1/owa.report.js');
+import { OWA } from '../../../modules/Base/src/reporting/owa.format.js';
+require('../../../modules/Base/src/reporting/owa.report.js');
 
 /**
  * A period is EITHER relative OR a fixed range, never both.
@@ -37,6 +37,8 @@ describe('the period picker keeps relative and fixed selections exclusive', () =
         return r;
     }
 
+    // What the picker hands back on Apply (owa.periodpicker.js toParams()):
+    // the kind not chosen arrives as null.
     test('choosing a relative period wipes the dates', () => {
         const r = report({
             period: 'date_range',
@@ -45,7 +47,7 @@ describe('the period picker keeps relative and fixed selections exclusive', () =
             siteId: 's1',
         });
 
-        r.setPeriod('last_seven_days');
+        r.applyPeriodParams({ period: 'last_seven_days', startDate: null, endDate: null });
 
         expect(r.properties.period).toBe('last_seven_days');
         expect(r.properties).not.toHaveProperty('startDate');
@@ -58,7 +60,7 @@ describe('the period picker keeps relative and fixed selections exclusive', () =
     test('choosing a date range wipes the relative period', () => {
         const r = report({ period: 'last_seven_days', siteId: 's1' });
 
-        r.setDateRange('20260801', '20260815');
+        r.applyPeriodParams({ period: null, startDate: '20260801', endDate: '20260815' });
 
         expect(r.properties.startDate).toBe('20260801');
         expect(r.properties.endDate).toBe('20260815');
@@ -69,9 +71,9 @@ describe('the period picker keeps relative and fixed selections exclusive', () =
     test('switching back and forth never leaves both behind', () => {
         const r = report({ period: 'today' });
 
-        r.setDateRange('20260801', '20260815');
-        r.setPeriod('this_month');
-        r.setDateRange('20260101', '20260131');
+        r.applyPeriodParams({ period: null, startDate: '20260801', endDate: '20260815' });
+        r.applyPeriodParams({ period: 'this_month', startDate: null, endDate: null });
+        r.applyPeriodParams({ period: null, startDate: '20260101', endDate: '20260131' });
 
         const hasRelative = Object.prototype.hasOwnProperty.call(r.properties, 'period');
         const hasDates    = Object.prototype.hasOwnProperty.call(r.properties, 'startDate');
@@ -88,10 +90,10 @@ describe('the period picker keeps relative and fixed selections exclusive', () =
      */
     test('the next url is built from properties alone, not merged with the current one', () => {
         const src = require('fs').readFileSync(
-            require('path').join(__dirname, '../../../modules/Base/src/reporting/v1/owa.report.js'),
+            require('path').join(__dirname, '../../../modules/Base/src/reporting/owa.report.js'),
             'utf8');
 
-        const reload = src.slice(src.indexOf('reload: function'), src.indexOf('_parseDate'));
+        const reload = src.slice(src.indexOf('reload: function'), src.indexOf('addTab : function'));
 
         expect(reload).toContain('this.properties');
         expect(reload).not.toMatch(/location\.search|window\.location\.href\s*\+|parseUrlParams/);

@@ -1,5 +1,5 @@
-import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
-import '../../modules/Base/src/reporting/v1/owa.realtime.js';
+import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
+import '../../modules/Base/src/reporting/owa.realtime.js';
 
 /**
  * What the realtime screen draws from one answer of v1/realtime.

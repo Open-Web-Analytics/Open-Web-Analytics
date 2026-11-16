@@ -199,7 +199,6 @@ class Caller extends \OWA\Core\Base {
         $total_time = $this->end_time - $this->start_time;
         \OWA\Core\CoreAPI::debug(sprintf('Total session time: %s',$total_time));
         \OWA\Core\CoreAPI::debug("Goodbye from OWA");
-        \OWA\Core\CoreAPI::profileDisplay();
     }
         
     function setSetting($module, $name, $value) {

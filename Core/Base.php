@@ -75,8 +75,6 @@ class Base {
      * Base Constructor
      */
     function __construct() {
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
-
         // Nothing is fetched here on purpose. Unsetting these declared
         // properties is what routes the first read of each through __get below,
         // which is where they are actually built. See that method for why.
@@ -194,10 +192,6 @@ class Base {
         $msg = $this->getMsg($code, $substitutions);
 
         return implode(' ', array_values($msg));
-    }
-
-    function __destruct() {
-        \OWA\Core\CoreAPI::profile($this, __FUNCTION__, __LINE__);
     }
 
 }

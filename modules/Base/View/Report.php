@@ -142,14 +142,6 @@ class Report extends \OWA\Core\View {
         $this->setJs('owa.reporting', 'base/dist/owa.reporting-combined-min.js');
         
         // css libs to be loaded
-        
-        /*
-		$this->setCss('base/css/smoothness-1.8.12/jquery-ui.css');
-        $this->setCss('base/css/jquery.ui.selectmenu.css');
-        $this->setCss('base/css/chosen/chosen.css');
-        $this->setCss("base/css/owa.admin.css");
-        $this->setCss("base/css/owa.report.css");
-		*/
 		$this->setCss("base/css/font-awesome/css/all.min.css");
         $this->setCss("base/css/owa.reporting-css-combined.css");
         $additionalCss = $this->c->get('base','additionalCss');

@@ -1,7 +1,7 @@
-// OWA is defined by owa.js; this module augments it (OWA.areaChart = ...). jQuery was
+// OWA is defined by owa.format.js; this module augments it (OWA.areaChart = ...). jQuery was
 // supplied by webpack.ProvidePlugin before the ESM renovation -- now imported explicitly.
 import * as jQuery from 'jquery';
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 import { formatRange, describeChange } from './owa.periodpicker.js';
 
 OWA.areaChart = function( options ) {

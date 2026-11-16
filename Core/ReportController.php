@@ -34,11 +34,6 @@ namespace OWA\Core;
 
 class ReportController extends \OWA\Core\AdminController {
 	
-	/**
-	 * An array of request param keys that
-	 * should be passed downstream as state
-	 */
-	var $state_keys = [];
 
     /**
      * Whether this screen draws data from the reporting cube.
@@ -383,12 +378,7 @@ class ReportController extends \OWA\Core\AdminController {
          */
         $metricSets = \OWA\Core\MetricSets::forProperty( $propertyId );
 
-        $tabs = \OWA\Core\MetricSets::toLegacyTabs( $metricSets );
-
         $this->set('metricSets', $metricSets);
-
-        $this->set('tabs', $tabs);
-        $this->set('tabs_json', json_encode($tabs));
 
         $this->set('top_level_report_nav', self::reportNavigation( $propertyId ));
     }
@@ -436,9 +426,6 @@ class ReportController extends \OWA\Core\AdminController {
     }
 
     function post() {
-		
-		// pass the state_keys var to views
-        $this->set( 'state_keys', $this->state_keys );
 
         /*
          * Reporting not ready: the report's own subview is replaced, so none of
@@ -454,15 +441,6 @@ class ReportController extends \OWA\Core\AdminController {
         }
     }
     
-    /**
-	 * Used to designate a request param as state for
-     * use by downstream views and templates
-     */
-    function addState( $param_name ) {
-	    
-	    $this->state_keys[] = $param_name;
-    }
-
     function setTitle($title, $suffix = '') {
 
         $this->set('title', $title);

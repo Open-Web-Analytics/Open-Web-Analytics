@@ -741,28 +741,6 @@ final class PartitionOperationsTest extends TestCase
         $this->assertLessThan($all, $scanned, 'the bound should reduce the partitions scanned');
     }
 
-    /** A constrained entity load still finds a row the constraint excludes. */
-    public function testConstrainedLoadFallsBackWhenTheHintIsWrong()
-    {
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $t = $this->makeTable();
-
-        $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(20250101, 20251231, 'monthly'));
-        $db->query(sprintf('INSERT INTO %s (id, yyyymmdd) VALUES (42, 20250615)', $t));
-
-        // Deliberately wrong window -- as a skewed browser clock would give.
-        $wrong = array('yyyymmdd' => array(
-            'value' => array('start' => '20251101', 'end' => '20251130'), 'operator' => 'between'
-        ));
-
-        $bounded = $db->getOneRowFromTable($t, 42, $wrong);
-        $this->assertEmpty($bounded, 'the wrong window must genuinely exclude the row');
-
-        // What getByColumn() does on a miss: repeat without the constraint.
-        $unbounded = $db->getOneRowFromTable($t, 42, array());
-        $this->assertSame(42, (int) $unbounded['id'], 'the row must still be reachable');
-    }
-
     /**
      * The safety property behind every bounded lookup on the write path: a
      * constraint that excludes the row must not make the row look absent.

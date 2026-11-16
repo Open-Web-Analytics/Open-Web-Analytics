@@ -196,12 +196,12 @@ final class SiteIdentityTest extends TestCase
     /** How many rows in owa_site carry this domain. */
     private function countSitesForDomain( string $domain ): int
     {
-        $summary = \OWA\Core\CoreAPI::summarize( array(
-            'entity'      => 'base.site',
-            'columns'     => array( 'id' => 'count' ),
-            'constraints' => array( 'domain' => $domain ),
-        ) );
+        $db = \OWA\Core\CoreAPI::dbSingleton();
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
+        $db->selectColumn( 'COUNT(id)', 'id_count' );
+        $db->where( 'domain', $domain );
+        $row = $db->getOneRow();
 
-        return (int) ( $summary['id_count'] ?? 0 );
+        return (int) ( $row['id_count'] ?? 0 );
     }
 }

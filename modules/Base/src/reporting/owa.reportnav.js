@@ -16,7 +16,7 @@
  * the column, and the choice is remembered (nav_shell.php).
  */
 
-import { OWA } from './owa.js';
+import { OWA } from './owa.format.js';
 
 export const NARROW = '(max-width: 900px)';
 export const OPEN = 'owa_reportNavOpen';
