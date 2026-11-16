@@ -113,9 +113,7 @@ class InstallCli extends \OWA\Core\Controller\Cli {
 
                 if ( ! $site_id ) {
 
-                    $this->e->notice('The install did not complete, and nothing was saved. Check the error log, then run this command again.');
-
-                    return false;
+                    return $this->fail('The install did not complete, and nothing was saved. Check the error log, then run this command again.');
                 }
 
                 $this->e->notice('Install Completed.');
@@ -128,13 +126,12 @@ class InstallCli extends \OWA\Core\Controller\Cli {
 
             // schema was not installed successfully
             } else {
-                $this->e->notice('Aborting embedded install due to errors installing schema. Try dropping all OWA tables and try again.');
-                return false;
+                return $this->fail('Aborting embedded install due to errors installing schema. Try dropping all OWA tables and try again.');
             }
 
 
         } else {
-            $this->e->notice("Could not locate config file. Aborting installation.");
+            return $this->fail("Could not locate config file. Aborting installation.");
         }
     }
 }

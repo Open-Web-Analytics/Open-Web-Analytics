@@ -96,7 +96,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
         if ( $edition && ! in_array( $edition, \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS, true ) ) {
 
-            return $this->refuse( sprintf(
+            return $this->usageError( sprintf(
                 '"%s" is not an edition this module reads. Choose one of: %s.',
                 $edition,
                 implode( ', ', \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS )

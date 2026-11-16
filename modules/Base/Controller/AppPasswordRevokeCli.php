@@ -56,12 +56,12 @@ class AppPasswordRevokeCli extends AppPasswordsCli {
 
         if ( $lookup_id === '' ) {
 
-            return $this->refuse( 'id=<id> or --all is required. cmd=app-password-list shows the ids.' );
+            return $this->usageError( 'id=<id> or --all is required. cmd=app-password-list shows the ids.' );
         }
 
         if ( ! \OWA\Module\Base\Classes\AppPasswords::revoke( $lookup_id, $user_id ) ) {
 
-            return $this->refuse( sprintf( '%s has no application password %s.', $user_id, $lookup_id ) );
+            return $this->fail( sprintf( '%s has no application password %s.', $user_id, $lookup_id ) );
         }
 
         \OWA\Core\CoreAPI::notice( sprintf( 'Application password %s of %s revoked.', $lookup_id, $user_id ) );

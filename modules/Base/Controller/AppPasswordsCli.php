@@ -40,7 +40,7 @@ abstract class AppPasswordsCli extends \OWA\Core\Controller\Cli {
 
         if ( $user_id === '' ) {
 
-            $this->refuse( 'user=<user id> is required.' );
+            $this->usageError( 'user=<user id> is required.' );
 
             return '';
         }
@@ -50,7 +50,7 @@ abstract class AppPasswordsCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $u->wasPersisted() ) {
 
-            $this->refuse( sprintf( 'There is no user %s.', $user_id ) );
+            $this->fail( sprintf( 'There is no user %s.', $user_id ) );
 
             return '';
         }

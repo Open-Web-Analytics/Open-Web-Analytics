@@ -46,12 +46,12 @@ class AppPasswordCreateCli extends AppPasswordsCli {
 
         if ( $name === '' ) {
 
-            return $this->refuse( 'name=<name> is required.' );
+            return $this->usageError( 'name=<name> is required.' );
         }
 
         if ( ! isset( \OWA\Module\Base\Classes\AppPasswords::scopes()[ $scope ] ) ) {
 
-            return $this->refuse( 'scope= takes read or full.' );
+            return $this->usageError( 'scope= takes read or full.' );
         }
 
         $made = \OWA\Module\Base\Classes\AppPasswords::create( $user_id, $name, $scope );

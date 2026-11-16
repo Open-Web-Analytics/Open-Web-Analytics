@@ -35,7 +35,7 @@ abstract class CustomDimensionsCli extends \OWA\Core\Controller\Cli {
 
         if ( ! ctype_digit( $id ) || $id === '0' ) {
 
-            $this->refuse( 'property=<id> is required. cmd=custom-dimension-list with no '
+            $this->usageError( 'property=<id> is required. cmd=custom-dimension-list with no '
                          . 'property lists every Property that has one.' );
 
             return '';

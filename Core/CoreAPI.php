@@ -937,7 +937,8 @@ class CoreAPI {
 
         $site_id = (string) $site_id;
 
-        if ( $site_id === '' ) {
+        // An id no site could have is not looked up, or remembered.
+        if ( ! self::isSiteIdShaped( $site_id ) ) {
 
             return false;
         }
@@ -974,6 +975,38 @@ class CoreAPI {
         }
 
         return self::$registered_sites[ $site_id ];
+    }
+
+    /** The longest site id: the width of the site_id column. */
+    const SITE_ID_MAX_LENGTH = 255;
+
+    /**
+     * Whether a string could be a site id: 1 to SITE_ID_MAX_LENGTH bytes, with
+     * no whitespace or control characters.
+     *
+     * @param string $site_id
+     * @return bool
+     */
+    public static function isSiteIdShaped( $site_id ) {
+
+        return is_string( $site_id )
+            && strlen( $site_id ) <= self::SITE_ID_MAX_LENGTH
+            && preg_match( '/^[^\x00-\x20\x7F]+$/', $site_id ) === 1;
+    }
+
+    /**
+     * A site id as written to a log line: at most 64 characters, with anything
+     * other than printable ASCII shown as "?".
+     *
+     * @param mixed $site_id
+     * @return string
+     */
+    public static function siteIdForLog( $site_id ) {
+
+        $id  = is_scalar( $site_id ) ? (string) $site_id : gettype( $site_id );
+        $out = preg_replace( '/[^\x21-\x7E]/', '?', substr( $id, 0, 64 ) );
+
+        return strlen( $id ) > 64 ? $out . '...' : $out;
     }
 
     /** Whether the database is reachable and runs a query. */
@@ -2301,10 +2334,12 @@ class CoreAPI {
 
         if ( $registered === false ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf(
+            // Debug, not notice: any anonymous request can name any id, and
+            // each would add a line to the error log.
+            \OWA\Core\CoreAPI::debug( sprintf(
                 'Not logging event: site id "%s" is not registered on this installation. '
               . 'Check the site id in your tracking code against cmd=add-site or the Sites admin page.',
-                (string) $site_id
+                \OWA\Core\CoreAPI::siteIdForLog( $site_id )
             ) );
 
             return false;

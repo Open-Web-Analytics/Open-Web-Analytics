@@ -107,6 +107,25 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      */
     const BUILD_LEASE = 1800;
 
+    /**
+     * The scheduler's and the job queue's lease: two of the five-minute
+     * cadence, refreshed after each partition. A run outliving it is not
+     * duplicated, because a second run skips a cube whose BUILD_LEASE is held.
+     */
+    const JOB_LEASE = 600;
+
+    /** See \OWA\Core\Controller\Cli::getJobLease(). */
+    public function getJobLease() {
+
+        return self::JOB_LEASE;
+    }
+
+    /** See \OWA\Module\Base\Classes\JobQueue::policyFor(). */
+    public static function jobQueuePolicy() {
+
+        return array( 'lease_seconds' => self::JOB_LEASE );
+    }
+
     function __construct( $params ) {
 
         // Rewrites a partition of a fact table, as the partition commands do.
@@ -130,7 +149,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $range ) {
 
-            return $this->refuse(
+            return $this->usageError(
                 'Could not read that range. Use from=yyyymmdd for that date through to now, '
               . 'days=N for the same relatively, or from=yyyymmdd to=yyyymmdd for a closed window.' );
         }
@@ -248,7 +267,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
             if ( ! ctype_digit( $only ) ) {
 
-                $this->refuse( 'property= takes a Property id.' );
+                $this->usageError( 'property= takes a Property id.' );
 
                 return null;
             }
@@ -660,6 +679,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
              * the lease only has to outlive ONE partition.
              */
             $lock->refresh( self::BUILD_LEASE );
+            $this->heartbeat();
         }
 
         return $outcome;

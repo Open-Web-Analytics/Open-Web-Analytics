@@ -57,7 +57,7 @@ class CustomDimensionDeregisterCli extends CustomDimensionsCli {
 
         if ( $key === '' ) {
 
-            return $this->refuse( 'key=<name> is required.' );
+            return $this->usageError( 'key=<name> is required.' );
         }
 
         $result = \OWA\Module\Base\Classes\Cube\Dimensions::deregister( $property_id, $key );

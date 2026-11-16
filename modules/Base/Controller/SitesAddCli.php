@@ -60,6 +60,35 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
 	
         $this->setView('base.cli');
     }
+
+    /**
+     * As a Controller\Cli does: invalid arguments exit 2, a refused capability
+     * or a Profile not created exits 1.
+     *
+     * @return mixed
+     */
+    function doAction() {
+
+        $data = parent::doAction();
+        $view = is_array( $data ) && isset( $data['view'] ) ? $data['view'] : null;
+        $code = 0;
+
+        if ( ! empty( $this->v ) && $this->v->hasErrors === true ) {
+
+            $code = \OWA\Core\Controller\Cli::EXIT_USAGE;
+
+        } elseif ( $view === 'base.error' || $view === 'base.genericCli' || ! $this->get( 'site' ) ) {
+
+            $code = \OWA\Core\Controller\Cli::EXIT_FAILED;
+        }
+
+        if ( $code && ! \OWA\Core\Controller\Cli::$exit_code ) {
+
+            \OWA\Core\Controller\Cli::$exit_code = $code;
+        }
+
+        return $data;
+    }
     
     function success() {
 	   

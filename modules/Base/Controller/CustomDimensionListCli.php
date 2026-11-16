@@ -39,7 +39,7 @@ class CustomDimensionListCli extends CustomDimensionsCli {
 
             if ( ! ctype_digit( $only ) ) {
 
-                return $this->refuse( 'property=<id> takes a Property id.' );
+                return $this->usageError( 'property=<id> takes a Property id.' );
             }
 
             $cubes = isset( $cubes[ $only ] )

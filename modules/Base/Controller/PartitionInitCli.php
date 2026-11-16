@@ -74,20 +74,16 @@ class PartitionInitCli extends PartitionsCli {
 
         if ( $granularity !== null && ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf(
+            return $this->usageError( sprintf(
                 'Unknown granularity "%s". Use one of: daily, quarter-month, half-month, monthly.', $granularity
             ) );
-
-            return;
         }
 
         $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
 
         if ( ! $tables ) {
 
-            \OWA\Core\CoreAPI::notice( 'No fact tables found.' );
-
-            return;
+            return $this->refuse( 'No fact tables found.' );
         }
 
         $budget  = $this->factTableBudget();
@@ -161,7 +157,7 @@ class PartitionInitCli extends PartitionsCli {
 
             if ( ! $ranges ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf( 'Could not work out a partition range for %s; skipping.', $table ) );
+                $this->fail( sprintf( 'Could not work out a partition range for %s; skipping.', $table ) );
 
                 continue;
             }
@@ -190,7 +186,7 @@ class PartitionInitCli extends PartitionsCli {
 
             } else {
 
-                \OWA\Core\CoreAPI::notice( sprintf(
+                $this->fail( sprintf(
                     '%s: FAILED to partition. The primary key must contain yyyymmdd; see the database error above.', $table
                 ) );
             }
