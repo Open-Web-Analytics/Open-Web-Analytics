@@ -15,25 +15,39 @@
         Require all granted
     </FilesMatch>
 
-    # Path-based allows, matched on REQUEST_URI. Authorization runs in the auth phase,
-    # BEFORE mod_rewrite's fixup-phase rules -- so the `api/` PREFIX must be allowed
-    # here (not just the rewritten api/index.php target) or the REST pretty-URLs 403
-    # before the rewrite ever fires. Also: the public/ built-asset tree, where EVERY
-    # browser-fetched asset now lives -- built JS/CSS (including the whole tracker family:
+    # The install root's api/ and public/ directories. Authorization runs in the auth
+    # phase, BEFORE mod_rewrite's fixup-phase rules -- so the `api/` PREFIX must be
+    # allowed here (not just the rewritten api/index.php target) or the REST pretty-URLs
+    # 403 before the rewrite ever fires. public/ is the built-asset tree, where EVERY
+    # browser-fetched asset lives -- built JS/CSS (including the whole tracker family:
     # owa.tracker/vendors/heatmap/player), AND the server-side makeImageLink images (via
-    # assets_url). The only two module-tree paths still allowed are the two legacy tracker
-    # ENTRY points that in-the-wild embeds hardcode (modules/base/dist/owa.tracker.js and
-    # modules/base/js/owa.tracker-combined-min.js); both are 301'd to public/ below, but
-    # must pass authz here first to reach the redirect. Their async chunks are NOT allowed
-    # here anymore -- the moved tracker pins its publicPath to public/base/dist/, so it
-    # never requests owa.vendors/heatmap/player from the module tree. Nothing else under
-    # modules/ is served.
+    # assets_url).
+    #
+    # Matched on the FILE the request maps to, not on REQUEST_URI: a URI test matches
+    # api/ or public/ anywhere in the path, including after a script name
+    # (<any>.php/public/x, served as PATH_INFO) and in any nested directory of that name
+    # (vendor/.../api/). The directory before api/ or public/ must be the install root,
+    # the one holding owa_env.php. REQUEST_FILENAME stops at the last path segment that
+    # exists, so a REST URL maps to api/ itself. Both the first and the last api/ or
+    # public/ segment are tried, so an install root whose own path has one still matches.
     #
     # public/ is ALSO granted by public/.htaccess, which the build writes
     # (webpack.public-htaccess.js), without an expression. A server that reads `Require`
     # but not `<If>` -- reported on shared hosting running LiteSpeed -- otherwise denies
     # every stylesheet and script: the pages load, unstyled.
-    <If "%{REQUEST_URI} =~ m#/(api/|public/|modules/base/dist/owa\.tracker\.js$|modules/base/js/owa\.tracker-combined-min\.js$)#">
+    <If "(%{REQUEST_FILENAME} =~ m#^(.*?)/(?:api|public)(?:/.*)?$# && -f '$1/owa_env.php') || (%{REQUEST_FILENAME} =~ m#^(.*)/(?:api|public)(?:/.*)?$# && -f '$1/owa_env.php')">
+        Require all granted
+    </If>
+
+    # The two legacy tracker ENTRY points that in-the-wild embeds hardcode
+    # (modules/base/dist/owa.tracker.js and modules/base/js/owa.tracker-combined-min.js);
+    # both are 301'd to public/ below, but must pass authz here first to reach the
+    # redirect. Their async chunks are not allowed -- the moved tracker pins its
+    # publicPath to public/base/dist/, so it never requests owa.vendors/heatmap/player
+    # from the module tree. Nothing else under modules/ is served. Neither path names a
+    # file in v2, so the request maps to a directory; one that maps to another existing
+    # file is that file with the legacy path as PATH_INFO, and is not allowed.
+    <If "%{REQUEST_URI} =~ m#/modules/base/(?:dist/owa\.tracker|js/owa\.tracker-combined-min)\.js$# && (! -f %{REQUEST_FILENAME} || %{REQUEST_FILENAME} =~ m#/modules/base/(?:dist/owa\.tracker|js/owa\.tracker-combined-min)\.js$#i)">
         Require all granted
     </If>
 
