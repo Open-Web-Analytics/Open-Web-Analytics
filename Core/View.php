@@ -216,11 +216,6 @@ class View extends \OWA\Core\Base {
             $this->data['validation_errors'] ?? []
         );
 
-        // pagination
-        if (array_key_exists('pagination', $this->data)) {
-            $this->body->set('pagination', $this->data['pagination']);
-        }
-
         //$this->_setLinkState();
 
         // assemble subview
@@ -231,11 +226,6 @@ class View extends \OWA\Core\Base {
 
             // Set validation errors
             $this->subview->body->set('validation_errors', $this->get('validation_errors'));
-
-            // pagination
-            if (array_key_exists('pagination', $this->data)) {
-                $this->subview->body->set('pagination', $this->data['pagination']);
-            }
 
             if (array_key_exists('params', $this->data)) {
                 $this->subview->body->set('params', $this->data['params']);

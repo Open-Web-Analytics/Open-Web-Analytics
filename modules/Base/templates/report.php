@@ -2,9 +2,6 @@
 <script>
 OWA.items['<?php $view->out( $view->dom_id );?>'] = new OWA.report();
 OWA.items['<?php $view->out( $view->dom_id );?>'].dom_id = "<?php $view->out( $view->dom_id );?>";
-OWA.items['<?php $view->out( $view->dom_id );?>'].page_num = "<?php $view->out( $view->getValue( 'page_num', 'pagination' ),false );?>1";
-OWA.items['<?php $view->out( $view->dom_id );?>'].max_page_num = "<?php $view->out( $view->getValue( 'max_page_num', 'pagination' ), false );?>";
-OWA.items['<?php $view->out( $view->dom_id );?>'].max_page_num = "<?php $view->out( $view->getValue( 'more_pages', 'pagination' ), false );?>";
 OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view->makeJson($view->params);?>;
 
 </script>

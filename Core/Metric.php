@@ -105,8 +105,6 @@ class Metric extends \OWA\Core\Base {
      */
     var $db;
     
-    var $pagination;
-    
     var $page;
     
     var $limit;
@@ -137,8 +135,6 @@ class Metric extends \OWA\Core\Base {
             
         //$this->db = owa_coreAPI::dbSingleton();
 
-        //$this->pagination = new owa_pagination;
-        
         return parent::__construct();
     }
     

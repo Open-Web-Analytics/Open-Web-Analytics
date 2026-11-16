@@ -129,7 +129,6 @@ class ResultSetManager extends \OWA\Core\Base {
     var $request_errors = array();
     var $formatters = array();
     var $segment;
-    var $pagination;
     var $resolution = 'day';
     var $timePeriod;
     var $all_columns = [];
@@ -1812,10 +1811,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         if (!empty($value)) {
 
             $this->page = $value;
-
-            if (!empty($this->pagination)) {
-                $this->pagination->setPage($value);
-            }
         }
     }
 
