@@ -130,6 +130,8 @@ class InstallManager extends \OWA\Core\Base {
      */
     function createDefaultSite($domain, $name = '', $description = '', $site_family = '', $site_id = '') {
 
+        $domain = \OWA\Module\Base\Classes\SiteManager::domainOnly($domain);
+
         if (!$name) {
             $name = $domain;
         }

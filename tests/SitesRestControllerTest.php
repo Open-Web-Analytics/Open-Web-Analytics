@@ -95,7 +95,8 @@ final class SitesRestControllerTest extends RestControllerTestCase
     public function testPostSitesCreatesSite(): void
     {
         $this->authenticateAs('admin');
-        $domain = 'https://owatest-post-' . $this->tok . '.example.com';
+        // Sent with a scheme, stored and echoed without one.
+        $domain = 'owatest-post-' . $this->tok . '.example.com';
 
         // Register cleanup by domain up front (the site is created by the
         // controller, not makeSite()) so a mid-request throw can't orphan it.
@@ -104,7 +105,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
         $resp = $this->callEndpoint(
             \OWA\Module\Base\Controller\AddSiteRest::class,
             'addSiteRestController.php',
-            ['protocol' => '', 'domain' => $domain, 'name' => 'OWA Test POST ' . $this->tok]
+            ['protocol' => '', 'domain' => 'https://' . $domain . '/', 'name' => 'OWA Test POST ' . $this->tok]
         );
 
         $this->assertSame(201, $resp['status'], 'A valid POST /sites should return 201.');

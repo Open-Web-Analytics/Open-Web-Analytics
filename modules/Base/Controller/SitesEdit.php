@@ -66,7 +66,7 @@ class SitesEdit extends \OWA\Core\AdminController {
         }
         $site->load( $site->generateId( $this->getParam('siteId') ) );
         $site->set('name', $this->getParam( 'name' ) );
-        $site->set('domain', $this->getParam( 'domain' ) );
+        $site->set('domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) ) );
 
         /*
          * An emptied description means empty. set() drops '' on a string column

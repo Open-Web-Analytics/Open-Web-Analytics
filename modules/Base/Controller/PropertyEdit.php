@@ -50,7 +50,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
         if ( $this->propertyTypeFor( $this->getParam( 'propertyId' ) )
              === \OWA\Module\Base\Entity\Property::TYPE_WEB ) {
 
-            $this->addValidation( 'domain', trim( (string) $this->getParam( 'domain' ) ), 'required',
+            $this->addValidation( 'domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) ), 'required',
                 array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ) );
         }
 
@@ -85,7 +85,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
 
         $name        = trim( (string) $this->getParam( 'name' ) );
-        $domain      = trim( (string) $this->getParam( 'domain' ) );
+        $domain      = \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) );
         $description = (string) $this->getParam( 'description' );
 
         $propertyId = $this->getParam( 'propertyId' );

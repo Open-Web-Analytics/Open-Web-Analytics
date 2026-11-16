@@ -392,6 +392,16 @@ Update087 adds `owa_user.session_epoch` for this; its down() removes it.
 Session cookies issued before the upgrade sign nobody in: every user signs in
 again once. Application passwords and overlay tokens are unchanged.
 
+### Domains are stored without a scheme
+
+A Profile's or Property's domain is a host, with a port when the site is served
+on one: `www.example.com`, `localhost:8080`. 1.x stored the scheme the
+installer's select added, `https://www.example.com`. Update088 removes a
+leading `http://` or `https://` and trailing slashes from `owa_site.domain` and
+`owa_property.domain`; its down() puts each value back. A domain typed or sent
+with a scheme (the settings screens, `POST /v1/sites`, `cmd=add-site`, the
+installer) is stored without it.
+
 ### Server roles: `OWA_SERVER_ROLE`
 
 A server's role says which requests it serves. With nothing set it is `full`,

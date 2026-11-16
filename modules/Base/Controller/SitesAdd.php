@@ -153,7 +153,7 @@ class SitesAdd extends \OWA\Core\AdminController {
 
         if ( $type === \OWA\Module\Base\Entity\Site::STREAM_WEB ) {
 
-            $this->addValidation( 'domain', trim( (string) $this->getParam( 'domain' ) ), 'required',
+            $this->addValidation( 'domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) ), 'required',
                 array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ) );
 
             return;

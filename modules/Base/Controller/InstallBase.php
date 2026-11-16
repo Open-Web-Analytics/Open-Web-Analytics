@@ -45,7 +45,7 @@ class InstallBase extends \OWA\Core\Controller\Install {
 	    
 	    // Do not add any validations here that require DB lookups
 	    
-        $this->addValidation('domain', $this->getParam('domain'), 'required', ['errorMsg' => $this->getMsg(3309)]);
+        $this->addValidation('domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam('domain') ), 'required', ['errorMsg' => $this->getMsg(3309)]);
         $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
 	    $this->addValidation('user_id', $this->getParam('user_id'), 'userName', array('stopOnError'	=> true));
         $this->addValidation('timezone', $this->getParam('timezone'), 'required', ['errorMsg' => $this->getMsg(3310)]);
@@ -63,35 +63,10 @@ class InstallBase extends \OWA\Core\Controller\Install {
          * The form used to ask for the scheme in a select of its own, so a
          * domain that also carried one produced "https://https://example.com"
          * -- hence a validation that rejected anything starting with "http".
-         * The select is gone and the scheme is stripped instead, which is what
-         * every reader of this column does anyway; refusing the most natural
-         * thing to paste bought nothing.
+         * The select is gone and the scheme is stripped instead
+         * (SiteManager::domainOnly(), in InstallManager::createDefaultSite());
+         * refusing the most natural thing to paste bought nothing.
          */
-    }
-
-    /**
-     * A domain, from whatever was typed.
-     *
-     * Stores what the column is for. Site::getDomainName() strips a scheme on
-     * the way out for the rows that still have one, so writing a bare domain
-     * here means the two agree rather than one undoing the other -- and it
-     * matches what the CLI installer has always stored.
-     *
-     * @param string $domain
-     * @return string
-     */
-    public static function domainOnly( $domain ) {
-
-        $domain = trim( (string) $domain );
-
-        $separator = strpos( $domain, '://' );
-
-        if ( $separator !== false ) {
-
-            $domain = substr( $domain, $separator + 3 );
-        }
-
-        return rtrim( trim( $domain ), '/' );
     }
 
     function action() {
@@ -116,7 +91,7 @@ class InstallBase extends \OWA\Core\Controller\Install {
 
                 $this->createAdminUser($this->getParam('user_id'), $this->getParam('email_address'), $this->getParam('password') );
 
-                $site_id = $this->createDefaultSite( self::domainOnly( $this->getParam('domain') ) );
+                $site_id = $this->createDefaultSite( $this->getParam('domain') );
 
                 /*
                  * Persisted here, with the rest of the install, because the choice

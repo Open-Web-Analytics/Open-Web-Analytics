@@ -58,6 +58,8 @@ class SiteManager extends \OWA\Core\Base {
      */
     function createNewSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
 
+        $domain = self::domainOnly( $domain );
+
         $existing = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
         $existing->load( $domain, 'domain' );
 
@@ -259,6 +261,8 @@ class SiteManager extends \OWA\Core\Base {
      */
     function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '', $property_id = '', $stream_type = '', $app_id = '' ) {
 
+        $domain = self::domainOnly( $domain );
+
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
 
         if ( $site_id ) {
@@ -388,30 +392,41 @@ class SiteManager extends \OWA\Core\Base {
     }
 
     /**
+     * A Profile or Property domain as it is stored: host[:port], with no
+     * scheme and no trailing slash.
+     *
+     * Every save of a domain goes through this, and Update088 applies it to
+     * the rows saved before it. A leading http:// or https:// (any case) and
+     * trailing slashes are removed, and surrounding space; nothing else, so a
+     * port or a path stays. Repeated until nothing changes, so a value it
+     * returns comes back unchanged.
+     *
+     * @param mixed $domain
+     * @return string
+     */
+    public static function domainOnly( $domain ) {
+
+        $domain = (string) $domain;
+
+        do {
+
+            $before = $domain;
+            $domain = rtrim( trim( (string) preg_replace( '#^https?://#i', '', trim( $domain ) ) ), '/' );
+
+        } while ( $domain !== $before );
+
+        return $domain;
+    }
+
+    /**
      * A domain reduced to the host, so that values differing only by scheme,
      * case or a trailing slash group together.
      */
     public static function normaliseDomain( $domain ) {
 
-        $domain = trim( (string) $domain );
-
-        if ( $domain === '' ) {
-
-            return '';
-        }
-
-        $separator = strpos( $domain, '://' );
-
-        if ( $separator !== false ) {
-
-            $domain = substr( $domain, $separator + 3 );
-        }
-
-        $domain = rtrim( trim( $domain ), '/' );
-
         // Lower-cased because hosts are case-insensitive, and two rows differing
         // only in case are one website however they were typed.
-        return strtolower( $domain );
+        return strtolower( self::domainOnly( $domain ) );
     }
 }
 
