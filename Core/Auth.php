@@ -428,8 +428,6 @@ class Auth extends \OWA\Core\Base {
 		    	//get signatureparam  of request
 		        $signature = \OWA\Core\CoreAPI::getRequestParam('signature') ?: \OWA\Core\CoreAPI::getServerParam( 'HTTP_X_SIGNATURE' );
 		        
-		        \OWA\Core\CoreAPI::debug('Signature: ' . $signature );
-		         
 		        // check if signature is exists and is valid
 		        if ( ! $signature || ! $this->isSignatureValid( $signature, $key, $url ) ) {
 			        
@@ -746,10 +744,12 @@ class Auth extends \OWA\Core\Base {
 	    //$signature = base64_decode( $signature );
 	    
 	    $computed_signature = $this->generateSignature( $requestUrl, $apiKey );
-	    \OWA\Core\CoreAPI::debug( 'computed signature: ' . $computed_signature );
-	    \OWA\Core\CoreAPI::debug( 'request url: ' . $requestUrl );
-	    
-	    if ( $signature === $computed_signature ) {
+	    // A signature is a credential for the rest of the day: neither it nor
+	    // the URL's key is logged.
+	    \OWA\Core\CoreAPI::debug( 'request url: ' . \OWA\Core\Lib::redactUrlForLog( $requestUrl ) );
+
+	    // Compared in constant time.
+	    if ( is_string( $signature ) && hash_equals( $computed_signature, $signature ) ) {
 		    
 		    \OWA\Core\CoreAPI::debug('API request signature is valid.' );
 		    return true;

@@ -100,4 +100,31 @@ final class RequestSignatureTest extends TestCase
             (bool) $this->auth->isSignatureValid('not-the-signature', self::KEY, $this->signed)
         );
     }
+
+    /** A signature that is not a string (signature[]=x) is refused, not an error. */
+    public function testANonStringSignatureIsRefused(): void
+    {
+        $this->assertFalse((bool) $this->auth->isSignatureValid(['x'], self::KEY, $this->signed));
+        $this->assertFalse((bool) $this->auth->isSignatureValid(null, self::KEY, $this->signed));
+    }
+
+    /**
+     * The comparison takes the same time however much of the signature is
+     * right (hash_equals()), and neither the signature sent nor the one
+     * computed is logged. Read from the source: neither is observable in a
+     * result.
+     */
+    public function testTheSignatureIsComparedInConstantTimeAndNotLogged(): void
+    {
+        $method = new ReflectionMethod(\OWA\Core\Auth::class, 'isSignatureValid');
+        $lines  = file((string) $method->getFileName());
+        $body   = implode('', array_slice($lines, $method->getStartLine() - 1, $method->getEndLine() - $method->getStartLine() + 1));
+
+        $this->assertStringContainsString('hash_equals( $computed_signature, $signature )', $body);
+        $this->assertStringNotContainsString('$signature === ', $body);
+        $this->assertDoesNotMatchRegularExpression('/debug\([^;]*\$(computed_)?signature\b/', $body);
+
+        $source = (string) file_get_contents((string) $method->getFileName());
+        $this->assertDoesNotMatchRegularExpression('/debug\(\s*\'Signature: \'/', $source);
+    }
 }
