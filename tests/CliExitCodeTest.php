@@ -227,6 +227,52 @@ PHP;
             $result['message']);
     }
 
+    /**
+     * cmd=install refused for its password -- none, or too short -- is a usage
+     * error, and exits 2 before installing anything. In its own process, as
+     * InstallCli defines OWA_INSTALLING; its action() is replaced, so nothing
+     * could be installed even if validation let it through.
+     *
+     * @dataProvider refusedInstalls
+     */
+    public function testAnInstallRefusedForItsPasswordExits2(array $params, string $says): void
+    {
+        $code = <<<'PHP'
+$_SERVER['argc'] = 1;
+require 'owa.php';
+new owa(array('request_type' => 'cli'));
+\OWA\Core\CoreAPI::getCurrentUser()->setRole('admin');
+\OWA\Core\CoreAPI::getCurrentUser()->setAuthStatus(true);
+$cli = new class(json_decode($argv[1], true)) extends \OWA\Module\Base\Controller\InstallCli {
+    function action() { echo "ACTION RAN\n"; }
+};
+ob_start();
+$data = $cli->doAction();
+ob_end_clean();
+echo 'RESULT ', json_encode(array('exit' => \OWA\Core\Controller\Cli::$exit_code, 'errors' => $data['validation_errors'] ?? null)), "\n";
+PHP;
+
+        $out = (string) shell_exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && '
+            . escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($code) . ' ' . escapeshellarg(json_encode($params)) . ' 2>&1');
+
+        $this->assertStringNotContainsString('ACTION RAN', $out);
+        $this->assertSame(1, preg_match('/^RESULT (.*)$/m', $out, $m), $out);
+
+        $result = json_decode($m[1], true);
+
+        $this->assertSame(Cli::EXIT_USAGE, $result['exit']);
+        $this->assertStringContainsString($says, json_encode($result['errors']));
+    }
+
+    /** @return iterable<string, array{array, string}> */
+    public static function refusedInstalls(): iterable
+    {
+        $base = array('user_id' => 'owa-test-admin', 'email_address' => 'owa-test-admin@example.test', 'domain' => 'https://example.test');
+
+        yield 'no password'    => array($base, 'password for the admin account is required');
+        yield 'short password' => array($base + array('password' => 'short'), 'at least');
+    }
+
     /** A capability refused before action() is a failure. */
     public function testARefusedCapabilityExits1(): void
     {
