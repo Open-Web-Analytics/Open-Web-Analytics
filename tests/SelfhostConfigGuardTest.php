@@ -81,10 +81,18 @@ final class SelfhostConfigGuardTest extends TestCase
     /** @return array{0:int,1:string} status, body */
     private function get(string $path): array
     {
-        $body = (string) @file_get_contents(self::$base . $path, false,
+        $stream = @fopen(self::$base . $path, 'r', false,
             stream_context_create(['http' => ['ignore_errors' => true, 'timeout' => 5]]));
 
-        preg_match('#^HTTP/\S+ (\d{3})#', (string) ($http_response_header[0] ?? ''), $m);
+        if (!$stream) {
+            return [0, ''];
+        }
+
+        $body    = (string) stream_get_contents($stream);
+        $headers = (array) (stream_get_meta_data($stream)['wrapper_data'] ?? []);
+        fclose($stream);
+
+        preg_match('#^HTTP/\S+ (\d{3})#', (string) ($headers[0] ?? ''), $m);
 
         return [(int) ($m[1] ?? 0), $body];
     }

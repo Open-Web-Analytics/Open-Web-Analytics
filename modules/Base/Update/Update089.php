@@ -99,8 +99,8 @@ class Update089 extends \OWA\Core\Update {
                 'after'      => $position > 0 ? $columns[ $position - 1 ] : '',
             ) );
 
-            if ( $db->query( sprintf( "CREATE TABLE %s ( id BIGINT NOT NULL, %s VARCHAR(255) NULL, PRIMARY KEY (id) ) COMMENT = '%s'",
-                    $backup, self::COLUMN, $db->prepare( $comment ) ) ) === false ) {
+            if ( $db->query( sprintf( "CREATE TABLE %s ( id BIGINT NOT NULL, %s VARCHAR(255) NULL, PRIMARY KEY (id) ) %s COMMENT = '%s'",
+                    $backup, self::COLUMN, $db->tableOptions(), $db->prepare( $comment ) ) ) === false ) {
 
                 $this->e->notice( sprintf( 'Creating %s failed.', $backup ) );
 
