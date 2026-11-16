@@ -104,10 +104,10 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         return ($data['view_method'] ?? '') === 'redirect' && ($data['do'] ?? '') === 'base.loginForm';
     }
 
-    public function testAnApiKeyIsNotReadOnAScreen(): void
+    /** A legacy API key on a screen is refused; it is accepted nowhere, the REST API included. */
+    public function testALegacyApiKeyIsRefusedOnAScreenAndByTheRestApi(): void
     {
-        $admin = $this->makeUser('admin', 'key');
-        \OWA\Core\CoreAPI::setRequestParam('apiKey', $admin['api_key']);
+        \OWA\Core\CoreAPI::setRequestParam('apiKey', str_repeat('a', 32));
 
         $screen = $this->screen();
         $data = (array) $screen->doAction();
@@ -116,7 +116,6 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         $this->assertTrue($this->sentToLogin($data));
         $this->assertFalse(\OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated());
 
-        // The control: the same key opens the same class served by the REST API.
         $this->resetCurrentUser();
         $this->signedInBy(null);
         $this->mode('rest');
@@ -124,7 +123,8 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         $screen = $this->screen();
         $screen->doAction();
 
-        $this->assertTrue($screen->ran, 'the key itself is valid');
+        $this->assertFalse($screen->ran);
+        $this->assertSame(\OWA\Core\Controller::legacyApiKeyMessage(), $screen->get('error_msg')['msg'] ?? null);
     }
 
     /** Not tried at all: the branch that writes the session cookies never runs. */
@@ -145,7 +145,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
     public function testAUserSignedInByAnotherMethodIsRefused(): void
     {
         $this->authenticateAs('admin');
-        $this->signedInBy('api_key');
+        $this->signedInBy('app_password');
 
         $screen = $this->screen();
         $screen->doAction();
@@ -195,7 +195,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
 
         // The reports route names its credentials: the API's, and the overlay
         // token an overlay reads it with (no other route takes one).
-        $this->assertSame(array('overlay_token', 'app_password', 'api_key', 'cookies'),
+        $this->assertSame(array('overlay_token', 'app_password', 'cookies'),
             (new \OWA\Module\Base\Controller\ReportsRest(array()))->acceptedAuthMethods());
     }
 

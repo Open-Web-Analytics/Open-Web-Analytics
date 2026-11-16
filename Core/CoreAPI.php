@@ -1080,12 +1080,6 @@ class CoreAPI {
         return $cu->isAuthenticated();
     }
     
-    public static function getCurrentUserApiKey() {
-
-        $cu = \OWA\Core\CoreAPI::getCurrentUser();
-        return $cu->getApiKey();
-    }
-    
     /**
      * @return \OWA\Module\Base\Classes\Service
      */
@@ -2711,7 +2705,7 @@ class CoreAPI {
         
         $params = $service->request->getAllOwaParams();
         
-        // Names only: the values carry the API key and signature.
+        // Names only: the values may carry credentials.
         \OWA\Core\CoreAPI::debug( 'Handling REST request with params: ' . implode( ', ', array_keys( (array) $params ) ) );
         
         $action = \OWA\Core\CoreAPI::getRequestParam('do');
@@ -3467,17 +3461,6 @@ class CoreAPI {
 	    return $set;
     }
     
-    public static function signRequestUrl( $url, $apiKey ) {
-	    
-	    $auth = \OWA\Core\Auth::get_instance();
-	    
-	    $signature = $auth->generateSignature( $url, $apiKey );
-	    
-	    $url .= '&owa_signature=' . $signature;
-	    
-	    return $url;
     }
-
-}
 
 ?>

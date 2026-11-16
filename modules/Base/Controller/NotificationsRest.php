@@ -26,7 +26,7 @@ class NotificationsRest extends \OWA\Core\AdminController {
          * Capability set AFTER parent::__construct(), matching ReportsRest --
          * the browser calls that route on every report page, so it is the
          * working example of a REST route reached with a session rather than
-         * an API key. Setting it before the parent runs makes the constructor
+         * an application password. Setting it before the parent runs makes the constructor
          * take the admin-page path and answer with an HTML error document
          * instead of the REST view.
          *

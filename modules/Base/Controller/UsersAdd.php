@@ -93,7 +93,6 @@ class UsersAdd extends \OWA\Core\AdminController {
 		        'user_id'	=> $u->get('user_id'),
 		        'email_address' => $u->get( 'email_address'),
 		        'real_name'		=>	$u->get( 'real_name' ),
-		        'api_key'		=>	$u->get('api_key'),
 		        'role'			=>	$u->get('role')
 	        ];
 		}

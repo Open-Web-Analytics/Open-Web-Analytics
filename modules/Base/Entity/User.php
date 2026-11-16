@@ -133,7 +133,6 @@ class User extends \OWA\Core\Entity {
         $this->set('password', \OWA\Core\Lib::encryptPassword($password));
         $this->set('creation_date', time());
         $this->set('last_update_date', time());
-        $this->set('api_key', self::newApiKey() );
         $ret = $this->create();
 
         return $ret;
@@ -197,11 +196,6 @@ class User extends \OWA\Core\Entity {
         return is_string( $key ) && preg_match( self::TEMP_PASSKEY_PATTERN, $key ) === 1 ? $key : false;
     }
 
-    /** A legacy API key: 32 random hex characters. */
-    public static function newApiKey(): string {
-
-        return bin2hex( random_bytes( 16 ) );
-    }
     
     /**
      * @return boolean

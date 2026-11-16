@@ -666,6 +666,31 @@ declare it.
 
 ---
 
+### 7. The API key and request signature — REMOVED in v2.0
+
+**What changed.** 1.x signed a REST request in with the user's API key
+(`apiKey`, or the `X-API-KEY` header) and an HMAC of the request URL
+(`signature`, or `X-SIGNATURE`). **v2.0 does not accept either.** A request
+that carries one is answered 401 with a message naming application passwords,
+and is not signed in by any other credential it also carries.
+
+**Why.** The key was long-lived, carried the whole account, travelled in
+URLs, and its signature stayed valid for the rest of the UTC day and was
+computed over a URL built from the request's Host header.
+
+**Instead.** An application password, sent in the `Authorization` header
+(`Bearer <token>`, or Basic with the user name and the token). Each user makes
+them under My Preferences → Application passwords, or with
+`php cli.php cmd=app-password-create`; each can be read-only and revoked on its
+own. A script that calls the API with an API key, including a WordPress
+plugin's server-side calls, needs an application password instead.
+
+**Also removed:** the API Key row on the user edit screen; new users are not
+given a key. The `api_key` column of `owa_user` stays for now and nothing
+reads it.
+
+---
+
 ## Deprecated in 2.0
 
 ### Tracker option `cookiePersistence`

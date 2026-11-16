@@ -24,8 +24,9 @@ namespace OWA\Module\Base\View;
 class CorsPreflight extends \OWA\Core\View\RestApi {
 
     /**
-     * The request headers the API reads: an application password, an API key
-     * and its signature, and a JSON body. Named rather than echoed back from
+     * The request headers the API reads: an application password and a JSON
+     * body; and the legacy API key and signature headers, so a request still
+     * sending them reaches the refusal that names their replacement. Named rather than echoed back from
      * Access-Control-Request-Headers, which granted whatever a page asked for.
      */
     const ALLOWED_HEADERS = 'Authorization, X-API-KEY, X-SIGNATURE, Content-Type';

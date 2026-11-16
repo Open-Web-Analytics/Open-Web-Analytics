@@ -12,7 +12,7 @@ namespace OWA\Module\Base\Controller;
  * token. Called by the Add dialog on base.myAppPasswords.
  *
  * An Ajax endpoint (Core\Controller\Ajax): a signed-in browser session only,
- * so an application password or an API key cannot mint a successor that
+ * so an application password cannot mint a successor that
  * outlives revoking it. Scripts use `cmd=app-password-create`.
  *
  * The user is the session's, never a parameter.

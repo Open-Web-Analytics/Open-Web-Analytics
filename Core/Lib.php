@@ -230,10 +230,10 @@ class Lib {
         // tell OWA it was serving over TLS when it was not.
         //
         // That is not cosmetic. get_current_url() takes its scheme from here,
-        // and Auth::isSignatureValid() recomputes an API request's signature
-        // over that URL -- so a signed cross-origin request from an https page
-        // signed http://host/... and was verified against https://host/...,
-        // which can never match. Every such request 401'd. Anything else
+        // and the request signature 1.x checked was computed over that URL --
+        // so a signed cross-origin request from an https page signed
+        // http://host/... and was verified against https://host/..., which
+        // could never match. Every such request 401'd. Anything else
         // building an absolute URL from get_current_url() was steerable the
         // same way.
         //
@@ -1451,13 +1451,6 @@ class Lib {
         return defined( 'OWA_DEBUG' ) && OWA_DEBUG === true;
     }
     
-     public static function inRestDebug() {
-	    
-	    if ( ( defined( 'OWA_REST_DEBUG') &&  OWA_REST_DEBUG === true ) ){
-			
-			return true;
-		}	    	
-    }
 
 }
 
