@@ -345,6 +345,17 @@ class ScheduleRunCli extends SchedulerCli {
             return;
         }
 
+        // The command takes only the arguments its usage() declares, as from cli.php.
+        $undeclared = \OWA\Core\Controller\Cli::undeclaredArguments( get_class( $controller ), (array) $job['params'] );
+
+        if ( $undeclared ) {
+
+            $this->record( $state, $job, 'failed', sprintf( '%s does not take %s',
+                $job['command'], implode( ', ', $undeclared ) ), time(), time(), null );
+
+            return;
+        }
+
         $lease = new \OWA\Module\Base\Classes\JobLease( $name );
 
         // The estimate is read-only and happens BEFORE the lock is taken, so two
@@ -360,11 +371,19 @@ class ScheduleRunCli extends SchedulerCli {
 
         $began = time();
 
+        // Written before the run, so a run that never finishes leaves
+        // last_finished_at older than last_run_at for JobStatus to report.
+        if ( $state ) {
+
+            $state->set( 'last_run_at', $began );
+            $state->update();
+        }
+
         \OWA\Core\CoreAPI::notice( sprintf( 'Running "%s".', $name ) );
 
         try {
 
-            $data    = $controller->doAction();
+            $data    = $this->doJobAction( $controller );
             $outcome = $this->readOutcome( $controller, $data );
 
         } catch ( \Throwable $t ) {

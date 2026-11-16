@@ -953,7 +953,7 @@ return array(
     'Overdue by %s and nothing above explains it. The dispatcher does not appear to be running -- the last activity of any kind was %s. Check the cron entry:  %s' => 'Overdue by %s and nothing above explains it. The dispatcher does not appear to be running -- the last activity of any kind was %s. Check the cron entry:  %s',
     'Overdue by %s, and no job has EVER recorded a run -- the dispatcher has not run at all. That almost always means the cron entry is missing or wrong. Add:  %s' => 'Overdue by %s, and no job has EVER recorded a run -- the dispatcher has not run at all. That almost always means the cron entry is missing or wrong. Add:  %s',
     'Overdue by %s, but another job ran at %s, so the dispatcher is alive. The problem is specific to this job.' => 'Overdue by %s, but another job ran at %s, so the dispatcher is alive. The problem is specific to this job.',
-    'Overdue by %s. Failing since %s: %s. It is retried at every tick.' => 'Overdue by %s. Failing since %s: %s. It is retried at every tick.',
+    'Overdue by %s. Failing since %s: %s. Each retry waits longer than the last, from a minute up to an hour.' => 'Overdue by %s. Failing since %s: %s. Each retry waits longer than the last, from a minute up to an hour.',
     'Overdue by %s. The last run declined to act: %s' => 'Overdue by %s. The last run declined to act: %s',
     'Overdue by %s. The last run started %s and never finished -- a fatal error or the process being killed, which nothing inside PHP could have caught.' => 'Overdue by %s. The last run started %s and never finished -- a fatal error or the process being killed, which nothing inside PHP could have caught.',
     'Override' => 'Override',

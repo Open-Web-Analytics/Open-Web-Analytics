@@ -241,7 +241,7 @@ class JobStatus {
         // satisfied occurrence, which is what a person means by "overdue by".
         $late = self::howLate( $last > 0 ? max( 60, $now - ( $last + $interval ) ) : $now - $slot );
 
-        if ( $row && (int) $row['last_finished_at'] && (int) $row['last_finished_at'] < (int) $row['last_run_at'] ) {
+        if ( $row && (int) $row['last_run_at'] && (int) $row['last_finished_at'] < (int) $row['last_run_at'] ) {
 
             return sprintf(
                 \OWA\Core\CoreAPI::t( 'Overdue by %s. The last run started %s and never finished -- a fatal error or the '
@@ -253,7 +253,7 @@ class JobStatus {
         if ( $row && (int) $row['last_failure_at'] > (int) $row['last_success_at'] ) {
 
             return sprintf(
-                \OWA\Core\CoreAPI::t( 'Overdue by %s. Failing since %s: %s. It is retried at every tick.' ),
+                \OWA\Core\CoreAPI::t( 'Overdue by %s. Failing since %s: %s. Each retry waits longer than the last, from a minute up to an hour.' ),
                 $late, self::readable( $row['last_failure_at'] ), $row['last_message'] ?: \OWA\Core\CoreAPI::t( 'no message recorded' )
             );
         }
