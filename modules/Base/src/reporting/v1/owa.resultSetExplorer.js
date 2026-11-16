@@ -289,6 +289,8 @@ OWA.resultSetExplorer.prototype = {
             new_dims = new_dims.join(',');
 
             url.setQueryParam('dimensions', new_dims);
+            // A new grouping starts on the first page.
+            url.removeQueryParam('page');
             this.getNewResultSet( url.getSource() );
         }
     },
@@ -312,6 +314,8 @@ OWA.resultSetExplorer.prototype = {
         var url = new OWA.uri( this.resultSet.self );
 
         url.setQueryParam( 'dimensions', dims.join( ',' ) );
+        // A new grouping starts on the first page.
+        url.removeQueryParam( 'page' );
 
         this.getNewResultSet( url.getSource() );
     },
@@ -322,6 +326,8 @@ OWA.resultSetExplorer.prototype = {
 
         // set constraints
         url.setQueryParam('constraints', constraints);
+        // A new filter starts on the first page.
+        url.removeQueryParam('page');
 
         // fetch new results
         this.getNewResultSet( url.getSource() );
