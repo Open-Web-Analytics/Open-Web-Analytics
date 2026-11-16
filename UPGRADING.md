@@ -380,12 +380,12 @@ module. The update's down() puts them back.
 
 ### Sign-in sessions expire, and signing out ends them everywhere
 
-A sign-in lasts two days from its last request. Signing out, or changing or
+A sign-in ends one to two days after its last request. Signing out, or changing or
 resetting a password, ends every session of that user, on every device.
 Update087 adds `owa_user.session_epoch` for this; its down() removes it.
 
 Session cookies issued before the upgrade sign nobody in: every user signs in
-again once. Application passwords, API keys and overlay tokens are unchanged.
+again once. Application passwords and overlay tokens are unchanged.
 
 ### Server roles: `OWA_SERVER_ROLE`
 

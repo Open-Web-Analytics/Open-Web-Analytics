@@ -71,7 +71,7 @@ class Auth extends \OWA\Core\Base {
     var $eq;
 
     /**
-     * How long a browser session lasts after its last request, in seconds.
+     * How long a session cookie is valid from when it is issued, in seconds.
      */
     const SESSION_LIFETIME = 172800;
 
@@ -489,8 +489,8 @@ class Auth extends \OWA\Core\Base {
      * Sign in by the `u` and `p` cookies (see sessionCredential()).
      *
      * A sign-in with less than SESSION_REFRESH_BELOW left is given a fresh `p`,
-     * so a session ends SESSION_LIFETIME after its last request rather than
-     * after its sign-in.
+     * so a session ends between SESSION_REFRESH_BELOW and SESSION_LIFETIME
+     * after its last request, not at a fixed time after its sign-in.
      */
     function authByCookies($user_id, $credential) {
 
