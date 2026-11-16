@@ -31,9 +31,10 @@ bundles that are stale or missing: in the run from the command line, or as a job
 for the scheduler's next minute when applied from the screen. A release that
 changes neither the tracker nor the schema asks for nothing.
 
-Until it is applied, the admin screens show the update notice. Tracking is
-unaffected, and so are scheduled jobs unless the release also changes the
-schema, which stops them until it is applied.
+Until it is applied, the admin screens show the update notice. Tracking,
+scheduled jobs, the other command line commands and the REST API are
+unaffected, unless the release also changes the schema, which stops them until
+it is applied.
 
 ### Tracked text is stored as it was sent
 
