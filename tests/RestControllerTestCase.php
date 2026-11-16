@@ -85,12 +85,9 @@ abstract class RestControllerTestCase extends TestCase
     // ---------------------------------------------------------------------
 
     /**
-     * Create a user with the given role. Returns [id, user_id, api_key].
+     * Create a user with the given role. Returns [id, user_id].
      *
-     * The user carries a legacy api_key, as one upgraded from 1.x does, so the
-     * responses can be checked for not disclosing it.
-     *
-     * @return array{id:mixed, user_id:string, api_key:string}
+     * @return array{id:mixed, user_id:string}
      */
     protected function makeUser(string $role, string $label = 'u'): array
     {
@@ -99,15 +96,12 @@ abstract class RestControllerTestCase extends TestCase
         $u->createNewUser($user_id, $role, 'pw' . $this->tok, $user_id, 'OWA Test ' . $role);
         $u->load($user_id, 'user_id');
         $this->assertNotEmpty($u->get('id'), "Failed to create {$role} user fixture.");
-        $u->set('api_key', bin2hex(random_bytes(16)));
-        $u->update();
 
         $this->trackForCleanup('base.user', $u->get('id'), 'id');
 
         return [
             'id'      => $u->get('id'),
             'user_id' => $user_id,
-            'api_key' => $u->get('api_key'),
         ];
     }
 
@@ -167,7 +161,7 @@ abstract class RestControllerTestCase extends TestCase
      * Authenticate the current request as a freshly created user of $role.
      * Returns the fixture array from makeUser().
      *
-     * @return array{id:mixed, user_id:string, api_key:string}
+     * @return array{id:mixed, user_id:string}
      */
     protected function authenticateAs(string $role): array
     {

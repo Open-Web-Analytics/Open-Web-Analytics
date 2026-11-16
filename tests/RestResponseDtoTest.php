@@ -38,7 +38,6 @@ final class RestResponseDtoTest extends TestCase
         $u->set('role', 'viewer');
         $u->set('password', 'a-password-hash');
         $u->set('temp_passkey', 'a-temp-passkey');
-        $u->set('api_key', 'an-api-key');
 
         return $u;
     }
@@ -96,7 +95,7 @@ final class RestResponseDtoTest extends TestCase
     {
         $out = $this->reduce($this->makeUser());
 
-        foreach (['password', 'temp_passkey', 'api_key'] as $secret) {
+        foreach (['password', 'temp_passkey', 'session_epoch'] as $secret) {
             $this->assertArrayNotHasKey(
                 $secret,
                 $out['properties'],

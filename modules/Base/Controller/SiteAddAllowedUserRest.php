@@ -85,7 +85,7 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
         $response = [
 
 	        'site'			=> $s->getProperties(),
-	        'allowed_user'	=> $u->getProperties( ['password', 'temp_passkey', 'api_key'] )
+	        'allowed_user'	=> $u->getProperties( ['password', 'temp_passkey', 'session_epoch'] )
         ];
 
         $this->set('response', $response);

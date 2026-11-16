@@ -735,9 +735,9 @@ them under My Preferences → Application passwords, or with
 own. A script that calls the API with an API key, including a WordPress
 plugin's server-side calls, needs an application password instead.
 
-**Also removed:** the API Key row on the user edit screen; new users are not
-given a key. The `api_key` column of `owa_user` stays for now and nothing
-reads it.
+**Also removed:** the API Key row on the user edit screen, and the `api_key`
+column of `owa_user`, which Update089 drops. Its down() adds the column back
+with every user's key.
 
 ---
 
