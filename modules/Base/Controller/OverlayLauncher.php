@@ -183,7 +183,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      *
      * The scheme and host are those of the page as recorded: the most clicked
      * page_location of that Profile's clicks on the page that is http or https
-     * and on its domain (originOf()). A Profile's domain carries no scheme,
+     * and on its domain (ProfileDomains::originOf()). A Profile's domain carries no scheme,
      * and the page may be served on a subdomain of it. With no such click,
      * the domain itself, over https.
      *
@@ -248,11 +248,11 @@ class OverlayLauncher extends \OWA\Core\Controller {
                     'SELECT page_location FROM %s WHERE %s GROUP BY page_location ORDER BY COUNT(*) DESC LIMIT %d',
                     $table, $where( array( $site_id ) ), self::CANDIDATES ) );
 
-                $domains = self::domainsOf( array( $site_id ) );
+                $domains = \OWA\Module\Base\Classes\ProfileDomains::of( array( $site_id ) );
 
                 foreach ( (array) $rows as $row ) {
 
-                    $origin = self::originOf( (string) ( $row['page_location'] ?? '' ), $domains );
+                    $origin = \OWA\Module\Base\Classes\ProfileDomains::originOf( (string) ( $row['page_location'] ?? '' ), $domains );
 
                     if ( $origin !== '' ) {
 
@@ -266,33 +266,6 @@ class OverlayLauncher extends \OWA\Core\Controller {
         }
 
         return '';
-    }
-
-    /**
-     * scheme://host[:port] of a recorded url, when it is http or https and on
-     * one of the domains.
-     *
-     * Anyone can send a beacon with any page_location, and the overlay's data
-     * link, token and all, travels in the fragment of the url opened: a host
-     * off the Profile's domain would receive it.
-     *
-     * @param string   $url
-     * @param string[] $domains from domainsOf()
-     * @return string '' when it is neither
-     */
-    private static function originOf( $url, array $domains ) {
-
-        $parts  = parse_url( trim( $url ) );
-        $scheme = strtolower( (string) ( $parts['scheme'] ?? '' ) );
-        $host   = strtolower( (string) ( $parts['host'] ?? '' ) );
-
-        if ( ! in_array( $scheme, array( 'http', 'https' ), true )
-             || $host === '' || ! self::isOnDomain( $host, $domains ) ) {
-
-            return '';
-        }
-
-        return $scheme . '://' . $host . ( isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '' );
     }
 
     /**
@@ -381,7 +354,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
             ? array( $siteId )
             : \OWA\Module\Base\Classes\Cube\Cubes::siteIds( $property_id );
 
-        $domains = self::domainsOf( $site_ids );
+        $domains = \OWA\Module\Base\Classes\ProfileDomains::of( $site_ids );
 
         $db->selectFrom( $table, 'e' );
         $db->selectColumn( 'e.page_location AS url, COUNT(*) AS clicks' );
@@ -401,7 +374,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
             $url = trim( (string) $row['url'] );
 
-            if ( self::isOnDomain( (string) parse_url( $url, PHP_URL_HOST ), $domains ) ) {
+            if ( \OWA\Module\Base\Classes\ProfileDomains::isOnDomain( (string) parse_url( $url, PHP_URL_HOST ), $domains ) ) {
 
                 return $url;
             }
@@ -412,58 +385,6 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
     /** How many of the most-clicked urls are tried for one on a Profile's domain. */
     const CANDIDATES = 25;
-
-    /**
-     * The Profiles' domains as bare hosts, without a leading www.: a domain
-     * saved before Update088 may still carry a scheme ("http://www.example.com").
-     *
-     * @param string[] $site_ids
-     * @return string[]
-     */
-    private static function domainsOf( array $site_ids ) {
-
-        $domains = array();
-
-        foreach ( $site_ids as $site_id ) {
-
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->getByColumn( 'site_id', $site_id );
-
-            $domain = strtolower( trim( (string) $site->get( 'domain' ) ) );
-            $host   = (string) parse_url( strpos( $domain, '//' ) === false ? '//' . $domain : $domain, PHP_URL_HOST );
-            $host   = preg_replace( '/^www\./', '', $host );
-
-            if ( $host !== '' ) {
-
-                $domains[] = $host;
-            }
-        }
-
-        return $domains;
-    }
-
-    /**
-     * Whether a host is one of the domains or a subdomain of one: www. and
-     * the other hosts a site serves under.
-     *
-     * @param string   $host
-     * @param string[] $domains from domainsOf()
-     * @return bool
-     */
-    private static function isOnDomain( $host, array $domains ) {
-
-        $host = strtolower( $host );
-
-        foreach ( $domains as $domain ) {
-
-            if ( $host === $domain || substr( $host, -strlen( '.' . $domain ) ) === '.' . $domain ) {
-
-                return true;
-            }
-        }
-
-        return false;
-    }
 }
 
 

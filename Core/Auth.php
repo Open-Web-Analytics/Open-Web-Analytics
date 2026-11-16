@@ -87,6 +87,13 @@ class Auth extends \OWA\Core\Base {
     const SESSION_CREDENTIAL_PATTERN = '/^([0-9]{1,10})\.([a-f0-9]{64})$/';
 
     /**
+     * Methods tried only where a controller names them (setAuthMethods()):
+     * the login form's user_id and password on the login action, and an
+     * overlay token on the routes an overlay reads.
+     */
+    const NAMED_ONLY_METHODS = array( 'login_form', 'overlay_token' );
+
+    /**
      * Auth class Singleton
      *
      * @return \OWA\Core\Auth
@@ -128,7 +135,8 @@ class Auth extends \OWA\Core\Base {
      * is judged on the ones the caller accepts. A login form's user_id and
      * password on a cookies-only endpoint are then plain parameters, not a
      * sign-in that writes the session cookies. Null tries every method, in
-     * the order below. See Controller::setAuthMethods().
+     * the order below, except NAMED_ONLY_METHODS. See
+     * Controller::setAuthMethods().
      *
      * @param string[]|null $methods login_form, overlay_token, app_password, cookies
      */
@@ -136,7 +144,9 @@ class Auth extends \OWA\Core\Base {
 
         $accepts = function ( $method ) use ( $methods ) {
 
-            return $methods === null || in_array( $method, (array) $methods, true );
+            return $methods === null
+                ? ! in_array( $method, self::NAMED_ONLY_METHODS, true )
+                : in_array( $method, (array) $methods, true );
         };
 		
         $this->legacy_api_key_refused = false;
@@ -161,8 +171,7 @@ class Auth extends \OWA\Core\Base {
             $ret = $this->authByInput(\OWA\Core\CoreAPI::getRequestParam('user_id'), \OWA\Core\CoreAPI::getRequestParam('password'));
              \OWA\Core\CoreAPI::debug('User authenticated via form input.');
     
-        } elseif ( is_array( $methods ) && in_array( 'overlay_token', $methods, true )
-                   && \OWA\Core\CoreAPI::getRequestParam('overlayToken') ) {
+        } elseif ( $accepts('overlay_token') && \OWA\Core\CoreAPI::getRequestParam('overlayToken') ) {
             // Only where a controller names it (setAuthMethods()): the routes an
             // overlay reads, not every route that accepts any credential.
             // auth by a scoped, short-lived overlay token.

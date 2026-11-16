@@ -102,15 +102,19 @@
      * same code that draws the panel.
      *
      * makeApiLink() builds the endpoint AND mints the nonce, so this does not
-     * hard-code where the API lives or how a nonce is derived. Both routes are
-     * named `notifications` and differ only by HTTP method, so one URL serves
-     * the read and the dismiss.
+     * hard-code where the API lives or how a nonce is derived. The routes are
+     * all named `notifications` and differ by HTTP method, and a nonce is
+     * minted for one method: a URL each for the read, the mark-read and the
+     * dismiss.
      */
-    $owa_apiUrl = $view->makeApiLink( array(
+    $owa_notificationRoute = array(
         'do'      => 'notifications',
         'module'  => 'base',
         'version' => 'v1',
-    ) );
+    );
+    $owa_apiUrl      = $view->makeApiLink( $owa_notificationRoute );
+    $owa_markReadUrl = $view->makeApiLink( $owa_notificationRoute, false, 'POST' );
+    $owa_dismissUrl  = $view->makeApiLink( $owa_notificationRoute, false, 'DELETE' );
 ?>
     <span class="owa_notificationBell">
         <button type="button" id="owa_notificationToggle" class="owa_notificationToggle"
@@ -139,7 +143,9 @@
         // addresses the API as api/index.php?do=...&module=...&version=...,
         // and assembling path segments here would only work on an install
         // whose URLs are rewritten.
-        var apiUrl = <?php echo json_encode( $owa_apiUrl ); ?>;
+        var apiUrl      = <?php echo json_encode( $owa_apiUrl ); ?>;
+        var markReadUrl = <?php echo json_encode( $owa_markReadUrl ); ?>;
+        var dismissUrl  = <?php echo json_encode( $owa_dismissUrl ); ?>;
 
         // The words this script writes, translated; %s is a number.
         var TEXT = <?php echo json_encode( array(
@@ -178,13 +184,13 @@
             el.classList.remove('is-unread');
             paintBadge();
 
-            fetch(apiUrl + '&notificationId=' + encodeURIComponent(id),
+            fetch(markReadUrl + '&notificationId=' + encodeURIComponent(id),
                   { method: 'POST', credentials: 'same-origin' })
                 .catch(function () { /* the next load re-reads the truth */ });
         }
 
         function dismiss(id, el) {
-            fetch(apiUrl + '&notificationId=' + encodeURIComponent(id),
+            fetch(dismissUrl + '&notificationId=' + encodeURIComponent(id),
                   { method: 'DELETE', credentials: 'same-origin' })
                 .then(function (r) {
                     if (!r.ok) { return; }

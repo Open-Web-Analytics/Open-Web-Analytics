@@ -142,6 +142,73 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         $this->assertNotSame('login_form', \OWA\Core\Auth::get_instance()->getAuthMethod());
     }
 
+    /** A user's real user_id and password, as the login form posts them. */
+    private function postedPassword(): array
+    {
+        $user = $this->makeUser('admin', 'posted');
+
+        \OWA\Core\CoreAPI::setRequestParam('user_id', $user['user_id']);
+        \OWA\Core\CoreAPI::setRequestParam('password', 'pw' . $this->tok);
+
+        return $user;
+    }
+
+    /**
+     * A plain Controller that is not the login action does not sign anyone in
+     * with a user_id and password, correct ones included.
+     */
+    public function testAPasswordSignsInNowhereButTheLoginAction(): void
+    {
+        $this->postedPassword();
+
+        $plain = new class(array('do' => 'base.testPlain')) extends \OWA\Core\Controller {
+
+            public $ran = false;
+
+            function __construct($params)
+            {
+                $this->setRequiredCapability('view_site_list');
+                parent::__construct($params);
+            }
+
+            function action()
+            {
+                $this->ran = true;
+            }
+        };
+
+        $plain->doAction();
+
+        $this->assertFalse($plain->ran, 'signed in by a password on a controller that is not the login action');
+        $this->assertFalse(\OWA\Core\CoreAPI::isCurrentUserAuthenticated());
+        $this->assertNotSame('login_form', \OWA\Core\Auth::get_instance()->getAuthMethod());
+    }
+
+    /** A REST request carrying a user_id and password is not signed in by them. */
+    public function testAPasswordDoesNotSignInARestRequest(): void
+    {
+        $this->mode('rest');
+        $this->postedPassword();
+
+        $resp = $this->callEndpoint(\OWA\Module\Base\Controller\SitesRest::class, 'sitesRestController.php', array());
+
+        $this->assertNotAuthenticated($resp, 'GET /sites with user_id and password');
+        $this->assertNotSame('login_form', \OWA\Core\Auth::get_instance()->getAuthMethod());
+    }
+
+    /** The login action still signs in with them. */
+    public function testTheLoginActionSignsInWithAPassword(): void
+    {
+        $user = $this->postedPassword();
+
+        $login = new \OWA\Module\Base\Controller\Login(array());
+        $status = \OWA\Core\Auth::get_instance()->authenticateUser($login->acceptedAuthMethods());
+
+        $this->assertTrue($status['auth_status']);
+        $this->assertSame('login_form', \OWA\Core\Auth::get_instance()->getAuthMethod());
+        $this->assertSame($user['user_id'], \OWA\Core\CoreAPI::getCurrentUser()->getUserData('user_id'));
+    }
+
     public function testAUserSignedInByAnotherMethodIsRefused(): void
     {
         $this->authenticateAs('admin');

@@ -291,7 +291,7 @@ OWA.kpiBox.prototype = {
             // (owa.metricinfo.js); the rest of the box charts the metric.
             html += OWA.util.sprintf( description
                 ? '<p class="owa_metricInfoboxLabel"><button type="button">%s</button></p>'
-                : '<p class="owa_metricInfoboxLabel">%s</p>', item.label );
+                : '<p class="owa_metricInfoboxLabel">%s</p>', OWA.util.escapeHtml( item.label ) );
             html += OWA.util.sprintf('<p class="owa_metricInfoboxLargeNumber">%s</p>',
                 OWA.util.escapeHtml( OWA.util.metricText( item ) ) );
 

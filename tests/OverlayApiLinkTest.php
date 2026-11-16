@@ -139,4 +139,40 @@ final class OverlayApiLinkTest extends TestCase
             ), "the token accepted its link with $key changed");
         }
     }
+
+    /**
+     * The heatmap link of a report carries the report's period, and its token
+     * accepts that link and no other dates.
+     */
+    public function testTheHeatmapLinkIsBoundToTheReportsPeriod(): void
+    {
+        $t  = $this->reportTemplate();
+        $tp = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');
+        $tp->set('date_range', ['startDate' => '20261001', 'endDate' => '20261007']);
+        $t->set('timePeriod', $tp);
+
+        parse_str((string) parse_url($this->heatmapLink($t), PHP_URL_QUERY), $q);
+
+        $this->assertSame('20261001', $q['startDate'] ?? null);
+        $this->assertSame('20261007', $q['endDate'] ?? null);
+
+        $token = $q['overlayToken'] ?? '';
+
+        $this->assertTrue(\OWA\Core\OverlayToken::permits($token, 'reports',
+            static fn($name) => (string) ($q[$name] ?? '')), 'the minted token does not permit its own link');
+
+        foreach ([
+            'startDate' => '20200101',
+            'endDate'   => '20301231',
+            'period'    => 'last_year',
+            'compare'   => 'previous_period',
+        ] as $key => $value) {
+
+            $edited = array_merge($q, [$key => $value]);
+
+            $this->assertFalse(\OWA\Core\OverlayToken::permits(
+                $token, 'reports', static fn($name) => (string) ($edited[$name] ?? '')
+            ), "the token accepted its link with $key changed");
+        }
+    }
 }

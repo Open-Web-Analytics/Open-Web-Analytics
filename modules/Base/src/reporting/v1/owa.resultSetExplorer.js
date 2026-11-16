@@ -1139,7 +1139,7 @@ OWA.dimensionPicker.prototype = {
 
                 if ( this.dim_list.hasOwnProperty(group) ) {
 
-                    c += OWA.util.sprintf('<optgroup label="%s">', group);
+                    c += OWA.util.sprintf('<optgroup label="%s">', OWA.util.escapeHtml( group ) );
 
                     var num_dim_in_group = 0;
                     // add list items
@@ -1155,8 +1155,8 @@ OWA.dimensionPicker.prototype = {
 
                             c += OWA.util.sprintf(
                                     '<option value="%s">%s</option>',
-                                    this.dim_list[group][i].name,
-                                    this.dim_list[group][i].label
+                                    OWA.util.escapeHtml( this.dim_list[group][i].name ),
+                                    OWA.util.escapeHtml( this.dim_list[group][i].label )
                             );
 
                             num_dim_in_group++;
