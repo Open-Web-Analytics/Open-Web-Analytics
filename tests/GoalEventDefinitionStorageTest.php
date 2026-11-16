@@ -298,6 +298,12 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $this->assertSame( '', $problem( 'Signup_Completed' ) );
         $this->assertNotSame( '', $problem( 'click' ), 'its rows would count as clicks' );
         $this->assertNotSame( '', $problem( 'session_start' ) );
+        $this->assertNotSame( '', $problem( 'Page_View' ), 'event_type compares case-blind: its rows would count as page views' );
+        $this->assertNotSame( '', $problem( 'Session_Start' ), 'its row would take the id of the beacon\'s session_start row' );
+        $this->assertNotSame( '', $problem( 'FIRST_VISIT' ) );
+        $this->assertNotSame( '', $problem( 'DomStream' ), 'a module\'s event is OWA\'s too' );
+        $this->assertSame( array( 7 => 'Page_View_2' ), \OWA\Module\Base\Entity\GoalEventDefinition::eventNames(
+            array( array( 'id' => 7, 'property_id' => 1, 'name' => 'Page View' ) ) ), 'renamed from 1.x like click is' );
         $this->assertNotSame( '', $problem( 'has-a-hyphen' ) );
         $this->assertNotSame( '', $problem( 'Signup completed' ) );
         $this->assertNotSame( '', $problem( str_repeat( 'a', 41 ) ) );
@@ -309,6 +315,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $this->assertContains( 'A name starts with a letter and has up to 40 letters, digits and underscores.',
             $this->saveErrors( 'x', array( 'name' => 'Signup by email' ) ) );
         $this->assertContains( 'click is an event OWA collects.', $this->saveErrors( 'x', array( 'name' => 'click' ) ) );
+        $this->assertContains( 'Page_View is an event OWA collects.', $this->saveErrors( 'x', array( 'name' => 'Page_View' ) ) );
         $this->assertSame( array(), array_filter( $this->saveErrors( 'x', array( 'name' => 'Unused_name_75' ) ),
             static function ( $m ) { return strpos( $m, 'name' ) !== false; } ) );
     }
