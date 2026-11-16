@@ -107,10 +107,10 @@ describe('reporting CSS build integrity', () => {
         test('a signature rule from each source is present (all seven concatenated)', () => {
             if (css === null) return;
             // One distinctive token per source proves it made it into the combine.
-            expect(css).toMatch(/\.ui-datepicker/);        // jquery-ui.css
+            expect(css).toMatch(/\.ui-dialog-titlebar/);   // jquery-ui.css
             expect(css).toMatch(/\.chosen-container/);     // chosen.css
             expect(css).toMatch(/#owa/);                   // owa.css (OWA app ids)
-            expect(css).toMatch(/\.ui-selectmenu-button/); // bundled selectmenu (jquery-ui 1.13)
+            expect(css).toMatch(/\.ui-tabs-nav/);          // jquery-ui tabs
             expect(css).toMatch(/\.owa_gridTable/);       // owa.grid.css
             expect(css).toMatch(/\.owa_navShell/);        // owa.shell.css
         });

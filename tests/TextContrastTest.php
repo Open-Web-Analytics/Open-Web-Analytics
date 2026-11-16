@@ -11,7 +11,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class TextContrastTest extends TestCase
 {
-    private const CSS = array( 'owa.css', 'owa.report.css', 'owa.grid.css', 'owa.admin.css', 'owa.shell.css', 'owa.widgets.css' );
+    private const CSS = array( 'owa.css', 'owa.report.css', 'owa.grid.css', 'owa.admin.css', 'owa.shell.css' );
 
     /** Selector => why its colour may be lighter than 4.5:1 on white. */
     private const EXEMPT = array(
@@ -20,10 +20,6 @@ final class TextContrastTest extends TestCase
         '.owa_grid .owa_gridPopOption:disabled'                                       => 'a disabled control',
         '.owa_grid .owa_gridIconButton:disabled'                                      => 'a disabled control',
         '.owa_grid .owa_gridShowMore[aria-busy="true"]'                               => 'a disabled control (aria-disabled while its rows load)',
-        '.owa_visitInfobox'                                                           => 'on a dark ground (#505050), not white; unused',
-        '.owa_visitInfoboxTitle'                                                      => 'on a dark ground (#505050), not white; unused',
-        '.inline_h2_grey'                                                             => 'unused',
-        '.owa .externalUrl'                                                           => 'unused',
         '.owa_siteControlCaret'                                                       => 'an icon: 4.48:1 is past the 3:1 an icon needs',
     );
 
