@@ -192,4 +192,70 @@ final class CompareMergerTest extends TestCase
         $this->assertArrayNotHasKey( 'in', \OWA\Module\Base\Classes\ResultSetManager::CONSTRAINT_OPERATORS );
         $this->assertContains( 'in', \OWA\Core\Db::ALLOWED_OPERATORS );
     }
+
+    /**
+     * A row only the comparison has: a count or a sum is 0 and changed by
+     * -100%; any other metric has no value and no change. Dimensions stay.
+     */
+    public function testARowOnlyTheComparisonHasIsZeroOrNothing(): void
+    {
+        $row = array(
+            'pagePath'   => self::cell( 'pagePath', '/gone', 'dimension' ),
+            'pageViews'  => self::cell( 'pageViews', 12 ) + array( 'data_type' => 'integer' ),
+            'bounceRate' => self::cell( 'bounceRate', 0.25 ) + array( 'data_type' => 'percentage' ),
+            'revenue'    => self::cell( 'revenue', 0 ) + array( 'data_type' => 'currency' ),
+        );
+
+        $out = CompareMerger::compareOnlyRow( $row, array( 'pageViews', 'revenue' ),
+            fn ( $type, $value ) => $type . ':' . $value );
+
+        $this->assertSame( $row['pagePath'], $out['pagePath'] );
+
+        $this->assertSame( array( 0, 'integer:0', 12, '12' ), array( $out['pageViews']['value'], $out['pageViews']['formatted_value'],
+            $out['pageViews']['compare_value'], $out['pageViews']['compare_formatted_value'] ) );
+        $this->assertEqualsWithDelta( -1.0, $out['pageViews']['change'], 1e-9 );
+
+        $this->assertSame( array( null, null, 0.25, null ), array( $out['bounceRate']['value'], $out['bounceRate']['formatted_value'],
+            $out['bounceRate']['compare_value'], $out['bounceRate']['change'] ) );
+
+        // Zero against zero: no change.
+        $this->assertSame( array( 0, null ), array( $out['revenue']['value'], $out['revenue']['change'] ) );
+    }
+
+    public function testTheAdditiveMetricsAreTheCountsAndSums(): void
+    {
+        $rs = self::rs( array() );
+        $rs->relatedMetrics = array(
+            'Content' => array( array( 'name' => 'pageViews', 'metric_type' => 'count' ), array( 'name' => 'bounceRate', 'metric_type' => 'ratio' ) ),
+            'Ecommerce' => array( array( 'name' => 'revenue', 'metric_type' => 'sum' ), array( 'name' => 'netRevenue', 'metric_type' => 'difference' ),
+                array( 'name' => 'totalUsers', 'metric_type' => 'distinct_count' ) ),
+        );
+
+        $this->assertSame( array( 'pageViews', 'revenue' ), CompareMerger::additiveMetrics( $rs ) );
+    }
+
+    /** An unset value and '' are two groups in SQL, and are matched as two. */
+    public function testAnUnsetValueIsNotMatchedWithAnEmptyOne(): void
+    {
+        $row = fn ( $path, $views ) => array( 'pagePath' => self::cell( 'pagePath', $path, 'dimension' ), 'pageViews' => self::cell( 'pageViews', $views ) );
+
+        $rs  = self::rs( array(), array( $row( null, 3 ), $row( '', 4 ) ) );
+        $crs = self::rs( array(), array( $row( '', 8 ), $row( null, 1 ) ) );
+
+        CompareMerger::merge( $rs, $crs, array( 'pagePath' ), array( '20261013', '20261109' ), array( '20260915', '20261012' ), 'previous_period' );
+
+        $this->assertSame( array( 1, 8 ), array( $rs->resultsRows[0]['pageViews']['compare_value'], $rs->resultsRows[1]['pageViews']['compare_value'] ) );
+    }
+
+    /** A row's key in PHP is the key the SQL computes: each value marked, an unset one as 'n'. */
+    public function testARowsGroupKey(): void
+    {
+        $row = array( 'pagePath' => self::cell( 'pagePath', null, 'dimension' ), 'eventName' => self::cell( 'eventName', 'click', 'dimension' ),
+            'n' => self::cell( 'n', 5, 'dimension' ) );
+
+        $this->assertSame( "n\x1fvclick\x1fv5",
+            \OWA\Module\Base\Classes\ResultSetManager::groupKeyOf( $row, array( 'pagePath', 'eventName', 'n' ) ) );
+        $this->assertSame( 'v', \OWA\Module\Base\Classes\ResultSetManager::groupKeyOf(
+            array( 'pagePath' => self::cell( 'pagePath', '', 'dimension' ) ), array( 'pagePath' ) ) );
+    }
 }

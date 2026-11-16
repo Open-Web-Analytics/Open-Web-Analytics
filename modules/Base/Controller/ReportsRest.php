@@ -208,10 +208,12 @@ class ReportsRest extends \OWA\Core\ReportController {
             return false;
         }
 
+        $this->refused_before = \OWA\Core\CoreAPI::dbSingleton()->queryErrorCount();
+
         return $this->withComparison( $rsm, $rsm->getResults() );
     }
 
-    /** The most rows a comparison query reads to match a page of rows. */
+    /** The most rows a trend's comparison query reads. */
     const COMPARE_ROW_LIMIT = 1000;
 
     /**
@@ -232,11 +234,15 @@ class ReportsRest extends \OWA\Core\ReportController {
      * The result set with the comparison period's numbers beside its own,
      * when the request names one (`compare`). See CompareMerger.
      *
-     * The comparison is the same query over the comparison's dates. A grid is
-     * a page of rows, and the comparison's own top rows need not be the same
-     * values, so its query is restricted to the values on the page (an `in`
-     * constraint per dimension, except a time-axis one, which is matched by
-     * position and is complete for the period anyway).
+     * The comparison is the same query over the comparison's dates.
+     *
+     * A TREND's comparison is a line of its own: the comparison's rows,
+     * restricted to the values of its other dimensions on the page (an `in`
+     * constraint per dimension), at most COMPARE_ROW_LIMIT of them.
+     *
+     * A GRID's rows are those of both periods. The page's own rows are
+     * compared with the same groups in the comparison (restrictToGroups()).
+     * Then come the groups only the comparison has (compareOnlyRows()).
      *
      * @return object the result set, with ->compare when one was asked for
      */
@@ -260,6 +266,8 @@ class ReportsRest extends \OWA\Core\ReportController {
         );
 
         $dims = (array) $rsm->dimensions;
+        $main = array( $rsm->timePeriod->getStartDate()->getYyyymmdd(), $rsm->timePeriod->getEndDate()->getYyyymmdd() );
+        $cmp  = array( $compare['startDate'], $compare['endDate'] );
 
         /*
          * The totals from a query of their own, with no dimensions and so no
@@ -268,51 +276,131 @@ class ReportsRest extends \OWA\Core\ReportController {
          */
         $totals = $this->resultSetManager( $over + array( 'dimensions' => '', 'sort' => '' ) )->getResults();
 
+        if ( ! $dims ) {
+
+            return \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $totals, array(), $main, $cmp, $compare['compare'] );
+        }
+
         /*
-         * With no rows of its own, a query has nothing to match -- except a
-         * trend, whose comparison is a line of its own (CompareMerger): "this
-         * week" on a quiet Sunday morning still draws last week.
+         * A trend is compared even with no rows of its own: "this week" on a
+         * quiet Sunday morning still draws last week.
          */
-        $trend = (bool) array_intersect( $dims, array_keys( \OWA\Module\Base\Classes\CompareMerger::TIME_AXIS ) );
+        if ( array_intersect( $dims, array_keys( \OWA\Module\Base\Classes\CompareMerger::TIME_AXIS ) ) ) {
 
-        if ( ! $dims || ( empty( $rs->resultsRows ) && ! $trend ) ) {
+            $crsm = $this->resultSetManager( $over );
 
-            return \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $totals, array(),
-                array( $rsm->timePeriod->getStartDate()->getYyyymmdd(), $rsm->timePeriod->getEndDate()->getYyyymmdd() ),
-                array( $compare['startDate'], $compare['endDate'] ), $compare['compare'] );
-        }
+            foreach ( \OWA\Module\Base\Classes\CompareMerger::restrictable( $dims ) as $dim ) {
 
-        $crsm = $this->resultSetManager( $over );
+                $values = array();
 
-        foreach ( \OWA\Module\Base\Classes\CompareMerger::restrictable( $dims ) as $dim ) {
+                foreach ( (array) $rs->resultsRows as $row ) {
 
-            $values = array();
+                    $values[] = isset( $row[ $dim ] ) && is_array( $row[ $dim ] ) ? $row[ $dim ]['value'] : null;
+                }
 
-            foreach ( (array) $rs->resultsRows as $row ) {
+                /*
+                 * Not when the request already filters this dimension (one
+                 * constraint per name: this would replace it), or when a value is
+                 * missing -- IN never matches NULL, and a "(not set)" row would
+                 * lose its comparison. The row limit bounds the query instead.
+                 */
+                if ( $values && ! $crsm->getConstraint( $dim )
+                        && ! in_array( null, $values, true ) && ! in_array( '', $values, true ) ) {
 
-                $values[] = isset( $row[ $dim ] ) && is_array( $row[ $dim ] ) ? $row[ $dim ]['value'] : null;
+                    $crsm->setConstraint( $dim, array_values( array_unique( $values ) ), 'in' );
+                }
             }
 
-            /*
-             * Not when the request already filters this dimension (one
-             * constraint per name: this would replace it), or when a value is
-             * missing -- IN never matches NULL, and a "(not set)" row would
-             * lose its comparison. The row limit bounds the query instead.
-             */
-            if ( $values && ! $crsm->getConstraint( $dim )
-                    && ! in_array( null, $values, true ) && ! in_array( '', $values, true ) ) {
+            $crs = $crsm->getResults();
+            $crs->aggregates = $totals->aggregates;
 
-                $crsm->setConstraint( $dim, array_values( array_unique( $values ) ), 'in' );
-            }
+            return \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $crs, $dims, $main, $cmp, $compare['compare'] );
         }
 
-        $main = array( $rsm->timePeriod->getStartDate()->getYyyymmdd(), $rsm->timePeriod->getEndDate()->getYyyymmdd() );
+        $crs = new \OWA\Module\Base\Classes\PaginatedResultSet();
 
-        $crs = $crsm->getResults();
+        if ( $rs->resultsRows ) {
+
+            $crsm = $this->resultSetManager( $over );
+            $crsm->setRowsOnly();
+            $crsm->restrictToGroups( array_map( function ( $row ) use ( $dims ) {
+                return \OWA\Module\Base\Classes\ResultSetManager::groupKeyOf( $row, $dims );
+            }, array_values( (array) $rs->resultsRows ) ) );
+
+            $crs = $crsm->getResults();
+        }
+
         $crs->aggregates = $totals->aggregates;
 
-        return \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $crs, $dims, $main,
-            array( $compare['startDate'], $compare['endDate'] ), $compare['compare'] );
+        \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $crs, $dims, $main, $cmp, $compare['compare'] );
+
+        return $this->compareOnlyRows( $rsm, $rs, $over );
+    }
+
+    /** @var int|null statements the database had refused when this request's query began; see getResultSet() */
+    private $refused_before = null;
+
+    /**
+     * A grid's rows of groups only the comparison has, after the period's own
+     * rows: ordered by the grid's sort over the comparison's numbers, and
+     * paged with them. One query: the comparison's groups NOT IN the period's
+     * (excludeGroupsOf()), from the row where this page's place falls past
+     * the period's rows (setRowWindow()).
+     *
+     * The period's rows are read ten pages ahead (ResultSetManager); short of
+     * that, where they end is known, and the rest of the read-ahead is filled
+     * from these. A page past them counts them (countGroups()).
+     *
+     * None when the request filters on a metric: that selects rows by the
+     * period's numbers, which these do not have. None either when a query of
+     * this request was refused: the period's rows may be missing rather than
+     * none.
+     *
+     * @return object $rs
+     */
+    private function compareOnlyRows( $rsm, $rs, array $over ) {
+
+        $per     = (int) $rsm->getLimit();
+        $offset  = $per * ( max( 1, (int) $rsm->getPage() ) - 1 );
+        $ahead   = $per * 10;
+        $fetched = (int) $rs->resultsTotal;
+
+        if ( $per < 1 || $fetched >= $ahead || $rsm->metricConstraints()
+                || ( $this->refused_before !== null
+                     && \OWA\Core\CoreAPI::dbSingleton()->queryErrorCount() > $this->refused_before ) ) {
+
+            return $rs;
+        }
+
+        $ends = $fetched > 0 ? $offset + $fetched : ( $offset > 0 ? $rsm->countGroups() : 0 );
+
+        $only = $this->resultSetManager( $over );
+        $only->setRowsOnly();
+        $only->excludeGroupsOf( $rsm );
+        $only->setRowWindow( max( 0, $offset - $ends ), $ahead - $fetched );
+
+        $ors = $only->getResults();
+
+        if ( ! empty( $ors->request_errors ) || empty( $ors->resultsRows ) ) {
+
+            return $rs;
+        }
+
+        $additive = \OWA\Module\Base\Classes\CompareMerger::additiveMetrics( $rs );
+        $format   = function ( $data_type, $value ) use ( $rsm ) {
+            return $rsm->formatValue( $data_type, $value );
+        };
+
+        $rows = array();
+
+        foreach ( (array) $ors->resultsRows as $row ) {
+
+            $rows[] = \OWA\Module\Base\Classes\CompareMerger::compareOnlyRow( $row, $additive, $format );
+        }
+
+        $rs->appendRows( $rows, count( $rows ) );
+
+        return $rs;
     }
 
     /**
