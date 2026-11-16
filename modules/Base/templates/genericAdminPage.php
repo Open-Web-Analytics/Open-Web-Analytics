@@ -1,5 +1,5 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div id="<?php echo $view->dom_id;?>" class="owa_reportContainer">
+<div id="<?php $view->out( $view->dom_id );?>" class="owa_reportContainer">
 
     <div class="reportSectionContainer">
         <div id="owa_timePeriodControl" class="owa_reportPeriod" style="float:right;"></div>
