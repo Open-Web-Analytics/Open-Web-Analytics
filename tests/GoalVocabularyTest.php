@@ -251,6 +251,10 @@ final class GoalVocabularyTest extends TestCase
         $this->assertSame( 'page_location', Vocab::columnFor( 'page_url' ) );
         $this->assertSame( 'tagged_medium', Vocab::columnFor( 'medium' ) );
         $this->assertSame( 'tagged_source', Vocab::columnFor( 'source' ) );
+
+        // 1.x's browser held the version; the family was browser_type.
+        $this->assertSame( 'browser_version', Vocab::columnFor( 'browser' ) );
+        $this->assertSame( 'browser_type',    Vocab::columnFor( 'browser_type' ) );
     }
 
     /** A property whose column is a rename resolves through the same map. */
