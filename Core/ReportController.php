@@ -109,38 +109,8 @@ class ReportController extends \OWA\Core\AdminController {
      * not come through a controller, and defence in depth is worth more than
      * the tidiness of removing it.
      */
-    /**
-     * Access to a report is access to its Property.
-     *
-     * Checked against the Property whenever the request names one, so a siteId
-     * beside it cannot carry a reader into a Property they may not see. Site
-     * access is held per Profile and any Profile of a Property grants the
-     * Property, so the check is made against one the reader may see.
-     */
-    protected function isCurrentUserCapable( $currentUser ) {
-
-        $propertyId = (string) $this->getParam( 'propertyId' );
-
-        if ( $propertyId === '' ) {
-
-            return parent::isCurrentUserCapable( $currentUser );
-        }
-
-        $siteId = $currentUser->siteIdForProperty( $propertyId );
-
-        /*
-         * A Property the reader may see no Profile of is refused, whatever the
-         * capability. One not tied to a site -- view_site_list, which the
-         * custom report and funnel lists require -- passed for every Property,
-         * so a viewer of one could list another's reports by its id.
-         */
-        if ( $siteId === '' && ! $currentUser->isAdmin() ) {
-
-            return false;
-        }
-
-        return (bool) $currentUser->isCapable( $this->getRequiredCapability(), $siteId );
-    }
+    // Access to a report is access to its Property, the one the request names else its siteId's.
+    use \OWA\Core\PropertyScopedAccess;
 
     /**
      * What the period picker starts from: the presets with today's dates for

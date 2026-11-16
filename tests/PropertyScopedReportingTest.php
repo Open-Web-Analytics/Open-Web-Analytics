@@ -239,6 +239,75 @@ final class PropertyScopedReportingTest extends TestCase
         }
     }
 
+    /**
+     * A siteId alone names its Property, so a list that requires a capability
+     * not held per site is refused for a Profile of a Property the reader may
+     * not see.
+     */
+    public function testTheReportListsAreRefusedForAProfileOfAPropertyTheReaderCannotSee(): void
+    {
+        [$user] = $this->viewer([self::ONE]);
+        $su = $this->serviceUser($user);
+
+        foreach ([\OWA\Module\Base\Controller\CustomReports::class, \OWA\Module\Base\Controller\Visualizations::class] as $class) {
+
+            $check = function (array $params) use ($su, $class): bool {
+                $controller = new $class($params);
+                $m = new ReflectionMethod($controller, 'isCurrentUserCapable');
+
+                return $m->invoke($controller, $su);
+            };
+
+            $this->assertTrue($check(['siteId' => self::TWO]), "$class refused a Profile of the reader's own Property");
+            $this->assertFalse($check(['siteId' => self::OTHER]), "$class opened another Property through its Profile");
+        }
+    }
+
+    /**
+     * The Property screens hold edit_sites on the Property they act on. A
+     * user who may edit one Property's Profiles cannot reach another Property
+     * by sending a siteId of their own beside its propertyId.
+     */
+    public function testThePropertyScreensAreCheckedAgainstThePropertyTheyActOn(): void
+    {
+        [$user] = $this->viewer([self::ONE]);
+        $su = $this->serviceUser($user);
+        $su->capabilities[] = 'edit_sites';
+
+        foreach ([
+            \OWA\Module\Base\Controller\PropertyAccess::class,
+            \OWA\Module\Base\Controller\PropertyAccessUpdate::class,
+            \OWA\Module\Base\Controller\PropertyDelete::class,
+            \OWA\Module\Base\Controller\PropertyEdit::class,
+            \OWA\Module\Base\Controller\PropertyProfile::class,
+            \OWA\Module\Base\Controller\PropertyProfiles::class,
+        ] as $class) {
+
+            $check = function (array $params) use ($su, $class): bool {
+                $controller = new $class($params);
+                $m = new ReflectionMethod($controller, 'isCurrentUserCapable');
+
+                return $m->invoke($controller, $su);
+            };
+
+            $this->assertTrue($check(['propertyId' => (string) self::PROPERTY]), "$class refused the user's own Property");
+            $this->assertTrue($check(['propertyId' => (string) self::PROPERTY, 'siteId' => self::TWO]), "$class refused the user's own Property");
+            $this->assertFalse($check(['propertyId' => (string) self::OTHER_PROPERTY, 'siteId' => self::ONE]),
+                "$class acted on another Property through the user's own siteId");
+            $this->assertFalse($check(['propertyId' => (string) self::OTHER_PROPERTY]), "$class acted on another Property");
+            $this->assertFalse($check(['siteId' => self::OTHER]), "$class acted on another Property through its Profile");
+        }
+
+        // Adding a Property names no propertyId; the user's own siteId is accepted.
+        $add = new \OWA\Module\Base\Controller\PropertyEdit(['siteId' => self::ONE, 'name' => 'New']);
+        $this->assertTrue((new ReflectionMethod($add, 'isCurrentUserCapable'))->invoke($add, $su));
+
+        // Without edit_sites, the user's own Property is refused too.
+        $viewer = $this->serviceUser($user);
+        $own = new \OWA\Module\Base\Controller\PropertyEdit(['propertyId' => (string) self::PROPERTY]);
+        $this->assertFalse((new ReflectionMethod($own, 'isCurrentUserCapable'))->invoke($own, $viewer));
+    }
+
     public function testPropertyAccessShowsAGrantOnAnyProfile(): void
     {
         [, $id] = $this->viewer([self::TWO]);
