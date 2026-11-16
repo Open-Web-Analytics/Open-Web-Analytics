@@ -1859,7 +1859,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * The day the clocks go back is still 24 values of dateHour: its repeated
      * hour groups as one. The day difference alone is one short -- a week of
      * days is seven apart and eight long -- and sorted by date the row it cut
-     * was today's.
+     * was today's. By yearMonth or year, the days too: a period has no more
+     * months or years than days.
      *
      * A query by anything else is paginated instead (DEFAULT_RESULTS_PER_PAGE,
      * computeDimensionalRows()), and does not reach here.
@@ -1882,11 +1883,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $days;
     }
 
-    /** Whether the query is by date or dateHour: one row per day or hour of the period. */
+    /** The dimensions a trend is drawn over: one row per interval of the period. */
+    const TREND_AXES = array( 'date', 'dateHour', 'yearMonth', 'year' );
+
+    /** Whether the query is by a trend's axis (TREND_AXES), so bounded by the period rather than paged. */
     function isByDate() {
 
-        return in_array( 'date', (array) $this->dimensions, true )
-            || in_array( 'dateHour', (array) $this->dimensions, true );
+        return (bool) array_intersect( self::TREND_AXES, (array) $this->dimensions );
     }
 
     function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
@@ -2740,7 +2743,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     function computeDimensionalRows( $bm ) {
 
         /*
-         * A query by anything but date or dateHour that names no page size gets
+         * A query by anything but a trend's axis that names no page size gets
          * DEFAULT_RESULTS_PER_PAGE, and pages. It fell to the date range below,
          * which limits by the period -- one row a day, a sound bound only for a
          * query BY day -- so a breakdown over the last seven days stopped at

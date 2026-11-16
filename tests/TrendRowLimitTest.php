@@ -51,6 +51,18 @@ final class TrendRowLimitTest extends TestCase
         return $out;
     }
 
+    /** One page view on the 15th of each month, 202301 to 202503: 27 months, more than a default page. */
+    private static function months(): array
+    {
+        $out = [];
+
+        for ($m = 0; $m < 27; $m++) {
+            $out[] = mktime(12, 0, 0, 1 + $m, 15, 2023);
+        }
+
+        return $out;
+    }
+
     /** 20260307 to 20260309, across the spring-forward: three days, whose midnights are 47 hours apart. */
     private static function springForward(): array
     {
@@ -99,7 +111,7 @@ final class TrendRowLimitTest extends TestCase
             throw new \RuntimeException('creating the fixture cube failed');
         }
 
-        $instants = array_merge(self::days(), self::hours(), self::springForward());
+        $instants = array_merge(self::days(), self::hours(), self::springForward(), self::months());
 
         foreach ($instants as $i => $instant) {
 
@@ -192,6 +204,14 @@ final class TrendRowLimitTest extends TestCase
         $this->assertSame(
             array_merge(self::format(self::days(), 'YmdH'), self::format(self::hours(), 'YmdH')),
             $this->trend('dateHour', '20260601', '20260610'));
+    }
+
+    /** By month and by year a trend is bounded by its period too, not cut to the default page. */
+    public function testAMonthlyAndAYearlyTrendHaveEveryInterval(): void
+    {
+        $this->assertSame(self::format(self::months(), 'Ym'),
+            $this->trend('yearMonth', '20230101', '20250331'));
+        $this->assertSame(['2023', '2024', '2025'], $this->trend('year', '20230101', '20250331'));
     }
 
     /**
