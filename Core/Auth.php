@@ -564,17 +564,6 @@ class Auth extends \OWA\Core\Base {
         return \OWA\Core\CoreAPI::clearState('p');
     }
 
-    /**
-     * Simple Password Encryption Scheme
-     *
-     * @param string $password
-     * @return string
-     */
-    function encryptPassword($password) {
-
-        return \OWA\Core\Lib::encryptPassword($password);
-
-    }
     function encryptOldPassword($password) {
 
         return \OWA\Core\Lib::encryptOldPassword($password);

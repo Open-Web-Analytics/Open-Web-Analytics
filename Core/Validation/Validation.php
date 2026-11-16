@@ -80,16 +80,6 @@ namespace OWA\Core\Validation;
          return $this->errorMsg;
      }
 
-     // depricated
-     function setErrorMsg($msg) {
-
-         $this->errorMsg = $msg;
-         $this->hasError = true;
-
-         return;
-
-     }
-
      function setErrorMessage($msg) {
          $this->errorMsg = $msg;
      }

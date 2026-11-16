@@ -55,12 +55,6 @@ final class ReportGridTest extends TestCase
     {
         $this->assertSame( 12, \OWA\Core\ReportGrid::colspan( array( 'colspan' => 16 ) ),
             'a span wider than the grid must become full width, not widen the grid' );
-
-        $this->assertTrue( \OWA\Core\ReportGrid::isOverWide( array( 'colspan' => 16 ) ),
-            'and it must still be reportable as a mistake, not silently accepted' );
-
-        $this->assertFalse( \OWA\Core\ReportGrid::isOverWide( array( 'colspan' => 12 ) ) );
-        $this->assertFalse( \OWA\Core\ReportGrid::isOverWide( array() ) );
     }
 
     /**

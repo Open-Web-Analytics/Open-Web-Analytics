@@ -242,11 +242,6 @@ class Error {
         return $this->log($message, 'alert');
     }
 
-    function emerg($message) {
-
-        return $this->log($message, 'emergency');
-    }
-
     function log( $err, $priority = 'notice' ) {
 
 

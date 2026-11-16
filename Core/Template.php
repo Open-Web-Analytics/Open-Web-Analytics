@@ -1133,28 +1133,6 @@ class Template extends TemplateEngine {
 
 
 
-    function makeTable($labels, $data, $table_class = '', $table_id = '', $is_sortable = true) {
-
-        $t = new \OWA\Core\Template;
-
-        if (!empty($table_id)) {
-            $id = rand();
-        }
-
-        $t->set('table_id', $id.'Table');
-        $t->set('data', $data);
-        $t->set('labels', $labels);
-        $t->set('class', $table_class);
-        if ($is_sortable === true) {
-            $t->set('sort_table_class', 'tablesorter');
-        }
-
-        $t->set_template('generic_table.php');
-
-        return $t->fetch();
-
-    }
-
 
 
 

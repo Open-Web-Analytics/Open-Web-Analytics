@@ -384,20 +384,6 @@ abstract class Module {
     }
 
     /**
-     * Attaches an event handler to the event queue
-     *
-     * @param array $event_name
-     * @param string $handler_name
-     * @return boolean
-     * @depricated
-     */
-    function _addHandler($event_name, $handler_name) {
-
-        return $this->registerEventHandler($event_name, $handler_name);
-
-    }
-
-    /**
      * Declare one of this module's settings.
      *
      * The module is NOT a parameter: it is $this->name. A module method that

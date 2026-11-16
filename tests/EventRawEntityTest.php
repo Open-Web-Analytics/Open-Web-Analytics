@@ -21,14 +21,6 @@ final class EventRawEntityTest extends TestCase
         return \OWA\Core\CoreAPI::entityFactory('base.event_raw');
     }
 
-    public function testItCarriesNoForeignKeys(): void
-    {
-        // null when none were declared -- getAllForeignKeys() reads a table
-        // property that setProperty() only creates for a foreign-key column.
-        $this->assertEmpty($this->raw()->getAllForeignKeys(),
-            'No joins in the reporting path is the whole point of the single table.');
-    }
-
     public function testTheColumnSet(): void
     {
         $columns = $this->raw()->getColumns();

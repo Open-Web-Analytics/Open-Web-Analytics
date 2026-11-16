@@ -371,8 +371,6 @@ class RequestContainer {
             }
         }
 
-        // clean params after decode
-        //$params = owa_lib::inputFilter($params);
         // replace owa params
         $this->owa_params = $params;
         //debug

@@ -16,7 +16,7 @@ class CreateTableDeclaresOptionsTest extends TestCase
     /**
      * Where a CREATE TABLE literal is not a table being declared.
      * MysqlDialect: OWA_SQL_CREATE_TABLE's last %s is createTable()'s options.
-     * Db: createTableLike() rewrites a SHOW CREATE TABLE of an existing table.
+     * Db: createUnpartitionedCopy() rewrites a SHOW CREATE TABLE of an existing table.
      */
     const EXEMPT = ['Core/Db/MysqlDialect.php', 'Core/Db.php'];
 

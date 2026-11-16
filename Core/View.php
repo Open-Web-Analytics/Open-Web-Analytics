@@ -544,14 +544,6 @@ class View extends \OWA\Core\Base {
         // control array - will check for these params. If they exist it will return.
         $sp = array_fill_keys( self::LINK_STATE_KEYS, null );
                 
-        // merge in any stte keys passed from the controller.
-        $state_keys = $this->get('state_keys') ?: [];
-        
-        foreach ( $state_keys as $k) {
-	        
-	        $sp[$k] = null;
-        }
-
         // final result array
         $link_params = array();
 		

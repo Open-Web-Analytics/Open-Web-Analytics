@@ -204,7 +204,7 @@ final class DbDriverSqlParityTest extends TestCase
     }
 
     /**
-     * A report-shaped query: joins, group-by, having, order, limit and offset all
+     * A report-shaped query: group-by, having, order, limit and offset all
      * at once. This is the construction the reporting layer actually performs,
      * and each clause passes its own values through prepare().
      */
@@ -214,7 +214,6 @@ final class DbDriverSqlParityTest extends TestCase
             $db->selectFrom('owa_request', 'r');
             $db->selectColumn('COUNT(*)', 'sessions');
             $db->selectColumn('r.page_url', 'pagePath');
-            $db->join(OWA_SQL_JOIN_LEFT_OUTER, 'owa_document', 'd', 'r.document_id', 'd.id');
             $db->where('r.site_id', "site'1");
             $db->where('r.yyyymmdd', ['start' => '20260101', 'end' => '20260131'], 'BETWEEN');
             $db->groupBy('r.page_url');

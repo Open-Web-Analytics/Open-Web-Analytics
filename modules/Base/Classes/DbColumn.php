@@ -92,8 +92,6 @@ class DbColumn {
       */
      var $character_encoding = null;
 
-     var $foreign_key;
-
      var $is_primary_key = false;
 
      var $auto_increment = false;
@@ -474,25 +472,6 @@ class DbColumn {
      function setDescription( $description ) {
 
          $this->description = (string) $description;
-     }
-
-     function setForeignKey($entity, $column = 'id') {
-
-         $this->foreign_key = array($entity, $column);
-     }
-
-     function getForeignKey() {
-
-         return $this->foreign_key;
-     }
-
-     function isForeignKey() {
-
-         if (!empty($this->foreign_key)) {
-             return true;
-         } else {
-             return false;
-         }
      }
 
      function setAutoIncrement() {

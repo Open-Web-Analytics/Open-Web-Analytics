@@ -64,8 +64,6 @@ final class ProfileStreamTypeTest extends TestCase
         $this->assertSame( 'web', $site->getStreamType(),
             'A row written before stream_type existed reads as something other than a '
             . 'website, so every existing Profile changes meaning on upgrade.' );
-
-        $this->assertTrue( $site->isWebStream() );
     }
 
     /** A website Profile is known by its domain. */
@@ -100,7 +98,6 @@ final class ProfileStreamTypeTest extends TestCase
         $this->track( $site );
 
         $this->assertSame( 'app', $site->getStreamType() );
-        $this->assertFalse( $site->isWebStream() );
         $this->assertSame( $appId, $site->get( 'app_id' ) );
 
         $this->assertEmpty( $site->get( 'domain' ),

@@ -153,12 +153,6 @@ class CustomReport extends \OWA\Core\Entity {
             ? self::TYPE_VISUALIZATION : self::TYPE_REPORT;
     }
 
-    /** @return bool */
-    public function isVisualization() {
-
-        return $this->reportType() === self::TYPE_VISUALIZATION;
-    }
-
     /**
      * Is this one listed to everybody?
      *

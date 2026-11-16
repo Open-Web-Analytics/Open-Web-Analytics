@@ -1142,45 +1142,6 @@ class CoreAPI {
         return $cache;
     }
     
-    public static function implementationFactory( $group, $implementation_name ) {
-      
-        // get implementation
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-    
-        $mapValue = $s->getMapValue( $group, $implementation_name );
-		
-        if ( $mapValue && is_array( $mapValue ) ) {
-	        
-	        // new style map format
-	        if ( array_key_exists('class_name', $mapValue ) ) {
-		        
-		        $class_name = $mapValue['class_name'];
-		       		            
-		        if ( array_key_exists('file', $mapValue ) ) {
-			        
-			        $file = $mapValue['file'];
-		        }
-		        
-		        if ( array_key_exists('params', $mapValue ) ) {
-			        
-			        $params = $mapValue['params'];
-		        }
-		        
-	        } else {
-				// old style compatability
-	        	list( $class_name, $file, $params ) = $mapValue;
-            }
-
-            //owa_coreAPI::debug(print_r($implementation, true));
-            return \OWA\Core\Lib::simpleFactory( $class_name, $file, $params );
-
-        } else {
-
-            throw new \Exception("No implementation by the name $implementation_name found in group $group.");
-        }
-        
-    }
-
 
     public static function requestContainerSingleton() {
 
@@ -3142,50 +3103,6 @@ class CoreAPI {
             $value = $min + ( $max - $min + 1 ) * $value / ( $max_random_number + 1 );
 
         return abs(intval($value));
-    }
-
-    public static function summarize($map) {
-
-        $entity = \OWA\Core\CoreAPI::entityFactory($map['entity']);
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom($entity->getTableName(), $entity->getTableAlias());
-
-        foreach ($map['columns'] as $col => $action) {
-
-            switch ($action) {
-
-                case 'sum':
-                    $col_def = sprintf("SUM(%s)", $col);
-                    $name = $col.'_sum';
-                    break;
-                case 'count':
-                    $col_def = sprintf("COUNT(%s)", $col);
-                    $name = $col.'_count';
-                    break;
-                case 'count_distinct':
-                    $col_def = sprintf("COUNT(distinct %s)", $col);
-                    $name = $col.'_dcount';
-                    break;
-                case 'max':
-                    $col_def = sprintf("MAX(%s)", $col);
-                    $name = $col.'_max';
-                    break;
-            }
-
-            $db->selectColumn($col_def, $name);
-        }
-
-        foreach ($map['constraints'] as $con_col => $con_value) {
-
-            if ( is_array( $con_value ) ) {
-                $db->where($con_col, $con_value['value'], $con_value['operator']);
-            } else {
-                $db->where($con_col, $con_value);
-            }
-        }
-
-        $ret = $db->getOneRow();
-        return $ret;
     }
 
     /**

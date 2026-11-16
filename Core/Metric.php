@@ -192,56 +192,7 @@ class Metric extends \OWA\Core\Base {
         return $this->labels;
     
     }
-    /*
 
-    function getPagination() {
-        
-        $count = $this->calculatePaginationCount();
-        $this->pagination->total_count = $count;
-        return $this->pagination->getPagination();
-    
-    }
-    
-    */
-    function zeroFill(&$array) {
-    
-        array_walk_recursive($array, array($this, 'addzero'));
-        
-        return $array;
-        
-    }
-    
-    function addzero(&$v, $k) {
-        
-        if (empty($v)) {
-            
-            $v = 0;
-            
-        }
-        
-        return;
-    }
-    /*
-
-    function getPeriod() {
-    
-        return $this->params['period'];
-    }
-    
-    function getOrder() {
-    
-        if (array_key_exists('order', $this->params)) {
-            return $this->params['order'];
-        }
-    }
-    
-    function getLimit() {
-        
-        return $this->limit;
-        
-    }
-    
-    */
     function setEntity($name) {
         
         $this->entity = \OWA\Core\CoreAPI::entityFactory($name);
@@ -440,13 +391,6 @@ class Metric extends \OWA\Core\Base {
     function getName() {
         
         return $this->name;
-    }
-    
-    function getFormat() {
-        
-        if (array_key_exists('result_format', $this->params)) {
-            return $this->params['result_format'];
-        }
     }
     
     /**

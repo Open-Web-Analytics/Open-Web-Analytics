@@ -63,42 +63,6 @@ class Lib {
         return implode($outer_glue, $output);
     }
 
-    /**
-     * Deconstruct Associative Array
-     *
-     * For example this takes array([1] => array(a => dog, b => cat), [2] => array(a => sheep, b => goat))
-     * and tunrs it into array([a] => array(dog, sheep), [b] => array(cat, goat))
-     *
-     * @param array $a_array
-     * @return array $data_arrays
-     * @access public
-     */
-    public static function deconstruct_assoc($a_array) {
-        if (!empty($a_array)):
-
-            $data_arrays = array();
-
-            if(!empty($a_array[1])) :
-
-                foreach ($a_array as $key => $value) {
-                    foreach ($value as $k => $v) {
-                        $data_arrays[$k][] = $v;
-
-                    }
-                }
-            else:
-                //print_r($a_array[0]);
-                foreach ($a_array[0] as $key => $value) {
-                    $data_arrays[$key][] = $value;
-                }
-            endif;
-
-            return $data_arrays;
-        else:
-            return array();
-        endif;
-    }
-
 
     /**
      * Array of Current Time
@@ -140,81 +104,6 @@ class Lib {
         return (int) $n === 1 ? (string) $one : (string) $many;
     }
 
-    /**
-     * Information array for Months in the year.
-     *
-     * @return array
-     */
-    public static function months() {
-
-        return array(
-
-                    1 => array('label' => \OWA\Core\CoreAPI::t( 'January' )),
-                    2 => array('label' => \OWA\Core\CoreAPI::t( 'February' )),
-                    3 => array('label' => \OWA\Core\CoreAPI::t( 'March' )),
-                    4 => array('label' => \OWA\Core\CoreAPI::t( 'April' )),
-                    5 => array('label' => \OWA\Core\CoreAPI::t( 'May' )),
-                    6 => array('label' => \OWA\Core\CoreAPI::t( 'June' )),
-                    7 => array('label' => \OWA\Core\CoreAPI::t( 'July' )),
-                    8 => array('label' => \OWA\Core\CoreAPI::t( 'August' )),
-                    9 => array('label' => \OWA\Core\CoreAPI::t( 'September' )),
-                    10 => array('label' => \OWA\Core\CoreAPI::t( 'October' )),
-                    11 => array('label' => \OWA\Core\CoreAPI::t( 'November' )),
-                    12 => array('label' => \OWA\Core\CoreAPI::t( 'December' ))
-        );
-
-    }
-
-    public static function days() {
-
-        return array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
-    }
-
-    public static function years() {
-
-        static $years;
-
-        if (empty($years)):
-
-            $start_year = 2005;
-
-            $years = array($start_year);
-
-            $num_years =  date("Y", time()) - $start_year;
-
-            for($i=1; $i<=$num_years; $i++) {
-
-                $years[] = $start_year + $i;
-            }
-
-            $years = array_reverse($years);
-
-        endif;
-
-        return $years;
-    }
-
-
-    /**
-     * Returns a label from an array of months
-     *
-     * @param int $month
-     * @return string
-     */
-    public static function get_month_label($month) {
-
-        static $months;
-
-        if (empty($months)):
-
-            $months = \OWA\Core\Lib::months();
-
-        endif;
-
-        return $months[$month]['label'];
-
-    }
 
 
 	public static function isHttps() {
@@ -314,11 +203,6 @@ class Lib {
         $url .= $_SERVER['REQUEST_URI'];
 
         return $url;
-    }
-
-    public static function inputFilter($input, $options = array() ) {
-
-        return \OWA\Module\Base\Classes\Sanitize::cleanInput( $input, $options );
     }
 
     public static function fileInclusionFilter($str) {
@@ -470,27 +354,6 @@ class Lib {
         return class_exists($class) ? $class : null;
     }
 
-    /**
-     * Generic Object Singleton
-     *
-     * @param string $class_dir
-     * @param string $class_prefix
-     * @param string $class_name
-     * @param array $conf
-     * @return object
-     */
-    public static function singleton($class_dir, $class_prefix, $class_name, $conf = array()) {
-
-        static $instance;
-        
-        if (!isset($instance)) {
-            // below missing a reference becasue the static vriable can not handle a reference
-            $instance = \OWA\Core\Lib::factory($class_dir, $class_prefix, $class_name, $conf);
-        }
-        
-        return $instance;
-    }
-    
     /**
      * 302 HTTP redirect the user to a new url
      *
@@ -1159,17 +1022,6 @@ class Lib {
         return dechex($crc);
     }
 
-    public static function getLocalTimestamp($utc = '') {
-
-        if ( ! $utc ) {
-            $utc = time();
-        }
-        $local_timezone_offset = date('Z');
-        $daylight_savings = date('I') * 3600;
-        $local_time = $utc - $local_timezone_offset + $daylight_savings;
-        return $local_time;
-    }
-
     public static function sanitizeCookieDomain($domain) {
 
         // Remove port information.
@@ -1185,67 +1037,6 @@ class Lib {
         }
 
         return $domain;
-    }
-
-    public static function stripWWWFromDomain($domain) {
-
-        $done = false;
-        $part = substr( $domain, 0, 5 );
-        if ($part === '.www.') {
-            //strip .www.
-            $domain = substr( $domain, 5);
-            // add back the leading period
-            $domain = '.'.$domain;
-            $done = true;
-        }
-
-        if ( ! $done ) {
-            $part = substr( $domain, 0, 4 );
-            if ($part === 'www.') {
-                //strip .www.
-                $domain = substr( $domain, 4);
-                $done = true;
-            }
-
-        }
-
-        return $domain;
-    }
-
-    /**
-     *  Use this function to parse out the url and query array element from
-     *  a url.
-     */
-    public static function parse_url( $url ) {
-
-        $url = parse_url($url);
-
-        if ( isset( $url['query'] ) ) {
-            $var = $url['query'];
-
-            $var  = html_entity_decode($var);
-            $var  = explode('&', $var);
-            $arr  = array();
-
-              foreach( $var as $val ) {
-
-                if ( strpos($val, '=') ) {
-                    $x = explode('=', $val);
-
-                    if ( isset( $x[1] ) ) {
-                        $arr[$x[0]] = urldecode($x[1]);
-                    }
-                } else {
-                    $arr[$val] = '';
-                }
-               }
-              unset($val, $x, $var);
-
-              $url['query_params'] = $arr;
-
-        }
-
-          return $url;
     }
 
     // better empty check when you need to accept these as valid, non-empty values:
@@ -1347,12 +1138,6 @@ class Lib {
         $names = implode( '|', array_map( function ( $n ) { return preg_quote( $n, '/' ); }, self::LOG_REDACTED_PARAMS ) );
 
         return (string) preg_replace( '/([?&])((?:owa_)?(?:' . $names . '))=[^&#]*/i', '$1$2=[redacted]', (string) $url );
-    }
-
-    public static function removeQueryParamFromUrl( $url, $key ) {
-	    
-	    $url = preg_replace('/([?&])'.$key.'=[^&]+(&|$)/','$1',$url);
-	    return rtrim( $url, '&');
     }
 
     public static function anonymizeIp( $ip_address ) {

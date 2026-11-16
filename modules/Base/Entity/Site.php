@@ -164,12 +164,6 @@ class Site extends \OWA\Core\Entity {
         return $type !== '' ? $type : self::STREAM_WEB;
     }
 
-    /** Does this Profile observe a website? */
-    public function isWebStream() {
-
-        return $this->getStreamType() === self::STREAM_WEB;
-    }
-
     /**
      * Has this Profile been archived?
      *
@@ -401,21 +395,6 @@ class Site extends \OWA\Core\Entity {
 
     }
 
-
-    /**
-     * Checks if user is allowed to access the site.
-     * @param integer $userId
-     * @return boolean
-     */
-    public function isUserAssigned($userId) {
-        $users = $this->getAssignedUsers();
-        foreach ($users as $user) {
-            if ($userId == $user->get('id')) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     /**
      * Returns collection of owa_user entities that are allowed for current user
