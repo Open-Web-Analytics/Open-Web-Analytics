@@ -11,6 +11,7 @@
 //
 return array(
     '"%s" cannot be queried here.' => '"%s" cannot be queried here.',
+    '"%s" is not a constraint: it needs a name, an operator and a value.' => '"%s" is not a constraint: it needs a name, an operator and a value.',
     '"%s" is not a database name OWA can use.' => '"%s" is not a database name OWA can use.',
     '"%s" is not a dimension or a metric, so a segment cannot select on it.' => '"%s" is not a dimension or a metric, so a segment cannot select on it.',
     '"%s" is not a dimension or a metric, so it cannot be constrained on. Refusing to run the query unconstrained -- an unknown name is not a request for everything.' => '"%s" is not a dimension or a metric, so it cannot be constrained on. Refusing to run the query unconstrained -- an unknown name is not a request for everything.',

@@ -102,8 +102,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      * The data link is minted here, at the click, because a row only exists in
      * the browser: the report could not have minted one per row.
      *
-     * Not for a value carrying a comma, which the constraint list would split;
-     * and only for a Property the user can see.
+     * Only for a Property the user can see.
      *
      * @param string $value  pagePathPlusQuery, or pagePath when $byPath
      * @param bool   $byPath every query string of the path
@@ -122,7 +121,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
         $path  = $mark === false ? $value : substr( $value, 0, $mark );
         $query = $mark === false ? '' : substr( $value, $mark + 1 );
 
-        if ( $path === '' || $path[0] !== '/' || strpos( $value, ',' ) !== false
+        if ( $path === '' || $path[0] !== '/'
              || ( $byPath && strpos( $value, '?' ) !== false ) ) {
 
             return;
@@ -147,7 +146,8 @@ class OverlayLauncher extends \OWA\Core\Controller {
             'propertyId'     => $propertyId,
             'metrics'        => 'eventCount',
             'dimensions'     => self::HEATMAP_DIMENSIONS,
-            'constraints'    => ( $byPath ? 'pagePath==' : 'pagePathPlusQuery==' ) . urlencode( $value )
+            'constraints'    => ( $byPath ? 'pagePath==' : 'pagePathPlusQuery==' )
+                . urlencode( \OWA\Module\Base\Classes\ResultSetManager::constraintValue( $value ) )
                 . ',eventName==click',
             'resultsPerPage' => 1000,
             'format'         => 'json',

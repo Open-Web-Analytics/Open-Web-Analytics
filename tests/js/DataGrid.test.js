@@ -126,6 +126,18 @@ describe('the filters a grid is given', () => {
         expect(OWA.dataGrid.formatConstraints(list)).toBe('medium==(not set),source!=(not set)');
     });
 
+    /* ResultSetManager::constraintValue(): % and , are escaped, so a comma does not end a clause. */
+    test('a value holding a comma, a % or an escape round-trips', () => {
+        const values = ['/a,b', '50%', 'spring%26summer', '/x%2Cy', 'p#frag'];
+        const list = values.map((value) => ({ name: 'pagePath', operator: '==', value }));
+        const str = OWA.dataGrid.formatConstraints(list);
+
+        expect(str).toBe('pagePath==/a%2Cb,pagePath==50%25,pagePath==spring%2526summer,'
+            + 'pagePath==/x%252Cy,pagePath==p#frag');
+        expect(OWA.dataGrid.parseConstraints(str)).toEqual(list);
+        expect(OWA.dataGrid.parseConstraints('pageTitle==100%')[0].value).toBe('100%');
+    });
+
     test('nothing is no filters', () => {
         expect(OWA.dataGrid.parseConstraints('')).toEqual([]);
         expect(OWA.dataGrid.parseConstraints(undefined)).toEqual([]);

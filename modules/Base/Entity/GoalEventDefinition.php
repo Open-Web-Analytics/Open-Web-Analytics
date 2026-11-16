@@ -413,7 +413,11 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      * Why a name cannot be a goal event definition's, or '' when it can.
      *
      * A name OWA collects itself is refused: a goal row called click would be
-     * counted as a click by every report that counts them.
+     * counted as a click by every report that counts them. In any case:
+     * event_type compares case-blind (its collation), so Page_View is counted
+     * as page_view, and a row's id hashes the lowercased name
+     * (Lib::wideStringGuid()), so a goal row called Session_Start takes the id
+     * of the beacon's session_start row and the insert fails.
      *
      * @param  string $name
      * @return string
@@ -427,7 +431,10 @@ class GoalEventDefinition extends \OWA\Core\Entity {
             return \OWA\Core\CoreAPI::t( 'A name starts with a letter and has up to 40 letters, digits and underscores.' );
         }
 
-        if ( in_array( $name, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
+        $owas = array_merge( \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(),
+            \OWA\Core\CoreAPI::trackingEventTypes() );
+
+        if ( in_array( strtolower( $name ), array_map( 'strtolower', $owas ), true ) ) {
 
             return sprintf( \OWA\Core\CoreAPI::t( '%s is an event OWA collects.' ), $name );
         }

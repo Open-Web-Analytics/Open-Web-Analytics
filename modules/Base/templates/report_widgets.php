@@ -699,9 +699,10 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
          * non-click row of the page into one bucket at NULL,NULL.
          *
          * Comma-separated, which is what parseConstraintsString() splits on. The
-         * path is urlencoded, so a path containing a comma cannot split the pair.
+         * path is escaped as a constraint value (a comma in it does not split
+         * the pair), then urlencoded for the link.
          */
-        $owa_hm_constraints = 'pagePath==' . urlencode( $owa_hm_path )
+        $owa_hm_constraints = 'pagePath==' . urlencode( \OWA\Module\Base\Classes\ResultSetManager::constraintValue( $owa_hm_path ) )
             . ',eventName==click';
 
         $owa_hm_api = $view->makeOverlayApiLink( array(

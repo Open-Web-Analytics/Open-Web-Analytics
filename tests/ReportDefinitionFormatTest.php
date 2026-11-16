@@ -162,6 +162,42 @@ final class ReportDefinitionFormatTest extends TestCase
             'a value from the request must be encoded; a literal must be left alone' );
     }
 
+    /**
+     * A request value survives the trip through the constraints string: built
+     * here, carried on a link (PHP decodes the query string once), and parsed
+     * by the query. A comma in it does not end its clause, and a % or an
+     * escape it holds is its own.
+     */
+    public function testARequestValueReachesTheQueryAsItWasGiven(): void
+    {
+        $rsm = new \OWA\Module\Base\Classes\ResultSetManager();
+
+        foreach ( array( 'spring%26summer', '/a,b', '/x%2Cy', 'p#frag', '50%', '/50%25off', 'a b&c=d' ) as $value ) {
+
+            $d = $this->declared(
+                $this->base( array(
+                    'params'   => array( 'pagePath' => array() ),
+                    'settings' => array( 'constraints' => array(
+                        array( 'dimension' => 'pagePath', 'fromParam' => 'pagePath' ),
+                        array( 'dimension' => 'eventName', 'value' => 'click' ),
+                    ) ),
+                ) ),
+                array( 'pagePath' => $value )
+            );
+
+            parse_str( 'constraints=' . $d['constraints'], $request );
+
+            $this->assertSame(
+                array(
+                    array( 'name' => 'pagePath', 'value' => $value, 'operator' => '==' ),
+                    array( 'name' => 'eventName', 'value' => 'click', 'operator' => '==' ),
+                ),
+                $rsm->parseConstraintsString( $request['constraints'] ), $value );
+        }
+
+        $this->assertSame( array(), (array) $rsm->request_errors );
+    }
+
     public function testAnOperatorOtherThanEqualsIsHonoured(): void
     {
         $d = $this->declared(

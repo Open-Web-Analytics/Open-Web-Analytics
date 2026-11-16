@@ -23,6 +23,7 @@ final class AttributedSourceBuildTest extends TestCase
     const NO_TOUCH      = 7782100000000004;
     const INHERITS_HOST = 7782100000000005;
     const OWN_REFERRER  = 7782100000000006;
+    const GOAL_ON_LAND  = 7782100000000007;
 
     /** @var int */
     private $yyyymmdd;
@@ -204,6 +205,46 @@ final class AttributedSourceBuildTest extends TestCase
             $this->assertSame([$values, $values], $got[$visitor] ?? null,
                 "visitor $visitor, on both page views of the session");
         }
+    }
+
+    /**
+     * A goal row shares its trigger's event_seq and ts but carries none of its
+     * tags: it must not be read as the session's landing event, whatever the
+     * ids say.
+     */
+    public function testAGoalRowAtItsTriggersPlaceDoesNotTakeTheLanding(): void
+    {
+        $this->landing(self::GOAL_ON_LAND, ['tagged_source' => 'partner', 'tagged_medium' => 'cpc',
+            'tagged_campaign' => 'autumn']);
+
+        $session = self::GOAL_ON_LAND + 500;
+        $trigger = \OWA\Module\Base\Classes\V2Event::id(self::SITE, self::GOAL_ON_LAND, $session, $this->t0, 'page_view');
+
+        // Below the trigger's id, so the id alone would sort it first.
+        $goalId = self::GOAL_ON_LAND;
+        $this->assertLessThan($trigger, $goalId);
+
+        $goal = \OWA\Core\CoreAPI::entityFactory('base.event_raw');
+        $goal->setProperties([
+            'id' => $goalId, 'event_type' => 'Signed_up', 'is_goal_event' => 1,
+            'site_id' => self::SITE, 'visitor_id' => self::GOAL_ON_LAND, 'session_id' => $session,
+            'ts' => $this->t0, 'event_seq' => 1, 'yyyymmdd' => $this->yyyymmdd, 'prior_sessions' => 1,
+            'page_location' => 'https://example.test/p', 'page_path' => '/p',
+        ]);
+        $this->assertTrue($goal->create(), 'seeding the goal row');
+
+        $this->rebuild();
+
+        $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results(sprintf(
+            'SELECT event_type, attributed_source, attributed_medium FROM %s WHERE yyyymmdd = %d'
+          . ' AND visitor_id = %d ORDER BY event_seq, is_goal_event',
+            \OWA\Module\Base\Classes\Cube\Cubes::tableFor(self::PROPERTY), $this->yyyymmdd, self::GOAL_ON_LAND));
+
+        $this->assertSame([
+            ['page_view', 'partner', 'cpc'], ['Signed_up', 'partner', 'cpc'], ['page_view', 'partner', 'cpc'],
+        ], array_map(static function ($row) {
+            return [$row['event_type'], $row['attributed_source'], $row['attributed_medium']];
+        }, (array) $rows));
     }
 
     /** The lookback is the Property's setting, applied at build: 150 days reaches the 120-day touch. */

@@ -1100,6 +1100,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      *
      * Structured rather than a string with placeholders, because the two kinds
      * of value are encoded differently: a value taken from the request is
+     * escaped as a constraint value (ResultSetManager::constraintValue()) and
      * urlencoded, a literal is not. Expressed as one template string, that
      * difference would have to be spelled with a filter -- and every author
      * would have to remember which side of the '==' they were on.
@@ -1128,7 +1129,8 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             if ( array_key_exists( 'fromParam', $part ) ) {
 
                 $name  = $part['fromParam'];
-                $value = urlencode( isset( $values[ $name ] ) ? $values[ $name ] : '' );
+                $value = urlencode( \OWA\Module\Base\Classes\ResultSetManager::constraintValue(
+                    isset( $values[ $name ] ) ? $values[ $name ] : '' ) );
 
             } else {
 
