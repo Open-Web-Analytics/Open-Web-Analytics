@@ -52,10 +52,12 @@ class Update062 extends \OWA\Core\Update {
 
         /*
          * First, whatever v1 holds (PLAN 2.30.6). Beacons in 1.x's FILE queue
-         * arrived and were never ingested, in a format v2 does not read: they
-         * are processed on 1.x before the upgrade, which refuses until they are.
+         * arrived and were never ingested, in a format v2 does not read, and
+         * the 1.x code that could is gone by now. Their lines are moved to an
+         * archive file in the queue directory, said in a notice, and the
+         * upgrade goes on. down() leaves the archive where it is.
          *
-         * owa_queue_item is not a reason to refuse. It held only retries --
+         * owa_queue_item is not a reason to stop. It held only retries --
          * events whose v1 handlers had already failed -- and with no shipped
          * drain it is mostly years of rows that fail every time. Its count is
          * said, and Update068 drops it.
@@ -64,15 +66,22 @@ class Update062 extends \OWA\Core\Update {
 
         if ( $queued['file_lines'] ) {
 
+            $archived = $this->archiveV1Queue();
+
+            if ( $archived === null ) {
+
+                $this->e->notice( 'Moving the 1.x file queue to an archive failed; nothing was removed from it.' );
+
+                return false;
+            }
+
             $this->e->notice( sprintf(
-                'OWA 1.x queued %d %s to its file queue that %s never ingested, and v2 cannot read %s. '
-              . 'Process %s on 1.x (php cli.php cmd=processEventQueue) until the queue is empty, then upgrade.',
-                $queued['file_lines'], \OWA\Core\Lib::plural( $queued['file_lines'], 'beacon', 'beacons' ), \OWA\Core\Lib::plural( $queued['file_lines'], 'was', 'were' ),
-                \OWA\Core\Lib::plural( $queued['file_lines'], 'it', 'them' ), \OWA\Core\Lib::plural( $queued['file_lines'], 'it', 'them' ) ) );
-
-            $this->awaiting = 'the 1.x file queue processed first';
-
-            return false;
+                'OWA 1.x queued %d %s to its file queue that %s never ingested, in a format v2 cannot read. '
+              . '%d %s moved from %d %s to %s.',
+                $queued['file_lines'], \OWA\Core\Lib::plural( $queued['file_lines'], 'beacon', 'beacons' ),
+                \OWA\Core\Lib::plural( $queued['file_lines'], 'was', 'were' ),
+                $archived['lines'], \OWA\Core\Lib::plural( $archived['lines'], 'line was', 'lines were' ),
+                $archived['files'], \OWA\Core\Lib::plural( $archived['files'], 'file', 'files' ), $archived['path'] ) );
         }
 
         if ( $queued['queue_rows'] ) {
@@ -299,9 +308,107 @@ class Update062 extends \OWA\Core\Update {
         return true;
     }
 
+    /** @var string|null the archive's file name; null to name it by the time. TESTS ONLY. */
+    public $archive_name = null;
+
+    /** The files of the queue directory that can hold 1.x's lines. */
+    private static function v1QueueFiles( $dir ) {
+
+        return array_values( array_filter( array_merge( array( $dir . 'events.txt' ), (array) glob( $dir . 'unprocessed/*' ) ), 'is_file' ) );
+    }
+
+    /** Whether a queue line is 1.x's: "<time>|*|<queue>|*|<pid>|*|<urlencoded blob>". v2 writes JSON. */
+    private static function isV1Line( $line ) {
+
+        return strpos( (string) $line, '|*|' ) !== false;
+    }
+
+    /**
+     * Move every 1.x line of the file queue to an archive file in the queue
+     * directory, update062-v1-queue-<date and time>.txt, unchanged, file by
+     * file. v2's own lines stay where they are; a batch in unprocessed/ left
+     * with none is removed.
+     *
+     * Each file is rewritten under the lock a writer appends under, so a beacon
+     * arriving meanwhile waits and is appended after. The archive is written
+     * before its lines are removed from a file, so a failure part way loses
+     * none: the lines moved so far are in the archive and the rest in the queue.
+     *
+     * @return array|null lines, files, path; null when a file could not be read
+     *                    or the archive written
+     */
+    public function archiveV1Queue() {
+
+        $dir  = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ), '/' ) . '/';
+        $path = $dir . ( $this->archive_name ?: 'update062-v1-queue-' . date( 'Ymd-His' ) . '.txt' );
+
+        $moved = array( 'lines' => 0, 'files' => 0, 'path' => $path );
+
+        foreach ( self::v1QueueFiles( $dir ) as $file ) {
+
+            $fh = @fopen( $file, 'c+' );
+
+            if ( ! $fh || ! flock( $fh, LOCK_EX ) ) {
+
+                return null;
+            }
+
+            $v1   = array();
+            $keep = array();
+
+            foreach ( explode( "\n", (string) stream_get_contents( $fh ) ) as $line ) {
+
+                if ( $line === '' ) {
+
+                    continue;
+                }
+
+                if ( self::isV1Line( $line ) ) {
+
+                    $v1[] = $line;
+
+                } else {
+
+                    $keep[] = $line;
+                }
+            }
+
+            $ok = true;
+
+            if ( $v1 ) {
+
+                $ok = @file_put_contents( $path, implode( "\n", $v1 ) . "\n", FILE_APPEND | LOCK_EX ) !== false;
+
+                if ( $ok ) {
+
+                    $rest = $keep ? implode( "\n", $keep ) . "\n" : '';
+                    $ok   = ftruncate( $fh, 0 ) && rewind( $fh ) && fwrite( $fh, $rest ) === strlen( $rest ) && fflush( $fh );
+
+                    $moved['lines'] += count( $v1 );
+                    $moved['files']++;
+                }
+            }
+
+            flock( $fh, LOCK_UN );
+            fclose( $fh );
+
+            if ( ! $ok ) {
+
+                return null;
+            }
+
+            if ( $v1 && ! $keep && $file !== $dir . 'events.txt' ) {
+
+                @unlink( $file );
+            }
+        }
+
+        return $moved;
+    }
+
     /**
      * What OWA 1.x left queued (PLAN 2.30.6): lines in its file queue that are
-     * not v2's JSON -- beacons never ingested, which stop the upgrade -- and
+     * not v2's JSON -- beacons never ingested, which up() archives -- and
      * owa_queue_item rows still awaiting a retry, which do not.
      *
      * @return array file_lines, queue_rows
@@ -311,17 +418,11 @@ class Update062 extends \OWA\Core\Update {
         $dir   = rtrim( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ), '/' ) . '/';
         $lines = 0;
 
-        foreach ( array_merge( array( $dir . 'events.txt' ), (array) glob( $dir . 'unprocessed/*' ) ) as $file ) {
-
-            if ( ! is_file( $file ) ) {
-
-                continue;
-            }
+        foreach ( self::v1QueueFiles( $dir ) as $file ) {
 
             foreach ( (array) file( $file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) as $line ) {
 
-                // 1.x wrote "<time>|*|<queue>|*|<pid>|*|<urlencoded blob>"; v2 writes JSON.
-                if ( strpos( (string) $line, '|*|' ) !== false ) {
+                if ( self::isV1Line( $line ) ) {
 
                     $lines++;
                 }
