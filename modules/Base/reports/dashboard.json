@@ -107,6 +107,7 @@
             "id": "latestVisits",
             "container": "latest-visits",
             "title": "Most Recent Visits",
+            "compare": false,
             "query": {
                 "metrics": "pageViewsPerSession",
                 "dimensions": "sessionStartTime,ipAddress,landingPage,sessionSourceMedium,city,country,priorSessionCount",

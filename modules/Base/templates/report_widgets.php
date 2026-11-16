@@ -747,9 +747,18 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
              */
         ?>
         <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody"></div>
+<?php
+    /*
+     * `compare: false`: the report's state without the comparison. A grid of
+     * single visits has no compare period to match its rows against.
+     */
+    $owa_gridState = ( $owa_w['compare'] ?? true ) === false
+        ? array_values( array_diff( \OWA\Core\View::LINK_STATE_KEYS, array( 'compare', 'compareStartDate', 'compareEndDate' ) ) )
+        : true;
+?>
 
         <script>
-        var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
+        var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, $owa_gridState ); ?>';
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
