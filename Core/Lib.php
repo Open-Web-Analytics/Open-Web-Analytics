@@ -1331,6 +1331,24 @@ class Lib {
           return $p['scheme'].$p['user'].$p['pass'].$p['host'].$p['port'].$p['path'].$p['query'].$p['fragment'];
     }
     
+    /**
+     * Query parameters whose values are credentials: the API key and request
+     * signature, the overlay token, a password and the password-reset key (k),
+     * each also with the owa_ prefix.
+     */
+    const LOG_REDACTED_PARAMS = array( 'apiKey', 'signature', 'overlayToken', 'password', 'k' );
+
+    /**
+     * A URL as written to the log: each LOG_REDACTED_PARAMS value replaced
+     * by [redacted].
+     */
+    public static function redactUrlForLog( $url ) {
+
+        $names = implode( '|', array_map( function ( $n ) { return preg_quote( $n, '/' ); }, self::LOG_REDACTED_PARAMS ) );
+
+        return (string) preg_replace( '/([?&])((?:owa_)?(?:' . $names . '))=[^&#]*/i', '$1$2=[redacted]', (string) $url );
+    }
+
     public static function removeQueryParamFromUrl( $url, $key ) {
 	    
 	    $url = preg_replace('/([?&])'.$key.'=[^&]+(&|$)/','$1',$url);

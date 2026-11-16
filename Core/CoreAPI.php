@@ -2478,11 +2478,13 @@ class CoreAPI {
             $cookie_value = \OWA\Core\Lib::implode_assoc('=>', '|||', $cookie_value);
         }
 
+        $logged_value = self::cookieValueForLog( $cookie_name, $cookie_value );
+
         // add namespace
         $cookie_name = sprintf('%s%s', \OWA\Core\CoreAPI::getSetting('base', 'ns'), $cookie_name);
 
         // debug
-        \OWA\Core\CoreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $cookie_value, $domain));
+        \OWA\Core\CoreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $logged_value, $domain));
 
         // makes cookie to session cookie only
         if (!\OWA\Core\CoreAPI::getSetting('base', 'cookie_persistence')) {
@@ -2492,6 +2494,15 @@ class CoreAPI {
 		
         setcookie($cookie_name, $cookie_value,
             self::cookieOptions($expires, $path, $domain, \OWA\Core\Lib::isHttps(), $httponly));
+    }
+
+    /** The sign-in cookies, by name before the namespace: their values are credentials. */
+    const CREDENTIAL_COOKIES = array( 'u', 'p' );
+
+    /** A cookie's value as written to the debug log: [redacted] for a CREDENTIAL_COOKIES one. */
+    public static function cookieValueForLog( $cookie_name, $cookie_value ) {
+
+        return in_array( (string) $cookie_name, self::CREDENTIAL_COOKIES, true ) ? '[redacted]' : (string) $cookie_value;
     }
 
     /**
