@@ -3162,10 +3162,12 @@ test.describe('custom reports', () => {
 
             await expect(theirs.locator('body')).toContainText(name);
 
-            // Not shared: not found for them, link or no link.
-            await theirs.goto(privateUrl, { waitUntil: 'networkidle' });
+            // Not shared: not found for them, link or no link -- the page a
+            // report of another Property gets.
+            const refused = await theirs.goto(privateUrl, { waitUntil: 'networkidle' });
 
-            await expect(theirs.locator('.owa_reportTitle')).not.toContainText(privateName);
+            expect(refused.status()).toBe(404);
+            await expect(theirs.locator('.owa_reportTitle')).toHaveCount(0);
             await expect(theirs.locator('body')).not.toContainText(privateName);
         } finally {
             await reader.close();

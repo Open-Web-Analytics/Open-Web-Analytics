@@ -214,6 +214,11 @@ class Report extends \OWA\Core\AdminController {
          */
         $data = (array) $this->delegateTo( $controllers[ $type ] );
 
+        if ( $refused = $this->notViewable( $id, $data, $report ) ) {
+
+            return $refused;
+        }
+
         // The same edit control a custom report gets, in the same place.
         return $this->withSharedTag( $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report ), $report );
     }
@@ -230,7 +235,9 @@ class Report extends \OWA\Core\AdminController {
         $property_id = \OWA\Module\Base\Classes\CustomReports::requestProperty(
             $row_id, $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) ?: $this->getParam( 'site_id' ) );
 
-        $report = \OWA\Module\Base\Classes\CustomReports::viewableOf( $row_id, $property_id );
+        // Who may view it is asked once the target has signed the reader in
+        // (notViewable()).
+        $report = \OWA\Module\Base\Classes\CustomReports::loadOf( $row_id, $property_id );
 
         if ( ! $report ) {
 
@@ -312,6 +319,11 @@ class Report extends \OWA\Core\AdminController {
 
         $data = (array) $target->doAction();
 
+        if ( $refused = $this->notViewable( $id, $data, $report ) ) {
+
+            return $refused;
+        }
+
         /*
          * "Edit", beside the title. See withEditAction() for what it is and on
          * what terms it is offered.
@@ -323,8 +335,8 @@ class Report extends \OWA\Core\AdminController {
          * governs, which is what lets each report be gated by its own
          * requirement rather than by this one's. Authentication therefore
          * happens INSIDE the call above -- and until it has, the current user
-         * is the default one. It carries the right user_id, and role
-         * 'everyone'.
+         * is the default one, with role 'everyone'. notViewable() is asked
+         * after it for the same reason.
          *
          * Asked before it, isCapable('edit_users') was therefore always false,
          * so mayEdit could only ever succeed through the OWNERSHIP branch. An
@@ -558,6 +570,41 @@ class Report extends \OWA\Core\AdminController {
         return \OWA\Core\CoreAPI::displayView( array( 'error_msg' => sprintf(
             \OWA\Core\CoreAPI::t( 'This saved report cannot be drawn: %s Edit the report to fix it.' ),
             rtrim( $error, '.' ) . '.' ) ), 'base.error' );
+    }
+
+    /**
+     * A drawn report the reader may not view (CustomReports::mayView()) is
+     * answered as not found, as one of another Property is; null otherwise.
+     *
+     * Asked AFTER the target's doAction(), for the reason given in
+     * renderCustom(): the target signs the reader in, and before it the
+     * current user has no role and no user_id to check. A refusal the target
+     * answered itself -- the login form for someone signed out -- is left as
+     * it is.
+     *
+     * @param  string $id
+     * @param  array  $data   what the target controller returned
+     * @param  array  $report the row
+     * @return array|null
+     */
+    private function notViewable( $id, array $data, array $report ) {
+
+        if ( empty( $data['view'] ) ) {
+
+            return null;
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+
+        if ( \OWA\Module\Base\Classes\CustomReports::mayView(
+                $report,
+                (string) $user->getUserData( 'user_id' ),
+                (bool) \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_users' ) ) ) {
+
+            return null;
+        }
+
+        return $this->reportNotResolved( $id, 'not found', 404 );
     }
 
     private function reportNotResolved( $id, $message, $status ) {
