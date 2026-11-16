@@ -458,8 +458,8 @@ final class ReportsRestControllerTest extends RestControllerTestCase
 
     /**
      * A grid lists the rows of both periods: the period's own first, then the
-     * groups only the comparison has, by the sort over its numbers. In those a
-     * count and a distinct count are 0 and changed by -100%.
+     * groups only the comparison has, by the sort over its numbers. In those
+     * every metric is 0 and changed by -100%, a distinct count too.
      */
     public function testAComparedGridAddsTheRowsOnlyTheComparisonHas(): void
     {

@@ -1422,7 +1422,7 @@ describe('a compared grid\'s rows only the comparison has', () => {
     const only = (browser, was) => ({
         browserType: cell('browserType', 'dimension', browser),
         sessions: metric('sessions', 0, '0', was, -1),
-        bounceRate: metric('bounceRate', null, null, 0.3, null),
+        bounceRate: metric('bounceRate', 0, '0.00%', 0.3, -1),
     });
 
     const compared = (rows, extra) => resultSet({
@@ -1443,7 +1443,7 @@ describe('a compared grid\'s rows only the comparison has', () => {
     const cells = ($root, i, column) => $root.find('tbody tr.owa_gridRow').eq(i).find('td[data-column="' + column + '"]');
     const number = ($td) => $td.contents().filter(function () { return this.nodeType === 3; }).first().text().trim();
 
-    test('come after the period\'s own: a count of 0 down 100%, a ratio a dash with no change', () => {
+    test('come after the period\'s own: every metric 0 down 100%, a ratio too', () => {
         const { $root } = draw(compared([own('Chrome', 60, 50), own('Safari', 30, null), only('Firefox', 12)]));
 
         expect(texts($root.find('tbody tr.owa_gridRow td[data-column="browserType"]'))).toEqual(['Chrome', 'Safari', 'Firefox']);
@@ -1455,9 +1455,8 @@ describe('a compared grid\'s rows only the comparison has', () => {
         expect($sessions.find('.owa_gridChange').attr('title')).toMatch(/: 12$/);
 
         const $bounce = cells($root, 2, 'bounceRate');
-        expect(number($bounce)).toBe('—');
-        expect($bounce.find('.owa_gridChange').hasClass('is-flat')).toBe(true);
-        expect($bounce.find('.owa_gridChange').text()).toBe('—');
+        expect(number($bounce)).toBe('0.00%');
+        expect($bounce.find('.owa_gridChange').text()).toBe('▼ 100.0%');
         expect($bounce.find('.owa_gridChange').attr('title')).toMatch(/: 0.3$/);
 
         expect($root.find('tbody tr.owa_gridRow').eq(2).find('.owa_gridRowNum').text()).toBe('3');

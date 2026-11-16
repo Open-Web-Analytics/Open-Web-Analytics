@@ -127,17 +127,15 @@ class CompareMerger {
 
     /**
      * A row the comparison period has and the period does not, as a row of
-     * the period: its dimension cells as they are, and each metric with the
-     * comparison's number as its compare_value. A count, distinct count, sum
-     * or difference is 0 in the period, and changed by -100%. A ratio
-     * ($ratios) has nothing to divide by, so it has no value and no change.
+     * the period: its dimension cells as they are, and every metric 0, a
+     * ratio too, as in a trend's empty interval. Each has the comparison's
+     * number as its compare_value and the change from it.
      *
      * @param array    $row    a row of the comparison's result set
-     * @param string[] $ratios the names of its ratio metrics
      * @param callable $format ( data_type, value ) => formatted value
      * @return array
      */
-    public static function compareOnlyRow( array $row, array $ratios, callable $format ) {
+    public static function compareOnlyRow( array $row, callable $format ) {
 
         foreach ( $row as $name => $cell ) {
 
@@ -146,41 +144,16 @@ class CompareMerger {
                 continue;
             }
 
-            $value = in_array( (string) $name, $ratios, true ) ? null : 0;
+            $value = 0;
 
             $row[ $name ]['value']                   = $value;
-            $row[ $name ]['formatted_value']         = $value === null ? null : $format( $cell['data_type'] ?? null, $value );
+            $row[ $name ]['formatted_value']         = $format( $cell['data_type'] ?? null, $value );
             $row[ $name ]['compare_value']           = $cell['value'] ?? null;
             $row[ $name ]['compare_formatted_value'] = $cell['formatted_value'] ?? ( $cell['value'] ?? null );
             $row[ $name ]['change']                  = self::change( $value, $cell['value'] ?? null );
         }
 
         return $row;
-    }
-
-    /**
-     * The ratio metrics of a result set, by the metric_type relatedMetrics
-     * carries.
-     *
-     * @param object $rs
-     * @return string[]
-     */
-    public static function ratioMetrics( $rs ) {
-
-        $names = array();
-
-        foreach ( (array) ( $rs->relatedMetrics ?? array() ) as $group ) {
-
-            foreach ( (array) $group as $metric ) {
-
-                if ( ( $metric['metric_type'] ?? '' ) === 'ratio' ) {
-
-                    $names[] = (string) $metric['name'];
-                }
-            }
-        }
-
-        return array_values( array_unique( $names ) );
     }
 
     /** Each metric cell of $cells, given the matching cell of $compare. */
