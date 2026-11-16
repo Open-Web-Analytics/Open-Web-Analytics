@@ -194,20 +194,20 @@ final class CompareMergerTest extends TestCase
     }
 
     /**
-     * A row only the comparison has: a count or a sum is 0 and changed by
-     * -100%; any other metric has no value and no change. Dimensions stay.
+     * A row only the comparison has: a count, distinct count or sum is 0 and
+     * changed by -100%; a ratio has no value and no change. Dimensions stay.
      */
-    public function testARowOnlyTheComparisonHasIsZeroOrNothing(): void
+    public function testARowOnlyTheComparisonHasIsZeroOrNoRatio(): void
     {
         $row = array(
             'pagePath'   => self::cell( 'pagePath', '/gone', 'dimension' ),
             'pageViews'  => self::cell( 'pageViews', 12 ) + array( 'data_type' => 'integer' ),
             'bounceRate' => self::cell( 'bounceRate', 0.25 ) + array( 'data_type' => 'percentage' ),
             'revenue'    => self::cell( 'revenue', 0 ) + array( 'data_type' => 'currency' ),
+            'totalUsers' => self::cell( 'totalUsers', 4 ) + array( 'data_type' => 'integer' ),
         );
 
-        $out = CompareMerger::compareOnlyRow( $row, array( 'pageViews', 'revenue' ),
-            fn ( $type, $value ) => $type . ':' . $value );
+        $out = CompareMerger::compareOnlyRow( $row, array( 'bounceRate' ), fn ( $type, $value ) => $type . ':' . $value );
 
         $this->assertSame( $row['pagePath'], $out['pagePath'] );
 
@@ -218,20 +218,24 @@ final class CompareMergerTest extends TestCase
         $this->assertSame( array( null, null, 0.25, null ), array( $out['bounceRate']['value'], $out['bounceRate']['formatted_value'],
             $out['bounceRate']['compare_value'], $out['bounceRate']['change'] ) );
 
+        $this->assertSame( array( 0, 'integer:0', 4 ), array( $out['totalUsers']['value'], $out['totalUsers']['formatted_value'],
+            $out['totalUsers']['compare_value'] ) );
+        $this->assertEqualsWithDelta( -1.0, $out['totalUsers']['change'], 1e-9 );
+
         // Zero against zero: no change.
         $this->assertSame( array( 0, null ), array( $out['revenue']['value'], $out['revenue']['change'] ) );
     }
 
-    public function testTheAdditiveMetricsAreTheCountsAndSums(): void
+    public function testTheRatioMetricsAreTheRatios(): void
     {
         $rs = self::rs( array() );
         $rs->relatedMetrics = array(
             'Content' => array( array( 'name' => 'pageViews', 'metric_type' => 'count' ), array( 'name' => 'bounceRate', 'metric_type' => 'ratio' ) ),
             'Ecommerce' => array( array( 'name' => 'revenue', 'metric_type' => 'sum' ), array( 'name' => 'netRevenue', 'metric_type' => 'difference' ),
-                array( 'name' => 'totalUsers', 'metric_type' => 'distinct_count' ) ),
+                array( 'name' => 'totalUsers', 'metric_type' => 'distinct_count' ), array( 'name' => 'conversionRate', 'metric_type' => 'ratio' ) ),
         );
 
-        $this->assertSame( array( 'pageViews', 'revenue' ), CompareMerger::additiveMetrics( $rs ) );
+        $this->assertSame( array( 'bounceRate', 'conversionRate' ), CompareMerger::ratioMetrics( $rs ) );
     }
 
     /** An unset value and '' are two groups in SQL, and are matched as two. */

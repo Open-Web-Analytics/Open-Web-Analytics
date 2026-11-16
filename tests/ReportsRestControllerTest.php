@@ -459,8 +459,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     /**
      * A grid lists the rows of both periods: the period's own first, then the
      * groups only the comparison has, by the sort over its numbers. In those a
-     * count is 0 and changed by -100%; a distinct count has no value and no
-     * change.
+     * count and a distinct count are 0 and changed by -100%.
      */
     public function testAComparedGridAddsTheRowsOnlyTheComparisonHas(): void
     {
@@ -483,8 +482,9 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $c = $data['resultsRows'][2];
         $this->assertSame('0', (string) $c['pageViews']['formatted_value']);
         $this->assertEqualsWithDelta(-1.0, $c['pageViews']['change'], 1e-9);
-        $this->assertSame([null, null, 5, null], [$c['totalUsers']['value'], $c['totalUsers']['formatted_value'],
-            (int) $c['totalUsers']['compare_value'], $c['totalUsers']['change']]);
+        $this->assertSame([0, '0', 5], [$c['totalUsers']['value'], (string) $c['totalUsers']['formatted_value'],
+            (int) $c['totalUsers']['compare_value']]);
+        $this->assertEqualsWithDelta(-1.0, $c['totalUsers']['change'], 1e-9);
 
         // The totals are the periods' own.
         $this->assertSame([4, 8], [(int) $data['aggregates']['pageViews']['value'], (int) $data['aggregates']['pageViews']['compare_value']]);

@@ -386,8 +386,8 @@ class ReportsRest extends \OWA\Core\ReportController {
             return $rs;
         }
 
-        $additive = \OWA\Module\Base\Classes\CompareMerger::additiveMetrics( $rs );
-        $format   = function ( $data_type, $value ) use ( $rsm ) {
+        $ratios = \OWA\Module\Base\Classes\CompareMerger::ratioMetrics( $rs );
+        $format = function ( $data_type, $value ) use ( $rsm ) {
             return $rsm->formatValue( $data_type, $value );
         };
 
@@ -395,7 +395,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
         foreach ( (array) $ors->resultsRows as $row ) {
 
-            $rows[] = \OWA\Module\Base\Classes\CompareMerger::compareOnlyRow( $row, $additive, $format );
+            $rows[] = \OWA\Module\Base\Classes\CompareMerger::compareOnlyRow( $row, $ratios, $format );
         }
 
         $rs->appendRows( $rows, count( $rows ) );
