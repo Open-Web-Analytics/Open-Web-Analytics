@@ -53,6 +53,9 @@ class Controller extends \OWA\Core\Base {
      */
     var $is_admin;
 
+    /** Whether this route takes an overlay token: only the routes an overlay reads. */
+    protected $accepts_overlay_token = false;
+
     /**
      * The priviledge level required to access this controller
      *
@@ -394,7 +397,7 @@ class Controller extends \OWA\Core\Base {
             /* PERFORM AUTHENTICATION */
             $auth = \OWA\Core\Auth::get_instance();
             if (!\OWA\Core\CoreAPI::isCurrentUserAuthenticated()) {
-                $status = $auth->authenticateUser();
+                $status = $auth->authenticateUser( $this->accepts_overlay_token );
                 if ($status['auth_status'] != true) {
                     $this->notAuthenticatedAction();
                     return false;
