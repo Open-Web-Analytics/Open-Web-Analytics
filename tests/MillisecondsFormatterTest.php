@@ -63,23 +63,18 @@ final class MillisecondsFormatterTest extends TestCase
     }
 
     /**
-     * A ratio's NULL survives every numeric formatter.
-     *
-     * A zero denominator gives NULL on purpose -- "no transactions, so revenue
-     * per transaction is not a number" -- and a formatter that renders it as
-     * $0.00 or 0.00% throws that away at the last step, reading as a measured
-     * zero. numberFormatter already guarded; currency and percentage did not,
-     * so every commerce ratio on a page with no purchases claimed a real zero.
+     * A NULL survives every numeric formatter: a value the query did not
+     * return is not shown as $0.00 or 0.00%.
      */
-    public function testANullRatioIsNotFormattedIntoAValue(): void
+    public function testANullIsNotFormattedIntoAValue(): void
     {
         $rsm = $this->rsm();
 
         $this->assertNull( $rsm->formatValue( 'currency', null ),
-            'currency must not render a NULL ratio as 0.00' );
+            'currency must not render a NULL as 0.00' );
 
         $this->assertNull( $rsm->formatValue( 'percentage', null ),
-            'percentage must not render a NULL ratio as 0.00%' );
+            'percentage must not render a NULL as 0.00%' );
 
         $this->assertNull( $rsm->formatValue( 'integer', null ) );
         $this->assertNull( $rsm->formatValue( 'milliseconds', null ) );

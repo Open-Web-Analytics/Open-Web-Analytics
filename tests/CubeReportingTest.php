@@ -1135,14 +1135,10 @@ final class CubeReportingTest extends TestCase
     }
 
     /**
-     * A zero denominator is NULL, not zero.
-     *
-     * "No sessions, so pages-per-session is not a number" and "pages-per-session
-     * is zero" are different answers, and only one of them is true. The formula
-     * path returns 0 for both, which is the behaviour this kind exists to stop
-     * inheriting.
+     * A zero denominator is 0: a day with no sessions has a pages per session
+     * of 0, as a trend's empty interval does, and the formatted value says so.
      */
-    public function testAZeroDenominatorIsAbsentRatherThanZero(): void
+    public function testAZeroDenominatorIsZero(): void
     {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
@@ -1156,8 +1152,9 @@ final class CubeReportingTest extends TestCase
 
         $this->assertSame(0, (int) $rs->aggregates['sessions']['value']);
 
-        $this->assertNull($rs->aggregates['pageViewsPerSession']['value'],
-            'a ratio with nothing to divide by has no value, and 0 would be a claim');
+        $this->assertSame(0, $rs->aggregates['pageViewsPerSession']['value']);
+        $this->assertSame('0', (string) $rs->aggregates['pageViewsPerSession']['formatted_value']);
+        $this->assertSame(0, (new \OWA\Core\Metric)->computeRatio(5, null), 'a missing denominator');
     }
 
     /**
@@ -1203,7 +1200,9 @@ final class CubeReportingTest extends TestCase
          * not a value PHP computed afterwards.
          */
         $this->assertStringContainsString('NULLIF', $column,
-            'a zero denominator must be NULL in SQL too, or the sort errors where the value does not');
+            'a zero denominator must not be a division error in SQL');
+        $this->assertStringStartsWith('round(COALESCE(', $column,
+            'and sorts as the 0 the value is');
 
         $this->assertStringContainsString('COUNT', $column,
             "the children's own expressions must be rendered into the sort");

@@ -1249,11 +1249,8 @@ OWA.util =  {
     },
 
     /**
-     * A metric's value as text, or a dash when it has none.
-     *
-     * A ratio over nothing is NULL on purpose -- no sessions, so pages per
-     * session is not a number, which is a different answer from zero (PLAN
-     * 2.11). Printed as it came, that NULL read "null" on the dashboard.
+     * A metric's value as text, or a dash when it has none. Printed as it
+     * came, a NULL read "null" on the dashboard.
      */
     metricText : function( cell ) {
 

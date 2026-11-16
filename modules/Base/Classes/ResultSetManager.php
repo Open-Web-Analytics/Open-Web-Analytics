@@ -1728,14 +1728,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                          * the server: computing the value in PHP and sorting
                          * that would order the page rather than the result.
                          *
-                         * NULLIF, so a zero denominator is NULL rather than an
-                         * error -- the same answer the value gets, and standard
-                         * SQL on every engine.
+                         * NULLIF, so a zero denominator is not an error, and
+                         * COALESCE, so it sorts as the 0 the value is.
                          */
                         $numerator   = $this->getMetricImplementation( $sort_metric->getNumerator() )->getSelect();
                         $denominator = $this->getMetricImplementation( $sort_metric->getDenominator() )->getSelect();
 
-                        $sort_col = sprintf( '(%s) / NULLIF((%s), 0)',
+                        $sort_col = sprintf( 'COALESCE((%s) / NULLIF((%s), 0), 0)',
                             $numerator[0], $denominator[0] );
 
                         if ( $sort_metric->getPrecision() !== null ) {
@@ -2290,13 +2289,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /**
-     * NULL STAYS NULL, like numberFormatter above.
-     *
-     * A ratio answers NULL on a zero denominator, deliberately: "no visits, so
-     * pages per visit is not a number" is a different answer from "pages per
-     * visit is zero". Formatting that NULL as 0.00% throws the distinction away
-     * at the last step, and reads as a measured zero -- which for a conversion
-     * rate claims people came and did not buy, rather than that nobody came.
+     * NULL STAYS NULL, like numberFormatter above: a value the query did not
+     * return is not shown as 0.00%.
      */
     function formatPercentage($value) {
 
@@ -3297,9 +3291,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     /**
      * A ratio's value on every row of a breakdown.
      *
-     * The same division as the aggregate, per row. A row missing either side
-     * has no ratio rather than a zero -- absent and zero are different answers
-     * (PLAN 2.11), and computeRatio() says which is which.
+     * The same division as the aggregate, per row. A row with no denominator
+     * is 0, as computeRatio() answers.
      *
      * @param  object $rs
      * @param  object $cm
