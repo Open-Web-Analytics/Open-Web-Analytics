@@ -244,8 +244,10 @@ class Controller extends \OWA\Core\Base {
                 
                 $nonce = $this->getParam('nonce');
                 \OWA\Core\CoreAPI::debug( "REST API Nonce: $nonce");
-                \OWA\Core\CoreAPI::debug( $this->get('version') . $this->get('module') . $this->get('do') );
-                if ( ! $nonce || ! $this->verifyNonce( $nonce, $this->get('version') . $this->get('module') . $this->get('do') ) ) {
+                $action = \OWA\Core\CoreAPI::restApiNonceAction( $this->get('version'), $this->get('module'), $this->get('do'),
+                    \OWA\Core\CoreAPI::serviceSingleton()->request->getRequestType() );
+                \OWA\Core\CoreAPI::debug( $action );
+                if ( ! $nonce || ! $this->verifyNonce( $nonce, $action ) ) {
                 
                     $this->e->debug('Nonce is missing or invalid.');
                     return $this->refused($this->notAuthenticatedAction());

@@ -26,6 +26,9 @@ final class OverlayTokenRouteTest extends RestControllerTestCase
 
         $this->resetCurrentUser();
 
+        // The method of the last sign-in tried, which the next test's screens check.
+        Auth::get_instance()->auth_method = null;
+
         parent::tearDown();
     }
 

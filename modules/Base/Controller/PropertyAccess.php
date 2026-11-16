@@ -13,6 +13,9 @@ namespace OWA\Module\Base\Controller;
  */
 class PropertyAccess extends \OWA\Core\AdminController {
 
+    // edit_sites on the Property acted on, not on the request's siteId.
+    use \OWA\Core\PropertyScopedAccess;
+
     function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_sites' );

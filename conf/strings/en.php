@@ -243,6 +243,7 @@ return array(
     'An event name starts with a letter and has up to 40 letters, digits and underscores.' => 'An event name starts with a letter and has up to 40 letters, digits and underscores.',
     'An event of your own, sent with trackCustomEvent, needs no conditions: leave them empty to count every one.' => 'An event of your own, sent with trackCustomEvent, needs no conditions: leave them empty to count every one.',
     'An inactive goal event definition is kept and stops counting.' => 'An inactive goal event definition is kept and stops counting.',
+    'An overlay link cannot ask for %s.' => 'An overlay link cannot ask for %s.',
     'Anchor X' => 'Anchor X',
     'Anchor Y' => 'Anchor Y',
     'Announce New Visitors Via E-mail' => 'Announce New Visitors Via E-mail',

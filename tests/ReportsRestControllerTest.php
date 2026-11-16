@@ -100,6 +100,55 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             'A resultSet response payload should be an array (the serialized result set).');
     }
 
+    /** The request parameters Auth reads an overlay token's request from. */
+    private const OVERLAY_REQUEST = ['overlayToken', 'rest_params', 'constraints', 'siteId', 'metrics',
+        'dimensions', 'period', 'segment', 'rowValues'];
+
+    /**
+     * A request signed in by a heatmap's token is held to the query on its
+     * link: a segment or rowValues, which the token does not bind, is refused.
+     */
+    public function testAnOverlayTokenMayNotAskForASegmentOrRowValues(): void
+    {
+        $user  = $this->makeUser('admin', 'overlay');
+        $base  = ['metrics' => 'eventCount', 'dimensions' => 'clickX', 'constraints' => 'pagePath==/a',
+                  'siteId' => $this->profile(true), 'period' => 'today'];
+        $token = \OWA\Core\OverlayToken::mint($user['user_id'], 'reports', 'constraints', 'pagePath==/a',
+            \OWA\Core\OverlayToken::DEFAULT_TTL, $base);
+
+        $ask = function (array $extra) use ($base, $token): array {
+            $params = $base + $extra + ['overlayToken' => $token, 'rest_params' => 'base/v1/reports'];
+
+            foreach (self::OVERLAY_REQUEST as $name) {
+                \OWA\Core\CoreAPI::setRequestParam($name, $params[$name] ?? '');
+            }
+
+            $this->resetCurrentUser();
+
+            return $this->callEndpoint(\OWA\Module\Base\Controller\ReportsRest::class, 'reportsRestController.php', $params);
+        };
+
+        try {
+            $this->assertSame(201, $ask([])['status'], 'the link itself');
+
+            foreach ([
+                'segment'   => ['segment' => 'pagePath==/b'],
+                'rowValues' => ['rowValues' => json_encode(['clickX' => ['10']])],
+            ] as $what => $extra) {
+                $resp = $ask($extra);
+
+                $this->assertSame(422, $resp['status'], "$what was answered");
+                $this->assertStringContainsString($what, $resp['raw']);
+            }
+        } finally {
+            foreach (self::OVERLAY_REQUEST as $name) {
+                \OWA\Core\CoreAPI::setRequestParam($name, '');
+            }
+
+            (new \ReflectionProperty(\OWA\Core\Auth::class, 'auth_method'))->setValue(\OWA\Core\Auth::get_instance(), null);
+        }
+    }
+
     /**
      * A Profile whose Property has no cube yet is answered 409 with the
      * reason, not 201 with no rows -- which is how a real zero looks.

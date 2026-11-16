@@ -241,11 +241,13 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         }
 
         /*
-         * Played by opening the page it was recorded on, so only a web page is
-         * offered: an http(s) location. No URL, no Play link (OWA.dataGrid's
-         * overlayLink).
+         * Played by opening the page it was recorded on, so only a web page on
+         * the Profile's domain or a subdomain of it is offered: the player's
+         * data link travels in that page's fragment. No URL, no Play link
+         * (OWA.dataGrid's overlayLink).
          */
-        if ( ! in_array( strtolower( (string) parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) {
+        if ( \OWA\Module\Base\Classes\ProfileDomains::originOf( $url,
+                \OWA\Module\Base\Classes\ProfileDomains::of( array( (string) $r['site_id'] ) ) ) === '' ) {
 
             $url = '';
         }

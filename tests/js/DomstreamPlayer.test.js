@@ -16,6 +16,14 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 
 let scrolledTo;
 
+// jsdom has no CSS.escape; jQuery.escapeSelector implements the same CSSOM
+// serialize-an-identifier algorithm.
+beforeAll(() => {
+    if (!window.CSS || !window.CSS.escape) {
+        window.CSS = Object.assign(window.CSS || {}, { escape: require('jquery').escapeSelector });
+    }
+});
+
 beforeEach(() => {
     document.body.innerHTML = '';
     const jq = require('jquery');
@@ -28,6 +36,7 @@ beforeEach(() => {
 
 afterEach(() => {
     jest.useRealTimers();
+    delete window.owa_assetsUrl;
 });
 
 function playerWith(samples) {
@@ -122,4 +131,41 @@ test('a sample of an unknown type is skipped', () => {
     const p = playerWith([[0, 'x', 1, 2]]);
 
     expect(() => p.playSample(p.samples[0])).not.toThrow();
+});
+
+/*
+ * A field found by name: the name is escaped for the attribute selector, so a
+ * backslash or a quote in it neither throws nor misses the field.
+ */
+test.each([
+    ['a trailing backslash', 'q\\'],
+    ['a backslash inside', 'a\\b'],
+    ['a double quote', 'say "hi"'],
+])('a key press finds a field whose name has %s', (_what, name) => {
+    const p = playerWith([[0, 'k', 'input', '', name]]);
+    const field = document.createElement('input');
+    field.setAttribute('name', name);
+    document.body.appendChild(field);
+
+    expect(() => p.playSample(p.samples[0])).not.toThrow();
+    expect(field.classList.contains('owa-key-pressed')).toBe(true);
+});
+
+test('an id is escaped for the selector', () => {
+    expect(Player.selector('input', 'a.b:c', '')).toBe('#a\\.b\\:c');
+});
+
+test('the cursor image loads from owa_assetsUrl when the page sets it', () => {
+    window.owa_assetsUrl = 'https://cdn.example.test/owa/';
+    playerWith([]);
+
+    expect(document.querySelector('#owa-cursor img').getAttribute('src'))
+        .toBe('https://cdn.example.test/owa/base/i/cursor2.png');
+});
+
+test('the cursor image loads from <baseUrl>public/ without owa_assetsUrl', () => {
+    playerWith([]);
+
+    expect(document.querySelector('#owa-cursor img').getAttribute('src'))
+        .toBe('https://owa.example.test/public/base/i/cursor2.png');
 });

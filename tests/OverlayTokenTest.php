@@ -134,6 +134,42 @@ final class OverlayTokenTest extends TestCase
         ));
     }
 
+    /**
+     * A token answers only for the dates on its link: another period, a
+     * range, a time range or a comparison is refused. A recording's token,
+     * minted with no period, accepts a request that names none.
+     */
+    public function testScopeIsEnforcedOnThePeriod(): void
+    {
+        $scope = ['propertyId' => '111', 'metrics' => 'eventCount', 'period' => 'last_thirty_days'];
+        $token = $this->mint(['scope' => $scope]);
+        $asked = ['document_id' => 'doc-12345'] + $scope;
+
+        $this->assertTrue(\OWA\Core\OverlayToken::permits($token, 'reports', $this->request($asked)));
+
+        foreach ([
+            'another period'   => ['period' => 'last_year'],
+            'a date range'     => ['startDate' => '20200101', 'endDate' => '20201231'],
+            'a time range'     => ['period' => '', 'startTime' => '1577836800', 'endTime' => '1609459199'],
+            'a comparison'     => ['compare' => 'previous_period'],
+            'comparison dates' => ['compareStartDate' => '20200101', 'compareEndDate' => '20201231'],
+        ] as $what => $change) {
+
+            $this->assertFalse(
+                \OWA\Core\OverlayToken::permits($token, 'reports', $this->request(array_merge($asked, $change))),
+                "$what was accepted"
+            );
+        }
+
+        $recording = $this->mint(['action' => 'domstreams', 'resource_key' => 'recording_id', 'resource' => '42',
+            'scope' => ['siteId' => 's-1']]);
+
+        $this->assertTrue(\OWA\Core\OverlayToken::permits($recording, 'domstreams',
+            $this->request(['recording_id' => '42', 'siteId' => 's-1'])));
+        $this->assertFalse(\OWA\Core\OverlayToken::permits($recording, 'domstreams',
+            $this->request(['recording_id' => '42', 'siteId' => 's-1', 'period' => 'today'])));
+    }
+
     public function testAnExpiredTokenIsRefused(): void
     {
         $expired = $this->mint(['ttl' => -1]);

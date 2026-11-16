@@ -23,6 +23,9 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomReportMarkFavorite extends \OWA\Core\AdminController {
 
+    // view_reports on the Property the report is starred on, as a report is checked.
+    use \OWA\Core\PropertyScopedAccess;
+
     function __construct( $params ) {
 
         parent::__construct( $params );
@@ -42,26 +45,6 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
 
             $this->setParam( 'propertyId', $propertyId );
         }
-    }
-
-    /**
-     * view_reports on the Property the report is starred on, against a Profile
-     * of it the reader may see, as ReportController checks a report.
-     *
-     * Asked of the siteId alone, a star sent with only the propertyId the
-     * report links carry was refused for everyone but an administrator.
-     */
-    protected function isCurrentUserCapable( $currentUser ) {
-
-        $propertyId = (string) $this->getParam( 'propertyId' );
-
-        if ( $propertyId === '' ) {
-
-            return parent::isCurrentUserCapable( $currentUser );
-        }
-
-        return (bool) $currentUser->isCapable( $this->getRequiredCapability(),
-            $currentUser->siteIdForProperty( $propertyId ) );
     }
 
     public function validate() {

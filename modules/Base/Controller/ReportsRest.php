@@ -107,7 +107,27 @@ class ReportsRest extends \OWA\Core\ReportController {
 		}
 	}
 	
+	/** What a request signed in by an overlay token may not ask for: its token does not bind them. */
+	const NOT_FOR_OVERLAY_TOKENS = array( 'segment', 'rowValues' );
+
 	function action() {
+
+		if ( \OWA\Core\Auth::get_instance()->getAuthMethod() === 'overlay_token' ) {
+
+			foreach ( self::NOT_FOR_OVERLAY_TOKENS as $key ) {
+
+				if ( ! in_array( $this->getParam( $key ), array( null, '' ), true ) ) {
+
+					$response = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'paginatedResultSet' );
+					$response->request_errors = array(
+						sprintf( \OWA\Core\CoreAPI::t( 'An overlay link cannot ask for %s.' ), $key ) );
+
+					$this->set( 'response', $response );
+
+					return;
+				}
+			}
+		}
 
 		/*
 		 * Reporting not ready for this Property: it has no cube yet.

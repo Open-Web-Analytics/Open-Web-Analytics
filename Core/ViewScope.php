@@ -60,7 +60,7 @@ namespace OWA\Core;
  * @method mixed getValue($key, $var)
  * @method mixed headerActions()
  * @method mixed makeAbsoluteLink($params = [], $add_state = false, $url = '', $xml = false)
- * @method mixed makeApiLink($params = [], $add_state = false)
+ * @method mixed makeApiLink($params = [], $add_state = false, $method = 'GET')
  * @method mixed makeImageLink($path, $absolute = false)
  * @method string|false makeImageLinkIfPresent($path, $absolute = false)
  * @method mixed makeJson($array)

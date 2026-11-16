@@ -312,7 +312,7 @@ class PaginatedResultSet {
         // if the REST API request was authorized using cookies then
         // we need to add a nonce to the urls
         if ( $auth->getAuthMethod() === 'cookies' ) {
-            $query_params['nonce'] = \OWA\Core\CoreAPI::createRestApiNonce( $query_params['version'], $query_params['module'], $query_params['do'] );
+            $query_params['nonce'] = \OWA\Core\CoreAPI::createRestApiNonce( $query_params['version'], $query_params['module'], $query_params['do'], 'GET' );
         }
 		
         // add current page if any
