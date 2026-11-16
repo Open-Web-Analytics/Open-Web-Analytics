@@ -2238,9 +2238,20 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return date( date( 'Y', $ts ) === date( 'Y' ) ? 'M j, g:i A' : 'M j, Y, g:i A', $ts );
     }
 
+    /**
+     * Seconds as a duration, in formatMilliseconds()'s format.
+     *
+     * @param int|float|string|null $value seconds
+     * @return string|null
+     */
     function formatSeconds($value) {
 
-        return date("G:i:s",mktime(0,0,($value)));
+        if ( $value === null || $value === '' ) {
+
+            return $value;
+        }
+
+        return $this->formatMilliseconds( $value * 1000 );
     }
 
     /**
@@ -2252,11 +2263,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * the same rule "(not set)" follows: the row holds the observation and the
      * renderer decides how to say it.
      *
-     * NOT formatSeconds(). That is date("G:i:s", mktime(0,0,$s)), which reads
-     * an hour-of-day back out and therefore WRAPS at 24 hours -- a total
-     * engagement time of 25 hours renders as 1:00:00. Fine for the per-visit
-     * averages it was written for, wrong for a sum across a reporting period,
-     * and this type carries both.
+     * A day or more reads as days plus h:mm:ss (25 hours is "1d 1:00:00"),
+     * since a sum across a reporting period passes a day routinely.
      *
      * @param int|null $value milliseconds
      * @return string

@@ -9,7 +9,6 @@
 import { OWA_instance as OWA } from '../common/owa.js';
 import { Util } from '../common/Util.js';
 import { OwaEvent } from './OwaEvent.js';
-import { Uri } from './Uri.js';
 import { toWire } from './WireNames.js';
 import { ElementAnchor } from './ElementAnchor.js';
 import DEFAULTS from './defaults.json';
@@ -917,8 +916,9 @@ class OWATracker  {
      * so the OWA tracker there continues the same visitor and session.
      *
      * The state is the visitor's cookies, concatenated as
-     * name1=encoded_value1.name2=encoded_value2, base64 encoded and appended to
-     * the URL. The page receiving it calls checkForLinkedState().
+     * name1=encoded_value1.name2=encoded_value2, base64 encoded and added to
+     * the URL's fragment (see addSharedStateToUrl()). The page receiving it
+     * calls checkForLinkedState().
      *
      * @command
      * @param {string} url  the destination
@@ -929,19 +929,35 @@ class OWATracker  {
         if ( url ) {
 
             var state = this.createSharedStateValue();
-
-            //check to see if we can just stick this on the anchor
-            var anchor = this.getUrlAnchorValue();
-            if ( ! anchor ) {
-
-                OWA.debug('shared state: %s', state);
-                document.location.href = url + '#' + OWA.getSetting('ns')+ 'state.' + state ;
-
-            // if not then we need ot insert it into GET params
-            } else {
-
-            }
+            OWA.debug('shared state: %s', state);
+            document.location.href = this.addSharedStateToUrl( url, state );
         }
+    }
+
+    /**
+     * The URL with the shared state token in its fragment.
+     *
+     * The token is a `<ns>state.<payload>` pair. A URL with no fragment gets it
+     * as the whole fragment; one that has a fragment keeps it and gets the
+     * token after a comma, the pair separator getAnchorParam() splits on.
+     *
+     * @internal
+     * @param {string} url
+     * @param {string} state  createSharedStateValue()
+     * @return {string}
+     */
+    addSharedStateToUrl(url, state) {
+
+        var token = OWA.getSetting('ns') + 'state.' + state;
+        var hash = url.indexOf('#');
+
+        if ( hash === -1 ) {
+            return url + '#' + token;
+        }
+
+        var fragment = url.substring( hash + 1 );
+
+        return url.substring( 0, hash + 1 ) + ( fragment ? fragment + ',' : '' ) + token;
     }
 
     createSharedStateValue() {
@@ -991,7 +1007,7 @@ class OWATracker  {
     shareStateByPost(form) {
 
         var state = this.createSharedStateValue();
-        form.action += '#' + OWA.getSetting('ns') + 'state.' + state;
+        form.action = this.addSharedStateToUrl( form.action, state );
         form.submit();
     }
 

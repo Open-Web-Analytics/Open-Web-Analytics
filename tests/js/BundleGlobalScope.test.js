@@ -39,7 +39,6 @@ describe('built bundles keep their declarations out of the global scope', () => 
         'StateManager',
         'Heatmap',
         'Player',
-        'Uri',
         'Util',
         'owa',
         'CustomEvent',
