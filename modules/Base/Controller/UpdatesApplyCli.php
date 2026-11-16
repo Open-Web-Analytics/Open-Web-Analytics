@@ -94,8 +94,9 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
             }
 
             if ( ( $awaiting ?? '' ) !== '' ) {
-                // Nothing failed: an update needs the operator first, and has said what.
-                $this->refuse( sprintf(
+                // An update needs the operator first, and has said what. The
+                // run did not complete, so it is a failure: exit code 1.
+                $this->fail( sprintf(
                     'Updates paused: one needs %s. Do what it says above, then run cmd=update again.', $awaiting ) );
             } elseif ($error === true) {
                 $this->fail($this->getMsg(3307));
