@@ -52,10 +52,10 @@
     trend.options.metricBoxes.width = '150px';
     trend.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out($k, false);?>_trend-metrics']);
     tab.addRse('trend', trend);
-    OWA.items['<?php echo $view->dom_id;?>'].addTab( tab );
+    OWA.items['<?php $view->out( $view->dom_id );?>'].addTab( tab );
     <?php endforeach;?>
     // create report tabs
-    OWA.items['<?php echo $view->dom_id;?>'].createTabs();
+    OWA.items['<?php $view->out( $view->dom_id );?>'].createTabs();
 
 </script>
 

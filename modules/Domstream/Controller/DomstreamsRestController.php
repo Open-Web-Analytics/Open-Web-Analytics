@@ -20,6 +20,10 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'view_reports' );
+
+        // An overlay (heatmap, recording player) reads this route with its
+        // scoped token; no other route accepts one.
+        $this->setAuthMethods( array( 'overlay_token', 'app_password', 'api_key', 'cookies' ) );
     }
 
     function validate() {
