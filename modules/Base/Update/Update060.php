@@ -24,8 +24,6 @@ class Update060 extends \OWA\Core\Update {
 
     var $schema_version = 60;
 
-    var $is_cli_mode_required = false;
-
     function up( $force = false ) {
 
         $table = $this->table();

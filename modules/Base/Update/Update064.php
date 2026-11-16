@@ -21,8 +21,6 @@ class Update064 extends \OWA\Core\Update {
 
     var $schema_version = 64;
 
-    var $is_cli_mode_required = false;
-
     const INDEX = 'site_ts';
 
     function up( $force = false ) {

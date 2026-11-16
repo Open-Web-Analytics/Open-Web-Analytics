@@ -37,7 +37,7 @@ class UsersDelete extends \OWA\Core\AdminController {
 
         $this->setRequiredCapability('edit_users');
         $this->setNonceRequired();
-        return parent::__construct($params);
+        parent::__construct($params);
     }
     
     function validate() {

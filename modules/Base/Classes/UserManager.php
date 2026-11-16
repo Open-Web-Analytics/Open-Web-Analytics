@@ -33,14 +33,6 @@ namespace OWA\Module\Base\Classes;
  */
 
 class UserManager extends \OWA\Core\Base {
-    /**
-     * owa_userManager constructor.
-     */
-    public function __construct() {
-
-        return parent::__construct();
-    }
-
     public function createNewUser($user_params) {
 
         if ( isset( $user_params['password'] ) ) {

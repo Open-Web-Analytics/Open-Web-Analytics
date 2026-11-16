@@ -17,8 +17,6 @@ class Update069 extends \OWA\Core\Update {
 
     var $schema_version = 69;
 
-    var $is_cli_mode_required = false;
-
     const DDL = <<<'SQL'
 CREATE TABLE %s (
   `id` bigint NOT NULL,

@@ -23,8 +23,6 @@ class Update087 extends \OWA\Core\Update {
 
     var $schema_version = 87;
 
-    var $is_cli_mode_required = false;
-
     const COLUMN = 'session_epoch';
 
     /*

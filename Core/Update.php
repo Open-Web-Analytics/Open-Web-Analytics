@@ -59,7 +59,7 @@ class Update extends \OWA\Core\Base {
      */
     var $schema_version;
 
-    var $is_cli_mode_required;
+    var $is_cli_mode_required = false;
 
     /**
      * Set by an update that stops for the operator rather than failing: a
@@ -78,11 +78,6 @@ class Update extends \OWA\Core\Base {
      * @var array<string,string>
      */
     public $tables = array();
-
-    function __construct() {
-
-        return parent::__construct();
-    }
 
     function isCliModeRequired() {
 

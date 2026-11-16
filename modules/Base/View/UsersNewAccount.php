@@ -31,11 +31,6 @@ namespace OWA\Module\Base\View;
 
 class UsersNewAccount extends \OWA\Core\View\Mail {
 
-    function __construct() {
-
-        return parent::__construct();
-    }
-
     function render($data) {
 
         $this->t->set_template('wrapper_email.php');

@@ -30,8 +30,6 @@ class Update055 extends \OWA\Core\Update {
 
     var $schema_version = 55;
 
-    var $is_cli_mode_required = false;
-
     const COLUMN = 'event_type';
 
     function up( $force = false ) {

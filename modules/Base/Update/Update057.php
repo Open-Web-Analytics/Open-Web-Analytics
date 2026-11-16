@@ -30,8 +30,6 @@ class Update057 extends \OWA\Core\Update {
 
     var $schema_version = 57;
 
-    var $is_cli_mode_required = false;
-
     const INDEX = 'site_transaction';
 
     function up( $force = false ) {

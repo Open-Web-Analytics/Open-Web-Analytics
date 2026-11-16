@@ -50,7 +50,7 @@ class InstallCli extends \OWA\Core\Controller\Cli {
 
     function __construct($params) {
         define('OWA_INSTALLING', true);
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
     /**

@@ -49,8 +49,6 @@ class Update036 extends \OWA\Core\Update {
 
     var $schema_version = 36;
 
-    var $is_cli_mode_required = false;
-
     /** The tables that can take the column instantly. */
     private function columns() {
 

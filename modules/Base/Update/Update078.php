@@ -49,8 +49,6 @@ class Update078 extends \OWA\Core\Update {
 
     var $schema_version = 78;
 
-    var $is_cli_mode_required = false;
-
     /** Old metric name => new. */
     const METRICS = array(
         'goalConversions'              => 'goalEvents',

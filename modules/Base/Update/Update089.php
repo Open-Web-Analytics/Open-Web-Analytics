@@ -22,8 +22,6 @@ class Update089 extends \OWA\Core\Update {
 
     var $schema_version = 89;
 
-    var $is_cli_mode_required = false;
-
     var $down_does_not_restore = 'the users\' API keys: the api_key column comes back empty.';
 
     const COLUMN = 'api_key';

@@ -31,8 +31,6 @@ class Update044 extends \OWA\Core\Update {
 
     var $schema_version = 44;
 
-    var $is_cli_mode_required = false;
-
     function up( $force = false ) {
 
         return $this->addCubeColumn( 'new_vs_returning' );

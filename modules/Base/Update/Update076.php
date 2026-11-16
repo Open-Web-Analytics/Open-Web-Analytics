@@ -41,8 +41,6 @@ class Update076 extends \OWA\Core\Update {
 
     var $schema_version = 76;
 
-    var $is_cli_mode_required = false;
-
     /** old name => new name, without the table prefix. */
     const TABLES = array(
         'goal_event'           => 'goal_event_definition',

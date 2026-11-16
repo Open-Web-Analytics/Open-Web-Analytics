@@ -70,7 +70,7 @@ class Module extends \OWA\Core\Module {
         \OWA\Core\CoreAPI::setSetting('base', 'geolocation_service', 'maxmind');
 
 
-        return parent::__construct();
+        parent::__construct();
     }
 
     /**

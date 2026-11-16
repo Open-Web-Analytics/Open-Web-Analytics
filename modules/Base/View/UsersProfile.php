@@ -31,11 +31,6 @@ namespace OWA\Module\Base\View;
 
 class UsersProfile extends \OWA\Core\View {
 
-    function __construct() {
-
-        return parent::__construct();
-    }
-
     function render($data) {
         $user = $this->get('profile');
         $this->body->set('isAdmin', false);

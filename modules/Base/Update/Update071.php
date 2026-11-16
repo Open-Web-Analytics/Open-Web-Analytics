@@ -27,8 +27,6 @@ class Update071 extends \OWA\Core\Update {
 
     var $schema_version = 71;
 
-    var $is_cli_mode_required = false;
-
     const COLUMN = 'profile_name';
 
     function up( $force = false ) {

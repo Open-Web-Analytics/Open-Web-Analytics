@@ -31,11 +31,6 @@ namespace OWA\Module\Base\View;
 
 class LoginForm extends \OWA\Core\View {
 
-    function __construct() {
-
-        return parent::__construct();
-    }
-
     function construct($data) {
 
         $this->setTitle( \OWA\Core\CoreAPI::t( 'Login' ) );

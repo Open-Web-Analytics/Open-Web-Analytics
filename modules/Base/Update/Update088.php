@@ -27,8 +27,6 @@ class Update088 extends \OWA\Core\Update {
 
     var $schema_version = 88;
 
-    var $is_cli_mode_required = false;
-
     var $down_does_not_restore = 'the scheme 1.x stored on each Profile and Property domain.';
 
     /** The entities whose domain column this rewrites, by key. */

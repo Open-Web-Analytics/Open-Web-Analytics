@@ -51,7 +51,7 @@ class Cli extends \OWA\Core\AdminController {
 
         if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::CLI ) ) {
 
-            return parent::__construct($params);
+            parent::__construct($params);
 
         } else {
 

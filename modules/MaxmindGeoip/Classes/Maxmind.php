@@ -42,18 +42,6 @@ class Maxmind extends \OWA\Core\Location {
     var $db_file_present = false;
 
     /**
-     * Constructor.
-     *
-     * The @return it used to carry named owa_hostip, a class that does not
-     * exist and never did here -- and a constructor returns nothing to annotate
-     * in any case.
-     */
-    function __construct() {
-
-        return parent::__construct();
-    }
-
-    /**
      * The GeoLite2 editions this module can read, and what each costs.
      *
      * City is the default and answers city, subdivision and country. Country

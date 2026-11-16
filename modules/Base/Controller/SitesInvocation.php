@@ -37,7 +37,7 @@ class SitesInvocation extends \OWA\Core\AdminController {
     function __construct($params) {
 
         $this->setRequiredCapability('edit_sites');
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
     function action() {

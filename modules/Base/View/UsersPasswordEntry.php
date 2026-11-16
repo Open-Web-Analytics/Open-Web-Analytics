@@ -33,11 +33,6 @@ namespace OWA\Module\Base\View;
 
 class UsersPasswordEntry extends \OWA\Core\View {
 
-    function __construct() {
-
-        return parent::__construct();
-    }
-
     function render($data) {
 
         $this->t->set_template('wrapper_public.php');

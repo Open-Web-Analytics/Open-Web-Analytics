@@ -42,8 +42,6 @@ class Update070 extends \OWA\Core\Update {
 
     var $schema_version = 70;
 
-    var $is_cli_mode_required = false;
-
     const NAME = 'enableEcommerceReporting';
 
     var $down_does_not_restore = 'on an installation that ran it before it kept ecommerce_reporting_before_070, each Profile\'s own value: every Profile takes its Property\'s.';

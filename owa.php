@@ -20,7 +20,7 @@ class owa extends \OWA\Core\Caller {
 
     function __construct($config = null) {
 
-        return parent::__construct($config);
+        parent::__construct($config);
     }
 
     /**

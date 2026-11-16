@@ -28,8 +28,6 @@ class Update068 extends \OWA\Core\Update {
 
     var $down_does_not_restore = 'the queue items in the dropped table: it comes back empty.';
 
-    var $is_cli_mode_required = false;
-
     const DDL = <<<'SQL'
 CREATE TABLE %s (
   `id` bigint NOT NULL,

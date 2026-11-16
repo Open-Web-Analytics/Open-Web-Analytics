@@ -26,8 +26,6 @@ class Update058 extends \OWA\Core\Update {
 
     var $schema_version = 58;
 
-    var $is_cli_mode_required = false;
-
     const COLUMN = 'screen_resolution';
 
     function up( $force = false ) {

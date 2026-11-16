@@ -30,8 +30,6 @@ class Update061 extends \OWA\Core\Update {
 
     var $schema_version = 61;
 
-    var $is_cli_mode_required = false;
-
     /** Visualization steps, as VisualizationSave allows. */
     const MAX_STEPS = 10;
 

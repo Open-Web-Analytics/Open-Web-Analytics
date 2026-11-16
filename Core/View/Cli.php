@@ -18,11 +18,6 @@ namespace OWA\Core\View;
 //
 
 class Cli extends \OWA\Core\View {
-
-    function __construct( $params ) {
-	   	
-		parent::__construct($params);
-    }
     
     function pre() {
 	    

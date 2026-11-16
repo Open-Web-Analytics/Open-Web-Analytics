@@ -28,8 +28,6 @@ class Update041 extends \OWA\Core\Update {
 
     var $schema_version = 41;
 
-    var $is_cli_mode_required = false;
-
     function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();

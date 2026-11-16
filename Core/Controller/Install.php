@@ -50,7 +50,7 @@ class Install extends \OWA\Core\Controller {
           
         $this->im = \OWA\Core\CoreAPI::supportClassFactory('base', 'installManager');
         
-        return parent::__construct( $params );
+        parent::__construct( $params );
     }
 
     /**

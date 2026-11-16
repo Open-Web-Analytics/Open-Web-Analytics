@@ -38,7 +38,7 @@ class OptionsModules extends \OWA\Core\View {
         //set page type
         $this->_setPageType('Administration Page');
 
-        return parent::__construct();
+        parent::__construct();
     }
 
     function render($data) {

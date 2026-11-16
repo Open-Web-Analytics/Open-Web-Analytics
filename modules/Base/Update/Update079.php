@@ -68,8 +68,6 @@ class Update079 extends \OWA\Core\Update {
 
     var $schema_version = 79;
 
-    var $is_cli_mode_required = false;
-
     /** The setting that keeps each converted report: id => { was, now, steps: index => { was, now } }. */
     const BEFORE = 'funnel_steps_before_079';
 

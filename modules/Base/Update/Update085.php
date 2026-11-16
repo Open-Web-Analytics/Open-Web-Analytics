@@ -40,8 +40,6 @@ class Update085 extends \OWA\Core\Update {
 
     var $schema_version = 85;
 
-    var $is_cli_mode_required = false;
-
     /** The base settings this deletes. */
     const RETIRED = array( 'is_embedded_admin_user_password_reset', 'resolve_hosts', 'fetch_refering_page_info' );
 

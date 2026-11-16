@@ -37,7 +37,7 @@ class OptionsUpdate extends \OWA\Core\AdminController {
 
         $this->setRequiredCapability('edit_settings');
         $this->setNonceRequired();
-        return parent::__construct($params);
+        parent::__construct($params);
 
     }
 

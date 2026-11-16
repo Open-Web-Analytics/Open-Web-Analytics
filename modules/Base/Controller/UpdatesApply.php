@@ -71,11 +71,6 @@ class UpdatesApply extends \OWA\Core\Controller {
 
     const LOCK_SECONDS = 3600;
 
-    function __construct($params) {
-
-        parent::__construct($params);
-    }
-
     function action() {
 
         $lock = new \OWA\Module\Base\Classes\JobLease( self::LOCK );

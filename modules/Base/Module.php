@@ -47,7 +47,7 @@ class Module extends \OWA\Core\Module {
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
         $this->required_schema_version = 89;
-        return parent::__construct();
+        parent::__construct();
     }
 
     /**

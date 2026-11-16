@@ -39,8 +39,6 @@ class Update043 extends \OWA\Core\Update {
 
     var $schema_version = 43;
 
-    var $is_cli_mode_required = false;
-
     /**
      * The scope every unpacked value lands at.
      *

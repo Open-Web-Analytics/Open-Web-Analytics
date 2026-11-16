@@ -50,7 +50,7 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         $this->eq = \OWA\Core\CoreAPI::getEventDispatch();
 
-        return parent::__construct($params);
+        parent::__construct($params);
 
     }
 

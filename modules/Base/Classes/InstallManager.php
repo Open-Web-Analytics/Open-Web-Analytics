@@ -33,11 +33,6 @@ namespace OWA\Module\Base\Classes;
 
 class InstallManager extends \OWA\Core\Base {
 
-    function __construct($params = '') {
-
-        return parent::__construct($params);
-    }
-
     function installSchema() {
 
         /*

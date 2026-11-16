@@ -33,11 +33,6 @@ namespace OWA\Module\Base\Controller;
 
 class UsersSetPassword extends \OWA\Core\Controller {
 
-    function __construct($params) {
-
-        return parent::__construct($params);
-    }
-
     function action() {
 
         $event = $this->getParam('event');

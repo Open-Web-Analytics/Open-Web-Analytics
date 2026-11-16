@@ -71,17 +71,6 @@ class AdminController extends \OWA\Core\Controller {
     }
     
     /**
-     * Constructor
-     *
-     * @param array $params
-     * @return \OWA\Core\Controller
-     */
-    function __construct($params) {
-    
-        return parent::__construct($params);
-    }
-
-    /**
      * The settings chrome a settings screen sits in: the site control, the
      * settings nav under it, and the base.optionsHierarchy view. Every
      * settings screen carries it, module screens included.

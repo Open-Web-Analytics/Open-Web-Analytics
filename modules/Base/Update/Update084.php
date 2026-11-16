@@ -41,8 +41,6 @@ class Update084 extends \OWA\Core\Update {
 
     var $schema_version = 84;
 
-    var $is_cli_mode_required = false;
-
     /** The setting this retires. */
     const OLD = 'log_robots';
 

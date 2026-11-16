@@ -40,8 +40,6 @@ class Update086 extends \OWA\Core\Update {
 
     var $schema_version = 86;
 
-    var $is_cli_mode_required = false;
-
     /** The modules whose every row this deletes. */
     const MODULES = array( 'fileCache', 'memcachedCache' );
 

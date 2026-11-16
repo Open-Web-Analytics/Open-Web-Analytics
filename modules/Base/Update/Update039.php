@@ -35,8 +35,6 @@ class Update039 extends \OWA\Core\Update {
 
     var $schema_version = 39;
 
-    var $is_cli_mode_required = false;
-
     /**
      * The columns this update makes nullable, and their definition.
      *

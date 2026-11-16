@@ -36,11 +36,6 @@ namespace OWA\Module\Base\View;
 class Error extends \OWA\Core\View {
 
 
-    function __construct() {
-
-        return parent::__construct();
-    }
-
     function render($data) {
 
         // Set Page title

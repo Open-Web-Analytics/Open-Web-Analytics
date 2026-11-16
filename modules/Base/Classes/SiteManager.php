@@ -34,11 +34,6 @@ namespace OWA\Module\Base\Classes;
 
 class SiteManager extends \OWA\Core\Base {
 
-    function __construct() {
-
-        return parent::__construct();
-    }
-
     /**
      * Ensure a site exists for a domain, and return it if this call created it.
      *

@@ -46,8 +46,6 @@ class Update081 extends \OWA\Core\Update {
 
     var $schema_version = 81;
 
-    var $is_cli_mode_required = false;
-
     /** The column this adds. */
     const COLUMN = 'property_id';
 

@@ -47,8 +47,6 @@ class Update056 extends \OWA\Core\Update {
 
     var $schema_version = 56;
 
-    var $is_cli_mode_required = false;
-
     /** What up() removed: { conditions: id => row, roles: id => role, groups: id => goal_group, settings: id => row }. */
     const BEFORE = 'goal_groups_before_056';
 

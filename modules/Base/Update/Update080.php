@@ -55,8 +55,6 @@ class Update080 extends \OWA\Core\Update {
 
     var $schema_version = 80;
 
-    var $is_cli_mode_required = false;
-
     /** The setting this retires. */
     const OLD = 'default_page';
 

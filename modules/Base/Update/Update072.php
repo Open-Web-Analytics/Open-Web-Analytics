@@ -28,8 +28,6 @@ class Update072 extends \OWA\Core\Update {
 
     var $schema_version = 72;
 
-    var $is_cli_mode_required = false;
-
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
     const COLUMNS = array( 'page_depth', 'previous_page_path', 'next_page_path' );
 

@@ -27,8 +27,6 @@ class Update073 extends \OWA\Core\Update {
 
     var $schema_version = 73;
 
-    var $is_cli_mode_required = false;
-
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
     const COLUMNS = array( 'element_anchor', 'anchor_x', 'anchor_y' );
 

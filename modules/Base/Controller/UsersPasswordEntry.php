@@ -50,11 +50,6 @@ class UsersPasswordEntry extends \OWA\Core\Controller {
         return \OWA\Module\Base\Entity\User::tempPasskeyIsCurrent( $key ) ? null : 2012;
     }
 
-    function __construct($params) {
-
-        return parent::__construct($params);
-    }
-
     /**
      * The form, for a link that can still set a password. One that cannot is
      * told so on the login form before anyone types a password into it.

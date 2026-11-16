@@ -157,7 +157,7 @@ class ResultSetManager extends \OWA\Core\Base {
         
         $this->resultSet = \OWA\Core\CoreAPI::supportClassFactory('base', 'paginatedResultSet');
 
-        return parent::__construct();
+        parent::__construct();
     }
 
 
