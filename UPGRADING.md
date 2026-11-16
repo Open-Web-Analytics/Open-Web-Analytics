@@ -353,6 +353,15 @@ Update086 deletes the stored rows of the two modules and of those settings, so
 an install that ran the File Cache no longer lists `fileCache` as an active
 module. The update's down() puts them back.
 
+### Sign-in sessions expire, and signing out ends them everywhere
+
+A sign-in lasts two days from its last request. Signing out, or changing or
+resetting a password, ends every session of that user, on every device.
+Update087 adds `owa_user.session_epoch` for this; its down() removes it.
+
+Session cookies issued before the upgrade sign nobody in: every user signs in
+again once. Application passwords, API keys and overlay tokens are unchanged.
+
 ### Server roles: `OWA_SERVER_ROLE`
 
 A server's role says which requests it serves. With nothing set it is `full`,

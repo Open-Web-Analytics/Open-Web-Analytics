@@ -33,9 +33,27 @@ namespace OWA\Module\Base\Controller;
 
 class Logout extends \OWA\Core\Controller {
 
+    /**
+     * Signs the user out of every browser session, on every device, and
+     * clears this browser's cookie.
+     */
     function action() {
 
         $auth = \OWA\Core\Auth::get_instance();
+        $cu   = \OWA\Core\CoreAPI::getCurrentUser();
+
+        if ( $cu->isAuthenticated() && $auth->getAuthMethod() === 'cookies' ) {
+
+            $user = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
+            $user->load( $cu->getUserData( 'user_id' ), 'user_id' );
+
+            if ( $user->wasPersisted() ) {
+
+                $user->endSessions();
+                $user->update();
+            }
+        }
+
         $auth->deleteCredentials();
         $this->setRedirectAction('base.loginForm');
     }
