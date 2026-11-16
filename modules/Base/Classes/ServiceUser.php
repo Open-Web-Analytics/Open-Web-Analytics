@@ -115,11 +115,6 @@ class ServiceUser extends \OWA\Core\Base {
         return $this->user->get('role');
     }
     
-    function getApiKey() {
-	    
-	    return $this->user->get('api_key');
-    }
-
     /**
      * Sets role and related capabilities
      *

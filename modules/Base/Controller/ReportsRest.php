@@ -35,7 +35,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
         // An overlay (heatmap, recording player) reads this route with its
         // scoped token; no other route accepts one.
-        $this->setAuthMethods( array( 'overlay_token', 'app_password', 'api_key', 'cookies' ) );
+        $this->setAuthMethods( array( 'overlay_token', 'app_password', 'cookies' ) );
     }
 	
 	function validate() {

@@ -20,13 +20,6 @@
             </TD>
         </TR>
 
-        <?php if ($view->edit === true):?>
-        <TR>
-            <TH><?php $view->out( \OWA\Core\CoreAPI::t( 'API Key' ) );?></TH>
-            <TD><span class="noedit"><?php echo $view->user['api_key'];?></span></TD>
-        </TR>
-        <?php endif;?>
-
         <?php if ( ! $view->isAdmin ):?>
         <TR>
             <TH><label for="owa_userRealName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Real Name' ) );?></label></TH>

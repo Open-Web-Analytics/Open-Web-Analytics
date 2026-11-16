@@ -105,6 +105,49 @@ describe( 'the grid\'s rows as lines', () => {
 
 describe( 'asking for the rows', () => {
 
+    test( 'a failed request keeps the total, says so, is not asked again on a redraw, and a later answer clears it', () => {
+        document.body.innerHTML = '<div id="trend"></div>';
+        const explorer = new OWA.resultSetExplorer( 'trend' );
+        explorer.resultSet = { self: 'https://owa.test/api/index.php?metrics=visits&dimensions=date' };
+
+        const chart = new OWA.areaChart();
+        chart.explorer = explorer;
+        chart.xDimension = 'date';
+        chart.redraw = jest.fn();
+
+        const answers = [];
+        const getJSON = $.getJSON;
+        $.getJSON = ( url, d, done ) => {
+            const def = $.Deferred();
+            answers.push( { fail: () => def.reject( { status: 500 }, 'error' ), done: ( data ) => { done( data ); def.resolve(); } } );
+            return def.promise();
+        };
+
+        try {
+            chart.plotRows( [ 'browserType' ], ROWS );
+            answers[0].fail();
+
+            expect( chart.rowsResultSet ).toBeNull();
+            expect( $( '#trend .owa_loadError' ).length ).toBe( 1 );
+            expect( chart.redraw ).not.toHaveBeenCalled();
+
+            // The total is drawn without the rows, and the failed question is not asked again.
+            const main  = trend( [ [ '20261102', 10 ] ] );
+            const built = chart.withGridRows( chart.singleSeries( main, 'date', 'visits' ), main, 'date', 'visits' );
+            expect( built.series ).toHaveLength( 1 );
+            expect( answers ).toHaveLength( 1 );
+
+            // Other rows are asked for; their answer clears the message.
+            chart.plotRows( [ 'browserType' ], ROWS.slice( 0, 1 ) );
+            answers[1].done( byBrowser( [ [ '20261102', 'Chrome', 4 ] ] ) );
+
+            expect( $( '#trend .owa_loadError' ).length ).toBe( 0 );
+            expect( chart.redraw ).toHaveBeenCalledTimes( 1 );
+        } finally {
+            $.getJSON = getJSON;
+        }
+    } );
+
     test( 'the trend\'s query, by its axis and the grid\'s dimensions, restricted to the rows', () => {
         const chart = new OWA.areaChart();
         chart.explorer = { resultSet: { self: 'https://owa.test/api/index.php?metrics=visits&dimensions=date&page=2&sort=date&compare=previous_period' } };
@@ -112,7 +155,7 @@ describe( 'asking for the rows', () => {
 
         const asked = [];
         const getJSON = $.getJSON;
-        $.getJSON = ( url ) => asked.push( url );
+        $.getJSON = ( url ) => { asked.push( url ); return $.Deferred().promise(); };
 
         try {
             expect( chart.plotRows( [ 'browserType' ], ROWS ) ).toBe( true );

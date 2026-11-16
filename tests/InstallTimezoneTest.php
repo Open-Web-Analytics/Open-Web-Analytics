@@ -495,7 +495,7 @@ final class InstallTimezoneTest extends TestCase
         $html = $this->renderWizard( 'OWA_TIMEZONE' );
 
         $this->assertMatchesRegularExpression(
-            '/<select name="timezone" disabled="disabled">/', $html,
+            '/<select name="timezone" id="owa_install_timezone" disabled="disabled">/', $html,
             'the picker must not be editable when a constant decides the value' );
 
         $this->assertStringContainsString( 'OWA_TIMEZONE', $html,
@@ -520,7 +520,7 @@ final class InstallTimezoneTest extends TestCase
     {
         $html = $this->renderWizard( '' );
 
-        $this->assertStringContainsString( '<select name="timezone">', $html );
+        $this->assertStringContainsString( '<select name="timezone" id="owa_install_timezone">', $html );
         $this->assertStringNotContainsString( 'disabled="disabled"', $html );
         $this->assertStringNotContainsString( 'OWA_TIMEZONE', $html );
         $this->assertStringContainsString( 'not retroactive', $html,

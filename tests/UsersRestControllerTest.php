@@ -134,8 +134,9 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $this->assertSame($user_id, $resp['data']['user_id'] ?? null,
             'The response should echo the created user_id.');
 
-        // The add response DOES include api_key by design -- it is the newly
-        // minted key the caller needs. It must never include the password hash.
+        // No API key is made for a new user, and the password hash is never sent.
+        $this->assertArrayNotHasKey('api_key', $resp['data'],
+            'The add-user response must not include an API key.');
         $this->assertArrayNotHasKey('password', $resp['data'],
             'The add-user response must not include the password hash.');
 

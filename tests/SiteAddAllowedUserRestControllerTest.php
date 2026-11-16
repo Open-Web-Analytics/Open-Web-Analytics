@@ -20,9 +20,8 @@ use PHPUnit\Framework\TestCase;
  *      a site_user relation row (the DoS / bad-foreign-key vector).
  *
  * The controller is driven at the controller layer (doAction) rather than
- * over HTTP so the authenticated success path can be exercised without
- * forging the request signature that api-key auth requires. Authentication
- * is simulated exactly as owa_auth::authByApiKey does on success:
+ * over HTTP so the authenticated success path can be exercised without a
+ * credential. Authentication is simulated as a successful sign-in leaves it:
  * loadNewUserByObject() + setAuthStatus(true) on the service current user.
  *
  * Cleanup: every fixture row (user, site, site_user) is removed in tearDown
@@ -258,7 +257,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
         $adminEntity = \OWA\Core\CoreAPI::entityFactory('base.user');
         $adminEntity->load($this->admin['id'], 'id');
 
-        // Mirror owa_auth::authByApiKey()'s success path.
+        // As a successful sign-in leaves the current user.
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->loadNewUserByObject($adminEntity);
         $cu->setAuthStatus(true);

@@ -106,11 +106,11 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
     /**
      * The visualization being drawn: the stored one this report names, if it
-     * is of the Property being reported on.
+     * is of the Property being reported on and the user may view it.
      */
     protected function visualization() {
 
-        return \OWA\Module\Base\Classes\CustomReports::loadOf(
+        return \OWA\Module\Base\Classes\CustomReports::viewableOf(
             $this->visualizationId(), (string) $this->getParam( 'propertyId' ) );
     }
 

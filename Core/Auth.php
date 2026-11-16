@@ -130,7 +130,7 @@ class Auth extends \OWA\Core\Base {
      * sign-in that writes the session cookies. Null tries every method, in
      * the order below. See Controller::setAuthMethods().
      *
-     * @param string[]|null $methods login_form, overlay_token, app_password, api_key, cookies
+     * @param string[]|null $methods login_form, overlay_token, app_password, cookies
      */
     function authenticateUser( $methods = null ) {
 
@@ -139,13 +139,22 @@ class Auth extends \OWA\Core\Base {
             return $methods === null || in_array( $method, (array) $methods, true );
         };
 		
-		$apiKey = \OWA\Core\CoreAPI::getRequestParam('apiKey') ?: \OWA\Core\CoreAPI::getServerParam( 'HTTP_X_API_KEY' );
-	
+        $this->legacy_api_key_refused = false;
+
         // check existing auth status first in case someone else took care of this already.
         if (\OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated()) {
 	        \OWA\Core\CoreAPI::debug('User is already authenticated.');
             $ret = true;
-        
+
+        } elseif ( self::carriesLegacyApiKey() ) {
+            // The legacy API key and request signature are not accepted. A
+            // request that carries one is refused, never judged on another
+            // credential it also carries.
+            $this->setAuthMethod( 'api_key' );
+            $this->legacy_api_key_refused = true;
+            $ret = false;
+            \OWA\Core\CoreAPI::debug( 'Legacy API key or request signature refused.' );
+
         } elseif ($accepts('login_form') && \OWA\Core\CoreAPI::getRequestParam('user_id') && \OWA\Core\CoreAPI::getRequestParam('password')) {
             // auth user by login form input
             $this->setAuthMethod( 'login_form');
@@ -158,8 +167,8 @@ class Auth extends \OWA\Core\Base {
             // overlay reads, not every route that accepts any credential.
             // auth by a scoped, short-lived overlay token.
             //
-            // Checked BEFORE the apiKey branch so that a request carrying both
-            // is held to the narrower credential, and scope is enforced here
+            // Checked BEFORE the other credentials so that a request carrying two
+            // is held to the narrower one, and scope is enforced here
             // rather than later: a request outside the token's scope does not
             // authenticate at all, so there is no window in which a caller is
             // authenticated but not yet constrained.
@@ -168,16 +177,10 @@ class Auth extends \OWA\Core\Base {
             \OWA\Core\CoreAPI::debug('User authenticated via overlay token.');
         } elseif ( $accepts('app_password') && ( $appPassword = $this->appPasswordCredential() ) ) {
             // An application password in the Authorization header. Before the
-            // apiKey and the cookies, and a failure here does not fall through
-            // to either: the request named a credential and it did not hold.
+            // cookies, and a failure here does not fall through to them: the
+            // request named a credential and it did not hold.
             $this->setAuthMethod( 'app_password' );
             $ret = $this->authByAppPassword( $appPassword['token'], $appPassword['user_id'] );
-        } elseif ( $accepts('api_key') && $apiKey ) {
-            // auth user by api key
-            $this->setAuthMethod( 'api_key');
-            $ret = $this->authByApiKey( $apiKey );
-            \OWA\Core\CoreAPI::debug('User authenticated via api key.');
-    
         } elseif ($accepts('cookies') && \OWA\Core\CoreAPI::getStateParam('u') && \OWA\Core\CoreAPI::getStateParam('p')) {
             // auth user by cookies
             $this->setAuthMethod( 'cookies');
@@ -428,63 +431,6 @@ class Auth extends \OWA\Core\Base {
         return (string) \OWA\Core\CoreAPI::getServerParam( 'REMOTE_ADDR' );
     }
 
-    function authByApiKey( $key ) {
-
-        $key = \OWA\Module\Base\Classes\Sanitize::cleanMd5( $key );
-
-        if ( $key ) {
-	        
-	        // check signature of request
-	        if ( ! \OWA\Core\Lib::inRestDebug() ) {
-		    	
-		    	//get current request url
-		    	$url = \OWA\Core\CoreAPI::getCurrentUrl();
-				//owa_coreAPI::debug('request url' . $url);
-		    	
-		    	//get signatureparam  of request
-		        $signature = \OWA\Core\CoreAPI::getRequestParam('signature') ?: \OWA\Core\CoreAPI::getServerParam( 'HTTP_X_SIGNATURE' );
-		        
-		        \OWA\Core\CoreAPI::debug('Signature: ' . $signature );
-		         
-		        // check if signature is exists and is valid
-		        if ( ! $signature || ! $this->isSignatureValid( $signature, $key, $url ) ) {
-			        
-			       \OWA\Core\CoreAPI::debug('signature missing from request or not valid.');
-			       return false;
-		        }
-		        
-			} else {
-				
-				\OWA\Core\CoreAPI::debug('skipping signature check in debug/development mode.');
-			}
-			
-            // fetch user object from the db
-            $this->u = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
-            $this->u->load( $key, 'api_key' );
-
-            if ( $this->u->get( 'user_id' ) ) {
-                // get current user
-                $cu = \OWA\Core\CoreAPI::getCurrentUser();
-                
-                // set as new current user in service layer
-                $cu->loadNewUserByObject( $this->u );
-                $cu->setAuthStatus( true );
-                $this->_is_user = true;
-                
-                return true;
-                
-            } else {
-	            
-                return false;
-            }
-
-        } else {
-
-            return false;
-        }
-
-    }
-
     /**
      * Sign in by the `u` and `p` cookies (see sessionCredential()).
      *
@@ -706,6 +652,13 @@ class Auth extends \OWA\Core\Base {
 
         return true;
     }
+    
+    /**
+     * The request parameters and headers of the legacy API key sign-in, which
+     * application passwords replace.
+     */
+    const LEGACY_API_KEY_PARAMS  = array( 'apiKey', 'signature' );
+    const LEGACY_API_KEY_HEADERS = array( 'HTTP_X_API_KEY', 'HTTP_X_SIGNATURE' );
 
     /**
      * Whether a typed password is the account's: the stored hash, or, for an
@@ -817,63 +770,37 @@ class Auth extends \OWA\Core\Base {
         return $expires !== null && $expires - ( $now ?? time() ) < self::SESSION_REFRESH_BELOW;
     }
 
-    function generateSignature( $requestUrl, $apiKey ) {
-	    
-	    // get the current time zone
-		$tz = date_default_timezone_get();
-		
-		// switch to UTC for signature check
-		date_default_timezone_set('UTC');
-		
-		// generate date
-	    $date = date( 'Ymd', time() );
-	   	
-	   	// switch time zone back to prior setting
-	    date_default_timezone_set($tz);
-	    
-	    return base64_encode( hash('sha256', 'OWASIGNATURE' . $apiKey . $requestUrl . $date . OWA_AUTH_KEY ) );
-    }
-    
-    function isSignatureValid( $signature, $apiKey, $requestUrl ) {
-	    
-		// '_' is jQuery's cache-buster, appended after the URL is signed, so it
-		// must stay excluded. owa_jsonpCallback was excluded for the same reason
-		// and is gone with JSONP -- keeping the carve-out would leave a param
-		// that could be set to anything without invalidating the signature.
-		$requestUrl = \OWA\Core\Lib::removeQueryParamFromUrl( $requestUrl, '_' );
-		
-	    
-		// The signature cannot cover itself, so it comes off before hashing.
-		// Both spellings are removed: OWA still signs with the namespaced name,
-		// but un-namespaced params are readable now, so a caller that sends
-		// 'signature=' would otherwise be read as authenticating and then fail
-		// the comparison for a reason nothing in the log would explain.
-		foreach ( array( 'owa_signature', 'signature' ) as $sig_param ) {
 
-			$requestUrl = \OWA\Core\Lib::removeQueryParamFromUrl( $requestUrl, $sig_param );
-		}
-	    
-	    
-	    //owa_coreAPI::debug('url w/ no sig: ' . $requestUrl );
-	    
-	    //$signature = base64_decode( $signature );
-	    
-	    $computed_signature = $this->generateSignature( $requestUrl, $apiKey );
-	    \OWA\Core\CoreAPI::debug( 'computed signature: ' . $computed_signature );
-	    \OWA\Core\CoreAPI::debug( 'request url: ' . $requestUrl );
-	    
-	    if ( $signature === $computed_signature ) {
-		    
-		    \OWA\Core\CoreAPI::debug('API request signature is valid.' );
-		    return true;
-		    
-	    } else {
-		    
-		    \OWA\Core\CoreAPI::debug('API request signature failed validation.' );
-		    return false;
-	    }
+    /** Whether the last authenticateUser() refused a legacy API key or signature. */
+    private $legacy_api_key_refused = false;
+
+    /** Whether the request carries a legacy API key or request signature. */
+    public static function carriesLegacyApiKey() {
+
+        foreach ( self::LEGACY_API_KEY_PARAMS as $param ) {
+
+            if ( (string) \OWA\Core\CoreAPI::getRequestParam( $param ) !== '' ) {
+
+                return true;
+            }
+        }
+
+        foreach ( self::LEGACY_API_KEY_HEADERS as $header ) {
+
+            if ( (string) \OWA\Core\CoreAPI::getServerParam( $header ) !== '' ) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
-    
+
+    public function refusedLegacyApiKey() {
+
+        return $this->legacy_api_key_refused;
+    }
+
     // sets the method by which the user was authenticated
     // @method  string
     private function setAuthMethod( $method ) {

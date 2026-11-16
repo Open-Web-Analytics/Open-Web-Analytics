@@ -60,6 +60,8 @@ class Strings {
         'OWA.dataGrid.CONDITIONS',
         'OWA.filterPills.OPERATORS',
         'OWA.filterPills.EMPTY_TESTS',
+        'OWA.constraintBuilder.OPERATORS',
+        'OWA.constraintBuilder.EMPTY_TESTS',
     );
 
     /**

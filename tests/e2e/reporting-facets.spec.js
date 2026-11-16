@@ -29,7 +29,6 @@
  */
 const path = require('path');
 const { execFileSync } = require('child_process');
-const crypto = require('crypto');
 const { test, expect } = require('@playwright/test');
 
 const HELPER = path.join(__dirname, 'reporting_facets_helper.php');
@@ -53,7 +52,7 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
     test.beforeAll(() => {
         fx = helper('provision');
         expect(fx.expected.total_visits, 'fixture seeded nothing').toBeGreaterThan(0);
-        expect(fx.api_key, 'fixture user has no api key').toBeTruthy();
+        expect(fx.token, 'fixture user has no application password').toBeTruthy();
     });
 
     test.afterAll(() => { helper('cleanup'); });
@@ -61,16 +60,6 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
     test.beforeEach(({}, testInfo) => {
         apiRoot = installRoot(testInfo.project.use.baseURL);
     });
-
-    /** Sign a request the way Auth::isSignatureValid recomputes it. */
-    function sign(url, apiKey, authKey) {
-        const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        return Buffer.from(
-            crypto.createHash('sha256')
-                .update('OWASIGNATURE' + apiKey + url + date + authKey)
-                .digest('hex')
-        ).toString('base64');
-    }
 
     /** Query the reports API and return the parsed resultset. */
     async function report(request, params) {
@@ -80,17 +69,15 @@ test.describe('the reporting engine answers correctly on every facet @selfhost-o
             owa_version: 'v1',
             owa_siteId: fx.site_id,
             owa_period: 'today',
-            owa_apiKey: fx.api_key,
         }, params));
 
-        // Signed over its own URL, apiKey included, signature appended last --
-        // the order Auth::isSignatureValid recomputes.
-        const unsigned = apiRoot + 'api/index.php?' + q.toString();
-        const url = unsigned + '&owa_signature=' + encodeURIComponent(
-            sign(unsigned, fx.api_key, fx.auth_key)
-        );
+        // An application password, over https as the proxy reports it.
+        const url = apiRoot + 'api/index.php?' + q.toString();
 
-        const res = await request.fetch(url, { method: 'GET' });
+        const res = await request.fetch(url, { method: 'GET', headers: {
+            Authorization: 'Bearer ' + fx.token,
+            'X-Forwarded-Proto': 'https',
+        } });
         const body = await res.text();
 
         /*

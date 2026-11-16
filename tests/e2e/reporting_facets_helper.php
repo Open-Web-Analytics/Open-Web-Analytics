@@ -246,10 +246,7 @@ function provision(): array
     return [
         'site_id'  => $site_id,
         'user_id'  => $user_id,
-        'api_key'  => $u->get('api_key'),
-        // The signing secret. Requests to the API are HMAC-signed over their own
-        // URL, so a spec needs this as well as the key -- see rest_e2e_helper.
-        'auth_key' => defined('OWA_AUTH_KEY') ? OWA_AUTH_KEY : '',
+        'token'    => (string) (\OWA\Module\Base\Classes\AppPasswords::create($user_id, 'e2e facets', \OWA\Module\Base\Classes\AppPasswords::SCOPE_READ)['token'] ?? ''),
         'yyyymmdd' => $yyyymmdd,
         'expected' => [
             'total_visits'      => $n,
@@ -403,6 +400,7 @@ function cleanup(): array
     $db->executeQuery();
 
     $u = \OWA\Core\CoreAPI::entityFactory('base.user');
+    \OWA\Module\Base\Classes\AppPasswords::revokeAllForUser(FIXTURE_TAG . '-analyst@owatest.example.com');
     $u->delete(FIXTURE_TAG . '-analyst@owatest.example.com', 'user_id');
 
     return ['status' => 'cleaned'];

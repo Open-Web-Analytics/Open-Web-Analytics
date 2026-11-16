@@ -12,7 +12,7 @@ namespace OWA\Core\Controller;
  *  - The session cookies are the only credential accepted, as on every
  *    AdminController (acceptedAuthMethods). The other methods are not tried,
  *    so a login form's user_id and password cannot sign anyone in or set
- *    cookies here, and an API key or an application password is not read.
+ *    cookies here, and an application password is not read.
  *  - A nonce is required, checked like any admin form's.
  *  - Every outcome is JSON, including the refusals that answer a screen with a
  *    redirect or an HTML page: 401 not signed in, 403 not capable or a bad
@@ -62,6 +62,11 @@ class Ajax extends \OWA\Core\AdminController {
     }
 
     function notAuthenticatedAction() {
+
+        if ( \OWA\Core\Auth::get_instance()->refusedLegacyApiKey() ) {
+
+            return $this->answer( 401, \OWA\Core\Controller::legacyApiKeyMessage() );
+        }
 
         return $this->answer( 401, \OWA\Core\CoreAPI::t( 'You are signed out. Sign in again and retry.' ) );
     }

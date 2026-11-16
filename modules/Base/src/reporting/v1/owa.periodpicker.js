@@ -283,6 +283,25 @@ export function settle( state, presets ) {
 }
 
 /**
+ * Choose a preset, or Custom date range. Custom chosen from a preset starts
+ * on the preset's dates up to today: a preset is drawn over its whole period,
+ * and a Custom range cannot end after today.
+ *
+ * @param {string} today yyyymmdd
+ */
+export function choosePreset( state, key, today ) {
+
+    if ( key === 'custom' && state.preset !== 'custom' ) {
+
+        state.main = state.main.map( ( ymd ) => ( ymd > today ? today : ymd ) );
+    }
+
+    state.preset = key;
+
+    return state;
+}
+
+/**
  * The request parameters a state stands for. A preset is `period`; a Custom
  * date range is startDate and endDate with no period. A comparison is
  * `compare`, plus compareStartDate and compareEndDate when it is a Custom
@@ -956,9 +975,7 @@ PeriodPicker.prototype = {
 
         if ( jump && this.draft ) {
 
-            const t = calendarTarget( this.draft, this.focus );
-
-            this.page = ( t === 'cmp' ? this.draft.cmp[1] : this.draft.main[1] ).substr( 0, 6 );
+            this.page = this.calendarEnd().substr( 0, 6 );
         }
 
         const had = this.focusedControl();
@@ -976,7 +993,7 @@ PeriodPicker.prototype = {
 
             if ( jump || top === null ) {
 
-                this.scrollCalendarTo( calendarTarget( this.draft, this.focus ) === 'cmp' ? this.draft.cmp[1] : this.draft.main[1] );
+                this.scrollCalendarTo( this.calendarEnd() );
 
             } else {
 
@@ -1003,6 +1020,17 @@ PeriodPicker.prototype = {
         } );
 
         if ( had ) this.restoreFocus( had );
+    },
+
+    /**
+     * The day the calendar opens on: the end of the range it edits or shows,
+     * or today when that end is after today (the calendar ends on today).
+     */
+    calendarEnd() {
+
+        const end = calendarTarget( this.draft, this.focus ) === 'cmp' ? this.draft.cmp[1] : this.draft.main[1];
+
+        return end > this.today ? this.today : end;
     },
 
     /**
@@ -1114,7 +1142,7 @@ PeriodPicker.prototype = {
                 return;
 
             case 'preset':
-                d.preset = k;
+                choosePreset( d, k, this.today );
                 this.focus = 'main';
                 jump = true;
                 break;

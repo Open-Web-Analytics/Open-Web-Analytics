@@ -420,7 +420,9 @@ class Controller extends \OWA\Core\Base {
                      * request goes on signed out.
                      */
                     if ( ! $needs_user ) {
-                        $auth->deleteCredentials();
+                        if ( ! $auth->refusedLegacyApiKey() ) {
+                            $auth->deleteCredentials();
+                        }
                         return true;
                     }
 
@@ -925,12 +927,20 @@ class Controller extends \OWA\Core\Base {
 		}
     }
 
+    /** Why a legacy API key or request signature was refused, and what replaces it. */
+    public static function legacyApiKeyMessage() {
+
+        return \OWA\Core\CoreAPI::t( 'API keys and request signatures are no longer accepted. Send an application password in the Authorization header instead.' );
+    }
+
     function notAuthenticatedAction() {
 		
 		if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
 			
 			$this->setView('base.restApi');
-			$this->set('error_msg', ['headline'	=> \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )] );
+			$this->set('error_msg', ['headline'	=> \OWA\Core\CoreAPI::t( 'Not authenticated.' ), 'msg' => \OWA\Core\Auth::get_instance()->refusedLegacyApiKey()
+				? self::legacyApiKeyMessage()
+				: \OWA\Core\CoreAPI::t( 'Check the API credentials or this user\'s permissions.' )] );
 			http_response_code(401);	
 		} else {
 	        $this->setRedirectAction('base.loginForm');
@@ -1012,7 +1022,7 @@ class Controller extends \OWA\Core\Base {
      * Accept only these authentication methods. Auth::authenticateUser() does
      * not try the others, so their credentials are never read.
      *
-     * @param string[] $methods login_form, overlay_token, app_password, api_key, cookies
+     * @param string[] $methods login_form, overlay_token, app_password, cookies
      */
     function setAuthMethods( array $methods ) {
 

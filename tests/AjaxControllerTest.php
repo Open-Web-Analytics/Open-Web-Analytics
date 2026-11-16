@@ -116,7 +116,6 @@ final class AjaxControllerTest extends RestControllerTestCase
     public static function otherMethods(): array
     {
         return array(
-            'api key'              => array('api_key'),
             'application password' => array('app_password'),
             'login form'           => array('login_form'),
             'overlay token'        => array('overlay_token'),
@@ -124,30 +123,22 @@ final class AjaxControllerTest extends RestControllerTestCase
     }
 
     /**
-     * Not tried, rather than tried and refused: the key on the request is never
-     * read, so it cannot authenticate. The control shows the same request
-     * authenticates when every method is accepted.
+     * A legacy API key is refused on an endpoint that reads only the session,
+     * as everywhere: 401, with what to use instead, and the endpoint does not
+     * run.
      */
-    public function testAnUnacceptedCredentialIsNotTried(): void
+    public function testALegacyApiKeyIsRefusedWithItsReplacementNamed(): void
     {
-        $admin = $this->makeUser('admin', 'key');
-        \OWA\Core\CoreAPI::setRequestParam('apiKey', $admin['api_key']);
-
-        $this->resetCurrentUser();
-        $this->signedInBy(null);
-        $this->assertFalse(\OWA\Core\Auth::get_instance()->authenticateUser(array('cookies'))['auth_status']);
-        $this->assertFalse(\OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated());
-
-        $this->signedInBy(null);
-        $this->assertTrue(\OWA\Core\Auth::get_instance()->authenticateUser()['auth_status'],
-            'the control: the key does authenticate when api_key is accepted');
-        $this->assertSame('api_key', \OWA\Core\Auth::get_instance()->getAuthMethod());
+        \OWA\Core\CoreAPI::setRequestParam('apiKey', str_repeat('a', 32));
 
         $this->resetCurrentUser();
         $this->signedInBy(null);
         $c = $this->endpoint(array('nonce' => 'x'));
-        $this->assertSame(401, $this->ajax($c)['status']);
+        $r = $this->ajax($c);
+
+        $this->assertSame(401, $r['status']);
         $this->assertFalse($c->ran);
+        $this->assertSame(\OWA\Core\Controller::legacyApiKeyMessage(), $r['json']['error'] ?? null);
     }
 
     /** A login form's fields on a cookies-only endpoint are parameters, not a sign-in. */

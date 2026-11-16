@@ -1113,12 +1113,6 @@ class CoreAPI {
         return $cu->isAuthenticated();
     }
     
-    public static function getCurrentUserApiKey() {
-
-        $cu = \OWA\Core\CoreAPI::getCurrentUser();
-        return $cu->getApiKey();
-    }
-    
     /**
      * @return \OWA\Module\Base\Classes\Service
      */
@@ -2513,11 +2507,13 @@ class CoreAPI {
             $cookie_value = \OWA\Core\Lib::implode_assoc('=>', '|||', $cookie_value);
         }
 
+        $logged_value = self::cookieValueForLog( $cookie_name, $cookie_value );
+
         // add namespace
         $cookie_name = sprintf('%s%s', \OWA\Core\CoreAPI::getSetting('base', 'ns'), $cookie_name);
 
         // debug
-        \OWA\Core\CoreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $cookie_value, $domain));
+        \OWA\Core\CoreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $logged_value, $domain));
 
         // makes cookie to session cookie only
         if (!\OWA\Core\CoreAPI::getSetting('base', 'cookie_persistence')) {
@@ -2527,6 +2523,15 @@ class CoreAPI {
 		
         setcookie($cookie_name, $cookie_value,
             self::cookieOptions($expires, $path, $domain, \OWA\Core\Lib::isHttps(), $httponly));
+    }
+
+    /** The sign-in cookies, by name before the namespace: their values are credentials. */
+    const CREDENTIAL_COOKIES = array( 'u', 'p' );
+
+    /** A cookie's value as written to the debug log: [redacted] for a CREDENTIAL_COOKIES one. */
+    public static function cookieValueForLog( $cookie_name, $cookie_value ) {
+
+        return in_array( (string) $cookie_name, self::CREDENTIAL_COOKIES, true ) ? '[redacted]' : (string) $cookie_value;
     }
 
     /**
@@ -2735,7 +2740,7 @@ class CoreAPI {
         
         $params = $service->request->getAllOwaParams();
         
-        // Names only: the values carry the API key and signature.
+        // Names only: the values may carry credentials.
         \OWA\Core\CoreAPI::debug( 'Handling REST request with params: ' . implode( ', ', array_keys( (array) $params ) ) );
         
         $action = \OWA\Core\CoreAPI::getRequestParam('do');
@@ -3491,17 +3496,6 @@ class CoreAPI {
 	    return $set;
     }
     
-    public static function signRequestUrl( $url, $apiKey ) {
-	    
-	    $auth = \OWA\Core\Auth::get_instance();
-	    
-	    $signature = $auth->generateSignature( $url, $apiKey );
-	    
-	    $url .= '&owa_signature=' . $signature;
-	    
-	    return $url;
     }
-
-}
 
 ?>

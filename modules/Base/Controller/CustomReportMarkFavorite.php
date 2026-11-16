@@ -72,17 +72,11 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
     function action() {
 
         $id     = (string) $this->getParam( 'customReportId' );
-        $report = \OWA\Module\Base\Classes\CustomReports::loadOf( $id, (string) $this->getParam( 'propertyId' ) );
-
         /*
-         * The report has to exist on the Property the request is on, and that
-         * is the whole check.
-         *
-         * Not "and you must be allowed to see it": a custom report renders for
-         * anyone with view_reports by design, so there is no narrower set to
-         * test against. Refusing a star on a report the reader can open would
-         * be inventing a permission that does not exist anywhere else.
+         * A report the reader may open, on the Property the request is on: the
+         * same check as opening it.
          */
+        $report = \OWA\Module\Base\Classes\CustomReports::viewableOf( $id, (string) $this->getParam( 'propertyId' ) );
         if ( $report ) {
 
             \OWA\Module\Base\Classes\CustomReportFavorites::toggle(

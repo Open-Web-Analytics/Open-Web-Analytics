@@ -1163,7 +1163,28 @@ OWA.areaChart.prototype = {
             that.rowsResultSet = new OWA.resultSet( data && data.hasOwnProperty( 'data' ) ? data.data : data );
             that.rowsX         = x;
 
+            if ( that.rowsFailed ) {
+
+                that.rowsFailed = false;
+                that.explorer.clearLoadError();
+            }
+
             that.redraw();
+
+        } ).fail( function () {
+
+            if ( that.rowsUrl !== source ) {
+
+                return;
+            }
+
+            // The total stays drawn; the explorer's error state says the rest
+            // did not load. The same question is not asked again on a redraw.
+            if ( that.explorer && typeof that.explorer.showLoadError === 'function' ) {
+
+                that.rowsFailed = true;
+                that.explorer.showLoadError();
+            }
         } );
     },
 

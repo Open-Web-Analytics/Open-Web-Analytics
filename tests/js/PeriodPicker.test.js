@@ -11,7 +11,7 @@
 import { OWA } from '../../modules/Base/src/reporting/v1/owa.js';
 import {
     PeriodPicker, compareRange, initialState, settle, toParams, calendarTarget,
-    pickDay, formatRange, formatDate, toIso, fromIso, parseDateInput, weekStart,
+    pickDay, choosePreset, formatRange, formatDate, toIso, fromIso, parseDateInput, weekStart,
 } from '../../modules/Base/src/reporting/v1/owa.periodpicker.js';
 
 const fixture = require( '../fixtures/compare-ranges.json' );
@@ -191,6 +191,33 @@ describe( 'the control', () => {
         expect( range ).toMatch( /8/ );
         expect( range ).toMatch( /14/ );
         expect( $( '.owa_periodTriggerCompare' ).textContent ).toMatch( /1.*7/ );
+    } );
+
+    test( 'a preset that runs past today shows its whole period; Custom from it ends on today', () => {
+        const presets = PRESETS.concat( [
+            { key: 'this_year', label: 'This year', startDate: '20260101', endDate: '20261109', axisEndDate: '20261231' },
+        ] );
+        make( { presets: presets } );
+        click( $( '.owa_periodTrigger' ) );
+        click( button( 'This year' ) );
+
+        expect( $$( '.owa_periodField .owa_periodValue' ).map( ( v ) => v.textContent ) ).toEqual( [ 'Jan 1, 2026', 'Dec 31, 2026' ] );
+        // The month a phone shows is one the calendar draws: this month, not December.
+        expect( $( '.owa_periodMonth.is-page' ).getAttribute( 'data-month' ) ).toBe( '202611' );
+
+        click( button( 'Custom date range' ) );
+        expect( $$( '.owa_periodField input' ).map( ( i ) => i.value ) ).toEqual( [ 'Jan 1, 2026', 'Nov 9, 2026' ] );
+        expect( $( '.owa_periodMonth.is-page' ).getAttribute( 'data-month' ) ).toBe( '202611' );
+
+        click( $( '[data-act="apply"]' ) );
+        expect( applied[0] ).toMatchObject( { period: null, startDate: '20260101', endDate: '20261109' } );
+    } );
+
+    test( 'Custom chosen while Custom keeps its dates', () => {
+        const s = { preset: 'custom', main: [ '20260101', '20261109' ] };
+        expect( choosePreset( s, 'custom', '20261001' ).main ).toEqual( [ '20260101', '20261109' ] );
+        expect( choosePreset( { preset: 'this_week', main: [ '20261108', '20261114' ] }, 'custom', '20261109' ).main )
+            .toEqual( [ '20261108', '20261109' ] );
     } );
 
     test( 'Custom date range is last, under Fixed, after the Relative presets', () => {

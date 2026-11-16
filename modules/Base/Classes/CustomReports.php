@@ -1890,16 +1890,10 @@ class CustomReports {
     /**
      * The reports a user may see listed.
      *
-     * Ownership governs the ROSTER, not viewing: an admin sees every report, a
-     * non-admin sees the ones they created, PLUS any their author has shared. A
-     * report reached by its URL renders for anyone with view_reports, which is
-     * what makes the URL shareable -- and is safe because a custom report can
-     * show nothing its reader could not already query for themselves.
-     *
-     * Sharing is therefore about being FOUND, not about being allowed. It puts
-     * a report on other people's lists; it does not open anything that was
-     * closed, and un-sharing does not close anything either -- a link someone
-     * already has goes on working.
+     * The same set as may open one (mayView()): an admin sees every report, a
+     * non-admin the ones they created PLUS any their author has shared.
+     * Un-sharing a report closes it to everyone else, links already sent
+     * included.
      *
      * @param string $user_id
      * @param bool   $all       true for a user who may see everyone's
@@ -2301,10 +2295,52 @@ class CustomReports {
     }
 
     /**
+     * One stored report of one Property that the signed-in user may view, or
+     * null. A report they may not view is answered as one that does not exist,
+     * as a report of another Property is (loadOf()).
+     *
+     * @param  string     $id
+     * @param  string|int $property_id
+     * @return array|null
+     */
+    public static function viewableOf( $id, $property_id ) {
+
+        $report = self::loadOf( $id, $property_id );
+
+        return $report && self::mayView(
+            $report,
+            (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' ),
+            (bool) \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_users' )
+        ) ? $report : null;
+    }
+
+    /**
+     * Whether this user may view this report: its creator, anyone when its
+     * author has shared it (is_shared = 1; NULL, every row written before the
+     * column, is private), or anyone who may see every report. The roster
+     * lists the same set.
+     *
+     * @param array|null $report
+     * @param string     $user_id
+     * @param bool       $all
+     * @return bool
+     */
+    public static function mayView( $report, $user_id, $all = false ) {
+
+        if ( ! $report ) {
+
+            return false;
+        }
+
+        return $all || (string) ( $report['is_shared'] ?? '' ) === '1' || self::mayEdit( $report, $user_id );
+    }
+
+    /**
      * Whether this user may edit this report.
      *
      * Editing is narrower than viewing: the creator, or anyone who may see
-     * every report. Checked against the ROW rather than re-read, so a caller
+     * every report; a shared report is not editable by those it is shared
+     * with. Checked against the ROW rather than re-read, so a caller
      * cannot check one report and act on another.
      *
      * @param array|null $report

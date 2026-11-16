@@ -46,6 +46,7 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $request->server       = $this->server;
         $request->request_type = $this->method;
         $request->setParam('apiKey', '');
+        $request->setParam('signature', '');
 
         // A method left on the one Auth per process refuses a later screen
         // test's in-process user (Controller::checkCapabilityAndAuthenticateUser()).
@@ -168,12 +169,10 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     }
 
     /** A credential that was named and did not hold is not retried as anything else. */
-    public function testAFailedPasswordDoesNotFallThroughToTheApiKey(): void
+    public function testAFailedPasswordIsNotRetriedAsAnythingElse(): void
     {
-        list($user, $made) = $this->userWithPassword();
+        list(, $made) = $this->userWithPassword();
         $wrong = substr($made['token'], 0, 12) . str_repeat('x', 32);
-
-        \OWA\Core\CoreAPI::serviceSingleton()->request->setParam('apiKey', $user['api_key']);
 
         $result = $this->authenticate(self::bearer($wrong));
 
@@ -185,14 +184,91 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     /** A site behind HTTP Basic auth sends its own password; that is not ours. */
     public function testABasicPasswordThatIsNotATokenIsLeftAlone(): void
     {
-        $user = $this->makeUser('admin', 'htpasswd');
-
-        \OWA\Core\CoreAPI::serviceSingleton()->request->setParam('apiKey', $user['api_key']);
-
         $result = $this->authenticate(self::basic('staging', 'the site password'));
 
-        $this->assertTrue($result['auth_status'], 'A site password blocked the apiKey.');
-        $this->assertSame('api_key', $result['method']);
+        $this->assertFalse($result['auth_status']);
+        $this->assertNotSame('app_password', $result['method'], 'A site password was read as an application password.');
+    }
+
+    /** @return array<string, array{array<string, string>, array<string, string>}> params, server variables */
+    public static function legacyCredentials(): array
+    {
+        return array(
+            'apiKey parameter'     => array(array('apiKey' => str_repeat('a', 32)), array()),
+            'signature parameter'  => array(array('signature' => 'c2ln'), array()),
+            'X-API-Key header'     => array(array(), array('HTTP_X_API_KEY' => str_repeat('a', 32))),
+            'X-Signature header'   => array(array(), array('HTTP_X_SIGNATURE' => 'c2ln')),
+        );
+    }
+
+    /**
+     * The legacy API key and request signature are refused, and the refusal
+     * is not a fall-through: a valid application password on the same request
+     * does not sign it in either.
+     *
+     * @dataProvider legacyCredentials
+     */
+    public function testALegacyApiKeyOrSignatureIsRefused(array $params, array $server): void
+    {
+        list(, $made) = $this->userWithPassword();
+        $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
+
+        foreach ($params as $name => $value) {
+            $request->setParam($name, $value);
+        }
+
+        try {
+            foreach (array(array(), self::bearer($made['token'])) as $also) {
+                $result = $this->authenticate($server + $also);
+
+                $this->assertFalse($result['auth_status']);
+                $this->assertSame('', $result['user_id']);
+                $this->assertTrue(\OWA\Core\Auth::get_instance()->refusedLegacyApiKey());
+            }
+        } finally {
+            foreach ($params as $name => $value) {
+                $request->setParam($name, '');
+            }
+        }
+
+        // Without it, the same password signs the request in.
+        $result = $this->authenticate(self::bearer($made['token']));
+        $this->assertTrue($result['auth_status']);
+        $this->assertFalse(\OWA\Core\Auth::get_instance()->refusedLegacyApiKey());
+    }
+
+    /** A REST request refused for a legacy credential is answered 401 with what to use instead. */
+    public function testTheRestRefusalNamesApplicationPasswords(): void
+    {
+        $request = \OWA\Core\CoreAPI::serviceSingleton()->request;
+        $request->setParam('apiKey', str_repeat('a', 32));
+        \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'rest');
+
+        try {
+            $this->authenticate(array());
+
+            $msg = self::refusal()['msg'] ?? null;
+
+            $this->assertSame(401, http_response_code());
+            $this->assertSame(\OWA\Core\Controller::legacyApiKeyMessage(), $msg);
+            $this->assertStringContainsString('application password', $msg);
+            $this->assertStringContainsString('Authorization header', $msg);
+        } finally {
+            $request->setParam('apiKey', '');
+        }
+
+        // Any other failure keeps the general message.
+        $this->authenticate(array());
+        $this->assertNotSame(\OWA\Core\Controller::legacyApiKeyMessage(), self::refusal()['msg'] ?? null);
+    }
+
+    /** The error a REST controller answers a request it could not authenticate with. */
+    private static function refusal(): array
+    {
+        $c = new \OWA\Core\Controller(array());
+        $c->notAuthenticatedAction();
+
+        return (array) ((array) (new \ReflectionProperty(\OWA\Core\Controller::class, 'data'))->getValue($c))['error_msg'];
     }
 
     public function testAReadOnlyPasswordAuthenticatesOnlyAGet(): void

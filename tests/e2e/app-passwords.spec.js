@@ -79,6 +79,7 @@ test.describe('application passwords authenticate REST requests @selfhost-only',
             { method: 'GET', headers: HTTPS });
 
         expect(res.status()).toBe(401);
+        expect(await res.text()).toContain('Authorization header');
     });
 
     test('a read-only password reads but cannot write', async ({ request }) => {
