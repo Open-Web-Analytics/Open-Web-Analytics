@@ -36,13 +36,34 @@ class Logout extends \OWA\Core\Controller {
     /**
      * Signs the user out of every browser session, on every device, and
      * clears this browser's cookie.
+     *
+     * Only with a nonce for base.logout, which every Log out link OWA draws
+     * carries. Without one -- a link from anywhere else -- the user is asked
+     * first, by a form that carries one. Nobody signed in goes to the login
+     * form.
      */
     function action() {
 
         $auth = \OWA\Core\Auth::get_instance();
         $cu   = \OWA\Core\CoreAPI::getCurrentUser();
 
-        if ( $cu->isAuthenticated() && $auth->getAuthMethod() === 'cookies' ) {
+        if ( ! $cu->isAuthenticated() ) {
+
+            $auth->deleteCredentials();
+            $this->setRedirectAction('base.loginForm');
+
+            return;
+        }
+
+        if ( ! $this->verifyNonce( $this->getParam('nonce'), 'base.logout' ) ) {
+
+            $this->setView('base.logoutConfirm');
+            $this->set('back_url', (string) $this->getReferringPage());
+
+            return;
+        }
+
+        if ( $auth->getAuthMethod() === 'cookies' ) {
 
             $user = \OWA\Core\CoreAPI::entityFactory( 'base.user' );
             $user->load( $cu->getUserData( 'user_id' ), 'user_id' );

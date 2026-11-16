@@ -103,6 +103,29 @@ test.describe('admin: authentication (login / logout)', () => {
         await gotoAction(page, 'base.users');
         await expect(page.locator('input[name="password"]')).toBeVisible();
     });
+
+    test('a logout link without a nonce asks first and leaves the session', async ({ page }) => {
+        await adminLogin(page);
+
+        await page.goto('?owa_do=base.logout', { waitUntil: 'networkidle' });
+        await expect(page.getByRole('heading', { name: 'Do you want to log out?' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
+
+        // Still signed in.
+        await gotoAction(page, 'base.users');
+        await expect(page.locator('#owa_userMenuToggle')).toBeVisible();
+        await expect(page.locator('input[name="password"]')).toHaveCount(0);
+
+        // The page's own button signs out.
+        await page.goto('?owa_do=base.logout', { waitUntil: 'networkidle' });
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.getByRole('button', { name: 'Log out' }).click(),
+        ]);
+        await expect(page.locator('input[name="password"]')).toBeVisible();
+        await gotoAction(page, 'base.users');
+        await expect(page.locator('input[name="password"]')).toBeVisible();
+    });
 });
 
 test.describe('admin: capability gate', () => {
