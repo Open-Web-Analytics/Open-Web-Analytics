@@ -10,10 +10,41 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * The page is the location the beacon claimed, and anyone can send a beacon.
  * A recording whose location was javascript: had a Play link that ran script
- * in OWA's own window when a reader clicked it.
+ * in OWA's own window when a reader clicked it. The page is opened with the
+ * player's data link in its fragment, so it must also be on the Profile's
+ * domain or a subdomain of it, as the heatmap launcher requires.
  */
 final class DomstreamPlayLinkTest extends TestCase
 {
+    const SITE = 'owa-play-link-site';
+
+    protected function setUp(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'reads the Profile\'s domain' );
+        }
+
+        $this->dropSite();
+
+        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+        \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
+            "INSERT INTO owa_site (id, site_id, property_id, name, domain) VALUES (%s, ?, 0, 'Play link fixture', 'www.example.test')",
+            $entity->generateId( self::SITE ) ), array( self::SITE ) );
+    }
+
+    protected function tearDown(): void
+    {
+        if ( owa_test_db_available() ) {
+            $this->dropSite();
+        }
+    }
+
+    private function dropSite(): void
+    {
+        \OWA\Core\CoreAPI::dbSingleton()->query( 'DELETE FROM owa_site WHERE site_id = ?', array( self::SITE ) );
+    }
+
     private function playUrl( string $location ): string
     {
         $controller = ( new ReflectionClass( \OWA\Module\Domstream\Controller\ReportDomstreams::class ) )
@@ -23,7 +54,7 @@ final class DomstreamPlayLinkTest extends TestCase
 
         return (string) $m->invoke( $controller, array(
             'recording_id'  => '4921417228',
-            'site_id'       => 'owa-test-site',
+            'site_id'       => self::SITE,
             'page_location' => $location,
             'viewport_w'    => 1280,
             'viewport_h'    => 800,
@@ -34,6 +65,27 @@ final class DomstreamPlayLinkTest extends TestCase
     {
         $this->assertSame( 'https://example.test/pricing', $this->playUrl( 'https://example.test/pricing#top' ) );
         $this->assertSame( 'http://example.test/', $this->playUrl( 'http://example.test/' ) );
+        $this->assertSame( 'https://www.example.test/a', $this->playUrl( 'https://www.example.test/a' ) );
+        $this->assertSame( 'https://shop.example.test/a', $this->playUrl( 'https://shop.example.test/a' ), 'a subdomain' );
+    }
+
+    /** @return array<string, array{string}> */
+    public static function offTheDomain(): array
+    {
+        return array(
+            'another host'          => array( 'https://elsewhere.test/pricing' ),
+            'a host ending like it' => array( 'https://badexample.test/pricing' ),
+            'the domain as a path'  => array( 'https://elsewhere.test/example.test' ),
+            'the domain as a user'  => array( 'https://example.test@elsewhere.test/' ),
+        );
+    }
+
+    /**
+     * @dataProvider offTheDomain
+     */
+    public function testAPageOffTheProfilesDomainHasNoPlayLink( string $location ): void
+    {
+        $this->assertSame( '', $this->playUrl( $location ) );
     }
 
     /** @return array<string, array{string}> */
