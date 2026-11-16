@@ -731,11 +731,4 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
 
         return null;
     }
-
-    protected function readableSize( $bytes ) {
-
-        return $bytes > 1048576
-            ? sprintf( '%.1f MB', $bytes / 1048576 )
-            : sprintf( '%.0f KB', $bytes / 1024 );
-    }
 }

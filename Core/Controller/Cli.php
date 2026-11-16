@@ -398,6 +398,14 @@ class Cli extends \OWA\Core\AdminController {
         $this->job_lease = $lease;
     }
 
+    /** A byte count as KB, or as MB above one megabyte. */
+    protected function readableSize( $bytes ) {
+
+        return $bytes > 1048576
+            ? sprintf( '%.1f MB', $bytes / 1048576 )
+            : sprintf( '%.0f KB', $bytes / 1024 );
+    }
+
     /**
      * Put report lines on standard output.
      *
