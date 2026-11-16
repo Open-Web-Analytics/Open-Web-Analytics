@@ -204,15 +204,21 @@ final class ReportsRestControllerTest extends RestControllerTestCase
     /** Page views written straight into a Profile's cube: [ yyyymmdd, path, count ]. */
     private function seedPageViews(string $siteId, array $rows): void
     {
-        $property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite($siteId);
-        $id = 990000;
+        $this->seedEvents($siteId, array_map(fn ($r) => [$r[0], $r[1], $r[2], 'page_view'], $rows));
+    }
 
-        foreach ($rows as [$day, $path, $count]) {
+    /** Events written straight into a Profile's cube: [ yyyymmdd, path (or null), count, event_type ]. */
+    private function seedEvents(string $siteId, array $rows): void
+    {
+        $property = \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite($siteId);
+
+        foreach ($rows as [$day, $path, $count, $type]) {
             for ($n = 0; $n < $count; $n++) {
+                $id = ++$this->seeded;
                 $event = \OWA\Module\Base\Classes\Cube\Cubes::entityFor($property);
                 $event->setProperties([
-                    'id'         => ++$id,
-                    'event_type' => 'page_view',
+                    'id'         => $id,
+                    'event_type' => $type,
                     'site_id'    => $siteId,
                     'visitor_id' => 7000 + $id,
                     'session_id' => 8000 + $id,
@@ -225,12 +231,14 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         }
     }
 
+    /** @var int the last event id seeded */
+    private int $seeded = 990000;
+
     /**
      * compare puts the comparison period's numbers beside the period's: in
-     * the aggregates, and on each row matched by its dimension values. The
-     * comparison is restricted to the rows on the page, so /c -- the
-     * comparison's own top page, and not on this page -- is not what /a is
-     * compared with.
+     * the aggregates, and on each row matched by its dimension values. /c --
+     * the comparison's own top page, which the period does not have -- is not
+     * what /a is compared with; it is counted as a row after the period's two.
      */
     public function testAComparisonIsAnsweredBesideThePeriod(): void
     {
@@ -269,6 +277,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         $this->assertSame('/a', $a['pagePath']['value']);
         $this->assertSame([3, 1], [(int) $a['pageViews']['value'], (int) $a['pageViews']['compare_value']]);
         $this->assertEqualsWithDelta(2.0, $a['pageViews']['change'], 1e-9);
+        $this->assertSame(3, (int) $data['resultsTotal']);
     }
 
     public function testATrendIsComparedDayForDay(): void
@@ -413,5 +422,184 @@ final class ReportsRestControllerTest extends RestControllerTestCase
         );
 
         $this->assertSame(422, $resp['status']);
+    }
+
+    /** A compared grid of page views by $dimensions: today against seven days ago. */
+    private function comparedGrid(string $site, array $params = []): array
+    {
+        $day  = date('Ymd');
+
+        $resp = $this->callEndpoint(
+            \OWA\Module\Base\Controller\ReportsRest::class,
+            'reportsRestController.php',
+            $params + ['metrics' => 'pageViews', 'dimensions' => 'pagePath', 'sort' => 'pageViews-', 'resultsPerPage' => 10,
+             'period' => 'date_range', 'startDate' => $day, 'endDate' => $day,
+             'compare' => 'previous_period_dow', 'siteId' => $site]
+        );
+
+        $this->assertSame(201, $resp['status'], $resp['raw']);
+
+        return $resp['data'];
+    }
+
+    /** Each row as [ its dimension values..., metric value, compare value ] of $metric. */
+    private static function compared(array $data, string $metric = 'pageViews', array $dims = ['pagePath']): array
+    {
+        return array_map(function ($r) use ($metric, $dims) {
+            $out = [];
+            foreach ($dims as $d) {
+                $out[] = $r[$d]['value'];
+            }
+            $out[] = $r[$metric]['value'] === null ? null : (int) $r[$metric]['value'];
+            $out[] = $r[$metric]['compare_value'] === null ? null : (int) $r[$metric]['compare_value'];
+            return $out;
+        }, $data['resultsRows']);
+    }
+
+    /**
+     * A grid lists the rows of both periods: the period's own first, then the
+     * groups only the comparison has, by the sort over its numbers. In those a
+     * count is 0 and changed by -100%; a distinct count has no value and no
+     * change.
+     */
+    public function testAComparedGridAddsTheRowsOnlyTheComparisonHas(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $day  = date('Ymd');
+        $week = date('Ymd', strtotime('-7 days'));
+
+        $this->seedPageViews($site, [
+            [$day, '/a', 3], [$day, '/b', 1],
+            [$week, '/a', 1], [$week, '/d', 2], [$week, '/c', 5],
+        ]);
+
+        $data = $this->comparedGrid($site, ['metrics' => 'pageViews,totalUsers']);
+
+        $this->assertSame([['/a', 3, 1], ['/b', 1, null], ['/c', 0, 5], ['/d', 0, 2]], self::compared($data));
+        $this->assertSame(4, (int) $data['resultsTotal']);
+
+        $c = $data['resultsRows'][2];
+        $this->assertSame('0', (string) $c['pageViews']['formatted_value']);
+        $this->assertEqualsWithDelta(-1.0, $c['pageViews']['change'], 1e-9);
+        $this->assertSame([null, null, 5, null], [$c['totalUsers']['value'], $c['totalUsers']['formatted_value'],
+            (int) $c['totalUsers']['compare_value'], $c['totalUsers']['change']]);
+
+        // The totals are the periods' own.
+        $this->assertSame([4, 8], [(int) $data['aggregates']['pageViews']['value'], (int) $data['aggregates']['pageViews']['compare_value']]);
+
+        // Sorted by the path, the comparison's rows by the path too.
+        $this->assertSame(['/a', '/b', '/c', '/d'], array_map(fn ($r) => $r['pagePath']['value'],
+            $this->comparedGrid($site, ['sort' => 'pagePath'])['resultsRows']));
+        $this->assertSame(['/b', '/a', '/d', '/c'], array_map(fn ($r) => $r['pagePath']['value'],
+            $this->comparedGrid($site, ['sort' => 'pagePath-'])['resultsRows']));
+    }
+
+    /**
+     * The comparison's rows page on from the period's: a page that runs past
+     * the period's rows is filled from them, and a page after it is theirs
+     * alone, from the right one. The read-ahead counts both.
+     */
+    public function testTheComparisonsRowsPageOnFromThePeriods(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $day  = date('Ymd');
+        $week = date('Ymd', strtotime('-7 days'));
+
+        $this->seedPageViews($site, [
+            [$day, '/a', 5], [$day, '/b', 4], [$day, '/c', 3],
+            [$week, '/b', 1], [$week, '/x', 9], [$week, '/y', 8], [$week, '/z', 7],
+        ]);
+
+        $page = function (int $n) use ($site): array {
+            $data = $this->comparedGrid($site, ['resultsPerPage' => 2, 'page' => $n]);
+            return [self::compared($data), (int) $data['resultsTotal'], (bool) $data['next']];
+        };
+
+        $this->assertSame([[['/a', 5, null], ['/b', 4, 1]], 6, true], $page(1));
+        $this->assertSame([[['/c', 3, null], ['/x', 0, 9]], 4, true], $page(2));
+        $this->assertSame([[['/y', 0, 8], ['/z', 0, 7]], 2, false], $page(3));
+        $this->assertSame([[], 0, false], $page(4));
+
+        // A card's Show more: page 1, more rows.
+        $this->assertSame(['/a', '/b', '/c', '/x', '/y'], array_map(fn ($r) => $r['pagePath']['value'],
+            $this->comparedGrid($site, ['resultsPerPage' => 5])['resultsRows']));
+    }
+
+    /**
+     * With nothing in the period, the grid is the comparison's rows, each
+     * changed to 0, and the total is 0 against the comparison's.
+     */
+    public function testAnEmptyPeriodListsTheComparisonsRows(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $week = date('Ymd', strtotime('-7 days'));
+
+        $this->seedPageViews($site, [[$week, '/a', 2], [$week, '/b', 1]]);
+
+        $data = $this->comparedGrid($site);
+
+        $this->assertSame([['/a', 0, 2], ['/b', 0, 1]], self::compared($data));
+        $this->assertSame(2, (int) $data['resultsTotal']);
+        $this->assertSame([0, 3], [(int) $data['aggregates']['pageViews']['value'], (int) $data['aggregates']['pageViews']['compare_value']]);
+
+        // A second page of an empty period starts where the comparison's rows do.
+        $this->assertSame([['/b', 0, 1]], self::compared($this->comparedGrid($site, ['resultsPerPage' => 1, 'page' => 2])));
+    }
+
+    /**
+     * A row's key is every dimension, and an unset one is a key like any
+     * other: the "(not set)" row is compared with the comparison's, and a
+     * group the period has under another event is not among the comparison's
+     * own.
+     */
+    public function testUnsetValuesAndTwoDimensionsAreKeysOfTheirOwn(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $day  = date('Ymd');
+        $week = date('Ymd', strtotime('-7 days'));
+
+        $this->seedEvents($site, [
+            [$day, null, 3, 'page_view'], [$day, '/a', 2, 'page_view'],
+            [$week, null, 1, 'page_view'], [$week, '/a', 6, 'click'], [$week, '/a', 4, 'page_view'], [$week, null, 5, 'click'],
+        ]);
+
+        $data = $this->comparedGrid($site, ['metrics' => 'eventCount', 'dimensions' => 'pagePath,eventName', 'sort' => 'eventCount-']);
+
+        $this->assertSame([
+            [null, 'page_view', 3, 1], ['/a', 'page_view', 2, 4],
+            ['/a', 'click', 0, 6], [null, 'click', 0, 5],
+        ], self::compared($data, 'eventCount', ['pagePath', 'eventName']));
+    }
+
+    /**
+     * A filter on a metric selects rows by the period's numbers, which the
+     * comparison's own rows do not have: none are added. A filter on a
+     * dimension applies to both periods.
+     */
+    public function testFiltersOnTheComparisonsRows(): void
+    {
+        $this->authenticateAs('admin');
+
+        $site = $this->profile(true);
+        $day  = date('Ymd');
+        $week = date('Ymd', strtotime('-7 days'));
+
+        $this->seedPageViews($site, [
+            [$day, '/a', 3], [$day, '/b', 1],
+            [$week, '/a', 1], [$week, '/c', 5], [$week, '/d', 2],
+        ]);
+
+        $this->assertSame([['/a', 3, 1], ['/b', 1, null]],
+            self::compared($this->comparedGrid($site, ['constraints' => 'pageViews>=1'])));
+        $this->assertSame([['/a', 3, 1], ['/b', 1, null], ['/c', 0, 5]],
+            self::compared($this->comparedGrid($site, ['constraints' => 'pagePath!=/d'])));
     }
 }

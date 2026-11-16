@@ -1367,6 +1367,41 @@ test.describe('a dashboard card shows more rows from the bar under them', () => 
 });
 
 /*
+ * A compared card lists the rows of both periods (ReportsRest): a period with
+ * nothing in it shows the comparison's rows, each a count of 0 down 100%.
+ */
+test.describe('a compared dashboard card', () => {
+
+    test('a period with no data lists the comparison\'s rows, and its total is 0', async ({ page }) => {
+        await login(page);
+
+        const day = (ago) => {
+            const d = new Date(Date.now() - ago * 86400000);
+            return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+        };
+
+        // Eight years before the fixture, against the fixture's own month.
+        await page.goto(`?owa_do=base.report&owa_reportId=dashboard&owa_siteId=${FIXTURE.siteId}`
+            + `&owa_period=date_range&owa_startDate=${day(2950)}&owa_endDate=${day(2921)}`
+            + `&owa_compare=date_range&owa_compareStartDate=${day(29)}&owa_compareEndDate=${day(0)}`,
+            { waitUntil: 'networkidle' });
+
+        const card = page.locator('#top-pages');
+        const rows = card.locator('tr.owa_gridRow');
+
+        await expect(rows.first()).toBeVisible({ timeout: 20_000 });
+        await expect(card.locator('.owa_gridEmpty')).toHaveCount(0);
+        await expect(card.locator('[data-ui="card-total"] .owa_cardTotalNumber')).toHaveText('0');
+        await expect(card.locator('[data-ui="card-total"] .owa_gridChange')).toHaveText('▼ 100.0%');
+
+        const first = rows.first().locator('td.owa_gridMetric').first();
+        await expect(first).toContainText(/^0/);
+        await expect(first.locator('.owa_gridChange')).toHaveText('▼ 100.0%');
+        await expect(first.locator('.owa_gridChange')).toHaveAttribute('title', /\d{4}: [1-9]/);
+    });
+});
+
+/*
  * A value in a full grid is set as a card's is: one size, weight and colour,
  * so a number reads the same wherever the dashboard shows it.
  */

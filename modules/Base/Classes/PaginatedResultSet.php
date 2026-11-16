@@ -210,6 +210,37 @@ class PaginatedResultSet {
         }
     }
 
+    /**
+     * Rows from another query after this page's own: as many as the page has
+     * room for. $fetched is how many that query read, within the read-ahead,
+     * and is counted with this page's (countResults()), so the pager and the
+     * next link reach them.
+     *
+     * @param array $rows
+     * @param int   $fetched
+     */
+    function appendRows( array $rows, $fetched ) {
+
+        $room = max( 0, (int) $this->resultsPerPage - count( (array) $this->resultsRows ) );
+
+        $this->resultsRows     = array_merge( array_values( (array) $this->resultsRows ), array_slice( array_values( $rows ), 0, $room ) );
+        $this->resultsReturned = count( $this->resultsRows );
+        $this->resultsTotal    = (int) $this->resultsTotal + (int) $fetched;
+
+        if ( $this->resultsPerPage ) {
+
+            $this->total_pages = ceil( ( $this->resultsTotal + $this->calculateOffset() ) / $this->resultsPerPage );
+
+            if ( $this->resultsTotal > $this->resultsPerPage ) {
+
+                $this->setMorePages();
+            }
+        }
+
+        $this->setResultSetUrls( (array) $this->queryParams );
+        $this->createResultSetHash();
+    }
+
     function getRowCount() {
 
         return $this->resultsTotal;
