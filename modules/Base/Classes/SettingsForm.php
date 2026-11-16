@@ -55,7 +55,7 @@ class SettingsForm {
 
         if ( $panels === null ) {
 
-            $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();
+            $panels = (array) \OWA\Core\CoreAPI::getAdminPanels();
         }
 
         $page = null;

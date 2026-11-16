@@ -269,7 +269,7 @@ class ReportSegment {
      */
     public function bounds() {
 
-        $timePeriod = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+        $timePeriod = new \OWA\Module\Base\Classes\TimePeriod();
 
         if ( $this->startDate && $this->endDate ) {
 

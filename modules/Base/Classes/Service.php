@@ -71,7 +71,7 @@ class Service extends \OWA\Core\Base {
             $this->setInit();
 
             // setup current user
-            $this->current_user = \OWA\Core\CoreAPI::supportClassFactory('base', 'serviceUser');
+            $this->current_user = new \OWA\Module\Base\Classes\ServiceUser();
             // the 'log_users' config directive relies on this being populated
             $this->current_user->setUserData( 'user_id' ,  $this->request->state->get('u') );
             // load geolocation obj.

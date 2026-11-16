@@ -331,8 +331,7 @@ abstract class Module {
 
         if (!is_object($handler_name)) {
 
-            //$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
-            $handler_name = \OWA\Core\CoreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');
+            $handler_name = \OWA\Core\CoreAPI::moduleGenericFactory($this->name, $dir, $handler_name);
         }
 
         $eq = \OWA\Core\CoreAPI::getEventDispatch();
@@ -368,8 +367,7 @@ abstract class Module {
             // create object
             if ( ! class_exists( $handler_name ) ) {
 
-                //$handler = &owa_lib::factory($handler_dir,'owa_', $handler_name);
-                $class = \OWA\Core\CoreAPI::moduleGenericFactory($this->name, $dir, $handler_name, $class_suffix = null, $params = '', $class_ns = 'owa_');
+                $class = \OWA\Core\CoreAPI::moduleGenericFactory($this->name, $dir, $handler_name);
             }
 
             // register

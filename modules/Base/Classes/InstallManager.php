@@ -90,7 +90,7 @@ class InstallManager extends \OWA\Core\Base {
                  * createNewUser(), whose signature is a public seam this does
                  * not need to widen.
                  */
-                $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+                $sm = new \OWA\Module\Base\Classes\SiteManager();
                 $u->getByColumn( 'user_id', $user_id );
 
                 if ( $u->get( 'id' ) ) {
@@ -162,7 +162,7 @@ class InstallManager extends \OWA\Core\Base {
          * site selector and the Property roster -- while a migrated install of
          * the same age looks correct. The two must not differ.
          */
-        $sm          = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+        $sm          = new \OWA\Module\Base\Classes\SiteManager();
         $property_id = $sm->ensurePropertyFor( $domain, $name, $description );
 
         $site->set('id', $site->generateId($site_id));

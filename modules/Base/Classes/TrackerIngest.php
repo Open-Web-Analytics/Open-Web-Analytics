@@ -254,7 +254,7 @@ class TrackerIngest {
             return null;
         }
 
-        $event      = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+        $event      = new \OWA\Module\Base\Classes\Event();
         $properties = $envelope['properties'];
 
         $event->setEventType( $envelope['type'] );

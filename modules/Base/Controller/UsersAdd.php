@@ -74,7 +74,7 @@ class UsersAdd extends \OWA\Core\AdminController {
 
     function action() {
 
-        $userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
+        $userManager = new \OWA\Module\Base\Classes\UserManager();
 
 
         $user_params = array( 'user_id'         => trim($this->params['user_id']),

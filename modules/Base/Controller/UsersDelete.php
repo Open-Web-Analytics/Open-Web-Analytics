@@ -48,7 +48,7 @@ class UsersDelete extends \OWA\Core\AdminController {
 
     function action() {
 
-        $userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
+        $userManager = new \OWA\Module\Base\Classes\UserManager();
 
         // add check here to ensure that this is not the default user....
         $userManager->deleteUser($this->getParam('user_id'));

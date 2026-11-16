@@ -65,7 +65,7 @@ class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
 
         $this->setRequiredCapability('edit_settings');
 
-        $this->_userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
+        $this->_userManager = new \OWA\Module\Base\Classes\UserManager();
     }
 
     public function validate()

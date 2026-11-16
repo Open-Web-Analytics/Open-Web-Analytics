@@ -49,8 +49,8 @@ class TimePeriod {
 
         //parent::__construct();
 
-        $this->startDate = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');
-        $this->endDate = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');
+        $this->startDate = new \OWA\Module\Base\Classes\Date();
+        $this->endDate = new \OWA\Module\Base\Classes\Date();
     }
 
     /**
@@ -616,7 +616,7 @@ class TimePeriod {
             case "last_month":
                 $month =  $time_now['month'] - 1;
                 $start = mktime(0, 0, 0, $month, 1, $time_now['year']);
-                $last = \OWA\Core\CoreAPI::supportClassFactory('base', 'date');
+                $last = new \OWA\Module\Base\Classes\Date();
                 $last->set($start, 'timestamp');
                 $end = mktime(23, 59, 59, $last->get('month'), $last->get('num_days_in_month'), $last->get('year'));
                 break;

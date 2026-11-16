@@ -129,7 +129,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
              * ensureOrganization() creates it on first need, so this works on
              * an install that has somehow never had one.
              */
-            $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+            $sm = new \OWA\Module\Base\Classes\SiteManager();
 
             $propertyId = $property->generateId( 'property:' . $name . ':' . uniqid( '', true ) );
 

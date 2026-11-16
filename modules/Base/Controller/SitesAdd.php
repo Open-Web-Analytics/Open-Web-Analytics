@@ -53,7 +53,7 @@ class SitesAdd extends \OWA\Core\AdminController {
 
         $this->set('domain', $this->getParam('protocol').$this->getParam('domain') );
 
-        $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+        $sm = new \OWA\Module\Base\Classes\SiteManager();
 
         /*
          * createSite(), not createNewSite().

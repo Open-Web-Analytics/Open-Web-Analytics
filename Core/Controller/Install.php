@@ -48,7 +48,7 @@ class Install extends \OWA\Core\Controller {
         
         $this->setRequiredCapability('install_schema');
           
-        $this->im = \OWA\Core\CoreAPI::supportClassFactory('base', 'installManager');
+        $this->im = new \OWA\Module\Base\Classes\InstallManager();
         
         parent::__construct( $params );
     }

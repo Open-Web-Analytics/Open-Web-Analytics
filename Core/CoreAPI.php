@@ -256,7 +256,7 @@ class CoreAPI {
         if( ! isset( $config ) ) {
 
 
-            $config = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'settings' );
+            $config = new \OWA\Module\Base\Classes\Settings();
         }
 
         return $config;
@@ -269,7 +269,7 @@ class CoreAPI {
         if( ! $e ) {
 
 
-            $e = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'error' );
+            $e = new \OWA\Module\Base\Classes\Error();
 
         }
 
@@ -1123,7 +1123,7 @@ class CoreAPI {
         if(empty($s)) {
 
 
-            $s = \OWA\Core\CoreAPI::supportClassFactory('base', 'service');
+            $s = new \OWA\Module\Base\Classes\Service();
 
         }
 
@@ -1158,7 +1158,7 @@ class CoreAPI {
 
     }
 
-    public static function moduleFactory($modulefile, $class_suffix = null, $params = '', $class_ns = 'owa_') {
+    public static function moduleFactory($modulefile, $class_suffix = null, $params = '') {
         /*
          * Both halves name a class -- OWA\Module\<Module>\<Suffix>\<Action> --
          * and class_exists() hands that name to the autoloader, which maps it
@@ -1228,7 +1228,7 @@ class CoreAPI {
           . 'owa_* file convention was removed in v2.0 (UPGRADING.md).', $class_suffix, $module, $file ) );
     }
 
-    public static function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '', $class_ns = 'owa_') {
+    public static function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '') {
 
         /*
          * By convention first. Handlers and filters are registered with the
@@ -1278,7 +1278,7 @@ class CoreAPI {
     }
 
 
-    public static function updateFactory($module, $filename, $class_ns = 'owa_') {
+    public static function updateFactory($module, $filename) {
 
         // NAMESPACE-FIRST. Update classes are PSR-4: UpdateNNN.php declares
         // OWA\Module\<Module>\Update\UpdateNNN, which Composer autoloads with no
@@ -2398,7 +2398,7 @@ class CoreAPI {
 
     public static function makeTimePeriod($time_period, $params = array()) {
 
-        $period = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');
+        $period = new \OWA\Module\Base\Classes\TimePeriod();
 
         if ( ! array_key_exists('period', $params)) {
             $params['period'] = $time_period;

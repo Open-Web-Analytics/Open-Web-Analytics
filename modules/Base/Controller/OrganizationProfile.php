@@ -21,7 +21,7 @@ class OrganizationProfile extends \OWA\Core\AdminController {
 
     function action() {
 
-        $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+        $sm = new \OWA\Module\Base\Classes\SiteManager();
 
         $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
         $organization->load( $sm->ensureOrganization() );

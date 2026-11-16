@@ -90,7 +90,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 				 * required; a caller sending two dates and nothing else is
 				 * still doing the normal thing.
 				 */
-				$period = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');
+				$period = new \OWA\Module\Base\Classes\TimePeriod();
 				$this->addValidation('period', $this->getParam('period'), 'inArray', array('possible_values' => $period->getValidPeriods(), 'stopOnError' => true) );
 			}
 		} else {
@@ -118,7 +118,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 				if ( ! in_array( $this->getParam( $key ), array( null, '' ), true ) ) {
 
-					$response = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'paginatedResultSet' );
+					$response = new \OWA\Module\Base\Classes\PaginatedResultSet();
 					$response->request_errors = array(
 						sprintf( \OWA\Core\CoreAPI::t( 'An overlay link cannot ask for %s.' ), $key ) );
 
@@ -142,7 +142,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 		if ( $readiness ) {
 
-			$response = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'paginatedResultSet' );
+			$response = new \OWA\Module\Base\Classes\PaginatedResultSet();
 			$response->notReady = $readiness;
 
 			$this->set( 'response', $response );

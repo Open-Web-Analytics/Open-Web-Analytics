@@ -480,7 +480,7 @@ class Controller extends \OWA\Core\Base {
 
     function createValidator() {
 
-        $this->v = \OWA\Core\CoreAPI::supportClassFactory('base', 'validator');
+        $this->v = new \OWA\Module\Base\Classes\Validator();
     }
 
     function addValidation($name, $value, $validation, $conf = array()) {
@@ -1348,7 +1348,7 @@ class Controller extends \OWA\Core\Base {
     protected function registeredSettingsNav() {
 
         return self::settingsNavSections(
-            (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels() );
+            (array) \OWA\Core\CoreAPI::getAdminPanels() );
     }
 
     /**

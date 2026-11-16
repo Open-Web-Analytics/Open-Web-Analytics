@@ -155,7 +155,7 @@ class ResultSetManager extends \OWA\Core\Base {
             'currency'        => array($this, 'formatCurrency')
         );
         
-        $this->resultSet = \OWA\Core\CoreAPI::supportClassFactory('base', 'paginatedResultSet');
+        $this->resultSet = new \OWA\Module\Base\Classes\PaginatedResultSet();
 
         parent::__construct();
     }
@@ -1907,7 +1907,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
       if ( $period_name ) {
 
         // create timePeriod class
-        $this->timePeriod = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');
+        $this->timePeriod = new \OWA\Module\Base\Classes\TimePeriod();
 
         $this->timePeriod->set($period_name, $map);
         

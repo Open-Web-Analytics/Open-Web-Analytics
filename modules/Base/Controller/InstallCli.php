@@ -78,7 +78,7 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     function action() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $im = \OWA\Core\CoreAPI::supportClassFactory('base', 'installManager');
+        $im = new \OWA\Module\Base\Classes\InstallManager();
         $this->e->notice('Starting OWA Install from command line.');
 
         //create config file
