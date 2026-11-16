@@ -78,6 +78,10 @@ final class OverlayLauncherTest extends TestCase
         self::clicks($day, self::SITE, 'https://www.example.test/pricing', 2);
         self::clicks($day, self::OTHER, 'https://shop.example.org/pricing?ref=a', 3);
         self::clicks($day, self::SITE, 'https://www.example.test/a,b%26c', 1, '/a,b%26c');
+        self::clicks($day, self::OTHER, 'http://shop.example.org/plain', 1, '/plain');
+        self::clicks($day, self::OTHER, 'http://blog.shop.example.org:8080/sub', 1, '/sub');
+        self::clicks($day, self::OTHER, 'https://evil.test/ftp', 3, '/ftp');
+        self::clicks($day, self::OTHER, 'ftp://shop.example.org/ftp', 2, '/ftp');
 
         $builder = new Builder(self::PROPERTY);
 
@@ -151,7 +155,7 @@ final class OverlayLauncherTest extends TestCase
     {
         $url = $this->launchPath('/a,b%26c');
 
-        $this->assertStringStartsWith('http://www.example.test/a,b%26c#owa_overlay.', $url);
+        $this->assertStringStartsWith('https://www.example.test/a,b%26c#owa_overlay.', $url);
 
         $params = json_decode(base64_decode(rawurldecode(substr($url, strpos($url, '#owa_overlay.') + 13))), true);
         parse_str((string) parse_url($params['api_url'], PHP_URL_QUERY), $q);
@@ -176,16 +180,16 @@ final class OverlayLauncherTest extends TestCase
     /**
      * A Pages row's heatmap: one exact page, path and query string.
      *
-     * Opened on the Profile's own domain -- the Profile with the page's clicks
-     * in the period -- whatever host the clicks' page_location names, so a
-     * forged one cannot choose where the reader goes; and the token the
-     * launcher mints accepts the data request it builds.
+     * Opened on the Profile with the page's clicks in the period, with the
+     * scheme and host its clicks recorded: https, although the domain was
+     * saved with http. The most clicked url, on another host, is passed over.
+     * The token the launcher mints accepts the data request it builds.
      */
     public function testAPagesRowOpensThatExactPageWithItsOwnData(): void
     {
         $url = $this->launchPage('/pricing');
 
-        $this->assertStringStartsWith('http://www.example.test/pricing#owa_overlay.', $url);
+        $this->assertStringStartsWith('https://www.example.test/pricing#owa_overlay.', $url);
 
         $params = json_decode(base64_decode(rawurldecode(substr($url, strpos($url, '#owa_overlay.') + 13))), true);
         $this->assertSame('loadHeatmap', $params['action'] ?? null);
@@ -201,7 +205,8 @@ final class OverlayLauncherTest extends TestCase
         $this->assertTrue(\OWA\Core\OverlayToken::permits($q['overlayToken'] ?? '', 'reports',
             static fn($name) => (string) ($q[$name] ?? '')), 'the token does not accept its own data request');
 
-        // The query string travels to the page and into the constraint.
+        // The query string travels to the page and into the constraint. No
+        // click recorded it, so the domain's own scheme is used.
         $withQuery = $this->launchPage('/pricing?ref=a');
         $this->assertStringStartsWith('http://www.example.test/pricing?ref=a#owa_overlay.', $withQuery);
     }
@@ -215,7 +220,7 @@ final class OverlayLauncherTest extends TestCase
     {
         $url = $this->launchPath('/pricing');
 
-        $this->assertStringStartsWith('http://www.example.test/pricing#owa_overlay.', $url);
+        $this->assertStringStartsWith('https://www.example.test/pricing#owa_overlay.', $url);
 
         $params = json_decode(base64_decode(rawurldecode(substr($url, strpos($url, '#owa_overlay.') + 13))), true);
         parse_str((string) parse_url($params['api_url'], PHP_URL_QUERY), $q);
@@ -242,6 +247,19 @@ final class OverlayLauncherTest extends TestCase
         $this->assertSame('/pricing?a=1,2',
             (new \OWA\Module\Base\Classes\ResultSetManager())->parseConstraintsString($q['constraints'] ?? '')[0]['value'] ?? null);
         $this->assertSame('', $this->launchPage('pricing'));
+    }
+
+    /**
+     * The scheme, host and port come from the recorded page, when it is http
+     * or https and on the Profile's domain or a subdomain of it. Otherwise the
+     * domain, stored bare, is opened over https.
+     */
+    public function testThePageOpensWithTheSchemeAndHostItWasRecordedOn(): void
+    {
+        $this->assertStringStartsWith('http://shop.example.org/plain#owa_overlay.', $this->launchPage('/plain'));
+        $this->assertStringStartsWith('http://blog.shop.example.org:8080/sub#owa_overlay.', $this->launchPage('/sub'));
+        $this->assertStringStartsWith('https://shop.example.org/ftp#owa_overlay.', $this->launchPage('/ftp'),
+            'an ftp url and a host off the domain are passed over');
     }
 
     public function testAPagesRowOpensNothingForAUserWhoCannotSeeTheProperty(): void

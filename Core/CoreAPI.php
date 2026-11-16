@@ -2027,6 +2027,13 @@ class CoreAPI {
         // inherited by all other controller classes
         $data = $controller->doAction();
 
+        // A page the controller rendered itself, as base.report's not-found
+        // and cannot-be-drawn answers are (actionNotResolved()), is the response.
+        if ( is_string( $data ) ) {
+
+            return $data;
+        }
+
         // Display view if controller calls for one.
         if ( ! empty( $data['view'] ) || ! empty( $data['action'] ) ) {
 

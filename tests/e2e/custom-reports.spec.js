@@ -2354,6 +2354,15 @@ test.describe('custom reports', () => {
                 () => decodeURIComponent(window.w1.resultSet.self)), { timeout: 20_000 })
                 .toContain('dimensions=yearMonth');
 
+            /*
+             * ...and on the Total. Sessions is a distinct count, so the Total
+             * is not the sum of the lines: it is null until the trend's own
+             * query by month alone has answered (OWA.areaChart totalsOf()).
+             */
+            await expect.poll(async () => page.evaluate(
+                () => window.w1.areaChart.dataseries[0].data[0][1]), { timeout: 20_000 })
+                .not.toBeNull();
+
             const after = await page.evaluate(() => ({
                 url: window.w1.resultSet.self,
                 x: window.w1.areaChart.xDimension,
@@ -3167,6 +3176,7 @@ test.describe('custom reports', () => {
             const refused = await theirs.goto(privateUrl, { waitUntil: 'networkidle' });
 
             expect(refused.status()).toBe(404);
+            await expect(theirs.locator('body')).toContainText('The page could not be found.');
             await expect(theirs.locator('.owa_reportTitle')).toHaveCount(0);
             await expect(theirs.locator('body')).not.toContainText(privateName);
         } finally {

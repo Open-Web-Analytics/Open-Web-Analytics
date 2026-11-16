@@ -99,7 +99,7 @@ final class SiteDomainNameTest extends TestCase
     {
         $this->assertSame(
             $stored,
-            \OWA\Module\Base\Controller\InstallBase::domainOnly( $typed ) );
+            \OWA\Module\Base\Classes\SiteManager::domainOnly( $typed ) );
     }
 
     public static function installerDomainProvider(): array
@@ -112,6 +112,10 @@ final class SiteDomainNameTest extends TestCase
             'a subdomain survives'         => array( 'https://sub.example.co.uk', 'sub.example.co.uk' ),
             'surrounding space goes'       => array( '  example.com  ', 'example.com' ),
             'a port is not a scheme'       => array( 'example.com:8080', 'example.com:8080' ),
+            'a scheme in capitals'         => array( 'HTTPS://Example.com/', 'Example.com' ),
+            'a port after a scheme stays'  => array( 'http://localhost:8080/', 'localhost:8080' ),
+            'two schemes, two slashes'     => array( 'https://http://example.com//', 'example.com' ),
+            'another scheme is not http'   => array( 'ftp://example.com', 'ftp://example.com' ),
         );
     }
 
@@ -126,7 +130,7 @@ final class SiteDomainNameTest extends TestCase
     {
         foreach ( array( 'example.com', 'https://example.com/', 'sub.example.co.uk' ) as $typed ) {
 
-            $stored = \OWA\Module\Base\Controller\InstallBase::domainOnly( $typed );
+            $stored = \OWA\Module\Base\Classes\SiteManager::domainOnly( $typed );
 
             $this->assertSame(
                 $stored,

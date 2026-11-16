@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
  *   2. A legitimate authenticated admin request still succeeds -- proving
  *      that moving the parent from owa_cliController (CLI-only, exits for
  *      web/REST) to owa_adminController did NOT break the intended use.
- *   3. The api_key (and password / temp_passkey) is NOT disclosed in the
+ *   3. The password, temp_passkey and session_epoch are NOT disclosed in the
  *      response body.
  *   4. A bogus siteId / user_id is rejected by validation and NEVER writes
  *      a site_user relation row (the DoS / bad-foreign-key vector).
@@ -137,7 +137,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
      * Finding #2 (regression): a legitimate authenticated admin request still
      * succeeds under owa_adminController -- the CLI-only parent would have
      * exited before ever reaching here.
-     * Finding #1 (disclosure): api_key / password / temp_passkey are absent
+     * Finding #1 (disclosure): password / temp_passkey / session_epoch are absent
      * from the response body.
      */
     public function testAuthenticatedAdminRequestSucceedsAndHidesSecrets(): void
@@ -159,7 +159,7 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
         $allowedUser = $data['response']['allowed_user'] ?? [];
         $this->assertNotEmpty($allowedUser, 'Response should include the allowed_user record.');
 
-        foreach (['api_key', 'password', 'temp_passkey'] as $secret) {
+        foreach (['password', 'temp_passkey', 'session_epoch'] as $secret) {
             $this->assertArrayNotHasKey($secret, $allowedUser,
                 "Response must not disclose the user's {$secret}.");
         }

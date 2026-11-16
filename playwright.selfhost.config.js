@@ -13,11 +13,13 @@ const path = require('path');
  * that an installed OWA answers at baseURL. So here we serve the repo with PHP's
  * built-in server (`php -S`) against a throwaway scratch install:
  *
- *   globalSetup  -> selfhost_harness.php up   (stash live config if any, CREATE a
- *                   scratch DB, write a config pointing at the php -S URL, run the
- *                   CLI installer) THEN seed_reporting_fixtures.php seed.
- *   webServer    -> php -S 127.0.0.1:8964 at the repo root (started by Playwright,
- *                   torn down when the run ends).
+ *   globalSetup  -> refuse when the built assets (`npm run build`) are missing,
+ *                   then selfhost_harness.php up (stash live config if any, CREATE
+ *                   a scratch DB, write a config pointing at the php -S URL, run
+ *                   the CLI installer) THEN seed_reporting_fixtures.php seed.
+ *   webServer    -> php -S 127.0.0.1:8964 at the repo root through
+ *                   tests/e2e/selfhost_router.php (started by Playwright before
+ *                   globalSetup, torn down when the run ends).
  *   globalTeardown -> unseed + selfhost_harness.php down (drop scratch DB, restore
  *                   the live config). Runs even on failure.
  *
@@ -80,21 +82,27 @@ module.exports = defineConfig({
     expect: { timeout: 15_000 },
 
     // Let Playwright own the php -S lifecycle: start it before the specs, kill it
-    // after. reuseExistingServer lets a dev leave one running between local runs.
+    // after. reuseExistingServer lets a dev leave one running between local runs;
+    // only a server started with the router answers the readiness URL, so an older
+    // php -S on the port is not reused.
     //
-    // READINESS URL -- must be install.php, NOT index.php. Playwright starts the
-    // webServer and waits for this URL to answer BEFORE globalSetup runs (plugin
-    // setup precedes globalSetups in the runner). But it's globalSetup (`up`) that
-    // writes owa-config.php + installs the schema, so at readiness-probe time there
-    // is NO config yet on a fresh machine/CI -- and index.php 500s with no config,
-    // which the probe treats as "not ready" and retries until this timeout. Only on
-    // this box did index.php happen to answer, because the LIVE config was still in
-    // place. install.php returns 200 whether or not OWA is installed, so it's a
-    // stable "is php -S serving?" signal independent of install state. (The specs
-    // themselves still hit index.php via baseURL, after `up` has installed.)
+    // Playwright starts the server and probes it BEFORE globalSetup runs `up`
+    // (plugin setup precedes globalSetups), and stops it AFTER globalTeardown has
+    // put the stashed owa-config.php back. In a git worktree that file is a
+    // symlink to another install's config, naming that install's database. So:
+    //
+    //   - the router (tests/e2e/selfhost_router.php) answers the readiness URL
+    //     itself and runs nothing of OWA until owa-config.php is the regular file
+    //     `up` wrote (SELFHOST_CONFIG_MARKER): before that, and again once
+    //     teardown has restored the original, every other request is a 503;
+    //   - opcache is off (opcache.enable, not enable_cli, governs the cli-server
+    //     SAPI) and the realpath cache is empty, so each request reads
+    //     owa-config.php as it is on disk, not a compiled copy of the file the
+    //     path resolved to before the swap.
     webServer: {
-        command: `php -d variables_order=EGPCS -S ${hostname}:${port} -t ${__dirname}`,
-        url: SERVER_URL + 'install.php',
+        command: `php -d opcache.enable=0 -d realpath_cache_size=0 -d variables_order=EGPCS`
+            + ` -S ${hostname}:${port} -t ${__dirname} ${path.join(__dirname, 'tests', 'e2e', 'selfhost_router.php')}`,
+        url: SERVER_URL + '__owa_e2e_selfhost',
         reuseExistingServer: !process.env.CI,
         timeout: 30_000,
         // php -S needs a worker pool so a request can be served while an earlier

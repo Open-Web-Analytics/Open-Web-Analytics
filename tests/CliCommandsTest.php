@@ -72,18 +72,19 @@ final class CliCommandsTest extends CliControllerTestCase
 
     public function testAddSiteCreatesSite(): void
     {
-        $domain = 'https://owatest-cli-add-' . $this->tok . '.example.com';
+        $domain = 'owatest-cli-add-' . $this->tok . '.example.com';
 
         $result = $this->runCommand(
             \OWA\Module\Base\Controller\SitesAddCli::class,
             'sitesAddCli.php',
-            ['domain' => $domain, 'name' => 'CLI add ' . $this->tok]
+            ['domain' => 'https://' . $domain, 'name' => 'CLI add ' . $this->tok]
         );
 
         $this->assertSame('base.sitesAddCli', $result['view'],
             'A valid add-site should route to the sitesAddCli success view.');
 
-        // Verify the row landed, then schedule it for cleanup.
+        // Verify the row landed, stored without the scheme it was typed with,
+        // then schedule it for cleanup.
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         $site->load($domain, 'domain');
         $this->assertNotEmpty($site->get('id'),
@@ -149,9 +150,9 @@ final class CliCommandsTest extends CliControllerTestCase
 
         $this->assertNotCapable($result, 'add-site requires edit_sites.');
 
-        // And nothing was written.
+        // And nothing was written: a domain is stored without its scheme.
         $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->load('https://owatest-cli-denied-' . $this->tok . '.example.com', 'domain');
+        $site->load('owatest-cli-denied-' . $this->tok . '.example.com', 'domain');
         $this->assertEmpty($site->get('id'),
             'A denied add-site must not create a site row.');
     }

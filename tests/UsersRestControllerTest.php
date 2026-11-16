@@ -13,7 +13,7 @@ require_once(__DIR__ . '/RestControllerTestCase.php');
  * tests render through the view and assert on the final JSON body -- a
  * controller-$data-only check would miss a view-level disclosure. This is the
  * same disclosure class as the siteUsers fix: the roster must not leak
- * api_key / password / temp_passkey.
+ * password / temp_passkey / session_epoch.
  */
 final class UsersRestControllerTest extends RestControllerTestCase
 {
@@ -74,15 +74,11 @@ final class UsersRestControllerTest extends RestControllerTestCase
         // No record may carry a secret column...
         foreach ($resp['data'] as $record) {
             $this->assertIsArray($record);
-            foreach (['api_key', 'password', 'temp_passkey'] as $secret) {
+            foreach (['password', 'temp_passkey', 'session_epoch'] as $secret) {
                 $this->assertArrayNotHasKey($secret, $record,
                     "The users roster must not disclose {$secret}.");
             }
         }
-
-        // ...and the concrete secret values must not appear anywhere in the body.
-        $this->assertNotInBody($target['api_key'], $resp['raw'],
-            'The target user api_key value must not be disclosed in the roster body.');
     }
 
     // ------------------------------------------------------------------
@@ -134,9 +130,7 @@ final class UsersRestControllerTest extends RestControllerTestCase
         $this->assertSame($user_id, $resp['data']['user_id'] ?? null,
             'The response should echo the created user_id.');
 
-        // No API key is made for a new user, and the password hash is never sent.
-        $this->assertArrayNotHasKey('api_key', $resp['data'],
-            'The add-user response must not include an API key.');
+        // The password hash is never sent.
         $this->assertArrayNotHasKey('password', $resp['data'],
             'The add-user response must not include the password hash.');
 

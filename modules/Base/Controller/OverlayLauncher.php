@@ -175,10 +175,17 @@ class OverlayLauncher extends \OWA\Core\Controller {
     }
 
     /**
-     * scheme://host of the Profile the page belongs to: the Property's only
-     * Profile, or the one with the most clicks on it in the period -- over
-     * the Profiles and the dates, which the cube indexes. A domain stored with
-     * no scheme is https.
+     * scheme://host[:port] to open the page on.
+     *
+     * The Profile is the Property's only one, or the one with the most clicks
+     * on the page in the period -- over the Profiles and the dates, which the
+     * cube indexes.
+     *
+     * The scheme and host are those of the page as recorded: the most clicked
+     * page_location of that Profile's clicks on the page that is http or https
+     * and on its domain (originOf()). A Profile's domain carries no scheme,
+     * and the page may be served on a subdomain of it. With no such click,
+     * the domain itself, over https.
      *
      * @param string|null $query null for every query string of the path
      * @return string '' when no Profile has a domain
@@ -187,34 +194,38 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         $site_ids = \OWA\Module\Base\Classes\Cube\Cubes::siteIds( $propertyId );
 
-        if ( count( $site_ids ) > 1 ) {
+        $tp = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+        $tp->set( isset( $period['period'] ) ? $period['period'] : 'date_range',
+            isset( $period['period'] ) ? array() : $period );
 
-            $tp = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
-            $tp->set( isset( $period['period'] ) ? $period['period'] : 'date_range',
-                isset( $period['period'] ) ? array() : $period );
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $propertyId );
+        $cube  = $db->tableExists( $table );
 
-            $db    = \OWA\Core\CoreAPI::dbSingleton();
-            $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $propertyId );
+        // The page's clicks in the period, for the Profiles named.
+        $where = function ( array $ids ) use ( $db, $tp, $path, $query ) {
 
-            if ( $db->tableExists( $table ) ) {
+            $quoted = array_map( function ( $s ) use ( $db ) { return "'" . $db->prepare( $s ) . "'"; }, $ids );
 
-                $quoted = array_map( function ( $s ) use ( $db ) { return "'" . $db->prepare( $s ) . "'"; }, $site_ids );
+            return sprintf(
+                "site_id IN (%s) AND event_type = 'click' AND yyyymmdd BETWEEN %d AND %d AND page_path = '%s' AND %s",
+                implode( ', ', $quoted ),
+                (int) $tp->startDate->get( 'yyyymmdd' ), (int) $tp->endDate->get( 'yyyymmdd' ),
+                $db->prepare( $path ),
+                $query === null ? '1 = 1'
+                    : ( $query === '' ? "(page_query IS NULL OR page_query = '')"
+                                      : sprintf( "page_query = '%s'", $db->prepare( $query ) ) ) );
+        };
 
-                $row = $db->get_row( sprintf(
-                    "SELECT site_id FROM %s WHERE site_id IN (%s) AND event_type = 'click'"
-                  . " AND yyyymmdd BETWEEN %d AND %d AND page_path = '%s' AND %s"
-                  . ' GROUP BY site_id ORDER BY COUNT(*) DESC LIMIT 1',
-                    $table, implode( ', ', $quoted ),
-                    (int) $tp->startDate->get( 'yyyymmdd' ), (int) $tp->endDate->get( 'yyyymmdd' ),
-                    $db->prepare( $path ),
-                    $query === null ? '1 = 1'
-                        : ( $query === '' ? "(page_query IS NULL OR page_query = '')"
-                                          : sprintf( "page_query = '%s'", $db->prepare( $query ) ) ) ) );
+        if ( $cube && count( $site_ids ) > 1 ) {
 
-                if ( is_array( $row ) && ! empty( $row['site_id'] ) ) {
+            $row = $db->get_row( sprintf(
+                'SELECT site_id FROM %s WHERE %s GROUP BY site_id ORDER BY COUNT(*) DESC LIMIT 1',
+                $table, $where( $site_ids ) ) );
 
-                    array_unshift( $site_ids, (string) $row['site_id'] );
-                }
+            if ( is_array( $row ) && ! empty( $row['site_id'] ) ) {
+
+                array_unshift( $site_ids, (string) $row['site_id'] );
             }
         }
 
@@ -226,14 +237,62 @@ class OverlayLauncher extends \OWA\Core\Controller {
             $domain = trim( (string) $site->get( 'domain' ) );
             $parts  = parse_url( strpos( $domain, '//' ) === false ? 'https://' . $domain : $domain );
 
-            if ( ! empty( $parts['host'] ) ) {
+            if ( empty( $parts['host'] ) ) {
 
-                return ( $parts['scheme'] ?? 'https' ) . '://' . $parts['host']
-                    . ( isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '' );
+                continue;
             }
+
+            if ( $cube ) {
+
+                $rows = $db->get_results( sprintf(
+                    'SELECT page_location FROM %s WHERE %s GROUP BY page_location ORDER BY COUNT(*) DESC LIMIT %d',
+                    $table, $where( array( $site_id ) ), self::CANDIDATES ) );
+
+                $domains = self::domainsOf( array( $site_id ) );
+
+                foreach ( (array) $rows as $row ) {
+
+                    $origin = self::originOf( (string) ( $row['page_location'] ?? '' ), $domains );
+
+                    if ( $origin !== '' ) {
+
+                        return $origin;
+                    }
+                }
+            }
+
+            return ( $parts['scheme'] ?? 'https' ) . '://' . $parts['host']
+                . ( isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '' );
         }
 
         return '';
+    }
+
+    /**
+     * scheme://host[:port] of a recorded url, when it is http or https and on
+     * one of the domains.
+     *
+     * Anyone can send a beacon with any page_location, and the overlay's data
+     * link, token and all, travels in the fragment of the url opened: a host
+     * off the Profile's domain would receive it.
+     *
+     * @param string   $url
+     * @param string[] $domains from domainsOf()
+     * @return string '' when it is neither
+     */
+    private static function originOf( $url, array $domains ) {
+
+        $parts  = parse_url( trim( $url ) );
+        $scheme = strtolower( (string) ( $parts['scheme'] ?? '' ) );
+        $host   = strtolower( (string) ( $parts['host'] ?? '' ) );
+
+        if ( ! in_array( $scheme, array( 'http', 'https' ), true )
+             || $host === '' || ! self::isOnDomain( $host, $domains ) ) {
+
+            return '';
+        }
+
+        return $scheme . '://' . $host . ( isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '' );
     }
 
     /**
@@ -355,8 +414,8 @@ class OverlayLauncher extends \OWA\Core\Controller {
     const CANDIDATES = 25;
 
     /**
-     * The Profiles' domains as bare hosts, without a leading www.: a Profile's
-     * domain is stored as entered, scheme and all ("http://www.example.com").
+     * The Profiles' domains as bare hosts, without a leading www.: a domain
+     * saved before Update088 may still carry a scheme ("http://www.example.com").
      *
      * @param string[] $site_ids
      * @return string[]
