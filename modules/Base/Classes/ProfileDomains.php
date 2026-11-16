@@ -11,9 +11,9 @@ namespace OWA\Module\Base\Classes;
  * Whether a recorded page is on a Profile's own domain: a host it names or a
  * subdomain of one.
  *
- * Asked before OWA opens a recorded page_location -- the heatmap launcher and
- * the Domstream player both open the page and pass it an overlay in the
- * fragment. Anyone can send a beacon with any page_location.
+ * Asked before OWA opens a recorded page_location with an overlay in its
+ * fragment, as the heatmap launcher and a module's player do. Anyone can send
+ * a beacon with any page_location.
  *
  * Hosts compare as Spam\Hosts compares them: lower-cased, without a port or a
  * leading www.
