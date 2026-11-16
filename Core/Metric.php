@@ -754,21 +754,19 @@ class Metric extends \OWA\Core\Base {
     /**
      * A ratio of two already-computed numbers.
      *
-     * NULL WHEN THE DENOMINATOR IS ZERO, not 0. "No visits, so pages-per-visit
-     * is not a number" and "pages-per-visit is zero" are different answers, and
-     * a formatter renders the first as absent (PLAN 2.11).
+     * 0 WHEN THE DENOMINATOR IS ZERO OR MISSING: a period, interval or row with
+     * no sessions has a pages per session, engagement rate and conversion rate
+     * of 0, as a trend's empty interval does.
      *
-     * A zero NUMERATOR is an ordinary zero and says so.
-     *
-     * @param  int|float $numerator
-     * @param  int|float $denominator
-     * @return float|int|null
+     * @param  int|float|null $numerator
+     * @param  int|float|null $denominator
+     * @return float|int
      */
     function computeRatio( $numerator, $denominator ) {
 
         if ( ! is_numeric( $denominator ) || (float) $denominator == 0.0 ) {
 
-            return null;
+            return 0;
         }
 
         $value = (float) $numerator / (float) $denominator;
