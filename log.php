@@ -122,12 +122,12 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     $owa->e->debug('Logging new tracking event...');
     
     $service = \OWA\Core\CoreAPI::serviceSingleton();
+    $service->request->decodeRequestParams();
     $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
-    // e_t from the current tracker, event_type from an older one; decoded as every value is (decodeBeaconValues()).
+    // e_t from the current tracker, event_type from an older one.
     $event_type = \OWA\Core\CoreAPI::getRequestParam('e_t');
-    $event_type = $event_type !== false && $event_type !== ''
-        ? $event_type : \OWA\Core\CoreAPI::getRequestParam('event_type');
-    $event->setEventType( is_string( $event_type ) ? rawurldecode( $event_type ) : $event_type );
+    $event->setEventType( $event_type !== false && $event_type !== ''
+        ? $event_type : \OWA\Core\CoreAPI::getRequestParam('event_type') );
     /*
      * Only parameters a request is ALLOWED to set reach the event.
      *
@@ -147,12 +147,10 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
      * A property the server derives is refused by construction: it is not
      * client-settable, so it is not in the admitted set.
      */
-    $received = $service->request->getAllOwaParams();
-
     $params = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::REQUEST_PRE,
-        \OWA\Module\Base\Classes\TrackingEventHelpers::decodeBeaconValues( $received ) );
+        $service->request->getAllOwaParams() );
 
-    $params = \OWA\Module\Base\Classes\TrackingEventHelpers::admitBeaconParams( $params, $received );
+    $params = \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams( $params );
 
     $event->setProperties( $params );
 

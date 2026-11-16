@@ -303,36 +303,6 @@ class V2Event {
     }
 
     /**
-     * A query string as it arrived, each name and value decoded once: the form
-     * a page's query has been stored in, a value's %20 as a space. A value's
-     * own & or # stays encoded (%26, %23), so the pair is not cut where it
-     * would split or end the query. Empty pairs are kept.
-     *
-     * @param  string $query
-     * @return string
-     */
-    public static function decodeQuery( $query ) {
-
-        $keep = static function ( $text ) {
-
-            return str_replace( array( '&', '#' ), array( '%26', '%23' ), rawurldecode( $text ) );
-        };
-
-        $out = array();
-
-        foreach ( explode( '&', (string) $query ) as $pair ) {
-
-            $at = strpos( $pair, '=' );
-
-            $out[] = $at === false
-                ? $keep( $pair )
-                : $keep( substr( $pair, 0, $at ) ) . '=' . $keep( substr( $pair, $at + 1 ) );
-        }
-
-        return implode( '&', $out );
-    }
-
-    /**
      * A query string with named parameters removed.
      *
      * REBUILT FROM PARTS, never edited with a regex. v1 strips a parameter with

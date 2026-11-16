@@ -984,105 +984,6 @@ class TrackingEventHelpers {
         return $kept;
     }
 
-    /**
-     * The internal properties holding the page URL and its referrer as PHP's
-     * decoding of the beacon's query string or body left them: decoded once,
-     * whole. Request-set and stored by nothing (tracking_properties.json).
-     */
-    const ARRIVED = array(
-        'page_location' => 'arrived_page_location',
-        'HTTP_REFERER'  => 'arrived_referer',
-    );
-
-    /**
-     * A beacon's values, decoded once more (log.php).
-     *
-     * PHP has decoded the query string (or form body) once, which undoes the
-     * tracker's one encodeURIComponent(). Each value is decoded once more,
-     * deliberately: that is the form every field has been stored in, a page
-     * URL with %20 stored with a space. A second decode cuts a URL at an
-     * encoded & or # -- in ?utm_campaign=spring%26summer the %26 becomes a
-     * separator -- so the page URL and referrer are also kept as they arrived
-     * (admitBeaconParams()), and the campaign tags, page_path and the query
-     * strings are read from those.
-     *
-     * @param  array $params  the request's params, decoded once by PHP
-     * @return array
-     */
-    public static function decodeBeaconValues( array $params ) {
-
-        $decoded = array();
-
-        foreach ( $params as $name => $value ) {
-
-            // A nested value (name[0][key]) is PHP's decoding alone, as it always was.
-            $decoded[ $name ] = is_string( $value ) ? rawurldecode( $value ) : $value;
-        }
-
-        return $decoded;
-    }
-
-    /**
-     * The params a beacon may set (admitRequestParams()), with the page URL
-     * and referrer as they arrived (ARRIVED), which are no beacon's to name.
-     *
-     * @param  array $decoded  decodeBeaconValues() of the params
-     * @param  array $params   the params as PHP decoded them
-     * @return array
-     */
-    public static function admitBeaconParams( array $decoded, array $params ) {
-
-        $admitted = self::admitRequestParams( $decoded );
-
-        $renames = \OWA\Module\Base\Classes\Beacon\Compat::renames();
-
-        foreach ( self::ARRIVED as $property => $arrived ) {
-
-            // The wire key first, then an older tracker's spelling of it.
-            $keys = array_merge( self::wireKeysFor( $property ), array( $property ),
-                array_keys( $renames, $property, true ) );
-
-            foreach ( $keys as $key ) {
-
-                if ( isset( $params[ $key ] ) && is_string( $params[ $key ] ) && $params[ $key ] !== ''
-                     && array_key_exists( $key, $admitted ) ) {
-
-                    $admitted[ $arrived ] = $params[ $key ];
-                    break;
-                }
-            }
-        }
-
-        return $admitted;
-    }
-
-    /**
-     * The URL a beacon carried for page_location or HTTP_REFERER, decoded once
-     * (ARRIVED), or null for an event that did not come from one: built in
-     * process, or queued before the copies existed.
-     *
-     * @param  object $event
-     * @param  string $property  page_location or HTTP_REFERER
-     * @return string|null
-     */
-    public static function arrivedUrl( $event, $property ) {
-
-        $value = $event->get( self::ARRIVED[ $property ] );
-
-        return is_string( $value ) && $value !== '' ? $value : null;
-    }
-
-    /** arrivedPageLocation() and arrivedReferer(): the copy log.php set, kept as it is. */
-    static function arrivedPageLocation( $value, $event ) {
-
-        return is_string( $value ) && $value !== '' ? $value : null;
-    }
-
-    static function arrivedReferer( $value, $event ) {
-
-        return is_string( $value ) && $value !== '' ? $value : null;
-    }
-
     public static function rejectServerOwnedParams( array $params ) {
 
         $serverOwned = self::serverOwnedProperties();
@@ -2266,9 +2167,7 @@ class TrackingEventHelpers {
             return null;
         }
 
-        // As the beacon carried it, where it did: a second decode cuts a tag at an encoded & or #.
-        $arrived = self::arrivedUrl( $event, 'page_location' );
-        $landing = $arrived ?? $event->get( 'page_location' );
+        $landing = $event->get( 'page_location' );
 
         if ( ! $landing || ! is_string( $landing ) ) {
 
@@ -2282,16 +2181,12 @@ class TrackingEventHelpers {
          * alone would hand the first site's answer to the second.
          */
         $site_id = (string) $event->get( 'site_id' );
-        $memo    = $site_id . '|' . ( $arrived !== null ? 'arrived|' : '' ) . $landing;
+        $memo    = $site_id . '|' . $landing;
 
         if ( ! isset( self::$landingTags[ $memo ] ) ) {
 
-            $tags = self::parseLandingTags( $landing, self::campaignKeysFor( $site_id ) );
-
-            // The cleaning page_location had (setDataType()), applied to the decoded values.
-            self::$landingTags[ $memo ] = $arrived !== null
-                ? array_map( array( \OWA\Module\Base\Classes\Sanitize::class, 'cleanTrackingText' ), $tags )
-                : $tags;
+            self::$landingTags[ $memo ] = self::parseLandingTags(
+                $landing, self::campaignKeysFor( $site_id ) );
         }
 
         return isset( self::$landingTags[ $memo ][ $name ] )
@@ -2587,18 +2482,11 @@ class TrackingEventHelpers {
      */
     static function derivePagePath( $value, $event ) {
 
-        $arrived = self::arrivedUrl( $event, 'page_location' );
-
         $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
-            $arrived ?? $event->get( 'page_location' ) );
-
-        // Split as it arrived, then decoded once: an encoded ? or # is part of the path.
-        $path = $arrived !== null && $parts['path'] !== null
-            ? \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( rawurldecode( $parts['path'] ) )
-            : $parts['path'];
+            $event->get( 'page_location' ) );
 
         return \OWA\Module\Base\Classes\V2Event::canonicalPath(
-            $path, self::directoryIndexPages() );
+            $parts['path'], self::directoryIndexPages() );
     }
 
     /**
@@ -2629,33 +2517,11 @@ class TrackingEventHelpers {
      */
     static function derivePageQuery( $value, $event ) {
 
-        $arrived = self::arrivedUrl( $event, 'page_location' );
-
         $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
-            $arrived ?? $event->get( 'page_location' ) );
+            $event->get( 'page_location' ) );
 
-        $query = \OWA\Module\Base\Classes\V2Event::filterQuery(
+        return \OWA\Module\Base\Classes\V2Event::filterQuery(
             $parts['query'], self::droppedQueryParams( $event->getSiteId() ) );
-
-        return $arrived !== null ? self::decodedQuery( $query ) : $query;
-    }
-
-    /**
-     * A query string as it arrived, decoded once pair by pair (V2Event::decodeQuery()),
-     * with the cleaning page_location had.
-     *
-     * @param  string|null $query
-     * @return string|null
-     */
-    private static function decodedQuery( $query ) {
-
-        if ( $query === null || $query === '' ) {
-
-            return $query;
-        }
-
-        return \OWA\Module\Base\Classes\Sanitize::cleanTrackingText(
-            \OWA\Module\Base\Classes\V2Event::decodeQuery( $query ) );
     }
 
     /**
@@ -2728,12 +2594,10 @@ class TrackingEventHelpers {
      */
     static function deriveRefererQuery( $value, $event ) {
 
-        $arrived = self::arrivedUrl( $event, 'HTTP_REFERER' );
-
         $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
-            $arrived ?? $event->get( 'HTTP_REFERER' ) );
+            $event->get( 'HTTP_REFERER' ) );
 
-        return $arrived !== null ? self::decodedQuery( $parts['query'] ) : $parts['query'];
+        return $parts['query'];
     }
 
     /**
