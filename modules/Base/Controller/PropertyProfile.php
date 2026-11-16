@@ -48,12 +48,6 @@ class PropertyProfile extends \OWA\Core\AdminController {
          */
         $this->set( 'profileCount', self::countLiveProfiles( $this->getParam( 'propertyId' ) ) );
         /*
-         * The hierarchy wrapper, not base.options: the left column is the site
-         * control, because that is what these screens are reached from and what
-         * they describe. The settings nav belongs to install-wide options.
-         */
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        /*
          * A current Profile even here, so the tile shows all three tiers rather
          * than the Organization over two blank lines -- and so the nav can
          * offer the Property and Profile groups at all.
@@ -61,9 +55,7 @@ class PropertyProfile extends \OWA\Core\AdminController {
         $siteId = $this->resolveCurrentSiteId(
             $this->getParam( 'siteId' ), $this->getParam( 'propertyId' ) );
 
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $this->getParam( 'propertyId' ) ) );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array( 'siteId' => $siteId ), '', $this->getParam( 'propertyId' ) );
         $this->setSubview( 'base.propertyProfile' );
     }
 

@@ -46,17 +46,8 @@ class OptionsGeneral extends \OWA\Core\AdminController {
         $this->set( 'configuration',  $this->c->fetch('base') );
 
         // add data to container
-        /*
-         * The hierarchy wrapper. Install-wide options live at the top of the same
-         * nav now -- one settings menu rather than two, which is only possible
-         * because every session lands on a Profile and the tile is always
-         * populated.
-         */
         $owa_site_id = $this->resolveCurrentSiteId();
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview( 'base.optionsGeneral' );
 
         return $this->data;
