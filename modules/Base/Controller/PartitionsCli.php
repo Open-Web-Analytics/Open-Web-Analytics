@@ -84,7 +84,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         if ( $only && ! $tables ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf(
+            $this->usageError( sprintf(
                 '"%s" is not a partitioned table. Partitioning applies to: %s.',
                 $only, implode( ', ', $this->factTables() )
             ) );
@@ -237,7 +237,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             return true;
         }
 
-        \OWA\Core\CoreAPI::notice( sprintf(
+        $this->refuse( sprintf(
             '%s: refusing to create %d partitions (limit %d -- %s). Each partition is a file, and '
           . 'past a few thousand, MySQL closes and reopens tablespaces under load, which slows '
           . 'everything on the instance. Lower OWA_PARTITION_DETAIL_MONTHS so less history is '
@@ -1106,7 +1106,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $db->supportsPartitioning() ) {
 
-            \OWA\Core\CoreAPI::notice( 'This database driver does not support partitioning; nothing to do.' );
+            $this->refuse( 'This database driver does not support partitioning; nothing to do.' );
 
             return false;
         }

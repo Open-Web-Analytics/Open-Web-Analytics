@@ -95,10 +95,10 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
 
             if ( ( $awaiting ?? '' ) !== '' ) {
                 // Nothing failed: an update needs the operator first, and has said what.
-                \OWA\Core\CoreAPI::notice( sprintf(
+                $this->refuse( sprintf(
                     'Updates paused: one needs %s. Do what it says above, then run cmd=update again.', $awaiting ) );
             } elseif ($error === true) {
-                \OWA\Core\CoreAPI::notice($this->getMsg(3307));
+                $this->fail($this->getMsg(3307));
             } else {
                 
                 // add data to container
@@ -122,10 +122,53 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         }
     }
     
+    /**
+     * <module>.<sequence> as array( module, sequence ), or null.
+     *
+     * @param mixed $update
+     * @return array|null
+     */
+    public static function parseUpdateName( $update ) {
+
+        return is_string( $update ) && preg_match( '/^([A-Za-z0-9_]+)\.(\d+)$/', $update, $m )
+            ? array( $m[1], $m[2] )
+            : null;
+    }
+
+    /**
+     * The update named <module>.<sequence>, or null after saying why not.
+     *
+     * @param mixed  $update
+     * @param string $arg  apply or rollback
+     * @return object|null
+     */
+    protected function namedUpdate( $update, $arg ) {
+
+        $name = self::parseUpdateName( $update );
+
+        if ( ! $name ) {
+
+            return $this->usageError( sprintf( '%s= takes <module>.<sequence>, such as base.86.', $arg ) );
+        }
+
+        try {
+
+            return \OWA\Core\CoreAPI::updateFactory( $name[0], $name[1] );
+
+        } catch ( \Exception $e ) {
+
+            return $this->usageError( $e->getMessage() );
+        }
+    }
+
     function apply($update) {
-    
-        list($module, $seq) = explode('.', $update);
-        $u = \OWA\Core\CoreAPI::updateFactory($module, $seq);
+
+        $u = $this->namedUpdate( $update, 'apply' );
+
+        if ( ! $u ) {
+
+            return;
+        }
         
         // check for force command param
         //
@@ -145,12 +188,19 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         
         if ($ret) {
             \OWA\Core\CoreAPI::notice("Updates applied successfully.");
+        } else {
+            $this->fail("The update did NOT apply. See the messages above for why.");
         }
     }
     
     function rollback($update) {
-        list($module, $seq) = explode('.', $update);
-        $u = \OWA\Core\CoreAPI::updateFactory($module, $seq);
+
+        $u = $this->namedUpdate( $update, 'rollback' );
+
+        if ( ! $u ) {
+
+            return;
+        }
 
         // rollback() returns false when it refuses an out-of-sequence rollback
         // and when down() fails part way. Reporting "completed" regardless told
@@ -160,7 +210,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         if ($ret) {
             \OWA\Core\CoreAPI::notice("Rollback completed.");
         } else {
-            \OWA\Core\CoreAPI::notice("Rollback did NOT complete. See the messages above for whether it was refused or failed part way.");
+            $this->fail("Rollback did NOT complete. See the messages above for whether it was refused or failed part way.");
         }
     }
     

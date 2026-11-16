@@ -96,7 +96,7 @@ class ScheduleRunCli extends SchedulerCli {
 
         if ( $only && ! isset( $jobs[ $only ] ) ) {
 
-            return $this->refuse( sprintf(
+            return $this->usageError( sprintf(
                 'No job named "%s". Registered jobs: %s.',
                 $only, implode( ', ', array_keys( $jobs ) ) ?: '(none)'
             ) );
@@ -157,7 +157,7 @@ class ScheduleRunCli extends SchedulerCli {
                 \OWA\Core\CoreAPI::notice( sprintf( 'Running queued job %s (%s), attempt %d of %d.',
                     $row['id'], $command, $row['attempts'], $row['max_attempts'] ) );
 
-                return $this->readOutcome( $controller, $controller->doAction() );
+                return $this->readOutcome( $controller, $this->doJobAction( $controller ) );
             } );
 
         if ( array_sum( $counts ) ) {
@@ -402,6 +402,27 @@ class ScheduleRunCli extends SchedulerCli {
     }
 
     /**
+     * Run a job's controller, leaving this run's exit code as it was: a job's
+     * outcome is recorded in its state, and schedule-run exits on its own.
+     *
+     * @param object $controller
+     * @return mixed
+     */
+    protected function doJobAction( $controller ) {
+
+        $exit_code = \OWA\Core\Controller\Cli::$exit_code;
+
+        try {
+
+            return $controller->doAction();
+
+        } finally {
+
+            \OWA\Core\Controller\Cli::$exit_code = $exit_code;
+        }
+    }
+
+    /**
      * Construct the job's controller directly.
      *
      * Not through CoreAPI::handleRequest(), whose mergeParams() writes into the
@@ -610,7 +631,7 @@ class ScheduleRunCli extends SchedulerCli {
 
         if ( ! $name ) {
 
-            return $this->refuse( 'Say which job: cmd=schedule-run --force-release job=NAME' );
+            return $this->usageError( 'Say which job: cmd=schedule-run --force-release job=NAME' );
         }
 
         $db   = \OWA\Core\CoreAPI::dbSingleton();

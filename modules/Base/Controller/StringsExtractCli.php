@@ -55,22 +55,18 @@ class StringsExtractCli extends \OWA\Core\Controller\Cli {
 
             if ( $this->getParam( 'check' ) ) {
 
-                $this->e->notice( sprintf( '%s is out of date. Run cmd=strings-extract.', $file ) );
+                $this->fail( sprintf( '%s is out of date. Run cmd=strings-extract.', $file ) );
                 continue;
             }
 
             if ( ! is_dir( dirname( $file ) ) && ! mkdir( dirname( $file ), 0775, true ) ) {
 
-                $this->e->notice( sprintf( 'Could not create %s.', dirname( $file ) ) );
-
-                return;
+                return $this->fail( sprintf( 'Could not create %s.', dirname( $file ) ) );
             }
 
             if ( file_put_contents( $file, $source ) === false ) {
 
-                $this->e->notice( sprintf( 'Could not write %s.', $file ) );
-
-                return;
+                return $this->fail( sprintf( 'Could not write %s.', $file ) );
             }
 
             $this->e->notice( sprintf( 'Wrote %s: %d %s.', $file, $count, $what ) );

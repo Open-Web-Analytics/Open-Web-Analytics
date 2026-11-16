@@ -74,6 +74,9 @@ abstract class CliControllerTestCase extends TestCase
         // setCurrentUser('admin', ...). Individual tests drop privileges when
         // exercising a capability gate.
         $this->authenticateAs('admin');
+
+        // The exit code is static, set by the first failure in the process.
+        \OWA\Core\Controller\Cli::$exit_code = 0;
     }
 
     protected function tearDown(): void

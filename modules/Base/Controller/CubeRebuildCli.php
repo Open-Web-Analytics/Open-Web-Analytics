@@ -130,7 +130,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $range ) {
 
-            return $this->refuse(
+            return $this->usageError(
                 'Could not read that range. Use from=yyyymmdd for that date through to now, '
               . 'days=N for the same relatively, or from=yyyymmdd to=yyyymmdd for a closed window.' );
         }
@@ -248,7 +248,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
             if ( ! ctype_digit( $only ) ) {
 
-                $this->refuse( 'property= takes a Property id.' );
+                $this->usageError( 'property= takes a Property id.' );
 
                 return null;
             }

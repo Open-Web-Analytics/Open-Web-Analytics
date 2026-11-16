@@ -662,24 +662,43 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * partition-rotate reports a refusal rather than looking like a success.
+     * partition-rotate reports arguments it will not act on rather than
+     * looking like a success: a usage error, exit code 2.
      *
      * Before the outcome channel, a refused run and a completed one were
      * indistinguishable to any caller.
      */
     public function testRotateReportsItsRefusals()
     {
-        foreach ([['keep' => '24'], ['raw-months' => 'abc'], ['raw-months' => '12'], ['property' => '1']] as $bad) {
+        foreach ([['keep' => '24'], ['raw-months' => 'abc'], ['raw-months' => '12'], ['property' => '1'],
+                  ['granularity' => 'fortnightly']] as $bad) {
+            \OWA\Core\Controller\Cli::$exit_code = 0;
+
             $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli($bad);
             $ctrl->action();
 
-            $this->assertSame('refused', $ctrl->getCliOutcome()['outcome'], json_encode($bad) . ' should be refused');
+            $this->assertSame('failed', $ctrl->getCliOutcome()['outcome'], json_encode($bad) . ' should be refused');
+            $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code, json_encode($bad));
         }
 
-        $ctrl = new \OWA\Module\Base\Controller\PartitionRotateCli(['granularity' => 'fortnightly']);
-        $ctrl->action();
+        \OWA\Core\Controller\Cli::$exit_code = 0;
+    }
 
-        $this->assertSame('refused', $ctrl->getCliOutcome()['outcome']);
+    /** refuse() after a failure leaves the run failed; the first failure sets the exit code. */
+    public function testARefusalDoesNotHideAFailure()
+    {
+        \OWA\Core\Controller\Cli::$exit_code = 0;
+
+        $ctrl = $this->runner();
+        $this->callProtected($ctrl, 'fail', ['it broke']);
+        $this->callProtected($ctrl, 'usageError', ['and the arguments were wrong']);
+        $this->callProtected($ctrl, 'refuse', ['and then it declined']);
+
+        $this->assertSame('failed', $ctrl->getCliOutcome()['outcome']);
+        $this->assertSame('it broke', $ctrl->getCliOutcome()['message']);
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_FAILED, \OWA\Core\Controller\Cli::$exit_code);
+
+        \OWA\Core\Controller\Cli::$exit_code = 0;
     }
 
     /**
@@ -776,14 +795,18 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertStringContainsString('does not run the scheduler', $ctrl->getCliOutcome()['message']);
     }
 
-    /** An unknown job name is refused, with the valid names offered. */
+    /** An unknown job name is a usage error, with the valid names offered. */
     public function testAnUnknownJobNameIsRefused()
     {
+        \OWA\Core\Controller\Cli::$exit_code = 0;
+
         $ctrl = $this->runner(['job' => 'no-such-job']);
         $ctrl->action();
 
         $out = $ctrl->getCliOutcome();
-        $this->assertSame('refused', $out['outcome']);
+        $this->assertSame('failed', $out['outcome']);
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code);
+        \OWA\Core\Controller\Cli::$exit_code = 0;
         $this->assertStringContainsString('rotate-partitions', $out['message'], 'say what the valid names are');
     }
 

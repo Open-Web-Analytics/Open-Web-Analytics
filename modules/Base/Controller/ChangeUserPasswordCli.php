@@ -103,7 +103,7 @@ class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
             return;
         }
 
-        \OWA\Core\CoreAPI::notice( "User password update failed." );
+        $this->fail( "User password update failed." );
     }
 
     public function errorAction()
