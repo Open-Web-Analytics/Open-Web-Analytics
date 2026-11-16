@@ -93,17 +93,13 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
     }
     
     function success() {
-	    
-	    http_response_code(201);
-	    
-	    $this->setView( 'base.siteAddAllowedUserRest' );
+
+        $this->restResponse( 201, 'response' );
     }
-    
+
     function errorAction() {
-	    
-	    http_response_code(422);
-	    
-	    $this->setView( 'base.siteAddAllowedUserRest' );
+
+        $this->restResponse( 422, 'response' );
     }
 
 }

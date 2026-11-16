@@ -53,9 +53,7 @@ class RealtimeRest extends \OWA\Core\ReportController {
 
     function errorAction() {
 
-        http_response_code( 422 );
-
-        $this->setView( 'base.restApi' );
+        $this->restResponse( 422 );
     }
 }
 

@@ -199,13 +199,10 @@ class ReportsRest extends \OWA\Core\ReportController {
 		$this->setView( 'base.reportsRest' );
 	}
 	
-	function errorAction() {
-		
-		http_response_code(422);
-		
-		$this->setView( 'base.restApi' );
+    function errorAction() {
 
-	}
+        $this->restResponse( 422 );
+    }
 	
 	/** The Property the request names, or else the one its siteId belongs to; '' for neither. */
 	private function propertyOfRequest() {

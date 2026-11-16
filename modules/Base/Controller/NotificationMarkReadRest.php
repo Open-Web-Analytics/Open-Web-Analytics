@@ -41,13 +41,11 @@ class NotificationMarkReadRest extends \OWA\Core\AdminController {
 
     function success() {
 
-        http_response_code(202);
-        $this->setView( 'base.notificationMarkReadRest' );
+        $this->restResponse( 202 );
     }
 
     function errorAction() {
 
-        http_response_code(422);
-        $this->setView( 'base.notificationMarkReadRest' );
+        $this->restResponse( 422 );
     }
 }

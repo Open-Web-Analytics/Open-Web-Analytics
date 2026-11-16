@@ -616,6 +616,22 @@ class Controller extends \OWA\Core\Base {
         $this->data['view'] = $view;
     }
 
+    /**
+     * Answers a REST request with the base.restApi view and this status code.
+     * The response's data is what this controller set under $key, read when
+     * the view renders (false when nothing was); with no key it has none.
+     */
+    protected function restResponse( $status, $key = '' ) {
+
+        http_response_code( $status );
+        $this->setView( 'base.restApi' );
+
+        if ( $key !== '' ) {
+
+            $this->set( 'response_key', $key );
+        }
+    }
+
     function setSubview($subview) {
 
         $this->data['subview'] = $subview;

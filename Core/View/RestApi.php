@@ -90,6 +90,15 @@ class RestApi extends \OWA\Core\View {
         $this->body->set('error', $error);
     }
     
+    /** The response's data: the value of the key a controller named with restResponse(). */
+    function render() {
+
+        if ( ! empty( $this->data['response_key'] ) ) {
+
+            $this->setResponseData( $this->get( $this->data['response_key'] ) );
+        }
+    }
+
     /**
 	 * Sets the data payload of the response
 	 */
