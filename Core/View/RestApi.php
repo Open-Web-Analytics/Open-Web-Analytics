@@ -209,6 +209,19 @@ class RestApi extends \OWA\Core\View {
         return strncasecmp( $host, 'www.', 4 ) === 0 && strpos( $rest, '.' ) !== false ? $rest : $host;
     }
 
+    /** An origin's port: the one it names, else its scheme's default. */
+    private static function originPort( $origin ) {
+
+        $port = parse_url( $origin, PHP_URL_PORT );
+
+        if ( $port ) {
+
+            return (int) $port;
+        }
+
+        return strtolower( (string) parse_url( $origin, PHP_URL_SCHEME ) ) === 'https' ? 443 : 80;
+    }
+
     public static function matchAllowedOrigin( $origin, array $sites ) {
 
         if ( ! is_string( $origin ) || $origin === '' ) {
@@ -267,6 +280,14 @@ class RestApi extends \OWA\Core\View {
             $siteHost  = parse_url( $candidate, PHP_URL_HOST );
 
             if ( ! $siteHost ) {
+
+                continue;
+            }
+
+            // A port stored with the domain is the only port of that site.
+            $sitePort = parse_url( $candidate, PHP_URL_PORT );
+
+            if ( $sitePort && $sitePort !== self::originPort( $origin ) ) {
 
                 continue;
             }
