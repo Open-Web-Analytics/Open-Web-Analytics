@@ -2857,7 +2857,6 @@ namespace OWA\Module\Base\Classes;
                 'tracker_cookie_domain'             => '',
                 'tracker_honor_privacy_signals'     => true,
                 'feed_subscription_param'            => 'sid',
-                'source_param'                        => 'source',
                 'site_id'                            => '',
                 'configuration_id'                    => '1',
                 'session_length'                    => 1800, //sdk
@@ -2871,7 +2870,6 @@ namespace OWA\Module\Base\Classes;
                 'db_make_persistant_connections'    => false,
                 'spam_detection'                    => 'normal',
                 'spam_threshold'                    => 5.0,
-                'clean_query_string'                => true,
                 'query_string_filters'                => '', // move to site settings
                 'async_log_dir'                        => '', // setupPaths(): logs/ in the data directory
                 'notice_email'                        => '',

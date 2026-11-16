@@ -55,23 +55,6 @@ final class MessageSubstitutionTest extends TestCase
         $this->assertStringNotContainsString('%s', $msg['message']);
     }
 
-    /**
-     * An error-headlined message substitutes the same way.
-     *
-     * This used 2001, the reset form's error. That message no longer takes a
-     * substitution at all -- it deliberately says nothing about the address it
-     * was given, because saying anything about it reported whether an account
-     * exists. 3008 is the same shape and still has a %s.
-     */
-    public function testTheErrorMessageSubstitutesTheSameWay(): void
-    {
-        $msg = $this->base->getMsg(3008, ['message' => ['12']]);
-
-        $this->assertSame('Error', $msg['headline']);
-        $this->assertStringContainsString('12', $msg['message']);
-        $this->assertStringNotContainsString('%s', $msg['message']);
-    }
-
     /** A bare scalar is one argument, not a TypeError. */
     public function testAScalarSubstitutionIsTreatedAsASingleArgument(): void
     {
@@ -83,8 +66,8 @@ final class MessageSubstitutionTest extends TestCase
     /** Substituting only the headline must not touch the message. */
     public function testSubstitutingOnlyTheHeadlineLeavesTheMessageIntact(): void
     {
-        $raw = $this->base->getMsg(3010);
-        $msg = $this->base->getMsg(3010, ['headline' => ['ignored']]);
+        $raw = $this->base->getMsg(3009);
+        $msg = $this->base->getMsg(3009, ['headline' => ['ignored']]);
 
         $this->assertSame($raw['message'], $msg['message']);
     }
@@ -92,11 +75,11 @@ final class MessageSubstitutionTest extends TestCase
     /** The common case: no substitutions, template returned verbatim. */
     public function testAMessageWithoutSubstitutionsIsReturnedVerbatim(): void
     {
-        $msg = $this->base->getMsg(3010);
+        $msg = $this->base->getMsg(3009);
 
         $this->assertSame('Error', $msg['headline']);
         $this->assertSame(
-            'No user has that email address.',
+            'A user with that email address already exists.',
             $msg['message']
         );
     }

@@ -150,7 +150,6 @@ class InstallBase extends \OWA\Core\Controller\Install {
             $this->set('site_id', $site_id);
             $this->setView('base.install');
             $this->setSubview('base.installFinish');
-            //$this->set('status_code', 3304);
 
         } else {
 

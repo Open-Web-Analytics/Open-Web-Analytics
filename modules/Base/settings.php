@@ -113,7 +113,6 @@ return array(
         'base_url' => array( 'default' => '' ),
         'capabilities' => array( 'default' => array( 'admin' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce', 'edit_settings', 'edit_sites', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ), 'analyst' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce' ), 'viewer' => array( 'install_schema', 'view_site_list', 'view_reports' ), 'everyone' => array( 'install_schema' ) ), 'description' => 'Which capabilities each user role has, as role => list of capabilities.' ),
         'capabilitiesThatRequireSiteAccess' => array( 'default' => array( 'view_reports', 'view_reports_ecommerce', 'edit_sites' ), 'description' => 'The capabilities a user holds only on the sites they have been given access to, rather than on every site.' ),
-        'clean_query_string' => array( 'default' => true ),
         'config_file' => array( 'description' => 'The path of the configuration file OWA reads at boot. Defaults to owa-config.php in the OWA directory.' ),
         'configuration_id' => array( 'default' => '1', 'internal' => true ),
         'cookie_domain' => array( 'default' => false, 'internal' => true ),
@@ -455,7 +454,6 @@ return array(
         'skip_stored_settings' => array( 'default' => false, 'internal' => true ),
         'session_length' => array( 'default' => 1800, 'description' => 'How long a visitor can be inactive before their next event starts a new session, in seconds. Default 1800 (30 minutes).' ),
         'site_id' => array( 'default' => '' ),
-        'source_param' => array( 'default' => 'source' ),
         /*
          * SPAM DETECTION (Classes\Spam). Every beacon is scored; one whose score
          * reaches spam_threshold is not stored. Install only: Spam\Score reads
