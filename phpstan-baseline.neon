@@ -57,13 +57,13 @@ parameters:
 		-
 			message: '#^Call to method generateId\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 4
+			count: 2
 			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method get\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 4
+			count: 2
 			path: Core/CoreAPI.php
 
 		-
@@ -81,7 +81,7 @@ parameters:
 		-
 			message: '#^Call to method getTableName\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 3
+			count: 2
 			path: Core/CoreAPI.php
 
 		-
@@ -99,13 +99,13 @@ parameters:
 		-
 			message: '#^Call to method load\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 7
+			count: 4
 			path: Core/CoreAPI.php
 
 		-
 			message: '#^Call to method makeId\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 3
+			count: 2
 			path: Core/CoreAPI.php
 
 		-
@@ -129,7 +129,7 @@ parameters:
 		-
 			message: '#^Call to method wasPersisted\(\) on an unknown class OWA\\Core\\unknown\.$#'
 			identifier: class.notFound
-			count: 6
+			count: 4
 			path: Core/CoreAPI.php
 
 		-
