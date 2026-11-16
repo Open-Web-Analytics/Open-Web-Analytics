@@ -762,4 +762,101 @@ final class CustomReportPropertyTest extends TestCase
         $this->assertSame($id, (string) ($funnel(['reportId' => 'custom-' . $id])->stored()['id'] ?? ''),
             'no Property named: its own');
     }
+
+    /** Make a stored report name a dimension that does not exist. */
+    private function makeUndrawable(string $id): void
+    {
+        $definition = $this->definition();
+        $definition['widgets'][0]['query']['dimensions'] = 'aDimensionThatNoLongerExists';
+
+        CoreAPI::dbSingleton()->query('UPDATE owa_custom_report SET definition = ? WHERE id = ?',
+            [json_encode($definition), $id]);
+    }
+
+    /**
+     * Run $fn with no one signed in, then put the current user back as it was.
+     */
+    private function signedOut(callable $fn)
+    {
+        $current = CoreAPI::getCurrentUser();
+        $fresh   = new \OWA\Module\Base\Classes\ServiceUser();
+        $fields  = array_filter((new \ReflectionObject($current))->getProperties(), fn ($p) => !$p->isStatic());
+        $saved   = [];
+
+        foreach ($fields as $field) {
+            $saved[$field->getName()] = $field->getValue($current);
+            $field->setValue($current, $field->getValue($fresh));
+        }
+
+        try {
+            return $fn();
+        } finally {
+            foreach ($fields as $field) {
+                $field->setValue($current, $saved[$field->getName()]);
+            }
+        }
+    }
+
+    /** The report page for a reportId: [data or [], what it printed, HTTP status]. */
+    private function reportPage(string $reportId): array
+    {
+        http_response_code(200);
+        ob_start();
+        $out  = (new \OWA\Module\Base\Controller\Report([
+            'reportId'   => $reportId,
+            'propertyId' => self::P,
+            'period'     => 'last_thirty_days',
+        ]))->doAction();
+        $html = ob_get_clean() . (is_string($out) ? $out : '');
+        $code = http_response_code();
+        http_response_code(200);
+
+        return [is_array($out) ? $out : [], $html, $code];
+    }
+
+    /**
+     * Signed out, a custom report id is answered with the login form whether
+     * or not a report has it, and nothing about the report is shown.
+     */
+    public function testASignedOutReaderGetsTheLoginFormWhetherOrNotTheReportExists(): void
+    {
+        $id = $this->store(self::P, 'Undrawable fixture');
+        $this->makeUndrawable($id);
+
+        foreach (['custom-' . $id, 'custom-7781999999999999'] as $reportId) {
+            [$data, $html] = $this->signedOut(fn () => $this->reportPage($reportId));
+
+            $this->assertSame('redirect', $data['view_method'] ?? null, $reportId);
+            $this->assertSame('base.loginForm', $data['do'] ?? null, $reportId);
+            $this->assertStringNotContainsString('aDimensionThatNoLongerExists', $html . json_encode($data), $reportId);
+        }
+    }
+
+    /**
+     * Why a report cannot be drawn is told to a reader who may open it; to a
+     * reader who may not, it is not found.
+     */
+    public function testWhyAReportCannotBeDrawnIsToldOnlyToAReaderWhoMayOpenIt(): void
+    {
+        $id     = $this->store(self::P, 'Undrawable fixture');
+        $viewer = $this->viewer();
+        $this->makeUndrawable($id);
+
+        [, $html, $code] = $this->asUser($viewer, fn () => $this->reportPage('custom-' . $id));
+
+        $this->assertSame(404, $code, 'not shared with the viewer');
+        $this->assertStringNotContainsString('aDimensionThatNoLongerExists', $html);
+        $this->assertStringNotContainsString('This saved report cannot be drawn', $html);
+
+        $this->share($id, true);
+
+        [, $html, $code] = $this->asUser($viewer, fn () => $this->reportPage('custom-' . $id));
+
+        $this->assertSame(500, $code, 'shared with the viewer');
+        $this->assertStringContainsString('aDimensionThatNoLongerExists', $html);
+
+        // The administrator of setUp() may open every report.
+        [, $html] = $this->reportPage('custom-' . $id);
+        $this->assertStringContainsString('aDimensionThatNoLongerExists', $html);
+    }
 }
