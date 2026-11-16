@@ -78,7 +78,7 @@
  *
  */
 
-define('OWA_DB_TYPE', 'yourdbtypegoeshere'); // options: mysql
+define('OWA_DB_TYPE', 'yourdbtypegoeshere'); // mysql (pdo_mysql where present, else mysqli), or mysqli or pdo_mysql to pin a driver
 define('OWA_DB_NAME', 'yourdbnamegoeshere'); // name of the database
 define('OWA_DB_HOST', 'yourdbhostgoeshere'); // host name of the server housing the database
 define('OWA_DB_USER', 'yourdbusergoeshere'); // database user
@@ -162,15 +162,18 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 /**
  * DATA DIRECTORIES
  *
- *   OWA_DATA_DIR   where OWA writes: its error log, the file event queue,
- *                  and downloaded user-agent patterns and GeoIP data.
- *                  Default: owa-data/ in this directory.
+ *   OWA_DATA_DIR          where OWA writes: its error log, the file event queue,
+ *                         and downloaded user-agent patterns and GeoIP data.
+ *                         Default: owa-data/ in this directory.
+ *   OWA_MAXMIND_DATA_DIR  where the Maxmind GeoIP module keeps its databases.
+ *                         Default: maxmind/ in OWA_DATA_DIR.
  *
  * The web server user and the user that runs cli.php both write there, so both
  * need write access to it and to its logs/.
  */
 
 //define('OWA_DATA_DIR', '/var/lib/owa/');
+//define('OWA_MAXMIND_DATA_DIR', '/var/lib/owa/maxmind/');
 
 /**
  * DEBUG
@@ -252,8 +255,10 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  *                                                  raw_retention_months; nothing when unset
  *   prune-job-queue               daily            removes finished queued jobs
  *   fetch-notifications           daily            fetches OWA's update notices
+ *   refresh-geoip-db              weekly           downloads a newer GeoIP database;
+ *                                                  while the Maxmind GeoIP module is active
  *
- * The daily and five-minute ones run at a time derived from this
+ * Every job but drain-tracker-ingest runs at a time derived from this
  * installation, so installs sharing a database do not all start at once.
  *
  * Use OWA_SCHEDULED_JOBS to retune what ships, to add jobs the release does not
@@ -316,8 +321,8 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * with, and reports spanning the change will mix the two. Depending on how far
  * apart the zones are, a day boundary can move by up to 21 hours.
  *
- * IF YOU SET THIS, IT WINS. The admin UI can also set the timezone (Options ->
- * General), but a constant defined here overrides whatever is stored in the
+ * IF YOU SET THIS, IT WINS. The admin UI can also set the timezone (Settings ->
+ * Server configuration -> General), but a constant defined here overrides whatever is stored in the
  * database, for as long as it stays defined. Comment it out again and the stored
  * value takes over.
  *
@@ -346,7 +351,8 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
 /**
  * MAXMIND GEOIP LICENCE KEY
  *
- * Only relevant if the Maxmind GeoIP module is activated.
+ * Only relevant if the Maxmind GeoIP module is active. The key can also be set
+ * on Settings -> Server configuration -> GeoIP.
  *
  * The GeoLite2 City database OWA looks IP addresses up in is free, but MaxMind
  * closed anonymous downloads at the end of 2019, so fetching it is
@@ -358,14 +364,14 @@ define('OWA_PUBLIC_URL', 'http://domain/path/to/owa/');
  * That works because this file is included from inside a settings object, so
  * $this is that object. It is not a define() like the settings above.
  *
- * Then refresh the database with:
+ * With a key set, the refresh-geoip-db job (see SCHEDULED JOBS) checks MaxMind
+ * once a week and downloads a newer database when there is one. To download it
+ * at once:
  *
  *      php cli.php cmd=update-geoip-db
  *
- * The database is worth refreshing periodically. IP ranges move between
- * countries and cities continuously, and a stale file does not fail -- it
- * answers, wrongly, and the reports look normal. MaxMind publish updates twice
- * a week.
+ * IP ranges move between countries and cities continuously, and a stale file
+ * does not fail -- it answers, wrongly, and the reports look normal.
  */
 
 ?>
