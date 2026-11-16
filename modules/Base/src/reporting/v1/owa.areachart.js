@@ -177,6 +177,57 @@ OWA.areaChart.besidePointer = function ( pointer, w, h, view ) {
     };
 };
 
+/**
+ * The most points a period is zero-filled to, by interval: twenty years of
+ * days, a year of hours, a century of months. The server bounds a trend by its
+ * period alone (ResultSetManager::timePeriodRows()); rows past these are
+ * still drawn, without zeroes between them.
+ */
+OWA.areaChart.MAX_POINTS = { day: 366 * 20, hour: 24 * 366, month: 1200 };
+
+/** The most pages fetchRows() asks for. */
+OWA.areaChart.MAX_ROW_PAGES = 20;
+
+/**
+ * Two pages of fetchRows()'s answer as one: the rows of both, and the
+ * comparison's rows once each. Each page's comparison is the comparison of
+ * the values on it, over the whole period, so pages share them.
+ *
+ * @param object into the result set so far
+ * @param object rs   the next page
+ * @param array  keys the group's dimensions, x first
+ */
+OWA.areaChart.mergeRowPages = function ( into, rs, keys ) {
+
+    into.resultsRows = ( into.resultsRows || [] ).concat( rs.resultsRows || [] );
+
+    if ( into.compare && rs.compare ) {
+
+        var keyOf = function ( row ) {
+            return keys.map( function ( k ) { return row[ k ] ? String( row[ k ].value ) : ''; } ).join( '\u0001' );
+        };
+
+        var seen = {};
+
+        ( into.compare.rows || [] ).forEach( function ( row ) { seen[ keyOf( row ) ] = true; } );
+
+        into.compare.rows = ( into.compare.rows || [] ).concat( ( rs.compare.rows || [] ).filter( function ( row ) {
+
+            var key = keyOf( row );
+
+            if ( seen[ key ] ) {
+                return false;
+            }
+
+            seen[ key ] = true;
+
+            return true;
+        } ) );
+    }
+
+    return into;
+};
+
 OWA.areaChart.prototype = {
         
     setDomId: function(dom_id) {
@@ -751,7 +802,7 @@ OWA.areaChart.prototype = {
             var hour = new Date( start.getTime() );
             var stop = Math.min( end.getTime() + 23 * 3600000, last );
 
-            while ( hour.getTime() <= stop && points.length < 24 * 31 ) {
+            while ( hour.getTime() <= stop && points.length < OWA.areaChart.MAX_POINTS.hour ) {
 
                 points.push( [ hour.getTime(), 0 ] );
                 hour.setUTCHours( hour.getUTCHours() + 1 );
@@ -764,7 +815,7 @@ OWA.areaChart.prototype = {
 
             var month = new Date( Date.UTC( start.getUTCFullYear(), start.getUTCMonth(), 1 ) );
 
-            while ( month <= end && points.length < 120 ) {
+            while ( month <= end && points.length < OWA.areaChart.MAX_POINTS.month ) {
 
                 points.push( [ month.getTime(), 0 ] );
                 month.setUTCMonth( month.getUTCMonth() + 1 );
@@ -775,9 +826,8 @@ OWA.areaChart.prototype = {
 
         var day = new Date( start.getTime() );
 
-        // Bounded: a hand-edited date range could otherwise ask for a point per
-        // day of a decade, and a chart of four thousand zeroes is not a chart.
-        while ( day <= end && points.length < 400 ) {
+        // Bounded (MAX_POINTS), past any period a report offers.
+        while ( day <= end && points.length < OWA.areaChart.MAX_POINTS.day ) {
 
             points.push( [ day.getTime(), 0 ] );
             day.setUTCDate( day.getUTCDate() + 1 );
@@ -825,11 +875,26 @@ OWA.areaChart.prototype = {
         if ( xs ) {
 
             var byX = {};
+            var all = xs.slice();
+            var inXs = {};
 
-            data.forEach( function ( p ) { byX[ p[0] ] = p[1]; } );
+            xs.forEach( function ( x ) { inXs[ x ] = true; } );
+
+            data.forEach( function ( p ) {
+
+                byX[ p[0] ] = p[1];
+
+                // A row past the zero-filled points (MAX_POINTS) is still drawn.
+                if ( ! inXs[ p[0] ] ) {
+                    inXs[ p[0] ] = true;
+                    all.push( p[0] );
+                }
+            } );
+
+            all.sort( function ( a, b ) { return a - b; } );
 
             // An interval with no row is zero, whatever the metric: see periodXs().
-            data = xs.map( function ( x ) {
+            data = all.map( function ( x ) {
                 return [ x, byX.hasOwnProperty( x ) ? byX[ x ] : 0 ];
             } );
         }
@@ -1136,11 +1201,18 @@ OWA.areaChart.prototype = {
             } );
         } );
 
+        /*
+         * A row per (x, row): five rows over a year are 1,825, past one page.
+         * So page by page, sorted by the whole group key so each page follows
+         * the last, until a page comes back short.
+         */
+        var perPage = parseInt( OWA.getSetting( 'max_results_per_page' ), 10 ) || 1000;
+
         url.setQueryParam( 'dimensions', [ x ].concat( dims ).join( ',' ) );
         url.setQueryParam( 'rowValues', JSON.stringify( restrict ) );
-        url.setQueryParam( 'resultsPerPage', 1000 );
+        url.setQueryParam( 'resultsPerPage', perPage );
+        url.setQueryParam( 'sort', [ x ].concat( dims ).join( ',' ) );
         url.removeQueryParam( 'page' );
-        url.removeQueryParam( 'sort' );
 
         var source = url.getSource();
 
@@ -1151,20 +1223,43 @@ OWA.areaChart.prototype = {
 
         this.rowsUrl = source;
 
-        var that = this;
+        var that   = this;
+        var merged = null;
 
-        jQuery.getJSON( source, '', function ( data ) {
+        var load = function ( page ) {
 
-            if ( that.rowsUrl !== source ) {
+            var at = new OWA.uri( source );
 
-                return;   // a later question has been asked since
+            if ( page > 1 ) {
+                at.setQueryParam( 'page', page );
             }
 
-            that.rowsResultSet = new OWA.resultSet( data && data.hasOwnProperty( 'data' ) ? data.data : data );
-            that.rowsX         = x;
+            jQuery.getJSON( at.getSource(), '', function ( data ) {
 
-            that.redraw();
-        } );
+                if ( that.rowsUrl !== source ) {
+
+                    return;   // a later question has been asked since
+                }
+
+                var rs = new OWA.resultSet( data && data.hasOwnProperty( 'data' ) ? data.data : data );
+
+                merged = merged ? OWA.areaChart.mergeRowPages( merged, rs, [ x ].concat( dims ) ) : rs;
+
+                if ( ( rs.resultsRows || [] ).length >= perPage && page < OWA.areaChart.MAX_ROW_PAGES ) {
+
+                    load( page + 1 );
+
+                    return;
+                }
+
+                that.rowsResultSet = merged;
+                that.rowsX         = x;
+
+                that.redraw();
+            } );
+        };
+
+        load( 1 );
     },
 
     /** Whether a metric's total is the sum of its parts: a count or a sum. */
