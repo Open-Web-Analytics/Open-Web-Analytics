@@ -96,7 +96,7 @@ class SitesEdit extends \OWA\Core\AdminController {
         $this->set( 'siteId', $this->getParam( 'siteId' ) );
         $this->set( 'edit', true );
         $this->setRedirectAction( 'base.sitesProfile' );
-        $this->set('status_code', 3201);
+        $this->setStatusCode( 3201 );
     }
 }
 

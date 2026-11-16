@@ -138,7 +138,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
         if ( $unknown ) {
 
-            return sprintf( 'unknown key%s %s; a report definition may use %s', count( $unknown ) === 1 ? '' : 's',
+            return sprintf( 'unknown key%s %s; a report definition may use %s', \OWA\Core\Lib::plural( count( $unknown ), '', 's' ),
                 implode( ', ', $unknown ), implode( ', ', self::KNOWN_KEYS ) );
         }
 

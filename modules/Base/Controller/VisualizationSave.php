@@ -82,25 +82,22 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
             foreach ( \OWA\Module\Base\Classes\FunnelStep::problems( $row, $number, $customColumns ) as $field => $message ) {
 
-                $this->addValidation( $field, '', 'required', array( 'errorMsg' => $message ) );
+                $this->addValidationError( $field, $message );
             }
         }
 
         // About the list, not one row: keyed `steps`, shown under the steps.
         if ( ! $kept ) {
 
-            $this->addValidation( 'steps', '', 'required',
-                array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'A funnel needs at least one step.' ) ) );
+            $this->addValidationError( 'steps', \OWA\Core\CoreAPI::t( 'A funnel needs at least one step.' ) );
         }
 
         /* A ceiling on the CHART rather than on the query -- see MAX_STEPS. */
         if ( $kept > self::MAX_STEPS ) {
 
-            $this->addValidation( 'steps', '', 'required', array(
-                'errorMsg' => sprintf(
+            $this->addValidationError( 'steps', sprintf(
                     \OWA\Core\CoreAPI::t( 'A funnel has at most %d steps; this one has %d.' ),
-                    self::MAX_STEPS, $kept ),
-            ) );
+                    self::MAX_STEPS, $kept ) );
         }
 
         /*
@@ -114,7 +111,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
         if ( $problem !== '' ) {
 
-            $this->addValidation( 'constraints', '', 'required', array( 'errorMsg' => $problem ) );
+            $this->addValidationError( 'constraints', $problem );
         }
     }
 

@@ -41,7 +41,7 @@ class OrganizationEdit extends \OWA\Core\AdminController {
         $organization->update();
 
         $this->setRedirectAction( 'base.organizationProfile' );
-        $this->set( 'status_code', 3201 );
+        $this->setStatusCode( 3201 );
     }
 
     function errorAction() {

@@ -37,7 +37,7 @@ class SitesEditTagSettings extends \OWA\Core\AdminController {
                           $set, 'profile', (string) $this->getParam( 'siteId' ),
                           $this->getParam( 'config' ), $this->getParam( 'override' ) ) as $name => $problem ) {
 
-                $this->addValidation( $name, '', 'required', array( 'errorMsg' => $problem ) );
+                $this->addValidationError( $name, $problem );
             }
         }
     }

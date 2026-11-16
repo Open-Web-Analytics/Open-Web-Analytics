@@ -52,8 +52,7 @@ class OptionsGeoip extends \OWA\Core\AdminController {
         $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
         $this->set( 'hierarchy_tier', 0 );
         $this->setView( 'base.optionsHierarchy' );
-        $this->data['subview'] = 'maxmind_geoip.optionsGeoip';
-        $this->data['view_method'] = 'delegate';
+        $this->setSubview( 'maxmind_geoip.optionsGeoip' );
 
         return $this->data;
     }

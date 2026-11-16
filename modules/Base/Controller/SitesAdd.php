@@ -181,7 +181,7 @@ class SitesAdd extends \OWA\Core\AdminController {
 
             $this->set( 'siteId', $site['site_id'] );
             $this->setRedirectAction( 'base.sitesInvocation' );
-            $this->set( 'status_code', 3202 );
+            $this->setStatusCode( 3202 );
 
         } else {
 

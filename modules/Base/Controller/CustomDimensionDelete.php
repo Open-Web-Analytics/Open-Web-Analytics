@@ -52,12 +52,12 @@ class CustomDimensionDelete extends \OWA\Core\AdminController {
                 'Removing %s was refused: %s',
                 $this->getParam( 'dimensionKey' ), $result['error'] ) );
 
-            $this->set( 'status_code', 3200 );
+            $this->setStatusCode( 3200 );
 
             return;
         }
 
-        $this->set( 'status_code', 3211 );
+        $this->setStatusCode( 3211 );
     }
 }
 

@@ -116,7 +116,7 @@ class UsersAdd extends \OWA\Core\AdminController {
 		unset($this->data['user']);
 		$this->setRedirectAction('base.users');
         // 3013: added, and the administrator must pass the invitation on another way.
-        $this->set('status_code', $this->get( 'invitation_sent' ) ? 3000 : 3013);
+        $this->setStatusCode( $this->get( 'invitation_sent' ) ? 3000 : 3013 );
     }
 
     function errorAction() {

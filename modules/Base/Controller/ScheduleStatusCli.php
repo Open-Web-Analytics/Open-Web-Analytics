@@ -60,7 +60,7 @@ class ScheduleStatusCli extends SchedulerCli {
 
         $lines = array( sprintf(
             'Scheduler status, %s (%s). %d job%s registered.',
-            $this->readable( $now ), $this->timezone(), count( $jobs ), count( $jobs ) === 1 ? '' : 's'
+            $this->readable( $now ), $this->timezone(), count( $jobs ), \OWA\Core\Lib::plural( count( $jobs ), '', 's' )
         ) );
 
         // One source for this string, shared with the admin banner and the
@@ -377,7 +377,7 @@ class ScheduleStatusCli extends SchedulerCli {
 
         $lines[] = sprintf(
             '%d job%s registered. Last activity of any kind: %s.',
-            count( $jobs ), count( $jobs ) === 1 ? '' : 's', $this->readable( $last_activity )
+            count( $jobs ), \OWA\Core\Lib::plural( count( $jobs ), '', 's' ), $this->readable( $last_activity )
         );
 
         // Queued beacons are ingested only by drain-tracker-ingest.

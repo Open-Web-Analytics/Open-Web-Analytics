@@ -26,8 +26,7 @@ class OptionsRetention extends \OWA\Core\AdminController {
         $owa_site_id = $this->resolveCurrentSiteId();
 
         $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
-        $this->data['subview'] = 'base.optionsRetention';
-        $this->data['view_method'] = 'delegate';
+        $this->setSubview( 'base.optionsRetention' );
 
         return $this->data;
     }

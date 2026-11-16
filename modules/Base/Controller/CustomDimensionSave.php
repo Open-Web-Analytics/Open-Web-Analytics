@@ -71,8 +71,7 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
 
         if ( $refusal !== '' ) {
 
-            $this->addValidation( 'dimensionKey', '', 'required',
-                array( 'errorMsg' => $refusal ) );
+            $this->addValidationError( 'dimensionKey', $refusal );
         }
     }
 
@@ -119,12 +118,12 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
                 'Registering %s was refused: %s',
                 $this->getParam( 'dimensionKey' ), $result['error'] ) );
 
-            $this->set( 'status_code', 3200 );
+            $this->setStatusCode( 3200 );
 
             return;
         }
 
-        $this->set( 'status_code', 3210 );
+        $this->setStatusCode( 3210 );
     }
 }
 

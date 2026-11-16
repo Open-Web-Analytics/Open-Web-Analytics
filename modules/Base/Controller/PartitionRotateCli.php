@@ -482,7 +482,7 @@ class PartitionRotateCli extends PartitionsCli {
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s: %s rebuilt from %d to %d (about %d event%s, roughly %d-%d minutes), so it covers its window.',
                 $b['table'], $dry_run ? 'would be' : 'queued to be', $b['from'], $b['to'], $b['events'],
-                (int) $b['events'] === 1 ? '' : 's',
+                \OWA\Core\Lib::plural( (int) $b['events'], '', 's' ),
                 $b['minutes'][0], $b['minutes'][1] ) );
         }
 
@@ -534,7 +534,7 @@ class PartitionRotateCli extends PartitionsCli {
         $what  = function ( $n ) use ( $since, $raw ) {
 
             return sprintf( '%d visitor%s last seen before %s with no event left in %s',
-                $n, (int) $n === 1 ? '' : 's', $since, $raw );
+                $n, \OWA\Core\Lib::plural( (int) $n, '', 's' ), $since, $raw );
         };
 
         if ( $dry_run ) {

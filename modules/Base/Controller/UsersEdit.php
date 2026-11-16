@@ -72,7 +72,7 @@ class UsersEdit extends \OWA\Core\AdminController {
 
 
         $u->update();
-        $this->set('status_code', 3003);
+        $this->setStatusCode( 3003 );
         $this->setRedirectAction('base.users');
     }
 

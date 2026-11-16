@@ -284,7 +284,7 @@ class Controller extends \OWA\Core\Base {
         if (array_key_exists('status_code', $this->params)
             && \OWA\Core\CoreAPI::serviceSingleton()->request->getRequestType() !== 'POST') {
 
-            $this->set('status_code', $this->getParam('status_code'));
+            $this->setStatusCode( $this->getParam('status_code') );
         }
 
         // get error msg from error code passed on the query string from a redirect.
@@ -492,6 +492,15 @@ class Controller extends \OWA\Core\Base {
 
         return $this->v->addValidation($name, $value, $validation, $conf);
 
+    }
+
+    /**
+     * Fails validation of this field with this message: a required check of
+     * an empty value, which always fails.
+     */
+    function addValidationError( $name, $msg ) {
+
+        return $this->addValidation( $name, '', 'required', array( 'errorMsg' => $msg ) );
     }
 
     function setValidation($name, $obj) {

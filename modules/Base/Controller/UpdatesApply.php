@@ -79,7 +79,6 @@ class UpdatesApply extends \OWA\Core\Controller {
 
             $this->set( 'error_msg', $this->getMsg( 3313 ) );
             $this->setView( 'base.error' );
-            $this->setViewMethod( 'delegate' );
 
             return;
         }
@@ -133,11 +132,10 @@ class UpdatesApply extends \OWA\Core\Controller {
             }
 
             $this->setView('base.error');
-            $this->setViewMethod('delegate');
         } else {
 
             // add data to container
-            $this->set('status_code', 3308);
+            $this->setStatusCode( 3308 );
             $this->set('do', 'base.optionsGeneral');
             $this->setViewMethod('redirect');
         }

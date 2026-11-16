@@ -62,7 +62,7 @@ class OptionsUpdate extends \OWA\Core\AdminController {
 
             if ( $problem !== null ) {
 
-                $this->addValidation( (string) $k, '', 'required', array( 'errorMsg' => $problem ) );
+                $this->addValidationError( (string) $k, $problem );
             }
         }
     }

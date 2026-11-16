@@ -107,7 +107,7 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
         // it cannot perform.
         \OWA\Core\CoreAPI::persistSetting( 'base', 'v1_tables_dropped', true );
 
-        $this->write( sprintf( 'Dropped %d v1 table%s.', count( $tables ), count( $tables ) === 1 ? '' : 's' ) );
+        $this->write( sprintf( 'Dropped %d v1 table%s.', count( $tables ), \OWA\Core\Lib::plural( count( $tables ), '', 's' ) ) );
     }
 
     /** @return array v1 table => rows the migration read from it, over every site */

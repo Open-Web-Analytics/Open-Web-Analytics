@@ -546,7 +546,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         $rows[] = $this->fact( 'Declared',
             sprintf( '%d setting%s across %d module%s',
-                count( $fields ), count( $fields ) === 1 ? '' : 's', count( $declared ), count( $declared ) === 1 ? '' : 's' ) );
+                count( $fields ), \OWA\Core\Lib::plural( count( $fields ), '', 's' ), count( $declared ), \OWA\Core\Lib::plural( count( $declared ), '', 's' ) ) );
 
         $rows[] = $this->fact( 'Fetched at boot', sprintf( '%d', $eager ) );
 

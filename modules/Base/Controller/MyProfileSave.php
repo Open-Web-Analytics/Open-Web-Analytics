@@ -174,7 +174,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
             $auth = \OWA\Core\Auth::get_instance();
             $auth->deleteCredentials();
 
-            $this->set( 'status_code', 3006 );
+            $this->setStatusCode( 3006 );
             $this->setRedirectAction( 'base.loginForm' );
 
             return;

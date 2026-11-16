@@ -64,7 +64,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
                           $set, 'property', (string) $this->getParam( 'propertyId' ),
                           $this->getParam( 'config' ), $this->getParam( 'override' ) ) as $name => $problem ) {
 
-                $this->addValidation( $name, '', 'required', array( 'errorMsg' => $problem ) );
+                $this->addValidationError( $name, $problem );
             }
         }
 
@@ -163,12 +163,12 @@ class PropertyEdit extends \OWA\Core\AdminController {
         if ( $this->getParam( 'propertyId' ) ) {
 
             $this->setRedirectAction( 'base.propertyProfile' );
-            $this->set( 'status_code', 3201 );
+            $this->setStatusCode( 3201 );
 
         } else {
 
             $this->setRedirectAction( 'base.sitesProfile' );
-            $this->set( 'status_code', 3212 );
+            $this->setStatusCode( 3212 );
         }
     }
 

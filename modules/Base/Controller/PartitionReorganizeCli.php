@@ -217,7 +217,7 @@ class PartitionReorganizeCli extends PartitionsCli {
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s: %s %d period%s, %d already correct.',
                 $table, $dry_run ? 'would rewrite' : 'rewrote', count( $result['changed'] ),
-                count( $result['changed'] ) === 1 ? '' : 's', $result['skipped']
+                \OWA\Core\Lib::plural( count( $result['changed'] ), '', 's' ), $result['skipped']
             ) );
 
             if ( $result['failed'] ) {

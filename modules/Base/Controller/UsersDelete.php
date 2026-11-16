@@ -57,7 +57,7 @@ class UsersDelete extends \OWA\Core\AdminController {
     function success() {
 	    
 	    $this->setRedirectAction('base.users');
-        $this->set('status_code', 3004);
+        $this->setStatusCode( 3004 );
     }
 }
 

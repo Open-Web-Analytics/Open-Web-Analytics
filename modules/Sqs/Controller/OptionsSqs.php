@@ -31,8 +31,7 @@ class OptionsSqs extends \OWA\Core\AdminController {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->set( 'hierarchy_tier', 0 );
         $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
-        $this->data['subview'] = 'sqs.optionsSqs';
-        $this->data['view_method'] = 'delegate';
+        $this->setSubview( 'sqs.optionsSqs' );
 
         return $this->data;
     }

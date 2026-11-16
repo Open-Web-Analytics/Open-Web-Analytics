@@ -70,6 +70,6 @@ class NotificationsFetchCli extends \OWA\Core\Controller\Cli {
 
         $this->e->notice( sprintf(
             '%d release%s seen, %d new notification%s stored.',
-            count( $items ), count( $items ) === 1 ? '' : 's', $created, $created === 1 ? '' : 's' ) );
+            count( $items ), \OWA\Core\Lib::plural( count( $items ), '', 's' ), $created, $created === 1 ? '' : 's' ) );
     }
 }

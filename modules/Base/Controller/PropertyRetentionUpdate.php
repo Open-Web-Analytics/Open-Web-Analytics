@@ -37,7 +37,7 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
 
         if ( ! ctype_digit( $id ) || ! $property->wasPersisted() ) {
 
-            $this->addValidation( 'propertyId', '', 'required', array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'That Property does not exist.' ) ) );
+            $this->addValidationError( 'propertyId', \OWA\Core\CoreAPI::t( 'That Property does not exist.' ) );
 
             return;
         }
@@ -46,7 +46,7 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
                 (string) $this->getParam( 'propertyId' ), (array) $this->getParam( 'config' ),
                 (array) $this->getParam( 'override' ) ) as $key => $problem ) {
 
-            $this->addValidation( $key, '', 'required', array( 'errorMsg' => $problem ) );
+            $this->addValidationError( $key, $problem );
         }
     }
 
@@ -69,7 +69,7 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
         }
 
         $this->setRedirectAction( 'base.propertyRetention' );
-        $this->set( 'status_code', 2500 );
+        $this->setStatusCode( 2500 );
     }
 
     function errorAction() {
