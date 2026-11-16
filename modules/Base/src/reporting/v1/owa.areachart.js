@@ -1167,6 +1167,90 @@ OWA.areaChart.prototype = {
         } );
     },
 
+    /** Whether a metric's total is the sum of its parts: a count or a sum. */
+    isAdditive : function ( resultSet, metric ) {
+
+        var type = '';
+
+        jQuery.each( ( resultSet && resultSet.relatedMetrics ) || {}, function ( group, list ) {
+            jQuery.each( list || [], function ( i, m ) {
+                if ( m && m.name === metric ) {
+                    type = m.metric_type;
+                }
+            } );
+        } );
+
+        return type === 'count' || type === 'sum';
+    },
+
+    /**
+     * A broken-out trend's total, x -> y, from its own query by the x axis
+     * alone; or null, having asked for it, until it is here.
+     */
+    totalsOf : function ( resultSet, x_name, y_name ) {
+
+        if ( ! resultSet || ! resultSet.self ) {
+
+            return null;
+        }
+
+        var url = new OWA.uri( resultSet.self );
+
+        url.setQueryParam( 'dimensions', x_name );
+        url.removeQueryParam( 'page' );
+        url.removeQueryParam( 'sort' );
+        url.removeQueryParam( 'resultsPerPage' );
+
+        var source = url.getSource();
+
+        if ( this.totalsUrl === source && this.totalsResultSet ) {
+
+            var that = this;
+            var out  = {};
+
+            ( this.totalsResultSet.resultsRows || [] ).forEach( function ( row ) {
+
+                if ( row[ x_name ] && row[ y_name ] ) {
+
+                    out[ that.formatValue( row[ x_name ].data_type, row[ x_name ].value ) ] =
+                        that.formatValue( row[ y_name ].data_type, row[ y_name ].value ) * 1;
+                }
+            } );
+
+            return out;
+        }
+
+        this.fetchTotals( source );
+
+        return null;
+    },
+
+    /** Ask for a broken-out trend's total (totalsOf()), and draw again with it. */
+    fetchTotals : function ( source ) {
+
+        if ( this.totalsUrl === source ) {
+
+            return;   // already asked
+        }
+
+        this.totalsUrl       = source;
+        this.totalsResultSet = null;
+
+        var that = this;
+
+        jQuery.getJSON( source, '', function ( data ) {
+
+            if ( that.totalsUrl !== source ) {
+
+                return;   // a later question has been asked since
+            }
+
+            that.totalsResultSet = new OWA.resultSet( data && data.hasOwnProperty( 'data' ) ? data.data : data );
+
+            that.redraw();
+        } );
+    },
+
     /** Draw again from the trend's result set, keeping the metric and axis. */
     redraw : function () {
 
@@ -1188,11 +1272,11 @@ OWA.areaChart.prototype = {
      * The rows arrive as (x, dimension value) pairs, so they are pivoted here:
      * a line per value, and the total across ALL of them as the area behind.
      *
-     * The total is the sum of every row, not of the lines that get drawn. Only
-     * the largest few values are drawn -- a breakdown by page path would
-     * otherwise be a hundred lines and no chart -- and a total that quietly
-     * left the rest out would be a different number from the one the report's
-     * metric boxes show.
+     * The total is the trend's own query by the x axis alone (fetchTotals()),
+     * not the sum of the rows: a users or bounce rate total is not the sum of
+     * each value's, and the rows stop at the page the query asked for. Until
+     * it arrives a count or a sum shows the sum of the rows, and any other
+     * metric no total.
      *
      * @return {series, points, x_type}
      */
@@ -1261,6 +1345,17 @@ OWA.areaChart.prototype = {
 
         xs.sort( function ( a, b ) { return a - b; } );
 
+        var own = this.totalsOf( resultSet, x_name, y_name );
+
+        if ( own ) {
+
+            totals = own;
+
+        } else if ( ! this.isAdditive( resultSet, y_name ) ) {
+
+            totals = {};
+        }
+
         // The biggest first, by the metric being charted, so the cap keeps
         // what matters rather than whatever the sort happened to return first.
         var ranked = Object.keys( byValue ).sort( function ( a, b ) {
@@ -1276,7 +1371,7 @@ OWA.areaChart.prototype = {
         // and the lines are what it is made of.
         built.push( this.areaSeries( OWA.l( 'Total' ), xs.map( function ( x ) {
 
-            return [ x, totals[ x ] ];
+            return [ x, own ? ( totals[ x ] || 0 ) : ( totals.hasOwnProperty( x ) ? totals[ x ] : null ) ];
 
         } ) ) );
 
