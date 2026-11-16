@@ -13,11 +13,8 @@ use PHPUnit\Framework\TestCase;
  * (e.g. owa_usersRestView drops password/temp_passkey), so a controller-only
  * assertion would miss a view-level disclosure.
  *
- * Authentication is simulated exactly as owa_auth::authByApiKey() does on
- * success (loadNewUserByObject + setAuthStatus(true)); OWA_REST_DEBUG is
- * defined so api-key auth would skip the request-signature check if a test
- * ever exercises the real auth layer. No HTTP is involved, so no signature
- * needs forging.
+ * Authentication is simulated as a successful sign-in leaves it
+ * (loadNewUserByObject + setAuthStatus(true)). No HTTP is involved.
  *
  * Cleanup: every fixture row (users, sites, site_user relations) is removed
  * in tearDown regardless of assertion outcome. Tests skip cleanly when the
@@ -33,12 +30,6 @@ abstract class RestControllerTestCase extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        if (!defined('OWA_REST_DEBUG')) {
-            // Skip the api-key request-signature check if the real auth layer
-            // is ever exercised. Harmless for the current controller-driven tests.
-            define('OWA_REST_DEBUG', true);
-        }
-
         if (!defined('OWA_TEST_REST_BOOTSTRAPPED')) {
             define('OWA_TEST_REST_BOOTSTRAPPED', true);
 
@@ -96,6 +87,9 @@ abstract class RestControllerTestCase extends TestCase
     /**
      * Create a user with the given role. Returns [id, user_id, api_key].
      *
+     * The user carries a legacy api_key, as one upgraded from 1.x does, so the
+     * responses can be checked for not disclosing it.
+     *
      * @return array{id:mixed, user_id:string, api_key:string}
      */
     protected function makeUser(string $role, string $label = 'u'): array
@@ -105,6 +99,8 @@ abstract class RestControllerTestCase extends TestCase
         $u->createNewUser($user_id, $role, 'pw' . $this->tok, $user_id, 'OWA Test ' . $role);
         $u->load($user_id, 'user_id');
         $this->assertNotEmpty($u->get('id'), "Failed to create {$role} user fixture.");
+        $u->set('api_key', bin2hex(random_bytes(16)));
+        $u->update();
 
         $this->trackForCleanup('base.user', $u->get('id'), 'id');
 

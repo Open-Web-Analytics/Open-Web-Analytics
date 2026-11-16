@@ -937,7 +937,8 @@ class CoreAPI {
 
         $site_id = (string) $site_id;
 
-        if ( $site_id === '' ) {
+        // An id no site could have is not looked up, or remembered.
+        if ( ! self::isSiteIdShaped( $site_id ) ) {
 
             return false;
         }
@@ -974,6 +975,38 @@ class CoreAPI {
         }
 
         return self::$registered_sites[ $site_id ];
+    }
+
+    /** The longest site id: the width of the site_id column. */
+    const SITE_ID_MAX_LENGTH = 255;
+
+    /**
+     * Whether a string could be a site id: 1 to SITE_ID_MAX_LENGTH bytes, with
+     * no whitespace or control characters.
+     *
+     * @param string $site_id
+     * @return bool
+     */
+    public static function isSiteIdShaped( $site_id ) {
+
+        return is_string( $site_id )
+            && strlen( $site_id ) <= self::SITE_ID_MAX_LENGTH
+            && preg_match( '/^[^\x00-\x20\x7F]+$/', $site_id ) === 1;
+    }
+
+    /**
+     * A site id as written to a log line: at most 64 characters, with anything
+     * other than printable ASCII shown as "?".
+     *
+     * @param mixed $site_id
+     * @return string
+     */
+    public static function siteIdForLog( $site_id ) {
+
+        $id  = is_scalar( $site_id ) ? (string) $site_id : gettype( $site_id );
+        $out = preg_replace( '/[^\x21-\x7E]/', '?', substr( $id, 0, 64 ) );
+
+        return strlen( $id ) > 64 ? $out . '...' : $out;
     }
 
     /** Whether the database is reachable and runs a query. */
@@ -1078,12 +1111,6 @@ class CoreAPI {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         return $cu->isAuthenticated();
-    }
-    
-    public static function getCurrentUserApiKey() {
-
-        $cu = \OWA\Core\CoreAPI::getCurrentUser();
-        return $cu->getApiKey();
     }
     
     /**
@@ -2307,10 +2334,12 @@ class CoreAPI {
 
         if ( $registered === false ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf(
+            // Debug, not notice: any anonymous request can name any id, and
+            // each would add a line to the error log.
+            \OWA\Core\CoreAPI::debug( sprintf(
                 'Not logging event: site id "%s" is not registered on this installation. '
               . 'Check the site id in your tracking code against cmd=add-site or the Sites admin page.',
-                (string) $site_id
+                \OWA\Core\CoreAPI::siteIdForLog( $site_id )
             ) );
 
             return false;
@@ -2478,11 +2507,13 @@ class CoreAPI {
             $cookie_value = \OWA\Core\Lib::implode_assoc('=>', '|||', $cookie_value);
         }
 
+        $logged_value = self::cookieValueForLog( $cookie_name, $cookie_value );
+
         // add namespace
         $cookie_name = sprintf('%s%s', \OWA\Core\CoreAPI::getSetting('base', 'ns'), $cookie_name);
 
         // debug
-        \OWA\Core\CoreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $cookie_value, $domain));
+        \OWA\Core\CoreAPI::debug(sprintf('Setting cookie %s with values: %s under domain: %s', $cookie_name, $logged_value, $domain));
 
         // makes cookie to session cookie only
         if (!\OWA\Core\CoreAPI::getSetting('base', 'cookie_persistence')) {
@@ -2492,6 +2523,15 @@ class CoreAPI {
 		
         setcookie($cookie_name, $cookie_value,
             self::cookieOptions($expires, $path, $domain, \OWA\Core\Lib::isHttps(), $httponly));
+    }
+
+    /** The sign-in cookies, by name before the namespace: their values are credentials. */
+    const CREDENTIAL_COOKIES = array( 'u', 'p' );
+
+    /** A cookie's value as written to the debug log: [redacted] for a CREDENTIAL_COOKIES one. */
+    public static function cookieValueForLog( $cookie_name, $cookie_value ) {
+
+        return in_array( (string) $cookie_name, self::CREDENTIAL_COOKIES, true ) ? '[redacted]' : (string) $cookie_value;
     }
 
     /**
@@ -2700,7 +2740,7 @@ class CoreAPI {
         
         $params = $service->request->getAllOwaParams();
         
-        // Names only: the values carry the API key and signature.
+        // Names only: the values may carry credentials.
         \OWA\Core\CoreAPI::debug( 'Handling REST request with params: ' . implode( ', ', array_keys( (array) $params ) ) );
         
         $action = \OWA\Core\CoreAPI::getRequestParam('do');
@@ -3456,17 +3496,6 @@ class CoreAPI {
 	    return $set;
     }
     
-    public static function signRequestUrl( $url, $apiKey ) {
-	    
-	    $auth = \OWA\Core\Auth::get_instance();
-	    
-	    $signature = $auth->generateSignature( $url, $apiKey );
-	    
-	    $url .= '&owa_signature=' . $signature;
-	    
-	    return $url;
     }
-
-}
 
 ?>

@@ -51,7 +51,7 @@ class JobsCli extends \OWA\Core\Controller\Cli {
 
                 if ( $id === '' ) {
 
-                    return $this->refuse( 'Say which job: cmd=jobs-retry id=<id>, or id=all for every failed job.' );
+                    return $this->usageError( 'Say which job: cmd=jobs-retry id=<id>, or id=all for every failed job.' );
                 }
 
                 $retried = $Q::retry( $id );
@@ -66,10 +66,15 @@ class JobsCli extends \OWA\Core\Controller\Cli {
 
                 if ( $id === '' ) {
 
-                    return $this->refuse( 'Say which job: cmd=jobs-forget id=<id>.' );
+                    return $this->usageError( 'Say which job: cmd=jobs-forget id=<id>.' );
                 }
 
-                \OWA\Core\CoreAPI::notice( $Q::forget( $id ) ? "Job $id deleted." : "No job $id." );
+                if ( ! $Q::forget( $id ) ) {
+
+                    return $this->fail( "No job $id." );
+                }
+
+                \OWA\Core\CoreAPI::notice( "Job $id deleted." );
 
                 return;
 

@@ -44,6 +44,20 @@ class PartitionReorganizeCli extends PartitionsCli {
         );
     }
 
+    /**
+     * Whether a value is a real date written yyyymmdd.
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    public static function isDate( $value ) {
+
+        $value = (string) $value;
+
+        return preg_match( '/^\d{8}$/', $value ) === 1
+            && checkdate( (int) substr( $value, 4, 2 ), (int) substr( $value, 6, 2 ), (int) substr( $value, 0, 4 ) );
+    }
+
     function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {
@@ -59,31 +73,25 @@ class PartitionReorganizeCli extends PartitionsCli {
 
         foreach ( array( 'from' => $from, 'to' => $to ) as $name => $value ) {
 
-            if ( $value !== null && ! preg_match( '/^\d{8}$/', (string) $value ) ) {
+            if ( $value !== null && ! self::isDate( $value ) ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf( '%s must be a date as yyyymmdd; got "%s".', $name, $value ) );
-
-                return;
+                return $this->usageError( sprintf( '%s must be a date as yyyymmdd; got "%s".', $name, $value ) );
             }
         }
 
         if ( ! $granularity ) {
 
-            \OWA\Core\CoreAPI::notice(
+            return $this->usageError(
                 'granularity is required: quarter-month, half-month or monthly.'
             );
-
-            return;
         }
 
         if ( ! \OWA\Core\Db::isPartitionGranularity( $granularity ) ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf(
+            return $this->usageError( sprintf(
                 'Unknown granularity "%s". Use one of: daily, quarter-month, half-month, monthly. '
               . '(There is no "weekly": a week does not divide a month.)', $granularity
             ) );
-
-            return;
         }
 
         $tables = $this->factTables( $this->getParam( 'table' ) ?: null );
@@ -115,7 +123,7 @@ class PartitionReorganizeCli extends PartitionsCli {
              */
             if ( $granularity === 'daily' && $this->dailyLeadMonths( $table ) ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf(
+                $this->refuse( sprintf(
                     '%s: refusing daily. The front of its lead is daily already and '
                   . 'cmd=partition-rotate maintains it; taking the whole table daily would make '
                   . 'the next rotate extend a year of lead at daily. Choose quarter-month, '
@@ -214,7 +222,7 @@ class PartitionReorganizeCli extends PartitionsCli {
 
             if ( $result['failed'] ) {
 
-                \OWA\Core\CoreAPI::notice( sprintf(
+                $this->fail( sprintf(
                     '%s: FAILED on %s. The table is still valid -- the periods that did change are done.',
                     $table, implode( '; ', $result['failed'] )
                 ) );

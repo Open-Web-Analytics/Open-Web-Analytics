@@ -64,8 +64,8 @@ class Report extends \OWA\Core\AdminController {
          * A custom report is addressed by the same reportId as any other, under
          * a reserved prefix: `custom-<row id>`. One id space, so every link,
          * bookmark and nav entry keeps working the same way, and a custom
-         * report is shareable by URL for exactly the reason a shipped one is --
-         * the URL is the whole address.
+         * report's URL is its whole address, as a shipped one's is. Who may
+         * open it is decided in renderCustom().
          *
          * Checked BEFORE the registry, so a module cannot register an id in the
          * reserved space and shadow somebody's saved report.
@@ -172,13 +172,9 @@ class Report extends \OWA\Core\AdminController {
     /**
      * Render a user-authored report.
      *
-     * VIEWING IS NOT GATED ON AUTHORSHIP, deliberately. Ownership decides what
-     * the roster LISTS and who may edit; a report reached by its URL renders
-     * for anyone who may view reports on its Property, which is what "shareable
-     * by url" has to mean to be true. It is safe because a custom report is a
-     * saved QUERY, not saved data: every figure in it is one the reader could
-     * already have asked for through the ordinary reporting UI, on that
-     * Property.
+     * Opened by its creator, by anyone once it is shared, and by anyone who may
+     * see every report (CustomReports::mayView()); to anyone else it is not
+     * found, as a report of another Property is.
      *
      * The definition is re-validated on the way OUT, not trusted because it was
      * validated on the way in. Two reasons, and neither is hypothetical: the
@@ -218,6 +214,11 @@ class Report extends \OWA\Core\AdminController {
          */
         $data = (array) $this->delegateTo( $controllers[ $type ] );
 
+        if ( $refused = $this->notViewable( $id, $data, $report ) ) {
+
+            return $refused;
+        }
+
         // The same edit control a custom report gets, in the same place.
         return $this->withSharedTag( $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report ), $report );
     }
@@ -234,6 +235,8 @@ class Report extends \OWA\Core\AdminController {
         $property_id = \OWA\Module\Base\Classes\CustomReports::requestProperty(
             $row_id, $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) ?: $this->getParam( 'site_id' ) );
 
+        // Who may view it is asked once the target has signed the reader in
+        // (notViewable()).
         $report = \OWA\Module\Base\Classes\CustomReports::loadOf( $row_id, $property_id );
 
         if ( ! $report ) {
@@ -316,6 +319,11 @@ class Report extends \OWA\Core\AdminController {
 
         $data = (array) $target->doAction();
 
+        if ( $refused = $this->notViewable( $id, $data, $report ) ) {
+
+            return $refused;
+        }
+
         /*
          * "Edit", beside the title. See withEditAction() for what it is and on
          * what terms it is offered.
@@ -327,8 +335,8 @@ class Report extends \OWA\Core\AdminController {
          * governs, which is what lets each report be gated by its own
          * requirement rather than by this one's. Authentication therefore
          * happens INSIDE the call above -- and until it has, the current user
-         * is the default one. It carries the right user_id, and role
-         * 'everyone'.
+         * is the default one, with role 'everyone'. notViewable() is asked
+         * after it for the same reason.
          *
          * Asked before it, isCapable('edit_users') was therefore always false,
          * so mayEdit could only ever succeed through the OWNERSHIP branch. An
@@ -355,12 +363,11 @@ class Report extends \OWA\Core\AdminController {
      * among the scope switch and the filter, which are controls for HOW YOU ARE
      * LOOKING at it; changing what it IS is a different kind of act.
      *
-     * Offered only to someone who may actually edit. Viewing is deliberately
-     * wider than editing -- that is what "shareable by url" means -- so an
-     * ungated control would be offering a reader a link that leads to a
-     * refusal. Asked of mayEdit() against the ROW, which is the same question
-     * the edit screen asks when the link is followed, so the two cannot answer
-     * differently.
+     * Offered only to someone who may actually edit. Viewing is wider than
+     * editing -- a shared report opens for others -- so an ungated control
+     * would be offering a reader a link that leads to a refusal. Asked of
+     * mayEdit() against the ROW, which is the same question the edit screen
+     * asks when the link is followed, so the two cannot answer differently.
      *
      * CoreAPI::isCurrentUserCapable() rather than reaching through
      * getCurrentUser() for isCapable(): it is the house way to ask this, it
@@ -494,8 +501,8 @@ class Report extends \OWA\Core\AdminController {
     }
 
     /**
-     * "Shared" beside the title of a report everyone with access can see, the
-     * tag the custom reports list gives it.
+     * "Shared" beside the title of a report everyone with access to its
+     * Property can open, the tag the custom reports list gives it.
      *
      * @param  array $data    what the target controller returned
      * @param  array $report  the row being rendered
@@ -563,6 +570,41 @@ class Report extends \OWA\Core\AdminController {
         return \OWA\Core\CoreAPI::displayView( array( 'error_msg' => sprintf(
             \OWA\Core\CoreAPI::t( 'This saved report cannot be drawn: %s Edit the report to fix it.' ),
             rtrim( $error, '.' ) . '.' ) ), 'base.error' );
+    }
+
+    /**
+     * A drawn report the reader may not view (CustomReports::mayView()) is
+     * answered as not found, as one of another Property is; null otherwise.
+     *
+     * Asked AFTER the target's doAction(), for the reason given in
+     * renderCustom(): the target signs the reader in, and before it the
+     * current user has no role and no user_id to check. A refusal the target
+     * answered itself -- the login form for someone signed out -- is left as
+     * it is.
+     *
+     * @param  string $id
+     * @param  array  $data   what the target controller returned
+     * @param  array  $report the row
+     * @return array|null
+     */
+    private function notViewable( $id, array $data, array $report ) {
+
+        if ( empty( $data['view'] ) ) {
+
+            return null;
+        }
+
+        $user = \OWA\Core\CoreAPI::getCurrentUser();
+
+        if ( \OWA\Module\Base\Classes\CustomReports::mayView(
+                $report,
+                (string) $user->getUserData( 'user_id' ),
+                (bool) \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_users' ) ) ) {
+
+            return null;
+        }
+
+        return $this->reportNotResolved( $id, 'not found', 404 );
     }
 
     private function reportNotResolved( $id, $message, $status ) {

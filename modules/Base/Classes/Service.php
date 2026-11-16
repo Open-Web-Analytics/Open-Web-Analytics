@@ -349,6 +349,21 @@ class Service extends \OWA\Core\Base {
                 continue;
             }
 
+            // A misspelt key would leave the job on what it was registered
+            // with, as if the entry were not there.
+            $unknown = array_diff( array_map( 'strval', array_keys( $spec ) ), array_keys( self::SCHEDULED_JOB_KEYS ) );
+
+            if ( $unknown ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf(
+                    'OWA_SCHEDULED_JOBS: "%s" has %s, which %s not one of: %s. Skipping the entry.',
+                    $name, implode( ', ', $unknown ), count( $unknown ) === 1 ? 'is' : 'are',
+                    implode( ', ', array_keys( self::SCHEDULED_JOB_KEYS ) )
+                ) );
+
+                continue;
+            }
+
             $known = isset( $jobs[ $name ] );
 
             // A new job has nothing to inherit, so it must say what it runs and

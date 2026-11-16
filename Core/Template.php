@@ -469,11 +469,6 @@ class Template extends TemplateEngine {
 
     }
     
-    function getApiKey() {
-	    
-		return \OWA\Core\CoreAPI::getCurrentUserApiKey();
-    }
-
     /**
      * An API link for an overlay: the heatmap, or a module's.
      *
@@ -556,36 +551,14 @@ class Template extends TemplateEngine {
         return $this->makeLink( $params, true, $this->config['rest_api_url'] );
     }
 
-    function makeApiLink($params = array(), $add_state = false, $add_apiKey = false) {
+    function makeApiLink($params = array(), $add_state = false) {
 
         $url = $this->config['rest_api_url'];
-        
-        if ( $add_apiKey ) {
-	        
-	        $params['apiKey'] = $this->getApiKey();
-            
-        } else {
-            
-            $params['nonce'] = \OWA\Core\CoreAPI::createRestApiNonce( $params['version'], $params['module'], $params['do'] );
-        }
-      
-        $link = $this->makeLink($params, $add_state, $url);
-        
-        if ( $add_apiKey ) {
-	     	
-	    	return $this->signRequestUrl( $link, $this->getApiKey() );
-	    	
-	    } else {
-        
-        	return $link;
-        }
-    }
-    
-    function signRequestUrl( $url, $apiKey ) {
-	    
-	    return \OWA\Core\CoreAPI::signRequestUrl( $url, $apiKey );
-    }
 
+        $params['nonce'] = \OWA\Core\CoreAPI::createRestApiNonce( $params['version'], $params['module'], $params['do'] );
+
+        return $this->makeLink($params, $add_state, $url);
+    }
 
     function makeImageLink($path, $absolute = false) {
 

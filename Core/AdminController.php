@@ -47,8 +47,8 @@ class AdminController extends \OWA\Core\Controller {
     /**
      * The session cookies, unless the controller declares otherwise.
      *
-     * A screen is for a signed-in browser, so an API key or an application
-     * password is not read, and a login form's user_id and password are
+     * A screen is for a signed-in browser, so an application password is not
+     * read, and a login form's user_id and password are
      * parameters rather than a sign-in that writes the session cookies ahead
      * of the nonce check.
      *

@@ -94,7 +94,7 @@ return array(
             'description' =>
                 \OWA\Core\CoreAPI::t( 'Whether REST API requests can authenticate with an application password, which each user '
                 . 'makes under My Preferences. Off refuses every one; the passwords are kept and work again '
-                . 'when it is turned back on. The legacy API key is not affected.' ),
+                . 'when it is turned back on.' ),
         ),
         'app_passwords_require_https' => array(
             'default'  => true,

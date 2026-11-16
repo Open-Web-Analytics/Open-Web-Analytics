@@ -46,6 +46,18 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
     /** A scheduled run's budget: inside the minute, so runs do not queue up behind each other. */
     const BUDGET = 45;
 
+    /** See \OWA\Core\Controller\Cli::getJobLease(): twice the time budget. */
+    public function getJobLease() {
+
+        return 2 * $this->budget();
+    }
+
+    /** @return int the time budget, in seconds */
+    protected function budget() {
+
+        return max( 1, (int) ( $this->getParam( 'seconds' ) ?: self::BUDGET ) );
+    }
+
     function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
@@ -62,11 +74,9 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
         }
 
         $I       = '\OWA\Module\Base\Classes\TrackerIngest';
-        $seconds = (int) ( $this->getParam( 'seconds' ) ?: self::BUDGET );
-
         try {
 
-            $deadline  = time() + max( 1, $seconds );
+            $deadline  = time() + $this->budget();
             $forwarded = $I::forwardFallback( $deadline );
 
         } catch ( \Throwable $t ) {

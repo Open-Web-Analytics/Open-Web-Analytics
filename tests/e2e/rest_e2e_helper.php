@@ -9,20 +9,11 @@
  * to call them for real:
  *
  *   provision            create an admin user + a site, return their identifiers
- *                        along with the auth key needed to sign requests
+ *                        and an application password for the user
  *   cleanup              remove what provision() created
  *   modules              which modules are active -- a module that is not active
  *                        never runs registerRestApiRoute(), so its routes do not
  *                        exist and a spec must not assert them
- *
- * Requests are signed rather than run with OWA_REST_DEBUG enabled. That constant
- * makes authByApiKey() skip signature verification entirely, so a suite relying
- * on it would never exercise the auth path it is meant to be calling through.
- * The signature scheme is Auth::generateSignature():
- *
- *   base64( hash('sha256', 'OWASIGNATURE' . apiKey . requestUrl . Ymd(UTC) . OWA_AUTH_KEY ) )
- *
- * -- note it base64-encodes the HEX digest, not raw bytes.
  *
  * Like the other e2e helpers this writes, so it HARD-REFUSES unless booted
  * against the throwaway scratch DB the self-host harness provisions.
@@ -69,9 +60,8 @@ function out(array $result): void
 }
 
 /**
- * An admin user (so every route's capability check passes) and a site to
- * operate on. Returns the auth key too: without it a spec cannot sign a
- * request, and unsigned requests are rejected before reaching any controller.
+ * An admin user (so every route's capability check passes), an application
+ * password for it, and a site to operate on.
  */
 function provision(): array
 {
@@ -95,8 +85,7 @@ function provision(): array
 
     return [
         'user_id'  => $user_id,
-        'api_key'  => $u->get('api_key'),
-        'auth_key' => defined('OWA_AUTH_KEY') ? OWA_AUTH_KEY : '',
+        'token'    => (string) (\OWA\Module\Base\Classes\AppPasswords::create($user_id, 'e2e REST', \OWA\Module\Base\Classes\AppPasswords::SCOPE_FULL)['token'] ?? ''),
         'site_id'  => $s->get('site_id'),
         'domain'   => $site_domain,
     ];
@@ -104,6 +93,8 @@ function provision(): array
 
 function cleanup(): array
 {
+    \OWA\Module\Base\Classes\AppPasswords::revokeAllForUser(FIXTURE_TAG . '-admin@owatest.example.com');
+
     $db = \OWA\Core\CoreAPI::dbSingleton();
 
     // Users and sites this fixture created, matched on the tag so a stray run

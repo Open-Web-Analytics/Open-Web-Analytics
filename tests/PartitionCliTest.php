@@ -171,7 +171,8 @@ final class PartitionCliTest extends CliControllerTestCase
             $cli = $this->rotate($params + ['table' => 'owa_event_raw']);
             $cli->action();
 
-            $this->assertSame('refused', $cli->getCliOutcome()['outcome'], json_encode($params) . ' must be refused');
+            // An argument the command will not act on is a usage error.
+            $this->assertSame('failed', $cli->getCliOutcome()['outcome'], json_encode($params) . ' must be refused');
         }
 
         $this->assertSame($before, $this->partitionCount('owa_event_raw'), 'a refusal changes nothing');
@@ -202,10 +203,11 @@ final class PartitionCliTest extends CliControllerTestCase
             $this->assertSame([$cubes[0]], $this->callProtected($this->drop(['property' => $pid]), 'selectTables'));
         }
 
-        foreach ([['only' => 'everything'], ['property' => '999999999999']] as $bad) {
+        // An unreadable only= is a usage error; a Property without a cube, a refusal.
+        foreach ([['failed', ['only' => 'everything']], ['refused', ['property' => '999999999999']]] as [$outcome, $bad]) {
             $cli = $this->drop($bad);
             $this->assertFalse($this->callProtected($cli, 'selectTables'), json_encode($bad));
-            $this->assertSame('refused', $cli->getCliOutcome()['outcome']);
+            $this->assertSame($outcome, $cli->getCliOutcome()['outcome']);
         }
     }
 

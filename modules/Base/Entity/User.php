@@ -66,7 +66,7 @@ class User extends \OWA\Core\Entity {
     /**
      * Credential fields. These are never part of a response payload.
      */
-    protected $private_properties = [ 'password', 'temp_passkey', 'api_key' ];
+    protected $private_properties = [ 'password', 'temp_passkey', 'api_key', 'session_epoch' ];
 
     function __construct() {
     
@@ -108,6 +108,15 @@ class User extends \OWA\Core\Entity {
         $apiKey->setDataType(OWA_DTD_VARCHAR255);
         $this->setProperty($apiKey);
 
+        // Signed into every session cookie (Auth::sessionCredential()); a new
+        // value ends them all. See endSessions(). Update087.
+        $epoch = new \OWA\Module\Base\Classes\DbColumn;
+        $epoch->setName('session_epoch');
+        $epoch->setDataType(OWA_DTD_INT);
+        $epoch->setNotNull();
+        $epoch->setDefaultValue(0);
+        $this->setProperty($epoch);
+
     }
     
     /**
@@ -133,7 +142,6 @@ class User extends \OWA\Core\Entity {
         $this->set('password', \OWA\Core\Lib::encryptPassword($password));
         $this->set('creation_date', time());
         $this->set('last_update_date', time());
-        $this->set('api_key', self::newApiKey() );
         $ret = $this->create();
 
         return $ret;
@@ -197,12 +205,17 @@ class User extends \OWA\Core\Entity {
         return is_string( $key ) && preg_match( self::TEMP_PASSKEY_PATTERN, $key ) === 1 ? $key : false;
     }
 
-    /** A legacy API key: 32 random hex characters. */
-    public static function newApiKey(): string {
-
-        return bin2hex( random_bytes( 16 ) );
-    }
     
+    /**
+     * Ends every browser session of this user, on every device, from the next
+     * request: each session cookie carries the epoch it was issued under.
+     * Written by the caller's update().
+     */
+    public function endSessions() {
+
+        $this->set( 'session_epoch', (int) $this->get( 'session_epoch' ) + 1 );
+    }
+
     /**
      * @return boolean
      */

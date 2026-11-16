@@ -289,6 +289,8 @@ OWA.resultSetExplorer.prototype = {
             new_dims = new_dims.join(',');
 
             url.setQueryParam('dimensions', new_dims);
+            // A new grouping starts on the first page.
+            url.removeQueryParam('page');
             this.getNewResultSet( url.getSource() );
         }
     },
@@ -312,6 +314,8 @@ OWA.resultSetExplorer.prototype = {
         var url = new OWA.uri( this.resultSet.self );
 
         url.setQueryParam( 'dimensions', dims.join( ',' ) );
+        // A new grouping starts on the first page.
+        url.removeQueryParam( 'page' );
 
         this.getNewResultSet( url.getSource() );
     },
@@ -322,6 +326,8 @@ OWA.resultSetExplorer.prototype = {
 
         // set constraints
         url.setQueryParam('constraints', constraints);
+        // A new filter starts on the first page.
+        url.removeQueryParam('page');
 
         // fetch new results
         this.getNewResultSet( url.getSource() );
@@ -3135,27 +3141,34 @@ OWA.constraintBuilder = function( target_dom_selector, options ) {
 
 };
 
+/*
+ * The operators the picker offers. This table and EMPTY_TESTS are catalogued
+ * from here (Strings::LABEL_TABLES) and shown through OWA.translate().
+ */
+OWA.constraintBuilder.OPERATORS = {
+    '==':    'Exactly Matching',
+    '!=':    'Not Matching',
+    '>':    'Greater than',
+    '<':    'Less than',
+    '=@':    'Contains'
+};
+
+/*
+ * THE EMPTY TEST, offered in the picker only. Each key is the whole tail
+ * of the clause: "(not set)" is the label for NULL and '', and the server
+ * reads `==(not set)` / `!=(not set)` as "is empty" / "has a value". Kept
+ * out of `operators` because that map also parses constraint strings.
+ */
+OWA.constraintBuilder.EMPTY_TESTS = {
+    '!=(not set)':  'Is Set',
+    '==(not set)':  'Is Not Set'
+};
+
 OWA.constraintBuilder.prototype = {
 
-    operators: {
-        '==':    'Exactly Matching',
-        '!=':    'Not Matching',
-        '>':    'Greater than',
-        '<':    'Less than',
-        '=@':    'Contains'
+    operators: OWA.constraintBuilder.OPERATORS,
 
-    },
-
-    /*
-     * THE EMPTY TEST, offered in the picker only. Each key is the whole tail
-     * of the clause: "(not set)" is the label for NULL and '', and the server
-     * reads `==(not set)` / `!=(not set)` as "is empty" / "has a value". Kept
-     * out of `operators` because that map also parses constraint strings.
-     */
-    emptyTests: {
-        '!=(not set)':  'Is Set',
-        '==(not set)':  'Is Not Set'
-    },
+    emptyTests: OWA.constraintBuilder.EMPTY_TESTS,
 
     parseConstraintString : function( str ) {
 
@@ -3628,8 +3641,8 @@ OWA.constraintBuilder.prototype = {
 
                     c += OWA.util.sprintf(
                             '<option value="%s">%s</option>',
-                            operator,
-                            lists[ l ][operator]
+                            OWA.util.escapeHtml( operator ),
+                            OWA.util.escapeHtml( OWA.translate( lists[ l ][operator] ) )
                     );
                 }
             }

@@ -68,7 +68,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
             <?php endif;?>
         </div>
 
-        <?php // Listing, not access: anyone with the link can open it either way. ?>
+        <?php // Listed to and opened by others, or by its author alone (CustomReports::mayView()). ?>
         <label class="owa_switch" for="owa_funnelShared">
             <input type="checkbox" role="switch" id="owa_funnelShared" value="1"
                    name="isShared"
@@ -77,7 +77,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
             <span class="owa_switchTrack" aria-hidden="true"></span>
             <?php $view->out( \OWA\Core\CoreAPI::t( 'Shared in everyone\'s list' ) ); ?>
         </label>
-        <span id="owa_funnelSharedHint" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Anyone you send the link to can open it either way.' ) ); ?></span>
+        <span id="owa_funnelSharedHint" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Off, it opens only for you and administrators, even from a link you have already sent.' ) ); ?></span>
 
         <div class="owa_editorActions">
             <a class="owa_button" id="owa_funnelCancel" href="<?php echo $owa_id

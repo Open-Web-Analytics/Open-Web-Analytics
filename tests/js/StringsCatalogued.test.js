@@ -72,7 +72,7 @@ const OBJECT_KEY = /^(text|html|title|label|placeholder|alt|tooltip|message|body
 const DIALOGS = ['confirm', 'alert', 'prompt', 'window.confirm', 'window.alert', 'window.prompt'];
 const TRANSLATORS = ['OWA.l', 'OWA.ln', 'OWA.translate', 'OWA.translatePlural'];
 const ESCAPES = ['esc', 'escapeHtml', 'OWA.util.escapeHtml', 'String'];
-const LABEL_TABLES = ['OWA.dataGrid.EMPTY_TESTS', 'OWA.dataGrid.OPERATOR_PHRASES', 'OWA.dataGrid.CONDITIONS', 'OWA.filterPills.OPERATORS', 'OWA.filterPills.EMPTY_TESTS'];
+const LABEL_TABLES = ['OWA.dataGrid.EMPTY_TESTS', 'OWA.dataGrid.OPERATOR_PHRASES', 'OWA.dataGrid.CONDITIONS', 'OWA.filterPills.OPERATORS', 'OWA.filterPills.EMPTY_TESTS', 'OWA.constraintBuilder.OPERATORS', 'OWA.constraintBuilder.EMPTY_TESTS'];
 
 /** A part of a flattened string not known here. */
 const HOLE = '\u0000';

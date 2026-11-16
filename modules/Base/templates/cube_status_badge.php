@@ -11,13 +11,13 @@ if ( ! function_exists( 'owa_cube_status_badge' ) ) {
         switch ( $level ) {
 
             case 'red':
-                return '<span class="owa_cubeStatus owa_cubeStatusRed"><span class="owa_cubeStatusDot"></span>Action needed</span>';
+                return '<span class="owa_cubeStatus owa_cubeStatusRed"><span class="owa_cubeStatusDot"></span>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Action needed' ), ENT_QUOTES, 'UTF-8' ) . '</span>';
 
             case 'yellow':
-                return '<span class="owa_cubeStatus owa_cubeStatusYellow"><span class="owa_cubeStatusDot"></span>Attention</span>';
+                return '<span class="owa_cubeStatus owa_cubeStatusYellow"><span class="owa_cubeStatusDot"></span>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Attention' ), ENT_QUOTES, 'UTF-8' ) . '</span>';
 
             default:
-                return '<span class="owa_cubeStatus owa_cubeStatusGreen"><span class="owa_cubeStatusDot"></span>OK</span>';
+                return '<span class="owa_cubeStatus owa_cubeStatusGreen"><span class="owa_cubeStatusDot"></span>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'OK' ), ENT_QUOTES, 'UTF-8' ) . '</span>';
         }
     }
 }

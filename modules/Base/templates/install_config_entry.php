@@ -8,18 +8,18 @@
 
         <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'Public URL' ) ); ?></h3>
         <div class="owa_installField">
-            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Public URL' ) ); ?></label>
+            <label for="owa_install_public_url"><?php $view->out( \OWA\Core\CoreAPI::t( 'Public URL' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="50" name="public_url" value="<?php $view->out( $view->public_url );?>">
+                <input type="text"size="50" name="public_url" id="owa_install_public_url" value="<?php $view->out( $view->public_url );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'This is the web URL of OWA\'s base directory.' ) ); ?></span>
         </div>
 
         <h3><?php $view->out( \OWA\Core\CoreAPI::t( 'Database' ) ); ?></h3>
         <div class="owa_installField">
-            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Type' ) ); ?></label>
+            <label for="owa_install_db_type"><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Type' ) ); ?></label>
             <span class="owa_installInput">
-                <select name="db_type">
+                <select name="db_type" id="owa_install_db_type">
 	                <?php foreach ( $view->owaTemplate()->config['db_supported_types'] as $db_type => $db_label ): ?>
                     <option value="<?php $view->out( $db_type );?>"><?php $view->out( $db_label );?></option>
                     <?php endforeach;?>
@@ -29,29 +29,29 @@
         </div>
 
         <div class="owa_installField">
-            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Host' ) ); ?></label>
+            <label for="owa_install_db_host"><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Host' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="db_host" value="<?php $view->out( $view->config['db_host'] ?? '' );?>">
+                <input type="text"size="30" name="db_host" id="owa_install_db_host" value="<?php $view->out( $view->config['db_host'] ?? '' );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'This is the host that your database resides on. Localhost is ok.' ) ); ?></span>
         </div>
 
         <div class="owa_installField">
-            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Port' ) ); ?></label>
+            <label for="owa_install_db_port"><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Port' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="db_port" value="<?php $view->out( ! empty( $view->config['db_port'] ) ? $view->config['db_port'] : 3306 );?>">
+                <input type="text"size="30" name="db_port" id="owa_install_db_port" value="<?php $view->out( ! empty( $view->config['db_port'] ) ? $view->config['db_port'] : 3306 );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( '(optional) The port of your database. Will default to port 3306 if you leave this empty.' ) ); ?></span>
         </div>
 
         <div class="owa_installField">
-            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database' ) ); ?></label>
+            <label for="owa_install_db_name"><?php $view->out( \OWA\Core\CoreAPI::t( 'Database' ) ); ?></label>
             <span class="owa_installInput">
                 <label>
                     <input type="radio" name="db_mode" value="existing"<?php if ( $view->config['db_mode'] === 'existing' ): ?> checked<?php endif; ?>>
                     <?php $view->out( \OWA\Core\CoreAPI::t( 'Use an existing database for this install' ) ); ?>
                 </label><br>
-                <input type="text" size="30" name="db_name" value="<?php $view->out( (string) ( $view->config['db_name'] ?? '' ) ); ?>" placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'its name' ) ); ?>"><br>
+                <input type="text" size="30" name="db_name" id="owa_install_db_name" value="<?php $view->out( (string) ( $view->config['db_name'] ?? '' ) ); ?>" placeholder="<?php $view->out( \OWA\Core\CoreAPI::t( 'its name' ) ); ?>"><br>
                 <label>
                     <input type="radio" name="db_mode" value="create"<?php if ( $view->config['db_mode'] === 'create' ): ?> checked<?php endif; ?>>
                     <?php $view->out( \OWA\Core\CoreAPI::t( 'Let OWA create a new database for this install (CREATE permissions required)' ) ); ?>
@@ -63,17 +63,17 @@
         </div>
 
         <div class="owa_installField">
-            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database User' ) ); ?></label>
+            <label for="owa_install_db_user"><?php $view->out( \OWA\Core\CoreAPI::t( 'Database User' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="text"size="30" name="db_user" value="<?php $view->out( $view->config['db_user'] ?? '' );?>">
+                <input type="text"size="30" name="db_user" id="owa_install_db_user" value="<?php $view->out( $view->config['db_user'] ?? '' );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'This is the user name to connect to the database.' ) ); ?></span>
         </div>
 
         <div class="owa_installField">
-            <label><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Password' ) ); ?></label>
+            <label for="owa_install_db_password"><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Password' ) ); ?></label>
             <span class="owa_installInput">
-                <input type="password"size="30" name="db_password" value="<?php $view->out( $view->config['db_password'] ?? '' );?>">
+                <input type="password"size="30" name="db_password" id="owa_install_db_password" value="<?php $view->out( $view->config['db_password'] ?? '' );?>">
             </span>
             <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'This is the password to connect to the database.' ) ); ?></span>
         </div>

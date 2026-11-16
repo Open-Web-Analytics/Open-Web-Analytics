@@ -380,8 +380,9 @@ class TrackerIngest {
 
         if ( $registered === false ) {
 
-            \OWA\Core\CoreAPI::notice( sprintf( 'Tracker ingest: site id "%s" is not registered; event dropped.',
-                (string) $event->getSiteId() ) );
+            // Debug, as at the edge: the id is whatever an anonymous request sent.
+            \OWA\Core\CoreAPI::debug( sprintf( 'Tracker ingest: site id "%s" is not registered; event dropped.',
+                \OWA\Core\CoreAPI::siteIdForLog( $event->getSiteId() ) ) );
 
             return true;
         }

@@ -269,15 +269,6 @@ class PaginatedResultSet {
 		
         $urls = [];
         $auth = \OWA\Core\Auth::get_instance();
-        // base url
-        $apiKey = '';
-        
-        // if the REST API request was authorized with an apiKey then
-        // we need to add that to the urls.		
-        if ( $auth->getAuthMethod() === 'api_key' ) {
-            $apiKey = \OWA\Core\CoreAPI::getCurrentUserApiKey();
-        }
-        
         $api_url = \OWA\Core\CoreAPI::getSetting('base', 'rest_api_url');
 		
 		$this->base_url = $api_url;
@@ -286,7 +277,6 @@ class PaginatedResultSet {
 		$query_params['do'] 		= 'reports';
 		$query_params['module'] 	= 'base';
 		$query_params['version'] 	= 'v1';
-        $query_params['apiKey']	= $apiKey;
         
         // if the REST API request was authorized using cookies then
         // we need to add a nonce to the urls
@@ -312,11 +302,6 @@ class PaginatedResultSet {
         
         $urls['self'] = sprintf($link_template, $api_url, $q);
         
-        // if there's an apiKey then we need to sign the request
-        if ( $apiKey ) {
-        
-            $urls['self'] = \OWA\Core\CoreAPI::signRequestUrl( $urls['self'], $apiKey );
-        }
             
         $this->self = $urls['self'];
 
@@ -338,9 +323,6 @@ class PaginatedResultSet {
 	        
 	        $urls['next'] = sprintf($link_template, $api_url, $nq);
             
-            if ( $apiKey ) {
-	           $urls['next'] = \OWA\Core\CoreAPI::signRequestUrl( $urls['next'], $apiKey );
-            }
             
             $this->next = $urls['next'];
         }
@@ -356,9 +338,6 @@ class PaginatedResultSet {
             
             $urls['previous'] = sprintf($link_template, $api_url, $pq);
             
-            if ( $apiKey ) {
-                $urls['previous'] = \OWA\Core\CoreAPI::signRequestUrl( $urls['previous'], $apiKey );
-            }
             
             $this->previous = $urls['previous'];
         }

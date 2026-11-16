@@ -83,8 +83,8 @@ $owa_max        = (int) $view->get('max_widgets');
 
         <?php
             /*
-             * Listing, not access. Anyone with view_reports can already open
-             * this report from its link; this decides whose LIST it is on.
+             * Listed to and opened by others, or by its author alone
+             * (CustomReports::mayView()).
              */
         ?>
         <label class="owa_switch" for="isShared">
@@ -94,7 +94,7 @@ $owa_max        = (int) $view->get('max_widgets');
             <span class="owa_switchTrack" aria-hidden="true"></span>
             <?php $view->out( \OWA\Core\CoreAPI::t( 'Shared in everyone\'s list' ) ); ?>
         </label>
-        <span id="isSharedHint" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Anyone you send the link to can open it either way.' ) ); ?></span>
+        <span id="isSharedHint" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Off, it opens only for you and administrators, even from a link you have already sent.' ) ); ?></span>
 
         <div class="owa_editorActions">
             <a class="owa_button" id="customReportCancel" href="<?php echo $owa_id

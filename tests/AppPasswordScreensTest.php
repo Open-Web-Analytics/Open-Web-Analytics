@@ -128,7 +128,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     }
 
     /**
-     * A browser session only: a leaked application password or API key cannot
+     * A browser session only: a leaked application password or overlay token cannot
      * mint a successor that outlives revoking it. The rule is Ajax's; this
      * checks the endpoint inherits it.
      */
@@ -136,7 +136,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     {
         $me = $this->signIn();
 
-        foreach (array('app_password', 'api_key') as $method) {
+        foreach (array('app_password', 'overlay_token') as $method) {
 
             $this->signedInBy($method);
             $c = new \OWA\Module\Base\Controller\MyAppPasswordCreateAjax(array(

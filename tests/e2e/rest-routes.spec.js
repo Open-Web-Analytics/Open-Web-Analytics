@@ -9,22 +9,21 @@
  *
  * Each route is asserted twice:
  *
- *   - unsigned  -> 401. Proves the request reached OWA's auth layer rather than
+ *   - anonymous -> 401. Proves the request reached OWA's auth layer rather than
  *                  dying earlier (a 404 or 500 here means the route did not
  *                  resolve at all, which is the failure mode being guarded).
- *   - signed    -> not 401, and not a 500. The status varies by route (a GET
+ *   - authenticated (an application password) -> not 401, and not a 500. The status varies by route (a GET
  *                  lists, a POST without a body fails validation), so the
  *                  assertion is deliberately about the route RESOLVING and the
  *                  controller RUNNING, not about its business logic -- that is
  *                  what the PHPUnit controller tests are for.
  *
- * Requests are signed for real rather than run with OWA_REST_DEBUG defined.
- * That constant makes authByApiKey() skip signature verification entirely, so a
- * suite relying on it would never exercise the auth path it is calling through.
+ * Requests authenticate with an application password in the Authorization
+ * header, over https as the proxy reports it (X-Forwarded-Proto), which
+ * application passwords require by default.
  */
 
 const path = require('path');
-const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { test, expect } = require('@playwright/test');
 
@@ -40,21 +39,13 @@ function installRoot(baseURL) {
     return baseURL.replace(/index\.php.*$/, '');
 }
 
-/**
- * Auth::generateSignature() -- base64 of the sha256 HEX digest (not raw bytes),
- * over the request URL with the signature param itself removed, and the date in
- * UTC.
- */
-function sign(requestUrl, apiKey, authKey) {
-    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const hex = crypto.createHash('sha256')
-        .update('OWASIGNATURE' + apiKey + requestUrl + date + authKey)
-        .digest('hex');
-    return Buffer.from(hex).toString('base64');
+/** The headers of a request authenticated with the fixture's application password. */
+function authed(creds, extra) {
+    return Object.assign({ Authorization: 'Bearer ' + creds.token, 'X-Forwarded-Proto': 'https' }, extra || {});
 }
 
-/** Build the URL a route is called at, optionally signed. */
-function routeUrl(root, route, query, creds) {
+/** Build the URL a route is called at. */
+function routeUrl(root, route, query) {
     // Deliberately sends owa_rest_params WITHOUT owa_do, because that is exactly
     // what .htaccess produces for the documented route form:
     //
@@ -66,14 +57,7 @@ function routeUrl(root, route, query, creds) {
         + '?owa_rest_params=' + route
         + (query ? '&' + query : '');
 
-    if (!creds) {
-        return base;
-    }
-
-    const withKey = base + '&owa_apiKey=' + creds.api_key;
-    return withKey + '&owa_signature=' + encodeURIComponent(
-        sign(withKey, creds.api_key, creds.auth_key)
-    );
+    return base;
 }
 
 const SELFHOST = process.env.OWA_E2E_SELFHOST === '1';
@@ -83,13 +67,12 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
     test.skip(!SELFHOST,
         'Provisions users and sites; runs only under the self-host e2e runner (OWA_E2E_SELFHOST=1).');
 
-    /** @type {{api_key:string, auth_key:string, site_id:string, user_id:string}} */
+    /** @type {{token:string, site_id:string, user_id:string, domain:string}} */
     let creds;
 
     test.beforeAll(() => {
         creds = helper('provision');
-        expect(creds.api_key, 'fixture user has no api key').toBeTruthy();
-        expect(creds.auth_key, 'OWA_AUTH_KEY is not readable, requests cannot be signed').toBeTruthy();
+        expect(creds.token, 'fixture user has no application password').toBeTruthy();
     });
 
     test.afterAll(() => {
@@ -126,12 +109,12 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
 
         const label = `${r.method} ${r.route}`;
 
-        test(`${label} - rejects an unsigned request with 401`, async ({ request }) => {
+        test(`${label} - rejects an anonymous request with 401`, async ({ request }) => {
             test.skip(!!r.module && !activeModules().includes(r.module),
                 `the ${r.module} module is not active on this install, so its route is not registered`);
 
             const root = installRoot(test.info().project.use.baseURL);
-            const res = await request.fetch(routeUrl(root, r.route, r.query, null), {
+            const res = await request.fetch(routeUrl(root, r.route, r.query), {
                 method: r.method,
             });
 
@@ -140,15 +123,15 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
             expect(res.status(), `${label} did not reach the auth layer`).toBe(401);
         });
 
-        test(`${label} - resolves and runs when signed`, async ({ request }) => {
+        test(`${label} - resolves and runs when authenticated`, async ({ request }) => {
             test.skip(!!r.module && !activeModules().includes(r.module),
                 `the ${r.module} module is not active on this install, so its route is not registered`);
 
             const root = installRoot(test.info().project.use.baseURL);
-            const url = routeUrl(root, r.route, r.query, creds);
-            const res = await request.fetch(url, { method: r.method });
+            const url = routeUrl(root, r.route, r.query);
+            const res = await request.fetch(url, { method: r.method, headers: authed(creds) });
 
-            expect(res.status(), `${label} rejected a signed request`).not.toBe(401);
+            expect(res.status(), `${label} rejected an authenticated request`).not.toBe(401);
 
             // A 500 means the controller could not be constructed or blew up --
             // exactly what a broken registration looks like from outside.
@@ -160,10 +143,24 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
         });
     }
 
+    test('a legacy API key and signature are refused with what to use instead', async ({ request }) => {
+        const root = installRoot(test.info().project.use.baseURL);
+
+        for (const headers of [{}, authed(creds)]) {
+            const res = await request.fetch(
+                routeUrl(root, 'base/v1/sites', 'owa_apiKey=' + 'a'.repeat(32) + '&owa_signature=c2ln'),
+                { method: 'GET', headers });
+            const body = await res.text();
+
+            expect(res.status(), 'a legacy credential must be refused, whatever else the request carries').toBe(401);
+            expect(body).toContain('application password');
+        }
+    });
+
     test('an unregistered route is refused, not dispatched', async ({ request }) => {
         const root = installRoot(test.info().project.use.baseURL);
         const res = await request.fetch(
-            routeUrl(root, 'base/v1/nosuchroute', '', creds), { method: 'GET' }
+            routeUrl(root, 'base/v1/nosuchroute', ''), { method: 'GET', headers: authed(creds) }
         );
 
         expect(res.status(), 'an unknown route should not 500').toBeLessThan(500);
@@ -199,7 +196,7 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
         const root = installRoot(test.info().project.use.baseURL);
 
         const strip = async (route) => {
-            const res = await request.fetch(routeUrl(root, route, '', null), { method: 'GET' });
+            const res = await request.fetch(routeUrl(root, route, ''), { method: 'GET' });
             const body = (await res.text()).replace(/"requestId":"[0-9]*"/, '"requestId":"X"');
             return { status: res.status(), body };
         };
@@ -215,7 +212,7 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
     /**
      * CORS lives in its own describe with a freshly provisioned fixture.
      *
-     * The route loop above signs real requests that POST and DELETE against
+     * The route loop above sends real requests that POST and DELETE against
      * users and sites, so by the time these run the fixture credential has been
      * through eight mutating calls. Re-provisioning here makes these cases
      * independent of what the loop did rather than dependent on running last --
@@ -223,16 +220,15 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
      *
      * It must not be a separate spec file: provision() calls cleanup() first, so
      * a second file calling it destroys this one's fixture mid-run. That is what
-     * broke seven of the signed cases above when these lived elsewhere.
+     * broke seven of the authenticated cases above when these lived elsewhere.
      */
     /**
      * CORS: the API answers cross-origin, and only for configured sites.
      *
      * These reuse the describe's own fixture rather than provisioning their
      * own. provision() calls cleanup() first, so calling it a second time in
-     * one run deletes the user and hands back an api_key belonging to no row --
-     * every request then 401s at the user lookup with a perfectly valid
-     * signature. One provision per run.
+     * one run deletes the user and the password the first fixture handed out --
+     * every request then 401s. One provision per run.
      *
      * They must also stay in this file for the same reason: a separate spec
      * calling provision() destroys this one's fixture mid-run.
@@ -241,9 +237,9 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
 
     test('a configured site\'s Origin is echoed back, and the request still works', async ({ request }) => {
             const root = installRoot(test.info().project.use.baseURL);
-            const url = routeUrl(root, 'base/v1/sites', '', creds);
+            const url = routeUrl(root, 'base/v1/sites', '');
 
-            const res = await request.fetch(url, { method: 'GET', headers: { Origin: creds.domain } });
+            const res = await request.fetch(url, { method: 'GET', headers: authed(creds, { Origin: creds.domain }) });
 
             expect(res.headers()['access-control-allow-origin'],
                 'a configured site must be allowed cross-origin').toBe(creds.domain);
@@ -256,11 +252,11 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
 
         test('an unrelated Origin gets no Allow-Origin header', async ({ request }) => {
             const root = installRoot(test.info().project.use.baseURL);
-            const url = routeUrl(root, 'base/v1/sites', '', creds);
+            const url = routeUrl(root, 'base/v1/sites', '');
 
             const res = await request.fetch(url, {
                 method: 'GET',
-                headers: { Origin: 'https://evil.example.com' },
+                headers: authed(creds, { Origin: 'https://evil.example.com' }),
             });
 
             expect(res.headers()['access-control-allow-origin'],
@@ -271,11 +267,11 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
             // The classic allowlist bypass: prefix or substring matching lets
             // evil-<host> and <host>.evil.net through.
             const root = installRoot(test.info().project.use.baseURL);
-            const url = routeUrl(root, 'base/v1/sites', '', creds);
+            const url = routeUrl(root, 'base/v1/sites', '');
             const host = new URL(creds.domain).host;
 
             for (const forged of [`https://evil-${host}`, `https://${host}.evil.net`, `https://sub.${host}`]) {
-                const res = await request.fetch(url, { method: 'GET', headers: { Origin: forged } });
+                const res = await request.fetch(url, { method: 'GET', headers: authed(creds, { Origin: forged }) });
 
                 expect(res.headers()['access-control-allow-origin'],
                     `${forged} must not be allowed`).toBeUndefined();
@@ -288,10 +284,10 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
             // production, and the refusal is origin-dependent too -- so it must be
             // present on both responses, not just the permitted one.
             const root = installRoot(test.info().project.use.baseURL);
-            const url = routeUrl(root, 'base/v1/sites', '', creds);
+            const url = routeUrl(root, 'base/v1/sites', '');
 
             for (const origin of [creds.domain, 'https://evil.example.com']) {
-                const res = await request.fetch(url, { method: 'GET', headers: { Origin: origin } });
+                const res = await request.fetch(url, { method: 'GET', headers: authed(creds, { Origin: origin }) });
 
                 expect(String(res.headers()['vary'] || ''),
                     `Vary: Origin missing for ${origin}`).toMatch(/Origin/i);
@@ -300,7 +296,7 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
 
         test('a request with no Origin is unaffected', async ({ request }) => {
             const root = installRoot(test.info().project.use.baseURL);
-            const res = await request.fetch(routeUrl(root, 'base/v1/sites', '', creds), { method: 'GET' });
+            const res = await request.fetch(routeUrl(root, 'base/v1/sites', ''), { method: 'GET', headers: authed(creds) });
 
             expect(res.headers()['access-control-allow-origin']).toBeUndefined();
             expect(res.status(), `same-origin request failed: ${await res.text()}`).not.toBe(401);
@@ -320,23 +316,16 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
      * Asserted over real HTTP rather than as a unit test because a callback
      * wrapper is a property of the response body and its Content-Type, and both
      * are produced by the view layer that only runs on a real request.
-     *
-     * The other half of the removal -- that owa_jsonpCallback is no longer
-     * exempt from the request signature -- is covered by
-     * tests/RequestSignatureTest.php. It cannot be asserted here: an appended
-     * parameter yields 401 whether or not the exemption exists, so an e2e case
-     * for it would pass either way.
      */
     test.describe('JSONP is not served', () => {
 
         test('a jsonpCallback parameter does not produce executable script', async ({ request }) => {
             const root = installRoot(test.info().project.use.baseURL);
 
-            // Signed WITH the parameter, so this reaches the view rather than
-            // being turned away for a bad signature.
-            const url = routeUrl(root, 'base/v1/sites', 'owa_jsonpCallback=owaEvil', creds);
+            // Authenticated, so this reaches the view.
+            const url = routeUrl(root, 'base/v1/sites', 'owa_jsonpCallback=owaEvil');
 
-            const res = await request.fetch(url, { method: 'GET' });
+            const res = await request.fetch(url, { method: 'GET', headers: authed(creds) });
             const body = await res.text();
 
             expect(res.status(), `request failed: ${body}`).not.toBe(401);
@@ -358,14 +347,14 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
  * A CORS preflight is answered, for a tracked site's origin only.
  *
  * A browser sends OPTIONS first for a cross-origin call carrying an
- * Authorization or X-API-KEY header -- an application password used from a
+ * Authorization header -- an application password used from a
  * page. The preflight controller was looked up under a name nothing resolved
  * any more, so every OPTIONS answered 500 and the browser never sent the call.
  */
 test.describe('CORS preflight @selfhost-only', () => {
 
     const preflight = (request, origin) => request.fetch(
-        routeUrl(installRoot(test.info().project.use.baseURL), 'base/v1/sites', '', null), {
+        routeUrl(installRoot(test.info().project.use.baseURL), 'base/v1/sites', ''), {
             method: 'OPTIONS',
             headers: {
                 Origin: origin,
@@ -393,7 +382,7 @@ test.describe('CORS preflight @selfhost-only', () => {
 
     test('the allowed headers are named, not echoed from the request', async ({ request }) => {
         const res = await request.fetch(
-            routeUrl(installRoot(test.info().project.use.baseURL), 'base/v1/sites', '', null), {
+            routeUrl(installRoot(test.info().project.use.baseURL), 'base/v1/sites', ''), {
                 method: 'OPTIONS',
                 headers: {
                     Origin: FIXTURE.siteDomain,

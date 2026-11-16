@@ -78,9 +78,14 @@ class ModuleActivateCli extends \OWA\Core\Controller\Cli {
              * run against a module that is already installed.
              */
             $ret = \OWA\Core\CoreAPI::installModule($module);
-            
+
+            if ( ! $ret ) {
+
+                return $this->fail( sprintf( 'Module %s was not installed. See the messages above.', $module ) );
+            }
+
         } else {
-            \OWA\Core\CoreAPI::notice('No module argument was specified. Use module=xxx');
+            return $this->usageError('No module argument was specified. Use module=xxx');
         }
     }
     

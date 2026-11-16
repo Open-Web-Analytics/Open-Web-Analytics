@@ -96,7 +96,7 @@ class ScheduleRunCli extends SchedulerCli {
 
         if ( $only && ! isset( $jobs[ $only ] ) ) {
 
-            return $this->refuse( sprintf(
+            return $this->usageError( sprintf(
                 'No job named "%s". Registered jobs: %s.',
                 $only, implode( ', ', array_keys( $jobs ) ) ?: '(none)'
             ) );
@@ -157,7 +157,7 @@ class ScheduleRunCli extends SchedulerCli {
                 \OWA\Core\CoreAPI::notice( sprintf( 'Running queued job %s (%s), attempt %d of %d.',
                     $row['id'], $command, $row['attempts'], $row['max_attempts'] ) );
 
-                return $this->readOutcome( $controller, $controller->doAction() );
+                return $this->readOutcome( $controller, $this->doJobAction( $controller ) );
             } );
 
         if ( array_sum( $counts ) ) {
@@ -345,6 +345,17 @@ class ScheduleRunCli extends SchedulerCli {
             return;
         }
 
+        // The command takes only the arguments its usage() declares, as from cli.php.
+        $undeclared = \OWA\Core\Controller\Cli::undeclaredArguments( get_class( $controller ), (array) $job['params'] );
+
+        if ( $undeclared ) {
+
+            $this->record( $state, $job, 'failed', sprintf( '%s does not take %s',
+                $job['command'], implode( ', ', $undeclared ) ), time(), time(), null );
+
+            return;
+        }
+
         $lease = new \OWA\Module\Base\Classes\JobLease( $name );
 
         // The estimate is read-only and happens BEFORE the lock is taken, so two
@@ -360,11 +371,19 @@ class ScheduleRunCli extends SchedulerCli {
 
         $began = time();
 
+        // Written before the run, so a run that never finishes leaves
+        // last_finished_at older than last_run_at for JobStatus to report.
+        if ( $state ) {
+
+            $state->set( 'last_run_at', $began );
+            $state->update();
+        }
+
         \OWA\Core\CoreAPI::notice( sprintf( 'Running "%s".', $name ) );
 
         try {
 
-            $data    = $controller->doAction();
+            $data    = $this->doJobAction( $controller );
             $outcome = $this->readOutcome( $controller, $data );
 
         } catch ( \Throwable $t ) {
@@ -399,6 +418,27 @@ class ScheduleRunCli extends SchedulerCli {
             // about it; a failure is not, so the job stays due and is retried.
             in_array( $outcome['outcome'], array( 'ok', 'refused' ), true ) ? $slot : null
         );
+    }
+
+    /**
+     * Run a job's controller, leaving this run's exit code as it was: a job's
+     * outcome is recorded in its state, and schedule-run exits on its own.
+     *
+     * @param object $controller
+     * @return mixed
+     */
+    protected function doJobAction( $controller ) {
+
+        $exit_code = \OWA\Core\Controller\Cli::$exit_code;
+
+        try {
+
+            return $controller->doAction();
+
+        } finally {
+
+            \OWA\Core\Controller\Cli::$exit_code = $exit_code;
+        }
     }
 
     /**
@@ -610,7 +650,7 @@ class ScheduleRunCli extends SchedulerCli {
 
         if ( ! $name ) {
 
-            return $this->refuse( 'Say which job: cmd=schedule-run --force-release job=NAME' );
+            return $this->usageError( 'Say which job: cmd=schedule-run --force-release job=NAME' );
         }
 
         $db   = \OWA\Core\CoreAPI::dbSingleton();

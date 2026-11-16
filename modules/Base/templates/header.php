@@ -83,7 +83,7 @@
                     array( 'id' => 'profile', 'label' => \OWA\Core\CoreAPI::t( 'Profile' ), 'class' => 'owa_myProfileLink',
                            'href' => $view->makeLink( array( 'do' => 'base.myProfile' ), false ) ),
                     array( 'id' => 'logout', 'label' => \OWA\Core\CoreAPI::t( 'Logout' ), 'class' => 'owa_userMenuLogout',
-                           'href' => $view->makeLink( array( 'do' => 'base.logout' ), false ) ),
+                           'href' => $view->makeLink( array( 'do' => 'base.logout' ), false, '', false, true ) ),
                 );
             ?>
             <?php foreach ( \OWA\Core\Navigation::links( 'nav_user_menu', $owa_user_links ) as $owa_link ):?>

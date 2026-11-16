@@ -165,6 +165,10 @@ final class MaxmindDownloadFlowTest extends TestCase {
             // The outcome the parent would record, without its notice().
             protected function refuse( $msg ) { return $this->outcome( 'refused', $msg ); }
             protected function fail( $msg )   { return $this->outcome( 'failed', $msg ); }
+            protected function usageError( $msg ) { $this->usage_errors++; return $this->outcome( 'failed', $msg ); }
+
+            /** @var int how many usage errors, which exit 2 */
+            public $usage_errors = 0;
             protected function skip( $msg )   { return $this->outcome( 'ok', $msg ); }
 
             private function outcome( $outcome, $msg ) {
@@ -499,6 +503,10 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         $this->assertSame( 0, $c->downloads );
         $this->assertTrue( $c->said( 'not an edition' ) );
+
+        // An argument the command cannot act on: a usage error, exit code 2.
+        $this->assertSame( 1, $c->usage_errors );
+        $this->assertSame( 'failed', $c->outcomeIs() );
     }
 
     private function installDatabase( $found, $destination ) {

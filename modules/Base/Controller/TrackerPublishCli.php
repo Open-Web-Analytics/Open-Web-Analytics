@@ -54,7 +54,7 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
 
             if ( $state === 'failed' ) {
 
-                $this->e->notice( "Tracker bundle for $id was not published; see the log." );
+                $this->fail( "Tracker bundle for $id was not published; see the log." );
             }
         }
 

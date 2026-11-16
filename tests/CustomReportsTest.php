@@ -1692,9 +1692,8 @@ final class CustomReportsTest extends TestCase
     // ------------------------------------------------------------------
     // Sharing: whose LIST a report appears on
     //
-    // Sharing is about being found, not about being allowed. A custom report
-    // opened by its URL already renders for anyone with view_reports, so these
-    // tests are all about the roster and none of them is an access test.
+    // The roster lists what a reader may open (CustomReports::mayView()); who
+    // may open a report is tested in CustomReportPropertyTest.
     // ------------------------------------------------------------------
 
     public function testAReportIsNotSharedUnlessAsked(): void

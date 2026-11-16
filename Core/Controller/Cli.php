@@ -115,10 +115,19 @@ class Cli extends \OWA\Core\AdminController {
     /** @var string */
     protected $cli_message = '';
 
-    /** @var bool whether a failure of this command makes cli.php exit 1 */
-    protected $exit_on_failure = false;
+    /** The exit code of a command that failed. */
+    const EXIT_FAILED = 1;
 
-    /** @var int the exit code cli.php ends with: 1 once a command that opted in has failed. */
+    /** The exit code of a command given an argument it does not take, or a value it cannot read. */
+    const EXIT_USAGE = 2;
+
+    /** Arguments every command accepts, beside those its usage() declares. */
+    const GLOBAL_ARGUMENTS = array( 'cmd' );
+
+    /** @var bool whether a failure of this command sets cli.php's exit code */
+    protected $exit_on_failure = true;
+
+    /** @var int the exit code cli.php ends with: the first failure's code, 0 when none. */
     public static $exit_code = 0;
 
     /**
@@ -144,7 +153,12 @@ class Cli extends \OWA\Core\AdminController {
      */
     protected function refuse( $msg ) {
 
-        $this->cli_outcome = 'refused';
+        // A refusal after a failure leaves the run failed.
+        if ( $this->cli_outcome === 'ok' ) {
+
+            $this->cli_outcome = 'refused';
+        }
+
         $this->cli_message = $this->cli_message ?: $msg;
 
         \OWA\Core\CoreAPI::notice( $msg );
@@ -164,17 +178,149 @@ class Cli extends \OWA\Core\AdminController {
      */
     protected function fail( $msg ) {
 
-        $this->cli_outcome = 'failed';
-        $this->cli_message = $this->cli_message ?: $msg;
-
-        if ( $this->exit_on_failure ) {
-
-            self::$exit_code = 1;
-        }
+        $this->markFailed( $msg, self::EXIT_FAILED );
 
         \OWA\Core\CoreAPI::notice( $msg );
 
         return null;
+    }
+
+    /**
+     * Given an argument or value it cannot act on. A failure, exiting 2.
+     *
+     * @param string $msg
+     * @return null
+     */
+    protected function usageError( $msg ) {
+
+        $this->markFailed( $msg, self::EXIT_USAGE );
+
+        \OWA\Core\CoreAPI::notice( $msg );
+
+        return null;
+    }
+
+    /**
+     * Record a failure without logging it, for a failure already reported.
+     *
+     * @param string $msg
+     * @param int    $code
+     * @return void
+     */
+    protected function markFailed( $msg, $code ) {
+
+        $this->cli_outcome = 'failed';
+        $this->cli_message = $this->cli_message ?: $msg;
+
+        // The first failure decides the exit code.
+        if ( $this->exit_on_failure && ! self::$exit_code ) {
+
+            self::$exit_code = (int) $code;
+        }
+    }
+
+    /**
+     * Run the command, and count as failures the answers Controller::doAction()
+     * gives without reaching action(): a refused capability, failed validation,
+     * and schema updates pending.
+     *
+     * @return mixed
+     */
+    function doAction() {
+
+        $data = parent::doAction();
+
+        if ( $this->cli_outcome !== 'ok' ) {
+
+            return $data;
+        }
+
+        $view = is_array( $data ) && isset( $data['view'] ) ? $data['view'] : null;
+
+        if ( $view === 'base.error' ) {
+
+            $this->markFailed( 'capability check failed', self::EXIT_FAILED );
+
+        } elseif ( ! empty( $this->v ) && $this->v->hasErrors === true ) {
+
+            $this->markFailed( 'invalid arguments', self::EXIT_USAGE );
+
+        } elseif ( $view === 'base.genericCli' ) {
+
+            $this->markFailed( 'schema updates are pending', self::EXIT_FAILED );
+        }
+
+        return $data;
+    }
+
+    /**
+     * The argument names a command reads: those its usage() declares, by the
+     * name before any `=` and without dashes, and GLOBAL_ARGUMENTS.
+     *
+     * Null for a command that does not declare its own usage(), whose
+     * arguments are therefore unknown.
+     *
+     * @param string $class
+     * @return string[]|null
+     */
+    public static function acceptedArguments( $class ) {
+
+        if ( ! is_string( $class ) || ! class_exists( $class ) || ! method_exists( $class, 'usage' ) ) {
+
+            return null;
+        }
+
+        $method = new \ReflectionMethod( $class, 'usage' );
+
+        if ( $method->getDeclaringClass()->getName() !== ltrim( $class, '\\' ) ) {
+
+            return null;
+        }
+
+        $usage = $class::usage();
+        $names = self::GLOBAL_ARGUMENTS;
+
+        foreach ( array_keys( (array) ( $usage['arguments'] ?? array() ) ) as $arg ) {
+
+            $names[] = ltrim( explode( '=', (string) $arg, 2 )[0], '-' );
+        }
+
+        return $names;
+    }
+
+    /**
+     * acceptedArguments() as $class answers it, which a command overrides to
+     * read a retired argument only to refuse it. A command's controller need
+     * not be a Cli (sitesAddCli extends its screen).
+     *
+     * @param string $class
+     * @return string[]|null
+     */
+    public static function acceptedArgumentsFor( $class ) {
+
+        return is_string( $class ) && method_exists( $class, 'acceptedArguments' )
+            ? $class::acceptedArguments( $class )
+            : self::acceptedArguments( $class );
+    }
+
+    /**
+     * The arguments in $params that $class does not take; empty when it takes
+     * them all or does not say what it takes.
+     *
+     * @param string $class
+     * @param array  $params
+     * @return string[]
+     */
+    public static function undeclaredArguments( $class, array $params ) {
+
+        $accepted = self::acceptedArgumentsFor( $class );
+
+        if ( $accepted === null ) {
+
+            return array();
+        }
+
+        return array_values( array_diff( array_map( 'strval', array_keys( $params ) ), $accepted ) );
     }
 
     /**
