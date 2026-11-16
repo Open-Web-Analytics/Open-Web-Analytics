@@ -8,6 +8,7 @@
             "id": "dim",
             "container": "dimension-grid",
             "title": "Latest Visits Profile",
+            "compare": false,
             "query": {
                 "dimensions": "sessionStartTime,ipAddress,landingPage,sessionSourceMedium,city,country,priorSessionCount",
                 "sort": "sessionStartTime-",

@@ -185,6 +185,12 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                             return ! is_string( $n ) || ! preg_match( '/^[a-z][a-zA-Z]*$/', $n ); } ) ) ) {
                 return sprintf( 'widget %s: "rowActions" must be a list of action names', $i );
             }
+            // `compare: false` keeps the report's comparison out of the widget's query.
+            if ( isset( $widget['compare'] ) && $widget['compare'] !== false ) {
+
+                return sprintf( 'widget %s: "compare" can only be false', $i );
+            }
+
             if ( isset( $widget['excludeColumns'] ) && ! is_array( $widget['excludeColumns'] ) ) {
 
                 return sprintf( 'widget %s: "excludeColumns" must be a list of column names', $i );

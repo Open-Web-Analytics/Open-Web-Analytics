@@ -246,6 +246,10 @@ final class ReportDefinitionFormatTest extends TestCase
             'params not an object' => array(
                 $base + array( 'params' => 'hostName' ), '"params" must be an object' ),
 
+            'compare other than false' => array(
+                $base + array( 'widgets' => array( array( 'type' => 'grid', 'compare' => true ) ) ),
+                '"compare" can only be false' ),
+
             'constraint with no dimension' => array(
                 $base + array( 'settings' => array( 'constraints' => array( array( 'value' => 'x' ) ) ) ),
                 'needs a "dimension"' ),
@@ -1242,6 +1246,44 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $this->assertArrayNotHasKey( 'compare', $query );
         $this->assertSame( 'last_28_days', $query['period'] ?? null );
+    }
+
+    /**
+     * A grid declared `compare: false` queries the period without the
+     * comparison; one that does not declare it still queries both.
+     */
+    public function testAGridDeclaredCompareFalseDoesNotQueryTheComparison(): void
+    {
+        $this->requireDbAsAdmin();
+
+        $grid = fn ( string $id, array $extra ) => $extra + array( 'type' => 'grid', 'id' => $id, 'container' => $id,
+            'query' => array( 'metrics' => 'sessions', 'dimensions' => 'medium', 'sort' => 'sessions-' ) );
+
+        $html = $this->renderedWith( array(
+            'title'   => 'Grids',
+            'metrics' => 'sessions',
+            'widgets' => array( $grid( 'visits', array( 'compare' => false ) ), $grid( 'media', array() ) ),
+        ), array(), array( 'period' => 'last_28_days', 'compare' => 'date_range',
+            'compareStartDate' => '20250101', 'compareEndDate' => '20250131' ) );
+
+        $query = $this->queryFor( $html, 'visitsurl' );
+        $this->assertArrayNotHasKey( 'compare', $query );
+        $this->assertArrayNotHasKey( 'compareStartDate', $query );
+        $this->assertSame( 'last_28_days', $query['period'] ?? null );
+
+        $this->assertSame( 'date_range', $this->queryFor( $html, 'mediaurl' )['compare'] ?? null );
+    }
+
+    /** Most Recent Visits lists single visits, which a comparison cannot match. */
+    public function testTheVisitListsAreNotCompared(): void
+    {
+        foreach ( array( 'dashboard' => 'latestVisits', 'latest-visits' => 'dim' ) as $report => $id ) {
+
+            $definition = json_decode( (string) file_get_contents( dirname( __DIR__ ) . "/modules/Base/reports/$report.json" ), true );
+            $widget     = array_values( array_filter( $definition['widgets'], fn ( $w ) => ( $w['id'] ?? '' ) === $id ) )[0] ?? array();
+
+            $this->assertFalse( $widget['compare'] ?? null, "$report $id" );
+        }
     }
 
     /** A stand-in for a TimePeriod: only its two dates are read. */
