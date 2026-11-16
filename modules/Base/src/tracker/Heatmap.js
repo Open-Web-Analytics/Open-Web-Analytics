@@ -55,32 +55,19 @@ class Heatmap {
 	        // N * this -- which is what makes a hot spot hot rather than every
 	        // dot being identically faint.
 	        dotAlpha: 0.08,
-	        numRegions: 40,
-	        alphaIncrement:50,
-	        demoMode: false,
 	        liveMode: true,
 	        mapInterval: 1000,
-	        randomDataCount: 200,
-	        rowsPerFetch: 100,
 	        /*
 	         * How much narrower or wider than the reader's window a click with
 	         * no element anchor may have been recorded in and still be drawn by
 	         * its page coordinate. A centred layout moves by half the
 	         * difference, so 24px keeps the error inside one dot.
 	         */
-	        widthTolerance: 24,
-	        strokeRegions: false,
-	        baseUrl: '',
-	        apiUrl: ''
+	        widthTolerance: 24
 	    };
 	    
 	   
 	    
-	    this.regions = [];
-	    this.regionsMap = [];
-	    this.regionWidth = null;
-	    this.regionHeight = null;
-	    this.dirtyRegions = {};
 	    this.timer = '';
 	    this.clicks = '';
 	    this.nextPage = 1;
@@ -216,18 +203,11 @@ class Heatmap {
     }
 
     /**
-     * Gets data, random if in demoMode
+     * Fetches the next page of clicks.
      */
     getData() {
 
-        // get data
-        if (this.options.demoMode === true) {
-            return this.getRandomData(this.options.randomDataCount);
-        } else {
-            var data = this.fetchData(this.getNextPage());
-
-            return;
-        }
+        this.fetchData(this.getNextPage());
     }
 
     checkForMoreClicks() {
@@ -538,66 +518,6 @@ class Heatmap {
         return rgb;
     }
 
-    /**
-     * Fills a region with grey
-     * DEPRICATED
-     */
-    fillRegion(num) {
-
-        this.fillRectangle(this.regions[num].x, this.regions[num].y, this.regionWidth, this.regionHeight, "rgba(0,0,0, 0.5)");
-    }
-
-    strokeRegion(num) {
-
-        this.context.strokeRect(this.regions[num].x, this.regions[num].y, this.regionWidth, this.regionHeight);
-
-    }
-
-    /**
-     * Fills a rectangle with an rgba value
-     */
-    fillRectangle(x,y,w,h,rgba) {
-
-        this.context.fillStyle = rgba;
-        this.context.fillRect(x, y, w, h);
-    }
-
-    /**
-     * Fils all regions
-     * DEPRICATED
-     */
-    fillAllRegions() {
-
-        for (var i=0, n = this.regions.length; i < n; i++) {
-            //OWA_instance.debug("region %s", i);
-            this.fillRegion(i);
-        }
-    }
-
-
-
-    /**
-     * Generates random data
-     * Takes an int
-     */
-    getRandomData(count) {
-
-        var data = Array();
-
-        for (var li=0; li < count; li++) {
-            var x = Math.round(Math.floor(Math.random()*(this.docDimensions.w-this.options.dotSize)));
-            var y = Math.round(Math.floor(Math.random()*(this.docDimensions.h-this.options.dotSize)));
-
-            data.push({'x':x,'y':y});
-        }
-
-        return data;
-    }
-
-    /**
-     * Plots dots on a the canvas
-     *
-     */
     /**
      * Plots a page of points onto the accumulation canvas, then paints.
      *

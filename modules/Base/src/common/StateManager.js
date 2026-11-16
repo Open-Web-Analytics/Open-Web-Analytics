@@ -1070,11 +1070,6 @@ class StateManager {
         
         return this.getFormat(store_name);
     }
-    
-    setStoreFormat( store_name, format ) {
-        
-        this.storeFormats[store_name] = format;
-    }
 }
 
 export { StateManager };

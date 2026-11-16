@@ -29,7 +29,6 @@ class Player {
         this.x       = 0;
         this.y       = 0;
         this.playing = false;
-        OWA_instance.registerStateStore( 'overlay', '', '', 'json' );
     }
 
     init() {
