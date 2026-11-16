@@ -337,9 +337,8 @@ class Auth extends \OWA\Core\Base {
 
         // set credentials
         $this->credentials['user_id'] = \OWA\Module\Base\Classes\Sanitize::cleanUserId( $user_id );
-        // must encrypt password to see if it matches whats in the db
-        $this->credentials['password'] = $this->generateAuthCredential( $this->credentials['user_id'], $this->encryptOldPassword( $password ) );
-        // pass plain text password to test with password_verify
+        // The typed password: isUser() checks it against the stored hash.
+        unset( $this->credentials['password'] );
         $this->credentials['new_password'] = $password;
         //owa_coreAPI::debug(print_r($this->credentials, true));
         $ret = $this->isUser();
@@ -519,6 +518,28 @@ class Auth extends \OWA\Core\Base {
         return is_string( $password ) && preg_match( self::LEGACY_GENERATED_PASSWORD, $password ) === 1;
     }
 
+    /**
+     * Whether a typed password matches a stored hash: password_hash()'s, or a
+     * 1.x unsalted md5 hash (Lib::encryptOldPassword()), each compared whole.
+     *
+     * @param string $password the password as typed
+     * @param string $stored   the user row's password column
+     */
+    function passwordMatches( $password, $stored ) {
+
+        if ( ! is_string( $password ) || $password === '' || self::isLegacyGeneratedPassword( $password ) ) {
+
+            return false;
+        }
+
+        if ( preg_match( '/^[a-f0-9]{32}$/', $stored ) ) {
+
+            return hash_equals( $stored, $this->encryptOldPassword( $password ) );
+        }
+
+        return password_verify( $password, $stored );
+    }
+
     function isUser() {
 
         // get current user
@@ -529,18 +550,27 @@ class Auth extends \OWA\Core\Base {
 
         if ( $this->credentials['user_id'] === $this->u->get('user_id') ) {
 
-            // new_password will only be set when using authByInput
-            if ( isset($this->credentials['new_password']) && ! self::isLegacyGeneratedPassword( $this->credentials['new_password'] ) ) {
-                // plain text password matches DB password we can authorize
-                if ( password_verify( $this->credentials['new_password'], $this->u->get('password') ) ) {
-                $this->_is_user = true;
+            /*
+             * A sign-in with a password (authByInput) is decided by the stored
+             * hash alone, compared in full (passwordMatches()). It never falls
+             * through to the cookie credential check below.
+             */
+            if ( isset( $this->credentials['new_password'] ) ) {
 
-                // set as new current user in service layer
-                $cu->loadNewUserByObject( $this->u );
-                $cu->setAuthStatus(true);
+                if ( $this->passwordMatches( $this->credentials['new_password'], (string) $this->u->get('password') ) ) {
 
-                return true;
+                    $this->_is_user = true;
+
+                    // set as new current user in service layer
+                    $cu->loadNewUserByObject( $this->u );
+                    $cu->setAuthStatus(true);
+
+                    return true;
                 }
+
+                $this->_is_user = false;
+
+                return false;
             }
 
             //if ($this->credentials['password'] === $this->u->get('password')):
