@@ -94,6 +94,11 @@ class Module extends \OWA\Core\Module {
             return false;
         }
 
+        if ( ! self::widenIdsAt( $recorded ) ) {
+
+            return false;
+        }
+
         if ( ! parent::update() ) {
 
             return false;
@@ -127,6 +132,31 @@ class Module extends \OWA\Core\Module {
         }
 
         return $this->recordTrackerBuild();
+    }
+
+    /** The schema of 1.x's own Update034, which creates v2's tables and re-keys no id. */
+    const ONE_X_UPDATE034_SCHEMA = 34;
+
+    /**
+     * Update034's id step, for an installation at schema 34 before v2's
+     * updates run.
+     *
+     * A 1.x build after 1.14 has an Update034 that creates v2's tables and
+     * leaves use_32bit_hash alone. v2 runs only the updates after 34, and each
+     * of them derives ids, so without this such an installation keeps deriving
+     * 32-bit ones. At 34 from v2's own Update034 the step finds nothing to do.
+     *
+     * @param  int $recorded the base schema before any update runs
+     * @return bool
+     */
+    public static function widenIdsAt( $recorded ) {
+
+        if ( (int) $recorded !== self::ONE_X_UPDATE034_SCHEMA ) {
+
+            return true;
+        }
+
+        return \OWA\Module\Base\Update\Update034::widenIds();
     }
 
     /** @var bool|null whether update() publishes in the run; null to decide by OWA_CLI. TESTS ONLY. */

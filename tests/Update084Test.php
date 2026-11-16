@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 use OWA\Module\Base\Update\Update084;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/InstallSettingRowsFixture.php';
 
 /**
  * Update084: log_robots gives way to spam_threshold, and down() puts back
@@ -14,6 +15,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class Update084Test extends TestCase
 {
+    use InstallSettingRowsFixture;
+
     const TABLE = 'owa_setting_update084_test';
 
     private Update084 $update;
@@ -37,6 +40,7 @@ final class Update084Test extends TestCase
     protected function tearDown(): void
     {
         if (owa_test_db_available()) {
+            $this->putBackInstallRows();
             \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::TABLE);
         }
     }
@@ -177,5 +181,56 @@ final class Update084Test extends TestCase
 
         $this->assertTrue($this->update->down());
         $this->assertSame($before, $this->rows());
+    }
+
+    /**
+     * The update run ends with Settings::save(), which writes back what the
+     * settings hold and prunes the eager install rows they do not. Against the
+     * install's own table and settings, the threshold up() wrote and the one
+     * down() put back are both still stored after it.
+     */
+    public function testTheClosingSaveKeepsWhatUpAndDownStored(): void
+    {
+        $this->requireDb();
+
+        $c = \OWA\Core\CoreAPI::configSingleton();
+        $this->assertTrue((bool) $c->config_from_db, 'boot read the store, so save() prunes');
+
+        $this->keepInstallRows(['log_robots', 'spam_threshold', Update084::BEFORE]);
+        $this->update->table = null;
+
+        // No threshold stored: up() creates the row.
+        $c->removeSetting('base', 'spam_threshold');
+        \OWA\Core\CoreAPI::dbSingleton()->query(sprintf("DELETE FROM %s WHERE scope_type = 'install' AND module = 'base' AND name IN ('spam_threshold', ?)",
+            $this->installTable()), [Update084::BEFORE]);
+        $this->writeInstallValue('log_robots', true);
+
+        $this->assertTrue($this->update->up());
+        $c->save();
+        $this->assertSame('', $this->storedInstallValue('spam_threshold'), 'the blank threshold up() wrote');
+        $this->assertSame('', $c->get('base', 'spam_threshold'));
+
+        $this->assertTrue($this->update->down());
+        $c->save();
+        $this->assertNull($this->storedInstallValue('spam_threshold'), 'up() created it, so down() removes it');
+        $this->assertTrue($this->storedInstallValue('log_robots'));
+
+        // A threshold stored before: down() puts it back, in a later process
+        // whose boot loaded the blank one.
+        $this->writeInstallValue('spam_threshold', '9.0');
+        $c->db_settings['base']['spam_threshold'] = '9.0';
+        $c->set('base', 'spam_threshold', '9.0');
+
+        $this->assertTrue($this->update->up());
+        $c->save();
+        $this->assertSame('', $this->storedInstallValue('spam_threshold'), 'the threshold boot loaded is not written back');
+
+        $c->db_settings['base']['spam_threshold'] = '';
+        $c->set('base', 'spam_threshold', '');
+
+        $this->assertTrue($this->update->down());
+        $c->save();
+        $this->assertSame('9.0', $this->storedInstallValue('spam_threshold'), 'the threshold down() put back');
+        $this->assertSame('9.0', $c->get('base', 'spam_threshold'));
     }
 }
