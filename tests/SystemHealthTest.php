@@ -41,6 +41,7 @@ final class SystemHealthTest extends TestCase
         JobQueue::$frozen_at = null;
         TrackerIngest::$queue   = null;
         TrackerIngest::$backend = null;
+        \OWA\Core\Strings::useTranslations(null);
 
         if (owa_test_db_available()) {
             \OWA\Core\CoreAPI::dbSingleton()->query('DROP TABLE IF EXISTS ' . self::JOBS);
@@ -431,5 +432,67 @@ final class SystemHealthTest extends TestCase
             $this->assertSame('green', self::levels($intake)['Blocked as spam']);
             $this->assertSame('green', $intake['level'], 'blocking is not a warning');
         });
+    }
+    /** A hung drain is named with its host when the batch records one, in one translatable sentence either way. */
+    public function testAHungDrainIsOneSentenceWithOrWithoutItsHost(): void
+    {
+        $holder = new \OWA\Module\Base\Classes\FileEventQueue(['path' => $this->intakeDir]);
+        $holder->send(['v' => 1, 'type' => 'page_view', 'properties' => [], 'queued_at' => 1]);
+        $holder->receive(10, 300);
+
+        $state = glob($this->intakeDir . 'processing/*.state')[0];
+        $row   = json_decode((string) file_get_contents($state), true);
+        $row['held_since'] = time() - 3600;
+        $batch = basename($state, '.state');
+
+        $detail = function () {
+            $found = array_column(SystemHealth::intake()['findings'], 'detail', 'label');
+            return $found['Hung drain'] ?? null;
+        };
+
+        $row['host'] = 'worker-2';
+        file_put_contents($state, json_encode($row));
+        \OWA\Core\Strings::useTranslations([
+            'Batch %1$s has been held for %2$s by process %3$s on %4$s. If that process is hung, end it and the next drain takes the batch over.'
+                => 'Stapel %1$s seit %2$s von Prozess %3$s auf %4$s gehalten.',
+            'Batch %1$s has been held for %2$s by process %3$s. If that process is hung, end it and the next drain takes the batch over.'
+                => 'Stapel %1$s seit %2$s von Prozess %3$s gehalten.',
+        ]);
+
+        $this->assertSame('Stapel ' . $batch . ' seit 60 minutes von Prozess ' . getmypid() . ' auf worker-2 gehalten.', $detail());
+
+        unset($row['host']);
+        file_put_contents($state, json_encode($row));
+
+        $this->assertSame('Stapel ' . $batch . ' seit 60 minutes von Prozess ' . getmypid() . ' gehalten.', $detail());
+        unset($holder);
+    }
+
+    /** The words a job row and a status badge show are translated; the outcome a row is compared by is not. */
+    public function testJobWordsAndBadgesAreTranslated(): void
+    {
+        \OWA\Core\Strings::useTranslations([
+            \OWA\Core\Strings::key('running', 'job outcome') => 'läuft',
+            \OWA\Core\Strings::key('failed', 'job outcome')  => 'fehlgeschlagen',
+            'Action needed' => 'Handeln',
+            'Attention'     => 'Achtung',
+            'OK'            => 'Gut',
+        ]);
+
+        $this->assertSame('läuft', SystemHealth::outcomeLabel('running'));
+        $this->assertSame('fehlgeschlagen', SystemHealth::outcomeLabel('failed'));
+        $this->assertSame('ok', SystemHealth::outcomeLabel('ok'));
+        $this->assertSame('something else', SystemHealth::outcomeLabel('something else'));
+        $this->assertSame('', SystemHealth::outcomeLabel(''));
+
+        foreach (SystemHealth::recurringJobs()['rows'] as $r) {
+            $this->assertSame(SystemHealth::outcomeLabel($r['outcome']), $r['outcome_label']);
+        }
+
+        require_once \OWA\Core\Env::root() . '/modules/Base/templates/cube_status_badge.php';
+
+        $this->assertStringContainsString('</span>Handeln</span>', owa_cube_status_badge('red'));
+        $this->assertStringContainsString('</span>Achtung</span>', owa_cube_status_badge('yellow'));
+        $this->assertStringContainsString('</span>Gut</span>', owa_cube_status_badge('green'));
     }
 }

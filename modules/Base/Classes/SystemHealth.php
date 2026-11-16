@@ -125,7 +125,8 @@ class SystemHealth {
             $s   = JobStatus::forJob( $name );
             $row = (array) $s['row'];
 
-            $level = $s['reason'] ? 'yellow' : 'green';
+            $level   = $s['reason'] ? 'yellow' : 'green';
+            $outcome = $s['running'] ? 'running' : (string) ( $row['last_status'] ?? '' );
 
             if ( ! $s['running'] && ( $row['last_status'] ?? '' ) === 'failed' ) {
 
@@ -136,9 +137,10 @@ class SystemHealth {
                 'name'     => $name,
                 'description' => (string) ( $s['job']['description'] ?? '' ),
                 'level'    => $level,
-                'schedule' => JobStatus::isDisabled( $s['job'] ) ? 'off' : \OWA\Core\Cron::describe( $s['job']['schedule'] ),
-                'last_run' => isset( $row['last_run_at'] ) ? JobStatus::readable( (int) $row['last_run_at'] ) : 'never',
-                'outcome'  => $s['running'] ? 'running' : (string) ( $row['last_status'] ?? '' ),
+                'schedule' => JobStatus::isDisabled( $s['job'] ) ? \OWA\Core\CoreAPI::t( 'off', 'job schedule' ) : \OWA\Core\Cron::describe( $s['job']['schedule'] ),
+                'last_run' => isset( $row['last_run_at'] ) ? JobStatus::readable( (int) $row['last_run_at'] ) : \OWA\Core\CoreAPI::t( 'never', 'job last run' ),
+                'outcome'  => $outcome,
+                'outcome_label' => self::outcomeLabel( $outcome ),
                 'message'  => (string) ( $row['last_message'] ?? '' ),
                 'next'     => $s['next'] ? JobStatus::readable( (int) $s['next'] ) : '',
                 'reason'   => (string) ( $s['reason'] ?? '' ),
@@ -152,6 +154,34 @@ class SystemHealth {
             ?: array( self::finding( 'green', \OWA\Core\CoreAPI::t( 'Up to date' ), \OWA\Core\CoreAPI::t( 'Every job ran when it was due.' ) ) );
 
         return self::section( \OWA\Core\CoreAPI::t( 'Recurring jobs' ), $findings, array( 'rows' => $rows ) );
+    }
+
+    /**
+     * A job outcome as shown: the outcomes the scheduler writes, translated;
+     * any other value as stored; '' when there is none.
+     */
+    public static function outcomeLabel( string $outcome ): string {
+
+        switch ( $outcome ) {
+
+            case 'running':
+                return \OWA\Core\CoreAPI::t( 'running', 'job outcome' );
+
+            case 'ok':
+                return \OWA\Core\CoreAPI::t( 'ok', 'job outcome' );
+
+            case 'failed':
+                return \OWA\Core\CoreAPI::t( 'failed', 'job outcome' );
+
+            case 'refused':
+                return \OWA\Core\CoreAPI::t( 'refused', 'job outcome' );
+
+            case 'never run':
+                return \OWA\Core\CoreAPI::t( 'never run', 'job outcome' );
+
+            default:
+                return $outcome;
+        }
     }
 
     /** The one-off job queue: what is waiting, running and failed, and whether it is being drained. */
@@ -257,13 +287,15 @@ class SystemHealth {
                 continue;
             }
 
-            $findings[] = self::finding( 'red', \OWA\Core\CoreAPI::t( 'Hung drain' ), sprintf(
-                \OWA\Core\CoreAPI::t( 'Batch %s has been held for %s by process %s%s. If that process is hung, end it and the next '
-                . 'drain takes the batch over.' ),
-                $batch['batch'], $age === null ? \OWA\Core\CoreAPI::t( 'an unknown time' )
-                    : sprintf( \OWA\Core\CoreAPI::tn( '%d minute', '%d minutes', intdiv( $age, 60 ) ), intdiv( $age, 60 ) ),
-                $batch['pid'] === null ? \OWA\Core\CoreAPI::t( '(unknown)' ) : $batch['pid'],
-                $batch['host'] !== '' ? ' on ' . $batch['host'] : '' ) );
+            $held_for = $age === null ? \OWA\Core\CoreAPI::t( 'an unknown time' )
+                : sprintf( \OWA\Core\CoreAPI::tn( '%d minute', '%d minutes', intdiv( $age, 60 ) ), intdiv( $age, 60 ) );
+            $pid      = $batch['pid'] === null ? \OWA\Core\CoreAPI::t( '(unknown)' ) : $batch['pid'];
+
+            $findings[] = self::finding( 'red', \OWA\Core\CoreAPI::t( 'Hung drain' ), $batch['host'] !== ''
+                ? sprintf( \OWA\Core\CoreAPI::t( 'Batch %1$s has been held for %2$s by process %3$s on %4$s. If that process is hung, end it and the next '
+                    . 'drain takes the batch over.' ), $batch['batch'], $held_for, $pid, $batch['host'] )
+                : sprintf( \OWA\Core\CoreAPI::t( 'Batch %1$s has been held for %2$s by process %3$s. If that process is hung, end it and the next '
+                    . 'drain takes the batch over.' ), $batch['batch'], $held_for, $pid ) );
         }
 
         $backend = TrackerIngest::backend();

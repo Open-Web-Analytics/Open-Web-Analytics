@@ -52,7 +52,7 @@ $owa_s = (array) $view->sections;
             <td><?php echo owa_cube_status_badge( $owa_r['level'] ); ?> <code<?php if ( $owa_r['description'] !== '' ): ?> title="<?php $view->out( $owa_r['description'] ); ?>"<?php endif; ?>><?php $view->out( $owa_r['name'] ); ?></code></td>
             <td><?php $view->out( $owa_r['schedule'] ); ?></td>
             <td><?php $view->out( $owa_r['last_run'] ); ?></td>
-            <td><?php $view->out( $owa_r['outcome'] ?: '--' ); ?><?php if ( $owa_r['outcome'] !== 'ok' && $owa_r['message'] !== '' ): ?><br><?php $view->out( $owa_r['message'] ); ?><?php endif; ?></td>
+            <td><?php $view->out( $owa_r['outcome_label'] ?: '--' ); ?><?php if ( $owa_r['outcome'] !== 'ok' && $owa_r['message'] !== '' ): ?><br><?php $view->out( $owa_r['message'] ); ?><?php endif; ?></td>
             <td><?php $view->out( $owa_r['next'] ); ?></td>
         </tr>
         <?php endforeach; ?>
