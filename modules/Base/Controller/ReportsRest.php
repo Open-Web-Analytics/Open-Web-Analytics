@@ -27,6 +27,9 @@ class ReportsRest extends \OWA\Core\ReportController {
         parent::__construct($params);
         $this->setRequiredCapability('view_reports');
     }
+
+    /** An overlay (heatmap, recording player) reads this route with its scoped token. */
+    protected $accepts_overlay_token = true;
 	
 	function validate() {
 		

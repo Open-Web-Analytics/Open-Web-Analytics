@@ -1,11 +1,11 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
 <script>
-OWA.items['<?php echo $view->dom_id;?>'] = new OWA.report();
-OWA.items['<?php echo $view->dom_id;?>'].dom_id = "<?php echo $view->dom_id;?>";
-OWA.items['<?php echo $view->dom_id;?>'].page_num = "<?php $view->out( $view->getValue( 'page_num', 'pagination' ),false );?>1";
-OWA.items['<?php echo $view->dom_id;?>'].max_page_num = "<?php $view->out( $view->getValue( 'max_page_num', 'pagination' ), false );?>";
-OWA.items['<?php echo $view->dom_id;?>'].max_page_num = "<?php $view->out( $view->getValue( 'more_pages', 'pagination' ), false );?>";
-OWA.items['<?php echo $view->dom_id;?>'].properties = <?php echo $view->makeJson($view->params);?>;
+OWA.items['<?php $view->out( $view->dom_id );?>'] = new OWA.report();
+OWA.items['<?php $view->out( $view->dom_id );?>'].dom_id = "<?php $view->out( $view->dom_id );?>";
+OWA.items['<?php $view->out( $view->dom_id );?>'].page_num = "<?php $view->out( $view->getValue( 'page_num', 'pagination' ),false );?>1";
+OWA.items['<?php $view->out( $view->dom_id );?>'].max_page_num = "<?php $view->out( $view->getValue( 'max_page_num', 'pagination' ), false );?>";
+OWA.items['<?php $view->out( $view->dom_id );?>'].max_page_num = "<?php $view->out( $view->getValue( 'more_pages', 'pagination' ), false );?>";
+OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view->makeJson($view->params);?>;
 
 <?php if ( ! $view->get( 'hideReportingNavigation' ) ):?>
 // Bind event handlers
@@ -49,7 +49,7 @@ jQuery(document).ready(function(){
 <?php endif;?>
 </script>
 
-<div id="<?php echo $view->dom_id;?>" class="owa_reportContainer">
+<div id="<?php $view->out( $view->dom_id );?>" class="owa_reportContainer">
 
     <table width="100%" cellpadding="0" cellspacing="0">
 
@@ -196,10 +196,10 @@ jQuery(document).ready(function(){
 </div>
 <script>
 <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
-OWA.items['<?php echo $view->dom_id;?>'].displayTimePeriodPicker('#owa_timePeriodControl');
-OWA.items['<?php echo $view->dom_id;?>'].showAutoRefreshControl({label: 'Live View:', target: '#liveViewSwitch'});
+OWA.items['<?php $view->out( $view->dom_id );?>'].displayTimePeriodPicker('#owa_timePeriodControl');
+OWA.items['<?php $view->out( $view->dom_id );?>'].showAutoRefreshControl({label: 'Live View:', target: '#liveViewSwitch'});
 <?php endif;?>
 <?php if ( ! $view->get( 'hideSitesFilter' ) ):?>
-OWA.items['<?php echo $view->dom_id;?>'].showSiteFilter();
+OWA.items['<?php $view->out( $view->dom_id );?>'].showSiteFilter();
 <?php endif;?>
 </script>

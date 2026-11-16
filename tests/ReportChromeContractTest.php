@@ -289,6 +289,26 @@ final class ReportChromeContractTest extends TestCase
 
 
     /**
+     * The container id comes from the request (reportId, else the action) and
+     * is written into the page, in a script and an attribute: it holds letters,
+     * digits and hyphens only, whatever reportId a link carries, and the
+     * templates escape it where they write it.
+     */
+    public function testTheContainerIdHoldsOnlySafeCharacters(): void
+    {
+        $data = (array) ( new \OWA\Module\Base\Controller\ReportDomstreams(
+            array( 'do' => 'base.reportDomstreams', 'page' => 1, 'reportId' => "x'];alert(1);//\"<b>" ) ) )->doAction();
+
+        $this->assertMatchesRegularExpression( '/^[A-Za-z0-9-]+$/', (string) $data['dom_id'] );
+
+        foreach ( glob( dirname( __DIR__ ) . '/modules/*/templates/*.php' ) as $template ) {
+
+            $this->assertDoesNotMatchRegularExpression( '/echo \$view->dom_id/', (string) file_get_contents( $template ),
+                basename( $template ) . ' writes dom_id unescaped' );
+        }
+    }
+
+    /**
      * Vacuity guard.
      *
      * Every assertion above is "this key exists". If pre() ever stopped running

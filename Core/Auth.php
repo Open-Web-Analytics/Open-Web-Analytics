@@ -115,7 +115,12 @@ class Auth extends \OWA\Core\Base {
      *
      * @param string $necessary_role
      */
-    function authenticateUser() {
+    /**
+     * @param bool $overlay_token whether the controller takes an overlay token
+     *                            (Controller::$accepts_overlay_token): only the
+     *                            routes an overlay reads do
+     */
+    function authenticateUser( $overlay_token = false ) {
 		
 		$apiKey = \OWA\Core\CoreAPI::getRequestParam('apiKey') ?: \OWA\Core\CoreAPI::getServerParam( 'HTTP_X_API_KEY' );
 	
@@ -136,7 +141,7 @@ class Auth extends \OWA\Core\Base {
             $ret = $this->authByInput(\OWA\Core\CoreAPI::getRequestParam('user_id'), \OWA\Core\CoreAPI::getRequestParam('password'));
              \OWA\Core\CoreAPI::debug('User authenticated via form input.');
     
-        } elseif ( \OWA\Core\CoreAPI::getRequestParam('overlayToken') ) {
+        } elseif ( $overlay_token && \OWA\Core\CoreAPI::getRequestParam('overlayToken') ) {
             // auth by a scoped, short-lived overlay token.
             //
             // Checked BEFORE the apiKey branch so that a request carrying both
@@ -172,6 +177,23 @@ class Auth extends \OWA\Core\Base {
     }
 
     /**
+     * The action the request is routed to: the route in `rest_params`
+     * (module/version/route), which CoreAPI::handleRestRequest() runs in
+     * preference to `do`, else `do`. A token is checked against what runs.
+     *
+     * @return string
+     */
+    public static function routedAction() {
+
+        $rest  = (string) \OWA\Core\CoreAPI::getRequestParam('rest_params');
+        $parts = $rest !== '' ? explode( '/', $rest ) : array();
+
+        return count( $parts ) >= 3
+            ? (string) $parts[2]
+            : (string) \OWA\Core\CoreAPI::getRequestParam('do');
+    }
+
+    /**
      * Authenticates a heatmap-overlay or domstream-player request.
      *
      * These run on the *tracked* site and call back to the OWA origin, so they
@@ -194,7 +216,7 @@ class Auth extends \OWA\Core\Base {
      */
     function authByOverlayToken( $token ) {
 
-        $action = \OWA\Core\CoreAPI::getRequestParam('do');
+        $action = self::routedAction();
 
         $permitted = \OWA\Core\OverlayToken::permits(
             $token,
