@@ -364,8 +364,12 @@ abstract class Module {
 
         // else try to create the class object
         } else {
-            // create object
-            if ( ! class_exists( $handler_name ) ) {
+            // A class name, or a class of this module named by convention.
+            if ( class_exists( $handler_name ) ) {
+
+                $class = new $handler_name();
+
+            } else {
 
                 $class = \OWA\Core\CoreAPI::moduleGenericFactory($this->name, $dir, $handler_name);
             }

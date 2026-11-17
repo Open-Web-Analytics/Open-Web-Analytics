@@ -393,6 +393,24 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
+     * The controller's work, run by doAction() once every check has passed.
+     * The default does nothing.
+     */
+    function action() {
+
+    }
+
+    /**
+     * Runs in place of action() when validation fails. A non-empty return is
+     * doAction()'s answer. The default shows the validation messages on the
+     * error page.
+     */
+    function errorAction() {
+
+        $this->setView( 'base.error' );
+    }
+
+    /**
      * Checks if the current controller requires privileges and authenticates the user and checks for capabilities
      * If the user is not allowed the correct error view is also initialized and the calling method should return
      * @uses ->getRequiredCapability and ->getCurrentSiteId

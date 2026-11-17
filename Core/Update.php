@@ -374,7 +374,7 @@ class Update extends \OWA\Core\Base {
         return $entity->dropColumn( $column ) !== false;
     }
 
-    function up() {
+    function up( $force = false ) {
 
         return false;
     }

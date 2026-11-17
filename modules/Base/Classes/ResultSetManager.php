@@ -1224,6 +1224,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         foreach ($niceness as $entity_name => $summary_level) {
 
             $error = false;
+            // the first dimension found unrelated to this entity
+            $unrelated = null;
 
             // check dimensions in segment for relation to base entity.
             if ( isset( $this->segment['dimensions'] ) ) {
@@ -1238,7 +1240,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                     // is the realtionship check fails then move onto the next entity.
                     if (!$check) {
                         $error = true;
-                        \OWA\Core\CoreAPI::debug("Segment dimension $dimension is not related to $entity_name. Moving on to next entity...");
+                        $unrelated = $segment_dim;
+                        \OWA\Core\CoreAPI::debug("Segment dimension $segment_dim is not related to $entity_name. Moving on to next entity...");
                         break;
                     } else {
                         // set related dimensions. this is needed for joins.
@@ -1261,6 +1264,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 // is the realtionship check fails then move onto the next entity.
                 if (!$check) {
                     $error = true;
+                    $unrelated = $unrelated ?? $dimension;
                     \OWA\Core\CoreAPI::debug("$dimension is not related to $entity_name. Moving on to next entity...");
                     break;
                 } else {
@@ -1291,9 +1295,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                  * report that looked merely uneventful.
                  */
                 $this->addRequestError( self::incompatibleMessage(
-                    $dimension,
+                    $unrelated,
                     array_merge( array_keys( (array) $metric_imps ),
-                        array_diff( $dims, array( $dimension ) ) ),
+                        array_diff( $dims, array( $unrelated ) ) ),
                     'dimension' ) );
             } else {
                 $i++;

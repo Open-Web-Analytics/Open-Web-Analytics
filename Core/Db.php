@@ -1183,6 +1183,8 @@ class Db extends \OWA\Core\Base {
 
     function _query() {
 
+        $ret = null;
+
         switch($this->_sqlParams['query_type']) {
 
             case 'insert':

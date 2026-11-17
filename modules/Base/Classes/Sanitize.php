@@ -241,8 +241,10 @@ class Sanitize {
                 $input = \OWA\Core\Lib::utf8Encode($input);
             }
 
+            $output = $input;
+
             if ($options['hidden_spaces']) {
-                $output = \OWA\Module\Base\Classes\Sanitize::removeHiddenSpaces($input);
+                $output = \OWA\Module\Base\Classes\Sanitize::removeHiddenSpaces($output);
             }
 
             if ($options['remove_html']) {

@@ -694,6 +694,8 @@ class Lib {
 
     public static function assocFromString($string_state, $inner = '=>', $outer = '|||') {
 
+        $state = array();
+
         if (!empty($string_state)):
 
             if (strpos($string_state, $outer) === false):
@@ -703,8 +705,6 @@ class Lib {
             else:
 
                 $array = explode($outer, $string_state);
-
-                $state = array();
 
                 foreach ($array as $key => $value) {
 

@@ -55,11 +55,7 @@ class Entity {
         
         $properties = array();
         
-        if (!empty($this->properties)) {
-            $vars = $this->properties;
-        }
-        
-        foreach ($vars as $k => $v) {
+        foreach ($this->properties as $k => $v) {
             
             $properties[$k] = $v->getValue();
                 
@@ -118,12 +114,7 @@ class Entity {
      */
     public function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
         
-        if (!empty($this->properties)) {
-            $all_cols = array_keys($this->properties);
-            $all_cols = array_flip($all_cols);
-        }
-        
-        //print_r($all_cols);
+        $all_cols = array_flip(array_keys($this->properties));
         
         $new_cols = array();
         $ns = '';

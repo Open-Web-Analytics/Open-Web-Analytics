@@ -129,9 +129,9 @@ class View extends \OWA\Core\Base {
      * Constructor
      *
      */
-    function __construct($params = null) {
+    function __construct() {
 
-        parent::__construct($params);
+        parent::__construct();
 
         $this->t = new \OWA\Core\Template();
         $this->body = new \OWA\Core\Template($this->module);

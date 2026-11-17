@@ -164,22 +164,14 @@ class State {
         if ( isset( $this->stores[ $store ] ) ) {
             \OWA\Core\CoreAPI::debug( 'Persisting state store: ' . $store );
             // transform state array into a string using proper format
+            // Only cookie stores are persisted, so the store's type is not read.
             if ( is_array( $this->stores[$store] ) ) {
-                switch ( $this->stores_meta[$store]['type'] ) {
 
-                    case 'cookie':
-
-                        // check for old style assoc format
-                        if ( $this->stores_meta[$store]['format'] === 'assoc' ) {
-                            $cookie_value = \OWA\Core\Lib::implode_assoc('=>', '|||', $this->stores[ $store ] );
-                        } else {
-                            $cookie_value = json_encode( $this->stores[ $store ] );
-                        }
-
-                        break;
-
-                    default:
-
+                // check for old style assoc format
+                if ( $this->stores_meta[$store]['format'] === 'assoc' ) {
+                    $cookie_value = \OWA\Core\Lib::implode_assoc('=>', '|||', $this->stores[ $store ] );
+                } else {
+                    $cookie_value = json_encode( $this->stores[ $store ] );
                 }
             } else {
                 $cookie_value = $this->stores[ $store ];

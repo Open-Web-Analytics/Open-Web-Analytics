@@ -276,7 +276,7 @@ class JobQueue {
 
                 $row['status']      = 'running';
                 $row['attempts']    = (int) $row['attempts'] + 1;
-                $row['lease_until'] = $lease;
+                $row['lease_until'] = $now + (int) $row['lease_seconds'];
                 $row['started_at']  = $now;
                 $row['dedupe_key']  = null;
 

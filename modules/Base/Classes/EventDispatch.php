@@ -324,32 +324,30 @@ class EventDispatch {
         $list = $this->listenersFor( $event->getDispatchName() );
 
         if ( $list ) {
-            if (!empty($list)) {
-                foreach ($list as $k => $observer_id) {
+            foreach ($list as $k => $observer_id) {
 
-                    /*
-                     * A listener is a callable, and the object half of one may
-                     * be a class NAME as well as an instance -- filter() has
-                     * always allowed both and says so. notify() did not: it
-                     * called get_class() on it unconditionally, which is a
-                     * TypeError the moment any handler is registered
-                     * statically, and takes the whole event dispatch down with
-                     * it rather than that one handler.
-                     *
-                     * Surfaced as tests/DimensionIngestionTest failing in the
-                     * isolation sweep, intermittently, because whether such a
-                     * handler is registered depends on which modules and
-                     * settings the run happens to have.
-                     */
-                    $listener = $this->listeners[ $observer_id ];
+                /*
+                 * A listener is a callable, and the object half of one may
+                 * be a class NAME as well as an instance -- filter() has
+                 * always allowed both and says so. notify() did not: it
+                 * called get_class() on it unconditionally, which is a
+                 * TypeError the moment any handler is registered
+                 * statically, and takes the whole event dispatch down with
+                 * it rather than that one handler.
+                 *
+                 * Surfaced as tests/DimensionIngestionTest failing in the
+                 * isolation sweep, intermittently, because whether such a
+                 * handler is registered depends on which modules and
+                 * settings the run happens to have.
+                 */
+                $listener = $this->listeners[ $observer_id ];
 
-                    $class = self::listenerName( $listener );
+                $class = self::listenerName( $listener );
 
-                    $responses[ $class ] = call_user_func_array( $listener, array( $event ) );
+                $responses[ $class ] = call_user_func_array( $listener, array( $event ) );
 
-                    \OWA\Core\CoreAPI::debug( sprintf( "%s event handled by %s.",
-                        $event->getEventType(), $class ) );
-                }
+                \OWA\Core\CoreAPI::debug( sprintf( "%s event handled by %s.",
+                    $event->getEventType(), $class ) );
             }
         } else {
             \OWA\Core\CoreAPI::debug("no listeners registered for this event type.");

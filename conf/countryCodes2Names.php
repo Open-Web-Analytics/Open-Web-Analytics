@@ -2,7 +2,7 @@
 /**
  * ISO-3166-1 http://en.wikipedia.org/wiki/ISO_3166-1
  */
-$countryCode2Name = array (
+return array (
 
     // Not a country -- see the UTC group in country2Timezones.php.
     "UTC" => "UTC (Coordinated Universal Time)",

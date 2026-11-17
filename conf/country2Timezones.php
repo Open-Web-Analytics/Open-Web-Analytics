@@ -1,5 +1,5 @@
 <?php
-$timezones = array(
+return array(
 
     /*
      * UTC is not a country, so it has no place in a country-keyed list -- and
