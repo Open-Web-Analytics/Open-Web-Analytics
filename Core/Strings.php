@@ -58,10 +58,6 @@ class Strings {
         'OWA.dataGrid.EMPTY_TESTS',
         'OWA.dataGrid.OPERATOR_PHRASES',
         'OWA.dataGrid.CONDITIONS',
-        'OWA.filterPills.OPERATORS',
-        'OWA.filterPills.EMPTY_TESTS',
-        'OWA.constraintBuilder.OPERATORS',
-        'OWA.constraintBuilder.EMPTY_TESTS',
     );
 
     /**

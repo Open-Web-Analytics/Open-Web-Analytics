@@ -51,10 +51,6 @@ final class StringsCatalogueTest extends TestCase
             'OWA.dataGrid.EMPTY_TESTS'      => 'modules/Base/src/reporting/owa.resultSetExplorer.js',
             'OWA.dataGrid.OPERATOR_PHRASES' => 'modules/Base/src/reporting/owa.resultSetExplorer.js',
             'OWA.dataGrid.CONDITIONS'       => 'modules/Base/src/reporting/owa.resultSetExplorer.js',
-            'OWA.filterPills.OPERATORS'     => 'modules/Base/src/reporting/owa.filterpills.js',
-            'OWA.filterPills.EMPTY_TESTS'   => 'modules/Base/src/reporting/owa.filterpills.js',
-            'OWA.constraintBuilder.OPERATORS'   => 'modules/Base/src/reporting/owa.resultSetExplorer.js',
-            'OWA.constraintBuilder.EMPTY_TESTS' => 'modules/Base/src/reporting/owa.resultSetExplorer.js',
         ];
 
         $this->assertSame(array_keys($where), Strings::LABEL_TABLES);

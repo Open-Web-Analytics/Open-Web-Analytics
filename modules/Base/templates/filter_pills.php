@@ -2,20 +2,21 @@
 <?php
 /*
  * Filters as pills: the markup OWA.filterPills (owa.filterpills.js) drives.
- * Included by the report editor's widget panel and by the funnel builder.
+ * Included by the report editor's widget panel, the funnel builder, and the
+ * segment filters of the funnel and recordings reports.
  *
  *   $owa_fp  the element ids -- pills, add, form, dimension, operator, value,
  *            addFilter, cancel -- and label, the id of the field's label
  */
 $owa_fp = $owa_fp ?? array();
 ?>
-<div class="owa_filterPills" id="<?php $view->out( $owa_fp['pills'] ); ?>" role="group"
+<div class="owa_filterPills" id="<?php $view->out( $owa_fp['pills'] ); ?>" role="group" data-ui="filter:pills"
      aria-labelledby="<?php $view->out( $owa_fp['label'] ); ?>">
     <button type="button" class="owa_button owa_filterAdd" id="<?php $view->out( $owa_fp['add'] ); ?>"
             aria-expanded="false" aria-controls="<?php $view->out( $owa_fp['form'] ); ?>"><i
             class="fas fa-filter" aria-hidden="true"></i> <?php $view->out( \OWA\Core\CoreAPI::t( 'Filter' ) ); ?></button>
 </div>
-<div class="owa_filterForm" id="<?php $view->out( $owa_fp['form'] ); ?>" style="display:none;">
+<div class="owa_filterForm" id="<?php $view->out( $owa_fp['form'] ); ?>" data-ui="filter:form" style="display:none;">
     <label for="<?php $view->out( $owa_fp['dimension'] ); ?>" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Dimension' ) ); ?></label>
     <select id="<?php $view->out( $owa_fp['dimension'] ); ?>"></select>
     <label for="<?php $view->out( $owa_fp['operator'] ); ?>" class="owa_srOnly"><?php $view->out( \OWA\Core\CoreAPI::t( 'Condition' ) ); ?></label>

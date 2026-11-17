@@ -16,13 +16,12 @@ require('../../modules/Base/src/reporting/owa.resultSetExplorer.js');
 require('../../modules/Base/src/reporting/owa.filterpills.js');
 
 /**
- * The filter pills (OWA.filterPills) of the report editor and the funnel
- * builder: how a stored constraints string is read back into pills.
+ * The filter pills (OWA.filterPills): how a stored constraints string is read
+ * back into pills, and how a pill is added, changed and removed.
  *
- * A clause is split where the server splits it, as the report grid's chips are
- * (OWA.dataGrid.parseConstraints()). The pills read with only the five
- * operators their form offers, so a clause using any other came back split at
- * the wrong place, or not at all and was then stored as `<clause>==`.
+ * A clause is split where the server splits it, by the report grid's reader
+ * (OWA.dataGrid.parseClause()), so a clause using an operator the form does not
+ * offer comes back whole.
  */
 
 /*
@@ -164,14 +163,174 @@ describe('in a translated locale', () => {
     });
 
     test('the form offers its conditions translated', () => {
-        OWA.config.strings = { 'contains': 'contient', 'is set': 'est défini' };
+        OWA.config.strings = { 'contains': 'contient', 'has a value': 'a une valeur' };
 
         pills();
 
         const labels = $('#o option').map((i, o) => $(o).text()).get();
 
         expect(labels).toContain('contient');
-        expect(labels).toContain('est défini');
+        expect(labels).toContain('a une valeur');
         expect($('#o option[value="=@"]').text()).toBe('contient');
     });
+});
+
+/** The page the pills are drawn on, as filter_pills.php writes it. */
+function page(dimensions, onChange = () => {}) {
+    document.body.innerHTML = `
+        <div id="p"></div><button id="a"></button>
+        <div id="f"><select id="d"></select><select id="o"></select><input id="v">
+            <button id="c">Cancel</button><button id="af">Add filter</button></div>`;
+    $.fn.chosen = function () { return this; };
+
+    return new OWA.filterPills(
+        { pills: 'p', add: 'a', form: 'f', dimension: 'd', operator: 'o', value: 'v', addFilter: 'af', cancel: 'c' },
+        dimensions || [{ name: 'medium', label: 'Medium' }, { name: 'source', label: 'Source' }],
+        onChange);
+}
+
+describe('the form', () => {
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    test('offers the operators, then the empty tests, worded as the grid words them', () => {
+        page();
+
+        expect($('#o option').map((i, o) => [[o.value, $(o).text()]]).get()).toEqual([
+            ['==', 'is'],
+            ['!=', 'is not'],
+            ['=@', 'contains'],
+            ['>', 'greater than'],
+            ['<', 'less than'],
+            ['!=(not set)', 'has a value'],
+            ['==(not set)', 'is not set'],
+        ]);
+    });
+
+    test('puts each choice under its group, in the order given', () => {
+        const p = page(OWA.filterPills.choices(
+            { 'traffic source': [{ name: 'medium', label: 'Medium' }], site: [{ name: 'siteId', label: 'Profile' }] },
+            { 'Site Usage': [{ name: 'pageViews', label: 'Page Views' }] }));
+
+        p.open();
+
+        expect($('#d optgroup').map((i, g) => [[g.label, $(g).children('option').map((k, o) => o.value).get()]]).get())
+            .toEqual([['traffic source', ['medium']], ['site', ['siteId']], ['Site Usage', ['pageViews']]]);
+    });
+
+    test('lists a choice with no group at the top level', () => {
+        page().open();
+
+        expect($('#d > option').map((i, o) => o.value).get()).toEqual(['', 'medium', 'source']);
+        expect($('#d optgroup')).toHaveLength(0);
+    });
+});
+
+describe('a pill', () => {
+
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+
+    test('opens the form on its filter, which Update filter changes in place', () => {
+        const changes = [];
+        const p = page(undefined, () => changes.push(p.get()));
+
+        p.set('medium==organic,source=@news');
+        $('#p .owa_filterPill').eq(0).find('.owa_filterPillEdit').trigger('click');
+
+        expect($('#d').val()).toBe('medium');
+        expect($('#o').val()).toBe('==');
+        expect($('#v').val()).toBe('organic');
+        expect($('#af').text()).toBe('Update filter');
+        expect($('#p .owa_filterPillEdit').eq(0).attr('aria-expanded')).toBe('true');
+
+        // jsdom lays nothing out, so nothing is :visible.
+        p.isOpen = () => true;
+        expect(p.problem()).toBe('Update the filter you are changing, or cancel it.');
+        delete p.isOpen;
+
+        $('#o').val('!=').trigger('change');
+        $('#af').trigger('click');
+
+        expect(p.get()).toBe('medium!=organic,source=@news');
+        expect(changes[changes.length - 1]).toBe('medium!=organic,source=@news');
+        expect($('#af').text()).toBe('Add filter');
+        expect($('#p .owa_filterPill')).toHaveLength(2);
+    });
+
+    test('names the filter it changes, and its X the filter it removes', () => {
+        const p = page();
+
+        p.set('medium==organic');
+
+        expect($('#p .owa_filterPillEdit').attr('aria-label')).toBe('Change the filter Medium is organic');
+        expect($('#p .owa_filterPillEdit').attr('aria-controls')).toBe('f');
+        expect($('#p .owa_filterPillRemove').attr('aria-label')).toBe('Remove the filter Medium is organic');
+    });
+
+    test('keeps a stored operator the form does not offer, and a name it does not list', () => {
+        const p = page();
+
+        p.set('pageViews>=5');
+        $('#p .owa_filterPillEdit').trigger('click');
+
+        expect($('#d').val()).toBe('pageViews');
+        expect($('#o').val()).toBe('>=');
+        expect($('#o option[value=">="]').text()).toBe('at least');
+
+        $('#af').trigger('click');
+
+        expect(p.get()).toBe('pageViews>=5');
+
+        // A new filter is not offered the stored operator.
+        p.open();
+
+        expect($('#o option[value=">="]')).toHaveLength(0);
+    });
+
+    test('changed to an empty test drops its value', () => {
+        const p = page();
+
+        p.set('medium==organic');
+        $('#p .owa_filterPillEdit').trigger('click');
+        $('#o').val('==(not set)').trigger('change');
+        $('#af').trigger('click');
+
+        expect(p.get()).toBe('medium==(not set)');
+    });
+
+    test('Filter, while a pill is being changed, starts a new filter', () => {
+        const p = page();
+
+        p.set('medium==organic');
+        $('#p .owa_filterPillEdit').trigger('click');
+        $('#a').trigger('click');
+
+        expect($('#d').val()).toBe('');
+        expect($('#af').text()).toBe('Add filter');
+
+        $('#d').val('source').trigger('change');
+        $('#v').val('news').trigger('input');
+        $('#af').trigger('click');
+
+        expect(p.get()).toBe('medium==organic,source==news');
+    });
+
+    test("removed by its X, the others keep their place", () => {
+        const p = page();
+
+        p.set('medium==organic,source=@news,medium!=(not set)');
+        $('#p .owa_filterPill').eq(1).find('.owa_filterPillRemove').trigger('click');
+
+        expect(p.get()).toBe('medium==organic,medium!=(not set)');
+    });
+});
+
+test('choices() reads lists by group, and an empty list as nothing', () => {
+    expect(OWA.filterPills.choices({ a: [{ name: 'x', label: 'X', description: 'd' }] }, [], null)).toEqual([
+        { name: 'x', label: 'X', group: 'a' },
+    ]);
 });

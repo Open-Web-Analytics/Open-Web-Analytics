@@ -13,11 +13,12 @@ global.jQuery = global.$ = $;
 
 require('../../modules/Base/src/reporting/owa.kpibox.js');
 require('../../modules/Base/src/reporting/owa.resultSetExplorer.js');
+require('../../modules/Base/src/reporting/owa.filterpills.js');
 
 /**
- * A metric box's label and the dimension picker's groups and dimensions are
- * text: a custom report's widget title or a dimension label holding markup is
- * shown as written, and adds no element.
+ * A metric box's label and the filter pills' groups and dimensions are text: a
+ * custom report's widget title or a dimension label holding markup is shown as
+ * written, and adds no element.
  */
 
 const MARKUP = 'Sales <img src=x data-probe="1"> & "returns"';
@@ -68,26 +69,30 @@ describe('a metric box', () => {
     });
 });
 
-describe('the dimension picker', () => {
+describe('the filter pills', () => {
 
-    test('shows its groups and dimensions as text, and keeps each name as its value', () => {
-        document.body.innerHTML = '<div id="dp"></div>';
+    test('show their groups and dimensions as text, and keep each name as its value', () => {
+        document.body.innerHTML = `
+            <div id="p"></div><button id="a"></button>
+            <div id="f"><select id="d"></select><select id="o"></select><input id="v"><button id="af"></button></div>`;
         $.fn.chosen = function () { return this; };
 
-        const picker = new OWA.dimensionPicker('#dp');
-        picker.setDimensionlist({
-            ['Custom <i data-probe="1">x</i>']: [
-                { name: 'cd_plan"><b data-probe="1">', label: MARKUP },
-            ],
-        });
-        picker.generateDimList('#dp');
+        const pills = new OWA.filterPills(
+            { pills: 'p', add: 'a', form: 'f', dimension: 'd', operator: 'o', value: 'v', addFilter: 'af', cancel: 'c' },
+            OWA.filterPills.choices({
+                ['Custom <i data-probe="1">x</i>']: [
+                    { name: 'cd_plan"><b data-probe="1">', label: MARKUP },
+                ],
+            }));
 
-        const group  = document.querySelector('#dp optgroup');
-        const option = document.querySelector('#dp optgroup option');
+        pills.open();
+
+        const group  = document.querySelector('#d optgroup');
+        const option = document.querySelector('#d optgroup option');
 
         expect(group.getAttribute('label')).toBe('Custom <i data-probe="1">x</i>');
         expect(option.value).toBe('cd_plan"><b data-probe="1">');
-        expect(option.textContent).toBe(MARKUP);
+        expect(option.textContent).toBe(MARKUP + ' (cd_plan"><b data-probe="1">)');
         expect(document.querySelector('[data-probe]')).toBeNull();
     });
 });

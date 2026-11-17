@@ -55,18 +55,23 @@ foreach ( $owa_steps as $owa_s ) {
 
     <?php
         /*
-         * The segment: WHICH people the funnel is drawn for.
-         *
-         * The same constraint builder the report grids use, so the funnel
-         * accepts exactly the constraints every other report does -- and offers
-         * exactly the same choices, because the options come from the reporting
-         * stack rather than a list written here. It keeps itself behind its own
-         * toggle, which is why this is a bare container.
+         * The segment: WHICH people the funnel is drawn for, as filter pills.
+         * The choices come from the reporting stack (ReportSegment::options()),
+         * so the funnel offers exactly the constraints every other report
+         * accepts.
          */
     ?>
-    <span class="owa_reportControl">
-        <span class="label"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filter:' ) ); ?></span>
-        <span id="funnelFilter" class="constraintPicker"></span>
+    <span class="owa_reportControl owa_reportFilters">
+        <span class="owa_srOnly" id="funnelFiltersLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filters' ) ); ?></span>
+        <?php
+            $owa_fp = [
+                'pills' => 'funnelFilters', 'add' => 'funnelAddFilter', 'form' => 'funnelFilterForm',
+                'dimension' => 'funnelFilterDimension', 'operator' => 'funnelFilterOperator',
+                'value' => 'funnelFilterValue', 'addFilter' => 'funnelFilterAdd',
+                'cancel' => 'funnelFilterCancel', 'label' => 'funnelFiltersLabel',
+            ];
+            include( 'filter_pills.php' );
+        ?>
     </span>
 
     <?php
@@ -207,21 +212,30 @@ foreach ( $owa_steps as $owa_s ) {
         OWA.items.funnelSteps.refreshGrid();
     }
 
-    // The segment filter. Applying one reloads the report, because the segment
-    // is resolved server-side -- it selects the people, and the funnel is then
-    // counted over all of their pages.
+    // The segment filter. A filter added, changed or removed reloads the
+    // report, because the segment is resolved server-side -- it selects the
+    // people, and the funnel is then counted over all of their pages.
     var funnelFilter = <?php echo $view->get('funnel_filter_json') ?: 'null'; ?>;
 
     if ( funnelFilter ) {
 
-        OWA.items.funnelConstraints = new OWA.constraintBuilder( '#funnelFilter', {} );
-        OWA.items.funnelConstraints.setRelatedDimensions( funnelFilter.dimensions, [] );
-        OWA.items.funnelConstraints.setRelatedMetrics( funnelFilter.metrics, [] );
-        OWA.items.funnelConstraints.display( funnelFilter.constraints || '' );
+        var applied = '';
 
-        jQuery( '#funnelFilter' ).on( 'constraint_change', function ( event, constraints ) {
-            goTo( { 'owa_constraints': constraints } );
+        OWA.items.funnelConstraints = new OWA.filterPills( {
+            pills: 'funnelFilters', add: 'funnelAddFilter', form: 'funnelFilterForm',
+            dimension: 'funnelFilterDimension', operator: 'funnelFilterOperator',
+            value: 'funnelFilterValue', addFilter: 'funnelFilterAdd', cancel: 'funnelFilterCancel'
+        }, OWA.filterPills.choices( funnelFilter.dimensions, funnelFilter.metrics ), function () {
+
+            var constraints = OWA.items.funnelConstraints.get();
+
+            if ( constraints !== applied ) {
+                goTo( { 'owa_constraints': constraints } );
+            }
         } );
+
+        OWA.items.funnelConstraints.set( funnelFilter.constraints || '' );
+        applied = OWA.items.funnelConstraints.get();
     }
 
     /*
