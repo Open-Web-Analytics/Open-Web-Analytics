@@ -32,6 +32,10 @@ class Update050 extends \OWA\Core\Update {
 
     const COLUMNS = array( 'transaction_id', 'tax', 'shipping' );
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         foreach ( self::COLUMNS as $column ) {

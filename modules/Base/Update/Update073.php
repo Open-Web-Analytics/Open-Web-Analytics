@@ -30,6 +30,10 @@ class Update073 extends \OWA\Core\Update {
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
     const COLUMNS = array( 'element_anchor', 'anchor_x', 'anchor_y' );
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );

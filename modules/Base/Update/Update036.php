@@ -49,7 +49,11 @@ class Update036 extends \OWA\Core\Update {
 
     public $schema_version = 36;
 
-    /** The tables that can take the column instantly. */
+    /**
+     * The tables that can take the column instantly.
+     *
+     * @return array<string, string> entity => column
+     */
     private function columns() {
 
         return array(
@@ -58,6 +62,10 @@ class Update036 extends \OWA\Core\Update {
         );
     }
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         foreach ( $this->columns() as $name => $column ) {

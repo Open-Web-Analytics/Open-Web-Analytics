@@ -34,6 +34,10 @@ class Update047 extends \OWA\Core\Update {
 
     public $schema_version = 47;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         return $this->addRawColumn( 'beacon_version' );

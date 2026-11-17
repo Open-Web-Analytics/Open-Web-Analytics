@@ -28,6 +28,10 @@ class Update058 extends \OWA\Core\Update {
 
     const COLUMN = 'screen_resolution';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         // Raw and every cube, each the way it needs -- see the CubeColumn trait.

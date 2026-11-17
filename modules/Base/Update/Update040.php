@@ -25,6 +25,10 @@ class Update040 extends \OWA\Core\Update {
 
     public $schema_version = 40;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );

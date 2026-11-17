@@ -29,6 +29,10 @@ class Update077 extends \OWA\Core\Update {
 
     const COLUMNS = array( 'value' );
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );

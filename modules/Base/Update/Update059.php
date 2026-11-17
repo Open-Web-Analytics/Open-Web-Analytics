@@ -16,6 +16,10 @@ class Update059 extends \OWA\Core\Update {
 
     const ENTITIES = array( 'base.migration_progress', 'base.migration_tally', 'base.migration_day_visitor' );
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         foreach ( self::ENTITIES as $name ) {

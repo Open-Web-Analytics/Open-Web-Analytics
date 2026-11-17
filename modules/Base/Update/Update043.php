@@ -48,6 +48,10 @@ class Update043 extends \OWA\Core\Update {
      */
     const INSTALL_SCOPE_ID = '1';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
@@ -199,7 +203,8 @@ class Update043 extends \OWA\Core\Update {
      * scalars and arrays of them, and refusing objects means a tampered-with
      * row cannot instantiate a class during unserialize.
      *
-     * @return array
+     * @param  \OWA\Module\Base\Entity\Configuration $legacy
+     * @return array<mixed> module => its settings; unserialized, so unchecked
      */
     private function readBlob( $legacy ) {
 
@@ -220,6 +225,8 @@ class Update043 extends \OWA\Core\Update {
     }
 
     /**
+     * @param  \OWA\Module\Base\Entity\Configuration $legacy
+     * @param  array<string, array<string, mixed>> $settings module => name => value, any type
      * @return boolean
      */
     private function writeBlob( $legacy, $settings ) {
@@ -251,6 +258,9 @@ class Update043 extends \OWA\Core\Update {
      * read whole on every request. Opting a key out is a later, deliberate act
      * and not something a migration should decide.
      *
+     * @param  int|string $module a key of the blob
+     * @param  int|string $name   a key of the blob
+     * @param  mixed      $value  a setting's value, any type
      * @return boolean
      */
     private function writeRow( $module, $name, $value ) {

@@ -26,6 +26,10 @@ class Update038 extends \OWA\Core\Update {
 
     public $schema_version = 38;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         return $this->addRawColumn( 'referer_query' );

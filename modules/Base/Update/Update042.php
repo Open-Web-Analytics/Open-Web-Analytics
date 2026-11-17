@@ -22,6 +22,10 @@ class Update042 extends \OWA\Core\Update {
 
     public $schema_version = 42;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_dimension' );

@@ -54,6 +54,10 @@ class Update054 extends \OWA\Core\Update {
     /** The keys that stop reaching `params` in this release. */
     const PROMOTED = array( 'file_name', 'file_extension' );
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         foreach ( self::PROMOTED as $column ) {

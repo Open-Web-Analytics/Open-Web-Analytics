@@ -53,6 +53,10 @@ class Update056 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $db         = \OWA\Core\CoreAPI::dbSingleton();
@@ -221,6 +225,11 @@ class Update056 extends \OWA\Core\Update {
         return true;
     }
 
+    /**
+     * @param  \OWA\Core\Entity $entity
+     * @param  string          $column
+     * @return bool
+     */
     private function hasColumn( $entity, $column ) {
 
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(

@@ -36,6 +36,10 @@ class Update052 extends \OWA\Core\Update {
 
     public $down_does_not_restore = 'the browser column\'s values, identical to browser_type: it comes back empty.';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         if ( $this->migrateConditions() === false ) {

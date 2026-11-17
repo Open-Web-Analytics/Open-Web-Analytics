@@ -42,6 +42,10 @@ class Update048 extends \OWA\Core\Update {
 
     public $down_does_not_restore = 'the orphaned conditions it deleted, which no goal could reach.';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $goal      = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();

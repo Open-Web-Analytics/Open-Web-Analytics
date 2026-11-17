@@ -29,6 +29,10 @@ class Update071 extends \OWA\Core\Update {
 
     const COLUMN = 'profile_name';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         return $this->addCubeColumn( self::COLUMN );

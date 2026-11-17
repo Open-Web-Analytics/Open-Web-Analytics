@@ -39,6 +39,10 @@ class Update045 extends \OWA\Core\Update {
 
     public $schema_version = 45;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         return $this->addRawColumn( 'event_seq' );

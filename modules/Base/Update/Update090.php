@@ -35,7 +35,11 @@ class Update090 extends \OWA\Core\Update {
     /** @var object|null the settings to keep in step instead of the install's. TESTS ONLY. */
     public $settings = null;
 
-    /** The install's settings, or none with a scratch table and no stand-in. */
+    /**
+     * The install's settings, or none with a scratch table and no stand-in.
+     *
+     * @return object|null the install's Settings, or a test's stand-in
+     */
     private function settings() {
 
         if ( $this->settings ) {
@@ -46,6 +50,10 @@ class Update090 extends \OWA\Core\Update {
         return isset( $this->tables['base.setting'] ) ? null : \OWA\Core\CoreAPI::configSingleton();
     }
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();

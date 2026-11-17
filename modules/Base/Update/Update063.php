@@ -40,6 +40,10 @@ class Update063 extends \OWA\Core\Update {
      */
     const DEFINITION = 'BIGINT NULL';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );

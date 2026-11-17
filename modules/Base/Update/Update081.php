@@ -49,6 +49,10 @@ class Update081 extends \OWA\Core\Update {
     /** The column this adds. */
     const COLUMN = 'property_id';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
@@ -138,7 +142,7 @@ class Update081 extends \OWA\Core\Update {
      * @param  string[] $funnels    1.x funnel id => its Profile's Property
      * @param  string[] $owners     the Properties its creator may see
      * @param  string   $first      the install's first Property, or ''
-     * @return array {property_id, reason}
+     * @return array{property_id: string, reason: string}
      */
     public static function assign( $id, array $funnels, array $owners, $first ) {
 

@@ -46,6 +46,10 @@ class Update034 extends \OWA\Core\Update {
         return array( 'base.event_raw', 'base.visitor_acquisition' );
     }
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         if ( ! self::widenIds() ) {

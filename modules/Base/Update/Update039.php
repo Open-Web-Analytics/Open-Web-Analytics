@@ -38,7 +38,7 @@ class Update039 extends \OWA\Core\Update {
     /**
      * The columns this update makes nullable, and their definition.
      *
-     * @return array column => type
+     * @return array<string, string> column => type
      */
     private function columns() {
 
@@ -48,6 +48,10 @@ class Update039 extends \OWA\Core\Update {
         );
     }
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();

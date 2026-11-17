@@ -53,7 +53,11 @@ class Update086 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
-    /** The rows this deletes, as a WHERE clause, and its parameters. */
+    /**
+     * The rows this deletes, as a WHERE clause, and its parameters.
+     *
+     * @return array{string, list<string>}
+     */
     private static function where() {
 
         $in = function ( array $values ) {
@@ -66,6 +70,10 @@ class Update086 extends \OWA\Core\Update {
         );
     }
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();

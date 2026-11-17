@@ -51,6 +51,10 @@ class Update049 extends \OWA\Core\Update {
 
     public $schema_version = 49;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         if ( $this->migrateTriggers() === false ) {

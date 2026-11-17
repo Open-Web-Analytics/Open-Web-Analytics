@@ -49,6 +49,10 @@ class Update075 extends \OWA\Core\Update {
     /** The setting that keeps each renamed goal event's name: id => array( 'was', 'now' ). */
     const BEFORE = 'goal_event_names_before_075';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $this->goals = array();
@@ -130,6 +134,8 @@ class Update075 extends \OWA\Core\Update {
      * Rename every goal event whose name is not a usable event name, unique
      * within its Property (GoalEventDefinition::eventNames()). On an upgrade
      * from 1.x the conversion rows Update062 stored already carry these names.
+     *
+     * @return bool
      */
     private function renameGoalEvents() {
 
@@ -164,7 +170,11 @@ class Update075 extends \OWA\Core\Update {
         return true;
     }
 
-    /** Store each flagged event's conversion rows and clear its flag. */
+    /**
+     * Store each flagged event's conversion rows and clear its flag.
+     *
+     * @return bool
+     */
     private function convertFlaggedRows() {
 
         $db  = \OWA\Core\CoreAPI::dbSingleton();
@@ -234,8 +244,8 @@ class Update075 extends \OWA\Core\Update {
      * conversion row is not.
      *
      * @param  string $in     'IN' or 'NOT IN' the first-class event names
-     * @param  array  $after  array( yyyymmdd, id )
-     * @return array
+     * @param  array{int, int|string} $after array( yyyymmdd, id )
+     * @return list<array<string, scalar|null>> raw rows, every column
      */
     private function batch( $in, array $after ) {
 
@@ -249,12 +259,15 @@ class Update075 extends \OWA\Core\Update {
             array_merge( $names, array( $after[0], $after[0], $after[1] ) ) ) );
     }
 
-    /** @var array site_id => list of array( 'event' => GoalEventDefinition, 'conditions' => array ) */
+    /** @var array<string, list<array{event: \OWA\Module\Base\Entity\GoalEventDefinition, conditions: list<\OWA\Module\Base\Entity\GoalEventDefinitionCondition>}>> site_id => its goal events */
     private $goals = array();
 
     /**
      * Every goal event of a Profile's Property, active or not, with its
      * conditions: a row flagged while one was active converted on it.
+     *
+     * @param  string $site_id
+     * @return list<array{event: \OWA\Module\Base\Entity\GoalEventDefinition, conditions: list<\OWA\Module\Base\Entity\GoalEventDefinitionCondition>}>
      */
     private function goalEventsOf( $site_id ) {
 
@@ -292,7 +305,13 @@ class Update075 extends \OWA\Core\Update {
         return $this->goals[ $site_id ];
     }
 
-    /** The goal event of a Profile's Property with a name, or null. */
+    /**
+     * The goal event of a Profile's Property with a name, or null.
+     *
+     * @param  string $site_id
+     * @param  string $event_name
+     * @return \OWA\Module\Base\Entity\GoalEventDefinition|null
+     */
     private function goalNamed( $site_id, $event_name ) {
 
         foreach ( $this->goalEventsOf( $site_id ) as $goal ) {

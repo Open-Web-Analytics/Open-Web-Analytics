@@ -14,6 +14,10 @@ class Update067 extends \OWA\Core\Update {
 
     public $schema_version = 67;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.job_queue' );

@@ -37,6 +37,7 @@ class Update066 extends \OWA\Core\Update {
 
     public $schema_version = 66;
 
+    /** @var bool */
     public $is_cli_mode_required = true;
 
     /*
@@ -64,6 +65,10 @@ class Update066 extends \OWA\Core\Update {
     const CUBE = array( 'attributed_source', 'attributed_medium', 'attributed_campaign', 'attributed_channel',
         'attributed_ad' );
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         foreach ( array( 'base.event_raw' => self::RAW, 'base.visitor_acquisition' => self::VISITOR ) as $name => $columns ) {
@@ -166,7 +171,9 @@ class Update066 extends \OWA\Core\Update {
     /**
      * Which of $columns $table has.
      *
-     * @return string[]
+     * @param  string       $table
+     * @param  list<string> $columns
+     * @return list<string>
      */
     private function present( $table, array $columns ) {
 
@@ -184,8 +191,8 @@ class Update066 extends \OWA\Core\Update {
      * One ALTER for a table that is never a swap target, so instant is fine.
      *
      * @param string $table
-     * @param array  $add  name => definition
-     * @param array  $drop names
+     * @param array<string, string> $add  name => definition
+     * @param list<string>          $drop names
      * @return bool
      */
     private function alter( $table, array $add, array $drop ) {

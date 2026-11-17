@@ -49,11 +49,18 @@ class Update085 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
+    /**
+     * @return string
+     */
     private static function placeholders() {
 
         return implode( ', ', array_fill( 0, count( self::RETIRED ), '?' ) );
     }
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();

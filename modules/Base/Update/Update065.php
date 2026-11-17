@@ -35,6 +35,10 @@ class Update065 extends \OWA\Core\Update {
 
     const COLUMNS = array( 'channel', 'acq_channel' );
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         foreach ( self::COLUMNS as $column ) {

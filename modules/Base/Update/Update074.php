@@ -27,6 +27,10 @@ class Update074 extends \OWA\Core\Update {
 
     public $schema_version = 74;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         return $this->dropColumns( array( 'remote_host' ) );

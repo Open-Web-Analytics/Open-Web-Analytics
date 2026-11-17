@@ -34,6 +34,10 @@ CREATE TABLE %s (
 ) %s
 SQL;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();

@@ -31,7 +31,12 @@ class Update072 extends \OWA\Core\Update {
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
     const COLUMNS = array( 'page_depth', 'previous_page_path', 'next_page_path' );
 
-    /** One rebuild per cube for all three; see CubeColumn::addCubeColumns(). */
+    /**
+     * One rebuild per cube for all three; see CubeColumn::addCubeColumns().
+     *
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         return $this->addCubeColumns( self::COLUMNS );

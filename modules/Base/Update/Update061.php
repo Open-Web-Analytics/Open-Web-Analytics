@@ -25,6 +25,9 @@ namespace OWA\Module\Base\Update;
  * again, and a converted funnel's id is derived from its site and goal.
  *
  * NOT CLI-ONLY: a handful of rows.
+ *
+ * @phpstan-type FunnelStep array{name: string, path: string, step_number: int}|array{name: string, goal_event_id: string, step_number: int}
+ * @phpstan-type FunnelPlan array{id: int|string|null, name: string, goal: string, steps: list<FunnelStep>, notes: list<string>}
  */
 class Update061 extends \OWA\Core\Update {
 
@@ -33,6 +36,10 @@ class Update061 extends \OWA\Core\Update {
     /** Visualization steps, as VisualizationSave allows. */
     const MAX_STEPS = 10;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
@@ -74,12 +81,20 @@ class Update061 extends \OWA\Core\Update {
         return $db->dropColumn( $table, 'v1_definition' ) !== false;
     }
 
+    /**
+     * @param  string $table
+     * @return bool
+     */
     private function hasBackupColumn( $table ) {
 
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_row(
             sprintf( "SHOW COLUMNS FROM %s LIKE 'v1_definition'", $table ) );
     }
 
+    /**
+     * @param  string $table
+     * @return bool
+     */
     private function rewriteReports( $table ) {
 
         $db       = \OWA\Core\CoreAPI::dbSingleton();
@@ -138,6 +153,9 @@ class Update061 extends \OWA\Core\Update {
         return true;
     }
 
+    /**
+     * @return bool
+     */
     private function convertFunnels() {
 
         $plans = $this->funnelPlans();
@@ -195,7 +213,7 @@ class Update061 extends \OWA\Core\Update {
     /**
      * Each pre-1.13 funnel, planned: id, name, steps and what did not carry.
      *
-     * @return array[]
+     * @return list<FunnelPlan>
      */
     public function funnelPlans() {
 
@@ -224,8 +242,8 @@ class Update061 extends \OWA\Core\Update {
     /**
      * One Profile's funnels. Pure, so the rules are tested without a database.
      *
-     * @param  array $row scope_id and the serialized goals map
-     * @return array[]
+     * @param  array<string, scalar|null> $row scope_id and the serialized goals map
+     * @return list<FunnelPlan>
      */
     public static function planFunnels( array $row ) {
 
@@ -346,6 +364,10 @@ class Update061 extends \OWA\Core\Update {
             ->generateId( 'visualization:v1-funnel:' . $site_id . ':' . (int) $goal_number );
     }
 
+    /**
+     * @param  string $site_id
+     * @return string
+     */
     private static function siteName( $site_id ) {
 
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );

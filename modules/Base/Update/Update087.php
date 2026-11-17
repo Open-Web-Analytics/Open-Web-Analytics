@@ -31,6 +31,9 @@ class Update087 extends \OWA\Core\Update {
      */
     const DEFINITION = 'INT NOT NULL DEFAULT 0';
 
+    /**
+     * @return bool
+     */
     private function hasColumn() {
 
         $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results(
@@ -39,6 +42,10 @@ class Update087 extends \OWA\Core\Update {
         return ! empty( $rows );
     }
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         if ( $this->hasColumn() ) {

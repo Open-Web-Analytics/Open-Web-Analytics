@@ -23,6 +23,10 @@ class Update064 extends \OWA\Core\Update {
 
     const INDEX = 'site_ts';
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         if ( $this->hasIndex() ) {
@@ -46,6 +50,9 @@ class Update064 extends \OWA\Core\Update {
             'DROP INDEX %s ON %s', self::INDEX, $this->tableFor( 'base.event_raw' ) ) ) !== false;
     }
 
+    /**
+     * @return bool
+     */
     private function hasIndex() {
 
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(

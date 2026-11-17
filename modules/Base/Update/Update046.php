@@ -40,18 +40,30 @@ class Update046 extends \OWA\Core\Update {
 
     public $schema_version = 46;
 
-    /** The anchors this adds. @return string[] */
+    /**
+     * The anchors this adds.
+     *
+     * @return list<string>
+     */
     private function added() {
 
         return array( 'session_start_ts', 'prior_session_start_ts' );
     }
 
-    /** The columns this removes. @return string[] */
+    /**
+     * The columns this removes.
+     *
+     * @return list<string>
+     */
     private function removed() {
 
         return array( 'prev_event_ts', 'clock_offset_usec' );
     }
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         foreach ( $this->added() as $column ) {

@@ -21,6 +21,10 @@ class Update051 extends \OWA\Core\Update {
 
     public $schema_version = 51;
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         return true;

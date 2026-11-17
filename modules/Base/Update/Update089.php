@@ -29,7 +29,11 @@ class Update089 extends \OWA\Core\Update {
     /** The column 1.x placed it after. */
     const AFTER = 'last_update_date';
 
-    /** The user table's columns, in order. @return string[] */
+    /**
+     * The user table's columns, in order.
+     *
+     * @return list<string>
+     */
     private function columns() {
 
         $names = array();
@@ -42,6 +46,10 @@ class Update089 extends \OWA\Core\Update {
         return $names;
     }
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         if ( ! in_array( self::COLUMN, $this->columns(), true ) ) {

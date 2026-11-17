@@ -32,6 +32,10 @@ class Update088 extends \OWA\Core\Update {
     /** The entities whose domain column this rewrites, by key. */
     const ENTITIES = array( 'site' => 'base.site', 'property' => 'base.property' );
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
