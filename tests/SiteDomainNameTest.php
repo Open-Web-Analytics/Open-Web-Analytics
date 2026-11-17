@@ -13,12 +13,6 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * and storing a scheme was load-bearing only while a site's identity was
  * md5( domain ), where http:// and https:// produced two unrelated sites for a
  * single website.
- *
- * The failure was silent rather than loud. Its one caller builds
- * '://' . $domain to test whether a URL already points at the site before
- * rewriting domain aliases; with a null that becomes a search for '://' alone,
- * which matches every absolute URL, so the guard passes and alias resolution is
- * skipped entirely.
  */
 final class SiteDomainNameTest extends TestCase
 {
@@ -40,8 +34,7 @@ final class SiteDomainNameTest extends TestCase
         $this->assertSame(
             'example.com',
             $this->siteWithDomain( 'example.com' )->getDomainName(),
-            'A domain stored without a scheme must still resolve, or domain-alias rewriting '
-            . 'silently stops running for that site.' );
+            'A domain stored without a scheme must still resolve.' );
     }
 
     public function testASchemeIsStrippedWhenPresent(): void
@@ -59,8 +52,7 @@ final class SiteDomainNameTest extends TestCase
     {
         /*
          * The property the migration depends on: stripping schemes from stored
-         * values must not change what this method answers, or every site using
-         * domain aliases would shift at once.
+         * values must not change what this method answers.
          */
         $this->assertSame(
             $this->siteWithDomain( 'https://example.com' )->getDomainName(),
@@ -70,8 +62,8 @@ final class SiteDomainNameTest extends TestCase
     public function testAnEmptyDomainAnswersEmptyNotNull(): void
     {
         /*
-         * Empty rather than null, so the caller's '://' . $domain stays a
-         * string. Note the entity ignores falsy writes to string columns, so
+         * Empty rather than null, so a caller always has a string. Note the
+         * entity ignores falsy writes to string columns, so
          * this is the un-set case rather than a set-to-empty one.
          */
         $this->assertSame( '', $this->siteWithDomain( '' )->getDomainName() );

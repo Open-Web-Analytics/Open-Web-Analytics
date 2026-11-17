@@ -151,23 +151,23 @@ final class ProfileSettingsScreenTest extends TestCase
 
         $controller = new \OWA\Module\Base\Controller\SitesEditSettings( array(
             'siteId'   => $site_id,
-            'config'   => array( 'base.domain_aliases' => 'example.test' ),
-            'override' => array( 'base.domain_aliases' => '1' ),
+            'config'   => array( 'base.query_string_filters' => 'sessionid' ),
+            'override' => array( 'base.query_string_filters' => '1' ),
         ) );
 
         $controller->errorAction();
 
         $data = $this->data( $controller );
 
-        $this->assertSame( 'example.test', $data['posted']['config']['base.domain_aliases'] ?? null );
-        $this->assertSame( '1', $data['posted']['override']['base.domain_aliases'] ?? null );
+        $this->assertSame( 'sessionid', $data['posted']['config']['base.query_string_filters'] ?? null );
+        $this->assertSame( '1', $data['posted']['override']['base.query_string_filters'] ?? null );
 
         $html = \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
             \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.profileObservation' ),
             'profile', $site_id, 'owa_', $data['posted'] );
 
         $this->assertMatchesRegularExpression(
-            '#<input type="text" size="50" name="owa_config\[base\.domain_aliases\]" value="example\.test" id=#', $html,
+            '#<input type="text" size="50" name="owa_config\[base\.query_string_filters\]" value="sessionid" id=#', $html,
             'the typed value comes back, enabled' );
     }
 
@@ -187,8 +187,8 @@ final class ProfileSettingsScreenTest extends TestCase
 
         $refusal = new \OWA\Module\Base\Controller\SitesEditSettings( array(
             'siteId'   => $site_id,
-            'config'   => array( 'base.domain_aliases' => 'example.test' ),
-            'override' => array( 'base.domain_aliases' => '1' ),
+            'config'   => array( 'base.query_string_filters' => 'sessionid' ),
+            'override' => array( 'base.query_string_filters' => '1' ),
         ) );
         $refusal->errorAction();
 
@@ -305,12 +305,12 @@ final class ProfileSettingsScreenTest extends TestCase
         }
     }
 
-    /** domain_aliases has nothing above it: a plain field, saved by its value. */
+    /** query_string_filters is empty above the Profile by default: a plain field, saved by its value. */
     public function testAFieldWithNothingAboveIsSavedByItsValue(): void
     {
         $this->requireDb();
         $site_id = $this->aSiteId();
-        $key     = 'domain_aliases';
+        $key     = 'query_string_filters';
 
         $this->holdProfile( $site_id );
 
@@ -327,8 +327,8 @@ final class ProfileSettingsScreenTest extends TestCase
             $c->action();
         };
 
-        $save( 'example.test' );
-        $this->assertSame( 'example.test',
+        $save( 'sessionid' );
+        $this->assertSame( 'sessionid',
             \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $site_id, 'base', $key ) );
 
         $save( '' );
@@ -392,16 +392,14 @@ final class ProfileSettingsScreenTest extends TestCase
             $this->assertStringContainsString( $control, $html, "base.$key is not offered on the Profile" );
         }
 
-        foreach ( array( 'domain_aliases', 'query_string_filters' ) as $key ) {
-            $this->assertStringContainsString( 'name="owa_config[base.' . $key . ']"', $html, "base.$key is still offered" );
-        }
+        $this->assertStringContainsString( 'name="owa_config[base.query_string_filters]"', $html, 'base.query_string_filters is still offered' );
 
-        // Retired, and its install-wide successor is on no screen. The names are checked on the html the asserts above found fields in.
-        foreach ( array( 'default_page', 'directory_index_pages' ) as $key ) {
+        // Retired (domain_aliases, default_page), and default_page's install-wide successor is on no screen. The names are checked on the html the asserts above found fields in.
+        foreach ( array( 'domain_aliases', 'default_page', 'directory_index_pages' ) as $key ) {
             $this->assertStringNotContainsString( '[base.' . $key . ']', $html, "base.$key is offered on the Profile" );
         }
 
-        foreach ( array( 'Pages and domains', 'Campaign parameters', 'Privacy and exclusions', 'Visitor announcements' ) as $legend ) {
+        foreach ( array( 'Page URLs', 'Campaign parameters', 'Privacy and exclusions', 'Visitor announcements' ) as $legend ) {
             $this->assertStringContainsString( '<legend>' . $legend . '</legend>', $html );
         }
     }
