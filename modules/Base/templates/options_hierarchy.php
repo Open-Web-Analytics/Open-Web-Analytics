@@ -42,7 +42,7 @@
         </TD>
         <TD class="layout_subview owa_hierarchyContent" valign="top">
             <?php // At full width this box scrolls, not the window (owa.shell.css). ?>
-            <div class="owa_contentScroll">
+            <div class="owa_contentScroll" data-ui="shell:content">
             <?php // The skip link's target (wrapper_default.php). ?>
             <main id="owa_main">
             <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>

@@ -57,7 +57,7 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
             <?php endif;?>
             <TD valign="top" width="*" class="owa_reportContentColumn">
                 <?php // At full width this box scrolls, not the window (owa.shell.css). ?>
-                <div class="owa_contentScroll">
+                <div class="owa_contentScroll" data-ui="shell:content">
                 <?php // The skip link's target (wrapper_default.php). ?>
                 <main id="owa_main">
                 <?php echo \OWA\Core\View::BANNER_SLOT; // the page's messages go here, not across the nav ?>
