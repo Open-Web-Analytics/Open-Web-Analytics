@@ -37,7 +37,7 @@ class Module extends \OWA\Core\Module {
      * Constructor
      *
      */
-    function __construct() {
+    public function __construct() {
 
         $this->name = 'base';
         $this->display_name = 'Open Web Analytics';
@@ -66,7 +66,7 @@ class Module extends \OWA\Core\Module {
      * creates every table, so its absence means tables made by something older,
      * which the chain used to handle by replaying from Update001.
      */
-    function update() {
+    public function update() {
 
         /*
          * Before any update: an installation on a server 2.0 cannot run on
@@ -162,7 +162,11 @@ class Module extends \OWA\Core\Module {
     /** @var bool|null whether update() publishes in the run; null to decide by OWA_CLI. TESTS ONLY. */
     public static $publish_inline = null;
 
-    /** The command line publishes in the run; the update screen queues it. */
+    /**
+     * The command line publishes in the run; the update screen queues it.
+     *
+     * @return bool
+     */
     private static function publishesInline() {
 
         return self::$publish_inline ?? ( defined( 'OWA_CLI' ) && OWA_CLI );
@@ -181,24 +185,32 @@ class Module extends \OWA\Core\Module {
      * The schema alone is still isSchemaCurrent(), which is what the
      * scheduler asks: a new tracker is no reason to stop its jobs.
      */
-    function isUpToDate() {
+    public function isUpToDate() {
 
         return parent::isUpToDate()
             && (string) \OWA\Core\CoreAPI::getSetting( $this->name, 'tracker_build' ) === self::requiredTrackerBuild();
     }
 
-    /** The built tracker's hash; empty with no build. Not cached: a build can change under a long run. */
+    /**
+     * The built tracker's hash; empty with no build. Not cached: a build can change under a long run.
+     *
+     * @return string
+     */
     public static function requiredTrackerBuild() {
 
         return \OWA\Module\Base\Classes\TrackerBundle::buildHash();
     }
 
-    function install() {
+    public function install() {
 
         return parent::install() && $this->recordTrackerBuild();
     }
 
-    /** The built tracker as the one the install is updated to. */
+    /**
+     * The built tracker as the one the install is updated to.
+     *
+     * @return true
+     */
     private function recordTrackerBuild() {
 
         $c = \OWA\Core\CoreAPI::configSingleton();
@@ -208,7 +220,7 @@ class Module extends \OWA\Core\Module {
         return true;
     }
 
-    function init() {
+    public function init() {
 
         // The one queue type Base ships; a module adds its own (the sqs module).
         $this->registerImplementation('event_queue_types', 'file', \OWA\Module\Base\Classes\FileEventQueue::class );
@@ -233,7 +245,7 @@ class Module extends \OWA\Core\Module {
     /**
      * Register Tracking Event Properties
      *
-     *
+     * @return void
      */
 
      public function setupTrackingProperties() {
@@ -284,7 +296,7 @@ class Module extends \OWA\Core\Module {
      *
      * The following lines register filter methods.
      */
-    function registerFilters() {
+    public function registerFilters() {
 
         /*
          * The beacon compat layer contributes what an older generation still
@@ -330,8 +342,10 @@ class Module extends \OWA\Core\Module {
      * Registered with the actions, not in registerAdminPanels(): that runs only
      * when the admin nav is built, and the Profile and Property screens and
      * their save controllers read these without building it.
+     *
+     * @return void
      */
-    function registerScopedSettingsFieldSets() {
+    public function registerScopedSettingsFieldSets() {
 
         /*
          * The Profile's Observation Settings screen, in the `profile_observation`
@@ -433,7 +447,7 @@ class Module extends \OWA\Core\Module {
      *
      * Class names are the PSR-4 names, which Composer autoloads.
      */
-    function registerActions() {
+    public function registerActions() {
 
         $this->registerScopedSettingsFieldSets();
 
@@ -577,7 +591,7 @@ class Module extends \OWA\Core\Module {
      *
      * The following lines register various command line interface (CLI) controller.
      */
-    function registerCliCommands() {
+    public function registerCliCommands() {
 
         $this->registerCliCommand('update', 'base.updatesApplyCli');
         $this->registerCliCommand('strings-extract', 'base.stringsExtractCli');
@@ -630,7 +644,7 @@ class Module extends \OWA\Core\Module {
      * installation retunes or turns one off in OWA_SCHEDULED_JOBS -- see
      * Settings::applyConfigConstants().
      */
-    function registerJobs() {
+    public function registerJobs() {
 
         // The NAME is deliberately not the command name. They are separate
         // fields -- a command can be scheduled more than once under different
@@ -807,7 +821,7 @@ class Module extends \OWA\Core\Module {
      *
      * The following lines register various API methods.
      */
-    function registerApiMethods() {
+    public function registerApiMethods() {
 
     	$this->registerRestApiRoute( 'v1', 'sites', 'GET', 'OWA\\Module\\Base\\Controller\\SitesRest' );
         $this->registerRestApiRoute( 'v1', 'sites', 'POST', 'OWA\\Module\\Base\\Controller\\AddSiteRest' );
@@ -827,7 +841,7 @@ class Module extends \OWA\Core\Module {
      * Registers Admin panels
      *
      */
-    function registerAdminPanels() {
+    public function registerAdminPanels() {
 
         $this->registerSettingsPage(array(
                 'do'             => 'base.optionsGeneral',
@@ -970,7 +984,7 @@ class Module extends \OWA\Core\Module {
      * cube. Report configs naming an old name are caught by the report
      * characterization tests rather than by a runtime fallback.
      */
-    function registerDimensions() {}
+    public function registerDimensions() {}
 
     /**
      * Every report this module offers, under the id it is reached by.
@@ -987,7 +1001,7 @@ class Module extends \OWA\Core\Module {
      * Called lazily by CoreAPI::getReportRegistry(), never from the module
      * constructor -- see the note on Module::registerReports().
      */
-    function registerReports() {
+    public function registerReports() {
 
         $this->registerReport( 'ads', 'reports/ads.json' );
         $this->registerReport( 'avg-order-value', 'reports/avg-order-value.json' );
@@ -1067,7 +1081,7 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'visitors-loyalty', 'reports/visitors-loyalty.json' );
     }
 
-    function registerNavigation() {
+    public function registerNavigation() {
 
         $this->addNavigationSubGroup('Dashboard', $this->reportRef( 'dashboard' ), \OWA\Core\CoreAPI::t( 'Dashboard' ), 1, 'view_reports', 'Reports','fa fa-tachometer-alt');
 
@@ -1202,7 +1216,7 @@ class Module extends \OWA\Core\Module {
      * Registers Event Handlers with queue queue
      *
      */
-    function _registerEventHandlers() {
+    public function _registerEventHandlers() {
 
         /*
          * THE v1 INGEST CHAIN WAS HERE, and this is 2.25 step 4.
@@ -1284,7 +1298,7 @@ class Module extends \OWA\Core\Module {
         $this->registerEventHandler(array('base.set_password', 'base.reset_password', 'base.new_user_account'), 'userHandlers');
     }
 
-    function _registerEventProcessors() {
+    public function _registerEventProcessors() {
 
         /*
          * Base's own tracking events: every name its property registry
@@ -1302,7 +1316,7 @@ class Module extends \OWA\Core\Module {
         $this->addEventProcessor( \OWA\Core\CoreAPI::anyTrackingEvent(), 'base.processRequest' );
     }
 
-    function _registerEntities() {
+    public function _registerEntities() {
 
         $this->registerEntity(array(
                 'site',
@@ -1365,8 +1379,11 @@ class Module extends \OWA\Core\Module {
      * Queue one publish of every bundle when a save at install level touched
      * a tag setting -- Base's or an active module's, anything in a
      * `tracking_tag` fieldset (PLAN 2.30.7).
+     *
+     * @param  \OWA\Module\Base\Classes\Event $event the settings save: its module and keys
+     * @return int an OWA_EHS_ handler status
      */
-    function tagSettingsSavedHandler( $event ) {
+    public function tagSettingsSavedHandler( $event ) {
 
         $module = (string) $event->get( 'module' );
         $keys   = (array) $event->get( 'keys' );
@@ -1385,7 +1402,11 @@ class Module extends \OWA\Core\Module {
         return OWA_EHS_EVENT_HANDLED;
     }
 
-    function installCompleteHandler($event) {
+    /**
+     * @param  \OWA\Module\Base\Classes\Event $event
+     * @return void
+     */
+    public function installCompleteHandler($event) {
 
         //owa_coreAPI::debug('test handler: '.print_r($event, true));
     }

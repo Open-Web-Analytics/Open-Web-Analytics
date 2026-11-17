@@ -18,7 +18,7 @@ require_once(__DIR__ . '/owa_env.php');
 
 class owa extends \OWA\Core\Caller {
 
-    function __construct($config = null) {
+    public function __construct($config = null) {
 
         parent::__construct($config);
     }
@@ -27,8 +27,11 @@ class owa extends \OWA\Core\Caller {
      * OWA Singleton Method
      *
      * Makes a singleton instance of OWA using the config array
+     *
+     * @param  array<mixed>|null $config as the constructor takes it; used by the first call only
+     * @return owa
      */
-    function singleton($config = null) {
+    public function singleton($config = null) {
 
         static $owa;
 

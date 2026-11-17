@@ -23,6 +23,9 @@ namespace OWA\Module\Domstream;
  *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
+ *
+ * @phpstan-import-type Definition from \OWA\Module\Base\Classes\TrackingEventHelpers
+ * @phpstan-import-type Config from \OWA\Module\Base\Classes\TrackerBundle
  */
 class Module extends \OWA\Core\Module {
 
@@ -37,7 +40,7 @@ class Module extends \OWA\Core\Module {
         'record' => 'trackDomStream',
     );
 
-    function __construct() {
+    public function __construct() {
 
         $this->name = 'domstream';
         $this->display_name = 'Domstream';
@@ -61,7 +64,7 @@ class Module extends \OWA\Core\Module {
      * page) are Base's. Scoped to this event; none is a column of the event
      * table, since a chunk is never stored as an event.
      *
-     * @return array property name => definition
+     * @return array<string, Definition> property name => definition
      */
     public static function trackingProperties() {
 
@@ -91,7 +94,7 @@ class Module extends \OWA\Core\Module {
         return $properties;
     }
 
-    function registerActions() {
+    public function registerActions() {
 
         // Its tag settings, beside Base's on every Tracking Tag screen (PLAN 2.24.4).
         $this->registerSettingsFieldSet( array(
@@ -110,18 +113,18 @@ class Module extends \OWA\Core\Module {
             'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController' );
     }
 
-    function _registerEntities() {
+    public function _registerEntities() {
 
         $this->registerEntity( array( 'domstream_chunk', 'domstream_payload' ) );
     }
 
     /** A chunk goes to this module's processor, never to Base's. */
-    function _registerEventProcessors() {
+    public function _registerEventProcessors() {
 
         $this->addTrackingEventProcessor( self::EVENT_NAME, 'domstream.processEvent' );
     }
 
-    function registerFilters() {
+    public function registerFilters() {
 
         $this->registerFilter( 'tracker_bundle_config', $this, 'addToBundle', 99 );
         $this->registerFilter( 'tracker_feature_labels', $this, 'labelFeatures', 10 );
@@ -133,11 +136,11 @@ class Module extends \OWA\Core\Module {
      * the sample rate among its options, trackDomStream among its features, and
      * the recorder's chunk inlined.
      *
-     * @param  array  $config  options, features, plugins
+     * @param  Config $config  options, features, plugins
      * @param  string $site_id
-     * @return array
+     * @return Config
      */
-    function addToBundle( $config, $site_id = '' ) {
+    public function addToBundle( $config, $site_id = '' ) {
 
         $setting = function ( $key ) use ( $site_id ) {
 
@@ -167,16 +170,26 @@ class Module extends \OWA\Core\Module {
     }
 
 
-    /** The Tracking Tag screen's name for what addToBundle() turns on. */
-    function labelFeatures( $labels ) {
+    /**
+     * The Tracking Tag screen's name for what addToBundle() turns on.
+     *
+     * @param  array<string, string> $labels command => label
+     * @return array<string, string>
+     */
+    public function labelFeatures( $labels ) {
 
         $labels['trackDomStream'] = 'Page interaction recording';
 
         return $labels;
     }
 
-    /** A page row's recordings: the Recordings report filtered to its path. */
-    function addRowActions( $actions ) {
+    /**
+     * A page row's recordings: the Recordings report filtered to its path.
+     *
+     * @param  array<array<string, mixed>> $actions name => action, as ConfiguredReport::ROW_ACTIONS
+     * @return array<array<string, mixed>>
+     */
+    public function addRowActions( $actions ) {
 
         $actions['recordings'] = array(
             'label'    => \OWA\Core\CoreAPI::t( 'Recordings' ),
@@ -188,7 +201,7 @@ class Module extends \OWA\Core\Module {
         return $actions;
     }
 
-    function registerReports() {
+    public function registerReports() {
 
         $this->registerReport( 'domstreams', array(
             'controller'  => 'domstream.reportDomstreams',
@@ -196,12 +209,12 @@ class Module extends \OWA\Core\Module {
         ) );
     }
 
-    function registerNavigation() {
+    public function registerNavigation() {
 
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'domstreams' ), \OWA\Core\CoreAPI::t( 'Recordings' ), 7 );
     }
 
-    function registerApiMethods() {
+    public function registerApiMethods() {
 
         $this->registerRestApiRoute( 'v1', 'domstreams', 'GET',
             'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController' );

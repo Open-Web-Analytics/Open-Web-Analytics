@@ -34,7 +34,7 @@ namespace OWA\Module\Hello;
 class Module extends \OWA\Core\Module {
 
 
-    function __construct() {
+    public function __construct() {
 
         $this->name = 'hello';
         $this->display_name = 'Hello World';
@@ -59,7 +59,7 @@ class Module extends \OWA\Core\Module {
      * The path argument is empty: the class name is the PSR-4 name, so Composer
      * autoloads it and needs no path.
      */
-    function registerActions() {
+    public function registerActions() {
 
         $this->registerAction(
             'hello.exampleSettings',
@@ -70,7 +70,7 @@ class Module extends \OWA\Core\Module {
      * Puts the settings page in the options navigation, in the Instance
      * section after Base's pages: the nav drops a section it does not build.
      */
-    function registerAdminPanels() {
+    public function registerAdminPanels() {
 
         $this->registerSettingsPage(array( 'do'      => 'hello.exampleSettings',
                                           'title'   => \OWA\Core\CoreAPI::t( 'Hello World!' ),
@@ -91,7 +91,7 @@ class Module extends \OWA\Core\Module {
      * of which was registered anywhere, so both links errored: the module a
      * third party copies was demonstrating a shape that does not work.
      */
-    function registerReports() {
+    public function registerReports() {
 
         $this->registerReport( 'hello-dashboard', 'reports/hello-dashboard.json' );
     }
@@ -108,14 +108,14 @@ class Module extends \OWA\Core\Module {
      * Registers Event Handlers with queue queue
      *
      */
-    function _registerEventHandlers() {
+    public function _registerEventHandlers() {
 
 
         return;
 
     }
 
-    function _registerEntities() {
+    public function _registerEntities() {
 
         //$this->entities[] = 'myentity';
     }

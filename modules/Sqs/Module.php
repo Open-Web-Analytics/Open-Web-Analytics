@@ -37,7 +37,7 @@ namespace OWA\Module\Sqs;
  */
 class Module extends \OWA\Core\Module {
 
-    function __construct() {
+    public function __construct() {
 
         $this->name = 'sqs';
         $this->display_name = 'AWS SQS Tracking Intake';
@@ -55,7 +55,7 @@ class Module extends \OWA\Core\Module {
     }
 
     /** Active, and its queues created if credentials and a region resolve. */
-    function activate() {
+    public function activate() {
 
         $ret = parent::activate();
 
@@ -67,7 +67,7 @@ class Module extends \OWA\Core\Module {
         return $ret;
     }
 
-    function registerActions() {
+    public function registerActions() {
 
         $this->registerAction( 'sqs.optionsSqs', 'OWA\\Module\\Sqs\\Controller\\OptionsSqs' );
         $this->registerAction( 'sqs.optionsSqsUpdate', 'OWA\\Module\\Sqs\\Controller\\OptionsSqsUpdate' );
@@ -77,7 +77,7 @@ class Module extends \OWA\Core\Module {
      * In the Instance section, and only while the module is active: the nav
      * drops a section it does not build.
      */
-    function registerAdminPanels() {
+    public function registerAdminPanels() {
 
         $this->registerSettingsPage( array(
             'do'        => 'sqs.optionsSqs',
@@ -94,13 +94,18 @@ class Module extends \OWA\Core\Module {
         ) );
     }
 
-    function _registerEventHandlers() {
+    public function _registerEventHandlers() {
 
         $this->registerEventHandler( 'base.install_settings_saved', $this, 'onSettingsSaved' );
     }
 
-    /** A saved region is where the queues must be: create them there. */
-    function onSettingsSaved( $event ) {
+    /**
+     * A saved region is where the queues must be: create them there.
+     *
+     * @param  \OWA\Module\Base\Classes\Event $event the settings save: its module and keys
+     * @return int an OWA_EHS_ handler status
+     */
+    public function onSettingsSaved( $event ) {
 
         if ( $event->get( 'module' ) === $this->name && in_array( 'region', (array) $event->get( 'keys' ), true ) ) {
 
@@ -110,6 +115,10 @@ class Module extends \OWA\Core\Module {
         return OWA_EHS_EVENT_HANDLED;
     }
 
+    /**
+     * @param  array{ok: bool, error: string|null, main: string|null, dlq: string|null, at: int} $result what Sqs::provision() answers
+     * @return void
+     */
     private function noteProvisioning( array $result ) {
 
         \OWA\Core\CoreAPI::notice( $result['ok']
