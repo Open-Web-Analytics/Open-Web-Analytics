@@ -43,7 +43,7 @@ class ClickMigrator extends FactMigrator {
         return array( $event );
     }
 
-    /** @var array site id => its tracker_cookie_domain, read once per site */
+    /** @var array<string, string> site id => its tracker_cookie_domain, read once per site */
     private $cookie_domains = array();
 
     /**

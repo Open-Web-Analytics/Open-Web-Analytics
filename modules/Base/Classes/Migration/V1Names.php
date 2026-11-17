@@ -191,7 +191,7 @@ class V1Names {
 
     /**
      * @param  string $name a 1.14 metric
-     * @return array  [ 'known' => bool, 'to' => string|null ]
+     * @return array{known: bool, to: string|null}
      */
     public static function metric( $name ) {
 
@@ -213,7 +213,7 @@ class V1Names {
 
     /**
      * @param  string $name a 1.14 dimension
-     * @return array  [ 'known' => bool, 'to' => string|null ]
+     * @return array{known: bool, to: string|null}
      */
     public static function dimension( $name ) {
 

@@ -32,6 +32,21 @@ namespace OWA\Module\Base\Classes\Migration;
  * Batched and resumable: owa_migration_progress records the last v1 id passed,
  * per source and site, in the same transaction as the rows written, and a batch
  * replayed after an interruption derives the same ids and writes nothing twice.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-type Refs array<string, array<int|string, mixed>>
+ * @phpstan-type Progress array<string, mixed>
+ * @phpstan-type Tally array{read?: array<int, int>, refused?: array<int, array<string, int>>, events?: array<int, array<string, array{n: int, revenue: int, items: int, max_ts: int}>>, visitors?: array<int, array<int|string, true>>}
+ * @phpstan-type TypeCounts array{expected?: int, revenue_expected?: int, items_expected?: int, present?: int, revenue_present?: int, items_present?: int}
+ * @phpstan-type ReconcileDay array{read: int, refused: array<string, int>, types: array<string, TypeCounts>, visitors_expected: int, visitors_present: int}
+ *
+ * A v1 row is a Row. Refs is resolve()'s: table => [ id as text => row ],
+ * plus prior_sessions (session id => count) and what a subclass adds; an id
+ * that is all digits is an int key. Progress is the owa_migration_progress
+ * row, as the entity loads it or progress() starts it: last_id, since,
+ * rows_read, rows_written, rows_refused, refusals (reason => count),
+ * completed_at, persisted. Tally is what one batch adds to
+ * owa_migration_tally and owa_migration_day_visitor, by yyyymmdd.
  */
 abstract class FactMigrator {
 
@@ -50,6 +65,8 @@ abstract class FactMigrator {
     /**
      * What progress is recorded under: the table, unless two passes read the
      * same one.
+     *
+     * @return string
      */
     protected static function progressKey() {
 
@@ -64,14 +81,16 @@ abstract class FactMigrator {
     const NO_TIMESTAMP = 'no_timestamp';
     const NO_DAY       = 'no_day';
 
+    /** @var string */
     private $prefix;
 
+    /** @var int */
     private $batch;
 
     /** @var int|null the oldest day migrated, as yyyymmdd; null migrates all */
     protected $since;
 
-    /** @var array "table.column" => bool, whether that v1 column is an integer type */
+    /** @var array<string, bool> "table.column" => bool, whether that v1 column is an integer type */
     private $integer_keys = array();
 
     /**
@@ -90,7 +109,7 @@ abstract class FactMigrator {
      * How much v1 holds, per site and year: what the preflight shows before an
      * administrator chooses a cutoff.
      *
-     * @return array[] site_id, year, rows, known (whether the site still exists)
+     * @return list<array{site_id: string, year: int, rows: int, known: bool}>  known: whether the site still exists
      */
     public function volume() {
 
@@ -151,7 +170,7 @@ abstract class FactMigrator {
         } ) );
     }
 
-    /** @return array site_id => true, for every site row there is */
+    /** @return array<int|string, true> site_id => true, for every site row there is */
     protected function knownSites() {
 
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
@@ -171,7 +190,7 @@ abstract class FactMigrator {
      *
      * @param  string   $site_id
      * @param  int|null $max_batches stop after this many batches; null runs to the end
-     * @return array    the progress row
+     * @return Progress the progress row
      */
     public function migrateSite( $site_id, $max_batches = null ) {
 
@@ -207,9 +226,10 @@ abstract class FactMigrator {
     /**
      * One batch: build, write and record progress in one transaction.
      *
-     * @param string $site_id
-     * @param array  $rows     v1 request rows, in id order
-     * @param array  $progress updated in place
+     * @param string    $site_id
+     * @param list<Row> $rows     v1 rows, in id order
+     * @param Progress  $progress updated in place
+     * @return void
      */
     protected function migrateBatch( $site_id, array $rows, array &$progress ) {
 
@@ -246,6 +266,8 @@ abstract class FactMigrator {
      * What one batch does, inside its transaction: here, write the raw rows it
      * becomes. A pass that is not a copy of rows overrides this.
      *
+     * @param  list<Row> $rows
+     * @param  Progress  $progress updated in place
      * @return int|false how many rows it wrote
      */
     protected function apply( array $rows, array &$progress ) {
@@ -266,7 +288,7 @@ abstract class FactMigrator {
      * inside the batch's transaction.
      *
      * @param string $site_id
-     * @param array  $tally from build()
+     * @param Tally  $tally from build()
      * @return bool
      */
     protected function recordTally( $site_id, array $tally ) {
@@ -341,7 +363,12 @@ abstract class FactMigrator {
         return true;
     }
 
-    /** Drop a site's tally for this pass: it starts over, or is reverted. */
+    /**
+     * Drop a site's tally for this pass: it starts over, or is reverted.
+     *
+     * @param  string $site_id
+     * @return void
+     */
     protected function forgetTally( $site_id ) {
 
         foreach ( array( 'base.migration_tally', 'base.migration_day_visitor' ) as $entity ) {
@@ -355,7 +382,10 @@ abstract class FactMigrator {
     /**
      * The raw rows a batch of v1 rows becomes, counting refusals into $progress.
      *
-     * @return array[]
+     * @param  list<Row>  $rows
+     * @param  Progress   $progress updated in place
+     * @param  Tally|null $tally    added to in place; null counts nothing
+     * @return list<array<string, mixed>> raw rows, as EventRawHandlers::rowFor() builds them
      */
     protected function build( array $rows, array &$progress, ?array &$tally = null ) {
 
@@ -435,6 +465,7 @@ abstract class FactMigrator {
      * with derives the same ids. Nothing else in owa_event_raw is touched.
      * Once v1 is dropped there is nothing to roll back to.
      *
+     * @param  string $site_id
      * @return int rows deleted
      */
     public function revertSite( $site_id ) {
@@ -497,7 +528,8 @@ abstract class FactMigrator {
      * A site reconciles when every expected row is present with the same
      * revenue and visitors. Refused rows are the accounted-for difference.
      *
-     * @return array|null yyyymmdd => day; null where the pass writes no raw rows
+     * @param  string $site_id
+     * @return array<int, ReconcileDay>|null yyyymmdd => day; null where the pass writes no raw rows
      */
     public function reconcileSite( $site_id ) {
 
@@ -596,7 +628,7 @@ abstract class FactMigrator {
     /**
      * The days that do not reconcile, as lines to print.
      *
-     * @param  array $days from reconcileSite()
+     * @param  array<int, ReconcileDay> $days from reconcileSite()
      * @return string[]
      */
     public static function discrepancies( array $days ) {
@@ -641,7 +673,7 @@ abstract class FactMigrator {
     /**
      * One line for a site that reconciles: days, rows read, refused, written.
      *
-     * @param  array $days from reconcileSite()
+     * @param  array<int, ReconcileDay> $days from reconcileSite()
      * @return string
      */
     public static function summary( array $days ) {
@@ -682,7 +714,7 @@ abstract class FactMigrator {
     /**
      * How many line items a built row's params carry.
      *
-     * @param  string|array|null $params
+     * @param  string|array<mixed>|null $params  JSON, or already decoded
      * @return int
      */
     protected static function itemCount( $params ) {
@@ -692,7 +724,12 @@ abstract class FactMigrator {
         return is_array( $doc ) && is_array( $doc['items'] ?? null ) ? count( $doc['items'] ) : 0;
     }
 
-    /** Drop a site's progress row and tally, so the pass starts over. */
+    /**
+     * Drop a site's progress row and tally, so the pass starts over.
+     *
+     * @param  string $site_id
+     * @return void
+     */
     protected function forget( $site_id ) {
 
         $this->forgetTally( $site_id );
@@ -711,6 +748,9 @@ abstract class FactMigrator {
      *
      * The same things the row builder refuses without, named so the run can
      * say how many of each it met.
+     *
+     * @param  Row $r
+     * @return string|null
      */
     protected function refusal( array $r ) {
 
@@ -740,7 +780,9 @@ abstract class FactMigrator {
     /**
      * What one v1 row becomes.
      *
-     * @return object[] events, the row's own first
+     * @param  Row  $r
+     * @param  Refs $refs
+     * @return \OWA\Module\Base\Classes\Event[] events, the row's own first
      */
     abstract protected function events( array $r, array $refs );
 
@@ -749,6 +791,10 @@ abstract class FactMigrator {
      * time, the page, referrer, user agent, location, attribution and custom
      * variables, with the URL readings made by ingest's own callbacks.
      *
+     * @param  Row    $r
+     * @param  Refs   $refs
+     * @param  string $type
+     * @param  array<string, mixed> $extra  properties of this event type
      * @return \OWA\Module\Base\Classes\Event
      */
     protected function baseEvent( array $r, array $refs, $type, array $extra = array() ) {
@@ -853,7 +899,9 @@ abstract class FactMigrator {
      * say utm_medium=referral cannot be told from v1's reading and loses it;
      * with a referrer the cube reads referral again.
      *
-     * @return array tracking properties
+     * @param  Row  $r
+     * @param  Refs $refs
+     * @return array<string, mixed> tracking properties
      */
     protected function attribution( array $r, array $refs ) {
 
@@ -900,6 +948,9 @@ abstract class FactMigrator {
      * strict mode refuses -- and with it the whole batch. Measured on a 1.x
      * install: 745 of 11,741 locations, plus one "VATICAN CITY STATE)". A code
      * is two letters; anything else is not one, and is stored as no code.
+     *
+     * @param  array<mixed> $location  a v1 location_dim row, or none
+     * @return array<mixed>
      */
     public static function repairedLocation( array $location ) {
 
@@ -924,17 +975,6 @@ abstract class FactMigrator {
     }
 
     /**
-     * A v1 address, or a v1 proxy chain resolved the way ingest resolves one.
-     *
-     * 1.x sometimes stored the whole X-Forwarded-For chain -- "client, proxy,
-     * ..." -- which is not an address and is longer than the column: strict
-     * mode refused the batch. Measured on a 1.x install: 5 of 724,000 rows.
-     * A single address is kept as v1 stored it; 1.x already chose it.
-     *
-     * @param mixed $value
-     * @return string|null
-     */
-    /**
      * A 1.x text value as the text it was.
      *
      * 1.x stored tracked text HTML-escaped -- "Caf&eacute;", "Tom &amp; Jerry"
@@ -953,6 +993,17 @@ abstract class FactMigrator {
             ? $value : html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
     }
 
+    /**
+     * A v1 address, or a v1 proxy chain resolved the way ingest resolves one.
+     *
+     * 1.x sometimes stored the whole X-Forwarded-For chain -- "client, proxy,
+     * ..." -- which is not an address and is longer than the column: strict
+     * mode refused the batch. Measured on a 1.x install: 5 of 724,000 rows.
+     * A single address is kept as v1 stored it; 1.x already chose it.
+     *
+     * @param mixed $value  as v1 stored it
+     * @return string|null
+     */
     public static function ipAddress( $value ) {
 
         $value = trim( (string) $value );
@@ -991,7 +1042,12 @@ abstract class FactMigrator {
         return $value !== '' && strlen( $value ) <= 16 ? $value : null;
     }
 
-    /** A stored value, as opposed to empty or v1's "(not set)". */
+    /**
+     * A stored value, as opposed to empty or v1's "(not set)".
+     *
+     * @param  mixed $value  as v1 stored it
+     * @return bool
+     */
     protected static function present( $value ) {
 
         return $value !== null && trim( (string) $value ) !== ''
@@ -1005,6 +1061,9 @@ abstract class FactMigrator {
      * hashes the time, so two page views of one session in one second would
      * collapse into one row. The sub-second part is derived from the v1 row id:
      * deterministic, so a replayed batch derives the same ids.
+     *
+     * @param  Row $r
+     * @return int
      */
     public static function microseconds( array $r ) {
 
@@ -1021,7 +1080,8 @@ abstract class FactMigrator {
      * then matches the wrong row. So ids are collected as text here and looked
      * up by exact value, in the key column's own type (lookup()).
      *
-     * @return array table => [ id as text => row ]
+     * @param  list<Row> $rows
+     * @return Refs table => [ id as text => row ]
      */
     protected function resolve( array $rows ) {
 
@@ -1056,9 +1116,9 @@ abstract class FactMigrator {
      * row's timestamp, or where v1 lost that row, the earliest of the
      * session's rows in this batch.
      *
-     * @param  array $rows
-     * @param  array $refs resolve()'s, which a subclass may add to
-     * @return array session id as text => timestamp
+     * @param  list<Row> $rows
+     * @param  Refs $refs resolve()'s, which a subclass may add to
+     * @return array<int|string, int> session id as text => timestamp
      */
     protected function sessionStarts( array $rows, array &$refs ) {
 
@@ -1100,9 +1160,9 @@ abstract class FactMigrator {
      * sessionStarts() has it. Two queries per batch, on each table's
      * visitor_id index.
      *
-     * @param  array $rows
-     * @param  array $starts session id as text => timestamp
-     * @return array session id as text => count
+     * @param  list<Row> $rows
+     * @param  array<int|string, int> $starts session id as text => timestamp
+     * @return array<int|string, int> session id as text => count
      */
     protected function priorSessions( array $rows, array $starts ) {
 
@@ -1195,9 +1255,9 @@ abstract class FactMigrator {
      * Rows of one v1 table by id, compared in the id column's own type.
      *
      * @param  string $table   unprefixed
-     * @param  array  $ids     as read, of any type
+     * @param  array<mixed> $ids  as read, of any type
      * @param  string $columns
-     * @return array  id as text => row
+     * @return array<int|string, Row>  id as text => row
      */
     protected function lookup( $table, array $ids, $columns ) {
 
@@ -1235,13 +1295,23 @@ abstract class FactMigrator {
         return $out;
     }
 
-    /** A v1 table's name under the prefix this migrator reads. */
+    /**
+     * A v1 table's name under the prefix this migrator reads.
+     *
+     * @param  string $table  unprefixed
+     * @return string
+     */
     protected function v1Table( $table ) {
 
         return V1Tables::name( $table, $this->prefix );
     }
 
-    /** Whether a v1 table's `id` column is an integer type on this installation. */
+    /**
+     * Whether a v1 table's `id` column is an integer type on this installation.
+     *
+     * @param  string $table  unprefixed
+     * @return bool
+     */
     protected function integerKey( $table ) {
 
         return $this->integerColumn( $table, 'id' );
@@ -1250,6 +1320,10 @@ abstract class FactMigrator {
     /**
      * Whether a v1 column is an integer type on this installation: the same
      * columns are BIGINT on one and VARCHAR on another (V1Schema).
+     *
+     * @param  string $table  unprefixed
+     * @param  string $column
+     * @return bool
      */
     protected function integerColumn( $table, $column ) {
 
@@ -1266,7 +1340,12 @@ abstract class FactMigrator {
         return $this->integer_keys[ $key ];
     }
 
-    /** A signed 64-bit integer written as text, other than zero. */
+    /**
+     * A signed 64-bit integer written as text, other than zero.
+     *
+     * @param  mixed $value  as read from v1, of any type
+     * @return bool
+     */
     public static function isId( $value ) {
 
         $value = (string) $value;
@@ -1280,7 +1359,13 @@ abstract class FactMigrator {
         return (string) (int) $value === $value;
     }
 
-    /** The next batch of one site's v1 rows after $after, in id order. */
+    /**
+     * The next batch of one site's v1 rows after $after, in id order.
+     *
+     * @param  string      $site_id
+     * @param  string|null $after  the last id passed; null from the start
+     * @return list<Row>
+     */
     protected function read( $site_id, $after ) {
 
         $name = V1Tables::name( static::SOURCE, $this->prefix );
@@ -1320,6 +1405,7 @@ abstract class FactMigrator {
      * over-long value into a silent truncation, and strict mode refusing it is
      * the point.
      *
+     * @param  list<array<string, mixed>> $rows  raw rows, as build() made them
      * @return int|false rows newly written
      */
     protected function write( array $rows ) {
@@ -1379,7 +1465,12 @@ abstract class FactMigrator {
         return (int) $this->db()->getAffectedRows();
     }
 
-    /** This site's progress row, loaded or new. */
+    /**
+     * This site's progress row, loaded or new.
+     *
+     * @param  string $site_id
+     * @return Progress
+     */
     protected function progress( $site_id ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.migration_progress' );
@@ -1429,6 +1520,12 @@ abstract class FactMigrator {
         );
     }
 
+    /**
+     * Write the progress row, and mark it persisted.
+     *
+     * @param  Progress $progress
+     * @return bool
+     */
     protected function save( array &$progress ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.migration_progress' );
@@ -1451,6 +1548,7 @@ abstract class FactMigrator {
         return false;
     }
 
+    /** @return \OWA\Core\Db */
     protected function db() {
 
         return \OWA\Core\CoreAPI::dbSingleton();

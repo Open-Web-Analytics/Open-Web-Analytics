@@ -25,6 +25,8 @@ namespace OWA\Module\Base\Classes\Migration;
  *
  * item_revenue is not carried. v2's item is price times quantity, which is
  * what v1 wrote it as.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
  */
 class PurchaseMigrator extends FactMigrator {
 
@@ -114,8 +116,8 @@ class PurchaseMigrator extends FactMigrator {
      * numbers, and null for an item naming neither a SKU nor a product --
      * the same rule OWATracker.purchaseItem applies at collection.
      *
-     * @param  array $li a commerce_line_item_fact row
-     * @return array|null
+     * @param  Row $li a commerce_line_item_fact row
+     * @return array{item_id?: string, item_name?: string, item_category?: string, price?: int|float, quantity?: int}|null
      */
     public static function item( array $li ) {
 

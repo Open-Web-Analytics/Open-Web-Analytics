@@ -22,6 +22,9 @@ namespace OWA\Module\Base\Classes\Migration;
  *
  * All of a site's sessions, whatever cutoff the page views were migrated with:
  * a visitor's acquisition is stamped on every later session they have.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type Progress from FactMigrator
  */
 class VisitorMigrator extends FactMigrator {
 
@@ -86,7 +89,9 @@ class VisitorMigrator extends FactMigrator {
     /**
      * The acquisition rows a batch of sessions yields.
      *
-     * @return array[]
+     * @param  list<Row> $rows      v1 session rows
+     * @param  Progress  $progress  updated in place
+     * @return list<array{visitor_id: string, site_id: string, acq_source: string|null, acq_medium: string|null, acq_campaign: string|null, acq_ad: string|null, acq_search_terms: string|null, acq_referer_url: string|null, acq_referer_host: string|null, acq_ts: int, last_seen: int}>
      */
     public function acquisitions( array $rows, array &$progress ) {
 
@@ -161,12 +166,25 @@ class VisitorMigrator extends FactMigrator {
         return $deleted;
     }
 
+    /**
+     * How many of these visitors the table holds a row for.
+     *
+     * @param  string    $table
+     * @param  list<int> $ids
+     * @return int
+     */
     private function present_rows( $table, array $ids ) {
 
         return (int) ( ( (array) $this->db()->get_row( sprintf( 'SELECT COUNT(*) AS n FROM %s WHERE visitor_id IN (%s)',
             $table, implode( ',', $ids ) ) ) )['n'] ?? 0 );
     }
 
+    /**
+     * A v1 value as text, or null where it holds nothing.
+     *
+     * @param  mixed $v  as v1 stored it
+     * @return string|null
+     */
     private static function value( $v ) {
 
         return self::present( $v ) ? self::v1Text( $v ) : null;

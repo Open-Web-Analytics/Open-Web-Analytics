@@ -51,7 +51,12 @@ class ActionMigrator extends FactMigrator {
         return array( $this->baseEvent( $r, $refs, $name, $extra ) );
     }
 
-    /** "Signup Form Submit" -> signup_form_submit; '' where nothing is left. */
+    /**
+     * "Signup Form Submit" -> signup_form_submit; '' where nothing is left.
+     *
+     * @param  string $name
+     * @return string
+     */
     public static function eventName( $name ) {
 
         $name = strtolower( trim( (string) $name ) );
@@ -76,6 +81,9 @@ class ActionMigrator extends FactMigrator {
      * processor. A v1 action called "Purchase" became a purchase row, with
      * none of a purchase's columns, and one sharing a module's event name was
      * handed to that module's store; both are prefixed with action_ instead.
+     *
+     * @param  string $name
+     * @return bool
      */
     public static function isTaken( $name ) {
 
