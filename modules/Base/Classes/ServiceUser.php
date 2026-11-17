@@ -246,13 +246,17 @@ class ServiceUser extends \OWA\Core\Base {
     }
 
     /**
-     * Mark the user as authenticated and populate their capabilities
+     * Mark the user as authenticated, or not.
      *
-     * @param  bool $bool not read: the status is always set true
+     * It used to ignore its argument and always set true, so a caller passing
+     * false to withdraw authentication authenticated the user instead. Every
+     * caller in OWA passes true.
+     *
+     * @param  bool $bool whether the user is authenticated
      * @return void
      */
     public function setAuthStatus($bool) {
-        $this->is_authenticated = true;
+        $this->is_authenticated = ( $bool === true );
     }
 
     /**
