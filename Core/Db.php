@@ -549,14 +549,14 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * selectColumn(), without the alias: $as is ignored.
+     * selectColumn().
      *
      * @param  string|array{0: string, 1: string} $name
      * @param  string $as
      * @return void
      */
     public function select($name, $as = '') {
-        $this->selectColumn($name, $as = '');
+        $this->selectColumn($name, $as);
     }
 
     /**
