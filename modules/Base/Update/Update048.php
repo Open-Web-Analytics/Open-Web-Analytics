@@ -36,13 +36,17 @@ namespace OWA\Module\Base\Update;
  */
 class Update048 extends \OWA\Core\Update {
 
-    var $schema_version = 48;
+    public $schema_version = 48;
 
     
 
-    var $down_does_not_restore = 'the orphaned conditions it deleted, which no goal could reach.';
+    public $down_does_not_restore = 'the orphaned conditions it deleted, which no goal could reach.';
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $goal      = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
         $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
@@ -101,7 +105,7 @@ class Update048 extends \OWA\Core\Update {
         return true;
     }
 
-    function down() {
+    public function down() {
 
         $this->e->notice(
             'Nothing to reverse: the rows this deleted were unreachable, and '

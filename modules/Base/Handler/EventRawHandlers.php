@@ -78,8 +78,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
     /**
      * @param object $event
+     * @return int an OWA_EHS_ handler status
      */
-    function notify( $event ) {
+    public function notify( $event ) {
 
         /*
          * THE SPAM SCORE FIRST, before the set is built. A beacon at or over the
@@ -107,9 +108,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
     /**
      * Save the events one beacon became, in one transaction.
      *
-     * @param  array  $events    incoming event first
-     * @param  object $incoming  the event as it arrived at this handler
-     * @return int
+     * @param  list<object> $events    incoming event first
+     * @param  object       $incoming  the event as it arrived at this handler
+     * @return int an OWA_EHS_ handler status
      */
     protected function saveTrackingEvents( array $events, $incoming ) {
 
@@ -170,7 +171,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * disagree with the row it describes.
      *
      * @param  object $event
-     * @return array|null  null when the event cannot be identified
+     * @return array<string, mixed>|null  column => value; null when the event cannot be identified
      */
     public static function rowFor( $event ) {
 
@@ -211,7 +212,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * @param object $event
      * @param string $name  the v2 event name
-     * @return array|null   null when the event cannot be identified
+     * @return array<string, mixed>|null   column => value; null when the event cannot be identified
      */
     protected function row( $event, $name ) {
 
@@ -387,21 +388,11 @@ class EventRawHandlers extends \OWA\Core\Observer {
     }
 
     /**
-     * The params JSON -- what cannot be a column.
+     * Names and string values converted to UTF-8 (Lib::utf8Encode()), so json_encode() keeps them.
      *
-     * Site-defined keys unknown at release time, and the per-event-type values
-     * that are too narrow to earn a column of their own. Every field whose name
-     * the release knows gets a column instead: the wide prototype measured
-     * storage as a wash, JSON extraction is slower than a column, and MySQL 8's
-     * INSTANT ADD COLUMN removes the ALTER cost for release-known fields.
-     *
-     * Returns null rather than '{}' for an event with nothing to carry, so
-     * COUNT(params) answers how many events carried any.
-     *
-     * @param object $event
-     * @return string|null JSON
+     * @param  array<mixed> $params name => value, nested to any depth
+     * @return array<mixed>
      */
-    /** Names and string values converted to UTF-8 (Lib::utf8Encode()), so json_encode() keeps them. */
     protected static function utf8Params( array $params ) {
 
         $out = array();
@@ -423,6 +414,21 @@ class EventRawHandlers extends \OWA\Core\Observer {
         return $out;
     }
 
+    /**
+     * The params JSON -- what cannot be a column.
+     *
+     * Site-defined keys unknown at release time, and the per-event-type values
+     * that are too narrow to earn a column of their own. Every field whose name
+     * the release knows gets a column instead: the wide prototype measured
+     * storage as a wash, JSON extraction is slower than a column, and MySQL 8's
+     * INSTANT ADD COLUMN removes the ALTER cost for release-known fields.
+     *
+     * Returns null rather than '{}' for an event with nothing to carry, so
+     * COUNT(params) answers how many events carried any.
+     *
+     * @param object $event
+     * @return string|null JSON
+     */
     protected function params( $event ) {
 
         $params = array();
@@ -614,7 +620,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * it is how the three stop drifting apart.
      *
      * @param object $event
-     * @return array  wire name => params key
+     * @return array<string, string>  wire name => params key
      */
     protected function declaredParams( $event ) {
 
@@ -625,7 +631,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
     /**
      * Has this beacon already been written?
      *
-     * @param array $row
+     * @param array<string, mixed> $row
      * @return bool
      */
     protected function alreadyIngested( $row ) {
@@ -652,9 +658,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * are InnoDB, but its only callers are the schema-update CLI -- nothing
      * depended on it while one beacon meant one row.
      *
-     * @param array[] $rows
-     * @param object  $event
-     * @return int
+     * @param list<array<string, mixed>> $rows
+     * @param object                     $event
+     * @return int an OWA_EHS_ handler status
      */
     protected function store( $rows, $event ) {
 
@@ -728,6 +734,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * pending one absorbs the rest.
      *
      * After the commit, as JobQueue::enqueue() asks.
+     *
+     * @param  list<array<string, mixed>> $rows
+     * @return void
      */
     protected function queueLateRebuilds( array $rows ) {
 
@@ -785,7 +794,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * page_title, page_url.
      *
      * @param object  $event the incoming tracking event
-     * @param array[] $rows  the rows just written, primary first
+     * @param list<array<string, mixed>> $rows  the rows just written, primary first
      * @return void
      */
     protected function announce( $event, array $rows ) {
@@ -837,8 +846,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * IN THE CALLER'S TRANSACTION, alongside the raw rows, so a visitor never
      * carries a property for an event that was not stored.
      *
-     * @param object $event
-     * @param array  $row  the primary row, already built
+     * @param object               $event
+     * @param array<string, mixed> $row  the primary row, already built
      * @return bool
      */
     protected function writeUserProperties( $event, $row ) {
@@ -1008,8 +1017,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * INSERT then either creates it or fails on the unique key, and in that
      * case a racing insert may have just landed, so the UPDATE runs once more.
      *
-     * @param object $event the incoming event
-     * @param array  $row   the primary row, already built
+     * @param object               $event the incoming event
+     * @param array<string, mixed> $row   the primary row, already built
      * @return bool
      */
     protected function writeLastTouch( $event, $row ) {
@@ -1106,9 +1115,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * an acquisition with nothing in it and acq_ts set, which the build reads as
      * direct (Cube\SourceStep) rather than as the sentinel.
      *
-     * @param object $event
-     * @param array  $row     the primary row, already built
-     * @param bool   $landing whether this beacon raised first_visit
+     * @param object               $event
+     * @param array<string, mixed> $row     the primary row, already built
+     * @param bool                 $landing whether this beacon raised first_visit
      * @return bool
      */
     protected function writeVisitorAcquisition( $event, $row, $landing = false ) {

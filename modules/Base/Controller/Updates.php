@@ -48,13 +48,14 @@ class Updates extends \OWA\Core\Controller {
             return;
         }
 
-        $data = array();
-
-        $data['view_method'] = 'delegate';
-        $data['view'] = 'base.updates';
-        $data['modules'] = $modules;
-
-        return $data;
+        // The signed-out wrapper: this page may be the first anything renders,
+        // before anyone has signed in.
+        $this->setView( 'base.updates', [
+            'template' => 'updates.php',
+            'wrapper'  => 'wrapper_public.php',
+            'vars'     => [ 'headline' => \OWA\Core\CoreAPI::t( 'Your database needs to be upgraded...' ), 'modules' ],
+        ] );
+        $this->set( 'modules', $modules );
     }
 }
 

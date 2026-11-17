@@ -25,11 +25,15 @@ class Update077 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 77;
+    public $schema_version = 77;
 
     const COLUMNS = array( 'value' );
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
@@ -47,7 +51,7 @@ class Update077 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: the column goes from every cube and from raw, with what it held. */
-    function down() {
+    public function down() {
 
         if ( $this->dropCubeColumns( self::COLUMNS ) === false ) {
 

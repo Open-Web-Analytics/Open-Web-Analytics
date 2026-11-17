@@ -38,19 +38,32 @@ namespace OWA\Module\Base\Update;
  */
 class Update062 extends \OWA\Core\Update {
 
-    var $schema_version = 62;
+    public $schema_version = 62;
 
-    var $is_cli_mode_required = true;
+    /** @var bool */
+    public $is_cli_mode_required = true;
 
-    var $down_does_not_restore = 'the 1.x file queue lines it moved to its update062-v1-queue archive file: they stay there.';
+    public $down_does_not_restore = 'the 1.x file queue lines it moved to its update062-v1-queue archive file: they stay there.';
 
-    /** The table prefix v1 is read under; a test reads a fixture's. */
-    var $prefix = 'owa_';
+    /**
+     * The table prefix v1 is read under; a test reads a fixture's.
+     *
+     * @var string
+     */
+    public $prefix = 'owa_';
 
-    /** The partitioned tables reachBack() extends; null for raw and every cube. A test names its own. */
-    var $partitioned_tables = null;
+    /**
+     * The partitioned tables reachBack() extends; null for raw and every cube. A test names its own.
+     *
+     * @var list<string>|null
+     */
+    public $partitioned_tables = null;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         /*
          * First, whatever v1 holds (PLAN 2.30.6). Beacons in 1.x's FILE queue
@@ -196,6 +209,7 @@ class Update062 extends \OWA\Core\Update {
      * every expected row is present with its revenue and visitors; a site that
      * differs is named, with its first days, and the update stays pending.
      *
+     * @param  string|null $since yyyymmdd, or null for all history
      * @return bool
      */
     private function reconcile( $since ) {
@@ -265,7 +279,7 @@ class Update062 extends \OWA\Core\Update {
      * Refused once cmd=v1-drop has run: the ids come from v1's rows, and with
      * them gone the migrated history can be neither found nor restored.
      */
-    function down() {
+    public function down() {
 
         if ( \OWA\Core\CoreAPI::getSetting( 'base', 'v1_tables_dropped' ) ) {
 
@@ -313,13 +327,23 @@ class Update062 extends \OWA\Core\Update {
     /** @var string|null the archive's file name; null to name it by the time. TESTS ONLY. */
     public $archive_name = null;
 
-    /** The files of the queue directory that can hold 1.x's lines. */
+    /**
+     * The files of the queue directory that can hold 1.x's lines.
+     *
+     * @param  string $dir
+     * @return list<string>
+     */
     private static function v1QueueFiles( $dir ) {
 
         return array_values( array_filter( array_merge( array( $dir . 'events.txt' ), (array) glob( $dir . 'unprocessed/*' ) ), 'is_file' ) );
     }
 
-    /** Whether a queue line is 1.x's: "<time>|*|<queue>|*|<pid>|*|<urlencoded blob>". v2 writes JSON. */
+    /**
+     * Whether a queue line is 1.x's: "<time>|*|<queue>|*|<pid>|*|<urlencoded blob>". v2 writes JSON.
+     *
+     * @param  string $line
+     * @return bool
+     */
     private static function isV1Line( $line ) {
 
         return strpos( (string) $line, '|*|' ) !== false;
@@ -336,8 +360,8 @@ class Update062 extends \OWA\Core\Update {
      * before its lines are removed from a file, so a failure part way loses
      * none: the lines moved so far are in the archive and the rest in the queue.
      *
-     * @return array|null lines, files, path; null when a file could not be read
-     *                    or the archive written
+     * @return array{lines: int, files: int, path: string}|null null when a file
+     *         could not be read or the archive written
      */
     public function archiveV1Queue() {
 
@@ -413,7 +437,7 @@ class Update062 extends \OWA\Core\Update {
      * not v2's JSON -- beacons never ingested, which up() archives -- and
      * owa_queue_item rows still awaiting a retry, which do not.
      *
-     * @return array file_lines, queue_rows
+     * @return array{file_lines: int, queue_rows: int}
      */
     public function undrainedV1Queue() {
 
@@ -447,7 +471,8 @@ class Update062 extends \OWA\Core\Update {
     /**
      * v1's volume per site and year, and what will be left behind.
      *
-     * @return string[]
+     * @param  \OWA\Module\Base\Classes\Migration\FactMigrator $migrator
+     * @return list<string>
      */
     public function preflight( $migrator ) {
 
@@ -490,6 +515,9 @@ class Update062 extends \OWA\Core\Update {
      * both read as starting on that later day -- a build of 2021 refuses, as no
      * dated partition covers it. Done before the passes, so the split moves
      * only rows v2 wrote itself.
+     *
+     * @param  string|null $since yyyymmdd, or null for all history
+     * @return bool
      */
     private function reachBack( $since ) {
 
@@ -548,7 +576,11 @@ class Update062 extends \OWA\Core\Update {
         return true;
     }
 
-    /** Whether any table a pass reads holds a row. */
+    /**
+     * Whether any table a pass reads holds a row.
+     *
+     * @return bool
+     */
     private function hasV1Rows() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -567,13 +599,22 @@ class Update062 extends \OWA\Core\Update {
         return false;
     }
 
+    /**
+     * @return bool
+     */
     private function hasV1() {
 
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->tableExists(
             \OWA\Module\Base\Classes\Migration\V1Tables::name( 'request', $this->prefix ) );
     }
 
-    /** A pass, or null where its v1 table is not there. */
+    /**
+     * A pass, or null where its v1 table is not there.
+     *
+     * @param  string      $class a pass, a key of PASSES
+     * @param  string|null $since yyyymmdd, or null for all history
+     * @return \OWA\Module\Base\Classes\Migration\FactMigrator|null
+     */
     private function migrator( $class, $since = null ) {
 
         $class = '\\OWA\\Module\\Base\\Classes\\Migration\\' . $class;

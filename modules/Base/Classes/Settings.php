@@ -116,8 +116,12 @@ namespace OWA\Module\Base\Classes;
       */
       function __construct() {
      
-        // load default settings
-        $this->default_config = $this->getDefaultSettingsArray();
+        /*
+         * Base's declared defaults, before the config file runs: the file may
+         * read and extend them, as addCapabilityToRole() does. Every other
+         * module's defaults arrive with the registry, below.
+         */
+        $this->default_config = self::baseDefaults();
         
         // include/load config file
         // This needs to happen as early as possible in order to make constants available
@@ -2694,240 +2698,35 @@ namespace OWA\Module\Base\Classes;
 
 
      /**
-      * @return array
+      * Base's defaults: what modules/Base/settings.php declares, plus two that
+      * are facts rather than declarations.
+      *
+      *   is_active    Base is always active. getActiveModules() finds it by
+      *                this when no stored row is read (a static-config boot),
+      *                and no module's is_active is declared with a default.
+      *   config_file  where this installation lives: owa-config.php in the
+      *                OWA directory.
+      *
+      * @return array{base: array<string, mixed>}
       */
-     private function getDefaultSettingsArray() {
-	 	 
-         return array(
-             'base' => array(
-                /*
-                 * 'ns' is the WIRE namespace. It is what keeps OWA's names from
-                 * colliding with a tracked page's own: cookie names in a shared
-                 * jar, the attribution params a customer puts on their URLs
-                 * (owa_source, owa_campaign), the cross-domain owa_state param,
-                 * and the OWA_ environment-variable prefix. Changing it breaks
-                 * every existing cookie and every campaign URL in the wild.
-                 *
-                 * OWA's OWN admin and reporting URLs and form fields carry no
-                 * prefix: OWA owns the whole query string there and has nothing
-                 * to collide with, so they read 'do=base.reportingHome'.
-                 * Prefixed admin URLs are still accepted on the way in -- see
-                 * RequestContainer -- so existing bookmarks and links keep
-                 * working.
-                 */
-                'ns'                                => 'owa_',
-                /*
-                 * EMPTY MEANS ns-PREFIXED -- owa_source, owa_medium and so on.
-                 * Naming the parameters explicitly is how a site opts into
-                 * utm_* without changing its links, and is a Property
-                 * setting because a Property is a website and its links are
-                 * its own. See TrackingEventHelpers::campaignKeysFor().
-                 */
-                'campaignKeys'                      => array(),
-                // utm_* read beside the ns-prefixed names; owa_ wins on a URL with both.
-                'campaignUtmParams'                 => true,
-                // The tracking tag (PLAN 2.24.4), baked into a Profile's tracking bundle.
-                // Features and lists default to the tracker's own (TrackerDefaults).
-                'tracker_cache_headers'             => array(),
-                'tracker_page_views'                => true,
-                'tracker_clicks'                    => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackClicks' ),
-                'tracker_forms'                     => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackForms' ),
-                'tracker_scroll'                    => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackScroll' ),
-                'tracker_site_search'               => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackSiteSearch' ),
-                'tracker_exceptions'                => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackExceptions' ),
-                'tracker_route_changes'             => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackRouteChanges' ),
-                'tracker_url_fragments'             => false,
-                'tracker_scroll_thresholds'         => \OWA\Module\Base\Classes\TrackerDefaults::text( 'scrollThresholds' ),
-                'tracker_site_search_params'        => \OWA\Module\Base\Classes\TrackerDefaults::text( 'siteSearchParams' ),
-                'tracker_download_extensions'       => \OWA\Module\Base\Classes\TrackerDefaults::text( 'downloadExtensions' ),
-                'tracker_visitor_cookie_days'       => 364,
-                'tracker_session_cookie_days'       => 364,
-                'tracker_cookie_domain'             => '',
-                'tracker_honor_privacy_signals'     => true,
-                'feed_subscription_param'            => 'sid',
-                'site_id'                            => '',
-                'configuration_id'                    => '1',
-                'session_length'                    => 1800, //sdk
-                'db_type'                            => 'mysql',
-                'db_name'                            => '',
-                'db_host'                            => '',
-                'db_port'                            => 3306,
-                'db_user'                            => '',
-                'db_password'                        => '',
-                'db_force_new_connections'            => true,
-                'db_make_persistant_connections'    => false,
-                'spam_detection'                    => 'normal',
-                'spam_threshold'                    => 5.0,
-                'query_string_filters'                => '', // move to site settings
-                'async_log_dir'                        => '', // setupPaths(): logs/ in the data directory
-                'notice_email'                        => '',
-                'error_log_file'                    => '', // setupPaths(): a file in logs/ in the data directory
-                'ua-regexes'                        => '',
-                'public_path'                        => '',
-                'geolocation_lookup'                => false,
-                'geolocation_service'                => '',
-                'report_wrapper'                    => 'wrapper_default.php',
-                'announce_visitors'                    => false,
-                'app_passwords_enabled'                => true,
-                'app_passwords_require_https'          => true,
-                'public_url'                        => '',
-                'base_url'                            => '',
-                'action_url'                        => '',
-                'assets_url'                        => '',
-                'tracking_url'                      => '',
-                'link_template'                        => '%s?%s', // main_url?key=value....
-                'owa_user_agent'                    => 'Open Web Analytics Bot ' . \OWA\Core\Env::version(),
-                'owa_news_url'                        => 'https://api.github.com/repositories/3891123/releases?page=1&per_page=5',
-                'timezone'                            => 'America/Los_Angeles',
-                'wiki_url'                            => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki',
-                'password_length'                    => 4,
-                'modules'                            => array('base'),
-                'mailer-from'                        => '',  // Set default address, because sending from root@localhost wont work
-                'mailer-fromName'                    => 'OWA Server',
+     public static function baseDefaults() {
 
-                // Fact-table partitioning. Defaults; override with a constant in
-                // owa-config.php -- see applyConfigConstants().
-                //
-                // How recent a period must be to keep fine granularity. Older
-                // periods may be merged into coarser ones to stay within the
-                // server's open-file budget -- merged, never dropped.
-                'partition_detail_months'            => 36,
-                // Fraction of the server's spare open-file slots partitioning may
-                // claim, as a divisor: 2 means half. The cap is shared with every
-                // other table on the instance, and the schema grows.
-                // Fewest partitions a table may be limited to, whatever the
-                // budget arithmetic says.
-                // How long a day stays in the cube's daily front tier before
-                // its month merges back. This IS the late-arrival window: past
-                // it, an event for that day is in raw and not in the cube
-                // until someone rebuilds that month. 3.1 has the number open
-                // pending a measurement of client-side lateness.
-                'cube_rebuild_window_days'           => 7,
-                'attribution_lookback_days'          => 90,
-                // Retention windows in months; none keeps everything (Classes\Retention).
-                'raw_retention_months'               => null,
-                'cube_retention_months'              => null,
-                // Largest run of calendar years that may be merged into a single
-                // partition. A cap: without it, an unreachable budget would drive
-                // everything into one partition, which fits no better and means
-                // all of history ages out at once.
-                // Set to a positive integer to state the per-table partition
-                // budget outright instead of deriving it from innodb_open_files.
-                'partition_max_partitions'           => 0,
-                'mailer-host'                        => '',
-                'mailer-port'                        => '',
-                'mailer-use-smtp'                    => false,
-                'mailer-smtpAuth'                    => false,
-                'mailer-username'                    => '',
-                'mailer-password'                    => '',
-                'queue_tracking_events'               => false,
-                'cookie_domain'                        => false,
-                'cookie_persistence'                => true,  // Controls persistence of cookies, only for use in europe needed
-                'is_active'                            => true,
-                'log_named_users'                    => true,
-                'log_visitor_pii'                    => true,
-                'excluded_ips'                        => '',
-                'anonymize_ips'                        => false,
-                'reserved_words'                    => array('do' => 'action'),
-                'start_page'                        => 'base.reportingHome',
-                // A page path's last segment named here is dropped: /store/index.html is /store.
-                'directory_index_pages'             => \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES,
-                'nonce_expiration_period'            => 7200,
-                'default_reporting_period'            => 'last_seven_days',
-                /*
-                 * campaignAttributionWindow stood here, 60 days, and was inert
-                 * for its whole life: StateManager::set() overwrote its own
-                 * expiration argument, so the campaign cookie was a browser-
-                 * session cookie whatever this said. Removed rather than
-                 * repaired -- v2 resolves attribution from stored evidence at
-                 * read time, where a window is a reporting choice and not a
-                 * cookie lifetime frozen at collection.
-                 */
-                 //list of capabilities that require access to the site
-                 'capabilitiesThatRequireSiteAccess' => array(
-                     'view_reports',
-                     'view_reports_ecommerce',
-                     'edit_sites',
-                 ),
-                 // role to capabilities configuration
-                'capabilities'                        => array(
-                        'admin' => array(
-                                'install_schema',
-                                'view_site_list',
-                                'view_reports',
-                                 'view_reports_ecommerce',
-                                'edit_settings',
-                                'edit_sites',
-                                'edit_users',
-                                'edit_modules',
-                                // Authoring a custom report. Admin-only by
-                                // default; grant it to another role in the
-                                // config file to let analysts build their own.
-                                // NOT in capabilitiesThatRequireSiteAccess, so
-                                // it is held on every Property. A custom report
-                                // is of one, and drawing it asks view_reports
-                                // there.
-                                'edit_reports',
-                                // Changing the email address on your own
-                                // account. Admin-only by default; grant it to
-                                // another role in the config file to let people
-                                // change their own.
-                                //
-                                // Separate from edit_users, which is about
-                                // other people's accounts. The address is where
-                                // password resets are sent, so changing it
-                                // moves who can recover the account -- everyone
-                                // may edit their own name without that being
-                                // true of their address.
-                                //
-                                // Not site-scoped, so not in
-                                // capabilitiesThatRequireSiteAccess.
-                                'edit_own_email'
-                        ),
-                        'analyst' => array('install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce'),
-                        'viewer' => array('install_schema', 'view_site_list', 'view_reports'),
-                        'everyone' => array('install_schema')
-                ),
-                'enableEcommerceReporting'            => false, // move to site settings
-                'currencyLocal'                        => 'en_US', // move to site settings
-                'currencyISO3'                        => 'USD',   // move to site settings
-                'disabledEndpoints'                    => array(),
-                'disableAllEndpoints'                => false,
-                // Scheduler. Jobs themselves are registered in code by each
-                // module; this holds only what OWA_SCHEDULED_JOBS overlays on
-                // top. See owa_service::loadJobs().
-                'scheduled_jobs'                    => array(),
-                'maxCustomVars'                        => 5, //sdk
-                'logo_image_path'                    => 'base/i/owa-logo.svg',
-                // Content-derived dimension ids are 63-bit. This flag marks an
-                // installation whose existing ids are the old 32-bit crc32
-                // values, so it keeps deriving them until its data has been
-                // migrated. It is a FACT ABOUT THE DATA rather than a
-                // preference: set by Update016 on an existing installation,
-                // and removed by the migration command once every id has been
-                // re-derived. A new installation never has it.
-                'use_32bit_hash'                    => false,
-                'use_32bit_hash_before_v2'          => false,
-                'goals_switched_off_by_049'         => array(),
-                'goal_groups_before_056'            => array(),
-                'ecommerce_reporting_before_070'    => array(),
-                'goal_event_names_before_075'       => array(),
-                'funnel_steps_before_079'           => array(),
-                'default_page_before_080'           => array(),
-                'log_robots_before_084'             => array(),
-                'retired_settings_before_085'       => array(),
-                'cache_settings_before_086'         => array(),
-                'v1_tables_dropped'                 => false,
-                'user_id_illegal_chars'                => array( " ", ";", "'", "\"", "|", ")", "("),
-                'archive_old_events'                => true, // used by event queues to archive processed events.
-                'request_type'                      => 'ui',
-                'server_role'                       => 'full',
-                'skip_stored_settings'              => false,
-                'db_supported_types'				=> ['mysql' => 'MySQL / MariaDB'],
-                'config_file'                       => \OWA\Core\Env::root() . '/owa-config.php'
-            )
-        );
+         $decl = include \OWA\Core\Env::modulesDir() . 'Base' . DIRECTORY_SEPARATOR . 'settings.php';
 
+         $defaults = [];
+
+         foreach ( (array) ( $decl['settings'] ?? [] ) as $key => $args ) {
+
+             if ( array_key_exists( 'default', (array) $args ) ) {
+
+                 $defaults[ $key ] = $args['default'];
+             }
+         }
+
+         $defaults['is_active']   = true;
+         $defaults['config_file'] = \OWA\Core\Env::root() . '/owa-config.php';
+
+         return [ 'base' => $defaults ];
      }
 
      /**
@@ -2936,29 +2735,10 @@ namespace OWA\Module\Base\Classes;
       */
      private function setupPaths() {
 
-         //build base url
-         $base_url = '';
-         $proto  = "http";
-
-        if(isset($_SERVER['HTTPS'])) {
-            $proto .= 's';
-        }
-        if(isset($_SERVER['SERVER_NAME'])) {
-            $base_url .= $proto.'://'.$_SERVER['SERVER_NAME'];
-        }
-
-        if(isset($_SERVER['SERVER_PORT'])) {
-            if($_SERVER['SERVER_PORT'] != 80) {
-                $base_url .= ':'.$_SERVER['SERVER_PORT'];
-            }
-        }
         // there is some plugin use case where this is needed i think. if not get rid of it.
         if (!defined('OWA_PUBLIC_URL')) {
             define('OWA_PUBLIC_URL', '');
         }
-
-        // set base url
-        $this->set('base', 'base_url', $base_url);
 
         //set public path if not defined in config file
         $public_path = $this->get('base', 'public_path');
@@ -2975,7 +2755,6 @@ namespace OWA\Module\Base\Classes;
         $this->set('base','main_absolute_url', $main_url);
         $modules_url = $public_url.'modules/';
         $this->set('base','modules_url', $modules_url);
-        //$this->set('base','action_url',$public_url.'action.php');
         // Built, web-facing static assets (the webpack products AND every server-side
         // image emitted via makeImageLink) live in a dedicated public/ tree, physically
         // separated from the source they are built from so the deny-all .htaccess can
@@ -3002,7 +2781,7 @@ namespace OWA\Module\Base\Classes;
         // discarded whatever the file said, and the config-file-only contract
         // could not be honoured by the config file.
         //
-        // Their declared default is '' (see the defaults array), so "empty means
+        // Their declared default is '' (modules/Base/settings.php), so "empty means
         // nobody set it" is exactly the existing convention, and every install
         // that does not set them is unaffected.
         if ( ! $this->get( 'base', 'error_log_file' ) ) {

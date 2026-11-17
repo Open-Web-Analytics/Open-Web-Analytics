@@ -116,6 +116,34 @@ test.describe('the top bar', () => {
     });
 
     /**
+     * The icons are drawn in Font Awesome, from the woff2 files the build ships.
+     *
+     * A face whose file is missing still leaves the icon's font-family set; only
+     * the browser knows the file failed. The regular face (far) is loaded by
+     * hand because the bar draws only solid icons.
+     */
+    test('the icons are drawn in Font Awesome, and both faces load', async ({ page }) => {
+        const icon = page.getByRole('button', { name: 'Help' }).locator('i');
+
+        await expect(icon).toBeVisible();
+        expect(await icon.evaluate((el) => getComputedStyle(el).fontFamily))
+            .toContain('Font Awesome 5 Free');
+
+        const faces = await page.evaluate(async () => {
+            await document.fonts.ready;
+            for (const weight of ['400', '900']) {
+                await document.fonts.load(`${weight} 16px "Font Awesome 5 Free"`).catch(() => null);
+            }
+            return [...document.fonts]
+                .filter((f) => f.family.replace(/"/g, '') === 'Font Awesome 5 Free')
+                .map((f) => `${f.weight} ${f.status}`)
+                .sort();
+        });
+
+        expect(faces).toEqual(['400 loaded', '900 loaded']);
+    });
+
+    /**
      * EVERYTHING SITS ON THE LOGO'S CENTRE LINE.
      *
      * Every item in this header is floated, and a float takes its own height

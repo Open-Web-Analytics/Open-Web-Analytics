@@ -363,7 +363,12 @@ class VisualizationEdit extends \OWA\Core\ReportController {
 
     function success() {
 
-        $this->setSubview( 'base.visualizationEdit' );
+        $this->setSubview( 'base.visualizationEdit', [
+            'template' => 'visualization_edit.php',
+            'vars'     => [ 'visualization', 'visualizationId', 'steps', 'visualizationType',
+                            'visualizationTypeLabel', 'visualizationTypeHint', 'visualizationTypeIcon',
+                            'eventNames', 'customEventNames', 'conditionVocabulary', 'blankStep', 'maxSteps',
+                            'propertyId', 'constraints', 'dimensionChoices' ] ] );
         $this->setView( 'base.report' );
         $this->set( 'title', $this->get( 'visualizationId' ) ? \OWA\Core\CoreAPI::t( 'Funnel' ) : \OWA\Core\CoreAPI::t( 'New funnel' ) );
 

@@ -97,7 +97,6 @@ describe('reporting bundle build integrity', () => {
             .split('\n').filter((l) => /^\s*import\b/.test(l)).join('\n');
         const orderedTokens = [
             'chosen-js/chosen.jquery.js',
-            'jquery-sparkline',
             "'jquery.flot'",                    // flot core
             'jquery.flot/jquery.flot.time.js',
             './owa.format.js',

@@ -26,7 +26,7 @@ class JobQueue extends \OWA\Core\Entity {
     /** One pending job per key. */
     const KEY_INDEX = 'dedupe_key_unique';
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'job_queue' );
 

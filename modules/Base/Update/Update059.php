@@ -12,11 +12,15 @@ namespace OWA\Module\Base\Update;
  */
 class Update059 extends \OWA\Core\Update {
 
-    var $schema_version = 59;
+    public $schema_version = 59;
 
     const ENTITIES = array( 'base.migration_progress', 'base.migration_tally', 'base.migration_day_visitor' );
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         foreach ( self::ENTITIES as $name ) {
 
@@ -39,7 +43,7 @@ class Update059 extends \OWA\Core\Update {
     }
 
     /** Drop them: the exact inverse. */
-    function down() {
+    public function down() {
 
         foreach ( self::ENTITIES as $name ) {
 

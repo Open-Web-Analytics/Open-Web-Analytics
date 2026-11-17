@@ -29,9 +29,13 @@ class Update044 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 44;
+    public $schema_version = 44;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         return $this->addCubeColumn( 'new_vs_returning' );
     }
@@ -48,7 +52,7 @@ class Update044 extends \OWA\Core\Update {
      * dimension is registered by the module rather than by a schema version --
      * so a checkout old enough to need this down() is old enough to have it.
      */
-    function down() {
+    public function down() {
 
         return $this->dropCubeColumn( 'new_vs_returning' );
     }

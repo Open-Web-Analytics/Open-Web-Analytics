@@ -30,7 +30,8 @@ class SystemHealth extends \OWA\Core\AdminController {
         $this->set( 'sections', \OWA\Module\Base\Classes\SystemHealth::sections() );
 
         CubeStatus::hierarchy( $this );
-        $this->setSubview( 'base.systemHealth' );
+        $this->setSubview( 'base.systemHealth', [
+            'template' => 'system_health.php', 'vars' => [ 'sections' ] ] );
     }
 }
 

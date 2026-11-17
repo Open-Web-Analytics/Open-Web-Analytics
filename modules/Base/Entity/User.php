@@ -65,10 +65,12 @@ class User extends \OWA\Core\Entity {
 
     /**
      * Credential fields. These are never part of a response payload.
+     *
+     * @var list<string>
      */
     protected $private_properties = [ 'password', 'temp_passkey', 'session_epoch' ];
 
-    function __construct() {
+    public function __construct() {
     
         $this->setTableName('user');
         
@@ -121,8 +123,15 @@ class User extends \OWA\Core\Entity {
      *
      * Its stored hash is of random bytes nobody is told. Auth::isUser() refuses
      * the values the previous generator gave.
+     *
+     * @param  string $user_id
+     * @param  string $role
+     * @param  string $password
+     * @param  string $email_address
+     * @param  string $real_name
+     * @return mixed Entity::create()'s result, the driver's: false on failure
      */
-    function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
+    public function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
 
         if ( ! $password ) {
 
@@ -163,6 +172,8 @@ class User extends \OWA\Core\Entity {
     /**
      * Whether a temp passkey is well formed and not yet expired. Says nothing
      * about whether any account holds it.
+     *
+     * @param  mixed $key as the request carried it: only a string can be one
      */
     public static function tempPasskeyIsCurrent( $key ): bool {
 
@@ -179,6 +190,8 @@ class User extends \OWA\Core\Entity {
      * nothing else records when a reset was sent. An invitation key, which
      * lives INVITE_TTL, reads as recent only in the RESET_RESEND_AFTER seconds
      * when it has exactly RESET_TTL left.
+     *
+     * @param  mixed $key as stored or carried: only a string can be one
      */
     public static function resetMailedRecently( $key, ?int $now = null ): bool {
 
@@ -194,7 +207,12 @@ class User extends \OWA\Core\Entity {
         return $minted <= $now && $minted > $now - self::RESET_RESEND_AFTER;
     }
 
-    /** A well-formed temp passkey, current or not, or false. */
+    /**
+     * A well-formed temp passkey, current or not, or false.
+     *
+     * @param  mixed $key as the request carried it: only a string can be one
+     * @return string|false
+     */
     public static function cleanTempPasskey( $key ) {
 
         return is_string( $key ) && preg_match( self::TEMP_PASSKEY_PATTERN, $key ) === 1 ? $key : false;
@@ -205,6 +223,8 @@ class User extends \OWA\Core\Entity {
      * Ends every browser session of this user, on every device, from the next
      * request: each session cookie carries the epoch it was issued under.
      * Written by the caller's update().
+     *
+     * @return void
      */
     public function endSessions() {
 

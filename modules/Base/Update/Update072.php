@@ -26,19 +26,24 @@ class Update072 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 72;
+    public $schema_version = 72;
 
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
     const COLUMNS = array( 'page_depth', 'previous_page_path', 'next_page_path' );
 
-    /** One rebuild per cube for all three; see CubeColumn::addCubeColumns(). */
-    function up( $force = false ) {
+    /**
+     * One rebuild per cube for all three; see CubeColumn::addCubeColumns().
+     *
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         return $this->addCubeColumns( self::COLUMNS );
     }
 
     /** The exact inverse: the columns go from every cube, with what they held. */
-    function down() {
+    public function down() {
 
         return $this->dropCubeColumns( self::COLUMNS );
     }

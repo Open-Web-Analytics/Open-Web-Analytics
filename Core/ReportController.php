@@ -436,7 +436,8 @@ class ReportController extends \OWA\Core\AdminController {
 
             $this->set( 'can_view_cube_status',
                 \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_modules' ) );
-            $this->setSubview( 'base.reportNotReady' );
+            $this->setSubview( 'base.reportNotReady', [
+                'template' => 'report_not_ready.php', 'vars' => [ 'reporting_readiness', 'can_view_cube_status' ] ] );
         }
     }
     

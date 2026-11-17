@@ -17,7 +17,7 @@ namespace OWA\Module\Base\Entity;
  */
 class MigrationDayVisitor extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'migration_day_visitor' );
 
@@ -32,7 +32,13 @@ class MigrationDayVisitor extends \OWA\Core\Entity {
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'visitor_id', OWA_DTD_BIGINT ) );
     }
 
-    /** @return int */
+    /**
+     * @param  string     $source
+     * @param  string     $site_id
+     * @param  int|string $yyyymmdd
+     * @param  int|string $visitor_id
+     * @return int
+     */
     public static function idFor( $source, $site_id, $yyyymmdd, $visitor_id ) {
 
         return \OWA\Core\Lib::wideStringGuid( implode( '|', array( $source, $site_id, (int) $yyyymmdd, $visitor_id ) ) );

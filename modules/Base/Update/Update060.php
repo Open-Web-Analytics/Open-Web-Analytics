@@ -22,9 +22,13 @@ namespace OWA\Module\Base\Update;
  */
 class Update060 extends \OWA\Core\Update {
 
-    var $schema_version = 60;
+    public $schema_version = 60;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $table = $this->table();
 
@@ -42,7 +46,7 @@ class Update060 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: visitor_id the primary key again, and nothing else. */
-    function down() {
+    public function down() {
 
         $table = $this->table();
 
@@ -67,12 +71,21 @@ class Update060 extends \OWA\Core\Update {
         return \OWA\Core\CoreAPI::dbSingleton()->tableExists( $table ) ? $table : null;
     }
 
+    /**
+     * @param  string $table
+     * @return bool
+     */
     private function hasSurrogate( $table ) {
 
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_row(
             sprintf( "SHOW COLUMNS FROM %s LIKE 'id'", $table ) );
     }
 
+    /**
+     * @param  string $table
+     * @param  string $sql
+     * @return bool
+     */
     private function alter( $table, $sql ) {
 
         if ( \OWA\Core\CoreAPI::dbSingleton()->query( $sql ) === false ) {

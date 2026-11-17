@@ -122,6 +122,9 @@ class Strings {
     /** @var array|null English (or context + English) => translation, for the locale in use */
     private static $translations = null;
 
+    /** @var string|null the locale $translations were loaded for; null when useTranslations() set them */
+    private static $translations_locale = null;
+
     /** @var string|null the plural rule set by useTranslations() (tests) */
     private static $plural_rule = null;
 
@@ -277,12 +280,20 @@ class Strings {
         return $strings ? array( 'strings' => $strings, 'plural' => self::pluralRule() ) : null;
     }
 
-    /** The locale's translations, loaded once. */
+    /**
+     * The translations of the locale in use, loaded once per locale.
+     *
+     * A t() call made before the config file defines OWA_LOCALE answers the
+     * English, and the next one after it loads the locale's catalogue: Base's
+     * settings declaration is read before the config file runs.
+     */
     private static function translations() {
 
-        if ( self::$translations === null ) {
+        if ( self::$translations === null
+             || ( self::$translations_locale !== null && self::$translations_locale !== self::locale() ) ) {
 
-            self::$translations = self::load( self::locale() );
+            self::$translations_locale = self::locale();
+            self::$translations        = self::load( self::$translations_locale );
         }
 
         return self::$translations;
@@ -333,13 +344,14 @@ class Strings {
      */
     public static function useTranslations( $translations, $plural_rule = null ) {
 
-        self::$translations = $translations === null ? null : (array) $translations;
-        self::$plural_rule  = $translations === null ? null : $plural_rule;
+        self::$translations        = $translations === null ? null : (array) $translations;
+        self::$plural_rule         = $translations === null ? null : $plural_rule;
+        self::$translations_locale = null;
     }
 
     /**
      * Use this locale instead of OWA_LOCALE (tests). Null goes back to it.
-     * Translations are not reloaded: see useTranslations().
+     * Translations set by useTranslations() stay; otherwise the locale's load.
      */
     public static function useLocale( $locale ) {
 

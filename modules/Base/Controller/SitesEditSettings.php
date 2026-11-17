@@ -111,7 +111,7 @@ class SitesEditSettings extends \OWA\Core\AdminController {
          * base.sitesProfile is the Profile's details form, which reads none of
          * these fields.
          */
-        $this->setSubview('base.profileSettings');
+        $this->setSubview( 'base.profileSettings', ProfileSettings::SCREEN );
         /*
          * 3002 -- "the form had errors" -- not 3311.
          *

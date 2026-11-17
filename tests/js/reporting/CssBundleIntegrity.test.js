@@ -159,3 +159,65 @@ describe('reporting CSS build integrity', () => {
         });
     });
 });
+
+/**
+ * Font Awesome ships woff2 only, and its stylesheet names nothing else: every
+ * browser OWA supports loads woff2, and a src() naming a file that is not
+ * shipped is a request that 404s. The build copies modules/Base/css/ as it is
+ * (the manifest's copy rule), so what the source tree holds is what ships.
+ */
+describe('Font Awesome fonts', () => {
+
+    const repoRoot = path.resolve(__dirname, '../../..');
+    const srcFaDir = path.join(repoRoot, 'modules/Base/css/font-awesome');
+    const publicFaDir = path.join(repoRoot, 'public/base/css/font-awesome');
+
+    /** The url() targets of a stylesheet, without the query or fragment. */
+    const urls = (css) => [...css.matchAll(/url\(\s*["']?([^"')]+?)["']?\s*\)/g)]
+        .map((m) => m[1].replace(/[?#].*$/, ''));
+
+    /** The url()s in faDir's all.min.css that do not resolve to a file there. */
+    const missingFrom = (faDir) => {
+        const cssDir = path.join(faDir, 'css');
+        const css = fs.readFileSync(path.join(cssDir, 'all.min.css'), 'utf8');
+
+        return urls(css).filter((u) => !fs.existsSync(path.resolve(cssDir, u)));
+    };
+
+    test('only woff2 font files are shipped', () => {
+        const fonts = fs.readdirSync(path.join(srcFaDir, 'webfonts'));
+
+        expect(fonts.length).toBeGreaterThan(0);
+        expect(fonts.filter((f) => !f.endsWith('.woff2'))).toEqual([]);
+    });
+
+    test('every @font-face names woff2 and nothing else', () => {
+        const css = fs.readFileSync(path.join(srcFaDir, 'css/all.min.css'), 'utf8');
+        const faces = css.match(/@font-face\{[^}]*\}/g) || [];
+
+        expect(faces.length).toBeGreaterThan(0);
+        for (const face of faces) {
+            expect(urls(face).every((u) => u.endsWith('.woff2'))).toBe(true);
+            expect(face).not.toMatch(/format\("(?!woff2")/);
+        }
+    });
+
+    test('the solid and regular faces are there, for fas and far', () => {
+        const css = fs.readFileSync(path.join(srcFaDir, 'css/all.min.css'), 'utf8');
+        const weights = (css.match(/@font-face\{[^}]*\}/g) || [])
+            .filter((f) => f.includes('"Font Awesome 5 Free"'))
+            .map((f) => (f.match(/font-weight:(\d+)/) || [])[1]);
+
+        expect(weights.sort()).toEqual(['400', '900']);
+    });
+
+    test('every url() in the stylesheet resolves to a file in the source tree', () => {
+        expect(missingFrom(srcFaDir)).toEqual([]);
+    });
+
+    test('every url() in the served stylesheet resolves to a served file', () => {
+        // The build has run when the served copy exists (BundleIntegrity builds it).
+        if (!fs.existsSync(path.join(publicFaDir, 'css/all.min.css'))) return;
+        expect(missingFrom(publicFaDir)).toEqual([]);
+    });
+});

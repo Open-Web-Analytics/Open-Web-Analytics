@@ -32,14 +32,18 @@ class Update047 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 47;
+    public $schema_version = 47;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         return $this->addRawColumn( 'beacon_version' );
     }
 
-    function down() {
+    public function down() {
 
         if ( $this->dropCubeColumn( 'beacon_version' ) === false ) {
 

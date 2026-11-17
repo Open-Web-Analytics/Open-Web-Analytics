@@ -149,7 +149,9 @@ class InstallBase extends \OWA\Core\Controller\Install {
 
             $this->set('site_id', $site_id);
             $this->setView('base.install');
-            $this->setSubview('base.installFinish');
+            $this->setSubview( 'base.installFinish', [
+                'template' => 'install_finish.php',
+                'vars'     => [ 'headline' => \OWA\Core\CoreAPI::t( 'Installation is Complete' ), 'site_id', 'u' ] ] );
 
         } else {
 
@@ -162,7 +164,7 @@ class InstallBase extends \OWA\Core\Controller\Install {
 
         $this->set('defaults', $this->params);
         $this->setView('base.install');
-        $this->setSubView('base.installDefaultsEntry');
+        $this->setSubview( 'base.installDefaultsEntry', InstallDefaultsEntry::SCREEN );
     }
 }
 

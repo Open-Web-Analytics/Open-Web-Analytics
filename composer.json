@@ -46,7 +46,10 @@
     },
     "scripts": {
         "lint": "find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -print0 | xargs -0 -n1 php -l",
-        "phpstan": "phpstan analyse -c phpstan.neon --memory-limit=1G",
+        "phpstan": [
+            "phpstan analyse -c phpstan.neon --memory-limit=1G",
+            "phpstan analyse -c phpstan.level6.neon --memory-limit=1G"
+        ],
         "test": "phpunit",
         "test:isolation": "bash tests/tools/isolation_sweep.sh",
         "test:scratch": "bash tests/tools/scratch_db_run.sh",

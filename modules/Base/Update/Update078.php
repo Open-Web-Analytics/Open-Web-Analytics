@@ -47,7 +47,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update078 extends \OWA\Core\Update {
 
-    var $schema_version = 78;
+    public $schema_version = 78;
 
     /** Old metric name => new. */
     const METRICS = array(
@@ -61,13 +61,17 @@ class Update078 extends \OWA\Core\Update {
         'conversions' => 'goals',
     );
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         return $this->rewriteAll( self::METRICS, self::SETS );
     }
 
     /** The exact inverse. */
-    function down() {
+    public function down() {
 
         return $this->rewriteAll( array_flip( self::METRICS ), array_flip( self::SETS ) );
     }
@@ -75,8 +79,8 @@ class Update078 extends \OWA\Core\Update {
     /**
      * Rewrite every saved definition that names one of these.
      *
-     * @param  array $metrics  from => to
-     * @param  array $sets     from => to
+     * @param  array<string, string> $metrics  from => to
+     * @param  array<string, string> $sets     from => to
      * @return bool
      */
     private function rewriteAll( array $metrics, array $sets ) {
@@ -150,8 +154,8 @@ class Update078 extends \OWA\Core\Update {
      * differently, and send this to the fallback, json_encode( rename() ).
      *
      * @param  string $stored   as the column holds it
-     * @param  array  $metrics  from => to
-     * @param  array  $sets     from => to
+     * @param  array<string, string> $metrics  from => to
+     * @param  array<string, string> $sets     from => to
      * @return string|null
      */
     public static function rewriteStored( $stored, array $metrics, array $sets = array() ) {
@@ -188,7 +192,12 @@ class Update078 extends \OWA\Core\Update {
         return self::decode( $text ) === $renamed ? $text : json_encode( $renamed );
     }
 
-    /** A stored definition decoded, as CustomReports::hydrate() reads one. */
+    /**
+     * A stored definition decoded, as CustomReports::hydrate() reads one.
+     *
+     * @param  string $stored
+     * @return mixed json_decode()'s result: an array, or null when it does not decode
+     */
     private static function decode( $stored ) {
 
         return json_decode( html_entity_decode( (string) $stored, ENT_QUOTES ), true );
@@ -199,10 +208,10 @@ class Update078 extends \OWA\Core\Update {
      *
      * Pure, so a test can hand it any shape.
      *
-     * @param  array $definition  decoded
-     * @param  array $metrics     from => to
-     * @param  array $sets        from => to
-     * @return array
+     * @param  array<string, mixed> $definition decoded JSON
+     * @param  array<string, string> $metrics     from => to
+     * @param  array<string, string> $sets        from => to
+     * @return array<string, mixed>
      */
     public static function rename( array $definition, array $metrics, array $sets = array() ) {
 
@@ -258,6 +267,11 @@ class Update078 extends \OWA\Core\Update {
         return $definition;
     }
 
+    /**
+     * @param  array<string, mixed>  $widget
+     * @param  array<string, string> $metrics from => to
+     * @return array<string, mixed>
+     */
     private static function widget( array $widget, array $metrics ) {
 
         if ( isset( $widget['query'] ) && is_array( $widget['query'] ) ) {
@@ -303,8 +317,9 @@ class Update078 extends \OWA\Core\Update {
      * Each keeps the spacing around it, so a string that maps nothing comes
      * back byte for byte and one that does differs only in the names.
      *
-     * @param  mixed $names
-     * @param  bool  $sort   each name may end in '-', a descending sort
+     * @param  mixed                 $names a list or a comma string of names; anything else is returned as it is
+     * @param  array<string, string> $map   from => to
+     * @param  bool                  $sort  each name may end in '-', a descending sort
      * @return mixed
      */
     private static function names( $names, array $map, $sort = false ) {
@@ -330,13 +345,26 @@ class Update078 extends \OWA\Core\Update {
         }, explode( ',', $names ) ) );
     }
 
-    /** A sort string: names() with each name keeping its '-'. */
+    /**
+     * A sort string: names() with each name keeping its '-'.
+     *
+     * @param  string                $sort
+     * @param  array<string, string> $map from => to
+     * @return string
+     */
     private static function sort( $sort, array $map ) {
 
         return self::names( $sort, $map, true );
     }
 
-    /** One name, mapped where the map has it. */
+    /**
+     * One name, mapped where the map has it.
+     *
+     * @param  mixed                 $part a name, or anything else, returned as it is
+     * @param  array<string, string> $map from => to
+     * @param  bool                  $sort
+     * @return mixed
+     */
     private static function one( $part, array $map, $sort ) {
 
         if ( ! is_string( $part ) ) {

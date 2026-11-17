@@ -285,26 +285,39 @@ final class CustomDimensionScreenTest extends TestCase
     public static function screens(): array
     {
         return [
-            'list'     => ['custom_dimensions.php', 'CustomDimensions.php'],
-            'register' => ['custom_dimension_edit.php', 'CustomDimensionEdit.php'],
+            'list'     => ['custom_dimensions.php', \OWA\Module\Base\Controller\CustomDimensions::class],
+            'register' => ['custom_dimension_edit.php', \OWA\Module\Base\Controller\CustomDimensionEdit::class],
         ];
     }
 
     /**
-     * EVERY VARIABLE THE TEMPLATE READS IS ONE THE VIEW SETS.
+     * EVERY VARIABLE THE TEMPLATE READS IS ONE THE SCREEN SETS: one its
+     * controller declares for the template, or one Core\View sets on every
+     * screen.
      *
      * ViewScope throws on an unset variable rather than rendering an empty
-     * string, so a template reading something the view forgot is a blank
-     * screen, not a blank field -- and the two halves are in different files
-     * with nothing but habit holding them together.
+     * string, so a template reading something nobody set is a blank screen,
+     * not a blank field -- and the two halves are in different files.
      *
      * @dataProvider screens
      */
-    public function testTheTemplateReadsNothingTheViewDoesNotSet( string $template, string $viewFile ): void
+    public function testTheTemplateReadsNothingTheScreenDoesNotSet( string $template, string $controllerClass ): void
     {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'the screen resolves its Property' );
+        }
+
         $markup = file_get_contents( __DIR__ . '/../modules/Base/templates/' . $template );
 
-        $view = file_get_contents( __DIR__ . '/../modules/Base/View/' . $viewFile );
+        $controller = new $controllerClass( [ 'propertyId' => (string) self::PROPERTY ] );
+        $controller->action();
+
+        $data = (array) $controller->data;
+        $set  = [ 'params', 'do', 'validation_errors', 'settings_page_title' ];
+
+        foreach ( (array) ( $data['templates'][ $data['subview'] ]['vars'] ?? [] ) as $key => $var ) {
+            $set[] = is_int( $key ) ? $var : $key;
+        }
 
         // $view->name, but not $view->method(...)
         preg_match_all( '/\$view->([A-Za-z_][A-Za-z0-9_]*)\b(?!\s*\()/', $markup, $matches );
@@ -313,11 +326,8 @@ final class CustomDimensionScreenTest extends TestCase
 
         foreach ( array_unique( $matches[1] ) as $name ) {
 
-            $this->assertMatchesRegularExpression(
-                "/'" . preg_quote( $name, '/' ) . "'/",
-                $view,
-                "$template reads \$view->$name and $viewFile never sets it, so the "
-              . 'screen renders as nothing' );
+            $this->assertContains( $name, $set,
+                "$template reads \$view->$name and the screen never sets it, so it renders as nothing" );
         }
     }
 

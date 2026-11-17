@@ -23,9 +23,13 @@ namespace OWA\Module\Base\Update;
  */
 class Update040 extends \OWA\Core\Update {
 
-    var $schema_version = 40;
+    public $schema_version = 40;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
 
@@ -46,7 +50,7 @@ class Update040 extends \OWA\Core\Update {
      * The exact inverse. What it holds is collected by a feature that goes away
      * with this update, and the acquisition columns beside it are untouched.
      */
-    function down() {
+    public function down() {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
 

@@ -45,7 +45,7 @@ class Update056 extends \OWA\Core\Update {
 
     use SettingRows;
 
-    var $schema_version = 56;
+    public $schema_version = 56;
 
     /** What up() removed: { conditions: id => row, roles: id => role, groups: id => goal_group, settings: id => row }. */
     const BEFORE = 'goal_groups_before_056';
@@ -53,7 +53,11 @@ class Update056 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $db         = \OWA\Core\CoreAPI::dbSingleton();
         $condition  = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
@@ -144,7 +148,7 @@ class Update056 extends \OWA\Core\Update {
      * The exact inverse: the columns, then what up() kept. The definitions are
      * spelled out because the entities no longer declare either column.
      */
-    function down() {
+    public function down() {
 
         $db         = \OWA\Core\CoreAPI::dbSingleton();
         $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
@@ -221,6 +225,11 @@ class Update056 extends \OWA\Core\Update {
         return true;
     }
 
+    /**
+     * @param  \OWA\Core\Entity $entity
+     * @param  string          $column
+     * @return bool
+     */
     private function hasColumn( $entity, $column ) {
 
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(

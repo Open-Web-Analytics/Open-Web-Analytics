@@ -1,0 +1,25 @@
+########################################################################
+# PHPStan, level 6, over the paths already typed for it. Same settings as
+# phpstan.neon; `composer phpstan` runs both. Add a path here once it has
+# no level 6 errors.
+#
+# CAUTION: PHPStan resolves `paths` RELATIVE TO THIS FILE.
+########################################################################
+
+includes:
+    - phpstan.neon
+
+parameters:
+    level: 6
+    paths!:
+        - modules/Base/Update
+        - modules/Base/Entity
+        - modules/Base/Handler
+        - modules/Sqs/Classes
+        - modules/MaxmindGeoip/Classes
+        - modules/Domstream/Classes
+        - modules/Domstream/Update
+
+    # OWA_EHS_* (handler return codes) are defined here, outside the paths.
+    scanFiles:
+        - modules/Base/Classes/EventDispatch.php

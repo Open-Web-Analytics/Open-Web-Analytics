@@ -19,11 +19,15 @@ namespace OWA\Module\Base\Update;
  */
 class Update064 extends \OWA\Core\Update {
 
-    var $schema_version = 64;
+    public $schema_version = 64;
 
     const INDEX = 'site_ts';
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         if ( $this->hasIndex() ) {
 
@@ -35,7 +39,7 @@ class Update064 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: the index this added, by its name. */
-    function down() {
+    public function down() {
 
         if ( ! $this->hasIndex() ) {
 
@@ -46,6 +50,9 @@ class Update064 extends \OWA\Core\Update {
             'DROP INDEX %s ON %s', self::INDEX, $this->tableFor( 'base.event_raw' ) ) ) !== false;
     }
 
+    /**
+     * @return bool
+     */
     private function hasIndex() {
 
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
