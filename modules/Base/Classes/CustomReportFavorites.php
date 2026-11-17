@@ -94,9 +94,8 @@ class CustomReportFavorites {
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report_favorite' );
 
         $rows = (array) $db->get_results( sprintf(
-            "SELECT custom_report_id FROM %s WHERE user_id = '%s'",
-            $entity->getTableName(),
-            $db->prepare( (string) $user_id ) ) );
+            'SELECT custom_report_id FROM %s WHERE user_id = ?',
+            $entity->getTableName() ), [ (string) $user_id ] );
 
         $ids = array();
 
@@ -141,10 +140,8 @@ class CustomReportFavorites {
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report_favorite' );
 
         $row = $db->get_row( sprintf(
-            "SELECT id FROM %s WHERE custom_report_id = '%s' AND user_id = '%s'",
-            $entity->getTableName(),
-            $db->prepare( (string) $report_id ),
-            $db->prepare( (string) $user_id ) ) );
+            'SELECT id FROM %s WHERE custom_report_id = ? AND user_id = ?',
+            $entity->getTableName() ), [ (string) $report_id, (string) $user_id ] );
 
         return ( is_array( $row ) && isset( $row['id'] ) ) ? (string) $row['id'] : null;
     }

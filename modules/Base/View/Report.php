@@ -144,7 +144,7 @@ class Report extends \OWA\Core\View {
         // css libs to be loaded
 		$this->setCss("base/css/font-awesome/css/all.min.css");
         $this->setCss("base/css/owa.reporting-css-combined.css");
-        $additionalCss = $this->c->get('base','additionalCss');
+        $additionalCss = \OWA\Core\CoreAPI::getSetting( 'base', 'additionalCss' );
         if (is_array($additionalCss)) {
             foreach ($additionalCss as $css) {
                 $this->setCss($css);

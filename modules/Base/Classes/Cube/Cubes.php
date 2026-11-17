@@ -123,6 +123,7 @@ class Cubes {
         $prefix = \OWA\Core\Entity::TABLE_PREFIX . self::PREFIX;
         $cubes  = array();
 
+        // Escaped, not bound: a server-side prepared SHOW TABLES takes no placeholder.
         foreach ( (array) $db->get_results( sprintf(
                 OWA_SQL_SHOW_TABLE, $db->prepare( $prefix ) . '%' ) ) as $row ) {
 
@@ -254,8 +255,8 @@ class Cubes {
         $db   = \OWA\Core\CoreAPI::dbSingleton();
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
 
-        $row = $db->get_row( sprintf( "SELECT property_id FROM %s WHERE site_id = '%s'",
-            $site, $db->prepare( $site_id ) ) );
+        $row = $db->get_row( sprintf( 'SELECT property_id FROM %s WHERE site_id = ?', $site ),
+            [ (string) $site_id ] );
 
         return self::$property_of_site[ $site_id ] =
             ( $row && ! empty( $row['property_id'] ) ) ? (string) $row['property_id'] : '';
@@ -411,17 +412,12 @@ class Cubes {
             return null;
         }
 
-        $db     = \OWA\Core\CoreAPI::dbSingleton();
-        $raw    = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
-        $quoted = array();
-
-        foreach ( $sites as $site_id ) {
-
-            $quoted[] = "'" . $db->prepare( $site_id ) . "'";
-        }
+        $db    = \OWA\Core\CoreAPI::dbSingleton();
+        $raw   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $sites = array_map( 'strval', array_values( $sites ) );
 
         $row = $db->get_row( sprintf( 'SELECT MIN(yyyymmdd) AS day FROM %s WHERE site_id IN (%s)',
-            $raw, implode( ', ', $quoted ) ) );
+            $raw, \OWA\Core\Db::placeholders( count( $sites ) ) ), $sites );
 
         $day = is_array( $row ) ? (int) ( $row['day'] ?? 0 ) : 0;
 

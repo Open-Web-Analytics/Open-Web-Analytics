@@ -88,7 +88,7 @@ class RequestContainer {
         $this->timestamp      = (int) $now;
         $this->timestamp_usec = (int) round( $now * 1000000 );
 
-        $this->guid = \OWA\Core\Lib::generateRandomUid();
+        $this->guid = \OWA\Core\Lib::randomId();
 
         // php's server variables
         $this->server = $_SERVER;

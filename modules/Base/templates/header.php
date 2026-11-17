@@ -143,19 +143,19 @@
         // addresses the API as api/index.php?do=...&module=...&version=...,
         // and assembling path segments here would only work on an install
         // whose URLs are rewritten.
-        var apiUrl      = <?php echo json_encode( $owa_apiUrl ); ?>;
-        var markReadUrl = <?php echo json_encode( $owa_markReadUrl ); ?>;
-        var dismissUrl  = <?php echo json_encode( $owa_dismissUrl ); ?>;
+        var apiUrl      = <?php echo $view->scriptJson( $owa_apiUrl ); ?>;
+        var markReadUrl = <?php echo $view->scriptJson( $owa_markReadUrl ); ?>;
+        var dismissUrl  = <?php echo $view->scriptJson( $owa_dismissUrl ); ?>;
 
         // The words this script writes, translated; %s is a number.
-        var TEXT = <?php echo json_encode( array(
+        var TEXT = <?php echo $view->scriptJson( array(
             'nothingNew' => \OWA\Core\CoreAPI::t( 'Nothing new.' ),
             'justNow'    => \OWA\Core\CoreAPI::t( 'just now' ),
             'minutes'    => \OWA\Core\CoreAPI::t( '%sm', 'minutes ago, abbreviated' ),
             'hours'      => \OWA\Core\CoreAPI::t( '%sh', 'hours ago, abbreviated' ),
             'days'       => \OWA\Core\CoreAPI::t( '%sd', 'days ago, abbreviated' ),
             'dismiss'    => \OWA\Core\CoreAPI::t( 'Dismiss notification' ),
-        ), JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
+        ) ); ?>;
 
         // The badge counts the UNREAD rows we hold -- not how many rows there
         // are, because a read notification stays on screen without counting.
@@ -222,7 +222,7 @@
         // written, after config_dom.php has set OWA.config.
         function locale() {
             return (window.OWA && OWA.config && OWA.config.locale)
-                || <?php echo json_encode( \OWA\Core\Strings::locale() === \OWA\Core\Strings::SOURCE_LOCALE ? null : \OWA\Core\Strings::htmlLang() ); ?>
+                || <?php echo $view->scriptJson( \OWA\Core\Strings::locale() === \OWA\Core\Strings::SOURCE_LOCALE ? null : \OWA\Core\Strings::htmlLang() ); ?>
                 || undefined;
         }
 

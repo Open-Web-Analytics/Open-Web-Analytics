@@ -61,7 +61,7 @@ final class Update070Test extends TestCase
         $this->row('property', (string) self::OFF_PROPERTY, serialize(true));
         $this->row('profile', self::ORPHAN, serialize(true));
         // Another setting at the profile scope, which this does not move.
-        $this->row('profile', self::ON, serialize('example.test'), 'domain_aliases');
+        $this->row('profile', self::ON, serialize('sessionid'), 'query_string_filters');
 
         $this->update = new \OWA\Module\Base\Update\Update070();
         $this->update->tables = ['base.setting' => self::TABLE];
@@ -140,7 +140,7 @@ final class Update070Test extends TestCase
             'a Profile still holds it');
 
         // Nothing else moves.
-        $this->assertSame(serialize('example.test'), $this->rows()['profile:' . self::ON . ':domain_aliases'] ?? null);
+        $this->assertSame(serialize('sessionid'), $this->rows()['profile:' . self::ON . ':query_string_filters'] ?? null);
     }
 
     /** NULL is no value: a Profile holding it inherits, like one with no row. */

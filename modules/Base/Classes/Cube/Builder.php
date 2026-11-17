@@ -1113,23 +1113,33 @@ class Builder {
 
             list( $id, $yyyymmdd ) = explode( ':', $key );
 
-            $tuple = array( (int) $id, (int) $yyyymmdd );
+            $tuple  = array( (int) $id, (int) $yyyymmdd );
+            $params = [];
 
             foreach ( array_keys( $steps ) as $column ) {
 
-                $tuple[] = isset( $values[ $column ] )
-                    ? "'" . $this->db->prepare( $values[ $column ] ) . "'" : 'NULL';
+                if ( isset( $values[ $column ] ) ) {
+
+                    $tuple[]  = '?';
+                    $params[] = (string) $values[ $column ];
+
+                } else {
+
+                    $tuple[] = 'NULL';
+                }
             }
 
-            $tuples[] = '(' . implode( ', ', $tuple ) . ')';
+            $tuples[] = [ '(' . implode( ', ', $tuple ) . ')', $params ];
         }
 
         // Chunked so one oversized statement cannot exceed max_allowed_packet.
         foreach ( array_chunk( $tuples, 500 ) as $chunk ) {
 
+            $params = array_merge( ...array_column( $chunk, 1 ) );
+
             if ( ! $this->db->query( sprintf( 'INSERT INTO %s (%s) VALUES %s',
                     $this->tables['computed'], implode( ', ', $columns ),
-                    implode( ', ', $chunk ) ) ) ) {
+                    implode( ', ', array_column( $chunk, 0 ) ) ), $params ) ) {
 
                 \OWA\Core\CoreAPI::error( 'Cube build: writing the computed values failed.' );
 

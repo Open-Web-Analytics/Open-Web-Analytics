@@ -269,7 +269,7 @@ class Event {
             $value = $vars[ $name ];
 
             // guid and timestamp are numeric by construction: the guid is
-            // Lib::generateRandomUid()'s digits and the time is unix seconds.
+            // Lib::randomId()'s digits and the time is unix seconds.
             // Anything else is not an event this install made.
             if ( ( $name === 'guid' || $name === 'timestamp' )
                  && ! ( is_int( $value ) || is_string( $value ) && ctype_digit( $value ) ) ) {
@@ -293,7 +293,7 @@ class Event {
      */
     function set_guid() {
 
-        return \OWA\Core\Lib::generateRandomUid();
+        return \OWA\Core\Lib::randomId();
     }
 
     function getProperties() {

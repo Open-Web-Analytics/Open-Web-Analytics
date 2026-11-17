@@ -33,9 +33,9 @@
  * pruneRedundantPersistedSettings() drop them and the module would look
  * uninstalled.
  *
- * Three settings are declared with no default for the same reason:
- * install_complete, domain_aliases and goals are stored and have never had a
- * code default, and inventing one would put them within reach of the prune.
+ * Two settings are declared with no default for the same reason:
+ * install_complete and goals are stored and have never had a code default,
+ * and inventing one would put them within reach of the prune.
  *
  * The config-file-only settings -- paths, stream targets, database
  * credentials, report_wrapper -- are declared STATIC, which is the same
@@ -59,6 +59,7 @@ return array(
     'settings' => array(
 
         'action_url' => array( 'default' => '' ),
+        'additionalCss' => array( 'description' => 'Stylesheets added to every report page after OWA\'s own, as paths under public/ such as base/css/my-theme.css. None by default.' ),
         'announce_visitors' => array(
             'default'  => false,
             'storable' => true,
@@ -225,16 +226,6 @@ return array(
         ),
         'disableAllEndpoints' => array( 'default' => false, 'description' => 'When true, turns off every entry point: index.php, log.php, api/index.php, cli.php and install.php.' ),
         'disabledEndpoints' => array( 'default' => array(), 'description' => 'Entry-point file names to turn off, such as install.php. Empty by default.' ),
-        'domain_aliases' => array(
-            'storable' => true,
-            // Per Profile, on its Observation Settings screen.
-            'scopes'   => array( 'install', 'profile' ),
-            'type'     => 'text',
-            'label'    => \OWA\Core\CoreAPI::t( 'Domain Aliases' ),
-            'description' =>
-                \OWA\Core\CoreAPI::t( 'Other domain names to treat as this one. If the domain is www.mydomain.com, '
-                . 'an alias of mydomain.com counts both as the same. Separate aliases with commas.' ),
-        ),
         'enableEcommerceReporting' => array(
             'default'  => false,
             'storable' => true,

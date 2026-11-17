@@ -2447,7 +2447,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertStringNotContainsString( 'alert(1);//];', $html,
             'a column name must not be able to close the array and run' );
 
-        $this->assertStringContainsString( 'excludeColumns = ["pageUrl\'];alert(1);\/\/"]', $html,
+        $this->assertStringContainsString( 'excludeColumns = ["pageUrl\\u0027];alert(1);\\/\\/"]', $html,
             'it must arrive as an encoded string inside the list' );
     }
 

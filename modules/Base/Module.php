@@ -46,7 +46,7 @@ class Module extends \OWA\Core\Module {
         $this->version = '11';
         $this->description = 'Base functionality for OWA.';
         $this->config_required = false;
-        $this->required_schema_version = 89;
+        $this->required_schema_version = 90;
         parent::__construct();
     }
 
@@ -339,8 +339,8 @@ class Module extends \OWA\Core\Module {
          * the same list.
          */
         foreach ( array(
-            array( 'base.profileObservation', \OWA\Core\CoreAPI::t( 'Pages and domains' ),
-                array( 'domain_aliases', 'query_string_filters' ) ),
+            array( 'base.profileObservation', \OWA\Core\CoreAPI::t( 'Page URLs' ),
+                array( 'query_string_filters' ) ),
             array( 'base.profileCampaigns', \OWA\Core\CoreAPI::t( 'Campaign parameters' ),
                 array( 'campaignKeys' ) ),
             array( 'base.profilePrivacy', \OWA\Core\CoreAPI::t( 'Privacy and exclusions' ),

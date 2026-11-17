@@ -172,7 +172,7 @@ final class SettingTierMoveTest extends TestCase
 
         $this->assertSame( 'via-entity', $site->getSiteSetting( $this->key ),
             'Site::getSiteSetting() still reads its own settings blob, so '
-            . 'makeUrlCanonical/domain aliases/default page see stale values.' );
+            . 'makeUrlCanonical sees stale values.' );
     }
 
     /**

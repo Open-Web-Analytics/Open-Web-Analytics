@@ -1776,7 +1776,7 @@ class CustomReports {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $sql    = 'SELECT * FROM owa_custom_report';
+        $sql    = 'SELECT * FROM ' . \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' )->getTableName();
         $params = array();
         $where  = array();
 
@@ -2046,7 +2046,7 @@ class CustomReports {
 
         if ( $id === '' ) {
 
-            $id = (string) \OWA\Core\Lib::generateRandomUid();
+            $id = \OWA\Core\Lib::randomId();
 
             $entity->set( 'id', $id );
             $entity->set( 'user_id', (string) $user_id );

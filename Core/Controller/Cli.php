@@ -435,6 +435,19 @@ class Cli extends \OWA\Core\AdminController {
             fwrite( $out, $line . PHP_EOL );
         }
     }
+
+    /**
+     * A command's invalid arguments, reported through notice(). doAction()
+     * sets the exit code (2).
+     *
+     * @param mixed $errors the controller's validation_errors
+     * @return void
+     */
+    public static function reportInvalidArguments( $errors ) {
+
+        \OWA\Core\CoreAPI::notice( "Command failed. There were some errors:\n"
+            . json_encode( array( $errors ), JSON_PRETTY_PRINT ) );
+    }
 }
 
 ?>

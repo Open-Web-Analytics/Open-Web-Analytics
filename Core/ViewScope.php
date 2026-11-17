@@ -51,6 +51,7 @@ namespace OWA\Core;
  *
  * @method string codeBlock($code, $language = 'HTML')
  * @method mixed createNonceFormField($action)
+ * @method string escape($value)
  * @method mixed escapeForXml($string)
  * @method mixed formatCurrency($value)
  * @method mixed get($name)
@@ -74,6 +75,7 @@ namespace OWA\Core;
  * @method void outMarkup($text, ...$markup)
  * @method array profileTabs($hierarchyNav, $params = [])
  * @method mixed safeHref($url, $echo = true)
+ * @method string|false scriptJson($value, $flags = 0)
  * @method mixed setTemplate($file)
  * @method array settingsColumn($hierarchyNav, $params = [])
  * @method mixed truncate($str, $length=10, $trailing='...')

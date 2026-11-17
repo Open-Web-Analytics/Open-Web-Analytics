@@ -210,8 +210,7 @@ class SiteManager extends \OWA\Core\Base {
          * just no longer what the row is CALLED. PropertyEdit already minted
          * ids this way; the two paths agree now.
          */
-        $id = $property->generateId(
-            'property:' . ( $name !== '' ? $name : $domain ) . ':' . uniqid( '', true ) );
+        $id = \OWA\Core\Lib::randomId( \OWA\Core\Lib::useNarrowGuid() );
 
         $property->set( 'id', $id );
         $property->set( 'organization_id', $this->ensureOrganization() );

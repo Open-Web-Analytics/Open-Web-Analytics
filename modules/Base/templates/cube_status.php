@@ -15,8 +15,8 @@ require_once __DIR__ . '/cube_status_badge.php';
 <div class="owa_panelIntro">
     <?php $view->out( \OWA\Core\CoreAPI::t( 'Each Property\'s reports read its reporting cube, which the scheduled build keeps up to date.' ) ); ?>
     <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s means reports are wrong or will stop updating until someone acts; %2$s means something the next scheduled build, or time, will resolve.' ),
-        '<b>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Action needed' ), ENT_QUOTES, 'UTF-8' ) . '</b>',
-        '<b>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Attention' ), ENT_QUOTES, 'UTF-8' ) . '</b>' ); ?>
+        '<b>' . $view->escape( \OWA\Core\CoreAPI::t( 'Action needed' ) ) . '</b>',
+        '<b>' . $view->escape( \OWA\Core\CoreAPI::t( 'Attention' ) ) . '</b>' ); ?>
 </div>
 
 <?php if ( ! $view->cubes ): ?>

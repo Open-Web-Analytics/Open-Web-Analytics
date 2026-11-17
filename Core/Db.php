@@ -429,6 +429,25 @@ class Db extends \OWA\Core\Base {
         return $this->_bindings;
     }
 
+    /**
+     * Placeholders for an IN list of $count bound values: "?, ?, ?". A list
+     * needs at least one value; IN () is not SQL.
+     *
+     * @param int $count
+     * @return string
+     */
+    public static function placeholders( $count ) {
+
+        $count = (int) $count;
+
+        if ( $count < 1 ) {
+
+            throw new \InvalidArgumentException( 'An IN list needs at least one value.' );
+        }
+
+        return implode( ', ', array_fill( 0, $count, '?' ) );
+    }
+
     function selectColumn($name, $as = '') {
 
         if (is_array($name)) {
@@ -1402,13 +1421,9 @@ class Db extends \OWA\Core\Base {
     function insertJobLock( $job_name, $owner, $now, $expires_at ) {
 
         return (bool) $this->query( sprintf(
-            "INSERT INTO %s (job_name, owner, acquired_at, expires_at) VALUES ('%s', '%s', %d, %d)",
-            $this->jobLockTable(),
-            $this->prepare( (string) $job_name ),
-            $this->prepare( (string) $owner ),
-            (int) $now,
-            (int) $expires_at
-        ) );
+            'INSERT INTO %s (job_name, owner, acquired_at, expires_at) VALUES (?, ?, ?, ?)',
+            $this->jobLockTable()
+        ), [ (string) $job_name, (string) $owner, (int) $now, (int) $expires_at ] );
     }
 
     /**
@@ -1425,11 +1440,9 @@ class Db extends \OWA\Core\Base {
     function deleteJobLock( $job_name, $now ) {
 
         return (bool) $this->query( sprintf(
-            "DELETE FROM %s WHERE job_name = '%s' AND expires_at <= %d",
-            $this->jobLockTable(),
-            $this->prepare( (string) $job_name ),
-            (int) $now
-        ) );
+            'DELETE FROM %s WHERE job_name = ? AND expires_at <= ?',
+            $this->jobLockTable()
+        ), [ (string) $job_name, (int) $now ] );
     }
 
     /**
@@ -1446,12 +1459,9 @@ class Db extends \OWA\Core\Base {
     function refreshJobLock( $job_name, $owner, $expires_at ) {
 
         return (bool) $this->query( sprintf(
-            "UPDATE %s SET expires_at = %d WHERE job_name = '%s' AND owner = '%s'",
-            $this->jobLockTable(),
-            (int) $expires_at,
-            $this->prepare( (string) $job_name ),
-            $this->prepare( (string) $owner )
-        ) );
+            'UPDATE %s SET expires_at = ? WHERE job_name = ? AND owner = ?',
+            $this->jobLockTable()
+        ), [ (int) $expires_at, (string) $job_name, (string) $owner ] );
     }
 
     /**
@@ -1468,11 +1478,9 @@ class Db extends \OWA\Core\Base {
     function releaseJobLock( $job_name, $owner ) {
 
         return (bool) $this->query( sprintf(
-            "DELETE FROM %s WHERE job_name = '%s' AND owner = '%s'",
-            $this->jobLockTable(),
-            $this->prepare( (string) $job_name ),
-            $this->prepare( (string) $owner )
-        ) );
+            'DELETE FROM %s WHERE job_name = ? AND owner = ?',
+            $this->jobLockTable()
+        ), [ (string) $job_name, (string) $owner ] );
     }
 
     /**
@@ -1484,10 +1492,9 @@ class Db extends \OWA\Core\Base {
     function getJobLock( $job_name ) {
 
         $row = $this->get_row( sprintf(
-            "SELECT job_name, owner, acquired_at, expires_at FROM %s WHERE job_name = '%s'",
-            $this->jobLockTable(),
-            $this->prepare( (string) $job_name )
-        ) );
+            'SELECT job_name, owner, acquired_at, expires_at FROM %s WHERE job_name = ?',
+            $this->jobLockTable()
+        ), [ (string) $job_name ] );
 
         return $row ? (array) $row : null;
     }
