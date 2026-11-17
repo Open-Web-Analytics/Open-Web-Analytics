@@ -416,7 +416,6 @@ return array(
     'Current password' => 'Current password',
     'Current password is required.' => 'Current password is required.',
     'Custom Dimensions' => 'Custom Dimensions',
-    'Custom Report Builder' => 'Custom Report Builder',
     'Custom Reports' => 'Custom Reports',
     'Custom date range' => 'Custom date range',
     'Custom dimension registered. Its cube column is added within a few minutes and filled from then on; rebuild the cube to fill past data.' => 'Custom dimension registered. Its cube column is added within a few minutes and filled from then on; rebuild the cube to fill past data.',
