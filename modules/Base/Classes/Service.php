@@ -46,7 +46,6 @@ class Service extends \OWA\Core\Base {
     var $modules = array();
     var $entities = array();
     var $metrics = array();
-    var $dimensions = array();
     var $denormalizedDimensions = array();
     var $browscap;
     var $geolocation;
@@ -211,22 +210,6 @@ class Service extends \OWA\Core\Base {
                 $this->metrics = array_merge_recursive( $this->metrics, $module->metrics);
             }
         }
-
-        $metricsByEntityMap = array();
-
-        foreach ( $this->metrics as $metric => $implementations ) {
-
-            foreach ( $implementations as $implementation ) {
-
-                $m = \OWA\Core\CoreAPI::metricFactory( $implementation['class'], $implementation['params']);
-
-                if ( ! $m->isCalculated() ) {
-                    $metricsByEntityMap[ $m->getEntityName() ][ $implementation['name'] ] = $implementation;
-                }
-            }
-        }
-
-        $this->setMap('metricsByEntity', $metricsByEntityMap);
     }
 
     function getAllMetrics() {
@@ -436,23 +419,11 @@ class Service extends \OWA\Core\Base {
 
         foreach ($this->modules as $k => $module) {
 
-            if (is_array($module->dimensions)) {
-                /*
-                 * Recursive, because dimensions are now keyed name => entity =>
-                 * registration. A flat array_merge would replace a whole name's
-                 * entity map with whichever module was loaded last, reproducing
-                 * inside the merge exactly the loss that registerDimension() no
-                 * longer commits.
-                 */
-                $this->dimensions = array_merge_recursive($this->dimensions, $module->dimensions);
-            }
-
+            // Recursive: dimensions are keyed name => entity => registration.
             if (is_array($module->denormalizedDimensions)) {
 
                 $this->denormalizedDimensions = array_merge_recursive($this->denormalizedDimensions, $module->denormalizedDimensions);
             }
-
-            //print_r($this->denormalizedDimensions);
         }
     }
 
@@ -632,34 +603,6 @@ class Service extends \OWA\Core\Base {
 
             return $this->metrics[$name];
         }
-    }
-
-    /**
-     * A normalized dimension, optionally the one defined for a given entity.
-     *
-     * Called without an entity this answers the LAST registration for the name,
-     * which is what the previously flat registry held after overwriting itself.
-     * That equivalence is deliberate: this change is about retaining the other
-     * registrations, not about changing which one an existing caller resolves.
-     *
-     * Called with an entity it answers that entity's registration, or nothing.
-     * This is the path a second schema generation will use -- one name, several
-     * entities, the caller saying which it means rather than hoping.
-     */
-    function getDimension($name, $entity = null) {
-
-        if (! array_key_exists($name, $this->dimensions)) {
-            return null;
-        }
-
-        $byEntity = $this->dimensions[$name];
-
-        if ($entity !== null) {
-
-            return array_key_exists($entity, $byEntity) ? $byEntity[$entity] : null;
-        }
-
-        return end($byEntity) ?: null;
     }
 
     /**

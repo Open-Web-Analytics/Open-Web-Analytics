@@ -7,7 +7,7 @@
 # PHPUnit runs the whole suite in ONE process, and OWA's Service is a singleton,
 # so a test can silently inherit state that something earlier set up: a registry
 # the dispatcher builds lazily (cli_commands, scheduled_jobs, api_methods,
-# event_processors, metricsByEntity), or a legacy owa_* alias that only exists
+# event_processors), or a legacy owa_* alias that only exists
 # once something has autoloaded it -- note `instanceof` does NOT autoload, so an
 # untouched alias reads as false for every object, with no error at all.
 #

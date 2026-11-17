@@ -19,8 +19,8 @@ namespace OWA\Core;
 //
 
 /**
- * Abstract observer class, wraps PEAR Log's observer to add event type.
- * 
+ * Base class for event handlers.
+ *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
@@ -32,24 +32,55 @@ namespace OWA\Core;
 
 class Observer extends \OWA\Core\Base {
 
-    var $id;
-    
     /**
      * Event Message
      *
      * @var array
      */
     var $m;
-   
+
     /**
-     * Creates a new basic Log_observer instance.
+     * Run an action with this event as its `event` parameter.
      *
-     * @access public
+     * @param string $action
+     * @return mixed
      */
-    function __construct() {
-        $this->id = md5(microtime());
+    function handleEvent( $action ) {
+
+        \OWA\Core\CoreAPI::performAction( $action, array( 'event' => $this->m ) );
+
+        return \OWA\Core\CoreAPI::debug( sprintf( 'Handled Event. Action: %s', $action ) );
     }
-    
+
+    /**
+     * Send a plain-text message through the configured mailer: its transport,
+     * From address and error logging.
+     *
+     * @param string $email_address
+     * @param string $subject
+     * @param string $msg
+     * @return bool whether the transport accepted it
+     */
+    function sendMail( $email_address, $subject, $msg ) {
+
+        $mailer = $this->mailer();
+        $mailer->setSubject( (string) $subject );
+        $mailer->setHtmlBody( nl2br( htmlspecialchars( (string) $msg, ENT_QUOTES, 'UTF-8' ) ) );
+        $mailer->setAltBody( (string) $msg );
+
+        if ( ! $mailer->addAddress( (string) $email_address ) ) {
+
+            return false;
+        }
+
+        return $mailer->sendMail();
+    }
+
+    /** The mailer sendMail() uses. */
+    protected function mailer() {
+
+        return new \OWA\Module\Base\Classes\Mailer();
+    }
 }
 
 ?>

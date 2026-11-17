@@ -3,32 +3,11 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * isDimensionRelated() must answer, not warn.
+ * How a query resolves the names it is given.
  *
- * WHY THIS EXISTS
- * ---------------
- * lookupDimension() returns null when a name does not resolve against the entity
- * being tested, having already recorded why via addError(). isDimensionRelated()
- * indexed that null directly:
- *
- *     $dimension = $this->lookupDimension($dimension_name, $entity);
- *     if ($dimension['denormalized'] === true) {     // <- null['denormalized']
- *
- * so every miss produced "Trying to access array offset on value of type null"
- * and the method fell out of the bottom returning an implicit NULL from a
- * predicate named is...().
- *
- * This fired on ORDINARY requests, not just bad input: the callers loop every
- * requested dimension against every candidate entity looking for one that fits
- * them all, so most pairings are expected to miss -- and every miss logged a
- * warning. That is how it turned up in a live Apache log, on a perfectly normal
- * e-commerce report.
- *
- * Callers all test `if (!$check)`, so null and false were already equivalent to
- * them. The fix changes no behaviour; it removes the warning and makes the
- * return type match the method name. These tests pin both halves -- and the
- * positive case too, because "return false everywhere" would also silence the
- * warning while breaking every report.
+ * lookupDimension() answers a dimension of the cube, or null -- without a PHP
+ * diagnostic -- for a name that is not one. A query naming a metric or a
+ * dimension that is not one is refused with a request error naming it.
  */
 final class DimensionResolutionTest extends TestCase
 {
@@ -40,6 +19,17 @@ final class DimensionResolutionTest extends TestCase
     private function manager(): object
     {
         return \OWA\Core\CoreAPI::supportClassFactory('base', 'resultSetManager');
+    }
+
+    /** A manager for a query with no constraints, which is what a caller sets up. */
+    private function query(array $metrics, array $dimensions = []): object
+    {
+        $rsm = $this->manager();
+        $rsm->metrics = $metrics;
+        $rsm->setDimensions($dimensions);
+        $rsm->setConstraints([]);
+
+        return $rsm;
     }
 
     /**
@@ -67,20 +57,19 @@ final class DimensionResolutionTest extends TestCase
     /**
      * @dataProvider unresolvableDimensions
      */
-    public function testAnUnresolvableDimensionIsNotRelatedAndDoesNotWarn(string $name): void
+    public function testAnUnresolvableDimensionIsNullAndDoesNotWarn(string $name): void
     {
         $rsm = $this->manager();
-        $result = null;
+        $result = 'unset';
 
         $diags = $this->diagnosticsFrom(
-            fn() => $rsm->isDimensionRelated($name, 'base.event'),
+            fn() => $rsm->lookupDimension($name, \OWA\Core\CoreAPI::entityFactory('base.event')),
             $result
         );
 
-        $this->assertSame([], $diags,
-            'a dimension that does not resolve against this entity raised a PHP diagnostic');
-        $this->assertFalse($result,
-            'an unresolvable dimension is "not related" -- and must say so with false, not null');
+        $this->assertSame([], $diags, 'an unknown name raised a PHP diagnostic');
+        $this->assertNull($result);
+        $this->assertContains("$name is not a registered dimension.", $rsm->errors);
     }
 
     public static function unresolvableDimensions(): array
@@ -92,47 +81,64 @@ final class DimensionResolutionTest extends TestCase
         ];
     }
 
-    /** A dimension the cube carries is related to it. */
-    public function testAResolvableDimensionIsStillRelated(): void
+    /** A dimension of the cube resolves to its column, behind the table's alias. */
+    public function testADimensionOfTheCubeResolves(): void
     {
         $rsm = $this->manager();
+        $entity = \OWA\Core\CoreAPI::entityFactory('base.event');
         $result = null;
 
-        $diags = $this->diagnosticsFrom(fn() => $rsm->isDimensionRelated('pagePath', 'base.event'), $result);
+        $diags = $this->diagnosticsFrom(fn() => $rsm->lookupDimension('pagePath', $entity), $result);
 
         $this->assertSame([], $diags);
-        $this->assertTrue($result, '"return false everywhere" would also silence the warning');
+        $this->assertSame('pagePath', $result['name'] ?? null);
+        $this->assertStringStartsWith($entity->getTableAlias() . '.', (string) ($result['column'] ?? ''));
     }
 
-    /**
-     * Registered, but not a column of the entity asked about. v1 would have
-     * joined it in through a foreign key; v2 has no joins, so the answer is no.
-     */
-    public function testARegisteredDimensionOnAnotherEntityIsNotRelated(): void
+    /** No dimension is a column of any other entity. */
+    public function testADimensionOfAnotherEntityDoesNotResolve(): void
     {
         $rsm = $this->manager();
-        $result = null;
+        $result = 'unset';
 
-        $diags = $this->diagnosticsFrom(fn() => $rsm->isDimensionRelated('pagePath', 'base.event_raw'), $result);
+        $diags = $this->diagnosticsFrom(
+            fn() => $rsm->lookupDimension('pagePath', \OWA\Core\CoreAPI::entityFactory('base.event_raw')),
+            $result
+        );
 
         $this->assertSame([], $diags);
-        $this->assertFalse($result);
+        $this->assertNull($result);
     }
 
-    public function testTheReturnIsAlwaysBoolean(): void
+    /** A query naming a dimension that is not one is refused, and says which. */
+    public function testAQueryNamingAnUnknownDimensionIsRefused(): void
     {
-        $rsm = $this->manager();
+        $rsm = $this->query(['pageViews'], ['pagePath', 'zz_not_a_thing']);
 
-        foreach ([
-            ['pagePath',       'base.event'],      // true
-            ['pagePath',       'base.event_raw'],  // false: registered, not on this entity
-            ['zz_not_a_thing', 'base.event'],      // false: not registered
-        ] as [$name, $entity]) {
+        $this->assertNull($rsm->loadBaseEntity());
+        $this->assertSame(['"zz_not_a_thing" cannot be queried here.'], $rsm->request_errors);
+    }
 
-            $this->assertIsBool(
-                @$rsm->isDimensionRelated($name, $entity),
-                "isDimensionRelated('$name', '$entity') did not return a boolean"
-            );
-        }
+    /** ...and so is one naming a metric that is not one. */
+    public function testAQueryNamingAnUnknownMetricIsRefused(): void
+    {
+        $rsm = $this->query(['pageViews', 'zzNotAMetric']);
+
+        $this->assertNull($rsm->loadBaseEntity());
+        $this->assertSame(['"zzNotAMetric" cannot be queried here.'], $rsm->request_errors);
+    }
+
+    /** Known names give the cube, with a calculated metric's children built. */
+    public function testKnownNamesGiveTheCube(): void
+    {
+        $rsm = $this->query(['pageViewsPerSession'], ['pagePath']);
+
+        $entity = $rsm->loadBaseEntity();
+
+        $this->assertSame([], $rsm->request_errors);
+        $this->assertSame(\OWA\Core\Module::FACT_ENTITY, $entity->getName());
+        $this->assertArrayHasKey('pageViewsPerSession', $rsm->calculatedMetrics);
+        $this->assertArrayHasKey('pageViews', $rsm->metricObjects);
+        $this->assertArrayHasKey('sessions', $rsm->metricObjects);
     }
 }

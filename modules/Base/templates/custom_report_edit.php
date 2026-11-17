@@ -342,10 +342,6 @@ $owa_max        = (int) $view->get('max_widgets');
     // was never real.
     var METRICS    = <?php echo json_encode( (array) $view->get('metric_choices') ); ?>;
     var DIMENSIONS = <?php echo json_encode( (array) $view->get('dimension_choices') ); ?>;
-    // metric name -> the fact tables it can be measured in. Used to narrow the
-    // metric pickers so an unaskable combination cannot be assembled.
-    var METRIC_ENTITIES    = <?php echo json_encode( (array) $view->get('metric_entities') ); ?>;
-    var DIMENSION_ENTITIES = <?php echo json_encode( (array) $view->get('dimension_entities') ); ?>;
     var TYPES      = <?php echo json_encode( $owa_types ); ?>;
     var MAX         = <?php echo (int) $owa_max; ?>;
     var MAX_METRICS    = <?php echo (int) $view->get('max_metrics'); ?>;
@@ -796,49 +792,13 @@ $owa_max        = (int) $view->get('max_widgets');
     }
 
     /**
-     * The fact tables that could answer for all of these metrics at once.
-     *
-     * The same reduction the query engine performs when it picks a base entity:
-     * intersect the tables each metric can come from. Empty means the set
-     * cannot be queried -- not that it would return few rows, but that there is
-     * no single table holding them, so it is not a question.
-     */
-    function compatibleEntities( names ) {
-
-        var entities = null;
-
-        for ( var i = 0; i < names.length; i++ ) {
-
-            var mine = METRIC_ENTITIES[ names[ i ] ] || [];
-
-            if ( entities === null ) {
-                entities = mine.slice();
-                continue;
-            }
-
-            entities = entities.filter( function ( e ) { return mine.indexOf( e ) !== -1; } );
-
-            if ( ! entities.length ) {
-                return [];
-            }
-        }
-
-        return entities || [];
-    }
-
-    /**
-     * Narrow the DIMENSION picker the same way.
-     *
-     * A dimension has to be related to a fact table that can also answer the
-     * chosen metrics -- `pagePath` is on the request but not the session, so
-     * asking for it beside a session-only metric is as impossible as mixing
-     * clicks with visits. Same reduction, one step further on.
+     * Narrow the DIMENSION picker to what can still be added: nothing at the
+     * cap, and no time dimension on a type whose axis is time.
      */
     function narrowDimensions() {
 
         var $select  = jQuery( '#dlgDimensions' );
         var selected = $select.val() || [];
-        var metrics  = jQuery( '#dlgMetrics' ).val() || [];
 
         var full = selected.length >= maxDimensions();
 
@@ -860,11 +820,7 @@ $owa_max        = (int) $view->get('max_widgets');
                 return false;
             }
 
-            if ( axisIsTime && TIME_DIMENSIONS.indexOf( choice.name ) !== -1 ) {
-                return false;
-            }
-
-            return allowedWith( metrics, selected.concat( [ choice.name ] ) );
+            return ! ( axisIsTime && TIME_DIMENSIONS.indexOf( choice.name ) !== -1 );
         } );
 
         fillChoices( $select, allowed, selected );
@@ -873,40 +829,7 @@ $owa_max        = (int) $view->get('max_widgets');
     }
 
     /**
-     * Whether these metrics and dimensions could be answered by one fact table.
-     *
-     * DIMENSION_ENTITIES maps a dimension to the tables it is related to, the
-     * same relation ResultSetManager::isDimensionRelated() reports.
-     */
-    function allowedWith( metrics, dimensions ) {
-
-        var entities = compatibleEntities( metrics );
-
-        if ( metrics.length && ! entities.length ) {
-            return false;
-        }
-
-        for ( var i = 0; i < dimensions.length; i++ ) {
-
-            var mine = DIMENSION_ENTITIES[ dimensions[ i ] ] || [];
-
-            if ( ! entities.length ) {
-                entities = mine.slice();
-                continue;
-            }
-
-            entities = entities.filter( function ( e ) { return mine.indexOf( e ) !== -1; } );
-
-            if ( ! entities.length ) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Narrow a metric picker to what can still be combined with what is chosen.
+     * Narrow a metric picker to what can still be added: nothing at the cap.
      *
      * Rebuilt rather than disabled item by item, because chosen renders its own
      * list from the select and only re-reads it on chosen:updated. An option
@@ -930,11 +853,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
             // At the cap nothing more is offered, rather than offered and then
             // refused on save.
-            if ( full ) {
-                return false;
-            }
-
-            return compatibleEntities( selected.concat( [ choice.name ] ) ).length > 0;
+            return ! full;
         } );
 
         fillChoices( $select, allowed, selected );

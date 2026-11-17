@@ -19,64 +19,40 @@ namespace OWA\Module\Base\Classes;
 //
 
 /**
- * The object cache: rows looked up during one request, kept for the rest of it.
- *
- * MEMORY ONLY. There was a persistent tier behind it -- the File Cache and
- * Memcached modules -- that saved about a third of a millisecond a lookup
- * against the database, was off by default, and brought stale rows served for
- * a week, long processes writing old rows back over newer ones, a file per
- * user agent anyone cared to send, and unserialize() of whatever a cache file
- * named. It is removed; a request reads each row it needs from the database
- * once.
+ * The object cache: values kept for the rest of one request, by collection
+ * and key. Nothing outlives the request.
  */
 class Cache {
 
-    var $statistics = array( 'hits' => 0, 'miss' => 0, 'added' => 0, 'removed' => 0 );
-
-    /** @var MemoryCache */
-    var $warm;
-
-    function __construct() {
-
-        $this->warm = new MemoryCache();
-    }
+    /** @var array<string, array<string, mixed>> values by collection, then key */
+    private $items = [];
 
     function set( $collection, $key, $value ) {
 
-        $this->warm->set( $collection, $this->hash( $key ), $value );
-        $this->statistics['added']++;
+        $this->items[ $collection ][ $key ] = $value;
     }
 
     function get( $collection, $key ) {
 
-        $value = $this->warm->get( $collection, $this->hash( $key ) );
-
-        if ( $value ) {
-
-            $this->statistics['hits']++;
-
-            return $value;
-        }
-
-        $this->statistics['miss']++;
+        return $this->items[ $collection ][ $key ] ?? null;
     }
 
     function remove( $collection, $key ) {
 
-        $this->statistics['removed']++;
+        if ( ! isset( $this->items[ $collection ] ) || ! array_key_exists( $key, $this->items[ $collection ] ) ) {
 
-        return $this->warm->remove( $collection, $this->hash( $key ) );
-    }
+            return false;
+        }
 
-    function flush() {
-
-        $this->warm->flush();
+        unset( $this->items[ $collection ][ $key ] );
 
         return true;
     }
 
-    function hash( $id ) {
+    function flush() {
 
-        return md5( $id );
+        $this->items = [];
+
+        return true;
     }
 }

@@ -70,14 +70,6 @@ class ResultSetManager extends \OWA\Core\Base {
      */
     var $dimensions = array();
 
-    /**
-     * The table/column or denormalized dimensions
-     * associated with this metric
-     *
-     * @var array
-     */
-    var $denormalizedDimensions = array();
-
     var $page = 1;
     var $limit;
     var $order;
@@ -102,25 +94,21 @@ class ResultSetManager extends \OWA\Core\Base {
 
     /** The keys of CONSTRAINT_OPERATORS, set by the constructor. */
     var $constraint_operators = array();
-    var $related_dimensions = array();
-    var $related_metrics = array();
     var $resultSet;
     var $metrics = array();
     var $childMetrics = array();
     var $calculatedMetrics = array();
     var $query_params = array();
     var $baseEntity;
-    var $metricObjectsByEntityMap = array();
+    /** @var array metric name => the metric object, set by loadMetric() */
+    var $metricObjects = array();
     var $errors = array();
 
     /**
      * Errors that mean the REQUEST is malformed, as opposed to noise.
      *
-     * Kept apart from $errors because most entries there are routine: a
-     * denormalized dimension such as productName resolves only against certain
-     * entities, so lookupDimension() records "not a registered dimension" during
-     * perfectly ordinary product reports. Measured -- it fires twice in a clean
-     * run of the suite with no bad input anywhere.
+     * Kept apart from $errors because entries there can be routine: an
+     * unknown sort column, a calculated metric as a constraint.
      *
      * So "any error" cannot gate the query; only these can.
      *
@@ -901,7 +889,7 @@ class ResultSetManager extends \OWA\Core\Base {
             return null;
         }
 
-        $objects = $this->metricObjectsByEntityMap[ $this->baseEntity->getName() ] ?? array();
+        $objects = $this->metricObjects;
         $names   = array();
 
         /*
@@ -1141,173 +1129,47 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function chooseBaseEntity() {
+    /**
+     * The cube entity the query reads, once the metrics it names are built.
+     *
+     * Null when it names no metric, and null with a request error when a
+     * metric or dimension it names is not one.
+     *
+     * @return \OWA\Core\Entity|null
+     */
+    function loadBaseEntity() {
 
-        $metric_imps = array();
+        foreach ( array_unique( array_merge( $this->metrics, $this->getMetricNamesFromConstraints() ) ) as $metric_name ) {
 
-        // load metric implementations
-        $all_metrics = $this->metrics;
+            if ( ! $this->loadMetric( $metric_name ) ) {
 
-        // add in metrics from segment if present
-        if ( isset($this->segment['metrics'] ) ) {
+                $this->addRequestError( sprintf( \OWA\Core\CoreAPI::t( '"%s" cannot be queried here.' ), $metric_name ) );
 
-            //$all_metrics = array_unique( array_merge( $this->metrics, $this->getMetricNamesFromSegment() ) );
-        }
-
-        // add metrics from constraints
-        $all_metrics = array_unique( array_merge( $this->metrics, $this->getMetricNamesFromConstraints() ) );
-
-        // get all metric implmentations so we can see what entities we have to choose from
-        foreach ($all_metrics as $metric_name) {
-
-            $metric_imps = array_merge($this->getMetricEntities($metric_name), $metric_imps);
-        }
-
-        \OWA\Core\CoreAPI::debug( 'pre-reduce set of entities to choose from:', $metric_imps );
-
-        $entities = array();
-
-        // reduce metric entities. this will give us the fact tables to choose from.
-        $reconciled = array();
-
-        foreach ($metric_imps as $metric_name => $mimp) {
-
-            if (empty($entities)) {
-                $entities = $mimp;
-            }
-
-            $entities = $this->reduceTables($mimp, $entities);
-
-            if (empty($entities)) {
-
-                /*
-                 * A REQUEST error, and it names the metric that broke the set.
-                 *
-                 * Every metric can be computed from one or more fact tables,
-                 * and a query is answered from ONE of them -- so a combination
-                 * is only askable if the metrics share a table. A click-table
-                 * metric and a session-table one have no table that holds both,
-                 * so asking for them together is not a thin result, it is not a
-                 * question.
-                 *
-                 * It used to be addError(), which puts it with the routine
-                 * misses that reports swallow -- so an impossible set came back
-                 * as an empty or nonsensical report with nothing said. A
-                 * request error is refused and explained, like an unknown
-                 * constraint name.
-                 */
-                return $this->addRequestError( self::incompatibleMessage(
-                    $metric_name, $reconciled, 'metric' ) );
-            }
-
-            $reconciled[] = $metric_name;
-        }
-
-        \OWA\Core\CoreAPI::debug( 'post-reduce set of entities to choose from:', $entities );
-
-        // check summary level of entities
-        $niceness = array();
-
-        foreach ($entities as $entity) {
-
-            $niceness[$entity] = $this->entityFor($entity)->getSummaryLevel();
-        }
-
-        // sort the fact table list by summary level
-        arsort($niceness);
-
-        \OWA\Core\CoreAPI::debug( 'Entities summary levels:', $niceness );
-
-        $entity_count = count($niceness);
-        $i = 1;
-        //check entities for dimension relations
-        foreach ($niceness as $entity_name => $summary_level) {
-
-            $error = false;
-            // the first dimension found unrelated to this entity
-            $unrelated = null;
-
-            // check dimensions in segment for relation to base entity.
-            if ( isset( $this->segment['dimensions'] ) ) {
-
-                //$dims = array_unique( array_merge( $this->dimensions, $this->getDimensionNamesFromSegment() ) );
-                $segment_dims = $this->getDimensionNamesFromSegment();
-
-                foreach ($segment_dims as $segment_dim) {
-
-                    $check = $this->isDimensionRelated($segment_dim, $entity_name);
-
-                    // is the realtionship check fails then move onto the next entity.
-                    if (!$check) {
-                        $error = true;
-                        $unrelated = $segment_dim;
-                        \OWA\Core\CoreAPI::debug("Segment dimension $segment_dim is not related to $entity_name. Moving on to next entity...");
-                        break;
-                    } else {
-                        // set related dimensions. this is needed for joins.
-                        \OWA\Core\CoreAPI::debug("Segment Dimension: $segment_dim is related to $entity_name.");
-                    }
-                }
-            }
-
-            //cycle through each dimension from dim list and those found in constraints.
-            $dims = array_unique( array_merge( $this->dimensions, $this->getDimensionsFromConstraints() ) );
-
-            \OWA\Core\CoreAPI::debug( 'Dimensions:', $this->dimensions );
-
-            \OWA\Core\CoreAPI::debug( sprintf( 'Checking the following dimensions for relation to %s:', $entity_name ), $dims );
-
-            foreach ($dims as $dimension) {
-
-                $check = $this->isDimensionRelated($dimension, $entity_name);
-
-                // is the realtionship check fails then move onto the next entity.
-                if (!$check) {
-                    $error = true;
-                    $unrelated = $unrelated ?? $dimension;
-                    \OWA\Core\CoreAPI::debug("$dimension is not related to $entity_name. Moving on to next entity...");
-                    break;
-                } else {
-                    // set related dimensions. this is needed for joins.
-                    $dim_array = $this->getDimensionByEntityName($dimension, $entity_name);
-
-                    $this->setRelatedDimension( $dim_array );
-                    \OWA\Core\CoreAPI::debug("Dimension: $dimension is related to $entity_name.");
-                }
-            }
-
-            // is no error then everythig is related and we are good to go.
-            if (!$error) {
-                \OWA\Core\CoreAPI::debug('optimal base entity is: '.$entity_name);
-                $this->baseEntity = $this->entityFor($entity_name);
-                return $this->baseEntity;
-            }
-
-            if ($i === $entity_count) {
-
-                /*
-                 * Same shape as the metric case above, and the same reason for
-                 * being a REQUEST error: the base entity has to satisfy every
-                 * metric AND every dimension, and constraints contribute their
-                 * dimensions to this list too. When no fact table is related to
-                 * all of them the question cannot be answered -- and answering
-                 * it with an empty grid and a debug line meant the reader saw a
-                 * report that looked merely uneventful.
-                 */
-                $this->addRequestError( self::incompatibleMessage(
-                    $unrelated,
-                    array_merge( array_keys( (array) $metric_imps ),
-                        array_diff( $dims, array( $unrelated ) ) ),
-                    'dimension' ) );
-            } else {
-                $i++;
+                return null;
             }
         }
-    }
 
-    function setRelatedDimension($dimension) {
+        if ( ! $this->metricObjects ) {
 
-        $this->related_dimensions[$dimension['name']] = $dimension;
+            return null;
+        }
+
+        $entity = $this->entityFor( \OWA\Core\Module::FACT_ENTITY );
+
+        $dimensions = array_merge( $this->getDimensionNamesFromSegment(), $this->dimensions,
+            $this->getDimensionsFromConstraints() );
+
+        foreach ( array_unique( $dimensions ) as $dimension ) {
+
+            if ( ! $this->lookupDimension( $dimension, $entity ) ) {
+
+                $this->addRequestError( sprintf( \OWA\Core\CoreAPI::t( '"%s" cannot be queried here.' ), $dimension ) );
+
+                return null;
+            }
+        }
+
+        return $this->baseEntity = $entity;
     }
 
     function getDimensionsFromConstraints() {
@@ -1342,251 +1204,41 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $metrics;
     }
 
-    function isDimensionRelated($dimension_name, $entity_name) {
+    /**
+     * Build a metric's object, and a calculated metric's children.
+     *
+     * @param  string $metric_name
+     * @return bool whether the name is a registered metric
+     */
+    function loadMetric( $metric_name ) {
 
-        $entity = $this->entityFor($entity_name);
+        $classes = \OWA\Core\CoreAPI::serviceSingleton()->getMetricClasses( $metric_name );
 
-        $dimension = $this->lookupDimension($dimension_name, $entity);
+        if ( ! $classes ) {
 
-        // lookupDimension() returns null when the name does not resolve AGAINST
-        // THIS ENTITY. That is a routine outcome, not an error case: the
-        // callers loop every requested dimension against every candidate
-        // entity looking for one that fits them all, so most pairings are
-        // expected to miss. Without
-        // this guard each of those misses fell through to the array access
-        // below and logged "Trying to access array offset on value of type
-        // null", which is why the warning appeared on ordinary report
-        // requests rather than only on bad input.
-        //
-        // Not related is the correct answer here, and it is what the callers
-        // already assumed -- they test `if (!$check)`, which treated the
-        // implicit null the same way. Returning false makes the contract match
-        // the method name.
-        if ( ! $dimension ) {
-            \OWA\Core\CoreAPI::debug("Dimension: $dimension_name did not resolve, so it is not related to $entity_name");
             return false;
         }
 
-        // isset() guards a dimension array that has no 'denormalized' key at
-        // all. The strict === true is kept deliberately: only a real boolean
-        // true counts, exactly as before.
-        if ( isset( $dimension['denormalized'] ) && $dimension['denormalized'] === true ) {
-            //$this->related_dimensions[$dimension['name']] = $dimension;
-            \OWA\Core\CoreAPI::debug("Dimension: $dimension_name is denormalized into $entity_name");
-            return true;
-        }
+        foreach ( $classes as $map ) {
 
-        // v1's normalized dimensions reached their table through a foreign key
-        // and a join. v2 has none: every dimension is a column of the table
-        // it is reported from.
-        \OWA\Core\CoreAPI::debug("Dimension: $dimension_name is not a column of $entity_name");
+            $m = \OWA\Core\CoreAPI::metricFactory( $map['class'], $map['params'] );
 
-        // Was an implicit null before. Every caller tests the result for
-        // truthiness, so this changes no behaviour -- it just stops a method
-        // named is...() from answering a question with null.
-        return false;
-    }
+            if ( $m->isCalculated() ) {
 
-    function getMetricEntities($metric_name) {
-        \OWA\Core\CoreAPI::debug("getting metric entities for $metric_name");
+                $this->addCalculatedMetric( $m );
 
-        //get the class implementations
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-        $classes = $s->getMetricClasses($metric_name);
+                foreach ( $m->getChildMetrics() as $child_name ) {
 
-        $entities = array();
-
-        // cycles through metric classes and get their entity names
-        foreach ($classes as $name => $map) {
-            $m = \OWA\Core\CoreAPI::metricFactory($map['class'], $map['params']);
-
-            // check to see if this is a calculated metric
-            if ($m->isCalculated()) {
-
-                foreach ($m->getChildMetrics() as $cmetric_name) {
-                    $this->addCalculatedMetric($m);
-                    $entities = array_merge($this->getMetricEntities($cmetric_name), $entities);
+                    $this->loadMetric( $child_name );
                 }
 
             } else {
-                $this->metricObjectsByEntityMap[$m->getEntityName()][$metric_name] = $m;
-                $entities[$metric_name][] = $m->getEntityName();
-            }
 
-        }
-
-        return $entities;
-    }
-
-    function reduceTables($new, $old) {
-
-        return array_intersect($new, $old);
-    }
-
-    /**
-     * Why a field cannot join the ones already reconciled.
-     *
-     * NAMES BOTH SIDES. "This combination cannot be queried" tells a reader
-     * nothing they can act on; "scrollDepth cannot be combined with visits,
-     * uniqueVisitors" tells them which one to take out. The offender is the
-     * field being added when the set of possible fact tables became empty, and
-     * the others are what it has to be compatible with.
-     *
-     * @param string $offender
-     * @param array  $with fields already reconciled
-     * @param string $kind metric|dimension
-     * @return string
-     */
-    public static function incompatibleMessage( $offender, array $with, $kind ) {
-
-        $with = array_values( array_filter( array_unique( $with ) ) );
-
-        if ( ! $with ) {
-
-            return sprintf( \OWA\Core\CoreAPI::t( '"%s" cannot be queried here.' ), $offender );
-        }
-
-        return sprintf(
-            'Illegal combination: the %s "%s" cannot be combined with %s. Each of these is '
-          . 'recorded in a different place, and one query is answered from one fact table -- '
-          . 'so no query can return them together. Remove one side or put them in separate '
-          . 'widgets.',
-            $kind,
-            $offender,
-            '"' . implode( '", "', $with ) . '"' );
-    }
-
-    /**
-     * The first field that makes a combination impossible, and what it clashes
-     * with -- or null when the combination is fine.
-     *
-     * Fields are added in order, so the offender is the one being added when
-     * the possible fact tables run out. That is the same order the query engine
-     * reduces in, which is what makes the answer match what would actually
-     * happen.
-     *
-     * @param array $metrics
-     * @param array $dimensions
-     * @return array|null {name, with, kind}
-     */
-    public function firstIncompatible( array $metrics, array $dimensions = array() ) {
-
-        $seen = array();
-
-        foreach ( array( 'metric' => $metrics, 'dimension' => $dimensions ) as $kind => $fields ) {
-
-            foreach ( $fields as $field ) {
-
-                $field = trim( (string) $field );
-
-                if ( $field === '' ) {
-
-                    continue;
-                }
-
-                $candidate = $seen;
-                $candidate[ $kind ][] = $field;
-
-                $ok = $this->compatibleEntities(
-                    isset( $candidate['metric'] ) ? $candidate['metric'] : array(),
-                    isset( $candidate['dimension'] ) ? $candidate['dimension'] : array() );
-
-                if ( ! $ok ) {
-
-                    return array(
-                        'name' => $field,
-                        'kind' => $kind,
-                        'with' => array_merge(
-                            isset( $seen['metric'] ) ? $seen['metric'] : array(),
-                            isset( $seen['dimension'] ) ? $seen['dimension'] : array() ),
-                    );
-                }
-
-                $seen = $candidate;
+                $this->metricObjects[ $metric_name ] = $m;
             }
         }
 
-        return null;
-    }
-
-    /**
-     * The fact tables that could answer for ALL of these metrics at once.
-     *
-     * Empty means the combination cannot be queried -- there is no one table
-     * holding them, so no single query can return them together.
-     *
-     * The same reduction getResults() performs, exposed so it can be ASKED
-     * rather than discovered by running a query and getting nothing. The
-     * custom report builder uses it twice: to refuse an impossible set at save
-     * time, and to stop offering metrics that would make one.
-     *
-     * Dimensions narrow it further, because the base entity has to be related
-     * to every one of them as well -- which is the second reduction
-     * getResults() performs, and the reason a dimension can be as impossible as
-     * a metric. Constraint dimensions belong in the same list: the engine folds
-     * them in with getDimensionsFromConstraints().
-     *
-     * @param array $names metric names
-     * @param array $dimensions dimension names, including any from constraints
-     * @return array entity names, empty when the combination is illegal
-     */
-    public function compatibleEntities( array $names, array $dimensions = array() ) {
-
-        $imps = array();
-
-        foreach ( $names as $name ) {
-
-            $name = trim( (string) $name );
-
-            if ( $name === '' ) {
-
-                continue;
-            }
-
-            $imps = array_merge( $this->getMetricEntities( $name ), $imps );
-        }
-
-        $entities = array();
-
-        foreach ( $imps as $mimp ) {
-
-            if ( empty( $entities ) ) {
-
-                $entities = $mimp;
-            }
-
-            $entities = $this->reduceTables( $mimp, $entities );
-
-            if ( empty( $entities ) ) {
-
-                return array();
-            }
-        }
-
-        $entities = array_values( array_unique( $entities ) );
-
-        foreach ( $dimensions as $dimension ) {
-
-            $dimension = trim( (string) $dimension );
-
-            if ( $dimension === '' ) {
-
-                continue;
-            }
-
-            $entities = array_values( array_filter( $entities,
-                function ( $entity ) use ( $dimension ) {
-
-                    return (bool) $this->isDimensionRelated( $dimension, $entity );
-                } ) );
-
-            if ( empty( $entities ) ) {
-
-                return array();
-            }
-        }
-
-        return $entities;
+        return true;
     }
 
     function isDimension( $name ) {
@@ -1600,65 +1252,44 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return in_array( $name, array_keys( $metrics ) );
     }
 
-    function getDimensionByEntityName($dim_name, $entity_name) {
-
-        $entity = $this->entityFor($entity_name);
-        return $this->lookupDimension($dim_name, $entity);
-    }
-
     /**
-     * Retrieves dimension given a name and associated fact table entity.
+     * A dimension of the entity, its column behind the entity's alias, or
+     * null when the name is not one.
      *
      * @param $name string the name of the dimension
      * @param $entity    object    the entity object
-     * @return array
+     * @return array|null
      */
     function lookupDimension($name, $entity) {
 
-        // check for denormalized
-        $registry = $this->dimensionRegistry();
-        $dim = $registry->denormalized($name, $entity->getName());
+        $dim = $this->dimensionRegistry()->denormalized( $name, $entity->getName() );
 
-        if ($dim) {
-            /*
-             * A dimension registered as an EXPRESSION already carries its own
-             * SQL, with %1$s wherever the alias belongs. Writing the alias in
-             * FRONT of it -- which is what every column dimension needs -- turns
-             * CONCAT(...) into event.CONCAT(...), and MySQL reads that as a call
-             * to a function named CONCAT in a schema named event.
-             */
-            /*
-             * Two arguments, because a date part reading the clock needs the
-             * timezone as well as the alias. An expression that does not use
-             * the second simply ignores it, which is how one substitution
-             * serves both kinds.
-             */
-            $dim['column'] = ! empty( $dim['expression'] )
-                ? sprintf( $dim['column'], $entity->getTableAlias(),
-                    \OWA\Module\Base\Classes\DimensionExpression::timezone() )
-                : $entity->getTableAlias().'.'.$dim['column'];
-        } else {
+        if ( ! $dim ) {
 
-            // check for normalized dim
-            if (array_key_exists($name, $this->related_dimensions)) {
-                $dim = $this->related_dimensions[$name];
-            } else {
+            $msg = "$name is not a registered dimension.";
+            \OWA\Core\CoreAPI::debug( $msg );
+            $this->addError( $msg );
 
-                $dim = $registry->normalized($name);
-
-                if ($dim) {
-                    // Registered, but not on this entity: v1 would have joined
-                    // it in through a foreign key, and v2 has no joins.
-                    \OWA\Core\CoreAPI::debug("$name is not a dimension of " . $entity->getName() . '.');
-                    $dim = null;
-                } else {
-                    $msg = "$name is not a registered dimension.";
-                    \OWA\Core\CoreAPI::debug($msg);
-                    $this->addError($msg);
-                }
-
-            }
+            return null;
         }
+
+        /*
+         * A dimension registered as an EXPRESSION already carries its own
+         * SQL, with %1$s wherever the alias belongs. Writing the alias in
+         * FRONT of it -- which is what every column dimension needs -- turns
+         * CONCAT(...) into event.CONCAT(...), and MySQL reads that as a call
+         * to a function named CONCAT in a schema named event.
+         */
+        /*
+         * Two arguments, because a date part reading the clock needs the
+         * timezone as well as the alias. An expression that does not use
+         * the second simply ignores it, which is how one substitution
+         * serves both kinds.
+         */
+        $dim['column'] = ! empty( $dim['expression'] )
+            ? sprintf( $dim['column'], $entity->getTableAlias(),
+                \OWA\Module\Base\Classes\DimensionExpression::timezone() )
+            : $entity->getTableAlias().'.'.$dim['column'];
 
         return $dim;
     }
@@ -2410,12 +2041,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $this->calculatedMetrics[$name];
     }
 
-    // can only be called after base entity is determined.
+    // Can only be called after loadBaseEntity().
     function getMetricImplementation($metric_name) {
 
         if (!array_key_exists($metric_name, $this->calculatedMetrics)) {
 
-            return $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$metric_name];
+            return $this->metricObjects[$metric_name];
 
         } else {
             return $this->getCalculatedMetricByName($metric_name);
@@ -2429,7 +2060,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             if (!array_key_exists($metric_name, $this->calculatedMetrics)) {
 
-                $m = $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$metric_name];
+                $m = $this->metricObjects[$metric_name];
 
                 $select = $m->getSelect();
                 //print_r ($select);
@@ -2451,7 +2082,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                     // check to see if the metric has already been added
                     if (!in_array($child_name, $this->metrics)) {
 
-                        $child = $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$child_name];
+                        $child = $this->metricObjects[$child_name];
                         $select = $child->getSelect();
                         //print_r ($select[0]);
                         $this->db->selectColumn($select[0], $select[1]);
@@ -2462,22 +2093,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 }
             }
         }
-    }
-
-    function getColumnName($string) {
-
-        //$string = trim($string);
-        if (array_key_exists($string, $this->related_dimensions)) {
-            return $this->related_dimensions[$string]['column'];
-        }
-
-        if (array_key_exists($string, $this->related_metrics)) {
-            return $string;
-        }
-
-
-        //return $string;
-
     }
 
     /**
@@ -2716,7 +2331,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     function groupKeysQuery() {
 
-        $bm  = $this->baseEntity ?: $this->chooseBaseEntity();
+        $bm  = $this->baseEntity ?: $this->loadBaseEntity();
         $key = $bm ? $this->groupKeySql() : null;
 
         if ( ! $key ) {
@@ -3025,9 +2640,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             return $this->resultSet;
         }
 
-		// determin the best fact table ot use forthe query based on
-		// the metrics and dimensions requested
-        $bm = $this->chooseBaseEntity();
+        $bm = $this->loadBaseEntity();
 
         /*
          * NEVER QUERY A CUBE THAT DOES NOT EXIST. The report controllers and the
@@ -3130,23 +2743,10 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $this->resultSet->errors = $this->errors;
         $this->resultSet->request_errors = $this->request_errors;
 		
-		/*
-		 * Related dimensions and metrics, WHEN there is a base entity.
-		 *
-		 * There is not when the combination asked for is impossible: nothing
-		 * serves clicks and visits at once, so the reduction produces no
-		 * entity and $bm is null. The request error saying so has just been
-		 * put on the result set two lines up -- and then this dereferenced the
-		 * null and the whole request died as a 500 with an empty body, which
-		 * is how an answerable "these cannot be asked for together" became an
-		 * unexplained failure.
-		 *
-		 * Empty is the honest answer: with no table chosen, nothing is related
-		 * to it. The reader gets the request error instead.
-		 */
-        $this->resultSet->setRelatedDimensions( $bm ? $this->getAllRelatedDimensions( $bm ) : array() );
+        // None when the query named something that is not a metric or a dimension.
+        $this->resultSet->setRelatedDimensions( $bm ? $this->relatedDimensions() : array() );
 
-        $this->resultSet->setRelatedMetrics( $bm ? $this->getAllRelatedMetrics( $bm ) : array() );
+        $this->resultSet->setRelatedMetrics( $bm ? $this->relatedMetrics() : array() );
 
         return $this->resultSet;
     }
@@ -3169,13 +2769,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             }
 
             if ( isset( $segment['dimensions'] ) ) {
-                //print_r($segment);
-                foreach ($segment['dimensions'] as $k => $dim) {
 
-                    // Only to log a dimension the segment's table does not have.
-                    $this->isDimensionRelated( $dim['name'], $segment_entity->getName() );
-                }
-                //print_r( $segment['dimensions'] );
                 $this->applyConstraints( $segment['dimensions'], $db, $segment_entity);
 
                 // apply siteId, startDate, and endDate constraints
@@ -3286,36 +2880,26 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /**
-     * Return the approraite metric implementation for the baseEntity
-     * Must be called after the base entity has been determined
+     * A metric's object, built if the query did not name it.
      *
      * @param    string    $name    the name of the metric
-     *
      */
     function getMetric($name) {
 
-        // check to see if the entity object map is loaded
         if ( ! in_array( $name, $this->metrics ) ) {
-            // if not load it forthat metric
-            $this->getMetricEntities($name);
+
+            $this->loadMetric( $name );
         }
 
-        return $this->metricObjectsByEntityMap[$this->baseEntity->getName()][$name];
-
+        return $this->metricObjects[$name];
     }
 
-    function getAllRelatedDimensions($entity) {
-
-        // No entity, nothing related to it. See the caller: this is reached
-        // with null when the metric/dimension combination has no base table.
-        if ( ! $entity ) {
-
-            return array();
-        }
+    /** The dimensions a query can group by, by family. */
+    function relatedDimensions() {
 
         $dims = array();
 
-        foreach ( $this->dimensionRegistry()->onEntity( $entity->getName() ) as $ddim ) {
+        foreach ( $this->dimensionRegistry()->onEntity( \OWA\Core\Module::FACT_ENTITY ) as $ddim ) {
 
             $dims[ $ddim['family'] ][] = array( 'name' => $ddim['name'], 'label' => $ddim['label'] );
         }
@@ -3324,80 +2908,51 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /**
-     * The metrics that can be computed on this entity, by group.
+     * The metrics a query can ask for, by group: every metric, but a
+     * calculated one only when each of its children is a metric of its own.
      *
      * Each carries its metric_type so the grid can tell a count, whose rows
      * are each a share of the total, from a ratio or an average, whose rows
      * are not.
      */
-    function getAllRelatedMetrics( $entity ) {
+    function relatedMetrics() {
 
-        // No entity, nothing related to it -- same reason as
-        // getAllRelatedDimensions().
-        if ( ! $entity ) {
+        $all       = \OWA\Core\CoreAPI::serviceSingleton()->getAllMetrics();
+        $built     = array();
+        $plain     = array();
+        $related   = array();
 
-            return array();
-        }
+        foreach ( $all as $metric_name => $implementations ) {
 
-        $related_metrics = array();
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-        $all_metrics = $s->getAllMetrics();
-        $entity_name = $entity->getName();
-        $s = \OWA\Core\CoreAPI::serviceSingleton();
-        $metricsByEntity = $s->getMap('metricsByEntity');
-        foreach ($all_metrics as $metric_name => $implementations) {
-
-            foreach ($implementations as $implementation) {
+            foreach ( $implementations as $implementation ) {
 
                 $m = \OWA\Core\CoreAPI::metricFactory( $implementation['class'], $implementation['params'] );
 
-                if ( $m->isCalculated() ) {
+                $built[] = array( $metric_name, $implementation, $m );
 
-                    $children = $m->getChildMetrics();
-                    $error = false;
-                    foreach( $children as $child ) {
+                if ( ! $m->isCalculated() ) {
 
-                        if ( ! isset($metricsByEntity[$entity_name][$child])) {
-
-                            $error = true;
-                        }
-                    }
-
-                    if ( ! $error ) {
-
-                        $related_metrics[$implementation['group']][] = array(
-                            'name'             => $metric_name,
-                            'label'         => $implementation['label'],
-                            'description'    => $implementation['description'],
-                            'group'            => $implementation['group'],
-                            'metric_type'    => $implementation['params']['metric_type'] ?? ''
-                        );
-
-                        continue;
-                    }
-
-
-                } else {
-
-                    if ( $entity_name === $m->getEntityName() ) {
-
-                        $related_metrics[$implementation['group']][] = array(
-                            'name'             => $metric_name,
-                            'label'         => $implementation['label'],
-                            'description'    => $implementation['description'],
-                            'group'            => $implementation['group'],
-                            'metric_type'    => $implementation['params']['metric_type'] ?? ''
-                        );
-
-                        continue;
-                    }
+                    $plain[ $implementation['name'] ] = true;
                 }
             }
         }
 
-        return $related_metrics;
+        foreach ( $built as list( $metric_name, $implementation, $m ) ) {
+
+            if ( $m->isCalculated() && array_diff( $m->getChildMetrics(), array_keys( $plain ) ) ) {
+
+                continue;
+            }
+
+            $related[ $implementation['group'] ][] = array(
+                'name'        => $metric_name,
+                'label'       => $implementation['label'],
+                'description' => $implementation['description'],
+                'group'       => $implementation['group'],
+                'metric_type' => $implementation['params']['metric_type'] ?? ''
+            );
+        }
+
+        return $related;
     }
-
 }
-
-?>

@@ -1370,18 +1370,6 @@ class Entity {
         return $this->name;
     }
     
-    function getSummaryLevel() {
-        
-        if (array_key_exists('summary_level', $this->_tableProperties)) {
-            
-            return $this->_tableProperties['summary_level'];
-        
-        } else {
-        
-            return 0;
-        }
-    }
-    
     function setCharacterEncoding($encoding) {
 
         $this->_tableProperties['character_encoding'] = $encoding;

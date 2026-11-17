@@ -304,7 +304,7 @@ final class CatalogCharacterizationHarness
     /**
      * Which dimensions each entity can actually reach.
      *
-     * Recorded because ResultSetManager::getAllRelatedDimensions() reads the
+     * Recorded because ResultSetManager::relatedDimensions() reads the
      * dimension registry as a PUBLIC PROPERTY rather than through an accessor,
      * so changing the registry's shape changes what it sees without any
      * accessor being involved. Nothing covered it, and a shape change silently
@@ -323,9 +323,7 @@ final class CatalogCharacterizationHarness
 
         foreach ( self::RELATED_ENTITIES as $entityName ) {
 
-            $entity = \OWA\Core\CoreAPI::entityFactory( $entityName );
-
-            $families = (array) $manager->getAllRelatedDimensions( $entity );
+            $families = (array) $manager->relatedDimensions();
 
             $normalised = array();
 

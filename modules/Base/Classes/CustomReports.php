@@ -532,15 +532,6 @@ class CustomReports {
             return $error;
         }
 
-        $error = self::validateCombination(
-            isset( $definition['metrics'] ) ? $definition['metrics'] : '',
-            '', '', 'the report metric set', $property_id );
-
-        if ( $error !== '' ) {
-
-            return $error;
-        }
-
         return '';
     }
 
@@ -717,35 +708,8 @@ class CustomReports {
             }
         }
 
-        /*
-         * EACH CONSTRAINT, CLAUSE BY CLAUSE.
-         *
-         * Before the combination check below, which folds the constraints'
-         * dimensions into the same reduction: constraintDimensions() keeps only
-         * the names that resolve, so a misspelled one reaches that check as
-         * nothing at all and the combination looks fine.
-         */
+        // Each constraint, clause by clause.
         $error = self::validateConstraints( $widget, $where, $property_id );
-
-        if ( $error !== '' ) {
-
-            return $error;
-        }
-
-        /*
-         * ...and everything asked for has to be ASKABLE TOGETHER.
-         *
-         * Metrics, dimensions AND the dimensions named by the widget's
-         * constraints: a query is answered from one fact table, and that table
-         * has to serve all three. Checked after the names resolve, because a
-         * combination check on a name that does not exist would report the
-         * wrong problem.
-         */
-        $error = self::validateCombination(
-            isset( $query['metrics'] ) ? $query['metrics'] : '',
-            isset( $query['dimensions'] ) ? $query['dimensions'] : '',
-            isset( $widget['constraints'] ) ? $widget['constraints'] : '',
-            $where, $property_id );
 
         if ( $error !== '' ) {
 
@@ -840,78 +804,6 @@ class CustomReports {
         }
 
         return '';
-    }
-
-    /**
-     * Whether these metrics can be asked for in one query.
-     *
-     * Every metric is computed from one or more FACT TABLES, and a query is
-     * answered from one of them -- so a set is only askable if its metrics
-     * share a table. A click-table metric and a session-table one have no table
-     * that holds both, so asking for them together is not a thin result, it is
-     * not a question.
-     *
-     * The answer comes from ResultSetManager, which performs exactly this
-     * reduction when it chooses a base entity. Asking IT rather than keeping a
-     * list here is what stops the two drifting: a metric registered tomorrow is
-     * covered without anything being added.
-     *
-     * @param string|array $metrics
-     * @param string|array $dimensions
-     * @param string $constraints the widget's constraint string, if any
-     * @param string $where human-readable position, for the message
-     * @param string|null $property_id whose dimensions; see validate()
-     * @return string
-     */
-    private static function validateCombination( $metrics, $dimensions, $constraints, $where, $property_id ) {
-
-        $names = self::asNames( $metrics );
-        $dims  = self::asNames( $dimensions );
-
-        /*
-         * Constraints contribute their DIMENSIONS to the same reduction -- the
-         * engine folds them in with getDimensionsFromConstraints(), so a
-         * constraint on a field the fact table does not carry breaks a query
-         * exactly as a dimension does.
-         */
-        foreach ( self::constraintDimensions( $constraints, $property_id ) as $name ) {
-
-            $dims[] = $name;
-        }
-
-        // Nothing to reconcile: one field is always askable on its own.
-        if ( count( $names ) + count( $dims ) < 2 ) {
-
-            return '';
-        }
-
-        if ( ! $names ) {
-
-            /*
-             * Dimensions alone cannot be reduced here: the entity list starts
-             * from the METRICS, and a widget with none inherits the report's.
-             * Left to the query, which checks the pair it actually runs with.
-             */
-            return '';
-        }
-
-        $rsm = new ResultSetManager;
-        $rsm->setPropertyId( (string) $property_id );
-
-        $clash = $rsm->firstIncompatible( $names, $dims );
-
-        if ( ! $clash ) {
-
-            return '';
-        }
-
-        /*
-         * The message NAMES BOTH SIDES. Listing everything asked for tells the
-         * author nothing they can act on; naming the field that broke the set
-         * and what it clashes with tells them which one to remove.
-         */
-        return $where . ': ' . ResultSetManager::incompatibleMessage(
-            $clash['name'], $clash['with'], $clash['kind'] );
     }
 
     /**
@@ -1691,37 +1583,6 @@ class CustomReports {
         }
 
         return '';
-    }
-
-    /**
-     * The dimension names a constraint string mentions.
-     *
-     * A constraint is `name==value`, comma separated. Only the NAME matters
-     * here, and only when it is a dimension -- a constraint on a metric is a
-     * having clause and does not decide the fact table.
-     *
-     * @param string $constraints
-     * @param string|null $property_id whose dimensions; see validate()
-     * @return array
-     */
-    private static function constraintDimensions( $constraints, $property_id ) {
-
-        $out = array();
-
-        foreach ( self::asNames( $constraints ) as $clause ) {
-
-            // Split on the first operator character; the operators are
-            // ==, !=, >, <, >=, <=, =~ and so on, all starting with one of these.
-            $name = preg_split( '/[=!<>~]/', $clause, 2 )[0];
-            $name = trim( (string) $name );
-
-            if ( $name !== '' && self::isDimension( $name, $property_id ) ) {
-
-                $out[] = $name;
-            }
-        }
-
-        return $out;
     }
 
     /** Whether the name resolves as either kind -- what a sort may be. */

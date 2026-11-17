@@ -16,10 +16,9 @@ final class RelatedMetricTypeTest extends TestCase
     private function related(): array
     {
         $rsm    = new \OWA\Module\Base\Classes\ResultSetManager;
-        $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event' );
         $byName = array();
 
-        foreach ( $rsm->getAllRelatedMetrics( $entity ) as $group => $metrics ) {
+        foreach ( $rsm->relatedMetrics() as $group => $metrics ) {
 
             foreach ( $metrics as $m ) {
 

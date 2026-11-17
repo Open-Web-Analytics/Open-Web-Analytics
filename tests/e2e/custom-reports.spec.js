@@ -1427,22 +1427,7 @@ test.describe('custom reports', () => {
             await expect(page.locator('.owa_typeDialogFrame .ui-dialog-title')).toHaveText('Add a widget');
         });
 
-        /*
-         * THERE IS NO METRIC-NARROWING TEST HERE ANY MORE.
-         *
-         * The picker narrows to what can be asked for alongside what is already
-         * chosen, and the narrowing is decided by which fact tables a metric can
-         * be computed from. Every metric registered on v2 declares
-         * `base.event` -- one cube, one table -- so no pair of them is
-         * incompatible and the picker correctly narrows to nothing. The pairs
-         * this used to use (visits/feedRequests, domClicks) are v1 metrics that
-         * no longer exist.
-         *
-         * The reduction itself is still exercised where it lives, in
-         * ResultSetManager, which does not need a browser to answer it.
-         */
-
-        /** The same narrowing reaches dimensions, and the caps are enforced. */
+        /** The metric picker offers nothing past its cap. */
         test('the pickers stop at four', async ({ page }) => {
             await openBuilderOnGrid(page);
 

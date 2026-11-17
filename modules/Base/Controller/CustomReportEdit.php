@@ -180,21 +180,6 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
         $this->set( 'propertyId', $propertyId );
 
-        /*
-         * Which fact tables each metric can be measured in.
-         *
-         * The builder narrows the picker with it: once a metric is chosen, only
-         * metrics sharing a table stay offered, so an impossible set cannot be
-         * assembled. Sent as data because the filtering has to happen per
-         * keystroke -- asking the server on every selection would make the
-         * picker feel broken, and the answer never changes within a page.
-         *
-         * Server-side validation still refuses an illegal set on save. This is
-         * the same answer arriving earlier, not a replacement for it.
-         */
-        $this->set( 'metric_entities', self::metricEntities() );
-        $this->set( 'dimension_entities', self::dimensionEntities( $propertyId ) );
-
         $this->set( 'metric_choices',    self::metricChoices() );
         $this->set( 'dimension_choices', self::dimensionChoices( $propertyId ) );
         $this->set( 'widget_types',      \OWA\Module\Base\Classes\CustomReports::translatedTable( \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPES ) );
@@ -265,79 +250,6 @@ class CustomReportEdit extends \OWA\Core\ReportController {
     }
 
     /**
-     * metric name => the fact tables it can be measured in.
-     *
-     * Read from ResultSetManager, which is what actually decides, so the
-     * builder cannot come to a different conclusion from the query engine.
-     *
-     * @return array<string,array>
-     */
-    public static function metricEntities() {
-
-        $out = array();
-
-        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-
-        foreach ( array_keys( (array) \OWA\Core\CoreAPI::getAllMetrics() ) as $name ) {
-
-            $out[ $name ] = $rsm->compatibleEntities( array( $name ) );
-        }
-
-        return $out;
-    }
-
-    /**
-     * dimension name => the fact tables it is related to.
-     *
-     * The same relation ResultSetManager checks when it picks a base entity, so
-     * the builder narrows on exactly what the query engine would refuse.
-     *
-     * @param  string|null $property_id whose dimensions; null for the modules' alone
-     * @return array<string,array>
-     */
-    public static function dimensionEntities( $property_id ) {
-
-        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-        $rsm->setPropertyId( (string) $property_id );
-
-        /*
-         * The fact tables a query can be answered from. Taken from the metric
-         * registry rather than listed, so a module adding a fact table and
-         * metrics for it is covered without a change here.
-         */
-        $entities = array();
-
-        foreach ( array_keys( (array) \OWA\Core\CoreAPI::getAllMetrics() ) as $metric ) {
-
-            foreach ( $rsm->compatibleEntities( array( $metric ) ) as $entity ) {
-
-                $entities[ $entity ] = true;
-            }
-        }
-
-        $entities = array_keys( $entities );
-
-        $out = array();
-
-        foreach ( array_keys( $rsm->dimensionRegistry()->all() ) as $name ) {
-
-            $related = array();
-
-            foreach ( $entities as $entity ) {
-
-                if ( $rsm->isDimensionRelated( $name, $entity ) ) {
-
-                    $related[] = $entity;
-                }
-            }
-
-            $out[ $name ] = $related;
-        }
-
-        return $out;
-    }
-
-    /**
      * A registry map reduced to {name, label}, sorted by what a person reads.
      *
      * The registry entries carry far more than the picker needs -- the SQL
@@ -355,8 +267,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
             $entry = (array) $entry;
 
-            // A metric is registered once per entity that can compute it, so
-            // its entry is a list of definitions; they share a label.
+            // A metric's entry is the list of its registrations; they share a label.
             if ( isset( $entry[0] ) && is_array( $entry[0] ) ) {
 
                 $entry = $entry[0];
