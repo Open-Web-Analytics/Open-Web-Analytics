@@ -198,7 +198,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
         chartHeight: 125,
         chartWidth:700,
         autoResizeCharts: true,
-        views:['grid', 'areaChart','pie', 'sparkline']
+        views:['grid', 'areaChart','pie']
     };
 
     this.viewObjects = {};
@@ -209,12 +209,15 @@ OWA.resultSetExplorer = function(dom_id, options) {
 
 OWA.resultSetExplorer.prototype = {
 
-    //remove
+    /*
+     * A view name -> the method that draws it. 'sparkline' was here, mapped to
+     * a makeSparkline() that no longer exists: a metric box draws its own
+     * sparkline (OWA.sparkline), and asking for that view threw.
+     */
     viewMethods: {
         grid: 'refreshGrid',
         areaChart: 'makeAreaChart',
-        pie: 'makeShareChart',
-        sparkline: 'makeSparkline'
+        pie: 'makeShareChart'
     },
 
     setDataLoadUrl : function(url) {
@@ -460,7 +463,14 @@ OWA.resultSetExplorer.prototype = {
 
             if (this.view) {
                 var method_name = this.viewMethods[this.view];
-                this[method_name]();
+
+                // An unknown view draws nothing rather than throwing: the data
+                // is loaded either way, and the queue below still runs.
+                if ( method_name && typeof this[ method_name ] === 'function' ) {
+                    this[method_name]();
+                } else {
+                    OWA.debug( 'resultSetExplorer: no view called %s', this.view );
+                }
             }
 
             if (this.asyncQueue.length > 0) {
