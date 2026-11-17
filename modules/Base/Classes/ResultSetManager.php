@@ -1969,7 +1969,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         // this_week and the rest already align, and adding a redundant timestamp
         // bound to them would risk excluding rows whose yyyymmdd and timestamp
         // disagree at a timezone edge.
-        if ( $dimension_name === 'date' && $this->timePeriod ) {
+        if ( $dimension_name === 'date' ) {
 
             $startTs = $this->timePeriod->startDate->getTimestamp();
             $endTs   = $this->timePeriod->endDate->getTimestamp();

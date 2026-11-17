@@ -72,7 +72,7 @@ class View extends \OWA\Core\Base {
     /**
      * Sub View object
      *
-     * @var object
+     * @var \OWA\Core\View|null
      */
     var $subview;
 

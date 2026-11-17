@@ -1108,7 +1108,6 @@ class Entity {
         else:
             return false;
         endif;
-        return;
     }
     
     function getColumnDefinition($column_name, $omit_primary_key = false) {

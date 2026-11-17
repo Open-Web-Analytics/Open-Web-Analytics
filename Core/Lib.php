@@ -500,7 +500,7 @@ class Lib {
                 $striped_n = substr($n, $len);
 
                 // a param named exactly the namespace has no name left
-                if ($striped_n === '' || $striped_n === false) {
+                if ($striped_n === '') {
                     continue;
                 }
 
@@ -1053,7 +1053,7 @@ class Lib {
 
             $root = \OWA\Core\Env::root() . '/';
 
-            return ( $root !== '' && strpos( $file, $root ) === 0 ? substr( $file, strlen( $root ) ) : $file )
+            return ( strpos( $file, $root ) === 0 ? substr( $file, strlen( $root ) ) : $file )
                 . ':' . ( $frame['line'] ?? 0 );
         }
 

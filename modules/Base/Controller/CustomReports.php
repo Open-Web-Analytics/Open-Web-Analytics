@@ -246,8 +246,8 @@ class CustomReports extends \OWA\Core\ReportController {
 
             $kinds[ $key ] = array(
                 'label'  => \OWA\Core\Strings::translate( $label ),
-                'hint'   => \OWA\Core\Strings::translate( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $key ] ?? '' ),
-                'icon'   => \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $key ] ?? '',
+                'hint'   => \OWA\Core\Strings::translate( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_HINTS[ $key ] ),
+                'icon'   => \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPE_ICONS[ $key ],
                 'params' => array( 'do' => 'base.visualizationEdit', 'visualizationType' => $key ),
             );
         }

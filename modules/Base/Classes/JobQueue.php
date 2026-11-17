@@ -231,6 +231,7 @@ class JobQueue {
      *
      * @param  int|null $within  only a job whose lease fits in this many seconds; null for any
      * @return array|null the claimed row
+     * @phpstan-impure
      */
     public static function claim( $within = null ) {
 

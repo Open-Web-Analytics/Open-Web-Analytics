@@ -61,9 +61,9 @@ class Controller extends \OWA\Core\Base {
     var $priviledge_level;
 
     /**
-     * data validation control object
+     * data validation control object, created by the first validation added
      *
-     * @var Object
+     * @var \OWA\Module\Base\Classes\Validator|null
      */
     var $v;
 

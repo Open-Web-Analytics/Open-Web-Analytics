@@ -3231,11 +3231,6 @@ class Db extends \OWA\Core\Base {
                 }
             }
 
-            if ( ! $ranges ) {
-
-                continue;
-            }
-
             // No change needed where the shape already matches.
             $same = ( count( $block_def['names'] ) === count( $ranges ) );
 
@@ -3759,10 +3754,7 @@ class Db extends \OWA\Core\Base {
             $run[] = $span;
         }
 
-        if ( $run ) {
-
-            $runs[] = $run;
-        }
+        $runs[] = $run;
 
         $total    = count( $this->getPartitionSpans( $table_name ) );
         $selected = count( $spans );

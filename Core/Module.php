@@ -314,7 +314,7 @@ abstract class Module {
      * Attaches an event handler to the event queue
      *
      * @param array $event_name
-     * @param string $handler_name
+     * @param string|object $handler_name
      * @return boolean
      */
     function registerEventHandler($event_name, $handler_name, $method = 'notify', $dir = 'handlers') {

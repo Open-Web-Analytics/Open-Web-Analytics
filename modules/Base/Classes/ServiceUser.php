@@ -40,8 +40,6 @@ class ServiceUser extends \OWA\Core\Base {
     var $preferences = array();
     var $is_authenticated = false;
     public $assignedSites = array();
-    private $isInitialized = false;
-    private $isAssignedSitesListLoaded = false;
 
     function __construct() {
         //parent::__construct();
@@ -91,7 +89,6 @@ class ServiceUser extends \OWA\Core\Base {
     private function initInternalProperties() {
         $this->loadRelatedUserData();
         $this->loadAssignedSites();
-        $this->setInitialized();
     }
 
     function loadRelatedUserData() {
@@ -262,11 +259,6 @@ class ServiceUser extends \OWA\Core\Base {
         $this->setAllowedSitesList($site_ids);
     }
 
-    public function setInitialized() {
-	    
-        $this->isInitialized = true;
-    }
-
     private function setAllowedSitesList($site_ids) {
 
         $list = array();
@@ -294,7 +286,6 @@ class ServiceUser extends \OWA\Core\Base {
         }
 
         $this->assignedSites = self::withSiblingProfiles( $list );
-        $this->isAssignedSitesListLoaded = true;
     }
 
     /**

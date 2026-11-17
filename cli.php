@@ -109,9 +109,6 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
         $exit_code = \OWA\Core\Controller\Cli::$exit_code;
     }
 
-} else {
-    // unload owa
-    $owa->restInPeace();
 }
 
 if (!empty($exit_code)) {

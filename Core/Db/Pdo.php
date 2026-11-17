@@ -150,12 +150,7 @@ abstract class Pdo extends \OWA\Core\Db
             }
         }
 
-        $this->connection_status = (bool) $this->connection;
-
-        if ( ! $this->connection_status ) {
-
-            $this->connectFailed();
-        }
+        $this->connection_status = true;
 
         return $this->connection_status;
     }

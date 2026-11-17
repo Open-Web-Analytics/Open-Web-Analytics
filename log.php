@@ -160,9 +160,6 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
     \OWA\Core\CoreAPI::logEvent($event->getEventType(), $event);
 
-} else {
-    // unload owa
-    $owa->restInPeace();
 }
 
 ?>

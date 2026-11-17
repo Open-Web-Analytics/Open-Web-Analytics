@@ -52,9 +52,9 @@ class TemplateEngine {
     var $vars = array();
 
     /**
-     * Template file
+     * Template file, null until one is set
      *
-     * @var string
+     * @var string|null
      */
     var $file;
 
