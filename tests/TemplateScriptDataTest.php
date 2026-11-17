@@ -154,7 +154,11 @@ final class TemplateScriptDataTest extends TestCase
         $this->assertSame( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL, $config['moreLabel'] );
         $this->assertSame( \OWA\Core\ReportGrid::COLUMNS, $config['columns'] );
         $this->assertSame( array_keys( \OWA\Module\Base\Classes\CustomReports::WIDTHS ), array_column( $config['widths'], 0 ) );
-        $this->assertContains( 'visits', array_column( $config['metrics'], 'name' ) );
+        $this->assertNotEmpty( $config['metrics'] );
+
+        foreach ( $config['metrics'] as $choice ) {
+            $this->assertTrue( \OWA\Module\Base\Classes\CustomReports::isMetric( $choice['name'] ), "{$choice['name']} is not a metric" );
+        }
         $this->assertGreaterThan( 0, $config['maxWidgets'] );
         $this->assertSame( [], $config['definition'], 'a new report starts empty' );
     }
