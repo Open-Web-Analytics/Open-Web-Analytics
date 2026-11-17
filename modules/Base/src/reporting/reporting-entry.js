@@ -30,13 +30,12 @@
  */
 
 // FIRST: publish jQuery on window for the vendor plugins that read a free `jQuery`/`$`
-// at eval time (chosen, sparkline, flot) and for the report
+// at eval time (chosen, flot) and for the report
 // templates' inline <script> blocks. Must precede every vendor import below.
 import './vendor-jquery-global.js';
 
 // jQuery plugin ecosystem (order preserved from the retired concat).
 import 'chosen-js/chosen.jquery.js';
-import 'jquery-sparkline';
 import 'jquery.flot';                       // core
 import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis.mode:"time")
 /*

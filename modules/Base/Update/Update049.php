@@ -49,9 +49,13 @@ namespace OWA\Module\Base\Update;
  */
 class Update049 extends \OWA\Core\Update {
 
-    var $schema_version = 49;
+    public $schema_version = 49;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         if ( $this->migrateTriggers() === false ) {
 
@@ -214,9 +218,9 @@ class Update049 extends \OWA\Core\Update {
     /** The goal events up() switched off because no condition of theirs could be migrated. */
     const SWITCHED_OFF = 'goals_switched_off_by_049';
 
-    var $down_does_not_restore = 'the conditions\' old property names: the map from them is many-to-one.';
+    public $down_does_not_restore = 'the conditions\' old property names: the map from them is many-to-one.';
 
-    function down() {
+    public function down() {
 
         /*
          * The conditions stay: the vocabulary map is many-to-one, so there is no

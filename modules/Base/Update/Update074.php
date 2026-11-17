@@ -25,15 +25,19 @@ class Update074 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 74;
+    public $schema_version = 74;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         return $this->dropColumns( array( 'remote_host' ) );
     }
 
     /** The column comes back empty: what it held is not kept anywhere. */
-    function down() {
+    public function down() {
 
         return $this->restoreColumn( 'remote_host', OWA_DTD_VARCHAR255 );
     }

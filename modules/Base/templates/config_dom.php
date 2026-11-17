@@ -5,7 +5,6 @@ OWA.config.main_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'main_ur
 OWA.config.public_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'public_url');?>";
 OWA.config.baseUrl = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'public_url');?>";
 //OWA.config.js_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'public_url').'js/';?>";
-//OWA.config.action_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'action_url');?>";
 OWA.config.images_url = "<?php echo \OWA\Core\CoreAPI::configSingleton()->assetsUrl();?>";
 OWA.config.log_url = "<?php echo \OWA\Core\CoreAPI::configSingleton()->trackingUrl() . 'log.php';?>";
 OWA.config.modules_url = "<?php echo \OWA\Core\CoreAPI::getSetting('base', 'modules_url');?>";

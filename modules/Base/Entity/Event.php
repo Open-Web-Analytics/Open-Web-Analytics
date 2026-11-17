@@ -64,9 +64,10 @@ class Event extends EventRaw {
      */
     const ALIAS = 'event';
 
+    /** @var bool */
     private $bound = false;
 
-    function __construct() {
+    public function __construct() {
 
         // Raw's 54 columns, its primary key, its indexes and its partition
         // column, in that order.

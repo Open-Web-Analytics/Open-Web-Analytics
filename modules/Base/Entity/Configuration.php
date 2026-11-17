@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Entity;
 
 class Configuration extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName('configuration');
         $this->properties['id'] = new \OWA\Module\Base\Classes\DbColumn;

@@ -38,7 +38,7 @@ class Update086 extends \OWA\Core\Update {
 
     use SettingRows;
 
-    var $schema_version = 86;
+    public $schema_version = 86;
 
     /** The modules whose every row this deletes. */
     const MODULES = array( 'fileCache', 'memcachedCache' );
@@ -53,7 +53,11 @@ class Update086 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
-    /** The rows this deletes, as a WHERE clause, and its parameters. */
+    /**
+     * The rows this deletes, as a WHERE clause, and its parameters.
+     *
+     * @return array{string, list<string>}
+     */
     private static function where() {
 
         $in = function ( array $values ) {
@@ -66,7 +70,11 @@ class Update086 extends \OWA\Core\Update {
         );
     }
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->settingTable();
@@ -127,7 +135,7 @@ class Update086 extends \OWA\Core\Update {
     }
 
     /** The exact inverse, from the record up() kept. */
-    function down() {
+    public function down() {
 
         $record = $this->record();
 

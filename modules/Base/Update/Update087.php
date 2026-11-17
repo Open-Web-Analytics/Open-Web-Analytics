@@ -21,7 +21,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update087 extends \OWA\Core\Update {
 
-    var $schema_version = 87;
+    public $schema_version = 87;
 
     const COLUMN = 'session_epoch';
 
@@ -31,6 +31,9 @@ class Update087 extends \OWA\Core\Update {
      */
     const DEFINITION = 'INT NOT NULL DEFAULT 0';
 
+    /**
+     * @return bool
+     */
     private function hasColumn() {
 
         $rows = \OWA\Core\CoreAPI::dbSingleton()->get_results(
@@ -39,7 +42,11 @@ class Update087 extends \OWA\Core\Update {
         return ! empty( $rows );
     }
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         if ( $this->hasColumn() ) {
 
@@ -58,7 +65,7 @@ class Update087 extends \OWA\Core\Update {
     }
 
     /** The exact inverse. */
-    function down() {
+    public function down() {
 
         if ( ! $this->hasColumn() ) {
 

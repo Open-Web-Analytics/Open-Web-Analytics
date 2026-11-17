@@ -80,7 +80,12 @@ final class Sqs {
         return self::PREFIX . substr( hash( 'sha256', $id ), 0, 12 );
     }
 
-    /** The dead-letter queue's name. */
+    /**
+     * The dead-letter queue's name.
+     *
+     * @param  string $name
+     * @return string
+     */
     public static function deadLetterName( $name ) {
 
         return $name . '-dlq';
@@ -160,6 +165,8 @@ final class Sqs {
      * OWA_SQS_REGION, else the region in OWA_SQS_QUEUE_URL, else the stored
      * region, else AWS_REGION or AWS_DEFAULT_REGION in the environment, else
      * null. The region in an AWS profile (~/.aws/config) is not read.
+     *
+     * @return string|null
      */
     public static function region() {
 
@@ -212,7 +219,11 @@ final class Sqs {
         return null;
     }
 
-    /** Where the credentials come from, for the settings screen. Never the secret. */
+    /**
+     * Where the credentials come from, for the settings screen. Never the secret.
+     *
+     * @return string
+     */
     public static function credentialSource() {
 
         $credentials = self::configCredentials();
@@ -227,7 +238,7 @@ final class Sqs {
             : 'OWA_SQS_KEY and OWA_SQS_SECRET in owa-config.php';
     }
 
-    /** @return array|null key, secret and any session token from owa-config.php */
+    /** @return array{key: string, secret: string, token?: string}|null key, secret and any session token from owa-config.php */
     private static function configCredentials() {
 
         if ( defined( 'OWA_SQS_KEY' ) && defined( 'OWA_SQS_SECRET' ) && OWA_SQS_KEY && OWA_SQS_SECRET ) {
@@ -250,7 +261,7 @@ final class Sqs {
      * owa-config.php when set, and the HTTP limits for this request's role.
      *
      * @param  string $region
-     * @return array
+     * @return array<string, mixed> the SqsClient constructor's arguments
      */
     public static function clientArgs( $region ) {
 
@@ -307,7 +318,7 @@ final class Sqs {
      * Create both queues, or find them, and record the outcome for the
      * settings screen (PLAN 2.30.4a).
      *
-     * @return array ok, error, main (url), dlq (url), at
+     * @return array{ok: bool, error: string|null, main: string|null, dlq: string|null, at: int}
      */
     public static function provision() {
 

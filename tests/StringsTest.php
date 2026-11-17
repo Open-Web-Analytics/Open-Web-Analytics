@@ -13,9 +13,41 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class StringsTest extends TestCase
 {
+    /** @var string|null a catalogue a test wrote, removed after it */
+    private $catalogue = null;
+
     protected function tearDown(): void
     {
         Strings::useTranslations(null);
+        Strings::useLocale(null);
+
+        if ($this->catalogue !== null) {
+            @unlink($this->catalogue);
+        }
+    }
+
+    /**
+     * A t() call before the locale is known answers the English, and does not
+     * keep the locale's translations from loading once it is: Base's settings
+     * declaration is read before the config file defines OWA_LOCALE.
+     */
+    public function testTranslationsFollowTheLocaleInUse(): void
+    {
+        $locale = 'zz_P' . getmypid();
+        $this->catalogue = Strings::path($locale);
+        file_put_contents($this->catalogue, "<?php\nreturn ['Name is required.' => 'Zz name.'];\n");
+
+        Strings::useTranslations(null);
+        Strings::useLocale(Strings::SOURCE_LOCALE);
+        $this->assertSame('Name is required.', \OWA\Core\CoreAPI::t('Name is required.'));
+
+        Strings::useLocale($locale);
+        $this->assertSame('Zz name.', \OWA\Core\CoreAPI::t('Name is required.'));
+
+        Strings::useTranslations(['Name is required.' => 'Pinned.']);
+        Strings::useLocale(Strings::SOURCE_LOCALE);
+        $this->assertSame('Pinned.', \OWA\Core\CoreAPI::t('Name is required.'),
+            'translations a test sets stay whatever the locale');
     }
 
     public function testTheEnglishIsReturnedWhenNothingTranslatesIt(): void

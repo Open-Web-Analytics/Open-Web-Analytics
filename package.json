@@ -30,7 +30,6 @@
     "chosen-js": "^1.8.7",
     "jgrowl": "^1.4.8",
     "jquery": "^3.6.0",
-    "jquery-sparkline": "^2.4.0",
     "jquery.flot": "^0.8.3"
   },
   "overrides": {

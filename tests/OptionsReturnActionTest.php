@@ -112,7 +112,14 @@ final class OptionsReturnActionTest extends TestCase {
             'the destination is the controller\'s to know, not a value the browser posts' );
     }
 
+    /**
+     * The module registers its actions only while it is active, and is_active
+     * lives in the database. Registering through the module itself checks the
+     * real registration whether or not this install has it switched on.
+     */
     public function testTheSaveActionIsRegistered(): void {
+
+        ( new \OWA\Module\MaxmindGeoip\Module() )->registerActions();
 
         $this->assertSame(
             \OWA\Module\MaxmindGeoip\Controller\OptionsGeoipUpdate::class,

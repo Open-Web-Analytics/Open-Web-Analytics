@@ -25,12 +25,16 @@ class Update073 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 73;
+    public $schema_version = 73;
 
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
     const COLUMNS = array( 'element_anchor', 'anchor_x', 'anchor_y' );
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
@@ -48,7 +52,7 @@ class Update073 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: the columns go from every cube and from raw, with what they held. */
-    function down() {
+    public function down() {
 
         if ( $this->dropCubeColumns( self::COLUMNS ) === false ) {
 
