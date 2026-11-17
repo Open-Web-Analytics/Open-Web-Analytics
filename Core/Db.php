@@ -219,6 +219,26 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
+     * Whether the most recent refused statement was stopped by a key or
+     * foreign key: the outcome a check-then-insert race expects.
+     *
+     * @var bool
+     */
+    protected $last_query_was_constraint_violation = false;
+
+    /**
+     * Whether the most recent refused statement was stopped by a key or foreign
+     * key. Like lastQueryError(), not cleared on success: read it immediately
+     * after the call that answered false.
+     *
+     * @return bool
+     */
+    public function lastQueryWasConstraintViolation() {
+
+        return $this->last_query_was_constraint_violation;
+    }
+
+    /**
      * How many statements have been refused in this process.
      *
      * A read that answers no row and a read that failed both come back empty;
@@ -258,6 +278,7 @@ class Db extends \OWA\Core\Base {
     protected function logQueryError( $message, $sql, $is_constraint_violation = false ) {
 
         $this->last_query_error = (string) $message;
+        $this->last_query_was_constraint_violation = (bool) $is_constraint_violation;
 
         // Full detail for development, unconditionally: this is the level that
         // was already being used, so nothing that worked before is lost.

@@ -221,19 +221,18 @@ class Mysql extends \OWA\Core\Db {
               ? $this->executeBound( $sql, $params )
               : @mysqli_query( $this->connection, $sql );
     
-            // Log Errors
-    
-            if ( mysqli_errno( $this->connection ) ) {
-    
+            // Log Errors. A bound statement's error is on the statement, not
+            // the connection, and executeBound() logs it before closing the
+            // statement; only an unbound query is checked here.
+
+            if ( ! $params && mysqli_errno( $this->connection ) ) {
+
                 $errno = mysqli_errno( $this->connection );
 
                 $this->logQueryError(
                     sprintf( '(%s) %s', $errno, mysqli_error( $this->connection ) ),
                     $sql,
-                    // mysqli reports the vendor code only. 1062 duplicate entry,
-                    // 1452/1451 foreign key -- the same class SQLSTATE 23000
-                    // covers for the PDO driver.
-                    in_array( (int) $errno, array( 1062, 1451, 1452 ), true )
+                    self::isConstraintErrno( $errno )
                 );
             }
     
@@ -444,6 +443,36 @@ class Mysql extends \OWA\Core\Db {
     }
 
     /**
+     * Whether a mysqli error number means a key or foreign key stopped the
+     * statement. mysqli reports the vendor code only: 1062 duplicate entry,
+     * 1451/1452 foreign key -- the class SQLSTATE 23000 covers for PDO.
+     *
+     * @param  int|string $errno
+     * @return bool
+     */
+    protected static function isConstraintErrno( $errno ) {
+
+        return in_array( (int) $errno, array( 1062, 1451, 1452 ), true );
+    }
+
+    /**
+     * Log a bound statement mysqli refused, from the error it reported.
+     *
+     * @param  int    $errno
+     * @param  string $error
+     * @param  string $sql
+     * @return void
+     */
+    protected function logBoundRefusal( $errno, $error, $sql ) {
+
+        $this->logQueryError(
+            $errno ? sprintf( '(%s) %s', $errno, $error ) : 'mysqli refused the statement without an error number',
+            $sql,
+            self::isConstraintErrno( $errno )
+        );
+    }
+
+    /**
      * Run a statement with bound parameters.
      *
      * mysqli's binding is more awkward than PDO's: one type STRING covering all
@@ -454,6 +483,11 @@ class Mysql extends \OWA\Core\Db {
      * a statement with no result set, false on failure. get_results() and
      * get_row() then behave identically whether or not parameters were used.
      *
+     * LOGS ITS OWN FAILURES. A prepared statement's error is on the statement,
+     * not the connection, and is gone once the statement is closed, so query()
+     * cannot see it afterwards. Without this a refused bound statement -- every
+     * entity create() and update() -- was not logged at all on this driver.
+     *
      * @param  string $sql
      * @param  Bindings $params
      * @return \mysqli_result|bool
@@ -463,6 +497,8 @@ class Mysql extends \OWA\Core\Db {
         $statement = @mysqli_prepare( $this->connection, $sql );
 
         if ( ! $statement ) {
+
+            $this->logBoundRefusal( mysqli_errno( $this->connection ), mysqli_error( $this->connection ), $sql );
 
             return false;
         }
@@ -494,12 +530,16 @@ class Mysql extends \OWA\Core\Db {
         // Spread from a variable: bind_param takes references.
         if ( ! @mysqli_stmt_bind_param( $statement, $types, ...$values ) ) {
 
+            $this->logBoundRefusal( mysqli_stmt_errno( $statement ), mysqli_stmt_error( $statement ), $sql );
+
             @mysqli_stmt_close( $statement );
 
             return false;
         }
 
         if ( ! @mysqli_stmt_execute( $statement ) ) {
+
+            $this->logBoundRefusal( mysqli_stmt_errno( $statement ), mysqli_stmt_error( $statement ), $sql );
 
             @mysqli_stmt_close( $statement );
 
