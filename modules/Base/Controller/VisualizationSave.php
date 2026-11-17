@@ -13,7 +13,7 @@ namespace OWA\Module\Base\Controller;
  */
 class VisualizationSave extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'edit_reports' );
@@ -219,7 +219,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
         return $steps;
     }
 
-    function action() {
+    public function action() {
 
         $id   = (string) $this->getParam( 'visualizationId' );
         $user = \OWA\Core\CoreAPI::getCurrentUser();
@@ -352,7 +352,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
      * comes back filled in rather than blank -- losing someone's typing is a
      * worse failure than the one being reported.
      */
-    function errorAction() {
+    public function errorAction() {
 
         $this->set( 'visualizationId', $this->getParam( 'visualizationId' ) );
         $this->set( 'name', $this->getParam( 'name' ) );

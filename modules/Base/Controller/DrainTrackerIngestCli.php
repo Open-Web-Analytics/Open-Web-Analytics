@@ -58,14 +58,14 @@ class DrainTrackerIngestCli extends \OWA\Core\Controller\Cli {
         return max( 1, (int) ( $this->getParam( 'seconds' ) ?: self::BUDGET ) );
     }
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         if ( ! $this->getParam( 'forward_only' ) && ! \OWA\Core\ServerRole::current()->hasDatabase() ) {
 

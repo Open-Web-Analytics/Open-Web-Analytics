@@ -21,20 +21,20 @@ namespace OWA\Module\Base\Controller;
  */
 class RealtimeRest extends \OWA\Core\ReportController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
         $this->setRequiredCapability( 'view_reports' );
     }
 
-    function validate() {
+    public function validate() {
 
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ) ?: $this->getParam( 'siteId' ),
             'required', array( 'stopOnError' => true ) );
     }
 
-    function action() {
+    public function action() {
 
         $realtime = new \OWA\Module\Base\Classes\Realtime( (string) $this->getParam( 'propertyId' ) );
         $visitor  = trim( (string) $this->getParam( 'visitorId' ) );
@@ -44,12 +44,12 @@ class RealtimeRest extends \OWA\Core\ReportController {
             : $realtime->summary() ) );
     }
 
-    function success() {
+    public function success() {
 
         $this->restResponse( 200, 'realtime' );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->restResponse( 422 );
     }

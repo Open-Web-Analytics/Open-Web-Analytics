@@ -49,7 +49,7 @@ class PartitionDropCli extends PartitionsCli {
         );
     }
 
-    function action() {
+    public function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {
 

@@ -69,7 +69,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
     /** @var array<string,int> */
     private $tally = array( self::OK => 0, self::WARN => 0, self::FAIL => 0 );
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         /*
          * The same gate the other administrative CLI commands use. It reports
@@ -81,7 +81,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $this->colour = $this->useColour();
 

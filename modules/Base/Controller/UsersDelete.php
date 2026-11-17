@@ -33,20 +33,20 @@ namespace OWA\Module\Base\Controller;
 
 class UsersDelete extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_users');
         $this->setNonceRequired();
         parent::__construct($params);
     }
     
-    function validate() {
+    public function validate() {
 	    
 	    $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
 	    $this->addValidation('user_id', $this->getParam('user_id'), 'isNotCurrentUser');
     }
 
-    function action() {
+    public function action() {
 
         $userManager = new \OWA\Module\Base\Classes\UserManager();
 
@@ -54,7 +54,7 @@ class UsersDelete extends \OWA\Core\AdminController {
         $userManager->deleteUser($this->getParam('user_id'));
     }
     
-    function success() {
+    public function success() {
 	    
 	    $this->setRedirectAction('base.users');
         $this->setStatusCode( 3004 );

@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class UsersEdit extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         parent::__construct($params);
 
@@ -56,7 +56,7 @@ class UsersEdit extends \OWA\Core\AdminController {
         $this->addValidation('user_id', $this->getParam('user_id'), 'entityExists', $userEntityConf);
     }
 
-    function action() {
+    public function action() {
 
         // This needs form validation in a bad way.
 
@@ -76,7 +76,7 @@ class UsersEdit extends \OWA\Core\AdminController {
         $this->setRedirectAction('base.users');
     }
 
-    function errorAction() {
+    public function errorAction() {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.usersProfile');

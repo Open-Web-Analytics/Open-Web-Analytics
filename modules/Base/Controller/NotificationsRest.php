@@ -18,7 +18,7 @@ use OWA\Module\Base\Classes\NotificationManager;
  */
 class NotificationsRest extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         parent::__construct($params);
 
@@ -51,7 +51,7 @@ class NotificationsRest extends \OWA\Core\AdminController {
     }
 
 
-    function action() {
+    public function action() {
 
         $userId = \OWA\Core\CoreAPI::getCurrentUser()->getUserData('user_id');
 
@@ -102,7 +102,7 @@ class NotificationsRest extends \OWA\Core\AdminController {
         $this->set( 'notifications', $out );
     }
 
-    function success() {
+    public function success() {
 
         http_response_code(200);
         $this->setView( 'base.notificationsRest' );

@@ -37,7 +37,7 @@ class TrackerPublishCli extends \OWA\Core\Controller\Cli {
     /** How old the cache header check may get before a quiet run repeats it. */
     const CHECK_EVERY = 86400;
 
-    function action() {
+    public function action() {
 
         $B = '\OWA\Module\Base\Classes\TrackerBundle';
 

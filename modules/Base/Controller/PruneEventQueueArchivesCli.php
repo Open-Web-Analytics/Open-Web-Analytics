@@ -46,7 +46,7 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
         );
     }
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_modules');
         parent::__construct($params);
@@ -62,7 +62,7 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
      * window instead: an archived batch is kept as long as the events in it
      * would be, so with raw_retention_months unset nothing is deleted.
      */
-    function action() {
+    public function action() {
 
         if ( $this->getParam( 'scheduled' ) ) {
 

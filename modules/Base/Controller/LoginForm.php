@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Controller;
  */
 class LoginForm extends \OWA\Core\Controller {
 
-    function action() {
+    public function action() {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
 

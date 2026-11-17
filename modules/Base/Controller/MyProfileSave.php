@@ -30,7 +30,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
     /** Shortest new password accepted (User::MIN_PASSWORD_LENGTH). */
     const MIN_PASSWORD_LENGTH = \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'view_site_list' );
         $this->setNonceRequired();
@@ -93,7 +93,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
         return false;
     }
 
-    function action() {
+    public function action() {
 
         $user = \OWA\Core\CoreAPI::getCurrentUser();
 
@@ -253,7 +253,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.myProfile' );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $messages = (array) $this->getValidationErrorMsgs();
 

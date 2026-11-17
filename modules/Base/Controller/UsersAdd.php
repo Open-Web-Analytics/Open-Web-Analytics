@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class UsersAdd extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         parent::__construct($params);
 
@@ -72,7 +72,7 @@ class UsersAdd extends \OWA\Core\AdminController {
         $this->addValidation('user_id', $this->getParam('user_id'), 'entityDoesNotExist', $userEntityConf);
     }
 
-    function action() {
+    public function action() {
 
         $userManager = new \OWA\Module\Base\Classes\UserManager();
 
@@ -111,7 +111,7 @@ class UsersAdd extends \OWA\Core\AdminController {
         $this->set( 'invitation_sent', $sent );
 	}
 
-    function success() {
+    public function success() {
 
 		unset($this->data['user']);
 		$this->setRedirectAction('base.users');
@@ -119,7 +119,7 @@ class UsersAdd extends \OWA\Core\AdminController {
         $this->setStatusCode( $this->get( 'invitation_sent' ) ? 3000 : 3013 );
     }
 
-    function errorAction() {
+    public function errorAction() {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.usersProfile');

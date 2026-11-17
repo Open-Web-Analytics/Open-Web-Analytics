@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class OptionsGeneral extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         parent::__construct($params);
         $this->type = 'options';
@@ -41,7 +41,7 @@ class OptionsGeneral extends \OWA\Core\AdminController {
 
     }
 
-    function action() {
+    public function action() {
 
         // add data to container
         $owa_site_id = $this->resolveCurrentSiteId();

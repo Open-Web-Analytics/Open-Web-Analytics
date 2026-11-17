@@ -30,7 +30,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 	/** A siteId filters to that Profile, so a client asking for one site's numbers gets them. */
 	protected $filters_by_site = true;
 	
-	function __construct($params) {
+	public function __construct($params) {
 		
         parent::__construct($params);
         $this->setRequiredCapability('view_reports');
@@ -40,7 +40,7 @@ class ReportsRest extends \OWA\Core\ReportController {
         $this->setAuthMethods( array( 'overlay_token', 'app_password', 'cookies' ) );
     }
 	
-	function validate() {
+	public function validate() {
 		
 		/*
 		 * The same range rule the web path enforces, from the same place, so the
@@ -112,7 +112,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 	/** What a request signed in by an overlay token may not ask for: its token does not bind them. */
 	const NOT_FOR_OVERLAY_TOKENS = array( 'segment', 'rowValues' );
 
-	function action() {
+	public function action() {
 
 		if ( \OWA\Core\Auth::get_instance()->getAuthMethod() === 'overlay_token' ) {
 
@@ -155,7 +155,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 		$this->set( 'response', $this->getResultSet() );
 	}
 	
-	function success() {
+	public function success() {
 
 		/*
 		 * A malformed request is not a success, whatever the envelope contains.
@@ -199,7 +199,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 		$this->restResponse( $status, 'response' );
 	}
 	
-    function errorAction() {
+    public function errorAction() {
 
         $this->restResponse( 422 );
     }
@@ -214,7 +214,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 	/**
      * Generates a data result set using metrics and dimension
      */
-    function getResultSet() {
+    public function getResultSet() {
 
         $rsm = $this->resultSetManager();
 

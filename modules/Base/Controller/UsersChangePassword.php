@@ -52,7 +52,7 @@ class UsersChangePassword extends \OWA\Core\Controller {
         $this->addValidation('password_length', $this->getParam('password'), 'stringLength', $passwordLengthConf);
     }
 
-    function action() {
+    public function action() {
 
         $auth = \OWA\Core\Auth::get_instance();
         $status = $auth->authenticateUserTempPasskey($this->getParam('k'));
@@ -72,7 +72,7 @@ class UsersChangePassword extends \OWA\Core\Controller {
         }
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->setView( 'base.usersPasswordEntry', UsersPasswordEntry::page( $this ) );
 

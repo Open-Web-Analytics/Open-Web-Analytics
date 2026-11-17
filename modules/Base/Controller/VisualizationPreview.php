@@ -31,7 +31,7 @@ class VisualizationPreview extends VisualizationFunnel {
         );
     }
 
-    function action() {
+    public function action() {
 
         $problem = \OWA\Module\Base\Classes\CustomReports::constraintsProblem(
             (string) $this->getParam( 'funnelFilter' ), \OWA\Core\CoreAPI::t( 'The funnel' ),
@@ -62,7 +62,7 @@ class VisualizationPreview extends VisualizationFunnel {
         ) );
     }
 
-    function post() {
+    public function post() {
 
         parent::post();
 

@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class OptionsUpdate extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_settings');
         $this->setNonceRequired();
@@ -67,13 +67,13 @@ class OptionsUpdate extends \OWA\Core\AdminController {
         }
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->setRedirectAction( $this->returnAction() );
         $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
     }
 
-    function action() {
+    public function action() {
 
         $c = \OWA\Core\CoreAPI::configSingleton();
 

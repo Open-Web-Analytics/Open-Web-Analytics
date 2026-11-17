@@ -37,7 +37,7 @@ class PartitionStatusCli extends PartitionsCli {
         );
     }
 
-    function action() {
+    public function action() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 

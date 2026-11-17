@@ -18,11 +18,11 @@ namespace OWA\Module\Base\Controller;
 class CorsPreflight extends \OWA\Core\Controller {
 
     /** Nothing to do: the answer is the headers the view sends. */
-    function action() {
+    public function action() {
 
     }
 
-    function success() {
+    public function success() {
 	    
 	    http_response_code(200);
 

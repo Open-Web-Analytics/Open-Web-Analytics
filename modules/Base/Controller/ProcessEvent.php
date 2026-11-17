@@ -34,10 +34,10 @@ namespace OWA\Module\Base\Controller;
 
 class ProcessEvent extends \OWA\Core\Controller {
 
-    var $event;
-    var $eq;
+    public $event;
+    public $eq;
 
-    function __construct($params) {
+    public function __construct($params) {
 
         if (array_key_exists('event', $params) && !empty($params['event'])) {
 
@@ -57,7 +57,7 @@ class ProcessEvent extends \OWA\Core\Controller {
     /**
      * Main Control Logic
      */
-    function action() {
+    public function action() {
 
         return;
 
@@ -66,7 +66,7 @@ class ProcessEvent extends \OWA\Core\Controller {
     /**
      * Must be called before all other event property setting functions
      */
-    function pre() {
+    public function pre() {
 
         // TODO: move this all into the coreAPI::logEvent method. We really don't need the overhead of a controller for this.
 
@@ -150,12 +150,12 @@ class ProcessEvent extends \OWA\Core\Controller {
         $this->event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::PROPERTY_POST, $this->event );
     }
 
-    function post() {
+    public function post() {
         
         return $this->addToEventQueue();
     }
 
-    function addToEventQueue() {
+    public function addToEventQueue() {
         
         if ( ! $this->isTrackingEvent() ) {
             
@@ -197,7 +197,7 @@ class ProcessEvent extends \OWA\Core\Controller {
      * CoreAPI::isTrackingEventType(), which admits a first-class name or a legal
      * custom one.
      */
-    function isTrackingEvent() {
+    public function isTrackingEvent() {
 
         return \OWA\Core\CoreAPI::isTrackingEventType( $this->event->getEventType() );
     }

@@ -45,7 +45,7 @@ class InstallFinish extends \OWA\Core\Controller\Install {
      * (Core\Controller\Install::doAction() redirects); anyone else is sent to
      * the start.
      */
-    function action() {
+    public function action() {
 
         $this->setRedirectAction( 'base.installStart' );
     }

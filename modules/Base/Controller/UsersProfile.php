@@ -33,13 +33,13 @@ namespace OWA\Module\Base\Controller;
 
 class UsersProfile extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_users');
         parent::__construct($params);
     }
 
-    function action() {
+    public function action() {
 
         // This needs form validation in a bad way.
         //Check to see if user is passed by constructor or else fetch the object.

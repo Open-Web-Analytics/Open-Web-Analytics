@@ -70,7 +70,7 @@ class UsersPasswordEntry extends \OWA\Core\Controller {
      * The form, for a link that can still set a password. One that cannot is
      * told so on the login form before anyone types a password into it.
      */
-    function action() {
+    public function action() {
 
         $problem = self::keyProblem( $this->getParam('k') );
 

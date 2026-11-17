@@ -52,7 +52,7 @@ class ScheduleRunCli extends SchedulerCli {
      */
     const MAX_RUNTIME = 240;
 
-    function action() {
+    public function action() {
 
         $started = time();
 

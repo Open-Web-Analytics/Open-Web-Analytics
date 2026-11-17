@@ -24,7 +24,7 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomDimensionDelete extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -38,7 +38,7 @@ class CustomDimensionDelete extends \OWA\Core\AdminController {
         $this->addValidation( 'dimensionKey', $this->getParam( 'dimensionKey' ), 'required' );
     }
 
-    function action() {
+    public function action() {
 
         $result = \OWA\Module\Base\Classes\Cube\Dimensions::deregister(
             (string) $this->getParam( 'propertyId' ),

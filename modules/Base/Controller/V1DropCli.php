@@ -40,14 +40,14 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
     /** The table prefix v1 is read under; a test names a fixture's. */
     public $prefix = null;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $schema = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' );
 

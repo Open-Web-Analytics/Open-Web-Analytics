@@ -33,13 +33,13 @@ namespace OWA\Module\Base\Controller;
 
 class SitesProfile extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_sites');
         parent::__construct($params);
     }
 
-    function action() {
+    public function action() {
 
         // needed as this controller is
         $site_id = $this->getParam('siteId');

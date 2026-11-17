@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class PasswordResetForm extends \OWA\Core\Controller {
 
-    function action() {
+    public function action() {
 
         $this->setView( 'base.passwordResetForm', self::page() );
     }

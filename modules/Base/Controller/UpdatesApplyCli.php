@@ -48,12 +48,12 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         );
     }
     
-    function __construct($params) {
+    public function __construct($params) {
         define('OWA_UPDATING', true);
         parent::__construct($params);
     }
 
-    function action() {
+    public function action() {
         
         // fetch list of modules that require updates
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -112,7 +112,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
     
     }
     
-    function listPendingUpdates() {
+    public function listPendingUpdates() {
         
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $modules = $s->getModulesNeedingUpdates();
@@ -162,7 +162,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         }
     }
 
-    function apply($update) {
+    public function apply($update) {
 
         $u = $this->namedUpdate( $update, 'apply' );
 
@@ -194,7 +194,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         }
     }
     
-    function rollback($update) {
+    public function rollback($update) {
 
         $u = $this->namedUpdate( $update, 'rollback' );
 

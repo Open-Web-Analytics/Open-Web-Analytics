@@ -18,7 +18,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
     // edit_sites on the Property acted on, not on the request's siteId.
     use \OWA\Core\PropertyScopedAccess;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -83,7 +83,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
         }
     }
 
-    function action() {
+    public function action() {
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
 
@@ -234,7 +234,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
      * the screen reloaded what was stored: correcting one field meant entering
      * every other change again. Rendered here, as SitesEditSettings does.
      */
-    function errorAction() {
+    public function errorAction() {
 
         $propertyId = $this->getParam( 'propertyId' );
         $property   = \OWA\Core\CoreAPI::entityFactory( 'base.property' );

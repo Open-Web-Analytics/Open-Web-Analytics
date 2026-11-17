@@ -44,7 +44,7 @@ class ScheduleStatusCli extends SchedulerCli {
     /** See JobStatus::MIN_GRACE. */
     const MIN_GRACE = \OWA\Module\Base\Classes\JobStatus::MIN_GRACE;
 
-    function action() {
+    public function action() {
 
         if ( $this->getParam( 'format' ) === 'markdown' ) {
 

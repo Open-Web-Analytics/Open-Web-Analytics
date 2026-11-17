@@ -16,7 +16,7 @@ namespace OWA\Module\Base\Controller;
  */
 abstract class CustomDimensionsCli extends \OWA\Core\Controller\Cli {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         // Rewrites a cube, as the partition commands do.
         $this->setRequiredCapability( 'edit_modules' );

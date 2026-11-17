@@ -13,14 +13,14 @@ class PropertyProfiles extends \OWA\Core\AdminController {
     // edit_sites on the Property acted on, not on the request's siteId.
     use \OWA\Core\PropertyScopedAccess;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_sites' );
 
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $property_id = (string) $this->getParam( 'propertyId' );
 

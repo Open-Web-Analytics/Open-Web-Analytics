@@ -43,7 +43,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      */
     const HEATMAP_DIMENSIONS = 'elementAnchor,anchorX,anchorY,clickX,clickY,viewportWidth';
 
-    function action() {
+    public function action() {
 
         $url = '';
 

@@ -22,7 +22,7 @@ abstract class AppPasswordsCli extends \OWA\Core\Controller\Cli {
         return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE );
     }
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_users' );
 

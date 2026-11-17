@@ -3,12 +3,12 @@ namespace OWA\Module\Base\Controller;
 
 class DeleteUserRest extends \OWA\Module\Base\Controller\UsersDelete {
 
-    function success() {
+    public function success() {
 
         $this->restResponse( 202 );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->restResponse( 422 );
     }

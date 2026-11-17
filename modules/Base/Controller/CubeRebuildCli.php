@@ -126,7 +126,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         return array( 'lease_seconds' => self::JOB_LEASE );
     }
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         // Rewrites a partition of a fact table, as the partition commands do.
         $this->setRequiredCapability( 'edit_modules' );
@@ -134,7 +134,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 

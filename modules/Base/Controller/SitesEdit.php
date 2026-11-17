@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class SitesEdit extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         parent::__construct($params);
 
@@ -56,7 +56,7 @@ class SitesEdit extends \OWA\Core\AdminController {
         $this->addValidation('siteId', $this->getParam('siteId'), 'entityExists', $siteEntityConf);
     }
 
-    function action() {
+    public function action() {
 
         // This needs form validation in a bad way.
 

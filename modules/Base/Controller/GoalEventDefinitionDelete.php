@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Controller;
  */
 class GoalEventDefinitionDelete extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'edit_settings' );
@@ -23,7 +23,7 @@ class GoalEventDefinitionDelete extends \OWA\Core\AdminController {
         $this->addValidation( 'goalEventDefinitionId', $this->getParam( 'goalEventDefinitionId' ), 'required' );
     }
 
-    function action() {
+    public function action() {
 
         $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
         $definition->delete( $this->getParam( 'goalEventDefinitionId' ) );

@@ -32,7 +32,7 @@ class AppPasswordCreateCli extends AppPasswordsCli {
         );
     }
 
-    function action() {
+    public function action() {
 
         $user_id = $this->user();
 

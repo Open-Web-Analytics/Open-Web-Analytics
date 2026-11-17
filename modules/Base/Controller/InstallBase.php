@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class InstallBase extends \OWA\Core\Controller\Install {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         parent::__construct($params);
 
@@ -69,7 +69,7 @@ class InstallBase extends \OWA\Core\Controller\Install {
          */
     }
 
-    function action() {
+    public function action() {
 
         $status = $this->installSchema();
 
@@ -160,7 +160,7 @@ class InstallBase extends \OWA\Core\Controller\Install {
         }
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->set('defaults', $this->params);
         $this->setView('base.install');

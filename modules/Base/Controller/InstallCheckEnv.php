@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class InstallCheckEnv extends \OWA\Core\Controller\Install {
 
-    function action() {
+    public function action() {
 
         /*
          * The checks themselves live in EnvironmentCheck, because

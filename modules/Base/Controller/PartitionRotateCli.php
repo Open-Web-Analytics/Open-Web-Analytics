@@ -203,7 +203,7 @@ class PartitionRotateCli extends PartitionsCli {
         return max( 1800, $seconds );
     }
 
-    function action() {
+    public function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {
 

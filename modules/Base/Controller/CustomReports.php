@@ -44,13 +44,13 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomReports extends \OWA\Core\ReportController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'view_site_list' );
     }
 
-    function action() {
+    public function action() {
 
         $user    = \OWA\Core\CoreAPI::getCurrentUser();
         $user_id = (string) $user->getUserData( 'user_id' );
@@ -173,7 +173,7 @@ class CustomReports extends \OWA\Core\ReportController {
             : (string) array_key_first( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES );
     }
 
-    function success() {
+    public function success() {
 
         $this->setSubview( 'base.customReports', [
             'template' => 'custom_reports.php',

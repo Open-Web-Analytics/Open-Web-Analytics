@@ -17,14 +17,14 @@ namespace OWA\Module\Base\Controller;
  */
 class GoalEventDefinitions extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->type = 'options';
         $this->setRequiredCapability( 'edit_settings' );
     }
 
-    function action() {
+    public function action() {
 
         $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 

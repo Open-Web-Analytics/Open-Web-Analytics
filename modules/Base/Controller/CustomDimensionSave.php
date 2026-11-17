@@ -26,7 +26,7 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomDimensionSave extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -78,7 +78,7 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
     /**
      * Back to the register screen, with the reason and what was typed.
      */
-    function errorAction() {
+    public function errorAction() {
 
         CustomDimensionEdit::prepare( $this,
             $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) ),
@@ -90,7 +90,7 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
             ) );
     }
 
-    function action() {
+    public function action() {
 
         $property_id = (string) $this->getParam( 'propertyId' );
 

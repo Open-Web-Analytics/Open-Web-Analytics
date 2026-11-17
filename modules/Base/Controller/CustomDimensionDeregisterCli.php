@@ -44,7 +44,7 @@ class CustomDimensionDeregisterCli extends CustomDimensionsCli {
         );
     }
 
-    function action() {
+    public function action() {
 
         $property_id = $this->property();
 

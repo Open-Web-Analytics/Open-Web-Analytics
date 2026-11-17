@@ -91,7 +91,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * dispatcher does (CustomReports::requestProperty()): this action can be
      * reached by name as well as through it.
      */
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -123,7 +123,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             ? substr( $reportId, strlen( $prefix ) ) : '';
     }
 
-    function action() {
+    public function action() {
 
         /*
          * The steps come from the VISUALIZATION's own definition.

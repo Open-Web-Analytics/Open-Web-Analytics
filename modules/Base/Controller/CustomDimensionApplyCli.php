@@ -56,7 +56,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
      */
     const APPLY_LEASE = 900;
 
-    function action() {
+    public function action() {
 
         $only = trim( (string) $this->getParam( 'property' ) );
 

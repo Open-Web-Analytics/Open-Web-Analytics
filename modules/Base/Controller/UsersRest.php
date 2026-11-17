@@ -18,7 +18,7 @@ namespace OWA\Module\Base\Controller;
 class UsersRest extends \OWA\Module\Base\Controller\Users {
     
 
-    function success() {
+    public function success() {
 	    
 	    http_response_code(200);
 	    

@@ -18,14 +18,14 @@ namespace OWA\Module\Base\Controller;
  */
 class SystemHealth extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $this->set( 'sections', \OWA\Module\Base\Classes\SystemHealth::sections() );
 

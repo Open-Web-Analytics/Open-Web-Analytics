@@ -15,7 +15,7 @@ namespace OWA\Module\Base\Controller;
  */
 class PropertyRetentionUpdate extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_settings' );
         $this->setNonceRequired();
@@ -23,7 +23,7 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
         parent::__construct( $params );
     }
 
-    function validate() {
+    public function validate() {
 
         // Runs from the parent constructor (Core\Controller), so nothing here may
         // assume a Property was named.
@@ -50,7 +50,7 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
         }
     }
 
-    function action() {
+    public function action() {
 
         $propertyId = (string) $this->getParam( 'propertyId' );
 
@@ -72,7 +72,7 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
         $this->setStatusCode( 2500 );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
         $this->setRedirectAction( 'base.propertyRetention' );

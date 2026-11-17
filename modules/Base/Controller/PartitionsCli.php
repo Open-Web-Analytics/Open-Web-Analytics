@@ -13,7 +13,7 @@ namespace OWA\Module\Base\Controller;
  */
 abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 

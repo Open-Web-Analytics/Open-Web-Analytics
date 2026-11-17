@@ -34,13 +34,13 @@ namespace OWA\Module\Base\Controller;
 
 class SitesInvocation extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_sites');
         parent::__construct($params);
     }
 
-    function action() {
+    public function action() {
         $site_id = $this->getParam('siteId');
         $this->set('site_id', $site_id);
         $s = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );

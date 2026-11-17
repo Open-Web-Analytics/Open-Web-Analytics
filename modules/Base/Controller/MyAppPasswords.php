@@ -19,7 +19,7 @@ namespace OWA\Module\Base\Controller;
  */
 class MyAppPasswords extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         // Every signed-in role makes its own; see base.myProfile.
         $this->setRequiredCapability( 'view_site_list' );
@@ -27,7 +27,7 @@ class MyAppPasswords extends \OWA\Core\AdminController {
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $user_id = (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' );
 

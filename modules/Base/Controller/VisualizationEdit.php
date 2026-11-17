@@ -21,7 +21,7 @@ namespace OWA\Module\Base\Controller;
  */
 class VisualizationEdit extends \OWA\Core\ReportController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'edit_reports' );
@@ -40,7 +40,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         }
     }
 
-    function action() {
+    public function action() {
 
         $id     = (string) $this->getParam( 'visualizationId' );
         $report = $id ? \OWA\Module\Base\Classes\CustomReports::loadOf( $id, (string) $this->getParam( 'propertyId' ) ) : null;
@@ -361,7 +361,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         return is_array( $steps ) ? $steps : array();
     }
 
-    function success() {
+    public function success() {
 
         $this->setSubview( 'base.visualizationEdit', [
             'template' => 'visualization_edit.php',

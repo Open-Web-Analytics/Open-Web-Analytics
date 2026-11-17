@@ -56,7 +56,7 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
         );
     }
     
-    function errorAction() {
+    public function errorAction() {
 
         \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
     }
@@ -67,7 +67,7 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
      *
      * @return mixed
      */
-    function doAction() {
+    public function doAction() {
 
         $data = parent::doAction();
         $view = is_array( $data ) && isset( $data['view'] ) ? $data['view'] : null;
@@ -90,7 +90,7 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
         return $data;
     }
     
-    function success() {
+    public function success() {
 
         $site = (array) ( $this->data['site'] ?? array() );
 

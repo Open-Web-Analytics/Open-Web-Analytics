@@ -32,7 +32,7 @@ class StringsExtractCli extends \OWA\Core\Controller\Cli {
         );
     }
 
-    function action() {
+    public function action() {
 
         $map   = \OWA\Core\Strings::extract( \OWA\Core\Strings::sourceRoots(), $problems, $script_keys );
         $files = array(

@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class InstallConfig extends \OWA\Core\Controller\Install {
 
-    function __construct($params) {
+    public function __construct($params) {
     
         parent::__construct($params);
 
@@ -50,7 +50,7 @@ class InstallConfig extends \OWA\Core\Controller\Install {
      * database with the existing file's details (its "create database" path
      * would otherwise name the configured database in its errors).
      */
-    function doAction() {
+    public function doAction() {
 
         if ( $this->c->isConfigFilePresent() && ! $this->isInstallComplete() ) {
 
@@ -102,7 +102,7 @@ class InstallConfig extends \OWA\Core\Controller\Install {
         $this->addValidation('public_url', $this->getParam('public_url'), 'subStringPosition', $domainConf);
     }
 
-    function action() {
+    public function action() {
 
         $create = $this->getParam( 'db_mode' ) === 'create';
 
@@ -192,7 +192,7 @@ class InstallConfig extends \OWA\Core\Controller\Install {
         }
     }
 
-    function errorAction() {
+    public function errorAction() {
         
         $this->set('config', $this->params);
         $this->setView('base.install');

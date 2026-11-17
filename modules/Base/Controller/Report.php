@@ -25,7 +25,7 @@ class Report extends \OWA\Core\AdminController {
      */
     const CUSTOM_PREFIX = 'custom-';
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -50,7 +50,7 @@ class Report extends \OWA\Core\AdminController {
      * action() would run this controller's checks and then the target's body,
      * which is a different and much worse thing.
      */
-    function doAction() {
+    public function doAction() {
 
         $id = $this->getParam( 'reportId' );
 

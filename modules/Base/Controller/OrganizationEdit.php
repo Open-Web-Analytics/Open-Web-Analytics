@@ -16,7 +16,7 @@ namespace OWA\Module\Base\Controller;
  */
 class OrganizationEdit extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -30,7 +30,7 @@ class OrganizationEdit extends \OWA\Core\AdminController {
             array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
     }
 
-    function action() {
+    public function action() {
 
         $sm = new \OWA\Module\Base\Classes\SiteManager();
 
@@ -44,7 +44,7 @@ class OrganizationEdit extends \OWA\Core\AdminController {
         $this->setStatusCode( 3201 );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->setRedirectAction( 'base.organizationProfile' );
         $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );

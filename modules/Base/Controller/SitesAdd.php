@@ -36,20 +36,20 @@ namespace OWA\Module\Base\Controller;
 
 class SitesAdd extends \OWA\Core\AdminController {
 	
-	function __construct( $params ) {
+	public function __construct( $params ) {
 		
 		$this->setRequiredCapability('edit_sites');
 		
 		parent::__construct( $params );
 	}
 	
-    function init() {
+    public function init() {
 	    
         $this->setNonceRequired();
       
     }
 
-    function action() {
+    public function action() {
 
         $this->set('domain', $this->getParam('protocol').$this->getParam('domain') );
 
@@ -114,7 +114,7 @@ class SitesAdd extends \OWA\Core\AdminController {
      * screen. What this screen needs is to know WHICH Property, and that is
      * only required when it is not creating one.
      */
-    function validate() {
+    public function validate() {
 
         $this->validateStreamIdentity();
 
@@ -163,7 +163,7 @@ class SitesAdd extends \OWA\Core\AdminController {
             array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Bundle ID or package name is required.' ) ) );
     }
     
-    function success() {
+    public function success() {
 
         /*
          * To the new Profile's Tracking Tag, not to reporting.
@@ -190,7 +190,7 @@ class SitesAdd extends \OWA\Core\AdminController {
         }
     }
 
-    function errorAction() {
+    public function errorAction() {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.sitesProfile');

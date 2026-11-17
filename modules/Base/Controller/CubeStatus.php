@@ -19,7 +19,7 @@ namespace OWA\Module\Base\Controller;
  */
 class CubeStatus extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         // The same reach as cmd=cube-rebuild and the Modules screen.
         $this->setRequiredCapability( 'edit_modules' );
@@ -27,7 +27,7 @@ class CubeStatus extends \OWA\Core\AdminController {
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $this->set( 'cubes', \OWA\Module\Base\Classes\Cube\Status::all() );
 

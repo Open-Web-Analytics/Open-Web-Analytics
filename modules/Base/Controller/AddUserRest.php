@@ -3,12 +3,12 @@ namespace OWA\Module\Base\Controller;
 
 class AddUserRest extends \OWA\Module\Base\Controller\UsersAdd {
 
-    function success() {
+    public function success() {
 
         $this->restResponse( 201, 'user' );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->restResponse( 422, 'user' );
     }

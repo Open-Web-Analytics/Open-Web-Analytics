@@ -42,7 +42,7 @@ class Logout extends \OWA\Core\Controller {
      * first, by a form that carries one. Nobody signed in goes to the login
      * form.
      */
-    function action() {
+    public function action() {
 
         $auth = \OWA\Core\Auth::get_instance();
         $cu   = \OWA\Core\CoreAPI::getCurrentUser();

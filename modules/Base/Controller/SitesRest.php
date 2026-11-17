@@ -17,7 +17,7 @@ namespace OWA\Module\Base\Controller;
  */
 class SitesRest extends \OWA\Core\ReportController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -36,14 +36,14 @@ class SitesRest extends \OWA\Core\ReportController {
      * screen controller to reuse four lines is how deleting the screen broke
      * the API.
      */
-    function action() {
+    public function action() {
 
         $this->set( 'tracked_sites', $this->getSitesAllowedForCurrentUser() );
     }
 
     
 
-    function success() {
+    public function success() {
 	    
 	    http_response_code(200);
 	    
