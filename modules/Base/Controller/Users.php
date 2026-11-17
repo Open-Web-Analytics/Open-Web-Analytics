@@ -63,7 +63,9 @@ class Users extends \OWA\Core\AdminController {
 	     */
 	    $owa_site_id = $this->resolveCurrentSiteId();
 	    $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
-        $this->setSubview('base.users');
+        $this->setSubview( 'base.users', [
+            'template' => 'users.php',
+            'vars'     => [ 'headline' => \OWA\Core\CoreAPI::t( 'User Roster' ), 'users' ] ] );
     }
 }
 

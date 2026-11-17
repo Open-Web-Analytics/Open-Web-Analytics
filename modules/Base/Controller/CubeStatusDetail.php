@@ -30,12 +30,14 @@ class CubeStatusDetail extends \OWA\Core\AdminController {
 
         $property_id = (string) $this->getParam( 'propertyId' );
 
-        $this->set( 'cube', ctype_digit( $property_id )
-            ? \OWA\Module\Base\Classes\Cube\Status::detail( $property_id ) : null );
+        // Empty when no Property was named or it has no id shape; the template says so.
+        $this->set( 'cube', ( ctype_digit( $property_id )
+            ? \OWA\Module\Base\Classes\Cube\Status::detail( $property_id ) : null ) ?: [] );
 
         CubeStatus::hierarchy( $this );
 
-        $this->setSubview( 'base.cubeStatusDetail' );
+        $this->setSubview( 'base.cubeStatusDetail', [
+            'template' => 'cube_status_detail.php', 'vars' => [ 'cube' ] ] );
     }
 
     function errorAction() {

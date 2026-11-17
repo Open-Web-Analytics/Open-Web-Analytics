@@ -273,7 +273,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
 
         $this->set( 'error_code', 3002 );
         $this->settingsChrome( array( 'siteId' => $siteId ), '', $propertyId );
-        $this->setSubview( 'base.propertyProfile' );
+        $this->setSubview( 'base.propertyProfile', PropertyProfile::screen( $propertyId ) );
     }
 }
 
