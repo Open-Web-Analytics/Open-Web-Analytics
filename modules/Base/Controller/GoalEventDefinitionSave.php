@@ -288,7 +288,12 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         return trim( (string) $this->getParam( 'name' ) );
     }
 
-    /** Whether another definition of this Property has the name. */
+    /**
+     * Whether another definition of this Property has the name.
+     *
+     * @param  string $name
+     * @return bool
+     */
     private function nameTaken( $name ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
@@ -302,6 +307,10 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         return ! empty( $row['id'] );
     }
 
+    /**
+     * @param  string $definitionId
+     * @return void
+     */
     private function saveConditions( $definitionId ) {
 
         if ( ! $definitionId ) {

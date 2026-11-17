@@ -146,6 +146,8 @@ class SitesAdd extends \OWA\Core\AdminController {
      * Called from validate() on both paths, because the type is a fact about
      * the Profile and is asked for whether or not a Property is being created
      * alongside it.
+     *
+     * @return void
      */
     protected function validateStreamIdentity() {
 

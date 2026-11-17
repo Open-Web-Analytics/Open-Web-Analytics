@@ -29,6 +29,8 @@ namespace OWA\Module\Base\Controller;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-import-type FieldSet from \OWA\Module\Base\Classes\Settings
  */
 
 class SitesEditSettings extends \OWA\Core\AdminController {
@@ -66,7 +68,11 @@ class SitesEditSettings extends \OWA\Core\AdminController {
         }
     }
 
-    /** The fieldsets the Observation Settings screen shows (templates/profile_settings.php). */
+    /**
+     * The fieldsets the Observation Settings screen shows (templates/profile_settings.php).
+     *
+     * @return list<FieldSet>
+     */
     private static function scopedFieldSets() {
 
         return \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'profile_observation' );

@@ -12,6 +12,8 @@ namespace OWA\Module\Base\Controller;
  * It deliberately does NOT touch the Profiles beneath it. A Profile's name is a
  * published API field (/v1/sites emits it, and the WordPress plugin labels its
  * picker with it), so renaming a Property must not cascade into one.
+ *
+ * @phpstan-import-type FieldSet from \OWA\Module\Base\Classes\Settings
  */
 class PropertyEdit extends \OWA\Core\AdminController {
 
@@ -172,7 +174,11 @@ class PropertyEdit extends \OWA\Core\AdminController {
         }
     }
 
-    /** The fieldsets the Property screen shows below its own fields. */
+    /**
+     * The fieldsets the Property screen shows below its own fields.
+     *
+     * @return array<FieldSet>
+     */
     private static function scopedFieldSets() {
 
         return array_merge(

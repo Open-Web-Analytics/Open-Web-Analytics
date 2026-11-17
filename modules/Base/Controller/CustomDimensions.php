@@ -66,7 +66,7 @@ class CustomDimensions extends \OWA\Core\AdminController {
      * says so rather than offering a form that cannot work.
      *
      * @param string $property_id
-     * @return array
+     * @return array{table: string, exists: bool, capacity: int, cap: int}
      */
     public static function cubeState( $property_id ) {
 

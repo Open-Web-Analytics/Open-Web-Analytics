@@ -41,7 +41,8 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
      *
      * @param \OWA\Core\AdminController $controller
      * @param string $property_id
-     * @param array  $submitted  what was typed, when a refused form comes back
+     * @param array<string, mixed> $submitted what was typed, when a refused form comes back
+     * @return void
      */
     public static function prepare( $controller, $property_id, array $submitted = array() ) {
 

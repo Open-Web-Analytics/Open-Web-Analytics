@@ -43,7 +43,7 @@ class PropertyProfiles extends \OWA\Core\AdminController {
      * The live Profiles of a Property, by name.
      *
      * @param  string $property_id
-     * @return array[] each the Profile's columns
+     * @return list<array<string, mixed>> each the Profile's columns
      */
     public static function rowsFor( $property_id ) {
 

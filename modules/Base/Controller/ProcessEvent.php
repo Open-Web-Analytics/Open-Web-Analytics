@@ -34,7 +34,9 @@ namespace OWA\Module\Base\Controller;
 
 class ProcessEvent extends \OWA\Core\Controller {
 
+    /** @var \OWA\Module\Base\Classes\Event */
     public $event;
+    /** @var \OWA\Module\Base\Classes\EventDispatch */
     public $eq;
 
     public function __construct($params) {
@@ -155,12 +157,15 @@ class ProcessEvent extends \OWA\Core\Controller {
         return $this->addToEventQueue();
     }
 
+    /**
+     * @return null post() returns it
+     */
     public function addToEventQueue() {
         
         if ( ! $this->isTrackingEvent() ) {
             
             \OWA\Core\CoreAPI::debug("Not dispatching event. This is not a valid tracking event type.");
-            return;
+            return null;
         }
         
         if ( ! $this->event->get( 'do_not_log' ) ) {
@@ -185,6 +190,8 @@ class ProcessEvent extends \OWA\Core\Controller {
 
             \OWA\Core\CoreAPI::debug("Not dispatching event due to 'do not log' flag being set.");
         }
+
+        return null;
     }
     
     /**
@@ -196,6 +203,8 @@ class ProcessEvent extends \OWA\Core\Controller {
      * "is this a tracking event" with three copies of the answer; they now share
      * CoreAPI::isTrackingEventType(), which admits a first-class name or a legal
      * custom one.
+     *
+     * @return bool
      */
     public function isTrackingEvent() {
 

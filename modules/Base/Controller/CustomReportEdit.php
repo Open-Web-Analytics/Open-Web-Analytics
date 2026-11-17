@@ -238,7 +238,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
      * when it refuses a definition, and a second list built somewhere else
      * would eventually disagree with this one.
      *
-     * @return array
+     * @return list<array{name: string, label: string}>
      */
     public static function metricChoices() {
 
@@ -252,7 +252,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
      * element anchor).
      *
      * @param  string|null $property_id null for the modules' dimensions alone
-     * @return array
+     * @return list<array{name: string, label: string}>
      */
     public static function dimensionChoices( $property_id ) {
 
@@ -269,7 +269,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
      * put the query internals into the page source.
      *
      * @param mixed $registry
-     * @return array
+     * @return list<array{name: string, label: string}> sorted by label
      */
     private static function choices( $registry ) {
 

@@ -176,6 +176,8 @@ class CustomReportSave extends \OWA\Core\AdminController {
      * raised by validate() rather than by action() was a blank page. That is
      * fixed in Core/Controller.php; this assigned to $this->data as well to
      * work around it, and no longer needs to.
+     * @param  string $message why, already translated
+     * @return mixed the builder's answer
      */
     private function refuse( $message ) {
 

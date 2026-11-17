@@ -247,6 +247,10 @@ class OptionsUpdate extends \OWA\Core\AdminController {
      * roots that must only ever be set via the config file or the installer.
      * Allowing them to be overwritten by an authenticated web request is an
      * RCE primitive (see error_log_file + report_wrapper chain).
+     *
+     * @param  string $module
+     * @param  string $key
+     * @return bool
      */
     private static function isSensitiveSettingKey( $module, $key ) {
 

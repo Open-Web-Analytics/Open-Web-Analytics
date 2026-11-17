@@ -64,7 +64,7 @@ class PropertyProfile extends \OWA\Core\AdminController {
      * A Property not yet saved has no id.
      *
      * @param string $propertyId
-     * @return array as setSubview() takes it
+     * @return array<string, mixed> as setSubview() takes it
      */
     public static function screen( $propertyId ) {
 
@@ -81,6 +81,9 @@ class PropertyProfile extends \OWA\Core\AdminController {
 
     /**
      * Profiles this Property still has, archived ones excluded.
+     *
+     * @param  string $propertyId
+     * @return int
      */
     public static function countLiveProfiles( $propertyId ) {
 

@@ -132,7 +132,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
     /**
      * @param string $property_id
      * @param string $table
-     * @return array ['changed' => int, 'failed' => int]
+     * @return array{changed: int, failed: int}
      */
     protected function applyTo( $property_id, $table ) {
 

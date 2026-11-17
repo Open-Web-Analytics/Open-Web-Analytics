@@ -13,6 +13,8 @@ namespace OWA\Module\Base\Controller;
  * Registering changes a Property's cube -- it issues DDL against the table
  * every report reads -- so all three want the same capability as the partition
  * commands rather than a reporting one.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
  */
 abstract class CustomDimensionsCli extends \OWA\Core\Controller\Cli {
 
@@ -47,7 +49,7 @@ abstract class CustomDimensionsCli extends \OWA\Core\Controller\Cli {
     /**
      * One registration, as a line.
      *
-     * @param array $row
+     * @param Row $row an owa_custom_dimension row
      * @return string
      */
     protected function describe( array $row ) {

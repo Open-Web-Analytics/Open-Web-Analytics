@@ -40,8 +40,8 @@ class RetentionPreviewRest extends \OWA\Core\AdminController {
      * not a whole number of months is left out, so a malformed request asks
      * about no change rather than "keep everything".
      *
-     * @param array $params
-     * @return array
+     * @param array<string, mixed> $params
+     * @return array<string, int|string> raw, cube_default and cube in months; property_id
      */
     public static function proposed( array $params ) {
 

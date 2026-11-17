@@ -76,7 +76,7 @@ class SitesProfile extends \OWA\Core\AdminController {
      * gives nothing, and the form falls back to creating a new one.
      *
      * @param  string $propertyId
-     * @return array
+     * @return array<string, string> the new Profile's property_id, stream_type and domain; nothing for no Property
      */
     private function defaultsForProperty( $propertyId ) {
 

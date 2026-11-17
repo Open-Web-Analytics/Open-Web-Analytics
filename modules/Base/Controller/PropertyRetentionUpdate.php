@@ -12,6 +12,8 @@ namespace OWA\Module\Base\Controller;
  *
  * The shorter window is applied by the next rotate-partitions run; a longer
  * one queues the rebuild of the months it now covers here, at once.
+ *
+ * @phpstan-import-type FieldSet from \OWA\Module\Base\Classes\Settings
  */
 class PropertyRetentionUpdate extends \OWA\Core\AdminController {
 
@@ -78,6 +80,9 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.propertyRetention' );
     }
 
+    /**
+     * @return FieldSet
+     */
     private static function fieldSet() {
 
         return \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyRetention' );
