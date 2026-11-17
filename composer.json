@@ -35,13 +35,18 @@
             "OWA\\Module\\": "modules/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "OWA\\PHPStan\\": "tests/phpstan/"
+        }
+    },
     "require-dev": {
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^10.5"
     },
     "scripts": {
         "lint": "find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -print0 | xargs -0 -n1 php -l",
-        "phpstan": "phpstan analyse -c phpstan.neon --autoload-file=tests/phpstan/EntityFactoryReturnType.php --memory-limit=1G",
+        "phpstan": "phpstan analyse -c phpstan.neon --memory-limit=1G",
         "test": "phpunit",
         "test:isolation": "bash tests/tools/isolation_sweep.sh",
         "test:scratch": "bash tests/tools/scratch_db_run.sh",

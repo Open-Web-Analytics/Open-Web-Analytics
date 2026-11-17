@@ -4,10 +4,8 @@
 #
 #   composer phpstan
 #
-# The composer script passes tests/phpstan/EntityFactoryReturnType.php
-# with --autoload-file: PHPStan builds its container, and so loads its
-# extensions, before bootstrapFiles run. Run plain `phpstan analyse` and
-# the extension's class is not found.
+# The entity factory extension (tests/phpstan/) loads through Composer's
+# autoload-dev, so plain `phpstan analyse` finds it after `composer install`.
 #
 # CAUTION: PHPStan resolves `paths` RELATIVE TO THIS FILE. A copy placed
 # elsewhere analyses nothing and prints "[OK] No errors".
