@@ -15,6 +15,7 @@ parameters:
         - modules/Base/Update
         - modules/Base/Entity
         - modules/Base/Handler
+        - modules/Base/Controller
         - modules/Sqs/Classes
         - modules/MaxmindGeoip/Classes
         - modules/Domstream/Classes
