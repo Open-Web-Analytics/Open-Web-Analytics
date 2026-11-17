@@ -148,9 +148,15 @@ class Sanitize {
     public static function stripHtml( $input = '', $tags = array() ) {
 
         if ($tags) {
+            // Each tag is stripped from what the previous pass left. Every pass
+            // used to start again from $input, so only the LAST tag in the list
+            // was removed. The closing tag is matched by whole name, as the
+            // opening one is: stripping b no longer takes </blockquote> too.
+            $output = $input;
             foreach ( $tags as $tag ) {
-                $output = preg_replace( '/<' . $tag . '\b[^>]*>/i', '', $input );
-                $output = preg_replace( '/<\/' . $tag . '[^>]*>/i', '', $output );
+                $tag = preg_quote( (string) $tag, '/' );
+                $output = preg_replace( '/<' . $tag . '\b[^>]*>/i', '', $output );
+                $output = preg_replace( '/<\/' . $tag . '\b[^>]*>/i', '', $output );
             }
         } else {
             $output = strip_tags($input);
