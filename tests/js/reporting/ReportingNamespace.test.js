@@ -48,11 +48,11 @@ describe('the reporting bundle keeps the wire namespace out of its own URLs', ()
 
         // Only unambiguous param contexts -- CSS class names in this file are
         // owa_-prefixed too and are none of this test's business.
-        const HARDCODED = /(?:get|set|remove)QueryParam\(\s*'owa_|'owa_do=|'&owa_/g;
+        const HARDCODED = /searchParams\.(?:get|set|delete|has)\(\s*'owa_|'owa_do=|'&owa_/g;
 
         test('the scan can actually fail', () => {
             // Guard against the regex quietly matching nothing forever.
-            expect("url.setQueryParam('owa_sort', x)").toMatch(HARDCODED);
+            expect("url.searchParams.set('owa_sort', x)").toMatch(HARDCODED);
             expect(src.length).toBeGreaterThan(1000);
         });
 
@@ -61,9 +61,9 @@ describe('the reporting bundle keeps the wire namespace out of its own URLs', ()
         });
 
         test('the param names are bare', () => {
-            expect(src).toContain("url.setQueryParam('sort', ");
-            expect(src).toContain("url.setQueryParam('constraints', ");
-            expect(src).toContain("url.getQueryParam('dimensions')");
+            expect(src).toContain("url.searchParams.set('sort', ");
+            expect(src).toContain("url.searchParams.set('constraints', ");
+            expect(src).toContain("url.searchParams.get('dimensions')");
             expect(src).not.toContain('appNs');
         });
     });

@@ -224,19 +224,18 @@ OWA.resultSetExplorer.prototype = {
 
     changeSort : function(column, order) {
 
-        var url = new OWA.uri( this.resultSet.self );
+        var url = new URL( this.resultSet.self, window.location.href );
         var sortorder = '';
         if (order === 'desc') {
             sortorder = '-';
         }
 
         // set sort order
-        url.setQueryParam('sort', column + sortorder);
+        url.searchParams.set('sort', column + sortorder);
         // remove page param
-        url.removeQueryParam('page');
+        url.searchParams.delete('page');
         // fetch new results
-        //alert( url.getSource() );
-        this.getNewResultSet( url.getSource() );
+        this.getNewResultSet( url.href );
 
     },
 
@@ -247,8 +246,8 @@ OWA.resultSetExplorer.prototype = {
     changeDimension : function(oldname, newname) {
 
         // get current list of dimensions from url
-        var url = new OWA.uri( this.resultSet.self );
-        var dims = OWA.util.urldecode(url.getQueryParam('dimensions'));
+        var url = new URL( this.resultSet.self, window.location.href );
+        var dims = OWA.util.urldecode(url.searchParams.get('dimensions'));
 
         var new_dims = [];
 
@@ -278,10 +277,10 @@ OWA.resultSetExplorer.prototype = {
 
             new_dims = new_dims.join(',');
 
-            url.setQueryParam('dimensions', new_dims);
+            url.searchParams.set('dimensions', new_dims);
             // A new grouping starts on the first page.
-            url.removeQueryParam('page');
-            this.getNewResultSet( url.getSource() );
+            url.searchParams.delete('page');
+            this.getNewResultSet( url.href );
         }
     },
 
@@ -301,26 +300,26 @@ OWA.resultSetExplorer.prototype = {
      */
     setDimensionList : function ( dims ) {
 
-        var url = new OWA.uri( this.resultSet.self );
+        var url = new URL( this.resultSet.self, window.location.href );
 
-        url.setQueryParam( 'dimensions', dims.join( ',' ) );
+        url.searchParams.set( 'dimensions', dims.join( ',' ) );
         // A new grouping starts on the first page.
-        url.removeQueryParam( 'page' );
+        url.searchParams.delete( 'page' );
 
-        this.getNewResultSet( url.getSource() );
+        this.getNewResultSet( url.href );
     },
 
     changeConstraints : function (constraints) {
 
-        var url = new OWA.uri( this.resultSet.self );
+        var url = new URL( this.resultSet.self, window.location.href );
 
         // set constraints
-        url.setQueryParam('constraints', constraints);
+        url.searchParams.set('constraints', constraints);
         // A new filter starts on the first page.
-        url.removeQueryParam('page');
+        url.searchParams.delete('page');
 
         // fetch new results
-        this.getNewResultSet( url.getSource() );
+        this.getNewResultSet( url.href );
 
     },
 
@@ -332,15 +331,15 @@ OWA.resultSetExplorer.prototype = {
      */
     changePage : function ( page, resultsPerPage ) {
 
-        var url = new OWA.uri( this.resultSet.self );
+        var url = new URL( this.resultSet.self, window.location.href );
 
-        url.setQueryParam( 'page', page );
+        url.searchParams.set( 'page', page );
 
         if ( resultsPerPage ) {
-            url.setQueryParam( 'resultsPerPage', resultsPerPage );
+            url.searchParams.set( 'resultsPerPage', resultsPerPage );
         }
 
-        this.getNewResultSet( url.getSource() );
+        this.getNewResultSet( url.href );
     },
 
     getOption : function(name) {
@@ -1276,7 +1275,7 @@ OWA.dataGrid.emptyText = function ( rs, own ) {
     } );
 
     var asked = rs && rs.self
-        ? OWA.dataGrid.parseConstraints( new OWA.uri( rs.self ).getQueryParam( 'constraints' ) )
+        ? OWA.dataGrid.parseConstraints( new URL( rs.self, window.location.href ).searchParams.get( 'constraints' ) )
         : [];
 
     var readers = asked.filter( function ( c ) {
@@ -1602,9 +1601,9 @@ OWA.dataGrid.prototype = {
      */
     cardSummary : function ( rs ) {
 
-        var self    = rs.self ? new OWA.uri( rs.self ) : null;
+        var query   = rs.self ? new URL( rs.self, window.location.href ).searchParams : null;
         var param   = function ( name ) {
-            return self ? String( self.getQueryParam( name ) || '' ) : '';
+            return query ? String( query.get( name ) || '' ) : '';
         };
         var metric  = jQuery.trim( param( 'metrics' ).split( ',' )[0] || '' );
         var dims    = param( 'dimensions' ).split( ',' ).map( jQuery.trim ).filter( Boolean );
@@ -1710,7 +1709,7 @@ OWA.dataGrid.prototype = {
         }
 
         return OWA.dataGrid.parseConstraints(
-            new OWA.uri( rs.self ).getQueryParam( 'constraints' ) );
+            new URL( rs.self, window.location.href ).searchParams.get( 'constraints' ) );
     },
 
     /** {name: {label, description, metric_type}} for every metric the result set relates. */
@@ -2839,9 +2838,9 @@ OWA.dataGrid.prototype = {
             return [];
         }
 
-        var self = new OWA.uri(resultSet.self);
+        var self = new URL( resultSet.self, window.location.href );
 
-        return String( self.getQueryParam('dimensions') || '' ).split(',');
+        return String( self.searchParams.get('dimensions') || '' ).split(',');
     }
 
 };
@@ -2966,7 +2965,7 @@ OWA.linkTrendToGrid = function ( trend, grid, count ) {
 
         sortedBy = rs.sortColumn;
 
-        var dims = OWA.util.urldecode( new OWA.uri( rs.self ).getQueryParam( 'dimensions' ) || '' )
+        var dims = OWA.util.urldecode( new URL( rs.self, window.location.href ).searchParams.get( 'dimensions' ) || '' )
             .split( ',' )
             .map( function ( d ) { return d.trim(); } )
             .filter( Boolean );
