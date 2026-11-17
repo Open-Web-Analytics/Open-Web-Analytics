@@ -54,13 +54,6 @@ class Install extends \OWA\Core\Base{
     var $params;
 
     /**
-     * Module name
-     *
-     * @var mixed
-     */
-    var $module;
-
-    /**
      * Constructor
      *
      * @return \OWA\Core\Install

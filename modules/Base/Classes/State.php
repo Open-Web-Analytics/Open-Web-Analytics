@@ -46,7 +46,6 @@ class State {
 
     function __destruct() {
 
-        return false;
     }
 
     function registerStore( $name, $expiration, $length = '', $format = 'json', $type = 'cookie', $cdh = null ) {

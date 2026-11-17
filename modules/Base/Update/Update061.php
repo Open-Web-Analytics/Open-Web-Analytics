@@ -338,7 +338,7 @@ class Update061 extends \OWA\Core\Update {
      *
      * @param  string $site_id
      * @param  int    $goal_number
-     * @return string
+     * @return int|string|null see Lib::setStringGuid()
      */
     public static function funnelId( $site_id, $goal_number ) {
 

@@ -675,6 +675,8 @@ class Lib {
      *        foreign key as 0, an id no row carries. v1's dimension ids passed
      *        true; nothing in OWA does since they went, and the parameter stays
      *        for modules that derive ids of their own.
+     * @return int|string|null a string of digits; crc32's int on a narrow-id
+     *        install (useNarrowGuid())
      */
     public static function setStringGuid($string, $allow_falsy = false) {
 

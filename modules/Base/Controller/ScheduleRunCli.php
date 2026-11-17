@@ -650,7 +650,9 @@ class ScheduleRunCli extends SchedulerCli {
 
         if ( ! $name ) {
 
-            return $this->usageError( 'Say which job: cmd=schedule-run --force-release job=NAME' );
+            $this->usageError( 'Say which job: cmd=schedule-run --force-release job=NAME' );
+
+            return;
         }
 
         $db   = \OWA\Core\CoreAPI::dbSingleton();

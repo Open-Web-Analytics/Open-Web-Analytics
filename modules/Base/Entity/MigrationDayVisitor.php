@@ -32,7 +32,7 @@ class MigrationDayVisitor extends \OWA\Core\Entity {
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'visitor_id', OWA_DTD_BIGINT ) );
     }
 
-    /** @return string */
+    /** @return int */
     public static function idFor( $source, $site_id, $yyyymmdd, $visitor_id ) {
 
         return \OWA\Core\Lib::wideStringGuid( implode( '|', array( $source, $site_id, (int) $yyyymmdd, $visitor_id ) ) );

@@ -66,9 +66,9 @@ class Db extends \OWA\Core\Base {
     ];
 
     /**
-     * Database Connection
+     * Database Connection, null when there is none
      *
-     * @var object
+     * @var object|null
      */
     var $connection;
 
@@ -88,9 +88,9 @@ class Db extends \OWA\Core\Base {
     var $num_queries = 0;
 
     /**
-     * Raw result object
+     * The driver's raw result: false when a query failed, empty before one ran
      *
-     * @var object
+     * @var object|string|false|null
      */
     var $new_result;
 
@@ -118,7 +118,7 @@ class Db extends \OWA\Core\Base {
     /**
      * Number of rows affected by insert/update/delete statements
      *
-     * @var integer
+     * @var int|null
      */
     var $rows_affected;
 

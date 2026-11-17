@@ -305,7 +305,7 @@ class Error {
                 $this->log($msg['error'], $msg['priority']);
             }
 
-            $this->bmsgs = null;
+            $this->bmsgs = array();
         }
     }
 

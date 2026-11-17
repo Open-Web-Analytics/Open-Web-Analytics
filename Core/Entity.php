@@ -1359,7 +1359,7 @@ class Entity {
      * Create guid from string
      *
      * @param     string $string
-     * @return     integer
+     * @return     int|string|null see Lib::setStringGuid()
      */
     function generateId($string) {
         return \OWA\Core\Lib::setStringGuid($string);

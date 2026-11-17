@@ -2229,7 +2229,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * since a sum across a reporting period passes a day routinely.
      *
      * @param int|null $value milliseconds
-     * @return string
+     * @return string|null
      */
     function formatMilliseconds($value) {
 

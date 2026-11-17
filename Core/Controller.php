@@ -42,7 +42,7 @@ class Controller extends \OWA\Core\Base {
     /**
      * Controller Type
      *
-     * @var array
+     * @var string
      */
     var $type;
 
