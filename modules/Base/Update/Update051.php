@@ -19,14 +19,14 @@ namespace OWA\Module\Base\Update;
  */
 class Update051 extends \OWA\Core\Update {
 
-    var $schema_version = 51;
+    public $schema_version = 51;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         return true;
     }
 
-    function down() {
+    public function down() {
 
         return true;
     }

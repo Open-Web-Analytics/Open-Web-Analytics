@@ -44,7 +44,7 @@ namespace OWA\Module\Base\Entity;
  */
 class EventRaw extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'event_raw' );
 
@@ -490,7 +490,7 @@ class EventRaw extends \OWA\Core\Entity {
      *
      * @return bool
      */
-    function create() {
+    public function create() {
 
         if ( isset( $this->properties['created_at'] ) && ! $this->get( 'created_at' ) ) {
 

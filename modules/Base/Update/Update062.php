@@ -38,19 +38,19 @@ namespace OWA\Module\Base\Update;
  */
 class Update062 extends \OWA\Core\Update {
 
-    var $schema_version = 62;
+    public $schema_version = 62;
 
-    var $is_cli_mode_required = true;
+    public $is_cli_mode_required = true;
 
-    var $down_does_not_restore = 'the 1.x file queue lines it moved to its update062-v1-queue archive file: they stay there.';
+    public $down_does_not_restore = 'the 1.x file queue lines it moved to its update062-v1-queue archive file: they stay there.';
 
     /** The table prefix v1 is read under; a test reads a fixture's. */
-    var $prefix = 'owa_';
+    public $prefix = 'owa_';
 
     /** The partitioned tables reachBack() extends; null for raw and every cube. A test names its own. */
-    var $partitioned_tables = null;
+    public $partitioned_tables = null;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         /*
          * First, whatever v1 holds (PLAN 2.30.6). Beacons in 1.x's FILE queue
@@ -265,7 +265,7 @@ class Update062 extends \OWA\Core\Update {
      * Refused once cmd=v1-drop has run: the ids come from v1's rows, and with
      * them gone the migrated history can be neither found nor restored.
      */
-    function down() {
+    public function down() {
 
         if ( \OWA\Core\CoreAPI::getSetting( 'base', 'v1_tables_dropped' ) ) {
 

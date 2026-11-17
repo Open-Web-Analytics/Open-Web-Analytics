@@ -26,9 +26,9 @@ namespace OWA\Module\Base\Update;
  */
 class Update090 extends \OWA\Core\Update {
 
-    var $schema_version = 90;
+    public $schema_version = 90;
 
-    var $down_does_not_restore = 'the Domain Aliases values: the rows are not put back.';
+    public $down_does_not_restore = 'the Domain Aliases values: the rows are not put back.';
 
     const NAME = 'domain_aliases';
 
@@ -46,7 +46,7 @@ class Update090 extends \OWA\Core\Update {
         return isset( $this->tables['base.setting'] ) ? null : \OWA\Core\CoreAPI::configSingleton();
     }
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->tableFor( 'base.setting' );
@@ -77,7 +77,7 @@ class Update090 extends \OWA\Core\Update {
         return true;
     }
 
-    function down() {
+    public function down() {
 
         return true;
     }

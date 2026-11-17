@@ -15,7 +15,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update069 extends \OWA\Core\Update {
 
-    var $schema_version = 69;
+    public $schema_version = 69;
 
     const DDL = <<<'SQL'
 CREATE TABLE %s (
@@ -34,7 +34,7 @@ CREATE TABLE %s (
 ) %s
 SQL;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->tableFor( 'app_password' );
@@ -54,7 +54,7 @@ SQL;
         return true;
     }
 
-    function down() {
+    public function down() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->tableFor( 'app_password' );

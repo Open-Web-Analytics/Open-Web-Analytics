@@ -25,17 +25,17 @@ class Update071 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 71;
+    public $schema_version = 71;
 
     const COLUMN = 'profile_name';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         return $this->addCubeColumn( self::COLUMN );
     }
 
     /** The exact inverse: the column goes from every cube, with what it held. */
-    function down() {
+    public function down() {
 
         return $this->dropCubeColumn( self::COLUMN );
     }

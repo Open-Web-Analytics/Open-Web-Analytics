@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update039 extends \OWA\Core\Update {
 
-    var $schema_version = 39;
+    public $schema_version = 39;
 
     /**
      * The columns this update makes nullable, and their definition.
@@ -48,7 +48,7 @@ class Update039 extends \OWA\Core\Update {
         );
     }
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -78,7 +78,7 @@ class Update039 extends \OWA\Core\Update {
      * installation unable to roll back at all, and the sentinel is what the
      * column held for an absent visitor before this.
      */
-    function down() {
+    public function down() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 

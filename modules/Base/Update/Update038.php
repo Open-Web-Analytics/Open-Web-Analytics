@@ -24,14 +24,14 @@ class Update038 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 38;
+    public $schema_version = 38;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         return $this->addRawColumn( 'referer_query' );
     }
 
-    function down() {
+    public function down() {
 
         if ( $this->dropCubeColumn( 'referer_query' ) === false ) {
 

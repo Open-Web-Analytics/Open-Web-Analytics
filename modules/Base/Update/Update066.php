@@ -35,9 +35,9 @@ class Update066 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 66;
+    public $schema_version = 66;
 
-    var $is_cli_mode_required = true;
+    public $is_cli_mode_required = true;
 
     /*
      * Spelled out rather than read from the entity: an update is permanent and
@@ -64,7 +64,7 @@ class Update066 extends \OWA\Core\Update {
     const CUBE = array( 'attributed_source', 'attributed_medium', 'attributed_campaign', 'attributed_channel',
         'attributed_ad' );
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         foreach ( array( 'base.event_raw' => self::RAW, 'base.visitor_acquisition' => self::VISITOR ) as $name => $columns ) {
 
@@ -124,7 +124,7 @@ class Update066 extends \OWA\Core\Update {
     }
 
     /** The exact inverse. */
-    function down() {
+    public function down() {
 
         foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 

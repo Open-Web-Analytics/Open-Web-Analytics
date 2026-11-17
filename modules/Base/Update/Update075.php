@@ -38,18 +38,18 @@ namespace OWA\Module\Base\Update;
  */
 class Update075 extends \OWA\Core\Update {
 
-    var $schema_version = 75;
+    public $schema_version = 75;
 
     
 
-    var $down_does_not_restore = 'exactly which rows were flagged before: re-flagging by day, site, visitor, session, time and trigger can flag more, or delete rows written after the upgrade.';
+    public $down_does_not_restore = 'exactly which rows were flagged before: re-flagging by day, site, visitor, session, time and trigger can flag more, or delete rows written after the upgrade.';
 
     const BATCH = 500;
 
     /** The setting that keeps each renamed goal event's name: id => array( 'was', 'now' ). */
     const BEFORE = 'goal_event_names_before_075';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $this->goals = array();
 
@@ -72,7 +72,7 @@ class Update075 extends \OWA\Core\Update {
      * well does not: GoalMigrator::revertSite() deletes Update062's conversion
      * rows by name, and they are no longer there to find.
      */
-    function down() {
+    public function down() {
 
         $this->goals = array();
 

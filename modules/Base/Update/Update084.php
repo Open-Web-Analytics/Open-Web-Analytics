@@ -39,7 +39,7 @@ class Update084 extends \OWA\Core\Update {
 
     use SettingRows;
 
-    var $schema_version = 84;
+    public $schema_version = 84;
 
     /** The setting this retires. */
     const OLD = 'log_robots';
@@ -53,7 +53,7 @@ class Update084 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->settingTable();
@@ -130,7 +130,7 @@ class Update084 extends \OWA\Core\Update {
     }
 
     /** The exact inverse, from the record up() kept. */
-    function down() {
+    public function down() {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $table  = $this->settingTable();

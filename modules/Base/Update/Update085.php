@@ -38,7 +38,7 @@ class Update085 extends \OWA\Core\Update {
 
     use SettingRows;
 
-    var $schema_version = 85;
+    public $schema_version = 85;
 
     /** The base settings this deletes. */
     const RETIRED = array( 'is_embedded_admin_user_password_reset', 'resolve_hosts', 'fetch_refering_page_info' );
@@ -54,7 +54,7 @@ class Update085 extends \OWA\Core\Update {
         return implode( ', ', array_fill( 0, count( self::RETIRED ), '?' ) );
     }
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->settingTable();
@@ -103,7 +103,7 @@ class Update085 extends \OWA\Core\Update {
     }
 
     /** The exact inverse, from the record up() kept. */
-    function down() {
+    public function down() {
 
         $record = $this->record();
 

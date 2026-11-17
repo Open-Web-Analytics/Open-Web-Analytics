@@ -42,13 +42,13 @@ class Update053 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 53;
+    public $schema_version = 53;
 
     
 
-    var $down_does_not_restore = 'the element_path values: the column comes back empty.';
+    public $down_does_not_restore = 'the element_path values: the column comes back empty.';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         if ( $this->dropCubeColumn( 'element_path' ) === false ) {
 
@@ -91,7 +91,7 @@ class Update053 extends \OWA\Core\Update {
      * dimension registry that does not declare it and a row builder that does not
      * fill it; leaving the column would leave every later row at the default.
      */
-    function down() {
+    public function down() {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 

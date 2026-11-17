@@ -28,11 +28,11 @@ class Update050 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 50;
+    public $schema_version = 50;
 
     const COLUMNS = array( 'transaction_id', 'tax', 'shipping' );
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         foreach ( self::COLUMNS as $column ) {
 
@@ -45,7 +45,7 @@ class Update050 extends \OWA\Core\Update {
         return true;
     }
 
-    function down() {
+    public function down() {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 

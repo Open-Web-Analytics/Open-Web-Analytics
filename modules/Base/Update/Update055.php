@@ -28,11 +28,11 @@ namespace OWA\Module\Base\Update;
  */
 class Update055 extends \OWA\Core\Update {
 
-    var $schema_version = 55;
+    public $schema_version = 55;
 
     const COLUMN = 'event_type';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         return $this->resize( OWA_DTD_VARCHAR64 );
     }
@@ -45,7 +45,7 @@ class Update055 extends \OWA\Core\Update {
      * this update. Refusing instead would leave strict mode rejecting the MODIFY
      * on any install that recorded one long name.
      */
-    function down() {
+    public function down() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 

@@ -28,9 +28,9 @@ namespace OWA\Module\Base\Update;
  */
 class Update037 extends \OWA\Core\Update {
 
-    var $schema_version = 37;
+    public $schema_version = 37;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
@@ -52,7 +52,7 @@ class Update037 extends \OWA\Core\Update {
         return true;
     }
 
-    function down() {
+    public function down() {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 

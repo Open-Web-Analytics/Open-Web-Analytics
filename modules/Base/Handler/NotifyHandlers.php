@@ -38,7 +38,7 @@ class NotifyHandlers extends \OWA\Core\Observer {
      * @access     public
      * @param     object $event
      */
-    function notify( $event ) {
+    public function notify( $event ) {
         
         if ( $event->getSiteId() ) {
 

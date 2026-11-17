@@ -17,7 +17,7 @@ namespace OWA\Module\Base\Entity;
  */
 class MigrationDayVisitor extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'migration_day_visitor' );
 

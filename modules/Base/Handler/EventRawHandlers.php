@@ -79,7 +79,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
     /**
      * @param object $event
      */
-    function notify( $event ) {
+    public function notify( $event ) {
 
         /*
          * THE SPAM SCORE FIRST, before the set is built. A beacon at or over the

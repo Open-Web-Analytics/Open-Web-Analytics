@@ -64,7 +64,7 @@ class Site extends \OWA\Core\Entity {
         self::$cachedAssignedUsers = array();
     }
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName('site');
         $this->setCachable();
@@ -187,7 +187,7 @@ class Site extends \OWA\Core\Entity {
      * Deriving identity from the domain is what made two sites for one domain
      * impossible, which is why new sites no longer use this.
      */
-    function generateSiteId($domain) {
+    public function generateSiteId($domain) {
 
         return md5($domain);
     }
@@ -224,12 +224,12 @@ class Site extends \OWA\Core\Entity {
      * is not on this string but on the numeric key derived from it, so callers
      * mint against a uniqueness check rather than trusting the width alone.
      */
-    function mintSiteId() {
+    public function mintSiteId() {
 
         return 'OWA-' . bin2hex( random_bytes( 8 ) );
     }
 
-    function settingsGetFilter($value) {
+    public function settingsGetFilter($value) {
         if ($value) {
             // Site settings are an array of scalars -- settingsSetFilter()
             // writes serialize($value) for exactly that. Refusing objects means
@@ -238,7 +238,7 @@ class Site extends \OWA\Core\Entity {
         }
     }
 
-    function settingsSetFilter($value) {
+    public function settingsSetFilter($value) {
 
         return serialize($value);
     }

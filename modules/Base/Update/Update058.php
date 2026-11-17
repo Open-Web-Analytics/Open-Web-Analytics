@@ -24,11 +24,11 @@ class Update058 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 58;
+    public $schema_version = 58;
 
     const COLUMN = 'screen_resolution';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         // Raw and every cube, each the way it needs -- see the CubeColumn trait.
         return $this->addRawColumn( self::COLUMN );
@@ -41,7 +41,7 @@ class Update058 extends \OWA\Core\Update {
      * does not declare it and a row builder that does not fill it.
      * Idempotent: a table already without it is left alone.
      */
-    function down() {
+    public function down() {
 
         if ( $this->dropCubeColumn( self::COLUMN ) === false ) {
 

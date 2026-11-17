@@ -47,7 +47,7 @@ class Update036 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 36;
+    public $schema_version = 36;
 
     /** The tables that can take the column instantly. */
     private function columns() {
@@ -58,7 +58,7 @@ class Update036 extends \OWA\Core\Update {
         );
     }
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         foreach ( $this->columns() as $name => $column ) {
 
@@ -76,7 +76,7 @@ class Update036 extends \OWA\Core\Update {
         return $this->addCubeColumn( 'referer_host' );
     }
 
-    function down() {
+    public function down() {
 
         if ( $this->dropCubeColumn( 'referer_host' ) === false ) {
 

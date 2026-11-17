@@ -28,11 +28,11 @@ namespace OWA\Module\Base\Update;
  */
 class Update057 extends \OWA\Core\Update {
 
-    var $schema_version = 57;
+    public $schema_version = 57;
 
     const INDEX = 'site_transaction';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -57,7 +57,7 @@ class Update057 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: the index this added, by its name, wherever it is. */
-    function down() {
+    public function down() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 

@@ -37,9 +37,9 @@ use MaxMind\Db\Reader;
  */
 class Maxmind extends \OWA\Core\Location {
 
-    var $db_file_name = 'GeoLite2-City.mmdb';
-    var $db_file_path;
-    var $db_file_present = false;
+    public $db_file_name = 'GeoLite2-City.mmdb';
+    public $db_file_path;
+    public $db_file_present = false;
 
     /**
      * The GeoLite2 editions this module can read, and what each costs.
@@ -84,7 +84,7 @@ class Maxmind extends \OWA\Core\Location {
             : \OWA\Core\Env::dataDir() . 'maxmind/';
     }
 
-    function isDbReady() {
+    public function isDbReady() {
 
         // getLocation() reads city, subdivision and country behind isset()
         // guards, so a Country database simply leaves the finer fields unset
@@ -109,7 +109,7 @@ class Maxmind extends \OWA\Core\Location {
      *
      * @param array $location_map
      */
-    function getLocation( $location_map ) {
+    public function getLocation( $location_map ) {
 
         if ( ! $this->isDbReady() ) {
 
@@ -155,7 +155,7 @@ class Maxmind extends \OWA\Core\Location {
      * Adding the dependency, and a UI for the setting, is a larger decision than
      * a bug fix should make on its own.
      */
-    function getLocationFromWebService($location_map) {
+    public function getLocationFromWebService($location_map) {
 
         if ( ! array_key_exists( 'ip_address', $location_map ) ) {
             return $location_map;

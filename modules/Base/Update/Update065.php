@@ -31,11 +31,11 @@ class Update065 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 65;
+    public $schema_version = 65;
 
     const COLUMNS = array( 'channel', 'acq_channel' );
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         foreach ( self::COLUMNS as $column ) {
 
@@ -49,7 +49,7 @@ class Update065 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: both columns go, and nothing else moved. */
-    function down() {
+    public function down() {
 
         foreach ( array_reverse( self::COLUMNS ) as $column ) {
 

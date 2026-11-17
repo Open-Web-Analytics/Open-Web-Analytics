@@ -24,7 +24,7 @@ namespace OWA\Module\Base\Entity;
  */
 class MigrationTally extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'migration_tally' );
 

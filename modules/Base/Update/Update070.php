@@ -40,11 +40,11 @@ class Update070 extends \OWA\Core\Update {
 
     use SettingRows;
 
-    var $schema_version = 70;
+    public $schema_version = 70;
 
     const NAME = 'enableEcommerceReporting';
 
-    var $down_does_not_restore = 'on an installation that ran it before it kept ecommerce_reporting_before_070, each Profile\'s own value: every Profile takes its Property\'s.';
+    public $down_does_not_restore = 'on an installation that ran it before it kept ecommerce_reporting_before_070, each Profile\'s own value: every Profile takes its Property\'s.';
 
     /** What up() did: { profiles: id => row, properties: property id => row|null }. */
     const BEFORE = 'ecommerce_reporting_before_070';
@@ -52,7 +52,7 @@ class Update070 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->settingTable();
@@ -154,7 +154,7 @@ class Update070 extends \OWA\Core\Update {
     }
 
     /** The exact inverse, from the record up() kept; without one, see approximately(). */
-    function down() {
+    public function down() {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $record = $this->record();

@@ -29,7 +29,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update063 extends \OWA\Core\Update {
 
-    var $schema_version = 63;
+    public $schema_version = 63;
 
     const COLUMN = 'created_at';
 
@@ -40,7 +40,7 @@ class Update063 extends \OWA\Core\Update {
      */
     const DEFINITION = 'BIGINT NULL';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
@@ -55,7 +55,7 @@ class Update063 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: the column goes, with what it held. */
-    function down() {
+    public function down() {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 

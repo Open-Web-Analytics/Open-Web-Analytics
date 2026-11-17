@@ -34,7 +34,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update034 extends \OWA\Core\Update {
 
-    var $schema_version = 34;
+    public $schema_version = 34;
 
     /**
      * The entities this update creates, in creation order.
@@ -46,7 +46,7 @@ class Update034 extends \OWA\Core\Update {
         return array( 'base.event_raw', 'base.visitor_acquisition' );
     }
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         if ( ! self::widenIds() ) {
 
@@ -112,7 +112,7 @@ class Update034 extends \OWA\Core\Update {
      * Reverse order of creation, which costs nothing here (there are no foreign
      * keys between them) and stays correct if one is ever added.
      */
-    function down() {
+    public function down() {
 
         foreach ( array_reverse( $this->tables() ) as $name ) {
 

@@ -35,9 +35,9 @@ namespace OWA\Module\Base\Update;
  */
 class Update035 extends \OWA\Core\Update {
 
-    var $schema_version = 35;
+    public $schema_version = 35;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $entity = \OWA\Module\Base\Classes\Cube\Cubes::preSplitEntity();
 
@@ -57,7 +57,7 @@ class Update035 extends \OWA\Core\Update {
      * The exact inverse: everything in it was derived by a build from
      * owa_event_raw, which this does not touch, so a rebuild reproduces it.
      */
-    function down() {
+    public function down() {
 
         $entity = \OWA\Module\Base\Classes\Cube\Cubes::preSplitEntity();
 

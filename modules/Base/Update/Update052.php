@@ -30,13 +30,13 @@ class Update052 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 52;
+    public $schema_version = 52;
 
     
 
-    var $down_does_not_restore = 'the browser column\'s values, identical to browser_type: it comes back empty.';
+    public $down_does_not_restore = 'the browser column\'s values, identical to browser_type: it comes back empty.';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         if ( $this->migrateConditions() === false ) {
 
@@ -132,7 +132,7 @@ class Update052 extends \OWA\Core\Update {
      * The condition migration has no inverse either, for the same reason it was
      * safe: both spellings named one value, so there is nothing to put back.
      */
-    function down() {
+    public function down() {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 

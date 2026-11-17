@@ -38,7 +38,7 @@ class Update046 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 46;
+    public $schema_version = 46;
 
     /** The anchors this adds. @return string[] */
     private function added() {
@@ -52,7 +52,7 @@ class Update046 extends \OWA\Core\Update {
         return array( 'prev_event_ts', 'clock_offset_usec' );
     }
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         foreach ( $this->added() as $column ) {
 
@@ -74,7 +74,7 @@ class Update046 extends \OWA\Core\Update {
      * the data. Reapplying and re-collecting is what fills them, which is the
      * same trade Update042 records for a registered dimension's column.
      */
-    function down() {
+    public function down() {
 
         /*
          * THE TYPES ARE SPELLED OUT HERE, and they have to be.

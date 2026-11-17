@@ -21,7 +21,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update087 extends \OWA\Core\Update {
 
-    var $schema_version = 87;
+    public $schema_version = 87;
 
     const COLUMN = 'session_epoch';
 
@@ -39,7 +39,7 @@ class Update087 extends \OWA\Core\Update {
         return ! empty( $rows );
     }
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         if ( $this->hasColumn() ) {
 
@@ -58,7 +58,7 @@ class Update087 extends \OWA\Core\Update {
     }
 
     /** The exact inverse. */
-    function down() {
+    public function down() {
 
         if ( ! $this->hasColumn() ) {
 

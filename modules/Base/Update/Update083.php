@@ -16,9 +16,9 @@ namespace OWA\Module\Base\Update;
  */
 class Update083 extends \OWA\Core\Update {
 
-    var $schema_version = 83;
+    public $schema_version = 83;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.spam_block' );
 
@@ -37,7 +37,7 @@ class Update083 extends \OWA\Core\Update {
         return true;
     }
 
-    function down() {
+    public function down() {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.spam_block' );
 

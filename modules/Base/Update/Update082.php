@@ -25,12 +25,12 @@ namespace OWA\Module\Base\Update;
  */
 class Update082 extends \OWA\Core\Update {
 
-    var $schema_version = 82;
+    public $schema_version = 82;
 
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
     const COLUMNS = array( 'spam_score', 'spam_rules' );
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 
@@ -48,7 +48,7 @@ class Update082 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: the columns go, with what they held. */
-    function down() {
+    public function down() {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 

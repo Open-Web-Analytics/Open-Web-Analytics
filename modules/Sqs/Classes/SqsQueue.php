@@ -72,7 +72,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     /** @var string|null */
     private $last_error;
 
-    function __construct( $map = array() ) {
+    public function __construct( $map = array() ) {
 
         $this->is_dead_letter = ! empty( $map['is_dead_letter'] );
         $this->name           = (string) ( $map['name'] ?? Sqs::queueName() );

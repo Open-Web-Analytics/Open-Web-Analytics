@@ -39,7 +39,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update076 extends \OWA\Core\Update {
 
-    var $schema_version = 76;
+    public $schema_version = 76;
 
     /** old name => new name, without the table prefix. */
     const TABLES = array(
@@ -51,7 +51,7 @@ class Update076 extends \OWA\Core\Update {
     const OLD_KEY = 'goal_event_id';
     const NEW_KEY = 'goal_event_definition_id';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         if ( $this->underBothNames() ) {
 
@@ -71,7 +71,7 @@ class Update076 extends \OWA\Core\Update {
     }
 
     /** The exact inverse, last step first. */
-    function down() {
+    public function down() {
 
         if ( $this->underBothNames() ) {
 

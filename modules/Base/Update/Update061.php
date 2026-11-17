@@ -28,12 +28,12 @@ namespace OWA\Module\Base\Update;
  */
 class Update061 extends \OWA\Core\Update {
 
-    var $schema_version = 61;
+    public $schema_version = 61;
 
     /** Visualization steps, as VisualizationSave allows. */
     const MAX_STEPS = 10;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
         $table  = $entity->getTableName();
@@ -50,7 +50,7 @@ class Update061 extends \OWA\Core\Update {
     }
 
     /** Every rewritten report as it was; the converted funnels removed; the column gone. */
-    function down() {
+    public function down() {
 
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' )->getTableName();
         $db    = \OWA\Core\CoreAPI::dbSingleton();

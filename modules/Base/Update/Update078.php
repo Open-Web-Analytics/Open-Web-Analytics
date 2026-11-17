@@ -47,7 +47,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update078 extends \OWA\Core\Update {
 
-    var $schema_version = 78;
+    public $schema_version = 78;
 
     /** Old metric name => new. */
     const METRICS = array(
@@ -61,13 +61,13 @@ class Update078 extends \OWA\Core\Update {
         'conversions' => 'goals',
     );
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         return $this->rewriteAll( self::METRICS, self::SETS );
     }
 
     /** The exact inverse. */
-    function down() {
+    public function down() {
 
         return $this->rewriteAll( array_flip( self::METRICS ), array_flip( self::SETS ) );
     }

@@ -44,12 +44,12 @@ namespace OWA\Module\Base\Update;
  */
 class Update081 extends \OWA\Core\Update {
 
-    var $schema_version = 81;
+    public $schema_version = 81;
 
     /** The column this adds. */
     const COLUMN = 'property_id';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
 
@@ -116,7 +116,7 @@ class Update081 extends \OWA\Core\Update {
     }
 
     /** The column goes, with the Property each row had. */
-    function down() {
+    public function down() {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' );
 

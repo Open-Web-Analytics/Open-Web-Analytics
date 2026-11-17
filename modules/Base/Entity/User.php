@@ -68,7 +68,7 @@ class User extends \OWA\Core\Entity {
      */
     protected $private_properties = [ 'password', 'temp_passkey', 'session_epoch' ];
 
-    function __construct() {
+    public function __construct() {
     
         $this->setTableName('user');
         
@@ -122,7 +122,7 @@ class User extends \OWA\Core\Entity {
      * Its stored hash is of random bytes nobody is told. Auth::isUser() refuses
      * the values the previous generator gave.
      */
-    function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
+    public function createNewUser($user_id, $role, $password = '', $email_address = '', $real_name = '') {
 
         if ( ! $password ) {
 

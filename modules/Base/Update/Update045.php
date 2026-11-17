@@ -37,14 +37,14 @@ class Update045 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 45;
+    public $schema_version = 45;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         return $this->addRawColumn( 'event_seq' );
     }
 
-    function down() {
+    public function down() {
 
         if ( $this->dropCubeColumn( 'event_seq' ) === false ) {
 

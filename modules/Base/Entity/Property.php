@@ -17,7 +17,7 @@ namespace OWA\Module\Base\Entity;
  */
 class Property extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'property' );
         $this->setCachable();

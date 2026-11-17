@@ -28,7 +28,7 @@ class SpamBlock extends \OWA\Core\Entity {
     /** The rule name of the row that counts blocked beacons. */
     const TOTAL = '*';
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'spam_block' );
 

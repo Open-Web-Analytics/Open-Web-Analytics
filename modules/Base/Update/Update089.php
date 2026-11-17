@@ -20,9 +20,9 @@ namespace OWA\Module\Base\Update;
  */
 class Update089 extends \OWA\Core\Update {
 
-    var $schema_version = 89;
+    public $schema_version = 89;
 
-    var $down_does_not_restore = 'the users\' API keys: the api_key column comes back empty.';
+    public $down_does_not_restore = 'the users\' API keys: the api_key column comes back empty.';
 
     const COLUMN = 'api_key';
 
@@ -42,7 +42,7 @@ class Update089 extends \OWA\Core\Update {
         return $names;
     }
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         if ( ! in_array( self::COLUMN, $this->columns(), true ) ) {
 
@@ -59,7 +59,7 @@ class Update089 extends \OWA\Core\Update {
         return true;
     }
 
-    function down() {
+    public function down() {
 
         $columns = $this->columns();
 

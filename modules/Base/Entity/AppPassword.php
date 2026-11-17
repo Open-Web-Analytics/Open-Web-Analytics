@@ -27,7 +27,7 @@ class AppPassword extends \OWA\Core\Entity {
 
     protected $private_properties = [ 'secret_hash' ];
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'app_password' );
 

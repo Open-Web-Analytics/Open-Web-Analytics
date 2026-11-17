@@ -22,9 +22,9 @@ namespace OWA\Module\Base\Update;
  */
 class Update060 extends \OWA\Core\Update {
 
-    var $schema_version = 60;
+    public $schema_version = 60;
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $table = $this->table();
 
@@ -42,7 +42,7 @@ class Update060 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: visitor_id the primary key again, and nothing else. */
-    function down() {
+    public function down() {
 
         $table = $this->table();
 

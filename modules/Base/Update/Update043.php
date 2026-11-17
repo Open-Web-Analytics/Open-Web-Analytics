@@ -37,7 +37,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update043 extends \OWA\Core\Update {
 
-    var $schema_version = 43;
+    public $schema_version = 43;
 
     /**
      * The scope every unpacked value lands at.
@@ -48,7 +48,7 @@ class Update043 extends \OWA\Core\Update {
      */
     const INSTALL_SCOPE_ID = '1';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
@@ -134,7 +134,7 @@ class Update043 extends \OWA\Core\Update {
      * Scoped rows -- organization, property, profile -- are NOT touched. They
      * predate this update and the blob has no place to put them.
      */
-    function down() {
+    public function down() {
 
         $legacy = \OWA\Core\CoreAPI::entityFactory( 'base.configuration' );
 

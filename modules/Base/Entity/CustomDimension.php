@@ -113,7 +113,7 @@ class CustomDimension extends \OWA\Core\Entity {
      */
     const SET_TS_SUFFIX = '_set_ts';
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'custom_dimension' );
 

@@ -15,7 +15,7 @@ namespace OWA\Module\Base\Entity;
  */
 class Organization extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'organization' );
         $this->setCachable();

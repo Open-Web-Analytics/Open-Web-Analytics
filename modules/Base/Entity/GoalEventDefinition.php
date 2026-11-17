@@ -192,7 +192,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     /** Whether this entity is on the names before Update076. */
     private $onNamesBefore076 = false;
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'goal_event_definition' );
         $this->setCachable();

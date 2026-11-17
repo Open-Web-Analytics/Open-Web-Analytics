@@ -66,7 +66,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update079 extends \OWA\Core\Update {
 
-    var $schema_version = 79;
+    public $schema_version = 79;
 
     /** The setting that keeps each converted report: id => { was, now, steps: index => { was, now } }. */
     const BEFORE = 'funnel_steps_before_079';
@@ -74,7 +74,7 @@ class Update079 extends \OWA\Core\Update {
     /** The step key a goal event step names its definition by, since Update076. */
     const DEFINITION_KEY = 'goal_event_definition_id';
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $table  = $this->tableFor( 'custom_report' );
@@ -146,7 +146,7 @@ class Update079 extends \OWA\Core\Update {
     }
 
     /** The exact inverse. See the class comment for a funnel edited since. */
-    function down() {
+    public function down() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->tableFor( 'custom_report' );
