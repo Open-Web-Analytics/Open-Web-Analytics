@@ -692,7 +692,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * title, as it did before. Nothing relies on that today; it is simply not
      * this change's business to alter it.
      */
-    function action() {
+    public function action() {
 
         $d = self::translated( $this->definition );
 

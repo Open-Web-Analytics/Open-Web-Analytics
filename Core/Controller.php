@@ -37,72 +37,72 @@ class Controller extends \OWA\Core\Base {
      *
      * @var array
      */
-    var $params = array();
+    public $params = array();
 
     /**
      * Controller Type
      *
      * @var string
      */
-    var $type;
+    public $type;
 
     /**
      * Is the controller for an admin function
      *
      * @var boolean
      */
-    var $is_admin;
+    public $is_admin;
 
     /**
      * The priviledge level required to access this controller
      *
      * @var string
      */
-    var $priviledge_level;
+    public $priviledge_level;
 
     /**
      * data validation control object, created by the first validation added
      *
      * @var \OWA\Module\Base\Classes\Validator|null
      */
-    var $v;
+    public $v;
 
     /**
      * Data container
      *
      * @var Array
      */
-    var $data = array();
+    public $data = array();
 
     /**
      * Capability
      *
      * @var string
      */
-    var $capability;
+    public $capability;
 
     /**
      * Time period
      *
      * @var Object
      */
-    var $period;
+    public $period;
 
     /**
      * Dom id
      *
      * @var String
      */
-    var $dom_id;
+    public $dom_id;
 
-    var $state;
+    public $state;
 
     /**
      * Flag for requiring nonce before performing write actions
      *
      * @var Bool
      */
-    var $is_nonce_required = false;
+    public $is_nonce_required = false;
 
     /**
      * The authentication methods this controller declares, or null for its
@@ -117,7 +117,7 @@ class Controller extends \OWA\Core\Base {
      *
      * @param array $params
      */
-    function __construct($params) {
+    public function __construct($params) {
 
         // call parent constructor to setup objects.
         parent::__construct();
@@ -140,7 +140,7 @@ class Controller extends \OWA\Core\Base {
 	 * Fires after constructor but before doAction.
 	 *
 	 */
-    function init() {
+    public function init() {
 	    
 	    return false;
     }
@@ -150,11 +150,11 @@ class Controller extends \OWA\Core\Base {
 	 * Method used to set param validators by concrete class
 	 *
 	 */
-    function validate() {
+    public function validate() {
 	    
     }
 	
-	function updateAction() {
+	public function updateAction() {
 		
 		$error_msg = \OWA\Core\CoreAPI::t( 'Cannot perform action. OWA Updates required.' );
 	                
@@ -193,7 +193,7 @@ class Controller extends \OWA\Core\Base {
      * Handles request from caller
      *
      */
-    function doAction() {
+    public function doAction() {
 
         \OWA\Core\CoreAPI::debug('Performing Action: '.get_class($this));
 
@@ -388,7 +388,7 @@ class Controller extends \OWA\Core\Base {
 	 * set output realted params like view, etc.
 	 * called after action because older style controllers might set these details within action()
 	 */
-    function success() {
+    public function success() {
 	    
     }
 
@@ -396,7 +396,7 @@ class Controller extends \OWA\Core\Base {
      * The controller's work, run by doAction() once every check has passed.
      * The default does nothing.
      */
-    function action() {
+    public function action() {
 
     }
 
@@ -405,7 +405,7 @@ class Controller extends \OWA\Core\Base {
      * doAction()'s answer. The default shows the validation messages on the
      * error page.
      */
-    function errorAction() {
+    public function errorAction() {
 
         $this->setView( 'base.error' );
     }
@@ -496,12 +496,12 @@ class Controller extends \OWA\Core\Base {
         return \OWA\Core\CoreAPI::isEveryoneCapable( $capability );
     }
 
-    function createValidator() {
+    public function createValidator() {
 
         $this->v = new \OWA\Module\Base\Classes\Validator();
     }
 
-    function addValidation($name, $value, $validation, $conf = array()) {
+    public function addValidation($name, $value, $validation, $conf = array()) {
 
         if ( empty( $this->v ) ) {
 
@@ -516,12 +516,12 @@ class Controller extends \OWA\Core\Base {
      * Fails validation of this field with this message: a required check of
      * an empty value, which always fails.
      */
-    function addValidationError( $name, $msg ) {
+    public function addValidationError( $name, $msg ) {
 
         return $this->addValidation( $name, '', 'required', array( 'errorMsg' => $msg ) );
     }
 
-    function setValidation($name, $obj) {
+    public function setValidation($name, $obj) {
 
         if (empty($this->v)) {
             $this->createValidator();
@@ -530,7 +530,7 @@ class Controller extends \OWA\Core\Base {
         return $this->v->setValidation($name, $obj);
     }
 
-    function getValidationErrorMsgs() {
+    public function getValidationErrorMsgs() {
 
         return $this->v->getErrorMsgs();
 
@@ -543,7 +543,7 @@ class Controller extends \OWA\Core\Base {
      *
      * @return bool
      */
-    function needsCurrentSchema() {
+    public function needsCurrentSchema() {
 
         return \OWA\Core\ServerRole::current()->hasDatabase();
     }
@@ -567,62 +567,62 @@ class Controller extends \OWA\Core\Base {
         return (bool) \OWA\Core\CoreAPI::isSchemaUpdateRequired();
     }
 
-    function isAdmin() {
+    public function isAdmin() {
 
         if ($this->is_admin == true) {
             return true;
         }
     }
 
-    function setRequiredCapability($capability) {
+    public function setRequiredCapability($capability) {
 
         $this->capability = $capability;
     }
 
-    function getRequiredCapability() {
+    public function getRequiredCapability() {
 
         return $this->capability;
     }
 
-    function getParam($name) {
+    public function getParam($name) {
 
         if (array_key_exists($name, $this->params)) {
             return $this->params[$name];
         }
     }
 
-    function setParam($name, $value) {
+    public function setParam($name, $value) {
 
         $this->params[$name] = $value;
     }
 
-    function isParam($name) {
+    public function isParam($name) {
 
         if (array_key_exists($name, $this->params)) {
             return true;
         }
     }
 
-    function get($name) {
+    public function get($name) {
 
         return $this->getParam($name);
     }
 
-    function pre() {
+    public function pre() {
 
         return false;
     }
 
-    function post() {
+    public function post() {
         return false;
     }
 
-    function getPeriod() {
+    public function getPeriod() {
 
         return $this->period;
     }
 
-    function setPeriod() {
+    public function setPeriod() {
         // set period
 
         $period = $this->makeTimePeriod($this->getParam('period'), $this->params);
@@ -632,7 +632,7 @@ class Controller extends \OWA\Core\Base {
         $this->data['params'] = array_merge($this->data['params'], $period->getPeriodProperties());
     }
 
-    function makeTimePeriod($time_period, $params = array()) {
+    public function makeTimePeriod($time_period, $params = array()) {
 
         return \OWA\Core\CoreAPI::makeTimePeriod($time_period, $params);
     }
@@ -653,7 +653,7 @@ class Controller extends \OWA\Core\Base {
      * @param string $view     <module>.<view>
      * @param array  $declared as above, or nothing for a View class
      */
-    function setView($view, array $declared = []) {
+    public function setView($view, array $declared = []) {
 
         $this->data['view'] = $view;
         $this->declareTemplate( $view, $declared );
@@ -683,7 +683,7 @@ class Controller extends \OWA\Core\Base {
      * @param string $subview  <module>.<view>
      * @param array  $declared template and vars, or nothing for a View class
      */
-    function setSubview($subview, array $declared = []) {
+    public function setSubview($subview, array $declared = []) {
 
         $this->data['subview'] = $subview;
         $this->declareTemplate( $subview, $declared );
@@ -697,7 +697,7 @@ class Controller extends \OWA\Core\Base {
         }
     }
 
-    function setViewMethod($method = 'delegate') {
+    public function setViewMethod($method = 'delegate') {
 
         $this->data['view_method'] = $method;
 
@@ -717,7 +717,7 @@ class Controller extends \OWA\Core\Base {
         return array_values( array_diff( \OWA\Core\View::LINK_STATE_KEYS, array( 'siteId' ) ) );
     }
 
-    function setRedirectAction($do) {
+    public function setRedirectAction($do) {
 
         $this->set('view_method', 'redirect');
         $this->set('do', $do);
@@ -776,7 +776,7 @@ class Controller extends \OWA\Core\Base {
 
     }
 
-    function set($name, $value) {
+    public function set($name, $value) {
 
         $this->data[$name] = $value;
     }
@@ -786,7 +786,7 @@ class Controller extends \OWA\Core\Base {
 	 * @depricated
 	 * @todo remove this
 	 */
-    function setControllerType($string) {
+    public function setControllerType($string) {
 
         $this->type = $string;
 
@@ -799,12 +799,12 @@ class Controller extends \OWA\Core\Base {
     }
 
     /** @param string[] $also_hosts see Lib::resolveRedirectUrl() */
-    function redirectBrowserToUrl($url, array $also_hosts = array()) {
+    public function redirectBrowserToUrl($url, array $also_hosts = array()) {
 
         return \OWA\Core\Lib::redirectBrowser($url, $also_hosts);
     }
 
-    function setStatusCode($code) {
+    public function setStatusCode($code) {
 
         $this->data['status_code'] = $code;
     }
@@ -816,7 +816,7 @@ class Controller extends \OWA\Core\Base {
      * In the web UI the page keeps the menu, its report links of the first
      * Profile the user may see, so there is a way on from it.
      */
-    function authenticatedButNotCapableAction($additionalMessage = '') {
+    public function authenticatedButNotCapableAction($additionalMessage = '') {
         if ( empty($additionalMessage) ) {
             $siteId = $this->getCurrentSiteId();
             $additionalMessage = $siteId
@@ -907,7 +907,7 @@ class Controller extends \OWA\Core\Base {
      * The nonce exists so that a state-changing request is one the user just
      * confirmed, and completing it on their behalf would defeat that.
      */
-    function nonceFailedAction() {
+    public function nonceFailedAction() {
 
 		// Not signed in: the nonce is beside the point, credentials come first.
 		if ( ! \OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated() ) {
@@ -943,7 +943,7 @@ class Controller extends \OWA\Core\Base {
         return \OWA\Core\CoreAPI::t( 'API keys and request signatures are no longer accepted. Send an application password in the Authorization header instead.' );
     }
 
-    function notAuthenticatedAction() {
+    public function notAuthenticatedAction() {
 		
 		if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
 			
@@ -991,7 +991,7 @@ class Controller extends \OWA\Core\Base {
 		}
     }
 
-    function verifyNonce($nonce, $action = '') {
+    public function verifyNonce($nonce, $action = '') {
             
         // `action` before `do`, as the dispatcher reads them
         // (CoreAPI::performAction): the nonce is checked against the action
@@ -1023,7 +1023,7 @@ class Controller extends \OWA\Core\Base {
     /**
      * Sets nonce flag for the controller.
      */
-    function setNonceRequired() {
+    public function setNonceRequired() {
 
         $this->is_nonce_required = true;
     }
@@ -1034,7 +1034,7 @@ class Controller extends \OWA\Core\Base {
      *
      * @param string[] $methods login_form, overlay_token, app_password, cookies
      */
-    function setAuthMethods( array $methods ) {
+    public function setAuthMethods( array $methods ) {
 
         $this->auth_methods = array_values( $methods );
     }
@@ -1045,7 +1045,7 @@ class Controller extends \OWA\Core\Base {
      *
      * @return string[]|null
      */
-    function acceptedAuthMethods() {
+    public function acceptedAuthMethods() {
 
         return $this->auth_methods;
     }

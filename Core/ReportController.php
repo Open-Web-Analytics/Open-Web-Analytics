@@ -66,7 +66,7 @@ class ReportController extends \OWA\Core\AdminController {
      *
      * @param array $params
      */
-    function __construct($params) {
+    public function __construct($params) {
         $this->setControllerType('report');
         $this->setRequiredCapability('view_reports');
         parent::__construct($params);
@@ -148,7 +148,7 @@ class ReportController extends \OWA\Core\AdminController {
         );
     }
 
-    function validate() {
+    public function validate() {
 
         /*
          * A range is both bounds or neither, and ordered. One bound alone is
@@ -216,7 +216,7 @@ class ReportController extends \OWA\Core\AdminController {
      * one fatals instead of refusing. Defining it here is part of adding the
      * validation above, not an extra.
      */
-    function errorAction() {
+    public function errorAction() {
 
         if ( ! headers_sent() ) {
             http_response_code( 400 );
@@ -235,7 +235,7 @@ class ReportController extends \OWA\Core\AdminController {
      * Current user is fully authenticated and loaded by this point
      *
      */
-    function pre() {
+    public function pre() {
 
         $sites = $this->getSitesAllowedForCurrentUser();
         $this->set('sites', $sites);
@@ -424,7 +424,7 @@ class ReportController extends \OWA\Core\AdminController {
             && (int) $period_end >= (int) date( 'Ymd', strtotime( '-1 day' ) );
     }
 
-    function post() {
+    public function post() {
 
         /*
          * Reporting not ready: the report's own subview is replaced, so none of
@@ -441,7 +441,7 @@ class ReportController extends \OWA\Core\AdminController {
         }
     }
     
-    function setTitle($title, $suffix = '') {
+    public function setTitle($title, $suffix = '') {
 
         $this->set('title', $title);
         $this->set('titleSuffix', $suffix);

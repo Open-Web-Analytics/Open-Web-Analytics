@@ -3390,7 +3390,7 @@ class CoreAPI {
         }
     }
     
-    static function loadConf( $file_name, $filter_name = '' ) {
+    public static function loadConf( $file_name, $filter_name = '' ) {
 	    
         $conf = array();
 	    $conf_file = \OWA\Core\Env::confDir() . $file_name;

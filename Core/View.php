@@ -60,83 +60,83 @@ class View extends \OWA\Core\Base {
      *
      * @var object
      */
-    var $t;
+    public $t;
 
     /**
      * Body content template object
      *
      * @var object
      */
-    var $body;
+    public $body;
 
     /**
      * Sub View object
      *
      * @var \OWA\Core\View|null
      */
-    var $subview;
+    public $subview;
 
     /**
      * Rednered subview
      *
      * @var string
      */
-    var $subview_rendered;
+    public $subview_rendered;
 
     /**
      * The priviledge level required to access this view
      * @depricated
      * @var string
      */
-    var $priviledge_level;
+    public $priviledge_level;
 
     /**
      * Type of page
      *
      * @var string
      */
-    var $page_type;
+    public $page_type;
 
     /**
      * Request Params
      *
      * @var array
      */
-    var $params;
+    public $params;
 
     /**
      * Authorization object
      *
      * @var object
      */
-    var $auth;
+    public $auth;
 
-    var $module; // set by factory.
+    public $module; // set by factory.
 
     /**
      * The <module>.<view> this view was made for, set by CoreAPI::viewFactory().
      *
      * @var string
      */
-    var $name = '';
+    public $name = '';
 
-    var $data;
+    public $data;
 
-    var $default_subview;
+    public $default_subview;
 
-    var $is_subview;
+    public $is_subview;
 
-    var $js = array();
+    public $js = array();
 
-    var $css = array();
+    public $css = array();
 
-    var $postProcessView = false;
+    public $postProcessView = false;
 
     /**
      * Constructor
      *
      */
-    function __construct() {
+    public function __construct() {
 
         parent::__construct();
 
@@ -152,7 +152,7 @@ class View extends \OWA\Core\Base {
      * @param mixed $data
      * @return mixed
      */
-    function assembleView($data) {
+    public function assembleView($data) {
 
         $this->e->debug('Assembling view: '.get_class($this));
 
@@ -292,7 +292,7 @@ class View extends \OWA\Core\Base {
      * Abstract pre render hook
      *
      */
-	function pre() {
+	public function pre() {
 		
 		return false;
 	}
@@ -301,7 +301,7 @@ class View extends \OWA\Core\Base {
      * Abstract Alternative rendering method reuires the setting of $this->postProcessView to fire
      *
      */
-    function postProcess() {
+    public function postProcess() {
 
         return false;
     }
@@ -310,7 +310,7 @@ class View extends \OWA\Core\Base {
      * Post method fired right before view is rendered and returned
      * as output
      */
-    function post() {
+    public function post() {
 
         return false;
     }
@@ -320,7 +320,7 @@ class View extends \OWA\Core\Base {
      * Sets the theme to be used by a view
      *
      */
-    function setTheme() {
+    public function setTheme() {
 
         // report_wrapper is a config-file / settings value; reduce it to a
         // safe basename before handing it to the template loader so that a
@@ -341,7 +341,7 @@ class View extends \OWA\Core\Base {
      * @depricated
      * @param array $data
      */
-    function construct($data) {
+    public function construct($data) {
 
         return;
 
@@ -352,7 +352,7 @@ class View extends \OWA\Core\Base {
      *
      * @param string $subview
      */
-    function loadSubView($subview) {
+    public function loadSubView($subview) {
 
         if (empty($subview)):
             if (!empty($this->default_subview)):
@@ -372,7 +372,7 @@ class View extends \OWA\Core\Base {
      *
      * @param array $data
      */
-    function renderSubView($data) {
+    public function renderSubView($data) {
 
         // Stores subview as string into $this->subview
         $this->subview_rendered = $this->subview->assembleSubView($data);
@@ -461,7 +461,7 @@ class View extends \OWA\Core\Base {
         }
     }
 
-    function assembleSubView($data) {
+    public function assembleSubView($data) {
 
         // Before render(), so a subview that wants to override its own title
         // still can -- and so it is set whichever branch below runs.
@@ -503,7 +503,7 @@ class View extends \OWA\Core\Base {
         return $mtime ? \OWA\Core\Env::version() . '.' . $mtime : \OWA\Core\Env::version();
     }
 
-    function setCss($path, $version = null, $deps = array(), $ie_only = false) {
+    public function setCss($path, $version = null, $deps = array(), $ie_only = false) {
 
         if ( ! $version ) {
 
@@ -523,7 +523,7 @@ class View extends \OWA\Core\Base {
         $this->css[$uid]['ie_only'] = $ie_only;
     }
 
-    function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
+    public function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
 
         if (empty($version)) {
 
@@ -550,7 +550,7 @@ class View extends \OWA\Core\Base {
      *
      * @param string $level
      */
-    function _setPriviledgeLevel( $level ) {
+    public function _setPriviledgeLevel( $level ) {
 
         $this->priviledge_level = $level;
 
@@ -562,7 +562,7 @@ class View extends \OWA\Core\Base {
      *
      * @param string $page_type
      */
-    function _setPageType( $page_type ) {
+    public function _setPageType( $page_type ) {
 
         $this->page_type = $page_type;
 
@@ -575,7 +575,7 @@ class View extends \OWA\Core\Base {
      * reports. This is used by many template functions.
      *
      */
-    function _setLinkState( $p = array() ) {
+    public function _setLinkState( $p = array() ) {
 
         // if an array is not passed them just use params
         if ( ! $p ) {
@@ -621,7 +621,7 @@ class View extends \OWA\Core\Base {
      *
      * @param string[] $keys
      */
-    function keepStateInLinks( $keys ) {
+    public function keepStateInLinks( $keys ) {
 
         $this->body->caller_params['keep_state'] = $keys;
 
@@ -631,7 +631,7 @@ class View extends \OWA\Core\Base {
         }
     }
 
-    function get( $name ) {
+    public function get( $name ) {
 
         if ( array_key_exists( $name, $this->data ) ) {
 	        
@@ -643,22 +643,22 @@ class View extends \OWA\Core\Base {
         }
     }
 
-    function set($name, $value) {
+    public function set($name, $value) {
 
         $this->data[$name] = $value;
     }
 
-    function setData($data) {
+    public function setData($data) {
         $this->data = $data;
     }
 
-    function setTitle($title, $suffix = '') {
+    public function setTitle($title, $suffix = '') {
 
         $this->t->set('page_title', $title);
         $this->t->set('titleSuffix', $suffix);
     }
 
-    function setContentTypeHeader($type = 'html') {
+    public function setContentTypeHeader($type = 'html') {
 
         \OWA\Core\Lib::setContentTypeHeader($type);
     }

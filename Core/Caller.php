@@ -41,17 +41,17 @@ class Caller extends \OWA\Core\Base {
      *
      * @var array
      */
-    var $params;
+    public $params;
         
-    var $start_time;
+    public $start_time;
     
-    var $end_time;
+    public $end_time;
     
-    var $update_required;
+    public $update_required;
     
-    var $service;
+    public $service;
     
-    var $site_id;
+    public $site_id;
             
     /**
      * Constructor
@@ -59,7 +59,7 @@ class Caller extends \OWA\Core\Base {
      * @param array $config
      * @return \OWA\Core\Caller
      */
-    function __construct( $config = [] ) {
+    public function __construct( $config = [] ) {
       
 		/* PHP ERROR LOGGING */
         if ( \OWA\Core\Lib::inDebug() ) {
@@ -169,7 +169,7 @@ class Caller extends \OWA\Core\Base {
     /**
      * Handles OWA internal page/action requests
      */
-    function handleRequest($caller_params = null, $action = '') {
+    public function handleRequest($caller_params = null, $action = '') {
         
         return \OWA\Core\CoreAPI::handleRequest($caller_params, $action);
                         
@@ -178,12 +178,12 @@ class Caller extends \OWA\Core\Base {
     /**
      * Handles OWA REST requests
      */
-    function handleRestRequest() {
+    public function handleRestRequest() {
         
         return \OWA\Core\CoreAPI::handleRestRequest();
     }
     
-    function __destruct() {
+    public function __destruct() {
         
         $this->end_time = microtime(true);
         $total_time = $this->end_time - $this->start_time;
@@ -191,23 +191,23 @@ class Caller extends \OWA\Core\Base {
         \OWA\Core\CoreAPI::debug("Goodbye from OWA");
     }
         
-    function setSetting($module, $name, $value) {
+    public function setSetting($module, $name, $value) {
         
         return \OWA\Core\CoreAPI::setSetting($module, $name, $value);
     }
     
-    function getSetting($module, $name) {
+    public function getSetting($module, $name) {
         
         return \OWA\Core\CoreAPI::getSetting($module, $name);
     }
         
-    function setCurrentUser($role, $login_name = '') {
+    public function setCurrentUser($role, $login_name = '') {
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->setRole($role);
         $cu->setAuthStatus(true);
     }
     
-    function makeEvent($type = '') {
+    public function makeEvent($type = '') {
     
         $event = new \OWA\Module\Base\Classes\Event();
         
@@ -218,17 +218,17 @@ class Caller extends \OWA\Core\Base {
         return $event;
     }
     
-    function setSiteId($site_id) {
+    public function setSiteId($site_id) {
         
         $this->site_id = $site_id;
     }
     
-    function getSiteId() {
+    public function getSiteId() {
         
         return $this->site_id;
     }
     
-    function isOwaInstalled() {
+    public function isOwaInstalled() {
         
         $version = \OWA\Core\CoreAPI::getSetting('base', 'schema_version');
         
@@ -239,7 +239,7 @@ class Caller extends \OWA\Core\Base {
         }
     }
     
-    function isEndpointEnabled($file_name) {
+    public function isEndpointEnabled($file_name) {
         
         if ( ! $this->getSetting('base', 'disableAllEndpoints') ) {
             $disabled_endpoints = $this->getSetting('base', 'disabledEndpoints');
@@ -276,7 +276,7 @@ class Caller extends \OWA\Core\Base {
     }
 
     
-    function restInPeace() {
+    public function restInPeace() {
     
         return false;
     }
