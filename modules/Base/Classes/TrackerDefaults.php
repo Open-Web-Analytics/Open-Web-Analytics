@@ -14,11 +14,11 @@ class TrackerDefaults {
 
     const FILE = 'modules/Base/src/tracker/defaults.json';
 
-    /** @var array|null */
+    /** @var array<string, mixed>|null */
     private static $defaults;
 
     /**
-     * @return array features, scrollThresholds, downloadExtensions, siteSearchParams
+     * @return array<string, mixed> features, scrollThresholds, downloadExtensions, siteSearchParams
      */
     public static function all() {
 
@@ -34,7 +34,7 @@ class TrackerDefaults {
 
     /**
      * @param  string $key
-     * @return array
+     * @return list<mixed>
      */
     public static function get( $key ) {
 

@@ -60,8 +60,7 @@ parameters:
         - modules/Base/Classes/Cube
         - modules/Base/Classes/Migration
         - modules/Base/Classes/Spam
-        # Base Classes, file by file: A to N typed so far; O to Z, and
-        # Settings (open PR #1445), not yet.
+        # Base Classes, file by file: every top-level class.
         - modules/Base/Classes/AppPasswords.php
         - modules/Base/Classes/Browscap.php
         - modules/Base/Classes/Cache.php
@@ -96,6 +95,33 @@ parameters:
         - modules/Base/Classes/Mailer.php
         - modules/Base/Classes/MaterializedEvents.php
         - modules/Base/Classes/NotificationManager.php
+        - modules/Base/Classes/PaginatedResultSet.php
+        - modules/Base/Classes/ProfileDomains.php
+        - modules/Base/Classes/PropertyGrants.php
+        - modules/Base/Classes/PurchaseDeduplication.php
+        - modules/Base/Classes/Realtime.php
+        - modules/Base/Classes/ReportSegment.php
+        - modules/Base/Classes/ResultSetManager.php
+        - modules/Base/Classes/Retention.php
+        - modules/Base/Classes/Sanitize.php
+        - modules/Base/Classes/SchedulerHealth.php
+        - modules/Base/Classes/Service.php
+        - modules/Base/Classes/ServiceUser.php
+        - modules/Base/Classes/Settings.php
+        - modules/Base/Classes/SettingsForm.php
+        - modules/Base/Classes/SiteManager.php
+        - modules/Base/Classes/State.php
+        - modules/Base/Classes/SystemHealth.php
+        - modules/Base/Classes/TimePeriod.php
+        - modules/Base/Classes/TouchBackfill.php
+        - modules/Base/Classes/TrackerBundle.php
+        - modules/Base/Classes/TrackerDefaults.php
+        - modules/Base/Classes/TrackerIngest.php
+        - modules/Base/Classes/TrackingEventHelpers.php
+        - modules/Base/Classes/UserManager.php
+        - modules/Base/Classes/V2Event.php
+        - modules/Base/Classes/Validator.php
+        - modules/Base/Classes/VisitorExpiry.php
 
     # OWA_EHS_* (handler return codes) are defined here, outside the paths.
     scanFiles:

@@ -43,8 +43,8 @@ class PropertyGrants {
      * that already held a grant is not given a second row.
      *
      * @param  string $property_id
-     * @param  array  $rendered user ids the form showed
-     * @param  array  $checked  user ids it submitted ticked
+     * @param  array<int|string> $rendered user ids the form showed
+     * @param  array<int|string> $checked  user ids it submitted ticked
      * @return int the number of Profiles written
      */
     public static function apply( $property_id, array $rendered, array $checked ) {

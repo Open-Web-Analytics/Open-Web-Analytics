@@ -55,7 +55,10 @@ class TouchBackfill {
     /** @var int visitors per statement */
     private $per;
 
-    function __construct( $per = self::VISITORS_PER_BATCH ) {
+    /**
+     * @param int $per visitors per statement
+     */
+    public function __construct( $per = self::VISITORS_PER_BATCH ) {
 
         $this->per   = max( 1, (int) $per );
 
@@ -100,7 +103,9 @@ class TouchBackfill {
      *
      * Read once: asking for each next range would scan the landings again.
      *
-     * @return array[] [ low, high ] visitor ids, inclusive
+     * @param  string $site_id
+     * @param  int    $per
+     * @return list<array{0: int, 1: int}> [ low, high ] visitor ids, inclusive
      */
     public function ranges( $site_id, $per = self::VISITORS_PER_BATCH ) {
 
@@ -123,7 +128,12 @@ class TouchBackfill {
         return $ranges;
     }
 
-    /** SQL that is true when the landing aliased $a arrived non-direct. */
+    /**
+     * SQL that is true when the landing aliased $a arrived non-direct.
+     *
+     * @param  string $a
+     * @return string
+     */
     private static function nonDirect( $a ) {
 
         $tests = array();
@@ -136,7 +146,14 @@ class TouchBackfill {
         return '(' . implode( ' OR ', $tests ) . ')';
     }
 
-    /** Step 1: every landing's prior touch, onto its beacon's rows. */
+    /**
+     * Step 1: every landing's prior touch, onto its beacon's rows.
+     *
+     * @param  string $site_id
+     * @param  int    $low
+     * @param  int    $high
+     * @return bool
+     */
     private function stamp( $site_id, $low, $high ) {
 
         $set = array();
@@ -181,7 +198,14 @@ class TouchBackfill {
         return $this->db->query( $sql, array( (string) $site_id, (string) $site_id, (string) $site_id ) ) !== false;
     }
 
-    /** Step 2: each visitor's latest non-direct landing, onto the visitor store. */
+    /**
+     * Step 2: each visitor's latest non-direct landing, onto the visitor store.
+     *
+     * @param  string $site_id
+     * @param  int    $low
+     * @param  int    $high
+     * @return bool
+     */
     private function store( $site_id, $low, $high ) {
 
         $latest = sprintf(

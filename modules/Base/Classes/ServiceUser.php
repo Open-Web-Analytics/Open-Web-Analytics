@@ -36,12 +36,16 @@ class ServiceUser extends \OWA\Core\Base {
      * @var \OWA\Module\Base\Entity\User
      */
     public $user;
-    var $capabilities = array();
-    var $preferences = array();
-    var $is_authenticated = false;
+    /** @var array<mixed> the role's capabilities */
+    public $capabilities = array();
+    /** @var mixed getPreferences()'s answer, false */
+    public $preferences = array();
+    /** @var bool */
+    public $is_authenticated = false;
+    /** @var array<\OWA\Module\Base\Entity\Site> site_id => the Profile */
     public $assignedSites = array();
 
-    function __construct() {
+    public function __construct() {
         //parent::__construct();
         // create empty user entity
         $this->user = \OWA\Core\CoreAPI::entityFactory('base.user');
@@ -53,10 +57,11 @@ class ServiceUser extends \OWA\Core\Base {
      * Loads Current user based on user_id
      * This method should only used if the user is authenticated.
      *
-     * @param $user_id    string    the user_id
+     * @param string $user_id the user_id
+     * @return void
      * @depricated
      */
-    function load( $user_id = '' ) {
+    public function load( $user_id = '' ) {
 
         if (! $user_id ) {
 
@@ -78,20 +83,27 @@ class ServiceUser extends \OWA\Core\Base {
      * Loads the current user from an owa_user object
      * owa_auth uses this after the user is authenticated
      *
-     * @param $user_obj    object    \owa_user object
+     * @param \OWA\Module\Base\Entity\User $user_obj
+     * @return void
      */
-    function loadNewUserByObject($user_obj) {
+    public function loadNewUserByObject($user_obj) {
 	    
         $this->user = $user_obj;
         $this->initInternalProperties();
     }
 
+    /**
+     * @return void
+     */
     private function initInternalProperties() {
         $this->loadRelatedUserData();
         $this->loadAssignedSites();
     }
 
-    function loadRelatedUserData() {
+    /**
+     * @return void
+     */
+    public function loadRelatedUserData() {
         $this->capabilities = $this->getCapabilities($this->user->get('role'));
         $this->preferences = $this->getPreferences($this->user->get('user_id'));
 
@@ -99,36 +111,54 @@ class ServiceUser extends \OWA\Core\Base {
     /**
      * gets allowed capabilities for the user role
      * @param mixed $role
+     * @return mixed the role's entry in the capabilities setting; array() for a role it does not name
      */
-    function getCapabilities($role) {
+    public function getCapabilities($role) {
         return \OWA\Core\CoreAPI::getCapabilities( $role );
     }
 
-    function getPreferences($user_id) {
+    /**
+     * @param  mixed $user_id
+     * @return false there are none
+     */
+    public function getPreferences($user_id) {
         return false;
     }
 
-    function getRole() {
+    /**
+     * @return mixed
+     */
+    public function getRole() {
         return $this->user->get('role');
     }
     
     /**
      * Sets role and related capabilities
      *
-     * @param    $value    string    the user's role
+     * @param    string $value the user's role
+     * @return   void
      */
-    function setRole($value) {
+    public function setRole($value) {
 
         $this->user->set('role', $value);
         $this->capabilities = $this->getCapabilities($value);
     }
 
-    function setUserData($name, $value) {
+    /**
+     * @param  string $name  a column of the user entity
+     * @param  mixed  $value
+     * @return void
+     */
+    public function setUserData($name, $value) {
 
         $this->user->set($name, $value);
     }
 
-    function getUserData($name) {
+    /**
+     * @param  string $name a column of the user entity
+     * @return mixed
+     */
+    public function getUserData($name) {
 
         return $this->user->get($name);
     }
@@ -140,7 +170,7 @@ class ServiceUser extends \OWA\Core\Base {
      * @param string|null $siteId    only needed if capability requires site access. you need to pass site_id (not id) field
      * @return boolean
      */
-    function isCapable($cap, $siteId = null) {
+    public function isCapable($cap, $siteId = null) {
         \OWA\Core\CoreAPI::debug("Checking if user is capable of: ".$cap);
 
         // is this capability assigned to everyone?
@@ -176,10 +206,10 @@ class ServiceUser extends \OWA\Core\Base {
      * Checks to see if the Capability requires
      * user to pass site access control check
      *
-     * @param    $capability    string    the name of the capability (e.g. 'view_reports')
+     * @param    string $capability the name of the capability (e.g. 'view_reports')
      * @return    boolean
      */
-    function isSiteAccessRequiredForCapability( $capability ) {
+    public function isSiteAccessRequiredForCapability( $capability ) {
 
         $capabilitiesThatRequireSiteAccess = \OWA\Core\CoreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
         if (is_array($capabilitiesThatRequireSiteAccess) && in_array($capability, $capabilitiesThatRequireSiteAccess)) {
@@ -195,7 +225,7 @@ class ServiceUser extends \OWA\Core\Base {
      * @param    string|null $siteId  the siteId of the site in question; null throws
      * @return    boolean
      */
-    function isSiteAccessible( $siteId ) {
+    public function isSiteAccessible( $siteId ) {
 
         if ( is_null($siteId) ) {
             throw new \InvalidArgumentException('Cannot tell if site is accessible to user without a siteId (none given).');
@@ -215,18 +245,28 @@ class ServiceUser extends \OWA\Core\Base {
         return false;
     }
 
-    // mark the user as authenticated and populate their capabilities
-    function setAuthStatus($bool) {
+    /**
+     * Mark the user as authenticated and populate their capabilities
+     *
+     * @param  bool $bool not read: the status is always set true
+     * @return void
+     */
+    public function setAuthStatus($bool) {
         $this->is_authenticated = true;
     }
 
-    function isAuthenticated() {
+    /**
+     * @return bool
+     */
+    public function isAuthenticated() {
         return $this->is_authenticated;
     }
 
 
     /**
      * Loads internal $this->assignedSites member
+     *
+     * @return void
      */
     private function loadAssignedSites() {
         \OWA\Core\CoreAPI::debug('loading assigned sites');
@@ -259,6 +299,10 @@ class ServiceUser extends \OWA\Core\Base {
         $this->setAllowedSitesList($site_ids);
     }
 
+    /**
+     * @param  mixed $site_ids the user's owa_site_user rows, as the allowed_sites_list filter left them
+     * @return void
+     */
     private function setAllowedSitesList($site_ids) {
 
         $list = array();
@@ -299,8 +343,8 @@ class ServiceUser extends \OWA\Core\Base {
      *
      * Archived siblings stay out for the reason the loop above gives.
      *
-     * @param  array $list site_id => Site entity
-     * @return array       the same, plus every live sibling Profile
+     * @param  array<\OWA\Module\Base\Entity\Site> $list site_id => Site entity
+     * @return array<\OWA\Module\Base\Entity\Site>       the same, plus every live sibling Profile
      */
     public static function withSiblingProfiles( array $list ) {
 
@@ -386,22 +430,34 @@ class ServiceUser extends \OWA\Core\Base {
         return '';
     }
 
+    /**
+     * @return array<\OWA\Module\Base\Entity\Site> site_id => the Profile
+     */
     public function getAssignedSites() {
 
         return $this->assignedSites;
     }
 
 
+    /**
+     * @return bool
+     */
     public function isOWAAdmin() {
 
         return $this->user->isOWAAdmin();
     }
 
+    /**
+     * @return bool
+     */
     public function isAdmin() {
 
         return $this->user->isAdmin();
     }
 
+    /**
+     * @return true|void
+     */
     public function isAnonymousUser() {
 
         if ( ! $this->user->get('user_id') || $this->getRole() === 'everyone') {

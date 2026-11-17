@@ -23,6 +23,9 @@ namespace OWA\Module\Base\Classes;
  *   command  what to run about it, or null
  *
  * and a section's level is its worst finding's.
+ *
+ * @phpstan-type Finding array{level: string, label: string, detail: string, command: string|null}
+ * @phpstan-type Section array<string, mixed>
  */
 class SystemHealth {
 
@@ -41,7 +44,7 @@ class SystemHealth {
     /**
      * Every section, in the order the screen shows them.
      *
-     * @return array[] key => [title, level, findings[], ...section data]
+     * @return array<string, Section> key => [title, level, findings[], ...section data]
      */
     public static function sections() {
 
@@ -56,7 +59,12 @@ class SystemHealth {
         );
     }
 
-    /** The worst of some levels. */
+    /**
+     * The worst of some levels.
+     *
+     * @param  array<mixed> $levels
+     * @return string red, yellow or green
+     */
     public static function worst( array $levels ) {
 
         foreach ( array( 'red', 'yellow' ) as $level ) {
@@ -70,6 +78,12 @@ class SystemHealth {
         return 'green';
     }
 
+    /**
+     * @param  string               $title
+     * @param  list<Finding>        $findings
+     * @param  array<string, mixed> $extra    the section's own data
+     * @return Section title, level, findings, and $extra
+     */
     private static function section( $title, array $findings, array $extra = array() ) {
 
         return array_merge( array(
@@ -79,6 +93,13 @@ class SystemHealth {
         ), $extra );
     }
 
+    /**
+     * @param  string      $level   red, yellow or green
+     * @param  string      $label
+     * @param  string      $detail
+     * @param  string|null $command
+     * @return Finding
+     */
     private static function finding( $level, $label, $detail, $command = null ) {
 
         return array( 'level' => $level, 'label' => $label, 'detail' => $detail, 'command' => $command );
@@ -88,7 +109,11 @@ class SystemHealth {
     // The sections
     // ---------------------------------------------------------------------
 
-    /** Is cron running schedule-run, and may it run jobs. */
+    /**
+     * Is cron running schedule-run, and may it run jobs.
+     *
+     * @return Section
+     */
     public static function scheduler() {
 
         $findings = array();
@@ -115,7 +140,11 @@ class SystemHealth {
         return self::section( \OWA\Core\CoreAPI::t( 'Scheduler' ), $findings );
     }
 
-    /** Each registered recurring job: when it last ran and how it went, and why it is behind if it is. */
+    /**
+     * Each registered recurring job: when it last ran and how it went, and why it is behind if it is.
+     *
+     * @return Section
+     */
     public static function recurringJobs() {
 
         $rows = array();
@@ -184,7 +213,11 @@ class SystemHealth {
         }
     }
 
-    /** The one-off job queue: what is waiting, running and failed, and whether it is being drained. */
+    /**
+     * The one-off job queue: what is waiting, running and failed, and whether it is being drained.
+     *
+     * @return Section
+     */
     public static function queue() {
 
         $stats    = JobQueue::stats();
@@ -217,7 +250,11 @@ class SystemHealth {
         ) );
     }
 
-    /** The tracker-ingest intake: beacons waiting, dead letters, and any drain that has hung. */
+    /**
+     * The tracker-ingest intake: beacons waiting, dead letters, and any drain that has hung.
+     *
+     * @return Section
+     */
     public static function intake() {
 
         try {
@@ -348,7 +385,7 @@ class SystemHealth {
      * Today and yesterday rather than 24 hours, because the table counts by
      * day, derived as raw's yyyymmdd is.
      *
-     * @return array|null
+     * @return Finding|null
      */
     public static function spamBlocked() {
 
@@ -380,6 +417,8 @@ class SystemHealth {
     /**
      * The Profiles' tracking bundles (PLAN 2.24, 2.30.7): built, published
      * and current, and served so browsers revalidate them.
+     *
+     * @return Section
      */
     public static function bundles() {
 
@@ -479,6 +518,8 @@ class SystemHealth {
      * Raw's size is the server's own estimate (Db::tableSize()) rather than
      * counted: a COUNT(*) over the event table is a full scan. It is
      * approximate and can be a day old, so the screen says "about".
+     *
+     * @return Section
      */
     public static function data() {
 
@@ -545,6 +586,10 @@ class SystemHealth {
         return self::section( \OWA\Core\CoreAPI::t( 'Data' ), $findings, array( 'facts' => $facts ) );
     }
 
+    /**
+     * @param  int|float $n
+     * @return string
+     */
     private static function bytes( $n ) {
 
         foreach ( array( 'GB' => 1073741824, 'MB' => 1048576, 'KB' => 1024 ) as $unit => $size ) {
@@ -558,7 +603,12 @@ class SystemHealth {
         return sprintf( \OWA\Core\CoreAPI::tn( '%d byte', '%d bytes', $n ), $n );
     }
 
-    /** A build hash, short enough to read; 'none' for no build or none recorded. */
+    /**
+     * A build hash, short enough to read; 'none' for no build or none recorded.
+     *
+     * @param  string $hash
+     * @return string
+     */
     private static function shortBuild( $hash ) {
 
         return $hash === '' ? \OWA\Core\CoreAPI::t( 'none' ) : substr( $hash, 0, 12 );
@@ -567,6 +617,8 @@ class SystemHealth {
     /**
      * The installation itself: what is running, and the environment checks
      * the installer runs (Classes\EnvironmentCheck, shared with cmd=instance-info).
+     *
+     * @return Section
      */
     public static function installation() {
 

@@ -50,8 +50,15 @@ class SiteManager extends \OWA\Core\Base {
      *
      * For a second site on a domain that already has one -- a website measured
      * by more than one profile -- use createSite().
+     *
+     * @param  string $domain
+     * @param  string $name
+     * @param  string $description
+     * @param  string $site_family
+     * @param  string $site_id      a pinned identifier; one is minted when empty
+     * @return \OWA\Module\Base\Entity\Site|void nothing when the domain has a site, or the site was not created
      */
-    function createNewSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
+    public function createNewSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
 
         $domain = self::domainOnly( $domain );
 
@@ -96,15 +103,6 @@ class SiteManager extends \OWA\Core\Base {
     const PROFILE_NAME_PREFIX       = 'Observation Profile ';
 
     /**
-     * The Organization every Property hangs from, created on first need.
-     *
-     * There is exactly one until someone builds a screen to make more, which is
-     * why this looks one up rather than taking a name. Installing does not have
-     * to know about it, and neither does adding a site.
-     *
-     * @return string|null organization id
-     */
-    /**
      * The id the install's first Organization gets.
      *
      * A database OWA created for this install is named for its Organization
@@ -121,6 +119,15 @@ class SiteManager extends \OWA\Core\Base {
             ?? \OWA\Core\CoreAPI::entityFactory( 'base.organization' )->generateId( self::DEFAULT_ORGANIZATION_KEY );
     }
 
+    /**
+     * The Organization every Property hangs from, created on first need.
+     *
+     * There is exactly one until someone builds a screen to make more, which is
+     * why this looks one up rather than taking a name. Installing does not have
+     * to know about it, and neither does adding a site.
+     *
+     * @return mixed|void organization id; nothing when it could not be created
+     */
     public function ensureOrganization() {
 
         $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
@@ -174,6 +181,9 @@ class SiteManager extends \OWA\Core\Base {
      * migration's rule too -- the human name describes the website, and the
      * Profile is only one way of watching it.
      *
+     * @param  mixed  $domain
+     * @param  string $name
+     * @param  string $description
      * @return int|string|null property id
      */
     public function ensurePropertyFor( $domain, $name = '', $description = '' ) {
@@ -233,6 +243,9 @@ class SiteManager extends \OWA\Core\Base {
      * Counts what is already there rather than tracking a sequence, so it is
      * correct after a migration, after a delete, and on an install whose
      * Profiles arrived by several different routes.
+     *
+     * @param  int|string $property_id
+     * @return string
      */
     public function nextProfileName( $property_id ) {
 
@@ -249,13 +262,21 @@ class SiteManager extends \OWA\Core\Base {
     }
 
     /**
+     * @param mixed  $domain
+     * @param string $name
+     * @param string $description
+     * @param string $site_family
+     * @param string $site_id      a pinned identifier; one is minted when empty
      * @param string $property_id  Put the Profile in THIS Property, instead of
      *                             deriving one from the domain. This is how a
      *                             second Profile is added to a website, and the
      *                             only way to add one to a Property that has no
      *                             domain to be found by.
+     * @param string $stream_type  a Site::STREAM_* value
+     * @param string $app_id       an app stream's id
+     * @return \OWA\Module\Base\Entity\Site|void nothing when it was not created
      */
-    function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '', $property_id = '', $stream_type = '', $app_id = '' ) {
+    public function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '', $property_id = '', $stream_type = '', $app_id = '' ) {
 
         $domain = self::domainOnly( $domain );
 
@@ -365,6 +386,8 @@ class SiteManager extends \OWA\Core\Base {
      * anywhere. Checking costs one indexed read on a table with a handful of
      * rows.
      *
+     * @param  \OWA\Module\Base\Entity\Site $site
+     * @param  int $attempts
      * @return array{0: string, 1: string} the site_id and its numeric key, or
      *                                     two empty strings if none was free
      */
@@ -417,6 +440,9 @@ class SiteManager extends \OWA\Core\Base {
     /**
      * A domain reduced to the host, so that values differing only by scheme,
      * case or a trailing slash group together.
+     *
+     * @param  mixed $domain
+     * @return string
      */
     public static function normaliseDomain( $domain ) {
 

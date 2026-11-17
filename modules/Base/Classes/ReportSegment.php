@@ -78,17 +78,26 @@ class ReportSegment {
         'session' => 'sessionId',
     );
 
+    /** @var string */
     private $propertyId;
+    /** @var string|null a period name */
     private $period;
+    /** @var string|null yyyymmdd */
     private $startDate;
+    /** @var string|null yyyymmdd */
     private $endDate;
+    /** @var string */
     private $constraints;
 
-    /** Why the segment selected nobody, when that was a refusal rather than a result. */
+    /** @var string|null Why the segment selected nobody, when that was a refusal rather than a result. */
     private $error = null;
 
     /**
-     * @param string $propertyId the Property the report is of
+     * @param string      $propertyId  the Property the report is of
+     * @param string|null $period      a period name
+     * @param string|null $startDate   yyyymmdd
+     * @param string|null $endDate     yyyymmdd
+     * @param string      $constraints the constraint string, as it travels on the URL
      */
     public function __construct( $propertyId, $period, $startDate, $endDate, $constraints = '' ) {
 
@@ -99,13 +108,21 @@ class ReportSegment {
         $this->constraints = (string) $constraints;
     }
 
-    /** Whether the reader has actually asked for a segment. */
+    /**
+     * Whether the reader has actually asked for a segment.
+     *
+     * @return bool
+     */
     public function isApplied() {
 
         return $this->constraints !== '';
     }
 
-    /** The constraint string, as it travels on the URL. */
+    /**
+     * The constraint string, as it travels on the URL.
+     *
+     * @return string
+     */
     public function getConstraints() {
 
         return $this->constraints;
@@ -135,7 +152,7 @@ class ReportSegment {
      * related-metric lists, and costs one aggregate rather than a group-by over
      * every visitor in the period.
      *
-     * @return array {dimensions, metrics} in the shape the picker reads
+     * @return array{dimensions: array<mixed>, metrics: array<mixed>} in the shape the picker reads
      */
     public function options() {
 
@@ -170,7 +187,7 @@ class ReportSegment {
             return $empty;
         }
 
-        $dimensions = (array) ( $rs->relatedDimensions ?? array() );
+        $dimensions = (array) $rs->relatedDimensions;
 
         foreach ( self::EXCLUDED_GROUPS as $group ) {
 
@@ -179,7 +196,7 @@ class ReportSegment {
 
         return array(
             'dimensions' => $dimensions,
-            'metrics'    => (array) ( $rs->relatedMetrics ?? array() ),
+            'metrics'    => (array) $rs->relatedMetrics,
         );
     }
 
@@ -199,7 +216,7 @@ class ReportSegment {
      * than an error.
      *
      * @param string $scope visitor|session
-     * @return array|null
+     * @return list<mixed>|null
      */
     public function subjects( $scope ) {
 
@@ -236,7 +253,7 @@ class ReportSegment {
 
         $ids = array();
 
-        foreach ( (array) ( $results->resultsRows ?? array() ) as $row ) {
+        foreach ( (array) $results->resultsRows as $row ) {
 
             if ( isset( $row[ $dimension ]['value'] ) ) {
 
@@ -265,7 +282,7 @@ class ReportSegment {
      * so a report and one beside it cannot disagree about what "last thirty
      * days" means.
      *
-     * @return array|null
+     * @return array{start: int|string, end: int|string}|null
      */
     public function bounds() {
 

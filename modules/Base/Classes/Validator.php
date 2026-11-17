@@ -37,21 +37,21 @@ namespace OWA\Module\Base\Classes;
       * 
       * @var boolean
       */
-     var $hasErrors;
+     public $hasErrors;
      
      /**
       * Error Msgs produced by Validations
       * 
-      * @var array
+      * @var array<string, string|array<string, string>|null>
       */
-     var $errorMsgs;
+     public $errorMsgs;
      
      /**
       * Validations to be performed in next validation run
       * 
-      * @var array
+      * @var list<array{name: string, obj: \OWA\Core\Validation\Validation}>
       */
-     var $validations;
+     public $validations;
           
      /**
       * Adds a validation to be performed in next run
@@ -59,9 +59,10 @@ namespace OWA\Module\Base\Classes;
       * @param string    $name         the name to be given to the validation and its results
       * @param mixed      $value        the data value that is to be validated
       * @param string     $validation the name of the validation to run
-      * @param array     $conf         configuration array for the object being created
+      * @param array<string, mixed> $conf configuration array for the object being created
+      * @return null
       */
-     function addValidation($name, $value, $validation, $conf) {
+     public function addValidation($name, $value, $validation, $conf) {
                 
         // Construct validatation obj
         $obj = $this->validationFactory($validation, $conf);
@@ -69,21 +70,32 @@ namespace OWA\Module\Base\Classes;
         $obj->setConfigArray($conf);
         
         $this->setValidation( $name, $obj );
+
+        return null;
     }
     
-    function setValidation($name, $obj) {
+    /**
+     * @param  string $name
+     * @param  \OWA\Core\Validation\Validation $obj
+     * @return null
+     */
+    public function setValidation($name, $obj) {
         
         // add name to validator
         $obj->setName($name);
         $this->validations[] = array('name' => $name, 'obj' => $obj);
+
+        return null;
     }
     
     /**
      * Factory method for producing validation objects
      * 
+     * @param  string $class_file
+     * @param  array<string, mixed> $conf
      * @return Object
      */
-    function validationFactory($class_file, $conf = array()) {
+    public function validationFactory($class_file, $conf = array()) {
         
         return \OWA\Core\CoreAPI::validationFactory($class_file, $conf);
     }
@@ -91,8 +103,9 @@ namespace OWA\Module\Base\Classes;
     /**
      * Performs a validation run
      * 
+     * @return void
      */
-    function doValidations() {
+    public function doValidations() {
         
         foreach ($this->validations as $k) {
             \OWA\Core\CoreAPI::debug('Validating '.$k['name']. ' with '. get_class( $k['obj'] ));
@@ -121,7 +134,7 @@ namespace OWA\Module\Base\Classes;
      * 
      * @return boolean
      */
-    function isValid() {
+    public function isValid() {
         
         if ($this->hasErrors == true):
             return false;
@@ -133,9 +146,9 @@ namespace OWA\Module\Base\Classes;
     /**
      * Accessor method for retrieving the error msgs produced by a validation run
      * 
-     * @return array
+     * @return array<string, string|array<string, string>|null>
      */
-    function getErrorMsgs() {
+    public function getErrorMsgs() {
         
         return $this->errorMsgs;
     }

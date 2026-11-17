@@ -33,6 +33,10 @@ namespace OWA\Module\Base\Classes;
  */
 
 class UserManager extends \OWA\Core\Base {
+    /**
+     * @param  array<string, mixed> $user_params user_id, role, email_address, real_name, and password when one is set
+     * @return \OWA\Module\Base\Entity\User|false
+     */
     public function createNewUser($user_params) {
 
         if ( isset( $user_params['password'] ) ) {
@@ -59,6 +63,10 @@ class UserManager extends \OWA\Core\Base {
 
     }
 
+    /**
+     * @param  array<string, mixed> $user_params password, and temp_passkey or user_id
+     * @return \OWA\Module\Base\Entity\User|false
+     */
     public function updateUserPassword($user_params)
     {
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
@@ -107,6 +115,9 @@ class UserManager extends \OWA\Core\Base {
      * keeps their account and loses their site access, which is recoverable by
      * re-granting. The other order can leave access attached to nothing. The
      * same goes for their application passwords.
+     *
+     * @param  string $user_id
+     * @return bool
      */
     public function deleteUser($user_id) {
 
@@ -139,6 +150,7 @@ class UserManager extends \OWA\Core\Base {
      * Remove every site grant held by one user row.
      *
      * @param  int|string $id  the user's own row id, not their user_id
+     * @return void
      */
     private function deleteSiteAccessFor( $id ) {
 
