@@ -40,7 +40,7 @@ class Browscap extends \OWA\Core\Base {
     /**
      * Browscap Record for current User agent
      *
-     * @var mixed
+     * @var \UAParser\Result\Client
      */
     public $browser;
 
@@ -51,6 +51,9 @@ class Browscap extends \OWA\Core\Base {
      */
     public $ua;
 
+    /**
+     * @param string $ua
+     */
     public function __construct( $ua = '' ) {
 
         parent::__construct();
@@ -64,6 +67,12 @@ class Browscap extends \OWA\Core\Base {
 
     }
 
+    /**
+     * Parse $this->ua; $user_agent is not read.
+     *
+     * @param  string $user_agent
+     * @return \UAParser\Result\Client
+     */
     public function lookup( $user_agent ) {
 
         /*
@@ -127,31 +136,50 @@ class Browscap extends \OWA\Core\Base {
         return null;
     }
 
+    /**
+     * @param  string $name a property of the parse: ua, os, device or originalUserAgent
+     * @return mixed that property, a different type for each
+     */
     public function get( $name ) {
 
         return $this->browser->$name;
     }
 
+    /**
+     * @return string
+     */
     public function getUaFamily() {
 
         return $this->browser->ua->family;
     }
 
+    /**
+     * @return string
+     */
     public function getUaFamilyVersion() {
 
         return $this->browser->ua->toVersion();
     }
 
+    /**
+     * @return string
+     */
     public function getUaVersion() {
 
         return $this->browser->ua->toVersion();
     }
 
+    /**
+     * @return string
+     */
     public function getOsFamily() {
 
         return $this->browser->os->family;
     }
 
+    /**
+     * @return string
+     */
     public function getOsVersion() {
 
         return $this->browser->os->toVersion();
@@ -170,13 +198,18 @@ class Browscap extends \OWA\Core\Base {
      * and storing it is not -- absence is NULL in owa_event_raw.
      */
 
+    /**
+     * @return string
+     */
     public function getDeviceFamily() {
 
-        return isset( $this->browser->device->family )
-            ? (string) $this->browser->device->family
-            : '';
+        // Always set: 'Other' when no rule matched.
+        return $this->browser->device->family;
     }
 
+    /**
+     * @return string
+     */
     public function getDeviceBrand() {
 
         return isset( $this->browser->device->brand )
@@ -184,6 +217,9 @@ class Browscap extends \OWA\Core\Base {
             : '';
     }
 
+    /**
+     * @return string
+     */
     public function getDeviceModel() {
 
         return isset( $this->browser->device->model )

@@ -23,6 +23,8 @@ namespace OWA\Module\Base\Classes;
  *
  * Its own SQL, not the entity layer, so a revoked password is never served
  * from the entity cache.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
  */
 class AppPasswords {
 
@@ -74,7 +76,7 @@ class AppPasswords {
      * @param  string $name
      * @param  string $scope SCOPE_READ or SCOPE_FULL. Read when not given, as
      *                       the dialog's first choice and cmd=app-password-create are.
-     * @return array|false token, lookup_id, name, scope, created_at
+     * @return array{token: string, lookup_id: string, name: string, scope: string, created_at: int}|false
      */
     public static function create( $user_id, $name, $scope = self::SCOPE_READ ) {
 
@@ -120,7 +122,7 @@ class AppPasswords {
      * The password a token belongs to, or null.
      *
      * @param  string $token
-     * @return array|null the row, without its hash
+     * @return Row|null the row, without its hash
      */
     public static function verify( $token ) {
 
@@ -161,7 +163,7 @@ class AppPasswords {
      * A user's passwords, newest first.
      *
      * @param  string $user_id
-     * @return array[] rows, without their hashes
+     * @return list<Row> rows, without their hashes
      */
     public static function forUser( $user_id ) {
 
@@ -241,13 +243,22 @@ class AppPasswords {
             array( $now, substr( (string) $ip, 0, 45 ), (string) $lookup_id, $now - self::USE_THROTTLE ) );
     }
 
-    /** The table: the entity's, or a test's scratch copy. */
+    /**
+     * The table: the entity's, or a test's scratch copy.
+     *
+     * @return string
+     */
     public static function table() {
 
         return self::$table ?: \OWA\Core\CoreAPI::entityFactory( 'base.app_password' )->getTableName();
     }
 
-    /** HMAC of a whole token, hex. */
+    /**
+     * HMAC of a whole token, hex.
+     *
+     * @param  string $token
+     * @return string
+     */
     private static function hash( $token ) {
 
         return hash_hmac( 'sha256', self::HMAC_CONTEXT . $token, self::key() );
@@ -256,13 +267,20 @@ class AppPasswords {
     /**
      * The HMAC key. Empty on an install with no auth key, and then nothing is
      * created or verified: an HMAC with an empty key protects nothing.
+     *
+     * @return string
      */
     private static function key() {
 
         return (string) \OWA\Core\CoreAPI::getSalt( 'auth' );
     }
 
-    /** $length characters from ALPHABET, each uniformly at random. */
+    /**
+     * $length characters from ALPHABET, each uniformly at random.
+     *
+     * @param  int $length
+     * @return string
+     */
     private static function randomString( $length ) {
 
         $max = strlen( self::ALPHABET ) - 1;
@@ -276,6 +294,9 @@ class AppPasswords {
         return $out;
     }
 
+    /**
+     * @return \OWA\Core\Db
+     */
     private static function db() {
 
         return \OWA\Core\CoreAPI::dbSingleton();

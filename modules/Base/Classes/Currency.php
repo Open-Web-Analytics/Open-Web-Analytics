@@ -54,7 +54,12 @@ class Currency {
         return preg_match( '/^[A-Z]{3}$/', $code ) ? $code : '';
     }
 
-    /** How many decimal places a major unit of this currency has. */
+    /**
+     * How many decimal places a major unit of this currency has.
+     *
+     * @param  string $code
+     * @return int
+     */
     public static function exponent( $code ) {
 
         $code = self::normalize( $code );
