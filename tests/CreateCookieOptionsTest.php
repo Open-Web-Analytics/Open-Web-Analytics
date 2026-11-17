@@ -35,6 +35,60 @@ final class CreateCookieOptionsTest extends TestCase
         );
     }
 
+    /** HTTPS signals Lib::isHttps() reads, cleared for a test and put back after it. */
+    private const HTTPS_KEYS = ['HTTPS', 'HTTP_X_FORWARDED_PROTO', 'HTTP_X_FORWARDED_PORT', 'SERVER_PORT'];
+
+    private function overServer(array $server, callable $fn)
+    {
+        $was = [];
+
+        foreach (self::HTTPS_KEYS as $k) {
+            $was[$k] = $_SERVER[$k] ?? null;
+            unset($_SERVER[$k]);
+        }
+
+        $_SERVER = $server + $_SERVER;
+
+        try {
+            return $fn();
+        } finally {
+            foreach ($was as $k => $v) {
+                unset($_SERVER[$k]);
+                if ($v !== null) {
+                    $_SERVER[$k] = $v;
+                }
+            }
+        }
+    }
+
+    /** $secure true marks the cookie Secure on a plain HTTP request. */
+    public function testSecureWhenAskedOverHttp(): void
+    {
+        $this->overServer([], function () {
+            $this->assertTrue(CoreAPI::cookieIsSecure(true));
+            $this->assertFalse(CoreAPI::cookieIsSecure(false));
+        });
+    }
+
+    /** On HTTPS every cookie is Secure, whatever $secure says. */
+    public function testSecureOverHttpsWhateverAsked(): void
+    {
+        $this->overServer(['HTTPS' => 'on'], function () {
+            $this->assertTrue(CoreAPI::cookieIsSecure(false));
+            $this->assertTrue(CoreAPI::cookieIsSecure(true));
+        });
+    }
+
+    /** createCookie() sets the cookie with that answer, not with Lib::isHttps() alone. */
+    public function testCreateCookieAsksIt(): void
+    {
+        $m   = new ReflectionMethod(CoreAPI::class, 'createCookie');
+        $src = implode('', array_slice(file($m->getFileName()), $m->getStartLine() - 1, $m->getEndLine() - $m->getStartLine() + 1));
+
+        $this->assertStringContainsString('self::cookieIsSecure($secure)', $src);
+        $this->assertStringNotContainsString('Lib::isHttps()', $src);
+    }
+
     /** Every caller in the code means the root path, and the default is it. */
     public function testTheDefaultPathIsTheRoot(): void
     {
