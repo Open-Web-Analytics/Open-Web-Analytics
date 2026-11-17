@@ -1940,7 +1940,7 @@ class CoreAPI {
              \OWA\Core\CoreAPI::getSetting( 'base', 'queue_incoming_tracking_events' ) ) {
 
             $q = \OWA\Core\CoreAPI::getEventQueue( 'incoming_tracking_events' );
-            \OWA\Core\CoreAPI::debug('Queuing '.$event->getEventType().' event with properties: '.print_r($event->getProperties(), true ) );
+            \OWA\Core\CoreAPI::debug( 'Queuing ' . $event->getEventType() . ' event with properties: ' . implode( ', ', array_keys( (array) $event->getProperties() ) ) );
             $q->sendMessage( $event );
 
         } else {
@@ -2245,7 +2245,7 @@ class CoreAPI {
         $params = $service->request->getAllOwaParams();
 
         if ($init != true) {
-            \OWA\Core\CoreAPI::debug('Handling request with params: '. print_r($params, true));
+            \OWA\Core\CoreAPI::debug( 'Handling request with params: ' . implode( ', ', array_keys( (array) $params ) ) );
         }
 
         /*
@@ -2290,7 +2290,7 @@ class CoreAPI {
         
         $params = $service->request->getAllOwaParams();
         
-        \OWA\Core\CoreAPI::debug('Handling REST request with params: '. print_r($params, true));
+        \OWA\Core\CoreAPI::debug( 'Handling REST request with params: ' . implode( ', ', array_keys( (array) $params ) ) );
         
         $action = \OWA\Core\CoreAPI::getRequestParam('do');
 

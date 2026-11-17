@@ -161,7 +161,6 @@ class RequestContainer {
 
         // create request params and type
         $params = array();
-		\OWA\Core\CoreAPI::debug('request container says params are:');
 		if ( array_key_exists('REQUEST_METHOD', $_SERVER) ) {
 				
 				$this->request_type = $_SERVER['REQUEST_METHOD'];
@@ -169,7 +168,6 @@ class RequestContainer {
 			if ( $_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'DELETE' ) {
 			
 				parse_str( trim(file_get_contents("php://input") ), $post_vars );
-				\OWA\Core\CoreAPI::debug($post_vars);
 				$params = array_merge( $_GET, $post_vars);
 				
 			} else if ( $_SERVER['REQUEST_METHOD'] === 'GET' ) {
@@ -184,7 +182,8 @@ class RequestContainer {
 			
 			$this->current_url = \OWA\Core\Lib::get_current_url();
 			
-			\OWA\Core\CoreAPI::debug($params);
+			// Names only: a value can be a password, a reset key or a cookie.
+			\OWA\Core\CoreAPI::debug( 'Request params: ' . implode( ', ', array_keys( (array) $params ) ) );
 			
 		} else {
 			
@@ -395,7 +394,7 @@ class RequestContainer {
         // replace owa params
         $this->owa_params = $params;
         //debug
-        \OWA\Core\CoreAPI::debug('decoded OWA params: '. print_r($this->owa_params, true));
+        \OWA\Core\CoreAPI::debug( 'Decoded OWA params: ' . implode( ', ', array_keys( (array) $this->owa_params ) ) );
         return;
 
     }
