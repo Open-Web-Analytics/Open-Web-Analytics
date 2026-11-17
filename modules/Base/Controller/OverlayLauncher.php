@@ -202,26 +202,32 @@ class OverlayLauncher extends \OWA\Core\Controller {
         $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $propertyId );
         $cube  = $db->tableExists( $table );
 
-        // The page's clicks in the period, for the Profiles named.
-        $where = function ( array $ids ) use ( $db, $tp, $path, $query ) {
+        // The page's clicks in the period, for the Profiles named: [ SQL, bindings ].
+        $where = function ( array $ids ) use ( $tp, $path, $query ) {
 
-            $quoted = array_map( function ( $s ) use ( $db ) { return "'" . $db->prepare( $s ) . "'"; }, $ids );
+            $params   = array_map( 'strval', array_values( $ids ) );
+            $params[] = (string) $path;
 
-            return sprintf(
-                "site_id IN (%s) AND event_type = 'click' AND yyyymmdd BETWEEN %d AND %d AND page_path = '%s' AND %s",
-                implode( ', ', $quoted ),
+            if ( $query !== null && $query !== '' ) {
+
+                $params[] = (string) $query;
+            }
+
+            return [ sprintf(
+                "site_id IN (%s) AND event_type = 'click' AND yyyymmdd BETWEEN %d AND %d AND page_path = ? AND %s",
+                \OWA\Core\Db::placeholders( count( $ids ) ),
                 (int) $tp->startDate->get( 'yyyymmdd' ), (int) $tp->endDate->get( 'yyyymmdd' ),
-                $db->prepare( $path ),
                 $query === null ? '1 = 1'
-                    : ( $query === '' ? "(page_query IS NULL OR page_query = '')"
-                                      : sprintf( "page_query = '%s'", $db->prepare( $query ) ) ) );
+                    : ( $query === '' ? "(page_query IS NULL OR page_query = '')" : 'page_query = ?' ) ), $params ];
         };
 
         if ( $cube && count( $site_ids ) > 1 ) {
 
+            list( $sql, $params ) = $where( $site_ids );
+
             $row = $db->get_row( sprintf(
                 'SELECT site_id FROM %s WHERE %s GROUP BY site_id ORDER BY COUNT(*) DESC LIMIT 1',
-                $table, $where( $site_ids ) ) );
+                $table, $sql ), $params );
 
             if ( is_array( $row ) && ! empty( $row['site_id'] ) ) {
 
@@ -244,9 +250,11 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
             if ( $cube ) {
 
+                list( $sql, $params ) = $where( array( $site_id ) );
+
                 $rows = $db->get_results( sprintf(
                     'SELECT page_location FROM %s WHERE %s GROUP BY page_location ORDER BY COUNT(*) DESC LIMIT %d',
-                    $table, $where( array( $site_id ) ), self::CANDIDATES ) );
+                    $table, $sql, self::CANDIDATES ), $params );
 
                 $domains = \OWA\Module\Base\Classes\ProfileDomains::of( array( $site_id ) );
 

@@ -2943,10 +2943,8 @@ class TrackingEventHelpers {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $row = $db->get_row( sprintf(
-            "SELECT revenue FROM %s WHERE site_id = '%s' AND transaction_id = '%s' AND event_type = 'purchase' LIMIT 1",
-            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(),
-            $db->prepare( $site ),
-            $db->prepare( $transaction ) ) );
+            "SELECT revenue FROM %s WHERE site_id = ? AND transaction_id = ? AND event_type = 'purchase' LIMIT 1",
+            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ), [ $site, $transaction ] );
 
         $revenue = is_array( $row ) ? ( $row['revenue'] ?? null ) : ( is_object( $row ) ? ( $row->revenue ?? null ) : null );
 

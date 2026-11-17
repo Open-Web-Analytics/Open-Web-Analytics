@@ -87,10 +87,9 @@ class Update039 extends \OWA\Core\Update {
             foreach ( $this->columns() as $column => $type ) {
 
                 $db->query( sprintf(
-                    "UPDATE %s SET %s = '%s' WHERE %s IS NULL",
-                    $table, $column,
-                    $db->prepare( \OWA\Module\Base\Classes\V2Event::UNRESOLVED ),
-                    $column ) );
+                    'UPDATE %s SET %s = ? WHERE %s IS NULL',
+                    $table, $column, $column ),
+                    [ \OWA\Module\Base\Classes\V2Event::UNRESOLVED ] );
 
                 if ( $db->modifyColumn( $table, $column, $type . ' NOT NULL' ) === false ) {
 

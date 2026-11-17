@@ -76,10 +76,8 @@ class PurchaseDeduplication {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $found = $db->get_results( sprintf(
-            "SELECT id FROM %s WHERE site_id = '%s' AND transaction_id = '%s' AND event_type = 'purchase' LIMIT 1",
-            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(),
-            $db->prepare( $site ),
-            $db->prepare( $transaction ) ) );
+            "SELECT id FROM %s WHERE site_id = ? AND transaction_id = ? AND event_type = 'purchase' LIMIT 1",
+            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ), [ $site, $transaction ] );
 
         return (bool) $found;
     }

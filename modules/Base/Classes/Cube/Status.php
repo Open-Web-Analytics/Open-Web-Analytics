@@ -574,8 +574,9 @@ class Status {
      */
     protected static function countsByDay( $table, $from, $to, $sites ) {
 
-        $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $where = sprintf( 'yyyymmdd >= %d AND yyyymmdd <= %d', (int) $from, (int) $to );
+        $db     = \OWA\Core\CoreAPI::dbSingleton();
+        $where  = sprintf( 'yyyymmdd >= %d AND yyyymmdd <= %d', (int) $from, (int) $to );
+        $params = [];
 
         if ( $sites !== null ) {
 
@@ -584,20 +585,14 @@ class Status {
                 return array();
             }
 
-            $quoted = array();
-
-            foreach ( $sites as $site_id ) {
-
-                $quoted[] = "'" . $db->prepare( $site_id ) . "'";
-            }
-
-            $where .= ' AND site_id IN (' . implode( ', ', $quoted ) . ')';
+            $params = array_map( 'strval', array_values( $sites ) );
+            $where .= ' AND site_id IN (' . \OWA\Core\Db::placeholders( count( $params ) ) . ')';
         }
 
         $out = array();
 
         foreach ( (array) $db->get_results( sprintf(
-                'SELECT yyyymmdd, COUNT(*) AS n FROM %s WHERE %s GROUP BY yyyymmdd', $table, $where ) ) as $row ) {
+                'SELECT yyyymmdd, COUNT(*) AS n FROM %s WHERE %s GROUP BY yyyymmdd', $table, $where ), $params ) as $row ) {
 
             $out[ (int) $row['yyyymmdd'] ] = (int) $row['n'];
         }

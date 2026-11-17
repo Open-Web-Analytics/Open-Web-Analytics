@@ -707,13 +707,15 @@ namespace OWA\Module\Base\Classes;
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
+        $params = [];
+
         $sql = sprintf(
             "SELECT module, name, value FROM %s WHERE scope_type = 'install' AND ( %s )%s",
             $entity->getTableName(),
-            $this->eagerPredicate( $db ),
-            $this->constantExclusion( $db ) );
+            $this->eagerPredicate( $params ),
+            $this->constantExclusion( $params ) );
 
-        $rows = (array) $db->get_results( $sql );
+        $rows = (array) $db->get_results( $sql, $params );
 
         $settings = array();
 
@@ -887,8 +889,8 @@ namespace OWA\Module\Base\Classes;
          * migration can answer from a cache of the table as it was before --
          * see Update043's note on the same hazard on the write side.
          */
-        $row = $db->get_row( sprintf( "SELECT settings FROM %s WHERE id = '%s'",
-            $legacy->getTableName(), $db->prepare( (string) $this->config_id ) ) );
+        $row = $db->get_row( sprintf( 'SELECT settings FROM %s WHERE id = ?',
+            $legacy->getTableName() ), [ (string) $this->config_id ] );
 
         if ( ! $row ) {
 
@@ -1740,10 +1742,10 @@ namespace OWA\Module\Base\Classes;
       * ship declarations, so there will always be modules resolved wholesale --
       * and this will always have to hold their constants out of it.
       *
-      * @param  object $db for escaping
+      * @param  array $params the statement's bindings, appended to
       * @return string a leading " AND NOT ( ... )", or ''
       */
-     private function constantExclusion( $db ) {
+     private function constantExclusion( array &$params ) {
 
          $parts = array();
 
@@ -1754,15 +1756,13 @@ namespace OWA\Module\Base\Classes;
                  continue;
              }
 
-             $quoted = array();
+             $parts[]  = sprintf( '( module = ? AND name IN ( %s ) )', \OWA\Core\Db::placeholders( count( $keys ) ) );
+             $params[] = (string) $module;
 
              foreach ( array_keys( $keys ) as $key ) {
 
-                 $quoted[] = "'" . $db->prepare( (string) $key ) . "'";
+                 $params[] = (string) $key;
              }
-
-             $parts[] = sprintf( "( module = '%s' AND name IN ( %s ) )",
-                 $db->prepare( (string) $module ), implode( ', ', $quoted ) );
          }
 
          if ( ! $parts ) {
@@ -1833,45 +1833,41 @@ namespace OWA\Module\Base\Classes;
       * modules that HAVE declared, and is the right place to surface the
       * warning for those that have not.
       *
-      * @param  object $db for escaping
+      * @param  array $params the statement's bindings, appended to
       * @return string
       */
-     private function eagerPredicate( $db ) {
+     private function eagerPredicate( array &$params ) {
 
          $parts = array();
 
-         $names = array();
+         $names = self::mechanicalSettingNames();
 
-         foreach ( self::mechanicalSettingNames() as $name ) {
+         $parts[] = sprintf( 'name IN ( %s )', \OWA\Core\Db::placeholders( count( $names ) ) );
 
-             $names[] = "'" . $db->prepare( $name ) . "'";
+         foreach ( $names as $name ) {
+
+             $params[] = (string) $name;
          }
-
-         $parts[] = sprintf( 'name IN ( %s )', implode( ', ', $names ) );
 
          foreach ( $this->eagerSettings() as $module => $keys ) {
 
-             $quoted = array();
+             $parts[]  = sprintf( '( module = ? AND name IN ( %s ) )', \OWA\Core\Db::placeholders( count( $keys ) ) );
+             $params[] = (string) $module;
 
              foreach ( $keys as $key ) {
 
-                 $quoted[] = "'" . $db->prepare( $key ) . "'";
+                 $params[] = (string) $key;
              }
-
-             $parts[] = sprintf( "( module = '%s' AND name IN ( %s ) )",
-                 $db->prepare( $module ), implode( ', ', $quoted ) );
          }
 
          if ( $this->declared_modules ) {
 
-             $declared = array();
+             $parts[] = sprintf( 'module NOT IN ( %s )', \OWA\Core\Db::placeholders( count( $this->declared_modules ) ) );
 
              foreach ( array_keys( $this->declared_modules ) as $module ) {
 
-                 $declared[] = "'" . $db->prepare( $module ) . "'";
+                 $params[] = (string) $module;
              }
-
-             $parts[] = sprintf( 'module NOT IN ( %s )', implode( ', ', $declared ) );
 
          } else {
 
@@ -2041,16 +2037,11 @@ namespace OWA\Module\Base\Classes;
 
          $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
-         $quoted = array();
-
-         foreach ( array_keys( $this->declared_modules ) as $module ) {
-
-             $quoted[] = "'" . $db->prepare( (string) $module ) . "'";
-         }
+         $modules = array_map( 'strval', array_keys( $this->declared_modules ) );
 
          $rows = (array) $db->get_results( sprintf(
              "SELECT module, name FROM %s WHERE scope_type = 'install' AND module IN ( %s )",
-             $entity->getTableName(), implode( ', ', $quoted ) ) );
+             $entity->getTableName(), \OWA\Core\Db::placeholders( count( $modules ) ) ), $modules );
 
          $problems = array();
 
