@@ -2,10 +2,9 @@
  * Overlay (heatmap) real-render characterization.
  *
  * WHY THIS EXISTS
- * The heatmap/player overlay is the single largest untested jQuery-dependent
- * surface in OWA (Heatmap.js + Player.js, ~950 lines, dozens of jQuery calls).
- * It runs on the *tracker* code path, which is on jQuery 3.x. This test pins the
- * fact that jQuery 3.x can still build the overlay DOM at runtime.
+ * The heatmap overlay runs on the *tracked* page, built with DOM APIs alone
+ * (no jQuery on the tracker side). This test pins that a real browser builds
+ * the overlay from the URL anchor, on the shipped tracker bundle and chunk.
  *
  * WHAT IT DOES
  * The overlay never renders on an OWA page -- it renders on the *tracked* page.
@@ -15,14 +14,12 @@
  * real browser to. The tracker's checkForOverlaySession() decodes the anchor
  * and, via OWA_instance.startOverlaySession(), dynamic-imports Heatmap.js and
  * calls generate(): showControlPanel() builds #owa_overlay + its controls and
- * createCanvas() appends #owa_heatmap -- all through jQuery 3.x.
+ * createCanvas() appends #owa_heatmap.
  *
  * WHAT IT ASSERTS (and what it deliberately does not)
- * Only the synchronous, deterministic jQuery-built DOM: the panel, which
- * carries the OWA logo and the Stats toggle, and the canvas element. The
- * subsequent click-data fetch is an async call against live data; it is not
- * part of the "does jQuery 3.x still build the overlay" contract and is not
- * asserted here. It is covered on its own, cross-origin and against a real API,
+ * Only the deterministic DOM: the panel, which carries the OWA logo and the
+ * Stats toggle, and the canvas element. The click-data fetch, and that points
+ * land where the clicks were, are covered cross-origin and against a real API
  * by overlay-cross-origin.spec.js.
  */
 
@@ -51,7 +48,7 @@ const HARNESS_HTML = fs.readFileSync(
     path.join(__dirname, 'overlay_harness.html'), 'utf8'
 );
 
-test.describe('heatmap overlay renders on the tracker path (jQuery 3.x)', () => {
+test.describe('heatmap overlay renders on the tracker path', () => {
     let pageErrors;
     let overlayCssResponses;
 
@@ -91,23 +88,30 @@ test.describe('heatmap overlay renders on the tracker path (jQuery 3.x)', () => 
      * window.
      */
     test('the tracker builds the overlay panel from the URL anchor: the logo and Stats', async ({ page }) => {
-        // showControlPanel() appends #owa_overlay via jQuery. The dynamic import
-        // of Heatmap.js + its jQuery work is async, so wait on the element
+        // The dynamic import of Heatmap.js is async, so wait on the element
         // rather than asserting synchronously.
         await expect(page.locator('#owa_overlay')).toBeVisible({ timeout: 20_000 });
 
         await expect(page.locator('#owa_overlay_logo')).toHaveCount(1);
-        await expect(page.locator('#owa_overlay .owa_overlay_control')).toHaveCount(1);
-        await expect(page.locator('#owa_overlay_stats_toggle')).toHaveText('Stats');
+        await expect(page.locator('#owa_overlay').getByRole('button')).toHaveCount(1);
+
+        const stats = page.getByRole('button', { name: 'Stats' });
+        await expect(stats).toHaveAttribute('aria-expanded', 'false');
         await expect(page.locator('#owa_overlay_stats')).toBeHidden();
 
-        await page.click('#owa_overlay_stats_toggle');
+        await stats.click();
+        await expect(stats).toHaveAttribute('aria-expanded', 'true');
         await expect(page.locator('#owa_overlay_stats')).toBeVisible();
-        await expect(page.locator('#owa_overlay_stats th').first()).toHaveText('Clicks');
+        await expect(page.getByRole('rowheader').first()).toHaveText('Clicks');
+
+        // From the keyboard too.
+        await stats.focus();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#owa_overlay_stats')).toBeHidden();
     });
 
     test('the heatmap canvas element is created', async ({ page }) => {
-        // createCanvas() appends <canvas id="owa_heatmap"> via jQuery, and the
+        // createCanvas() appends <canvas id="owa_heatmap">, and the
         // Heatmap constructor getContext('2d')s it -- proves the canvas exists
         // and is a real 2d-context canvas.
         const canvas = page.locator('canvas#owa_heatmap');

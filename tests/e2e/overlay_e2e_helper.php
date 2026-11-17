@@ -410,7 +410,7 @@ function seedRecording(string $site_id, string $recording_id): void
         'page_location' => OVERLAY_DOMAIN . OVERLAY_PAGE_PATH,
         'page_path'     => OVERLAY_PAGE_PATH,
         'duration_ms'   => 1000,
-    ], [[0, 'm', 10, 20], [500, 'm', 20, 20]]);
+    ], [[0, 'm', 10, 20], [500, 'm', 20, 20], [100, 'c', 30, 40, 'a', 'overlay-anchor', '']]);
 }
 
 function countRows(string $table, string $site_id): int
