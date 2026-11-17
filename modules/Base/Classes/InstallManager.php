@@ -282,7 +282,7 @@ class InstallManager extends \OWA\Core\Base {
         }
         
         // load config from DB
-        $c->load( $this->c->get( 'base', 'configuration_id' ) );
+        $c->load( \OWA\Core\CoreAPI::getSetting( 'base', 'configuration_id' ) );
         
         // is the install flag set
         if ( ! \OWA\Core\CoreAPI::getSetting('base', 'install_complete') ) {
