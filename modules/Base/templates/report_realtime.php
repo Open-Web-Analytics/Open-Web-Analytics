@@ -113,9 +113,9 @@ $owa_realtimeApi = $view->makeApiLink( array(
 <script>
 jQuery( function () {
     new OWA.realtime( document.getElementById( 'owa_realtime' ), {
-        apiUrl:   <?php echo json_encode( $owa_realtimeApi ); ?>,
-        mapUrl:   <?php echo json_encode( $view->makeImageLink( 'base/i/world-110m.svg' ) ); ?>,
-        timezone: <?php echo json_encode( (string) $view->get( 'realtime_timezone' ) ); ?>
+        apiUrl:   <?php echo $view->scriptJson( $owa_realtimeApi ); ?>,
+        mapUrl:   <?php echo $view->scriptJson( $view->makeImageLink( 'base/i/world-110m.svg' ) ); ?>,
+        timezone: <?php echo $view->scriptJson( (string) $view->get( 'realtime_timezone' ) ); ?>
     } ).start();
 } );
 </script>

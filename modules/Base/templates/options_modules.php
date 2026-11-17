@@ -28,7 +28,7 @@
         <TD class="">
         <?php if ($v['name'] != 'base'): ?>
         <?php if (! empty($v['activated_by'])): ?>
-            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Active while %s is set' ), '<code>' . htmlspecialchars( (string) $v['activated_by'], ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?>
+            <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Active while %s is set' ), '<code>' . $view->escape( (string) $v['activated_by'] ) . '</code>' ); ?>
         <?php elseif (isset($v['status']) && $v['status'] == 'active'): ?>
             <a href="<?php echo $view->makeLink( array('do' => 'base.moduleDeactivate', 'module' => $v['name']), false, false, false, true );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Deactivate' ) ); ?></a>
         <?php else: ?>

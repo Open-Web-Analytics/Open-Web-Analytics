@@ -95,7 +95,7 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
         window.location.href = url.toString();
     }
 
-    var recordings = <?php echo json_encode( $owa_table, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
+    var recordings = <?php echo $view->scriptJson( $owa_table ); ?>;
 
     if ( recordings && recordings.resultsRows && recordings.resultsRows.length ) {
 
@@ -111,9 +111,9 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
     }
 
     var filter = {
-        dimensions: <?php echo json_encode( $owa_filter_dimensions ); ?>,
-        metrics: <?php echo json_encode( $owa_filter_metrics ); ?>,
-        constraints: <?php echo json_encode( (string) $view->get('domstreams_constraints') ); ?>
+        dimensions: <?php echo $view->scriptJson( $owa_filter_dimensions ); ?>,
+        metrics: <?php echo $view->scriptJson( $owa_filter_metrics ); ?>,
+        constraints: <?php echo $view->scriptJson( (string) $view->get('domstreams_constraints') ); ?>
     };
 
     if ( filter.dimensions ) {

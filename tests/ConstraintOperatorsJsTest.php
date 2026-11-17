@@ -31,10 +31,10 @@ final class ConstraintOperatorsJsTest extends TestCase
             $js = (string) ob_get_clean();
         }
 
-        $this->assertStringContainsString(
-            'OWA.config.constraint_operators = '
-          . json_encode( array_keys( ResultSetManager::CONSTRAINT_OPERATORS ) ) . ';',
-            $js );
+        $this->assertMatchesRegularExpression( '/^OWA\.config\.constraint_operators = (.*);$/m', $js );
+        preg_match( '/^OWA\.config\.constraint_operators = (.*);$/m', $js, $m );
+
+        $this->assertSame( array_keys( ResultSetManager::CONSTRAINT_OPERATORS ), json_decode( $m[1], true ) );
     }
 
     public function testTheGridReadsTheOperatorsFromThePage(): void

@@ -109,7 +109,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
                             ? '<i class="fas ' . ( $owa_desc ? 'fa-arrow-down' : 'fa-arrow-up' )
                               . ' owa_sortIndicator" aria-hidden="true"></i>'
                             : '',
-                        htmlspecialchars( $label, ENT_QUOTES )
+                        $view->escape( $label )
                     );
                 };
 
@@ -188,7 +188,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
     <?php elseif ( $owa_author ): ?>
         <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'No custom reports yet. %s.' ),
             '<a class="owa_newCustomReport" href="' . $view->makeLink( array( 'do' => 'base.customReportEdit' ), true ) . '">'
-            . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Make one' ), ENT_QUOTES, 'UTF-8' ) . '</a>' ); ?>
+            . $view->escape( \OWA\Core\CoreAPI::t( 'Make one' ) ) . '</a>' ); ?>
     <?php else: ?>
         <?php $view->out( \OWA\Core\CoreAPI::t( 'No custom reports have been shared with you yet.' ) ); ?>
     <?php endif; ?>
@@ -239,7 +239,7 @@ jQuery( function () {
     dialog.dialog( jQuery.extend( {
         autoOpen: false,
         modal: true,
-        title: <?php echo json_encode( \OWA\Core\CoreAPI::t( 'What do you want to make?' ) ); ?>,
+        title: <?php echo $view->scriptJson( \OWA\Core\CoreAPI::t( 'What do you want to make?' ) ); ?>,
         // Kept inside .owa: every rule styling what is inside it is scoped
         // `.owa .owa_...`, and jQuery UI would otherwise lift it to <body>.
         appendTo: '.owa',

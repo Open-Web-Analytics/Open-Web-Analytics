@@ -471,7 +471,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php
 ?>
 <?php if ( $owa_chartMetric !== '' ): ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', <?php echo json_encode( $owa_chartSeries ); ?>, '<?php $view->out( $owa_container, false ); ?>']);
+        <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', <?php echo $view->scriptJson( $owa_chartSeries ); ?>, '<?php $view->out( $owa_container, false ); ?>']);
 <?php endif; ?>
 <?php if ( $owa_showMetricBoxes ): ?>
 <?php if ( $owa_isTrendCard ): ?>
@@ -566,14 +566,14 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
 <?php if ( ! empty( $owa_w['boxWidth'] ) ): ?>
-        <?php echo $owa_id; ?>.options.metricBoxes.width = <?php echo json_encode( (string) $owa_w['boxWidth'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
+        <?php echo $owa_id; ?>.options.metricBoxes.width = <?php echo $view->scriptJson( (string) $owa_w['boxWidth'] ); ?>;
 <?php endif; ?>
         <?php
             // The label sits inside the box; see $owa_ownsTitle above. Encoded
             // rather than quoted -- it is prose and may carry an apostrophe.
         ?>
         <?php // Only a single-metric widget lends its title to the box; see $owa_ownsTitle. ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes', '', <?php echo json_encode( $owa_ownsTitle ? (string) ( $owa_w['title'] ?? '' ) : '' ); ?>]);
+        <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes', '', <?php echo $view->scriptJson( $owa_ownsTitle ? (string) ( $owa_w['title'] ?? '' ) : '' ); ?>]);
 
 <?php if ( ! $owa_multiSet ): ?>
         <?php echo $owa_id; ?>.load();
@@ -605,14 +605,14 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
         var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
         <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-        <?php echo $owa_id; ?>.options.shareChart.metric = <?php echo json_encode( (string) $owa_chartMetric, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
-        <?php echo $owa_id; ?>.options.shareChart.dimension = <?php echo json_encode( (string) ( $owa_query['dimensions'] ?? '' ), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
+        <?php echo $owa_id; ?>.options.shareChart.metric = <?php echo $view->scriptJson( (string) $owa_chartMetric ); ?>;
+        <?php echo $owa_id; ?>.options.shareChart.dimension = <?php echo $view->scriptJson( (string) ( $owa_query['dimensions'] ?? '' ) ); ?>;
 <?php if ( ! empty( $owa_w['valueLabels'] ) ): ?>
         <?php // Raw value -> label, so a boolean dimension can read New/Repeat rather than No/Yes. ?>
-        <?php echo $owa_id; ?>.options.shareChart.valueLabels = <?php echo json_encode( (object) $owa_w['valueLabels'] ); ?>;
+        <?php echo $owa_id; ?>.options.shareChart.valueLabels = <?php echo $view->scriptJson( (object) $owa_w['valueLabels'] ); ?>;
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['ownConstraints'] ) ): ?>
-        <?php echo $owa_id; ?>.options.shareChart.ownConstraints = <?php echo json_encode( (string) $owa_w['ownConstraints'], JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
+        <?php echo $owa_id; ?>.options.shareChart.ownConstraints = <?php echo $view->scriptJson( (string) $owa_w['ownConstraints'] ); ?>;
 <?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['makeShareChart']);
 
@@ -729,7 +729,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
             <ul>
                 <li>
                     <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%s - click visualization map.' ),
-                        '<a target="_blank" href="' . $owa_hm_url . '">' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Heatmap Overlay' ), ENT_QUOTES, 'UTF-8' ) . '</a>' ); ?>
+                        '<a target="_blank" href="' . $owa_hm_url . '">' . $view->escape( \OWA\Core\CoreAPI::t( 'Heatmap Overlay' ) ) . '</a>' ); ?>
                 </li>
             </ul>
         </div>
@@ -783,10 +783,9 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['link'] ) ): ?>
         var <?php echo $owa_id; ?>link = '<?php echo $view->makeLink( $owa_w['link']['template'], true ); ?>';
-        <?php echo $owa_id; ?>.addLinkToColumn(<?php echo json_encode( (string) $owa_w['link']['linkColumn'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>, <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>, <?php
+        <?php echo $owa_id; ?>.addLinkToColumn(<?php echo $view->scriptJson( (string) $owa_w['link']['linkColumn'] ); ?>, <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>, <?php
             // A list, so not makeJson(), which always writes an object.
-            echo json_encode( array_values( array_map( 'strval', (array) ( $owa_w['link']['except'] ?? array() ) ) ),
-                JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>);
+            echo $view->scriptJson( array_values( array_map( 'strval', (array) ( $owa_w['link']['except'] ?? array() ) ) ) ); ?>);
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['excludeColumns'] ) ): ?>
         <?php
@@ -801,7 +800,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
              * says the same thing and cannot say anything else.
              */
         ?>
-        <?php echo $owa_id; ?>.options.grid.excludeColumns = <?php echo json_encode( array_values( (array) $owa_w['excludeColumns'] ) ); ?>;
+        <?php echo $owa_id; ?>.options.grid.excludeColumns = <?php echo $view->scriptJson( array_values( (array) $owa_w['excludeColumns'] ) ); ?>;
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['formatters'] ) ): ?>
         <?php
@@ -816,10 +815,10 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
              * definition can select a formatter but cannot become one.
              */
         ?>
-        <?php echo $owa_id; ?>.options.grid.columnFormatters = <?php echo json_encode( (object) $owa_w['formatters'] ); ?>;
+        <?php echo $owa_id; ?>.options.grid.columnFormatters = <?php echo $view->scriptJson( (object) $owa_w['formatters'] ); ?>;
 <?php endif; ?>
 <?php if ( ! empty( $owa_w['ownConstraints'] ) ): ?>
-        <?php echo $owa_id; ?>.options.grid.ownConstraints = <?php echo json_encode( (string) $owa_w['ownConstraints'], JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
+        <?php echo $owa_id; ?>.options.grid.ownConstraints = <?php echo $view->scriptJson( (string) $owa_w['ownConstraints'] ); ?>;
 <?php endif; ?>
 <?php
     /*
@@ -853,7 +852,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
     }
 ?>
 <?php if ( $owa_rowActions ): ?>
-        <?php echo $owa_id; ?>.options.grid.rowActions = <?php echo json_encode( $owa_rowActions, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
+        <?php echo $owa_id; ?>.options.grid.rowActions = <?php echo $view->scriptJson( $owa_rowActions ); ?>;
 <?php endif; ?>
         <?php echo $owa_id; ?>.asyncQueue.push(['refreshGrid']);
 

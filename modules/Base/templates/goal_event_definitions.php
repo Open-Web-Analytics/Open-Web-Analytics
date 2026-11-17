@@ -10,7 +10,7 @@
 ?>
 <h1 class="panel_headline"><?php echo $view->headline;?></h1>
 <div id="panel">
-<div class="owa_panelIntro"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'A goal event definition counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted, or every one of an event of your own. Goal event definitions belong to the %s, so they count the same way in all of its Observation Profiles.' ), '<strong>' . htmlspecialchars( (string) \OWA\Core\CoreAPI::t( 'Property' ), ENT_QUOTES, 'UTF-8' ) . '</strong>' ); ?></div>
+<div class="owa_panelIntro"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'A goal event definition counts one thing visitors do, such as reaching a page or taking an action: every event that matches its condition is counted, or every one of an event of your own. Goal event definitions belong to the %s, so they count the same way in all of its Observation Profiles.' ), '<strong>' . $view->escape( (string) \OWA\Core\CoreAPI::t( 'Property' ) ) . '</strong>' ); ?></div>
 
 <?php
 /*
@@ -69,7 +69,7 @@
                         <span class="owa_goalEventValue"><?php $view->out( $owa_cond['value'] );?></span>
                     <?php endforeach;?>
                     <?php elseif ( \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $owa_trigger ) ):?>
-                    <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'every %s' ), '<span class="owa_goalEventTrigger">' . htmlspecialchars( (string) $owa_trigger, ENT_QUOTES, 'UTF-8' ) . '</span>' ); ?>
+                    <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'every %s' ), '<span class="owa_goalEventTrigger">' . $view->escape( (string) $owa_trigger ) . '</span>' ); ?>
                     <?php else:?>
                     <?php
                         /*

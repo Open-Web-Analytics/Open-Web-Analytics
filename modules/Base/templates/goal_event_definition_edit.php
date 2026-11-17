@@ -171,8 +171,7 @@ $owa_operators = array(
             </div>
             <span class="validation_error"><?php $view->out( $view->validation_errors['conditionValue'] ?? '' );?></span>
             <script type="application/json" id="owa_goalVocabulary"><?php
-                echo json_encode( (array) $view->conditionVocabulary,
-                    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+                echo $view->scriptJson( (array) $view->conditionVocabulary );
             ?></script>
         </div>
     </div>

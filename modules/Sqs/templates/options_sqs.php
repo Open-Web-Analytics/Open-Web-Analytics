@@ -10,8 +10,8 @@
         <div class="title"><?php $view->out( \OWA\Core\CoreAPI::t( 'Queues' ) ); ?></div>
         <div class="description">
             <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s and its dead-letter queue %2$s.' ),
-                '<code>' . htmlspecialchars( (string) $view->queue_name, ENT_QUOTES, 'UTF-8' ) . '</code>',
-                '<code>' . htmlspecialchars( (string) $view->dlq_name, ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?>
+                '<code>' . $view->escape( (string) $view->queue_name ) . '</code>',
+                '<code>' . $view->escape( (string) $view->dlq_name ) . '</code>' ); ?>
             <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s in %2$s names the queue; without it the names are derived from this install\'s database.' ),
                 '<code>OWA_SQS_QUEUE_URL</code>',
                 '<code>owa-config.php</code>' ); ?>
