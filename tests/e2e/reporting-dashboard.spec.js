@@ -45,7 +45,7 @@ async function boxesReport(page) {
  *   - chosen      -> .chzn-container enhanced select menus
  *
  * They also PIN jQuery 3.6.0 -- the reporting bundle is on 3.x (was 1.6.4).
- * The plugins run on jQuery 3 as they are (Flot 0.8.3, jQuery-UI 1.13.3), so
+ * The plugins run on jQuery 3 as they are (Flot 0.8.3, chosen 1.8.7), so
  * the bundle carries neither jquery-migrate nor a $.browser shim.
  * A future version bump fails this assertion and must be a conscious, reviewed
  * change (same discipline as the bundle-integrity test).
@@ -578,8 +578,8 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);
-        // Every reporting plugin runs on jQuery 3 as it is (jQuery-UI 1.13.3,
-        // Flot 0.8.3, ...), so no compat layer is loaded.
+        // Every reporting plugin runs on jQuery 3 as it is (Flot 0.8.3,
+        // chosen 1.8.7, ...), so no compat layer is loaded.
         const migrate = await page.evaluate(() => window.jQuery && window.jQuery.migrateVersion);
         expect(jqv).toBe('3.6.0');
         expect(migrate).toBeUndefined();
@@ -872,11 +872,9 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
  *
  * Two things only exist here, not on the dashboard:
  *
- *  1. The jQuery-UI `tabs` widget (owa.report.createTabs -> #report-tabs.ui-tabs).
- *     The 1.8.12 -> 1.13.3 upgrade migrated tabs({show:fn}) to the `activate`
- *     event (the old `show` option was removed in 1.9) plus an explicit initial
- *     selectTab() call (activate does not fire on init the way show did), so we
- *     pin the rendered tab UI.
+ *  1. The metric-set tabs (owa.report.createTabs -> OWA.tabs). The selected
+ *     set's widgets load when the tabs are built, so we pin the rendered tab UI
+ *     and the grid that loading draws.
  *  2. A deterministic single-row grid: all 8 seeded pageviews use a Chrome UA, so
  *     the Browser Types grid is exactly ONE "Chrome" row. That determinism is what
  *     lets the FUNCTIONAL secondary-dimension / filter tests below assert real
@@ -1064,21 +1062,34 @@ test.describe('dimension report: tabs, secondary dimension + filter (post-1.13 u
         await expect(pick).toBeFocused();
     });
 
-    test('jQuery-UI tabs build the tabbed report layout', async ({ page }) => {
-        // openReport already waited for #report-tabs.ui-tabs, so the widget built.
-        // Assert the full tab structure: the widget container, the generated nav
-        // list with at least one labeled tab, and the active tab panel.
-        const tabs = page.locator('#report-tabs.ui-tabs');
-        await expect(tabs).toBeVisible();
+    test('the metric sets are tabs over the panels they show', async ({ page }) => {
+        // openReport already waited for the tab list.
+        const list = page.getByRole('tablist', { name: 'Metrics' });
+        await expect(list).toBeVisible();
 
-        const navTabs = tabs.locator('.report-tabs-nav-list li a');
-        expect(await navTabs.count()).toBeGreaterThanOrEqual(1);
+        const tabs = list.getByRole('tab');
+        expect(await tabs.count()).toBeGreaterThanOrEqual(2);
         // Tab labels come from OWA.report.tab config; the first is non-empty.
-        expect((await navTabs.first().innerText()).trim().length).toBeGreaterThan(0);
+        expect((await tabs.first().innerText()).trim().length).toBeGreaterThan(0);
 
-        // The active tab's panel is shown and carries the grid (createTabs' initial
-        // selectTab() calls tab.load(), which builds a result-set explorer grid).
-        await expect(page.locator('tr.owa_gridRow').first()).toBeVisible();
+        // The first is selected, and its panel alone is shown -- carrying the
+        // grid that selecting it loaded (tab.load() builds the explorers).
+        await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByRole('tabpanel')).toHaveCount(1);
+        await expect(page.getByRole('tabpanel').locator('tr.owa_gridRow').first()).toBeVisible();
+
+        // The arrow key selects the next set and shows its panel instead.
+        await tabs.first().focus();
+        await page.keyboard.press('ArrowRight');
+        await expect(tabs.nth(1)).toBeFocused();
+        await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+        await expect(tabs.first()).toHaveAttribute('aria-selected', 'false');
+        await expect(page.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', await tabs.nth(1).getAttribute('id'));
+
+        // And a click goes back.
+        await tabs.first().click();
+        await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByRole('tabpanel').locator('tr.owa_gridRow').first()).toBeVisible();
     });
 
     test('selecting a secondary dimension requeries and splits the grid by that dimension', async ({ page }) => {

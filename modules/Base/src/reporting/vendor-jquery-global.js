@@ -4,7 +4,6 @@
  * The reporting bundle's vendored jQuery plugins are UMD/IIFE files that cannot be
  * edited, and several read a FREE `jQuery`/`$` at module-eval time rather than
  * require()-ing it:
- *   - jquery-ui-dist: UMD else-branch `factory( jQuery )`
  *   - chosen-js:      `$ = jQuery` (chosen.jquery.js ~610)
  *   - jquery-sparkline, jquery.flot (core/time): `(function($){...})(jQuery)`
  *

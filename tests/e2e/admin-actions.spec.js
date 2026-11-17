@@ -418,6 +418,17 @@ test.describe('admin: site CRUD', () => {
         await page.locator('.owa_confirmCancel').click();
         await expect(confirmDialog).toBeHidden();
         await expect(page.locator('input[value="Delete Profile"]')).toBeVisible();
+        await expect(deleteButton, 'focus is back on what asked').toBeFocused();
+
+        // A modal named by its question, which Escape answers no to.
+        await deleteButton.click();
+        const named = page.getByRole('dialog', { name: 'Delete this Observation Profile?' });
+        await expect(named).toBeVisible();
+        await expect(named.getByRole('button', { name: 'Cancel' })).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(named).toBeHidden();
+        await expect(deleteButton).toBeFocused();
+        expect(paramOf(page.url(), 'do')).toBe('base.sitesProfile');
 
         await deleteButton.click();
         await expect(page.locator('#owa_confirmDialog')).toBeVisible();

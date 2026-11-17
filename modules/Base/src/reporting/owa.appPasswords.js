@@ -1,6 +1,6 @@
 import $ from 'jquery';
 import { OWA } from './owa.format.js';
-import { dialogFit } from './owa.dialog.js';
+import { dialog } from './owa.dialog.js';
 
 /**
  * The Add dialog on the Application Passwords screen (my_app_passwords.php).
@@ -39,7 +39,10 @@ function addRow( made ) {
     $( '.owa_appPasswordsNone' ).prop( 'hidden', true );
 }
 
-function openAddDialog() {
+// Made the first time Add is used, and opened again each time after.
+var addDialog = null;
+
+function openAddDialog( opener ) {
 
     var $dialog = $( '#owa_appPasswordDialog' );
     var $form   = $dialog.find( '.owa_appPasswordForm' );
@@ -103,7 +106,7 @@ function openAddDialog() {
                 $form.prop( 'hidden', true );
                 $result.find( '.owa_appPasswordResultName' ).text( made.name );
                 $result.prop( 'hidden', false );
-                $dialog.dialog( 'option', 'buttons', doneButtons );
+                addDialog.setButtons( doneButtons );
                 $result.find( '.owa_appPasswordToken' ).val( made.token ).trigger( 'focus' ).trigger( 'select' );
             } )
             .catch( function () {
@@ -120,12 +123,12 @@ function openAddDialog() {
     var createButtons = [
         {
             text: OWA.l( 'Cancel' ),
-            class: 'owa-button owa-button-quiet owa_appPasswordCancel',
-            click: function () { $( this ).dialog( 'close' ); }
+            className: 'owa-button owa-button-quiet owa_appPasswordCancel',
+            click: function ( d ) { d.close(); }
         },
         {
             text: OWA.l( 'Create' ),
-            class: 'owa-button owa_appPasswordCreate',
+            className: 'owa-button owa_appPasswordCreate',
             click: create
         }
     ];
@@ -133,8 +136,8 @@ function openAddDialog() {
     var doneButtons = [
         {
             text: OWA.l( 'Done' ),
-            class: 'owa-button owa_appPasswordDone',
-            click: function () { $( this ).dialog( 'close' ); }
+            className: 'owa-button owa_appPasswordDone',
+            click: function ( d ) { d.close(); }
         }
     ];
 
@@ -145,20 +148,22 @@ function openAddDialog() {
         create();
     } );
 
-    // Wide enough to show a whole token.
-    $dialog.prop( 'hidden', false ).dialog( $.extend( {
-        modal: true,
-        resizable: false,
-        draggable: false,
-        dialogClass: 'owa_confirmDialogFrame owa_appPasswordDialogFrame',
-        buttons: createButtons,
-        close: function () {
+    if ( ! addDialog ) {
 
-            // The token is gone from the page once the dialog is.
-            $dialog.find( '.owa_appPasswordToken' ).val( '' );
-            $dialog.dialog( 'destroy' ).prop( 'hidden', true );
-        }
-    }, dialogFit( 560 ) ) );
+        // Wide enough to show a whole token.
+        addDialog = dialog( $dialog, {
+            width: 560,
+            className: 'owa_confirmDialogFrame owa_appPasswordDialogFrame',
+            onClose: function () {
+
+                // The token is gone from the page once the dialog is.
+                $dialog.find( '.owa_appPasswordToken' ).val( '' );
+            }
+        } );
+    }
+
+    addDialog.setButtons( createButtons );
+    addDialog.open( opener );
 
     $form.find( '[name="name"]' ).trigger( 'focus' );
 }
@@ -168,7 +173,7 @@ $( function () {
     $( document ).on( 'click', '.owa_appPasswordAdd', function ( event ) {
 
         event.preventDefault();
-        openAddDialog();
+        openAddDialog( this );
     } );
 } );
 
