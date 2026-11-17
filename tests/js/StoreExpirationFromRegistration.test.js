@@ -1,9 +1,3 @@
-jest.mock('jquery', () => {
-    const jq = jest.requireActual('jquery');
-    jq.__esModule = true;
-    return jq;
-});
-
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 import { Util } from '../../modules/Base/src/common/Util.js';
 
