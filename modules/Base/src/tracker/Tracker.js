@@ -4744,7 +4744,8 @@ class OWATracker  {
         var store  = this.storeName( 's' );
         var now    = event.get( 'timestamp' ) || this.getTimestamp();
         var mine   = OWA.getState( store, 'last_req' ) * 1 || 0;
-        var shared = OWA.getPersistedState( store, 'last_req' ) * 1 || 0;
+        // Live: what another tab has written since this page loaded.
+        var shared = OWA.getPersistedState( store, 'last_req', true ) * 1 || 0;
         var latest = Math.max( mine, shared );
 
         if ( ! this.isNewSession( now, latest ) ) {
@@ -4788,24 +4789,37 @@ class OWATracker  {
     joinPersistedSession() {
 
         var store = this.storeName( 's' );
-        var sid   = OWA.getPersistedState( store, 'sid' );
+        var sid   = OWA.getPersistedState( store, 'sid', true );
 
         if ( ! sid || sid === OWA.getState( store, 'sid' ) ) {
 
             return;
         }
 
-        [ 'sid', 'sts', 'psts', 'seq' ].forEach( function ( key ) {
+        /*
+         * READ ALL, THEN WRITE. Each setState() persists the whole store from
+         * memory, so setting sid first would overwrite the other tab's cookie
+         * with this tab's sts, psts and seq before they were read.
+         */
+        var keys   = [ 'sid', 'sts', 'psts', 'seq' ];
+        var theirs = {};
 
-            var value = OWA.getPersistedState( store, key );
+        keys.forEach( function ( key ) {
+
+            theirs[ key ] = OWA.getPersistedState( store, key, true );
+        } );
+
+        var nps = OWA.getPersistedState( this.storeName( 'v' ), 'nps', true );
+
+        keys.forEach( function ( key ) {
+
+            var value = theirs[ key ];
 
             if ( value !== undefined && value !== '' ) {
 
                 OWA.setState( store, key, value );
             }
         } );
-
-        var nps = OWA.getPersistedState( this.storeName( 'v' ), 'nps' );
 
         if ( nps !== undefined && nps !== '' ) {
 

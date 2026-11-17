@@ -227,10 +227,21 @@ class StateManager {
 	 * contaminate memory, so this does not weaken the separation -- the
 	 * invariant is that nothing MERGES before the decision, not that nothing
 	 * reads.
+	 *
+	 * `live` reads the jar as it is NOW instead of this.cookies, the snapshot
+	 * taken when the page loaded. The cross-tab reads (continueSession(),
+	 * joinPersistedSession()) exist to see what ANOTHER tab has written since,
+	 * and no other tab updates this tab's snapshot: read from it, they never
+	 * saw anything. A live read does not replace the snapshot. At page start
+	 * the two are the same, so the session decision keeps reading the snapshot.
+	 *
+	 * @param {string}  store_name
+	 * @param {string}  key
+	 * @param {boolean} [live]
 	 */
-	getPersisted( store_name, key ) {
+	getPersisted( store_name, key, live ) {
 
-		var persisted = this.readPersistedStore( store_name );
+		var persisted = this.readPersistedStore( store_name, live ? ( Util.readAllCookies() || {} ) : null );
 
 		if ( persisted.state && persisted.state.hasOwnProperty( key ) ) {
 			return persisted.state[ key ];
@@ -1025,11 +1036,14 @@ class StateManager {
      * and the format sniff are identical either way, and only what is done with
      * the result differs.
      */
-    readPersistedStore( store_name ) {
+    readPersistedStore( store_name, jar ) {
 
         var state = '';
         var format = '';
-        var cookie_values = this.getCookieValues( OWA.getSetting('ns') + store_name );
+        // A jar passed in (a live read) instead of the page-load snapshot.
+        var cookie_values = jar
+            ? jar[ OWA.getSetting('ns') + store_name ]
+            : this.getCookieValues( OWA.getSetting('ns') + store_name );
 
         if (cookie_values) {
 
