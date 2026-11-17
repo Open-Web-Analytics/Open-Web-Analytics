@@ -159,8 +159,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
     </template>
     <?php // Every event's condition properties, so a step's pickers follow its event (owa.goalbuilder.js). ?>
     <script type="application/json" id="owa_funnelVocabulary"><?php
-        echo json_encode( (array) $view->conditionVocabulary,
-            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+        echo $view->scriptJson( (array) $view->conditionVocabulary );
     ?></script>
 </form>
 
@@ -185,9 +184,9 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
 jQuery( function () {
 
     var MAX_STEPS   = <?php echo (int) ( $view->maxSteps ?: 10 );?>;
-    var DIMENSIONS  = <?php echo json_encode( array_values( (array) $view->dimensionChoices ) );?>;
+    var DIMENSIONS  = <?php echo $view->scriptJson( array_values( (array) $view->dimensionChoices ) );?>;
     // The words this script writes, translated; %s is the step's number, %1$s, %2$s... the values in order.
-    var TEXT = <?php echo json_encode( array(
+    var TEXT = <?php echo $view->scriptJson( array(
         'eventLabel' => \OWA\Core\CoreAPI::t( 'The event step %s matches' ),
         'needsEvent' => \OWA\Core\CoreAPI::t( 'Step %s needs an event.' ),
         'fullUrl'    => \OWA\Core\CoreAPI::t( 'Step %s needs a path, such as /basket, not a full web address.' ),
@@ -201,7 +200,7 @@ jQuery( function () {
         'continued'  => \OWA\Core\CoreAPI::t( '%s continued' ),
         'summary'    => \OWA\Core\CoreAPI::t( '%1$s of sessions that reached %2$s went on to reach %3$s.' ),
         'moved'      => \OWA\Core\CoreAPI::t( 'Step moved to position %1$s of %2$s.' ),
-    ), JSON_HEX_TAG | JSON_HEX_AMP );?>;
+    ) );?>;
 
     function say( pattern, n ) {
         return String( pattern ).replace( '%s', n );
@@ -214,7 +213,7 @@ jQuery( function () {
         } );
     }
 
-    var PREVIEW_URL = <?php echo json_encode( $view->makeLink( array(
+    var PREVIEW_URL = <?php echo $view->scriptJson( $view->makeLink( array(
         'do'          => 'base.visualizationPreview',
         'period'      => 'last_thirty_days',
         'funnelScope' => 'session',
@@ -414,7 +413,7 @@ jQuery( function () {
     // rendered in); undefined is the browser's own.
     function locale() {
         return ( window.OWA && OWA.config && OWA.config.locale )
-            || <?php echo json_encode( \OWA\Core\Strings::locale() === \OWA\Core\Strings::SOURCE_LOCALE ? null : \OWA\Core\Strings::htmlLang() ); ?>
+            || <?php echo $view->scriptJson( \OWA\Core\Strings::locale() === \OWA\Core\Strings::SOURCE_LOCALE ? null : \OWA\Core\Strings::htmlLang() ); ?>
             || undefined;
     }
 

@@ -154,7 +154,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         $rows = array();
 
         foreach ( \OWA\Module\Base\Classes\EnvironmentCheck::all(
-                      $this->c->get( 'base', 'config_file' ) ) as $check ) {
+                      \OWA\Core\CoreAPI::getSetting( 'base', 'config_file' ) ) as $check ) {
 
             $rows[] = $this->row(
                 $check['passed'] ? self::OK : self::FAIL,

@@ -228,7 +228,7 @@ class Controller extends \OWA\Core\Base {
 	            $nonce = $this->getParam('nonce');
 	
 	            if (!$nonce || !$this->verifyNonce($nonce)) {
-	                $this->e->debug('Nonce is not valid.');
+	                \OWA\Core\CoreAPI::debug('Nonce is not valid.');
 	                return $this->refused($this->nonceFailedAction());
 	            }
 	        }
@@ -249,7 +249,7 @@ class Controller extends \OWA\Core\Base {
                 \OWA\Core\CoreAPI::debug( $action );
                 if ( ! $nonce || ! $this->verifyNonce( $nonce, $action ) ) {
                 
-                    $this->e->debug('Nonce is missing or invalid.');
+                    \OWA\Core\CoreAPI::debug('Nonce is missing or invalid.');
                     return $this->refused($this->notAuthenticatedAction());
                 }
             }
@@ -1131,8 +1131,7 @@ class Controller extends \OWA\Core\Base {
 
         if ( ! $propertyId && $siteId ) {
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->getByColumn( 'site_id', $siteId );
+            $site = \OWA\Module\Base\Entity\Site::forSiteId( $siteId );
             $propertyId = $site->get( 'property_id' );
         }
 

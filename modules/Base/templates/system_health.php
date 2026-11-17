@@ -15,8 +15,8 @@ $owa_s = (array) $view->sections;
 <div class="owa_panelIntro">
     <?php $view->out( \OWA\Core\CoreAPI::t( 'The scheduler and its jobs, the job queue, the beacon queue, the Profiles\' tracking bundles, and the installation.' ) ); ?>
     <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$s means something has stopped until someone acts; %2$s means something to look at that the next run, or time, may resolve.' ),
-        '<b>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Action needed' ), ENT_QUOTES, 'UTF-8' ) . '</b>',
-        '<b>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Attention' ), ENT_QUOTES, 'UTF-8' ) . '</b>' ); ?>
+        '<b>' . $view->escape( \OWA\Core\CoreAPI::t( 'Action needed' ) ) . '</b>',
+        '<b>' . $view->escape( \OWA\Core\CoreAPI::t( 'Attention' ) ) . '</b>' ); ?>
 </div>
 
 <?php foreach ( array( 'scheduler', 'jobs', 'queue', 'intake', 'bundles', 'data', 'install' ) as $owa_key ): ?>
@@ -101,9 +101,9 @@ $owa_s = (array) $view->sections;
     <?php if ( $owa_key === 'intake' && isset( $owa_sec['type'] ) ): ?>
     <div class="owa_panelIntro">
         <?php if ( $owa_sec['queued'] ): ?>
-        <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Beacons are queued (%s) and drained every minute.' ), '<code>' . htmlspecialchars( (string) $owa_sec['type'], ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?>
+        <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Beacons are queued (%s) and drained every minute.' ), '<code>' . $view->escape( (string) $owa_sec['type'] ) . '</code>' ); ?>
         <?php else: ?>
-        <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Beacons are written as they arrive; only a failed write is queued (%s), to retry a minute later.' ), '<code>' . htmlspecialchars( (string) $owa_sec['type'], ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?>
+        <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Beacons are written as they arrive; only a failed write is queued (%s), to retry a minute later.' ), '<code>' . $view->escape( (string) $owa_sec['type'] ) . '</code>' ); ?>
         <?php endif; ?>
         <?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Waiting %1$s, dead letters %2$s.' ),
             $owa_sec['waiting'] === null ? \OWA\Core\CoreAPI::t( 'unknown' ) : (string) $owa_sec['waiting'],

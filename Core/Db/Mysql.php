@@ -141,7 +141,7 @@ class Mysql extends \OWA\Core\Db {
 
             if ( $mode !== null ) {
 
-                $this->query( sprintf( "SET SESSION sql_mode='%s'", $this->prepare( $mode ) ) );
+                $this->query( 'SET SESSION sql_mode = ?', [ (string) $mode ] );
             }
 
         }

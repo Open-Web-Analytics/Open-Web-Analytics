@@ -247,7 +247,7 @@ class ServiceUser extends \OWA\Core\Base {
 
         $site_ids = array();
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom( 'owa_site_user' );
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
         $db->selectColumn( '*' );
         $db->where( 'user_id', $this->user->get('id') );
         $site_ids = $db->getAllRows();

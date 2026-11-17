@@ -2943,10 +2943,8 @@ class TrackingEventHelpers {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $row = $db->get_row( sprintf(
-            "SELECT revenue FROM %s WHERE site_id = '%s' AND transaction_id = '%s' AND event_type = 'purchase' LIMIT 1",
-            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName(),
-            $db->prepare( $site ),
-            $db->prepare( $transaction ) ) );
+            "SELECT revenue FROM %s WHERE site_id = ? AND transaction_id = ? AND event_type = 'purchase' LIMIT 1",
+            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ), [ $site, $transaction ] );
 
         $revenue = is_array( $row ) ? ( $row['revenue'] ?? null ) : ( is_object( $row ) ? ( $row->revenue ?? null ) : null );
 
@@ -3172,8 +3170,7 @@ class TrackingEventHelpers {
         $url = \OWA\Core\Lib::unparseUrl( parse_url( $url ), array( 'port', 'user', 'pass', 'fragment' ) );
 
         \OWA\Core\CoreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->load( $site->generateId( $site_id ) );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
         // The install's filters, then the site's, then OWA's own params.
         $ns      = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );

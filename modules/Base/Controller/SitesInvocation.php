@@ -43,8 +43,7 @@ class SitesInvocation extends \OWA\Core\AdminController {
     function action() {
         $site_id = $this->getParam('siteId');
         $this->set('site_id', $site_id);
-        $s = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $s->getByColumn('site_id', $site_id);
+        $s = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
         $this->set('site', $s);
         $this->setSubview('base.sitesInvocation');
         /*
@@ -83,8 +82,8 @@ class SitesInvocation extends \OWA\Core\AdminController {
         $db  = \OWA\Core\CoreAPI::dbSingleton();
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
 
-        $day = $db->get_row( sprintf( "SELECT MAX(yyyymmdd) AS day FROM %s WHERE site_id = '%s'",
-            $raw, $db->prepare( (string) $site_id ) ) );
+        $day = $db->get_row( sprintf( 'SELECT MAX(yyyymmdd) AS day FROM %s WHERE site_id = ?', $raw ),
+            [ (string) $site_id ] );
 
         if ( ! is_array( $day ) || empty( $day['day'] ) ) {
 
@@ -92,8 +91,8 @@ class SitesInvocation extends \OWA\Core\AdminController {
         }
 
         $row = $db->get_row( sprintf(
-            "SELECT MAX(ts) AS ts FROM %s WHERE site_id = '%s' AND yyyymmdd = %d",
-            $raw, $db->prepare( (string) $site_id ), (int) $day['day'] ) );
+            'SELECT MAX(ts) AS ts FROM %s WHERE site_id = ? AND yyyymmdd = %d',
+            $raw, (int) $day['day'] ), [ (string) $site_id ] );
 
         $ts = is_array( $row ) ? (int) ( $row['ts'] ?? 0 ) : 0;
 

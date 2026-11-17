@@ -25,7 +25,7 @@ final class InstallDatabase {
     /** A new Organization id: random, unlike the fixed one an existing database's install derives. */
     public static function mintOrganizationId() {
 
-        return (string) random_int( 1, PHP_INT_MAX );
+        return \OWA\Core\Lib::randomId();
     }
 
     /** @return string */

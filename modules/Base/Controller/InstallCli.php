@@ -72,14 +72,14 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     /** A refused install prints why, and has done nothing. */
     function errorAction() {
 
-        $this->setView('base.cli');
+        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
     }
 
     function action() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $im = new \OWA\Module\Base\Classes\InstallManager();
-        $this->e->notice('Starting OWA Install from command line.');
+        \OWA\Core\CoreAPI::notice('Starting OWA Install from command line.');
 
         //create config file
         $present = $this->c->isConfigFilePresent();
@@ -116,13 +116,13 @@ class InstallCli extends \OWA\Core\Controller\Cli {
                     return $this->fail('The install did not complete, and nothing was saved. Check the error log, then run this command again.');
                 }
 
-                $this->e->notice('Install Completed.');
+                \OWA\Core\CoreAPI::notice('Install Completed.');
 
                 // Without the scheduler no report shows anything: say so where
                 // the install is run, as the web installer's last page does.
-                $this->e->notice('Add this to the crontab of the user that owns the OWA files, '
+                \OWA\Core\CoreAPI::notice('Add this to the crontab of the user that owns the OWA files, '
                     . 'or reports stay empty: ' . \OWA\Module\Base\Classes\SchedulerHealth::cronLine());
-                $this->e->notice('Then check it with: php cli.php cmd=schedule-status');
+                \OWA\Core\CoreAPI::notice('Then check it with: php cli.php cmd=schedule-status');
 
             // schema was not installed successfully
             } else {

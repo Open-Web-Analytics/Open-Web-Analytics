@@ -198,7 +198,7 @@ class JobQueue {
             }
         }
 
-        $id = (string) random_int( 1, PHP_INT_MAX );
+        $id = \OWA\Core\Lib::randomId();
 
         $inserted = $db->query( sprintf(
             'INSERT INTO %s (id, command, params, dedupe_key, status, run_after, attempts, max_attempts,'

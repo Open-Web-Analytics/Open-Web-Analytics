@@ -16,7 +16,7 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  * never loaded, usually on a host that has nothing to do with the site.
  * Hosts are compared as Spam\Hosts does: case ignored, port ignored, and
  * www.example.com the same as example.com. A subdomain of the domain or of an
- * alias is on the site (Hosts::isWithin()): shop.example.com is a page of a
+ * alias is on the site (ProfileDomains::isOnDomain()): shop.example.com is a page of a
  * Profile whose domain is example.com, and badexample.com is not.
  *
  * DOES NOT FIRE for a Profile with no domain set: there is nothing to compare
@@ -31,17 +31,16 @@ class GhostPageHost extends \OWA\Module\Base\Classes\Spam\Rule {
 
     public function test( $event, array $headers ) {
 
-        $page = \OWA\Module\Base\Classes\Spam\Hosts::of(
-            \OWA\Module\Base\Classes\Spam\Received::pageLocation( $event ) );
+        $page = \OWA\Module\Base\Classes\Spam\Received::pageLocation( $event );
 
-        if ( $page === '' ) {
+        if ( \OWA\Module\Base\Classes\Spam\Hosts::of( $page ) === '' ) {
 
             return false;
         }
 
         $hosts = $this->profileHosts( (string) $event->getSiteId() );
 
-        return $hosts && ! \OWA\Module\Base\Classes\Spam\Hosts::isWithin( $page, $hosts );
+        return $hosts && ! \OWA\Module\Base\Classes\ProfileDomains::isOnDomain( $page, $hosts );
     }
 
     /** The Profile's hosts. Separate so a test can name them without a Profile. */

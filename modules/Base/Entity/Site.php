@@ -193,6 +193,26 @@ class Site extends \OWA\Core\Entity {
     }
 
     /**
+     * The Profile a site_id names. Not persisted when there is none, or no
+     * site_id.
+     *
+     * @param string $site_id
+     * @return Site
+     */
+    public static function forSiteId( $site_id ) {
+
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+
+        // getByColumn() refuses a falsy value, '0' among them.
+        if ( $site_id ) {
+
+            $site->getByColumn( 'site_id', (string) $site_id );
+        }
+
+        return $site;
+    }
+
+    /**
      * A fresh identifier for a new site, owing nothing to its domain.
      *
      * Prefixed so a minted identifier is recognisable on sight and can be told
@@ -355,7 +375,7 @@ class Site extends \OWA\Core\Entity {
         foreach ( $changes['revoke'] as $id ) {
 
             $db = \OWA\Core\CoreAPI::dbSingleton();
-            $db->deleteFrom('owa_site_user');
+            $db->deleteFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
             $db->where( 'site_id', $this->get('id') );
             $db->where( 'user_id', $id );
             $db->executeQuery();
@@ -380,7 +400,7 @@ class Site extends \OWA\Core\Entity {
              throw new \Exception('no site data loaded!');
          }
          $db = \OWA\Core\CoreAPI::dbSingleton();
-         $db->deleteFrom('owa_site_user');
+         $db->deleteFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
          $db->where( 'site_id', $this->get('id') );
          $ret = $db->executeQuery();
 
@@ -406,7 +426,7 @@ class Site extends \OWA\Core\Entity {
         }
         if (!isset(self::$cachedAssignedUsers[$this->get('id')])) {
             $db = \OWA\Core\CoreAPI::dbSingleton();
-            $db->selectFrom( 'owa_site_user' );
+            $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
             $db->selectColumn( '*' );
             $db->where( 'site_id', $this->get('id') );
             $relations = $db->getAllRows();

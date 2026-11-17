@@ -57,13 +57,12 @@ class VisualizationFunnel extends \OWA\Core\View {
         // A step the funnel cannot count: no event, or a property it cannot test. Refused
         // rather than drawn with that step ignored -- see stepPredicate().
         $this->body->set('funnel_step_error',    $this->get('funnel_step_error') );
-        // Written into a <script>: the HEX flags keep a stored value from closing it.
-        $inline = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
-        $this->body->set('funnel_table_json', json_encode( $this->get('funnel_table'), $inline ) );
-        $this->body->set('funnel_filter_json', json_encode( array(
+        // Written into a <script>.
+        $this->body->set('funnel_table_json', \OWA\Core\Template::scriptJson( $this->get('funnel_table') ) );
+        $this->body->set('funnel_filter_json', \OWA\Core\Template::scriptJson( array(
             'dimensions'  => $this->get('funnel_filter_dimensions'),
             'metrics'     => $this->get('funnel_filter_metrics'),
             'constraints' => $this->get('funnel_constraints'),
-        ), $inline ) );
+        ) ) );
     }
 }

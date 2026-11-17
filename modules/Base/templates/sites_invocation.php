@@ -40,13 +40,13 @@ $state  = (string) ( $status['state'] ?? '' );
         <div class="owa-tagStatus__row owa-tagStatus__row--ok">
             <dt><?php $view->out( \OWA\Core\CoreAPI::t( 'Tracker' ) ); ?></dt>
             <dd><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'Published %s.' ), date( 'Y-m-d H:i', (int) $status['published_at'] ) ) ); ?>
-                <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Served from %s' ), '<code>' . htmlspecialchars( (string) $view->bundle_url, ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?></span></dd>
+                <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Served from %s' ), '<code>' . $view->escape( (string) $view->bundle_url ) . '</code>' ); ?></span></dd>
         </div>
         <?php elseif ( $state === 'unbuilt' ): ?>
         <div class="owa-tagStatus__row owa-tagStatus__row--problem">
             <dt><?php $view->out( \OWA\Core\CoreAPI::t( 'Tracker' ) ); ?></dt>
             <dd><?php $view->out( \OWA\Core\CoreAPI::t( 'Not published: the tracker has not been built on this installation.' ) ); ?>
-                <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'To be served from %s' ), '<code>' . htmlspecialchars( (string) $view->bundle_url, ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?></span></dd>
+                <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'To be served from %s' ), '<code>' . $view->escape( (string) $view->bundle_url ) . '</code>' ); ?></span></dd>
         </div>
         <?php else: ?>
         <div class="owa-tagStatus__row owa-tagStatus__row--pending">
@@ -55,7 +55,7 @@ $state  = (string) ( $status['state'] ?? '' );
                 <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'It could not be written when the settings were saved, so it is queued; '
                     . 'the scheduler publishes it within a minute. If it stays here, see %1$s. To be served from %2$s' ),
                     '<code>php cli.php cmd=jobs</code>',
-                    '<code>' . htmlspecialchars( (string) $view->bundle_url, ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?></span></dd>
+                    '<code>' . $view->escape( (string) $view->bundle_url ) . '</code>' ); ?></span></dd>
         </div>
         <?php endif; ?>
 
@@ -63,14 +63,14 @@ $state  = (string) ( $status['state'] ?? '' );
         <div class="owa-tagStatus__row owa-tagStatus__row--ok">
             <dt><?php $view->out( \OWA\Core\CoreAPI::t( 'Updates' ) ); ?></dt>
             <dd><?php $view->out( \OWA\Core\CoreAPI::t( 'Changes reach visitors on their next page view.' ) ); ?>
-                <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'The tracker is served with %s' ), '<code>Cache-Control: ' . htmlspecialchars( (string) $cache['cache_control'], ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?></span></dd>
+                <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'The tracker is served with %s' ), '<code>Cache-Control: ' . $view->escape( (string) $cache['cache_control'] ) . '</code>' ); ?></span></dd>
         </div>
         <?php elseif ( isset( $cache['ok'] ) && $cache['ok'] === false ): ?>
         <div class="owa-tagStatus__row owa-tagStatus__row--problem">
             <dt><?php $view->out( \OWA\Core\CoreAPI::t( 'Updates' ) ); ?></dt>
             <dd><?php if ( ! empty( $cache['cache_control'] ) ): ?><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'This server sends no revalidation header for the tracker (it sends %s), '
                     . 'so a change can take hours to days to reach returning visitors.' ),
-                    '<code>Cache-Control: ' . htmlspecialchars( (string) $cache['cache_control'], ENT_QUOTES, 'UTF-8' ) . '</code>' ); ?><?php else: ?><?php $view->out( \OWA\Core\CoreAPI::t( 'This server sends no revalidation header for the tracker, '
+                    '<code>Cache-Control: ' . $view->escape( (string) $cache['cache_control'] ) . '</code>' ); ?><?php else: ?><?php $view->out( \OWA\Core\CoreAPI::t( 'This server sends no revalidation header for the tracker, '
                     . 'so a change can take hours to days to reach returning visitors.' ) ); ?><?php endif; ?>
                 <span class="owa-tagStatus__detail"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'On Apache, enable %1$s and %2$s for OWA’s directory; elsewhere, send %3$s for %4$s and %5$s.' ),
                     '<code>mod_headers</code>', '<code>AllowOverride</code>', '<code>Cache-Control: no-cache</code>',
@@ -146,7 +146,7 @@ $state  = (string) ( $status['state'] ?? '' );
     <p class="owa-tagScreen__lede"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'The tag works as it is. To send what the tracker cannot see for itself, such as the section of the site a page belongs to, who is signed in, or a purchase, queue commands on '
     . '%1$s before the tag. See the %2$s for every command.' ),
     '<code>owa_cmds</code>',
-    '<a href="' . $view->makeWikiLink( 'Javascript-Tracker' ) . '">' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'JavaScript tracker reference' ), ENT_QUOTES, 'UTF-8' ) . '</a>' ); ?></p>
+    '<a href="' . $view->makeWikiLink( 'Javascript-Tracker' ) . '">' . $view->escape( \OWA\Core\CoreAPI::t( 'JavaScript tracker reference' ) ) . '</a>' ); ?></p>
 
     <?php echo $view->codeBlock( "<script>\n  var owa_cmds = owa_cmds || [];\n  owa_cmds.push(['setContentGroup', 'Blog']);\n</script>", 'HTML' ); ?>
 

@@ -410,9 +410,9 @@ class CoreAPI {
      * @param  string $sql
      * @return array
      */
-    protected static function rowsFor( $sql ) {
+    protected static function rowsFor( $sql, array $params = [] ) {
 
-        return (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql );
+        return (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, $params );
     }
 
     public static function settingRowsForChain( $chain ) {
@@ -429,17 +429,17 @@ class CoreAPI {
             return self::$setting_row_cache[ $cache_key ];
         }
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
         $predicates = array();
         $ranks      = array();
+        $params     = [];
 
         foreach ( $chain as $scope ) {
 
             $type = (string) $scope['type'];
 
-            $predicates[] = sprintf( "( scope_type = '%s' AND scope_id = '%s' )",
-                $db->prepare( $type ), $db->prepare( (string) $scope['id'] ) );
+            $predicates[] = '( scope_type = ? AND scope_id = ? )';
+            $params[]     = $type;
+            $params[]     = (string) $scope['id'];
 
             $ranks[ $type ] = isset( self::$setting_scope_rank[ $type ] )
                 ? self::$setting_scope_rank[ $type ] : 0;
@@ -449,7 +449,8 @@ class CoreAPI {
 
         foreach ( $ranks as $type => $rank ) {
 
-            $when .= sprintf( " WHEN '%s' THEN %d", $db->prepare( $type ), $rank );
+            $when    .= sprintf( ' WHEN ? THEN %d', $rank );
+            $params[] = (string) $type;
         }
 
         $sql = sprintf(
@@ -460,7 +461,7 @@ class CoreAPI {
             $when );
 
         return self::$setting_row_cache[ $cache_key ] =
-            self::indexSettingRows( $chain, self::rowsFor( $sql ) );
+            self::indexSettingRows( $chain, self::rowsFor( $sql, $params ) );
     }
 
     /**
@@ -557,13 +558,13 @@ class CoreAPI {
      */
     protected static function resolveProfileChain( $siteId ) {
 
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
-        $rank = 'CASE st.scope_type';
+        $rank   = 'CASE st.scope_type';
+        $params = [ (string) $siteId ];
 
         foreach ( self::$setting_scope_rank as $type => $value ) {
 
-            $rank .= sprintf( " WHEN '%s' THEN %d", $db->prepare( (string) $type ), $value );
+            $rank    .= sprintf( ' WHEN ? THEN %d', $value );
+            $params[] = (string) $type;
         }
 
         $rank .= ' ELSE 0 END';
@@ -577,14 +578,14 @@ class CoreAPI {
           . "     ( st.scope_type = 'profile'      AND st.scope_id = s.site_id )"
           . "  OR ( st.scope_type = 'property'     AND st.scope_id = s.property_id )"
           . "  OR ( st.scope_type = 'organization' AND st.scope_id = p.organization_id ) )"
-          . " WHERE s.site_id = '%s'"
+          . ' WHERE s.site_id = ?'
           . ' ORDER BY %s DESC',
             self::tableOf( 'base.site' ),
             self::tableOf( 'base.property' ),
             self::tableOf( 'base.setting' ),
-            $db->prepare( (string) $siteId ), $rank );
+            $rank );
 
-        $rows = self::rowsFor( $sql );
+        $rows = self::rowsFor( $sql, $params );
 
         if ( ! $rows ) {
 
@@ -668,8 +669,7 @@ class CoreAPI {
 
         if ( $scopeType === 'profile' ) {
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->getByColumn( 'site_id', $scopeId );
+            $site = \OWA\Module\Base\Entity\Site::forSiteId( $scopeId );
 
             $scopeId   = $site->get( 'property_id' );
             $scopeType = 'property';
@@ -866,8 +866,7 @@ class CoreAPI {
             return;
         }
 
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->load( $site->generateId( $site_id ) );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
         /*
          * A site id that names no site still answers "no setting", not the
@@ -952,8 +951,7 @@ class CoreAPI {
 
         if ( ! array_key_exists( $site_id, self::$registered_sites ) ) {
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->load( $site->generateId( $site_id ) );
+            $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
             if ( ! $site->wasPersisted() && ! self::databaseAnswers() ) {
 
@@ -2878,7 +2876,7 @@ class CoreAPI {
      */
     public static function getSitesList() {
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom('owa_site');
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
         $db->selectColumn('*');
         $sites = $db->getAllRows();
 

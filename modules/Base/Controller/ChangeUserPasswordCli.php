@@ -108,8 +108,7 @@ class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
 
     public function errorAction()
     {
-        $this->setView('base.changeUserPasswordCli');
-        $this->set('msgs', $this->getParam('validation_errors'));
+        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
     }
 }
 

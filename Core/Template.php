@@ -104,7 +104,7 @@ class Template extends TemplateEngine {
 
             // throw error
             } else {
-                $this->e->err(sprintf('%s was not found in any template directory.', $file));
+                \OWA\Core\CoreAPI::error(sprintf('%s was not found in any template directory.', $file));
                 return false;
             }
             return $fullfile;
@@ -147,7 +147,7 @@ class Template extends TemplateEngine {
 
             // throw error
             else:
-                $this->e->err(sprintf('%s was not found in any template directory.', $file));
+                \OWA\Core\CoreAPI::error(sprintf('%s was not found in any template directory.', $file));
                 return false;
             endif;
 
@@ -1189,7 +1189,7 @@ class Template extends TemplateEngine {
     function out($output, $sanitize = true, $decode_special_entities = false) {
 
         if ( $sanitize ) {
-            $output = \OWA\Module\Base\Classes\Sanitize::escapeForDisplay($output);
+            $output = $this->escape($output);
 
             if ( $decode_special_entities ) {
                 $output = strtr($output, array('&amp;'  => '&'));
@@ -1198,6 +1198,32 @@ class Template extends TemplateEngine {
         }
 
         echo $output;
+    }
+
+    /**
+     * A value escaped for HTML, text or attribute, as out() prints it. The one
+     * escape templates use; out() is this, echoed.
+     *
+     * @param mixed $value
+     * @return string
+     */
+    public static function escape( $value ) {
+
+        return (string) \OWA\Module\Base\Classes\Sanitize::escapeForDisplay( $value );
+    }
+
+    /**
+     * A value as JSON that is safe inside a <script> element or an attribute:
+     * < > & ' " are written as \u escapes, so no value can close the element
+     * or the attribute. $flags adds to those (JSON_FORCE_OBJECT, ...).
+     *
+     * @param mixed $value
+     * @param int   $flags
+     * @return string|false
+     */
+    public static function scriptJson( $value, $flags = 0 ) {
+
+        return json_encode( $value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | (int) $flags );
     }
 
     /**
@@ -1213,7 +1239,7 @@ class Template extends TemplateEngine {
      */
     function outMarkup( $text, ...$markup ) {
 
-        echo vsprintf( \OWA\Module\Base\Classes\Sanitize::escapeForDisplay( (string) $text ), array_map( 'strval', $markup ) );
+        echo vsprintf( $this->escape( (string) $text ), array_map( 'strval', $markup ) );
     }
 
     /**
@@ -1237,7 +1263,7 @@ class Template extends TemplateEngine {
     function safeHref( $url, $echo = true ) {
 
         $safe = \OWA\Module\Base\Classes\Sanitize::sanitizeHref( $url );
-        $safe = \OWA\Module\Base\Classes\Sanitize::escapeForDisplay( $safe );
+        $safe = $this->escape( $safe );
 
         if ( $echo ) {
             echo $safe;
