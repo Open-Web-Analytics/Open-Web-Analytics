@@ -2944,7 +2944,8 @@ namespace OWA\Module\Base\Classes;
       * Writes the config file based on the default config file - but with the given database credentials
       *
       * @param array<string, string> $config_values with the database setting keys
-      * @return true
+      * @return bool true when it wrote the file; false when one was already
+      *              there, which it leaves as it is
       */
      public function createConfigFile($config_values) {
 
@@ -2960,7 +2961,7 @@ namespace OWA\Module\Base\Classes;
          if (file_exists($file)) {
              \OWA\Core\CoreAPI::error("Your config file already exists. If you need to change your configuration, edit that file at: ".$file);
              require_once($file);
-            return true;
+            return false;
          }
 
          if (!file_exists(\OWA\Core\Env::root() . '/owa-config-dist.php')) {
