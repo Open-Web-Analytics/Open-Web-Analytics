@@ -35,9 +35,12 @@ function sessionCookie() {
     return raw ? Util.decodeCookieValue(unescape(raw)) : null;
 }
 
+/**
+ * Another tab writing the session cookie. The jar only: nothing refreshes this
+ * tab's own snapshot of it, as nothing does in a browser.
+ */
 function writeSessionCookie(store) {
     Util.setCookie(`owa_s_${SITE}`, JSON.stringify(store), 1, '/', OWA.getSetting('cookie_domain'));
-    OWA.state.cookies = Util.readAllCookies();
 }
 
 /**
