@@ -29,6 +29,9 @@ namespace OWA\Core\Validation;
  */
 class CompareRange extends \OWA\Core\Validation\Validation {
 
+    /**
+     * @return void
+     */
     public function validate() {
 
         $error = \OWA\Module\Base\Classes\TimePeriod::getCompareError(

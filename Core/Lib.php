@@ -51,7 +51,7 @@ class Lib {
      *
      * @param string $inner_glue
      * @param string $outer_glue
-     * @param array $array
+     * @param array<scalar|null> $array key => value
      * @return string
      */
     public static function implode_assoc($inner_glue, $outer_glue, $array) {
@@ -67,7 +67,8 @@ class Lib {
     /**
      * Array of Current Time
      *
-     * @return array
+     * @param  int|null $timestamp now when null
+     * @return array<string, int|string>  each part as date() gives it, a numeric string; timestamp an int
      * @access public
      */
     public static function time_now( $timestamp = null ) {
@@ -106,6 +107,9 @@ class Lib {
 
 
 
+    /**
+     * @return true|null true when this hop arrived over TLS
+     */
 	public static function isHttps() {
 		
 		// check for https
@@ -136,6 +140,8 @@ class Lib {
 		) {
 			return true;
 		}
+
+        return null;
 	}
 	
     /**
@@ -205,6 +211,10 @@ class Lib {
         return $url;
     }
 
+    /**
+     * @param  mixed  $str as the request carried it: only a string can be a name
+     * @return string
+     */
     public static function fileInclusionFilter($str) {
 
         // ?do[]=x arrives as an array. Not a name, so nothing: the dispatcher
@@ -239,7 +249,8 @@ class Lib {
      * @param string $class_dir
      * @param string $class_prefix
      * @param string $class_name
-     * @param array $constructorArguments
+     * @param array<mixed> $constructorArguments the constructor's one argument
+     * @param string $class_suffix
      * @return object
      */
     public static function factory($class_dir, $class_prefix, $class_name, $constructorArguments = array(), $class_suffix = '') {
@@ -281,7 +292,8 @@ class Lib {
      *
      * @param string $class_name
      * @param string $file_path  ignored: a class file path, which callers written before PSR-4 still pass
-     * @param mixed  $args       the constructor's argument
+     * @param mixed  $args       the constructor's argument, whatever that class takes
+     * @return object
      */
     public static function simpleFactory( $class_name, $file_path = '', $args = '' ) {
 
@@ -346,12 +358,16 @@ class Lib {
      * 302 HTTP redirect the user to a new url
      *
      * @param string $url
+     * @param list<string> $also_hosts see resolveRedirectUrl()
+     * @return null
      */
     public static function redirectBrowser($url, array $also_hosts = array()) {
 
         // 302 redirect to URL
         header ('Location: '.\OWA\Core\Lib::resolveRedirectUrl( $url, $also_hosts ));
         header ('HTTP/1.0 302 Found');
+
+        return null;
     }
 
     /**
@@ -458,6 +474,14 @@ class Lib {
         return $base;
     }
 
+    /**
+     * Each key found in $new_keys renamed to its value there.
+     *
+     * @template V
+     * @param  array<V> $array
+     * @param  array<array-key> $new_keys old key => new key
+     * @return array<V>
+     */
     public static function rekeyArray($array, $new_keys) {
 
         $new_keys = $new_keys;
@@ -475,6 +499,15 @@ class Lib {
     }
 
 
+    /**
+     * The entries whose name starts with $ns, that prefix removed; all of
+     * them when $ns is empty.
+     *
+     * @template V
+     * @param  array<V> $params
+     * @param  string   $ns
+     * @return array<V>
+     */
     public static function stripParams($params, $ns = '') {
 
         $striped_params = array();
@@ -520,7 +553,8 @@ class Lib {
     /**
      * redirects borwser to a particular view
      *
-     * @param mixed $data
+     * @param array<mixed> $data the controller's data container
+     * @return null
      */
     public static function redirectToView($data) {
         //print_r($data);
@@ -536,6 +570,8 @@ class Lib {
         $new_url = sprintf($config['link_template'], $config['main_url'], $get);
 
         \OWA\Core\Lib::redirectBrowser($new_url);
+
+        return null;
     }
 
     /**
@@ -555,9 +591,9 @@ class Lib {
      * header, which a test cannot read. This half is the part with the rules in
      * it, and it is pure.
      *
-     * @param  array  $data           the controller's data container
+     * @param  array<mixed> $data     the controller's data container
      * @param  string $ns             application namespace to prefix each name with
-     * @param  array  $control_params names that steer the framework, not the view
+     * @param  list<string> $control_params names that steer the framework, not the view
      * @return string
      */
     public static function buildRedirectQuery( $data, $ns = '', $control_params = array() ) {
@@ -669,6 +705,7 @@ class Lib {
     }
 
     /**
+     * @param string|null $string
      * @param bool $allow_falsy Hash '0' rather than treating it as no value.
      *        The guard below is a truthiness test, so the legitimate string '0'
      *        reads as absent and this returns null -- which reaches a BIGINT
@@ -694,6 +731,14 @@ class Lib {
         return null;
     }
 
+    /**
+     * The reverse of implode_assoc().
+     *
+     * @param  string $string_state
+     * @param  string $inner
+     * @param  string $outer
+     * @return array<string>|string key => value; $string_state itself when it holds no $outer
+     */
     public static function assocFromString($string_state, $inner = '=>', $outer = '|||') {
 
         $state = array();
@@ -727,6 +772,9 @@ class Lib {
     /**
      * Lists all files in a Directory
      *
+     * @param  string $start_dir
+     * @param  bool   $recursive
+     * @return list<array{name: string, path: string}>|false false when $start_dir is not a directory
      */
     public static function listDir($start_dir='.', $recursive = true) {
 
@@ -763,6 +811,10 @@ class Lib {
 
     }
 
+    /**
+     * @param  string $string
+     * @return string|null null on a PCRE error
+     */
     public static function escapeNonAsciiChars($string) {
 
         return preg_replace('/[^(\x20-\x7F)]*/','', $string);
@@ -802,6 +854,10 @@ class Lib {
         return md5(strtolower($password).strlen($password));
         //return owa_coreAPI::saltedHash( $password, 'auth');
     }
+    /**
+     * @param  string $password
+     * @return string
+     */
     public static function encryptPassword($password) {
 
         // check function exists to support older PHP
@@ -812,6 +868,12 @@ class Lib {
         }
     }
 
+    /**
+     * @param  string $hash_type an algorithm hash_hmac() knows; md5 when empty
+     * @param  string $data
+     * @param  string $salt
+     * @return string
+     */
     public static function hash( $hash_type, $data, $salt = '' ) {
         
         if ( ! $hash_type ) {
@@ -836,9 +898,9 @@ class Lib {
      * so a parameter could be literally called '--force'; anything relying on
      * that reads its value under the undashed name now.
      *
-     * @param array $argv raw arguments, including the script name at index 0
-     * @return array|string the parameter map, or a message describing the first
-     *                      argument that could not be read
+     * @param list<string> $argv raw arguments, including the script name at index 0
+     * @return array<string|true>|string the parameter map, or a message describing
+     *                      the first argument that could not be read
      */
     public static function parseCliArgs( $argv ) {
 
@@ -878,6 +940,10 @@ class Lib {
         return $params;
     }
 
+    /**
+     * @param  string|null $type html, xml, json or csv; html when empty
+     * @return void
+     */
     public static function setContentTypeHeader($type = 'html') {
 
         if (!$type) {
@@ -895,11 +961,19 @@ class Lib {
         }
     }
 
+    /**
+     * @param  int|float|numeric-string $string major units
+     * @return int|float minor units
+     */
     public static function prepareCurrencyValue($string) {
 
         return $string * 100;
     }
 
+    /**
+     * @param  string $string
+     * @return string
+     */
     public static function utf8Encode($string) {
 
         $string = (string) $string;
@@ -939,6 +1013,10 @@ class Lib {
         return preg_replace( '/[\x80-\xFF]/', '?', $string );
     }
 
+    /**
+     * @param  string $str
+     * @return bool|null null where mb_detect_encoding() exists and $str is not UTF-8
+     */
     public static function checkForUtf8($str) {
 
         if ( function_exists( 'mb_detect_encoding' ) ) {
@@ -982,8 +1060,16 @@ class Lib {
             }
             return true;
         }
+
+        return null;
     }
 
+    /**
+     * @param  int|float $value    minor units
+     * @param  string    $local    an ICU locale
+     * @param  string    $currency ISO 4217 code
+     * @return string|false false when NumberFormatter cannot format it
+     */
     public static function formatCurrency($value, $local, $currency) {
 
         // Minor units back to major, by the currency's own decimal places: there
@@ -1003,6 +1089,10 @@ class Lib {
         }
     }
 
+    /**
+     * @param  string $string
+     * @return string
+     */
     public static function crc32AsHex($string) {
         $crc = crc32($string);
         //$crc += 0x100000000;
@@ -1012,6 +1102,10 @@ class Lib {
         return dechex($crc);
     }
 
+    /**
+     * @param  string $domain
+     * @return string the domain with a leading period and no port
+     */
     public static function sanitizeCookieDomain($domain) {
 
         // Remove port information.
@@ -1060,14 +1154,25 @@ class Lib {
         return '';
     }
 
+    /**
+     * @param  mixed $value any type
+     * @return true|null true when empty() and not numeric
+     */
     public static function isEmpty($value) {
 
         if ( empty( $value ) && ! is_numeric( $value ) ) {
 	        
 	        return true;
         }
+
+        return null;
     }
 
+    /**
+     * @param  int|numeric-string $number
+     * @param  int $char_length
+     * @return string
+     */
     public static function zeroFill( $number, $char_length ) {
 
         return str_pad( strval( (int) $number ), $char_length, "0", STR_PAD_LEFT );
@@ -1089,6 +1194,7 @@ class Lib {
 
     /**
      * @deprecated use randomId()
+     * @param  string $seed unused
      * @return string
      */
     public static function generateRandomUid( $seed = '' ) {
@@ -1096,6 +1202,13 @@ class Lib {
         return self::randomId();
     }
 
+    /**
+     * The URL parse_url() read, less the parts named in $ommit.
+     *
+     * @param  array<string, int|string>|false $parsed_url parse_url()'s result
+     * @param  list<string> $ommit part names: scheme, host, port, user, pass, path, query, fragment
+     * @return string
+     */
     public static function unparseUrl($parsed_url, $ommit = array() ) {
 
         $url = '';
@@ -1132,6 +1245,9 @@ class Lib {
     /**
      * A URL as written to the log: each LOG_REDACTED_PARAMS value replaced
      * by [redacted].
+     *
+     * @param  string $url
+     * @return string
      */
     public static function redactUrlForLog( $url ) {
 
@@ -1140,6 +1256,11 @@ class Lib {
         return (string) preg_replace( '/([?&])((?:owa_)?(?:' . $names . '))=[^&#]*/i', '$1$2=[redacted]', (string) $url );
     }
 
+    /**
+     * @param  string $ip_address
+     * @return string|false|null the address with its host part zeroed; null when it
+     *         is neither IPv4 nor IPv6
+     */
     public static function anonymizeIp( $ip_address ) {
 	    
 	    $ipv4NetMask = "255.255.255.0";
@@ -1155,28 +1276,51 @@ class Lib {
 	        
             return inet_ntop( inet_pton( $ip_address ) & inet_pton( $ipv6NetMask ) );
         }
+
+        return null;
     }
     
-    // check to see if the IP address falls within known private IP ranges
+    /**
+     * Check to see if the IP address falls within known private IP ranges.
+     *
+     * @param  string $ip_address
+     * @return string|false the address when public; false when private, reserved or not one
+     */
     public static function isNotPrivateIp( $ip_address ) {
 
 		return filter_var( $ip_address, FILTER_VALIDATE_IP, ['flags' => FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ] );
     }
     
+    /**
+     * @param  array-key    $key
+     * @param  array<mixed> $array
+     * @return true|null
+     */
     public static function keyExistsNotEmpty( $key, $array ) {
 	    
 	    if ( array_key_exists($key, $array) && ! empty( $array[ $key ] ) )  {
 		    
 		    return true;
 	    }
+
+        return null;
     }
     
+    /**
+     * $params over $defaults, a falsy param leaving its default.
+     *
+     * @param  mixed $defaults only an array is merged
+     * @param  mixed $params   only an array is merged
+     * @return array<mixed>|null null unless both are arrays
+     */
     public static function setDefaultParams( $defaults, $params ) {
 	    
 	    if ( is_array( $defaults ) && is_array( $params ) ) {
 	    
 	    	return array_merge( $defaults, array_filter( $params) );
 	    }
+
+        return null;
     }
     
     /**

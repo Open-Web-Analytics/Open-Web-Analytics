@@ -70,7 +70,11 @@ final class Env {
         return $dir === '' ? self::defaultDataDir() : self::withSlash( $dir );
     }
 
-    /** A directory path ending in exactly one slash. */
+    /**
+     * A directory path ending in exactly one slash.
+     *
+     * @param  string $dir
+     */
     public static function withSlash( $dir ): string {
 
         return rtrim( (string) $dir, '/' ) . '/';

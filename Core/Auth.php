@@ -42,16 +42,18 @@ class Auth extends \OWA\Core\Base {
     /**
      * Array of permission roles that users can have
      *
-     * @var array
+     * @var array<string>|null nothing sets it
      */
     public $roles;
 
+    /** @var string|null nothing sets it */
     public $status_msg;
 
     /**
-     * Login credentials
+     * Login credentials: user_id, and password (the `p` cookie) or
+     * new_password (a typed password), each as given
      *
-     * @var array
+     * @var array<string, mixed>
      */
     public $credentials = array();
 
@@ -62,12 +64,16 @@ class Auth extends \OWA\Core\Base {
      */
     public $auth_status = false;
 
+    /** @var bool */
     public $_is_user = false;
 
+    /** @var array<mixed> */
     public $params;
 
+    /** @var string|null see setAuthMethod() */
     public $auth_method;
 
+    /** @var \OWA\Module\Base\Classes\EventDispatch */
     public $eq;
 
     /**
@@ -96,6 +102,7 @@ class Auth extends \OWA\Core\Base {
     /**
      * Auth class Singleton
      *
+     * @param  string $plugin unused
      * @return \OWA\Core\Auth
      */
     public static function get_instance($plugin = '') {
@@ -139,6 +146,8 @@ class Auth extends \OWA\Core\Base {
      * Controller::setAuthMethods().
      *
      * @param string[]|null $methods login_form, overlay_token, app_password, cookies
+     * @return array{auth_status: mixed} as the auth_status filter left it: a bool
+     *         unless a module's filter answers otherwise
      */
     public function authenticateUser( $methods = null ) {
 
@@ -298,7 +307,7 @@ class Auth extends \OWA\Core\Base {
      * Header only. A token in the URL ends up in server logs and Referer
      * headers.
      *
-     * @return array|null token, user_id (null for Bearer)
+     * @return array{token: string, user_id: string|null}|null user_id null for Bearer
      */
     private function appPasswordCredential() {
 
@@ -446,6 +455,10 @@ class Auth extends \OWA\Core\Base {
      * A sign-in with less than SESSION_REFRESH_BELOW left is given a fresh `p`,
      * so a session ends between SESSION_REFRESH_BELOW and SESSION_LIFETIME
      * after its last request, not at a fixed time after its sign-in.
+     *
+     * @param  mixed $user_id    the `u` cookie, as carried
+     * @param  mixed $credential the `p` cookie, as carried
+     * @return bool|null null when a user was already signed in upstream
      */
     public function authByCookies($user_id, $credential) {
 
@@ -473,8 +486,15 @@ class Auth extends \OWA\Core\Base {
         } else {
             return true;
         }
+
+        return null;
     }
 
+    /**
+     * @param  mixed $user_id  as the request carried it
+     * @param  mixed $password as the request carried it: only a string can match
+     * @return bool
+     */
     public function authByInput($user_id, $password) {
 
         // set credentials
@@ -531,6 +551,8 @@ class Auth extends \OWA\Core\Base {
      * HttpOnly: nothing in the browser needs them, and with them a script
      * injected into any OWA page would have the account. Secure on an HTTPS
      * request (Lib::isHttps()).
+     *
+     * @return void
      */
     public function saveCredentials() {
 
@@ -542,6 +564,8 @@ class Auth extends \OWA\Core\Base {
 
     /**
      * Writes `p` for the signed-in user, expiring SESSION_LIFETIME from now.
+     *
+     * @return void
      */
     protected function writeSessionCredential() {
 
@@ -551,12 +575,27 @@ class Auth extends \OWA\Core\Base {
             $this->u->get('user_id'), $this->u->get('session_epoch'), $this->u->get('password'), $expires ), $expires );
     }
 
-    /** A session cookie: HttpOnly, and Secure on an HTTPS request. */
+    /**
+     * A session cookie: HttpOnly, and Secure on an HTTPS request.
+     *
+     * @param  string $name
+     * @param  string $value
+     * @param  int    $expires unix timestamp
+     * @return void
+     */
     protected function writeCookie( $name, $value, $expires ) {
 
         $this->emitCookie( $name, $value, $expires, (bool) \OWA\Core\Lib::isHttps(), true );
     }
 
+    /**
+     * @param  string $name
+     * @param  string $value
+     * @param  int    $expires unix timestamp
+     * @param  bool   $secure
+     * @param  bool   $httponly
+     * @return void
+     */
     protected function emitCookie( $name, $value, $expires, $secure, $httponly ) {
 
         \OWA\Core\CoreAPI::createCookie( $name, $value, $expires, '/', '', $secure, $httponly );
@@ -573,12 +612,21 @@ class Auth extends \OWA\Core\Base {
         return \OWA\Core\CoreAPI::clearState('p');
     }
 
+    /**
+     * @param  string $password
+     * @return string
+     */
     public function encryptOldPassword($password) {
 
         return \OWA\Core\Lib::encryptOldPassword($password);
 
     }
 
+    /**
+     * Loads $u by credentials['user_id'].
+     *
+     * @return void
+     */
     public function getUser() {
 
         // fetch user object from the db
@@ -596,6 +644,10 @@ class Auth extends \OWA\Core\Base {
      */
     const LEGACY_GENERATED_PASSWORD = '/^(\\$2[aby]?\\$\\d\\d|\\$argon)$/';
 
+    /**
+     * @param  mixed $password any type: only a string can be one
+     * @return bool
+     */
     public static function isLegacyGeneratedPassword( $password ) {
 
         return is_string( $password ) && preg_match( self::LEGACY_GENERATED_PASSWORD, $password ) === 1;
@@ -661,6 +713,10 @@ class Auth extends \OWA\Core\Base {
     /**
      * Whether a typed password is the account's: the stored hash, or, for an
      * account whose password 1.x stored unsalted, the whole of that hash.
+     *
+     * @param  mixed  $typed  as the request carried it: only a string can match
+     * @param  string $stored
+     * @return bool
      */
     private function passwordMatches( $typed, $stored ) {
 
@@ -699,6 +755,13 @@ class Auth extends \OWA\Core\Base {
         return $expires . '.' . self::sessionHmac( $user_id, $session_epoch, $password_hash, $expires );
     }
 
+    /**
+     * @param  string $user_id
+     * @param  int    $session_epoch
+     * @param  string $password_hash
+     * @param  int    $expires unix timestamp
+     * @return string
+     */
     private static function sessionHmac( $user_id, $session_epoch, $password_hash, $expires ) {
 
         // Only user_id is free text, and it comes first, so the fields cannot run together.
@@ -769,10 +832,18 @@ class Auth extends \OWA\Core\Base {
     }
 
 
-    /** Whether the last authenticateUser() refused a legacy API key or signature. */
+    /**
+     * Whether the last authenticateUser() refused a legacy API key or signature.
+     *
+     * @var bool
+     */
     private $legacy_api_key_refused = false;
 
-    /** Whether the request carries a legacy API key or request signature. */
+    /**
+     * Whether the request carries a legacy API key or request signature.
+     *
+     * @return bool
+     */
     public static function carriesLegacyApiKey() {
 
         foreach ( self::LEGACY_API_KEY_PARAMS as $param ) {
@@ -794,18 +865,28 @@ class Auth extends \OWA\Core\Base {
         return false;
     }
 
+    /**
+     * @return bool
+     */
     public function refusedLegacyApiKey() {
 
         return $this->legacy_api_key_refused;
     }
 
-    // sets the method by which the user was authenticated
-    // @method  string
+    /**
+     * Sets the method by which the user was authenticated.
+     *
+     * @param  string $method api_key, login_form, overlay_token, app_password or cookies
+     * @return void
+     */
     private function setAuthMethod( $method ) {
         
         $this->auth_method = $method;
     }
     
+    /**
+     * @return string|null null before authenticateUser() chose one
+     */
     public function getAuthMethod() {
         
         return $this->auth_method;

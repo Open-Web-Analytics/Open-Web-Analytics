@@ -38,6 +38,9 @@ namespace OWA\Core\Validation;
  */
 class DateRange extends \OWA\Core\Validation\Validation {
 
+    /**
+     * @return void
+     */
     public function validate() {
 
         $error = \OWA\Module\Base\Classes\TimePeriod::getRangeError(

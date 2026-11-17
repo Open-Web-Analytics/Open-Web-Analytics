@@ -32,6 +32,9 @@ namespace OWA\Core\Validation;
  
  class SubStringPosition extends \OWA\Core\Validation\Validation {
      
+     /**
+      * @return void
+      */
      public function validate() {
          
          $value = $this->getValues();

@@ -33,9 +33,9 @@ namespace OWA\Core;
 class Observer extends \OWA\Core\Base {
 
     /**
-     * Event Message
+     * The event being handled
      *
-     * @var array
+     * @var \OWA\Module\Base\Classes\Event|null null until a handler's notify() sets it
      */
     public $m;
 
@@ -76,7 +76,11 @@ class Observer extends \OWA\Core\Base {
         return $mailer->sendMail();
     }
 
-    /** The mailer sendMail() uses. */
+    /**
+     * The mailer sendMail() uses.
+     *
+     * @return \OWA\Module\Base\Classes\Mailer
+     */
     protected function mailer() {
 
         return new \OWA\Module\Base\Classes\Mailer();

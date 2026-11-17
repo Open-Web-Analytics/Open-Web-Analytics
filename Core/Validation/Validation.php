@@ -32,20 +32,31 @@ namespace OWA\Core\Validation;
  
  class Validation {
  	 
- 	 // name of param being validated.
+ 	 /** @var string|null name of param being validated */
  	 public $name;
-     // hold config
+
+     /** @var array<string, mixed> errorMsg, stopOnError and each validation's own keys */
      public $conf;
 
-     // hold values to validate
+     /** @var mixed the value to validate, any type a controller passes */
      public $values;
 
+     /** @var bool|null true once the validation has failed */
      public $hasError;
 
+     /**
+      * A message, or getMsg()'s headline and message.
+      *
+      * @var string|array<string, string>|null
+      */
      public $errorMsg;
 
+     /** @var mixed the errorMsgTemplate configuration key, any type given; nothing reads it */
      public $errorMsgTemplate;
 
+     /**
+      * @param array<string, mixed> $conf
+      */
      public function __construct($conf = array()) {
 
          if (array_key_exists('errorMsgTemplate', $conf)) {
@@ -60,30 +71,53 @@ namespace OWA\Core\Validation;
 
      }
 	 
+	 /**
+	  * @param  string $name
+	  * @return void
+	  */
 	 public function setName( $name ) {
 		 
 	 	$this->name = $name;	
 	 }
 	 
+	 /**
+	  * @return string|null
+	  */
 	 public function getName() {
 		 
 		 return $this->name;
 	 }
 	 
+     /**
+      * Sets $hasError through hasError() when the value fails. Validator reads
+      * that, not the return value.
+      *
+      * @return bool|void
+      */
      public function validate() {
 
          return false;
      }
 
+     /**
+      * @return string|array<string, string>|null
+      */
      public function getErrorMsg() {
 
          return $this->errorMsg;
      }
 
+     /**
+      * @param  string|array<string, string> $msg
+      * @return void
+      */
      public function setErrorMessage($msg) {
          $this->errorMsg = $msg;
      }
 
+     /**
+      * @return bool
+      */
      public function isValid() {
 
          if ($this->hasError == true):
@@ -93,12 +127,20 @@ namespace OWA\Core\Validation;
          endif;
      }
 
+     /**
+      * @param  array<string, mixed> $array
+      * @return void
+      */
      public function setConfigArray($array) {
 
          $this->conf = $array;
          return;
      }
 
+     /**
+      * @param  string $name
+      * @return mixed  as the configuration holds it; null when unset
+      */
      public function getConfig($name) {
 
          if (isset( $this->conf[$name] ) ) {
@@ -106,18 +148,30 @@ namespace OWA\Core\Validation;
          }
      }
 
+     /**
+      * @param  mixed $values any type a controller passes
+      * @return void
+      */
      public function setValues($values) {
 
          $this->values = $values;
          return;
      }
 
+     /**
+      * @return mixed
+      */
      public function getValues() {
 
          return $this->values;
 
      }
 
+     /**
+      * Marks the validation failed.
+      *
+      * @return void
+      */
      public function hasError() {
 
          $this->hasError = true;

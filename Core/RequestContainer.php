@@ -35,17 +35,46 @@ namespace OWA\Core;
 #[\AllowDynamicProperties]
 class RequestContainer {
 
+    /** @var list<string>|null the CLI's argv; null on a web request */
     public $cli_args;
+
+    /** @var bool|null true on an HTTPS request, else unset */
     public $is_https;
+
+    /**
+     * The request's params by their un-namespaced names.
+     *
+     * Keyed by name; PHP turns a numeric name into an int key.
+     *
+     * @var array<mixed> a string, or an array PHP decoded; setParam() stores anything
+     */
     public $owa_params = array();
+
+    /** @var array<list<string>> name => each value a cookie of that name carried */
     public $cookies = array();
+
+    /** @var array<list<string>> the cookies in OWA's namespace, the prefix removed */
     public $owa_cookies = array();
+
+    /** @var array<mixed> the PHP session's values */
     public $session = array();
+
+    /** @var array<mixed> the request's params, cleaned, as named on the request */
     public $request = array();
+
+    /** @var array<mixed> the request's server variables */
     public $server;
+
+    /** @var string */
     public $guid;
+
+    /** @var \OWA\Module\Base\Classes\State */
     public $state;
+
+    /** @var string REQUEST_METHOD, 'cli', or '' */
     public $request_type = '';
+
+    /** @var int the edge receipt in seconds */
     public $timestamp;
 
     /**
@@ -60,6 +89,7 @@ class RequestContainer {
      */
     public $timestamp_usec;
 
+    /** @var string|null null on a CLI request */
     public $current_url;
 
     /**
@@ -313,6 +343,10 @@ class RequestContainer {
         }
     }
 
+    /**
+     * @param  string $name
+     * @return mixed  as owa_params holds it; false when absent
+     */
     public function getParam($name) {
 
         if (array_key_exists($name, $this->owa_params)) {
@@ -323,12 +357,21 @@ class RequestContainer {
 
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $value any type a caller stores
+     * @return true
+     */
     public function setParam($name, $value) {
 
         $this->owa_params[$name] = $value;
         return true;
     }
 
+    /**
+     * @param  string $name
+     * @return mixed  as the request carried it; false when absent
+     */
     public function getRequestParam($name) {
 
         if (array_key_exists($name, $this->request)) {
@@ -338,17 +381,28 @@ class RequestContainer {
         }
     }
 
+    /**
+     * @return array<mixed>
+     */
     public function getAllOwaParams() {
 
         return $this->owa_params;
     }
 
+    /**
+     * @param  array<mixed> $params name => value; each replaces the one held
+     * @return void
+     */
     public function mergeParams($params) {
 
         $this->owa_params = array_merge($this->owa_params, $params);
         return;
     }
 
+    /**
+     * @param  string $name
+     * @return mixed  as $_SERVER holds it; false when absent
+     */
     public function getServerParam($name) {
 
         if (array_key_exists($name, $this->server)) {
@@ -358,6 +412,9 @@ class RequestContainer {
         }
     }
 
+    /**
+     * @return void
+     */
     public function decodeRequestParams() {
 
         $params = array();
@@ -380,6 +437,9 @@ class RequestContainer {
 
     }
 
+    /**
+     * @return int
+     */
     public function getTimestamp() {
 
         return $this->timestamp;
@@ -405,7 +465,8 @@ class RequestContainer {
      * the two: multiplying up cannot invent precision, where truncating down would
      * throw some away.
      *
-     * @param int $seconds
+     * @param  int $seconds
+     * @return void
      */
     public function setTimestamp( $seconds ) {
 
@@ -423,11 +484,17 @@ class RequestContainer {
         return $this->timestamp_usec;
     }
 
+    /**
+     * @return string|null
+     */
     public function getCurrentUrl() {
 
         return $this->current_url;
     }
 
+    /**
+     * @return string
+     */
     public function getRequestType() {
 
         return strtoupper( $this->request_type );

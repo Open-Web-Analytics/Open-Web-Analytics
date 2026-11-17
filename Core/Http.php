@@ -41,7 +41,7 @@ class Http {
     /**
      * Configuration
      *
-     * @var array
+     * @var array<string, mixed> a setting's value is any type
      */
     public $config;
 
@@ -52,8 +52,14 @@ class Http {
      */
     public $e;
 
+    /** @var Client */
     public $http;
 
+    /**
+     * The last request's response; '' before one, and after one that failed.
+     *
+     * @var \Psr\Http\Message\ResponseInterface|string
+     */
     public $response;
     public function __construct() {
 	    
@@ -64,6 +70,12 @@ class Http {
 	    ] );
 
     }
+    /**
+     * @param  string $url
+     * @param  string $arguments unused
+     * @return \Psr\Http\Message\StreamInterface|string|null the body; null when
+     *         the request failed
+     */
    public function getRequest($url, $arguments = '') {
 		
 		$this->response = '';
@@ -110,16 +122,26 @@ class Http {
 	        
 	        return $this->getResponseBody();
         }
+
+        return null;
     }
     
+    /**
+     * @return int|null null before a response
+     */
    public function getResponseStatusCode() {
 	    
 	    if ( $this->response ) {
 		 
 		    return $this->response->getStatusCode();
 		}
+
+        return null;
     }
     
+    /**
+     * @return \Psr\Http\Message\StreamInterface|string '' before a response
+     */
    public function getResponseBody() {
 
 	      if ( $this->response ) {

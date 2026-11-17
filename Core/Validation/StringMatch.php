@@ -32,6 +32,9 @@ namespace OWA\Core\Validation;
  
  class StringMatch extends \OWA\Core\Validation\Validation {
 
+     /**
+      * @return void
+      */
      public function validate() {
 
          $values_array = $this->getValues();
