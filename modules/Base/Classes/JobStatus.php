@@ -15,6 +15,10 @@ namespace OWA\Module\Base\Classes;
  * cmd=schedule-status and the Reporting Cube screen say the same thing about
  * the same job because they run the same code; the CLI classes keep their
  * method names as delegates.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type JobRegistration from \OWA\Core\Module
+ * @phpstan-import-type CronFields from \OWA\Core\Cron
  */
 class JobStatus {
 
@@ -35,7 +39,7 @@ class JobStatus {
      *
      * @param string   $name
      * @param int|null $now
-     * @return array ['job','row','next','running','reason']
+     * @return array{job: JobRegistration|null, row: Row|null, next: int|null, running: bool, reason: string|null}
      */
     public static function forJob( $name, $now = null ) {
 
@@ -83,6 +87,11 @@ class JobStatus {
         return $out;
     }
 
+    /**
+     * Every scheduled job, by name.
+     *
+     * @return array<string, JobRegistration>
+     */
     public static function jobs() {
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -93,6 +102,11 @@ class JobStatus {
         return $s->getJobs();
     }
 
+    /**
+     * The reporting timezone, else PHP's.
+     *
+     * @return string
+     */
     public static function timezone() {
 
         $tz = \OWA\Core\CoreAPI::getSetting( 'base', 'timezone' );
@@ -100,6 +114,10 @@ class JobStatus {
         return $tz ? $tz : date_default_timezone_get();
     }
 
+    /**
+     * @param  JobRegistration $job
+     * @return CronFields|null null when the job is off or its schedule cannot be read
+     */
     public static function parsedSchedule( $job ) {
 
         $expr = isset( $job['schedule'] ) ? strtolower( trim( (string) $job['schedule'] ) ) : '';
@@ -112,6 +130,10 @@ class JobStatus {
         return \OWA\Core\Cron::parse( $expr );
     }
 
+    /**
+     * @param  JobRegistration|null $job
+     * @return bool
+     */
     public static function isDisabled( $job ) {
 
         $expr = isset( $job['schedule'] ) ? strtolower( trim( (string) $job['schedule'] ) ) : '';
@@ -119,6 +141,11 @@ class JobStatus {
         return $expr === '' || $expr === 'off';
     }
 
+    /**
+     * Every job's state row, by job_name.
+     *
+     * @return array<int|string, Row>
+     */
     public static function allState() {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.scheduled_job' );
@@ -140,6 +167,13 @@ class JobStatus {
         return $out;
     }
 
+    /**
+     * A Unix time as a date and time in the reporting timezone.
+     *
+     * @param  scalar|null $ts      as a row or a caller holds it
+     * @param  string      $absent  what an empty $ts reads as
+     * @return string
+     */
     public static function readable( $ts, $absent = 'never' ) {
 
         if ( ! $ts ) {
@@ -162,6 +196,15 @@ class JobStatus {
     /**
      * Why is this job not running? The first cause that holds, in order.
      *
+     * @param  string          $name
+     * @param  JobRegistration $job
+     * @param  Row|null        $row            its state row
+     * @param  Row|null        $lock           its lock row
+     * @param  CronFields|null $parsed         its schedule
+     * @param  int             $now
+     * @param  bool            $pending        a schema update is pending
+     * @param  bool            $ever           any job has a state row
+     * @param  int             $last_activity  the latest last_run_at of any job
      * @return string|null  null when there is nothing to say
      */
     public static function diagnose( $name, $job, $row, $lock, $parsed, $now, $pending, $ever, $last_activity ) {

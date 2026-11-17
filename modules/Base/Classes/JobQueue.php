@@ -33,6 +33,9 @@ namespace OWA\Module\Base\Classes;
  * A RETRY KEEPS ITS ROW: the same id, pending again after the next back-off
  * step. A job that exhausts its attempts is kept as failed, with its error,
  * until retried or pruned.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-type Policy array{max_attempts: int, backoff: list<int>, lease_seconds: int}
  */
 class JobQueue {
 
@@ -74,15 +77,24 @@ class JobQueue {
      */
     public static $table = null;
 
-    /** The queue's clock. */
+    /**
+     * The queue's clock.
+     *
+     * @return int
+     */
     public static function now() {
 
         return self::$frozen_at ?? time();
     }
 
-    /** Set by claim() when the database connection was lost; drain() stops. */
+    /**
+     * Set by claim() when the database connection was lost; drain() stops.
+     *
+     * @var bool
+     */
     private static $connection_lost = false;
 
+    /** @return \OWA\Core\Db */
     private static function db() {
 
         return \OWA\Core\CoreAPI::dbSingleton();
@@ -110,7 +122,11 @@ class JobQueue {
         return $s->getCliCommandClass( (string) $command ) ?: null;
     }
 
-    /** The queue's table: the entity's, or a test's scratch copy. */
+    /**
+     * The queue's table: the entity's, or a test's scratch copy.
+     *
+     * @return string
+     */
     public static function table() {
 
         return self::$table ?: \OWA\Core\CoreAPI::entityFactory( 'base.job_queue' )->getTableName();
@@ -121,7 +137,7 @@ class JobQueue {
      * controller declaring a static jobQueuePolicy().
      *
      * @param  string $command
-     * @return array max_attempts, backoff (int[]), lease_seconds
+     * @return Policy
      */
     public static function policyFor( $command ) {
 
@@ -153,7 +169,7 @@ class JobQueue {
      * job is committed with whatever surrounds it.
      *
      * @param  string      $command  a registered CLI command
-     * @param  array       $params   its arguments
+     * @param  array<string, mixed> $params  its arguments, name => a JSON-encodable value
      * @param  string|null $key      at most one pending job per key
      * @param  int         $delay    seconds before it may run
      * @return string|false  the job's id
@@ -215,7 +231,10 @@ class JobQueue {
         return $key !== null ? ( self::pendingWithKey( $key ) ?: false ) : false;
     }
 
-    /** @return string|null the pending job holding $key */
+    /**
+     * @param  string $key
+     * @return string|null the pending job holding $key
+     */
     private static function pendingWithKey( $key ) {
 
         $row = self::db()->get_row( sprintf(
@@ -230,7 +249,7 @@ class JobQueue {
      * Two queries rather than one OR, so each is served by its index.
      *
      * @param  int|null $within  only a job whose lease fits in this many seconds; null for any
-     * @return array|null the claimed row
+     * @return Row|null the claimed row
      * @phpstan-impure
      */
     public static function claim( $within = null ) {
@@ -308,13 +327,23 @@ class JobQueue {
         return null;
     }
 
-    /** A deadlock (1213, SQLSTATE 40001) or lock-wait timeout (1205): worth trying again. */
+    /**
+     * A deadlock (1213, SQLSTATE 40001) or lock-wait timeout (1205): worth trying again.
+     *
+     * @param  string $error  what the database said
+     * @return bool
+     */
     public static function isRetryable( $error ) {
 
         return (bool) preg_match( '/\b(1213|1205|40001)\b|deadlock|lock wait timeout/i', (string) $error );
     }
 
-    /** The server went away or the connection dropped (2006, 2013): stop until the next tick. */
+    /**
+     * The server went away or the connection dropped (2006, 2013): stop until the next tick.
+     *
+     * @param  string $error  what the database said
+     * @return bool
+     */
     public static function isLostConnection( $error ) {
 
         return (bool) preg_match( '/\b(2006|2013)\b|gone away|lost connection/i', (string) $error );
@@ -328,8 +357,10 @@ class JobQueue {
      * first job, so a job longer than the budget still runs.
      *
      * @param  int      $deadline  unix time to stop claiming
-     * @param  callable $run       fn( string $command, array $params, array $job ): array outcome, message
-     * @return array counts: done, retried, failed, exhausted
+     * @param  callable(string, array<string, mixed>, Row): array<string, mixed> $run  given the command, its
+     *                             arguments and the job's row; answers outcome ('ok', 'refused', else
+     *                             failed) and message
+     * @return array{done: int, retried: int, failed: int, exhausted: int}
      */
     public static function drain( $deadline, callable $run ) {
 
@@ -404,6 +435,10 @@ class JobQueue {
         return $counts;
     }
 
+    /**
+     * @param  string $id
+     * @return void
+     */
     private static function markDone( $id ) {
 
         self::db()->query( sprintf(
@@ -411,6 +446,11 @@ class JobQueue {
             array( 'done', self::now(), $id ) );
     }
 
+    /**
+     * @param  string $id
+     * @param  string $error
+     * @return void
+     */
     private static function markFailed( $id, $error ) {
 
         self::db()->query( sprintf(
@@ -422,6 +462,8 @@ class JobQueue {
      * After a failed run: pending again after the next back-off step, or
      * failed for good once its attempts are spent.
      *
+     * @param  Row    $job
+     * @param  string $error  '' reads as Failed.
      * @return bool whether it will be retried
      */
     private static function retryOrFail( array $job, $error ) {
@@ -446,7 +488,12 @@ class JobQueue {
         return true;
     }
 
-    /** An error message, cut to what the column holds. */
+    /**
+     * An error message, cut to what the column holds.
+     *
+     * @param  string $error
+     * @return string
+     */
     private static function bound( $error ) {
 
         return mb_substr( (string) $error, 0, self::ERROR_LENGTH );
@@ -479,6 +526,7 @@ class JobQueue {
     /**
      * Delete one job, whatever its state.
      *
+     * @param  string $id
      * @return bool whether there was one
      */
     public static function forget( $id ) {
@@ -519,8 +567,8 @@ class JobQueue {
     /**
      * The queue at a glance, for the health screen and cmd=jobs.
      *
-     * @return array due, delayed, running, failed, done (counts) and
-     *               oldest_due_age (seconds, null when nothing is due)
+     * @return array{due: int, delayed: int, running: int, failed: int, done: int, oldest_due_age: int|null}
+     *               counts, and oldest_due_age in seconds, null when nothing is due
      */
     public static function stats() {
 
@@ -561,7 +609,7 @@ class JobQueue {
      *
      * @param  string|null $status
      * @param  int         $limit
-     * @return array[]
+     * @return list<Row>
      */
     public static function listJobs( $status = null, $limit = 50 ) {
 
