@@ -29,7 +29,7 @@ namespace OWA\Module\Base\Entity;
  */
 class ScheduledJob extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName('scheduled_job');
 

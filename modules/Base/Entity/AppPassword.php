@@ -25,9 +25,10 @@ class AppPassword extends \OWA\Core\Entity {
     /** The index a user's list is read through. */
     const USER_INDEX = 'user_id';
 
+    /** @var list<string> */
     protected $private_properties = [ 'secret_hash' ];
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'app_password' );
 

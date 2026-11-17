@@ -453,6 +453,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         $this->set( 'savedProperties', $saved );
         $this->set( 'error_code', 3002 );
         $this->settingsChrome( array( 'propertyId' => $propertyId ), '', $propertyId );
-        $this->setSubview( 'base.goalEventDefinitionEdit' );
+        $this->setSubview( 'base.goalEventDefinitionEdit',
+            GoalEventDefinitionEdit::screen( $this->getParam( 'goalEventDefinitionId' ) ) );
     }
 }

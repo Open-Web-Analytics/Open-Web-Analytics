@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Entity;
  */
 class JobLock extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName('job_lock');
 

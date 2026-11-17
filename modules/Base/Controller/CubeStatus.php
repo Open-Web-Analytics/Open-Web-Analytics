@@ -33,7 +33,8 @@ class CubeStatus extends \OWA\Core\AdminController {
 
         self::hierarchy( $this );
 
-        $this->setSubview( 'base.cubeStatus' );
+        $this->setSubview( 'base.cubeStatus', [
+            'template' => 'cube_status.php', 'vars' => [ 'cubes' ] ] );
     }
 
     /**

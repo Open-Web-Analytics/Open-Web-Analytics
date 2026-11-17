@@ -42,6 +42,8 @@ class MyAppPasswords extends \OWA\Core\AdminController {
         $this->set( 'siteId', $siteId );
 
         $this->settingsChrome( array( 'siteId' => $siteId ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) );
-        $this->setSubview( 'base.myAppPasswords' );
+        $this->setSubview( 'base.myAppPasswords', [
+            'template' => 'my_app_passwords.php',
+            'vars'     => [ 'app_passwords', 'scopes', 'enabled', 'require_https', 'api_url', 'siteId' ] ] );
     }
 }

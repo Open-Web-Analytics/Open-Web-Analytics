@@ -243,13 +243,10 @@ final class EventRawEntityTest extends TestCase
         // Read from the DECLARATION, not through getSetting(): that answers
         // false for an absent key and for one declared false, so it cannot
         // tell "removed" from "defaulted off" -- which is the whole claim.
-        $class = new ReflectionClass(\OWA\Module\Base\Classes\Settings::class);
-        $method = $class->getMethod('getDefaultSettingsArray');
-
-        $declared = $method->invoke($class->newInstanceWithoutConstructor());
-
-        $this->assertArrayNotHasKey('v2_raw_collection', $declared['base'],
-            'the setting must not still be declared with a default');
+        $this->assertArrayNotHasKey('v2_raw_collection', \OWA\Module\Base\Classes\Settings::baseDefaults()['base'],
+            'the setting must not still have a default');
+        $this->assertArrayNotHasKey('base|v2_raw_collection', \OWA\Core\Module::settingsRegistry()['fields'],
+            'the setting must not still be declared');
 
         $denylist = array_merge(
             \OWA\Module\Base\Classes\Settings::staticSettings()['base'],

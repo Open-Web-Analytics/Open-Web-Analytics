@@ -48,7 +48,7 @@ class VisitorAcquisition extends \OWA\Core\Entity {
     /** The unique index on visitor_id, by the name an update can drop. */
     const VISITOR_INDEX = 'visitor_id_unique';
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'visitor_acquisition' );
 

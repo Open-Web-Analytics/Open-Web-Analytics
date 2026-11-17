@@ -22,11 +22,15 @@ namespace OWA\Module\Domstream\Update;
  */
 class Update002 extends \OWA\Core\Update {
 
-    var $schema_version = 2;
+    public $schema_version = 2;
 
     const ENTITIES = array( 'domstream.domstream_chunk', 'domstream.domstream_payload' );
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -51,7 +55,7 @@ class Update002 extends \OWA\Core\Update {
     }
 
     /** The two tables go, with every recording in them. */
-    function down() {
+    public function down() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 

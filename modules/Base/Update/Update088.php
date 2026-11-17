@@ -25,14 +25,18 @@ namespace OWA\Module\Base\Update;
  */
 class Update088 extends \OWA\Core\Update {
 
-    var $schema_version = 88;
+    public $schema_version = 88;
 
-    var $down_does_not_restore = 'the scheme 1.x stored on each Profile and Property domain.';
+    public $down_does_not_restore = 'the scheme 1.x stored on each Profile and Property domain.';
 
     /** The entities whose domain column this rewrites, by key. */
     const ENTITIES = array( 'site' => 'base.site', 'property' => 'base.property' );
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $count = 0;
@@ -74,7 +78,7 @@ class Update088 extends \OWA\Core\Update {
         return true;
     }
 
-    function down() {
+    public function down() {
 
         return true;
     }

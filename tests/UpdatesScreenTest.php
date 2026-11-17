@@ -52,30 +52,35 @@ final class UpdatesScreenTest extends TestCase
         $this->assertArrayNotHasKey( 'view', $data );
     }
 
-    private function wrapperFile(): string
+    /** The view the action names, assembled as index.php assembles it. */
+    private function renderedView(): \OWA\Core\View
     {
-        $view = new \OWA\Module\Base\View\Updates();
-        $view->render( ['modules' => ['base']] );
+        \OWA\Core\CoreAPI::serviceSingleton()->modules_needing_updates = ['base'];
 
-        $file = new \ReflectionProperty( $view->t, 'file' );
+        $data = $this->run_action();
+        $view = \OWA\Core\CoreAPI::viewFactory( $data['view'], $data );
+        $view->setData( $data );
+        $view->assembleView( $data );
 
-        return basename( (string) $file->getValue( $view->t ) );
+        return $view;
     }
 
     public function testItRendersInTheSignedOutWrapper(): void
     {
-        $this->assertSame( 'wrapper_public.php', $this->wrapperFile(),
+        \OWA\Core\CoreAPI::serviceSingleton()->modules_needing_updates = ['base'];
+
+        $html = (string) \OWA\Core\CoreAPI::displayView( $this->run_action() );
+
+        $this->assertStringContainsString( 'owa_publicPage', $html,
             'The updates page took the signed-in wrapper, whose header it does not load the styles for.' );
     }
 
     public function testItRendersTheUpdatesListInsideTheWrapper(): void
     {
-        $view = new \OWA\Module\Base\View\Updates();
-        $view->render( ['modules' => ['base']] );
+        $view = $this->renderedView();
 
-        $file = new \ReflectionProperty( $view->body, 'file' );
-
-        $this->assertSame( 'updates.php', basename( (string) $file->getValue( $view->body ) ) );
+        $this->assertSame( 'updates.php', basename( (string) $view->body->file ) );
+        $this->assertSame( ['base'], $view->body->vars['modules'] ?? null );
     }
 
     public function testWithUpdatesPendingItListsTheModules(): void

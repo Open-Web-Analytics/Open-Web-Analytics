@@ -45,16 +45,20 @@ class Update054 extends \OWA\Core\Update {
 
     use CubeColumn;
 
-    var $schema_version = 54;
+    public $schema_version = 54;
 
     
 
-    var $down_does_not_restore = 'the values rows stored in the promoted columns: the columns are dropped and their values are not copied back into params.';
+    public $down_does_not_restore = 'the values rows stored in the promoted columns: the columns are dropped and their values are not copied back into params.';
 
     /** The keys that stop reaching `params` in this release. */
     const PROMOTED = array( 'file_name', 'file_extension' );
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         foreach ( self::PROMOTED as $column ) {
 
@@ -77,7 +81,7 @@ class Update054 extends \OWA\Core\Update {
      * no inverse either, because a registration is a Property's own declaration
      * and re-creating one would be inventing it.
      */
-    function down() {
+    public function down() {
 
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
 

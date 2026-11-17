@@ -56,7 +56,27 @@ class PropertyProfile extends \OWA\Core\AdminController {
             $this->getParam( 'siteId' ), $this->getParam( 'propertyId' ) );
 
         $this->settingsChrome( array( 'siteId' => $siteId ), '', $this->getParam( 'propertyId' ) );
-        $this->setSubview( 'base.propertyProfile' );
+        $this->setSubview( 'base.propertyProfile', self::screen( $this->getParam( 'propertyId' ) ) );
+    }
+
+    /**
+     * The details screen, which PropertyEdit draws again for a refused save.
+     * A Property not yet saved has no id.
+     *
+     * @param string $propertyId
+     * @return array as setSubview() takes it
+     */
+    public static function screen( $propertyId ) {
+
+        return [
+            'template' => 'property_profile.php',
+            'vars'     => [
+                'headline' => $propertyId ? \OWA\Core\CoreAPI::t( 'Property Details' ) : \OWA\Core\CoreAPI::t( 'New Property' ),
+                'property', 'propertyId',
+                // A refused save's values, to show in place of what is stored.
+                'posted',
+            ],
+        ];
     }
 
     /**

@@ -25,7 +25,8 @@ class InstallStart extends \OWA\Core\Controller\Install {
     function action() {
 
         $this->setView('base.install');
-        $this->setSubview('base.installStart');
+        $this->setSubview( 'base.installStart', [
+            'template' => 'install_start.php', 'vars' => [ 'headline' => \OWA\Core\CoreAPI::t( 'Get Started...' ) ] ] );
     }
 }
 

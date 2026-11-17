@@ -375,7 +375,7 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
         const underTrend = await page.evaluate(() => ({
             boxes: document.querySelectorAll('#siteTrend-metrics .owa_metricInfobox').length,
-            sparklines: document.querySelectorAll('#siteTrend-metrics .owa_metricInfobox canvas').length,
+            sparklines: document.querySelectorAll('#siteTrend-metrics [data-ui^="kpi:"] [data-ui="sparkline"]').length,
         }));
 
         expect(underTrend.boxes).toBeGreaterThan(1);
@@ -394,12 +394,12 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
 
             document.querySelectorAll('.owa_reportGridItem').forEach((item) => {
 
-                const boxes = item.querySelectorAll('.owa_metricInfobox');
+                const boxes = item.querySelectorAll('[data-ui^="kpi:"]');
 
                 if (boxes.length && !item.querySelector('.owa_areaChart')) {
                     rows.push({
                         boxes: boxes.length,
-                        sparklines: item.querySelectorAll('.owa_metricInfobox canvas').length,
+                        sparklines: item.querySelectorAll('[data-ui^="kpi:"] [data-ui="sparkline"]').length,
                     });
                 }
             });
@@ -737,30 +737,37 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
         expect(drawn.options).toEqual(['dateHour', 'date', 'yearMonth']);
     });
 
-    test('sparkline paints kpi-box canvases', async ({ page }) => {
-        // OWA renders each sparkline into <p class="sparkline">; jquery-sparkline
-        // 2.4.0 (the jQuery-3.x-clean replacement for the vendored 1.2.1) draws a
-        // <canvas> inside it. Assert at least one sparkline painted a canvas.
-        //
-        // NOT on the dashboard any more. Its only boxes are the ones under the
-        // trend, and those deliberately draw no sparkline -- the chart above
-        // them already shows the shape over time. No shipped report has boxes
-        // without a chart, so the library is pinned on the seeded custom
-        // report's.
+    /*
+     * Each standalone box draws its metric as a line, an image named by the
+     * series' range. NOT on the dashboard: its only boxes are the ones under
+     * the trend, which draw none, so this is the seeded custom report's.
+     */
+    test('a standalone metric box draws its sparkline, named by its range', async ({ page }) => {
         await page.goto(await boxesReport(page), { waitUntil: 'networkidle' });
 
-        const sparkCanvases = page.locator('p.sparkline canvas');
+        const line = page.locator('[data-ui^="kpi:"]').first()
+            .getByRole('img', { name: /^Trend: lowest [\d,.]+, highest [\d,.]+$/ });
 
-        await expect(sparkCanvases.first()).toBeAttached({ timeout: 20_000 });
-        expect(await sparkCanvases.count()).toBeGreaterThanOrEqual(1);
+        await expect(line).toBeVisible({ timeout: 20_000 });
 
-        const dims = await page.evaluate(() => {
-            const c = document.querySelector('p.sparkline canvas');
-            return c ? { w: c.width, h: c.height } : null;
+        // The size the boxes have always drawn it at.
+        const box = await line.boundingBox();
+        expect(box && Math.round(box.width)).toBe(100);
+        expect(box && Math.round(box.height)).toBe(20);
+
+        // A line was drawn, inside the box, in the stylesheet's colour.
+        const drawn = await line.evaluate((svg) => {
+            const path = svg.querySelector('[data-ui="sparkline-line"]');
+            const b = path.getBBox();
+            return {
+                d: path.getAttribute('d'),
+                inside: b.x >= 0 && b.y >= 0 && b.x + b.width <= 100 && b.y + b.height <= 20,
+                stroke: getComputedStyle(path).stroke,
+            };
         });
-        expect(dims).not.toBeNull();
-        expect(dims.w).toBeGreaterThan(0);
-        expect(dims.h).toBeGreaterThan(0);
+        expect(drawn.d).toMatch(/^M[\d.]+ [\d.]+( L[\d.]+ [\d.]+)+/);
+        expect(drawn.inside).toBe(true);
+        expect(drawn.stroke).toBe('rgb(0, 0, 255)');
     });
 
     test('the period picker opens with the presets and a calendar', async ({ page }) => {

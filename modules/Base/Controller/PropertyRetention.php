@@ -37,7 +37,9 @@ class PropertyRetention extends \OWA\Core\AdminController {
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ), $this->getParam( 'propertyId' ) );
 
         $this->settingsChrome( array( 'siteId' => $siteId ), '', $this->getParam( 'propertyId' ) );
-        $this->setSubview( 'base.propertyRetention' );
+        $this->setSubview( 'base.propertyRetention', [
+            'template' => 'property_retention.php',
+            'vars'     => [ 'headline' => \OWA\Core\CoreAPI::t( 'Data Retention' ), 'property', 'propertyId' ] ] );
     }
 }
 

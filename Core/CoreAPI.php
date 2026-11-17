@@ -1157,6 +1157,28 @@ class CoreAPI {
     }
 
     public static function moduleFactory($modulefile, $class_suffix = null, $params = '') {
+
+        $class = self::moduleClass( $modulefile, $class_suffix );
+
+        if ( $class === null ) {
+
+            throw self::noModuleClass( $modulefile, $class_suffix );
+        }
+
+        $obj = new $class( $params );
+        $obj->module = explode( '.', (string) $modulefile )[0];
+
+        return $obj;
+    }
+
+    /**
+     * The class a <module>.<name> resolves to with this suffix -- the module's
+     * own OWA\Module\<Module>\<Suffix>\<Name>, or for Base one of Core's -- or
+     * null when there is none.
+     *
+     * @throws \OWA\Core\Exception\InvalidAction when either half is not a bare identifier
+     */
+    public static function moduleClass( $modulefile, $class_suffix ) {
         /*
          * Both halves name a class -- OWA\Module\<Module>\<Suffix>\<Action> --
          * and class_exists() hands that name to the autoloader, which maps it
@@ -1195,15 +1217,17 @@ class CoreAPI {
             }
         }
 
+        if ( ! $class_suffix ) {
+
+            return null;
+        }
+
         $psr4 = '\\OWA\\Module\\' . \OWA\Core\Lib::moduleDirName( $module )
               . '\\' . $class_suffix . '\\' . ucfirst( $file );
 
-        if ( $class_suffix && class_exists( $psr4 ) ) {
+        if ( class_exists( $psr4 ) ) {
 
-            $obj = new $psr4( $params );
-            $obj->module = $module;
-
-            return $obj;
+            return $psr4;
         }
 
         /*
@@ -1213,17 +1237,51 @@ class CoreAPI {
          */
         $core = '\\OWA\\Core\\' . $class_suffix . '\\' . ucfirst( $file );
 
-        if ( $module === 'base' && $class_suffix && class_exists( $core ) ) {
+        if ( $module === 'base' && class_exists( $core ) ) {
 
-            $obj = new $core( $params );
-            $obj->module = $module;
-
-            return $obj;
+            return $core;
         }
 
-        throw new \Exception( sprintf(
+        return null;
+    }
+
+    private static function noModuleClass( $modulefile, $class_suffix ) {
+
+        list( $module, $file ) = explode( '.', (string) $modulefile );
+
+        return new \Exception( sprintf(
             'No %s class for %s.%s. A class must be PSR-4 autoloadable; the pre-PSR-4 '
           . 'owa_* file convention was removed in v2.0 (UPGRADING.md).', $class_suffix, $module, $file ) );
+    }
+
+    /**
+     * The view named $name: its module's View class, or -- when the module
+     * ships none and the controller declared a template for the name
+     * (Controller::setView(), setSubview()) -- a plain View that renders it.
+     *
+     * @param string $name  <module>.<view>
+     * @param array  $data  the controller's data
+     * @return \OWA\Core\View
+     */
+    public static function viewFactory( $name, $data = [] ) {
+
+        $class = self::moduleClass( $name, 'View' );
+
+        if ( $class === null ) {
+
+            if ( empty( $data['templates'][ $name ] ) ) {
+
+                throw self::noModuleClass( $name, 'View' );
+            }
+
+            $class = \OWA\Core\View::class;
+        }
+
+        $view = new $class();
+        $view->module = explode( '.', (string) $name )[0];
+        $view->name   = (string) $name;
+
+        return $view;
     }
 
     public static function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '') {
@@ -1321,12 +1379,9 @@ class CoreAPI {
         return $obj;
     }
 
-    public static function subViewFactory($subview, $params = array()) {
+    public static function subViewFactory( $subview, $data = [] ) {
 
-        list($module, $class) = explode(".", $subview);
-        //print_r($module.' ' . $class);
-
-        $subview =  \OWA\Core\CoreAPI::moduleFactory($subview, 'View', $params);
+        $subview = self::viewFactory( $subview, $data );
         $subview->is_subview = true;
 
         return $subview;
@@ -2367,8 +2422,8 @@ class CoreAPI {
             $viewfile = $data['view'];
         endif;
 
-        $view = \OWA\Core\CoreAPI::moduleFactory($viewfile, 'View');
-      
+        $view = self::viewFactory( $viewfile, $data );
+
         $view->setData($data);
         return $view->assembleView($data);
 

@@ -38,8 +38,9 @@ class UserHandlers extends \OWA\Core\Observer {
      *
      * @param     mixed $event
      * @access     public
+     * @return int an OWA_EHS_ handler status
      */
-    function notify($event) {
+    public function notify($event) {
 
         $this->m = $event;
 

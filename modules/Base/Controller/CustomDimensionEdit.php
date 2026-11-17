@@ -58,7 +58,9 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
         ), $submitted ) );
 
         $controller->settingsChrome( array( 'propertyId' => $property_id ), '', $property_id );
-        $controller->setSubview( 'base.customDimensionEdit' );
+        $controller->setSubview( 'base.customDimensionEdit', [
+            'template' => 'custom_dimension_edit.php',
+            'vars'     => [ 'propertyId', 'cube', 'scopes', 'types', 'submitted', 'used' ] ] );
     }
 }
 

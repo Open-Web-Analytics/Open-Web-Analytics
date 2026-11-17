@@ -33,12 +33,6 @@ namespace OWA\Module\Base\View;
 
 class Install extends \OWA\Core\View {
 
-    function __construct() {
-
-        $this->default_subview = 'base.installStart';
-        parent::__construct();
-    }
-
     function render($data) {
 
         //page title

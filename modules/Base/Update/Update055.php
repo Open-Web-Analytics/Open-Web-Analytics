@@ -28,11 +28,15 @@ namespace OWA\Module\Base\Update;
  */
 class Update055 extends \OWA\Core\Update {
 
-    var $schema_version = 55;
+    public $schema_version = 55;
 
     const COLUMN = 'event_type';
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         return $this->resize( OWA_DTD_VARCHAR64 );
     }
@@ -45,7 +49,7 @@ class Update055 extends \OWA\Core\Update {
      * this update. Refusing instead would leave strict mode rejecting the MODIFY
      * on any install that recorded one long name.
      */
-    function down() {
+    public function down() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -59,7 +63,11 @@ class Update055 extends \OWA\Core\Update {
         return $this->resize( OWA_DTD_VARCHAR24 );
     }
 
-    /** Raw and every cube, whichever of them exist. */
+    /**
+     * Raw and every cube, whichever of them exist.
+     *
+     * @return list<string>
+     */
     private function tables() {
 
         $tables = array(
@@ -76,6 +84,10 @@ class Update055 extends \OWA\Core\Update {
             function ( $table ) use ( $db ) { return $db->tableExists( $table ); } ) );
     }
 
+    /**
+     * @param  string $type
+     * @return bool
+     */
     private function resize( $type ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();

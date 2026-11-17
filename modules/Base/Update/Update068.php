@@ -22,11 +22,11 @@ namespace OWA\Module\Base\Update;
  */
 class Update068 extends \OWA\Core\Update {
 
-    var $schema_version = 68;
+    public $schema_version = 68;
 
     
 
-    var $down_does_not_restore = 'the queue items in the dropped table: it comes back empty.';
+    public $down_does_not_restore = 'the queue items in the dropped table: it comes back empty.';
 
     const DDL = <<<'SQL'
 CREATE TABLE %s (
@@ -49,7 +49,11 @@ CREATE TABLE %s (
 ) %s
 SQL;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->tableFor( 'queue_item' );
@@ -69,7 +73,7 @@ SQL;
         return true;
     }
 
-    function down() {
+    public function down() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->tableFor( 'queue_item' );

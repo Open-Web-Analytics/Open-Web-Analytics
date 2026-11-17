@@ -20,16 +20,20 @@ namespace OWA\Module\Base\Update;
  */
 class Update089 extends \OWA\Core\Update {
 
-    var $schema_version = 89;
+    public $schema_version = 89;
 
-    var $down_does_not_restore = 'the users\' API keys: the api_key column comes back empty.';
+    public $down_does_not_restore = 'the users\' API keys: the api_key column comes back empty.';
 
     const COLUMN = 'api_key';
 
     /** The column 1.x placed it after. */
     const AFTER = 'last_update_date';
 
-    /** The user table's columns, in order. @return string[] */
+    /**
+     * The user table's columns, in order.
+     *
+     * @return list<string>
+     */
     private function columns() {
 
         $names = array();
@@ -42,7 +46,11 @@ class Update089 extends \OWA\Core\Update {
         return $names;
     }
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         if ( ! in_array( self::COLUMN, $this->columns(), true ) ) {
 
@@ -59,7 +67,7 @@ class Update089 extends \OWA\Core\Update {
         return true;
     }
 
-    function down() {
+    public function down() {
 
         $columns = $this->columns();
 
