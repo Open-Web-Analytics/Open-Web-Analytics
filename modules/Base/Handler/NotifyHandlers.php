@@ -37,6 +37,7 @@ class NotifyHandlers extends \OWA\Core\Observer {
      *
      * @access     public
      * @param     object $event
+     * @return int an OWA_EHS_ handler status
      */
     public function notify( $event ) {
         
