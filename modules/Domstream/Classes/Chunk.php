@@ -42,7 +42,8 @@ final class Chunk {
 
     /**
      * @param  object $event a `domstream` tracking event, after logEvent()'s edge checks
-     * @return array|null    [ 'chunk' => row, 'payload' => row ], or null
+     * @return array{chunk: array<string, int|string|null>, payload: array{id: int, yyyymmdd: int, payload: string}}|null
+     *         [ 'chunk' => row, 'payload' => row ], or null
      */
     public static function fromEvent( $event ) {
 
@@ -133,6 +134,9 @@ final class Chunk {
     /**
      * The chunk's id, from its own content.
      *
+     * @param  string $site_id
+     * @param  string $recording_id
+     * @param  int    $seq
      * @return int
      */
     public static function id( $site_id, $recording_id, $seq ) {
@@ -144,7 +148,7 @@ final class Chunk {
      * The samples, decoded and checked, or null with the refusal set.
      *
      * @param  mixed $raw the JSON the tracker sent
-     * @return array|null
+     * @return list<list<int|string>>|null recorder tuples
      */
     public static function samples( $raw ) {
 
@@ -192,6 +196,10 @@ final class Chunk {
         return $samples;
     }
 
+    /**
+     * @param  mixed $s a decoded sample, any JSON value
+     * @return bool
+     */
     private static function isSample( $s ) {
 
         if ( ! is_array( $s ) || ! array_is_list( $s ) || count( $s ) < 2 ) {
@@ -231,6 +239,9 @@ final class Chunk {
     /**
      * The page's path, canonicalised exactly as a raw event's page_path is, so
      * Page Detail's pagePath finds the same page here.
+     *
+     * @param  string $location
+     * @return string|null
      */
     private static function path( $location ) {
 
@@ -245,6 +256,12 @@ final class Chunk {
             $parts['path'], \OWA\Module\Base\Classes\TrackingEventHelpers::directoryIndexPages() ), 0, 1024 );
     }
 
+    /**
+     * @param  mixed $v a decoded value, any JSON value
+     * @param  int   $min
+     * @param  int   $max
+     * @return bool
+     */
     private static function isInt( $v, $min, $max ) {
 
         if ( is_int( $v ) ) {
@@ -260,22 +277,40 @@ final class Chunk {
         return false;
     }
 
+    /**
+     * @param  mixed $v an event property, any type
+     * @return bool
+     */
     private static function isId( $v ) {
 
         return ( is_int( $v ) && $v > 0 )
             || ( is_string( $v ) && preg_match( '/^[1-9][0-9]{0,18}$/', $v ) );
     }
 
+    /**
+     * @param  mixed $v a decoded value, any JSON value
+     * @return bool
+     */
     private static function isText( $v ) {
 
         return is_string( $v ) && mb_strlen( $v ) <= self::MAX_TEXT;
     }
 
+    /**
+     * @param  mixed $v an event property, any type
+     * @param  int   $min
+     * @param  int   $max
+     * @return int
+     */
     private static function clamp( $v, $min, $max ) {
 
         return self::isInt( $v, PHP_INT_MIN, PHP_INT_MAX ) ? max( $min, min( $max, (int) $v ) ) : $min;
     }
 
+    /**
+     * @param  string $reason
+     * @return null
+     */
     private static function refuse( $reason ) {
 
         self::$refusal = $reason;

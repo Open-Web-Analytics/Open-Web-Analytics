@@ -37,8 +37,11 @@ use MaxMind\Db\Reader;
  */
 class Maxmind extends \OWA\Core\Location {
 
+    /** @var string */
     public $db_file_name = 'GeoLite2-City.mmdb';
+    /** @var string|null */
     public $db_file_path;
+    /** @var bool */
     public $db_file_present = false;
 
     /**
@@ -76,6 +79,8 @@ class Maxmind extends \OWA\Core\Location {
     /**
      * Where the GeoIP databases are: OWA_MAXMIND_DATA_DIR from owa-config.php,
      * else maxmind/ in the data directory.
+     *
+     * @return string
      */
     public static function dataDir() {
 
@@ -84,6 +89,9 @@ class Maxmind extends \OWA\Core\Location {
             : \OWA\Core\Env::dataDir() . 'maxmind/';
     }
 
+    /**
+     * @return bool
+     */
     public function isDbReady() {
 
         // getLocation() reads city, subdivision and country behind isset()
@@ -107,7 +115,8 @@ class Maxmind extends \OWA\Core\Location {
     /**
      * Fetches the location from the Maxmind local db
      *
-     * @param array $location_map
+     * @param  array<string, string|null> $location_map
+     * @return array<string, string|null>
      */
     public function getLocation( $location_map ) {
 
@@ -154,6 +163,9 @@ class Maxmind extends \OWA\Core\Location {
      *
      * Adding the dependency, and a UI for the setting, is a larger decision than
      * a bug fix should make on its own.
+     *
+     * @param  array<string, string|null> $location_map
+     * @return array<string, string|null>
      */
     public function getLocationFromWebService($location_map) {
 
@@ -231,6 +243,11 @@ class Maxmind extends \OWA\Core\Location {
      *
      * strtolower() is safe over UTF-8 here: since PHP 8.0 it is ASCII-only and
      * locale-insensitive, so multibyte sequences pass through untouched.
+     *
+     * @param  mixed                     $record the reader's array; the web service's model object is not read
+     * @param  array<string, string|null> $location_map
+     * @param  string                    $lang
+     * @return array<string, string|null>
      */
     private function mapCityRecord( $record, $location_map = array(), $lang = 'en' ) {
 

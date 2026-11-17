@@ -72,6 +72,9 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
     /** @var string|null */
     private $last_error;
 
+    /**
+     * @param  array{is_dead_letter?: bool, name?: string, max_receives?: int} $map
+     */
     public function __construct( $map = array() ) {
 
         $this->is_dead_letter = ! empty( $map['is_dead_letter'] );
@@ -92,7 +95,11 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return $this->last_error;
     }
 
-    /** Forget the last failure, so lastError() speaks for what follows. */
+    /**
+     * Forget the last failure, so lastError() speaks for what follows.
+     *
+     * @return void
+     */
     public function clearLastError() {
 
         $this->last_error = null;
@@ -177,6 +184,12 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return true;
     }
 
+    /**
+     * @param  array<string, mixed> $envelope
+     * @param  int                  $delay
+     * @param  bool                 $replayed
+     * @return bool
+     */
     public function send( array $envelope, $delay = 0, $replayed = false ) {
 
         $body = json_encode( $envelope, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
@@ -233,12 +246,19 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return $messages;
     }
 
+    /**
+     * @return bool
+     */
     public function ack( \OWA\Core\IntakeMessage $message ) {
 
         return (bool) $this->call( fn ( $c ) => $c->deleteMessage(
             array( 'QueueUrl' => $this->url(), 'ReceiptHandle' => $message->receipt ) ) );
     }
 
+    /**
+     * @param  int $delay seconds
+     * @return bool
+     */
     public function release( \OWA\Core\IntakeMessage $message, $delay ) {
 
         return (bool) $this->call( fn ( $c ) => $c->changeMessageVisibility( array(
@@ -248,6 +268,10 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         ) ) );
     }
 
+    /**
+     * @param  string $reason
+     * @return bool
+     */
     public function deadLetter( \OWA\Core\IntakeMessage $message, $reason ) {
 
         $dlq = $this->deadLetterQueue();
@@ -313,6 +337,8 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
      * is how a stalled drain is caught.
      *
      * When the attributes cannot be read, messages is null and error says why.
+     *
+     * @return array{messages: int|null, oldest_age: null, error: string|null}
      */
     public function stats() {
 
@@ -384,7 +410,11 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return $this->url;
     }
 
-    /** The URL without asking SQS: OWA_SQS_QUEUE_URL, the provisioning record when it names this queue, else from the credentials. */
+    /**
+     * The URL without asking SQS: OWA_SQS_QUEUE_URL, the provisioning record when it names this queue, else from the credentials.
+     *
+     * @return string|null
+     */
     private function knownUrl() {
 
         $configured = Sqs::configuredUrlFor( $this->name );
@@ -410,13 +440,21 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return Sqs::urlFromCredentials( $this->name );
     }
 
-    /** Keep the URL provisioning returned, for this object. */
+    /**
+     * Keep the URL provisioning returned, for this object.
+     *
+     * @param  string $url
+     * @return void
+     */
     private function remember( $url ) {
 
         $this->url = (string) $url;
     }
 
-    /** @return array|null */
+    /**
+     * @param  list<string> $names
+     * @return array<string, string>|null attribute => value
+     */
     private function attributes( array $names ) {
 
         $got = $this->call( fn ( $c ) => $c->getQueueAttributes(
@@ -425,7 +463,14 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return $got ? (array) ( $got['Attributes'] ?? array() ) : null;
     }
 
-    /** SendMessage with a body as it stands. */
+    /**
+     * SendMessage with a body as it stands.
+     *
+     * @param  string                $body
+     * @param  int                   $delay seconds
+     * @param  array<string, string> $attributes name => value
+     * @return bool
+     */
     private function sendBody( $body, $delay, array $attributes ) {
 
         $args = array(
@@ -442,7 +487,12 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return (bool) $this->call( fn ( $c ) => $c->sendMessage( array( 'QueueUrl' => $this->url ) + $args ) );
     }
 
-    /** A received SQS message as the contract's. */
+    /**
+     * A received SQS message as the contract's.
+     *
+     * @param  array<string, mixed> $m a message as ReceiveMessage gives it
+     * @return \OWA\Core\IntakeMessage
+     */
     private static function message( array $m ) {
 
         $attr = function ( $name ) use ( $m ) {
@@ -467,7 +517,8 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
      *
      * @param  callable $fn
      * @param  bool     $needs_url  false for provision()'s own calls, which make the queue
-     * @return \Aws\Result|array|null
+     * @return (\Aws\Result&iterable<string, mixed>)|array<string, mixed>|null what $fn returned: the SDK's result,
+     *         or provision()'s own array; null on failure
      */
     private function call( callable $fn, $needs_url = true ) {
 

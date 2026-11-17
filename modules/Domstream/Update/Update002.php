@@ -26,6 +26,10 @@ class Update002 extends \OWA\Core\Update {
 
     const ENTITIES = array( 'domstream.domstream_chunk', 'domstream.domstream_payload' );
 
+    /**
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
