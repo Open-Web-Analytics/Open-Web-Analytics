@@ -1,13 +1,13 @@
 <?php
 
 /**
- * What Base stores, and what boot needs of it.
+ * What Base stores, what boot needs of it, and every Base default.
  *
- * First generated from getDefaultSettingsArray() plus the settings that are
- * stored without one, and maintained by hand since. A key Base owns but does
- * not declare leaves the boot query's wholesale clause and is then never read,
- * so the completeness is the point. SettingsDeclarationContractTest keeps the
- * defaults here in step with getDefaultSettingsArray().
+ * The only place a Base default is written, but for the two facts
+ * Settings::baseDefaults() adds (is_active and config_file); it reads the rest
+ * from here before the config file runs. A key Base owns but does not declare
+ * leaves the boot query's wholesale clause and is then never read, so the
+ * completeness is the point.
  *
  * Three kinds, and only two of them ever reach the database:
  *
@@ -31,7 +31,8 @@
  * `schema_version` and `is_active` are NOT here. Core\Module::settingsRegistry()
  * adds those to every module, eager and without a default -- a default would let
  * pruneRedundantPersistedSettings() drop them and the module would look
- * uninstalled.
+ * uninstalled. Base's is_active is true in Settings::baseDefaults(): Base is
+ * always active, including on a boot that reads no stored settings.
  *
  * Two settings are declared with no default for the same reason:
  * install_complete and goals are stored and have never had a code default,
@@ -44,7 +45,8 @@
  * so that list stays as a test asserting this file agrees with it.
  *
  * TWO SETTINGS ARE DECLARED WITH NO DEFAULT although the code has one:
- * config_file and data_dir. The code builds those from the
+ * config_file (Settings::baseDefaults()) and data_dir (applyConfigConstants()).
+ * The code builds those from the
  * installation's directory (Core\Env), so their value depends on where it lives
  * -- baking one into a static file made the declaration disagree with the code
  * the moment the checkout moved, which the configless CI run caught by running
@@ -112,6 +114,15 @@ return array(
         'assets_url' => array( 'default' => '', 'description' => 'Where the built static files under public/ are served from, set by OWA_ASSETS_URL: the report screens\' scripts, styles, fonts and images, the tracker and its chunks, and the Profiles\' tracking bundles. Empty is the public URL followed by public/.' ),
         'async_log_dir' => array( 'default' => '', 'description' => 'The directory the file event queue writes its batch files to. Empty uses owa-data/logs/.' ),
         'base_url' => array( 'default' => '' ),
+        /*
+         * edit_reports is authoring a custom report, and edit_own_email is
+         * changing the address on your own account, which moves where its
+         * password resets go -- unlike your own name, and unlike edit_users,
+         * which is about other people's accounts. Both are admin-only by
+         * default, granted to another role in the config file, and held on
+         * every Property (not in capabilitiesThatRequireSiteAccess): a custom
+         * report is of one Property, and drawing it asks view_reports there.
+         */
         'capabilities' => array( 'default' => array( 'admin' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce', 'edit_settings', 'edit_sites', 'edit_users', 'edit_modules', 'edit_reports', 'edit_own_email' ), 'analyst' => array( 'install_schema', 'view_site_list', 'view_reports', 'view_reports_ecommerce' ), 'viewer' => array( 'install_schema', 'view_site_list', 'view_reports' ), 'everyone' => array( 'install_schema' ) ), 'description' => 'Which capabilities each user role has, as role => list of capabilities.' ),
         'capabilitiesThatRequireSiteAccess' => array( 'default' => array( 'view_reports', 'view_reports_ecommerce', 'edit_sites' ), 'description' => 'The capabilities a user holds only on the sites they have been given access to, rather than on every site.' ),
         'config_file' => array( 'description' => 'The path of the configuration file OWA reads at boot. Defaults to owa-config.php in the OWA directory.' ),
@@ -326,6 +337,8 @@ return array(
             'pattern'  => '/^$|^[^@\s,]+@[^@\s,]+\.[^@\s,]+(\s*,\s*[^@\s,]+@[^@\s,]+\.[^@\s,]+)*$/',
             'pattern_problem' => \OWA\Core\CoreAPI::t( 'Notice E-mail Address is an e-mail address, or several separated by commas.' ),
         ),
+        // The wire namespace only. OWA's own admin and reporting URLs carry no
+        // prefix; RequestContainer still accepts prefixed ones.
         'ns' => array( 'default' => 'owa_', 'description' => 'The prefix on OWA\'s cookie names and on the URL parameters it reads from tracked pages, such as owa_source and owa_state. Default owa_. Changing it orphans every existing cookie and campaign link.' ),
 
         /*
@@ -404,9 +417,8 @@ return array(
          * COMPUTED AT BOOT, never stored, and declared anyway.
          *
          * setupPaths() derives these from the configured public URL,
-         * and RequestContainer/Browscap read them back. They have no literal
-         * default, so generating this file from getDefaultSettingsArray() did
-         * not produce them -- and a key read on a module that HAS declared is a
+         * and RequestContainer/Browscap read them back. They have no
+         * default -- and a key read on a module that HAS declared is a
          * key whose stored value would never be fetched. Declaring them static
          * says that deliberately rather than by omission, and keeps the
          * catalogue complete enough for the read sweep to need no exceptions.
@@ -656,6 +668,10 @@ return array(
                 . 'In some jurisdictions honoring Global Privacy Control is a legal requirement, so '
                 . 'turning this off is the site owner&rsquo;s decision.' ),
         ),
+        // A fact about the data, not a preference: the installation's
+        // content-derived dimension ids are still 32-bit crc32 values. Set by
+        // Update016 on an existing installation, removed by the migration
+        // command once every id has been re-derived.
         'use_32bit_hash' => array( 'default' => false, 'storable' => true, 'internal' => true ),
         // Set by Update034 when it re-keyed an installation that arrived still
         // deriving 32-bit ids, so its down() can put them back.
