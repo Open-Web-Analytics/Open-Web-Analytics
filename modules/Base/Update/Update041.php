@@ -26,9 +26,13 @@ namespace OWA\Module\Base\Update;
  */
 class Update041 extends \OWA\Core\Update {
 
-    var $schema_version = 41;
+    public $schema_version = 41;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = \OWA\Module\Base\Classes\Cube\Cubes::preSplitTable();
@@ -65,7 +69,7 @@ class Update041 extends \OWA\Core\Update {
      * with no schema change at all, and a rollback that deleted them would take
      * away rebuildable data an installation might still be reporting from.
      */
-    function down() {
+    public function down() {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $entity = \OWA\Module\Base\Classes\Cube\Cubes::preSplitEntity();

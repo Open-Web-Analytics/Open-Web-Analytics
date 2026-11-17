@@ -27,7 +27,7 @@ class GoalEventDefinitionCondition extends \OWA\Core\Entity {
     const TABLE_BEFORE_076             = 'goal_event_condition';
     const DEFINITION_COLUMN_BEFORE_076 = 'goal_event_id';
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'goal_event_definition_condition' );
         $this->setCachable();

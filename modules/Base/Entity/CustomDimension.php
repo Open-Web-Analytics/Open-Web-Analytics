@@ -113,7 +113,7 @@ class CustomDimension extends \OWA\Core\Entity {
      */
     const SET_TS_SUFFIX = '_set_ts';
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'custom_dimension' );
 
@@ -206,13 +206,21 @@ class CustomDimension extends \OWA\Core\Entity {
         $this->addCompositeIndex( 'property_column', array( 'property_id', 'column_name' ) );
     }
 
-    /** The scopes a registration may declare. @return string[] */
+    /**
+     * The scopes a registration may declare.
+     *
+     * @return list<string>
+     */
     public static function scopes() {
 
         return array( self::SCOPE_EVENT, self::SCOPE_USER );
     }
 
-    /** The types a registration may declare. @return string[] */
+    /**
+     * The types a registration may declare.
+     *
+     * @return list<string>
+     */
     public static function types() {
 
         return array( self::TYPE_STRING, self::TYPE_INTEGER, self::TYPE_DECIMAL );

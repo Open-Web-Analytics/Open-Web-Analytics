@@ -20,9 +20,13 @@ namespace OWA\Module\Base\Update;
  */
 class Update042 extends \OWA\Core\Update {
 
-    var $schema_version = 42;
+    public $schema_version = 42;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_dimension' );
 
@@ -46,7 +50,7 @@ class Update042 extends \OWA\Core\Update {
      * rollback silently discarding collected data that re-registering and
      * rebuilding would otherwise bring straight back.
      */
-    function down() {
+    public function down() {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.custom_dimension' );
 

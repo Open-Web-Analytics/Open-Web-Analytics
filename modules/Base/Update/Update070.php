@@ -40,11 +40,11 @@ class Update070 extends \OWA\Core\Update {
 
     use SettingRows;
 
-    var $schema_version = 70;
+    public $schema_version = 70;
 
     const NAME = 'enableEcommerceReporting';
 
-    var $down_does_not_restore = 'on an installation that ran it before it kept ecommerce_reporting_before_070, each Profile\'s own value: every Profile takes its Property\'s.';
+    public $down_does_not_restore = 'on an installation that ran it before it kept ecommerce_reporting_before_070, each Profile\'s own value: every Profile takes its Property\'s.';
 
     /** What up() did: { profiles: id => row, properties: property id => row|null }. */
     const BEFORE = 'ecommerce_reporting_before_070';
@@ -52,7 +52,11 @@ class Update070 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->settingTable();
@@ -154,7 +158,7 @@ class Update070 extends \OWA\Core\Update {
     }
 
     /** The exact inverse, from the record up() kept; without one, see approximately(). */
-    function down() {
+    public function down() {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $record = $this->record();
@@ -202,6 +206,8 @@ class Update070 extends \OWA\Core\Update {
     /**
      * With no record: each Property's value written to those of its Profiles
      * that hold none, so every Profile answers as it did.
+     *
+     * @return bool
      */
     private function approximately() {
 
@@ -234,7 +240,14 @@ class Update070 extends \OWA\Core\Update {
         return true;
     }
 
-    /** A row of base.<name> at this scope, every column, or null. */
+    /**
+     * A row of base.<name> at this scope, every column, or null.
+     *
+     * @param  string $scope_type
+     * @param  string $scope_id
+     * @param  string $name
+     * @return array<string, scalar|null>|null
+     */
     private function scopedRow( $scope_type, $scope_id, $name = self::NAME ) {
 
         $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT * FROM %s WHERE id = ?', $this->settingTable() ),
@@ -243,6 +256,12 @@ class Update070 extends \OWA\Core\Update {
         return $row ? (array) $row : null;
     }
 
+    /**
+     * @param  string $scope_type
+     * @param  string $scope_id
+     * @param  string $name
+     * @return string
+     */
     private function settingId( $scope_type, $scope_id, $name ) {
 
         return (string) \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->makeId( $scope_type, (string) $scope_id, 'base', $name );

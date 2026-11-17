@@ -28,11 +28,15 @@ namespace OWA\Module\Base\Update;
  */
 class Update057 extends \OWA\Core\Update {
 
-    var $schema_version = 57;
+    public $schema_version = 57;
 
     const INDEX = 'site_transaction';
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -57,7 +61,7 @@ class Update057 extends \OWA\Core\Update {
     }
 
     /** The exact inverse: the index this added, by its name, wherever it is. */
-    function down() {
+    public function down() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -79,7 +83,11 @@ class Update057 extends \OWA\Core\Update {
         return true;
     }
 
-    /** Raw, then every cube. */
+    /**
+     * Raw, then every cube.
+     *
+     * @return list<string>
+     */
     private function tables() {
 
         return array_merge(
@@ -87,6 +95,10 @@ class Update057 extends \OWA\Core\Update {
             \OWA\Module\Base\Classes\Cube\Cubes::allTables() );
     }
 
+    /**
+     * @param  string $table
+     * @return bool
+     */
     private function hasIndex( $table ) {
 
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(

@@ -16,7 +16,7 @@ namespace OWA\Module\Base\Entity;
  */
 class CustomReportFavorite extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'custom_report_favorite' );
 

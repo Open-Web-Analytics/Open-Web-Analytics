@@ -20,6 +20,9 @@ trait SettingRows {
     /** @var object|null the settings to keep in step instead of the install's. TESTS ONLY. */
     public $settings = null;
 
+    /**
+     * @return string
+     */
     private function settingTable() {
 
         return $this->tableFor( 'base.setting' );
@@ -34,6 +37,8 @@ trait SettingRows {
      *
      * None with a scratch table and no stand-in: the install's own settings
      * are not the ones being changed.
+     *
+     * @return object|null the install's Settings, or a test's stand-in
      */
     private function settings() {
 
@@ -45,7 +50,13 @@ trait SettingRows {
         return isset( $this->tables['base.setting'] ) ? null : \OWA\Core\CoreAPI::configSingleton();
     }
 
-    /** Hold this value of base.<name> in the settings, or nothing when it is null. */
+    /**
+     * Hold this value of base.<name> in the settings, or nothing when it is null.
+     *
+     * @param  string $name
+     * @param  mixed  $value a setting's value, any type
+     * @return void
+     */
     private function hold( $name, $value ) {
 
         $settings = $this->settings();
@@ -66,7 +77,11 @@ trait SettingRows {
         $settings->set( 'base', $name, $value );
     }
 
-    /** What up() kept, or an empty array. */
+    /**
+     * What up() kept, or an empty array.
+     *
+     * @return array<mixed> unserialized from the table, so its shape is unchecked
+     */
     private function record() {
 
         $row = $this->row( self::BEFORE );
@@ -81,7 +96,12 @@ trait SettingRows {
         return is_array( $record ) ? $record : array();
     }
 
-    /** An install row of base.<name>, every column, or null. */
+    /**
+     * An install row of base.<name>, every column, or null.
+     *
+     * @param  string $name
+     * @return array<string, scalar|null>|null
+     */
     private function row( $name ) {
 
         $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT * FROM %s WHERE id = ?', $this->settingTable() ),
@@ -90,13 +110,24 @@ trait SettingRows {
         return $row ? (array) $row : null;
     }
 
+    /**
+     * @param  string $name
+     * @return string
+     */
     private function installId( $name ) {
 
         return (string) \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->makeId(
             'install', self::INSTALL_SCOPE_ID, 'base', $name );
     }
 
-    /** Upsert an install row of base.<name> holding this serialized value. */
+    /**
+     * Upsert an install row of base.<name> holding this serialized value.
+     *
+     * @param  string $name
+     * @param  string $value serialized
+     * @param  int    $autoload 1 or 0
+     * @return bool
+     */
     private function writeInstallRow( $name, $value, $autoload ) {
 
         return \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
@@ -105,20 +136,35 @@ trait SettingRows {
             array( $this->installId( $name ), self::INSTALL_SCOPE_ID, $name, $value, (int) $autoload, time(), $value ) ) !== false;
     }
 
-    /** Upsert the install row of the record, not autoloaded. */
+    /**
+     * Upsert the install row of the record, not autoloaded.
+     *
+     * @param  string $value serialized
+     * @return bool
+     */
     private function writeRecord( $value ) {
 
         return $this->writeInstallRow( self::BEFORE, $value, 0 );
     }
 
-    /** Delete the record's install row. */
+    /**
+     * Delete the record's install row.
+     *
+     * @return bool
+     */
     private function deleteRecord() {
 
         return \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->settingTable() ),
             array( $this->installId( self::BEFORE ) ) ) !== false;
     }
 
-    /** A row put back exactly as SELECT * read it, into this table or the settings table. */
+    /**
+     * A row put back exactly as SELECT * read it, into this table or the settings table.
+     *
+     * @param  array<string, scalar|null> $row
+     * @param  string|null                $table
+     * @return bool
+     */
     private function restoreRow( array $row, $table = null ) {
 
         $table   = $table ?? $this->settingTable();

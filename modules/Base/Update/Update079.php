@@ -63,10 +63,13 @@ namespace OWA\Module\Base\Update;
  * of the old kinds, and down() reads a record it then empties.
  *
  * NOT CLI-ONLY. Saved funnels are a handful of rows.
+ *
+ * @phpstan-type StepCondition array{property: string, operator: string, value: string}
+ * @phpstan-type GoalDefinition array{trigger: string, match: string, conditions: list<StepCondition>}
  */
 class Update079 extends \OWA\Core\Update {
 
-    var $schema_version = 79;
+    public $schema_version = 79;
 
     /** The setting that keeps each converted report: id => { was, now, steps: index => { was, now } }. */
     const BEFORE = 'funnel_steps_before_079';
@@ -74,7 +77,11 @@ class Update079 extends \OWA\Core\Update {
     /** The step key a goal event step names its definition by, since Update076. */
     const DEFINITION_KEY = 'goal_event_definition_id';
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $db     = \OWA\Core\CoreAPI::dbSingleton();
         $table  = $this->tableFor( 'custom_report' );
@@ -146,7 +153,7 @@ class Update079 extends \OWA\Core\Update {
     }
 
     /** The exact inverse. See the class comment for a funnel edited since. */
-    function down() {
+    public function down() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $table = $this->tableFor( 'custom_report' );
@@ -215,10 +222,11 @@ class Update079 extends \OWA\Core\Update {
      *
      * Pure, so a test can hand it any shape.
      *
-     * @param  array $definition  decoded
-     * @param  array $goals       definition id => { trigger, match, conditions }, for
-     *                            the definitions the steps name that exist
-     * @return array  { definition, steps: index => { was, now }, left: index => reason }
+     * @param  array<string, mixed>               $definition decoded JSON
+     * @param  array<int|string, GoalDefinition>  $goals      definition id => { trigger, match, conditions },
+     *                                                       for the definitions the steps name that exist
+     * @return array{definition: array<string, mixed>, steps: array<int|string, array{was: array<mixed>, now: array<mixed>}>, left: array<int|string, string>}
+     *         steps: index => { was, now }, left: index => reason
      */
     public static function convert( array $definition, array $goals ) {
 
@@ -282,7 +290,7 @@ class Update079 extends \OWA\Core\Update {
      * before any ?, and page_query exact the part after it when there is one.
      *
      * @param  string $path  as the step stored it
-     * @return array
+     * @return array{kind: string, event: string, match: string, conditions: list<StepCondition>}
      */
     public static function pathStep( $path ) {
 
@@ -305,7 +313,14 @@ class Update079 extends \OWA\Core\Update {
         return array( 'kind' => 'event', 'event' => 'page_view', 'match' => 'all', 'conditions' => $conditions );
     }
 
-    /** A step with one key replaced by these fields, where it stood; a step without it gets them before step_number. */
+    /**
+     * A step with one key replaced by these fields, where it stood; a step without it gets them before step_number.
+     *
+     * @param  array<mixed>         $step
+     * @param  string               $key
+     * @param  array<string, mixed> $fields
+     * @return array<mixed>
+     */
     private static function replaceKey( array $step, $key, array $fields ) {
 
         $out = array();
@@ -341,6 +356,9 @@ class Update079 extends \OWA\Core\Update {
     /**
      * The goal event definitions a definition's steps name, read under the
      * names Update076 gave the tables: id => { trigger, match, conditions }.
+     *
+     * @param  array<string, mixed> $definition decoded JSON
+     * @return array<int|string, GoalDefinition>
      */
     private function goalDefinitions( array $definition ) {
 
@@ -403,7 +421,12 @@ class Update079 extends \OWA\Core\Update {
         return $out;
     }
 
-    /** A stored definition decoded, as CustomReports::hydrate() reads one. */
+    /**
+     * A stored definition decoded, as CustomReports::hydrate() reads one.
+     *
+     * @param  string $stored
+     * @return mixed json_decode()'s result: an array, or null when it does not decode
+     */
     private static function decode( $stored ) {
 
         return json_decode( html_entity_decode( (string) $stored, ENT_QUOTES ), true );

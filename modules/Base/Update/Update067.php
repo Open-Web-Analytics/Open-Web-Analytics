@@ -12,9 +12,13 @@ namespace OWA\Module\Base\Update;
  */
 class Update067 extends \OWA\Core\Update {
 
-    var $schema_version = 67;
+    public $schema_version = 67;
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.job_queue' );
 
@@ -33,7 +37,7 @@ class Update067 extends \OWA\Core\Update {
         return true;
     }
 
-    function down() {
+    public function down() {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.job_queue' );
 

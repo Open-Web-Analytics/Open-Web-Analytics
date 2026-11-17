@@ -39,7 +39,7 @@ namespace OWA\Module\Base\Update;
  */
 class Update076 extends \OWA\Core\Update {
 
-    var $schema_version = 76;
+    public $schema_version = 76;
 
     /** old name => new name, without the table prefix. */
     const TABLES = array(
@@ -51,7 +51,11 @@ class Update076 extends \OWA\Core\Update {
     const OLD_KEY = 'goal_event_id';
     const NEW_KEY = 'goal_event_definition_id';
 
-    function up( $force = false ) {
+    /**
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         if ( $this->underBothNames() ) {
 
@@ -71,7 +75,7 @@ class Update076 extends \OWA\Core\Update {
     }
 
     /** The exact inverse, last step first. */
-    function down() {
+    public function down() {
 
         if ( $this->underBothNames() ) {
 
@@ -156,6 +160,8 @@ class Update076 extends \OWA\Core\Update {
      * it, below what 2.0 runs on (Classes\DatabaseRequirement).
      *
      * @param  string $table  without the prefix
+     * @param  string $from
+     * @param  string $to
      * @return bool
      */
     private function renameColumn( $table, $from, $to ) {
@@ -185,6 +191,11 @@ class Update076 extends \OWA\Core\Update {
         return true;
     }
 
+    /**
+     * @param  string $table
+     * @param  string $column
+     * @return bool
+     */
     private function hasColumn( $table, $column ) {
 
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
@@ -202,6 +213,8 @@ class Update076 extends \OWA\Core\Update {
      * an author's step name that happens to read goal_event_id is a value, and
      * a quote inside a value is escaped.
      *
+     * @param  string $from
+     * @param  string $to
      * @return bool
      */
     private function renameStepKeys( $from, $to ) {
@@ -248,6 +261,8 @@ class Update076 extends \OWA\Core\Update {
      * A stored definition with one key renamed wherever it occurs.
      *
      * @param  string $definition  as stored: JSON, its quotes plain or as &quot;
+     * @param  string $from
+     * @param  string $to
      * @return string
      */
     public static function renameKey( $definition, $from, $to ) {
