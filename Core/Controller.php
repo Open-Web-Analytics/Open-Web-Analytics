@@ -638,9 +638,25 @@ class Controller extends \OWA\Core\Base {
     }
 
 
-    function setView($view) {
+    /**
+     * The view that renders the page.
+     *
+     * A view whose module ships no View class for it is the template declared
+     * here (View::renderDeclaredTemplate()):
+     *
+     *   template  the file, from the view's module's templates
+     *   vars      what the template reads: the name of one of this
+     *             controller's values, or name => value
+     *   wrapper   the page template, when not the report_wrapper setting's
+     *   title     the page's <title>
+     *
+     * @param string $view     <module>.<view>
+     * @param array  $declared as above, or nothing for a View class
+     */
+    function setView($view, array $declared = []) {
 
         $this->data['view'] = $view;
+        $this->declareTemplate( $view, $declared );
     }
 
     /**
@@ -659,10 +675,26 @@ class Controller extends \OWA\Core\Base {
         }
     }
 
-    function setSubview($subview) {
+    /**
+     * The screen inside the page's view, declared as setView() declares a page:
+     * template and vars. A subview has no wrapper or title of its own; the
+     * page's are the outer view's.
+     *
+     * @param string $subview  <module>.<view>
+     * @param array  $declared template and vars, or nothing for a View class
+     */
+    function setSubview($subview, array $declared = []) {
 
         $this->data['subview'] = $subview;
+        $this->declareTemplate( $subview, $declared );
+    }
 
+    private function declareTemplate( $view, array $declared ) {
+
+        if ( $declared ) {
+
+            $this->data['templates'][ $view ] = $declared;
+        }
     }
 
     function setViewMethod($method = 'delegate') {
