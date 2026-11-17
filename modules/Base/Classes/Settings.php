@@ -2735,29 +2735,10 @@ namespace OWA\Module\Base\Classes;
       */
      private function setupPaths() {
 
-         //build base url
-         $base_url = '';
-         $proto  = "http";
-
-        if(isset($_SERVER['HTTPS'])) {
-            $proto .= 's';
-        }
-        if(isset($_SERVER['SERVER_NAME'])) {
-            $base_url .= $proto.'://'.$_SERVER['SERVER_NAME'];
-        }
-
-        if(isset($_SERVER['SERVER_PORT'])) {
-            if($_SERVER['SERVER_PORT'] != 80) {
-                $base_url .= ':'.$_SERVER['SERVER_PORT'];
-            }
-        }
         // there is some plugin use case where this is needed i think. if not get rid of it.
         if (!defined('OWA_PUBLIC_URL')) {
             define('OWA_PUBLIC_URL', '');
         }
-
-        // set base url
-        $this->set('base', 'base_url', $base_url);
 
         //set public path if not defined in config file
         $public_path = $this->get('base', 'public_path');
@@ -2774,7 +2755,6 @@ namespace OWA\Module\Base\Classes;
         $this->set('base','main_absolute_url', $main_url);
         $modules_url = $public_url.'modules/';
         $this->set('base','modules_url', $modules_url);
-        //$this->set('base','action_url',$public_url.'action.php');
         // Built, web-facing static assets (the webpack products AND every server-side
         // image emitted via makeImageLink) live in a dedicated public/ tree, physically
         // separated from the source they are built from so the deny-all .htaccess can

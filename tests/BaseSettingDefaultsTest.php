@@ -15,7 +15,7 @@ final class BaseSettingDefaultsTest extends TestCase
     private const PROBE = __DIR__ . '/fixtures/static_config_boot_probe.php';
 
     /** Keys the defaults no longer carry because nothing reads them. */
-    private const DROPPED = [];
+    private const DROPPED = [ 'action_url', 'base_url', 'password_length', 'site_id' ];
 
     /**
      * Set during boot whatever the default says: setupPaths() fills the paths,

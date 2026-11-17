@@ -142,13 +142,6 @@ class Caller extends \OWA\Core\Base {
         $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
         $dispatch->notify($dispatch->makeEvent('init'));
         
-        /* SET SITE ID */
-        // needed in standalone installs where site_id is not set in config file.
-        // still needed??????
-        if (!empty($this->params['site_id'])) {
-            $this->c->set('base', 'site_id', $this->params['site_id']);
-        }
-        
         // re-fetch the array now that overrides have been applied.
         // needed for backwards compatability
         $this->config = $this->c->fetch('base');

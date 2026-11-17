@@ -60,7 +60,6 @@ return array(
 
     'settings' => array(
 
-        'action_url' => array( 'default' => '' ),
         'additionalCss' => array( 'description' => 'Stylesheets added to every report page after OWA\'s own, as paths under public/ such as base/css/my-theme.css. None by default.' ),
         'announce_visitors' => array(
             'default'  => false,
@@ -113,7 +112,6 @@ return array(
         'archive_old_events' => array( 'default' => true, 'description' => 'Whether the file event queue moves a processed batch file to its archive directory instead of deleting it. On by default.' ),
         'assets_url' => array( 'default' => '', 'description' => 'Where the built static files under public/ are served from, set by OWA_ASSETS_URL: the report screens\' scripts, styles, fonts and images, the tracker and its chunks, and the Profiles\' tracking bundles. Empty is the public URL followed by public/.' ),
         'async_log_dir' => array( 'default' => '', 'description' => 'The directory the file event queue writes its batch files to. Empty uses owa-data/logs/.' ),
-        'base_url' => array( 'default' => '' ),
         /*
          * edit_reports is authoring a custom report, and edit_own_email is
          * changing the address on your own account, which moves where its
@@ -395,7 +393,6 @@ return array(
         'owa_user_agent' => array( 'default' => 'Open Web Analytics Bot master', 'description' => 'The User-Agent header OWA sends on its own outbound HTTP requests.' ),
         'partition_detail_months' => array( 'default' => 36, 'description' => 'How many recent months of a partitioned table keep their fine-grained partitions before partition-rotate may merge older ones. Default 36.' ),
         'partition_max_partitions' => array( 'default' => 0, 'description' => 'The most partitions partition-rotate lets one table hold. 0 uses the built-in ceiling of 400.' ),
-        'password_length' => array( 'default' => 4 ),
         'public_path' => array( 'default' => '', 'description' => 'The filesystem path of OWA\'s public/ directory. Empty uses public/ inside the OWA directory.' ),
         'public_url' => array( 'default' => '', 'description' => 'The URL of the OWA directory, ending in a slash. Links, assets and tracker URLs are built from it.' ),
         'query_string_filters' => array(
@@ -456,7 +453,6 @@ return array(
         // Set by the 1.x OWA_USE_STATIC_CONFIG_ONLY: stored settings are not read at boot.
         'skip_stored_settings' => array( 'default' => false, 'internal' => true ),
         'session_length' => array( 'default' => 1800, 'description' => 'How long a visitor can be inactive before their next event starts a new session, in seconds. Default 1800 (30 minutes).' ),
-        'site_id' => array( 'default' => '' ),
         /*
          * SPAM DETECTION (Classes\Spam). Every beacon is scored; one whose score
          * reaches spam_threshold is not stored. Install only: Spam\Score reads
