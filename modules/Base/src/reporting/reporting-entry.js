@@ -99,6 +99,8 @@ import './owa.profileform.js';
 // the goal event definition form's condition builder (owa.goalbuilder.js).
 import './owa.funnelbuilder.js';
 import './owa.goalbuilder.js';
+// The custom report editor (custom_report_edit.php), started from the data the template hands over.
+import './owa.customReportEdit.js';
 
 // window.jQuery / window.$ are published by vendor-jquery-global.js (first import);
 // window.OWA (the ~166 template references) is published by owa.format.js itself.

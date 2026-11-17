@@ -1201,16 +1201,6 @@ final class CustomReportsTest extends TestCase
         }
     }
 
-    /** The builder is handed the same list, not a copy of it. */
-    public function testTheBuilderReadsTheTimeDimensionsFromTheRegistry(): void
-    {
-        $template = file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/custom_report_edit.php');
-
-        $this->assertMatchesRegularExpression(
-            '/var TIME_DIMENSIONS = <\?php echo [^;]*\\\\CustomReports::timeDimensions\(\) \); \?>;/',
-            $template);
-    }
-
     /**
      * The chart-metric question is asked on exactly the types that plot one.
      *
