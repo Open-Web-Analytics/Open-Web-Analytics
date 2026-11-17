@@ -95,12 +95,19 @@ class Ajax extends \OWA\Core\AdminController {
     }
 
     /**
-     * @param  string $additionalMessage unused: the answer carries the message alone
+     * @param  string $additionalMessage already translated; follows the message
      * @return array<string, mixed> answer()'s data
      */
     public function authenticatedButNotCapableAction( $additionalMessage = '' ) {
 
-        return $this->answer( 403, $this->getMsg( 2003 )['message'] );
+        $message = $this->getMsg( 2003 )['message'];
+
+        if ( ! empty( $additionalMessage ) ) {
+
+            $message .= ' ' . $additionalMessage;
+        }
+
+        return $this->answer( 403, $message );
     }
 
     /**
