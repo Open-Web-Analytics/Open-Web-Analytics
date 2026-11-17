@@ -30,12 +30,11 @@
  */
 
 // FIRST: publish jQuery on window for the vendor plugins that read a free `jQuery`/`$`
-// at eval time (jquery-ui, chosen, sparkline, flot) and for the report
+// at eval time (chosen, sparkline, flot) and for the report
 // templates' inline <script> blocks. Must precede every vendor import below.
 import './vendor-jquery-global.js';
 
 // jQuery plugin ecosystem (order preserved from the retired concat).
-import 'jquery-ui-dist/jquery-ui.js';
 import 'chosen-js/chosen.jquery.js';
 import 'jquery-sparkline';
 import 'jquery.flot';                       // core

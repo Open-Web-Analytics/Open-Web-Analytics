@@ -42,7 +42,7 @@ namespace OWA\Module\Base\Controller;
  *
  * It was also wrong concretely. View/Options.php loads owa.admin.css and
  * nothing else, so the builder's own rules never reached it and the whole page
- * rendered unstyled; and jQuery UI's stylesheet is loaded by report pages only,
+ * rendered unstyled; and the reporting stylesheet is loaded by report pages only,
  * so the widget dialog opened as an unstyled block. Both were symptoms of the
  * screen being in the wrong family, and both go away here rather than being
  * patched around.

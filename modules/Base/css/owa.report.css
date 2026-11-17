@@ -611,13 +611,6 @@ li.constraintRow {
 }
 
 /*
- * The remove control is an X, not a button.
- *
- * It was a jQuery-UI button, which put a third kind of chrome on the row for
- * the smallest thing in it. Marked up as a control for the keyboard, drawn as
- * a glyph.
- */
-/*
  * The plus and the X are a matched pair, sitting at the end of the row they
  * act on. Drawn as glyphs, not as buttons, though some are <button>s: they
  * are the smallest things in the row, and a third and fourth kind of chrome

@@ -86,7 +86,7 @@ describe('reporting bundle build integrity', () => {
     });
 
     test('reporting-entry imports the vendor plugins in load-bearing order', () => {
-        // Order matters: jQuery UI before the other plugins; flot core -> time,
+        // Order matters: flot core -> time,
         // with time.js before the OWA area chart (xaxis.mode:"time");
         // and the OWA namespace modules last. Assert the relative sequence.
         //
@@ -96,7 +96,6 @@ describe('reporting bundle build integrity', () => {
         const entry = fs.readFileSync(entryPath, 'utf8')
             .split('\n').filter((l) => /^\s*import\b/.test(l)).join('\n');
         const orderedTokens = [
-            'jquery-ui-dist/jquery-ui.js',
             'chosen-js/chosen.jquery.js',
             'jquery-sparkline',
             "'jquery.flot'",                    // flot core
@@ -124,6 +123,29 @@ describe('reporting bundle build integrity', () => {
 
         expect(entry).not.toContain('jquery.flot.pie');
         expect(fs.existsSync(path.join(srcDir, 'owa.piechart.js'))).toBe(false);
+    });
+
+    // Dialogs are the browser's <dialog> (owa.dialog.js) and tabs are OWA.tabs.
+    test('jQuery UI is not imported, nor any of its widgets called', () => {
+        const entry = fs.readFileSync(entryPath, 'utf8')
+            .split('\n').filter((l) => /^\s*import\b/.test(l)).join('\n');
+
+        expect(entry).not.toContain('jquery-ui');
+
+        const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+        expect(Object.keys(pkg.dependencies)).not.toContain('jquery-ui-dist');
+
+        // A widget called on a jQuery object, `$( el ).dialog( ... )`; OWA's
+        // own are OWA.dialog() and OWA.tabs().
+        const calls = /(?<!\bOWA)\.(dialog|tabs|draggable|resizable|sortable|datepicker|autocomplete|checkboxradio|controlgroup|selectmenu|tooltip|menu|button|spinner|slider|accordion)\s*\(/;
+        const templatesDir = path.join(repoRoot, 'modules/Base/templates');
+        const files = [
+            ...fs.readdirSync(srcDir).filter((f) => f.endsWith('.js')).map((f) => path.join(srcDir, f)),
+            ...fs.readdirSync(templatesDir).filter((f) => f.endsWith('.php')).map((f) => path.join(templatesDir, f)),
+        ];
+        const offenders = files.filter((f) => calls.test(fs.readFileSync(f, 'utf8')))
+            .map((f) => path.relative(repoRoot, f));
+        expect(offenders).toEqual([]);
     });
 
     test('flot\'s resize plugin is not imported, and stays that way', () => {
@@ -232,7 +254,7 @@ describe('reporting bundle build integrity', () => {
         test('the bundle is self-contained (vendors inlined, not split out)', () => {
             if (bundle === null) return;
             // The report templates load ONLY owa.reporting-combined-min.js, so the
-            // vendor code (jQuery, jQuery-UI, flot, jqGrid, ...) must be INLINED in
+            // vendor code (jQuery, chosen, flot, ...) must be INLINED in
             // this one file rather than split into a sibling chunk. (The tracker's
             // owa.vendors split is scoped away from this bundle via a separate
             // compiler config in webpack.config.js.)
@@ -242,12 +264,12 @@ describe('reporting bundle build integrity', () => {
             // <script>, not a runtime import(), so `__webpack_require__.e` never
             // appears and there is no literal 'owa.vendors' reference to grep. The
             // observable difference is that the vendor code either lives IN this
-            // file or it doesn't. A split collapses this bundle from ~900KB to ~70KB
+            // file or it doesn't. A split collapses this bundle from ~350KB to ~70KB
             // and moves every vendor fingerprint out into the sibling chunk -- so a
             // size floor no split can clear, plus the vendor tokens being present
             // right here, is what actually catches the regression.
-            expect(bundle.length).toBeGreaterThan(500 * 1024);
-            for (const token of ['"3.6.0"', 'jQuery UI - v1.13.3', 'flot-base']) {
+            expect(bundle.length).toBeGreaterThan(300 * 1024);
+            for (const token of ['"3.6.0"', 'flot-base']) {
                 expect(bundle.includes(token)).toBe(true);
             }
 
@@ -264,17 +286,15 @@ describe('reporting bundle build integrity', () => {
         /**
          * The vendor-version invariants, pinned against the module-graph output.
          * Terser strips the `jQuery v<n>`
-         * banner comment, so match the version token embedded in code instead; the
-         * jQuery-UI license banner and Flot's `flot-base` class survive minification
-         * and fingerprint the pinned plugin versions. The authoritative jQuery
+         * banner comment, so match the version token embedded in code instead;
+         * Flot's `flot-base` class survives minification and fingerprints its
+         * pinned version. The authoritative jQuery
          * runtime-version check lives in BundleLoad.test.js (reads jq.fn.jquery).
          */
         test('reporting bundle embeds the pinned vendor versions', () => {
             if (bundle === null) return;
             // jQuery core 3.6.0 (post-split-brain baseline): `var C="3.6.0"`.
             expect(bundle.includes('"3.6.0"')).toBe(true);
-            // jQuery-UI 1.13.3 (license banner is preserved by terser).
-            expect(bundle.includes('jQuery UI - v1.13.3')).toBe(true);
             // Flot 0.8.3 renamed its canvas class base -> flot-base.
             expect(bundle.includes('flot-base')).toBe(true);
         });

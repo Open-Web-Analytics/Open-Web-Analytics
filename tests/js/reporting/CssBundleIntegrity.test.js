@@ -9,17 +9,17 @@ const { execSync } = require('child_process');
  * This file's production moved from the PHP-CLI `cmd=build` controller
  * (base.build / owa_buildController, formerly driven by base/module.php
  * registerBuildPackages) to webpack (reportingCssConfig in webpack.config.js):
- *   - The seven source CSS files are the webpack entry, in cascade order: jquery-ui,
- *     chosen, owa, owa.admin, owa.report, owa.grid, owa.shell.
+ *   - The six source CSS files are the webpack entry, in cascade order: chosen,
+ *     owa, owa.admin, owa.report, owa.grid, owa.shell.
  *   - mini-css-extract-plugin emits the combined file under the SAME name to the
  *     SAME directory (modules/Base/css/), and css-loader runs with url:false so
  *     every url() is passed through verbatim -- combined with the css/ output dir,
- *     the relative asset paths (images/ui-icons_*, chosen-sprite.png, ../i/*) stay
+ *     the relative asset paths (chosen-sprite.png, ../i/*) stay
  *     valid without rewriting a single url().
  *   - webpack-remove-empty-scripts drops the stub .js a CSS-only entry produces.
  *   - The output is NOT minified (no -min suffix), matching the retired concat.
  *
- * These tests pin that contract: the seven sources exist, the config drives the CSS
+ * These tests pin that contract: the six sources exist, the config drives the CSS
  * through mini-css-extract (not the PHP concat), the PHP build package is gone, and
  * the built artifact carries each source's signature rule with url()s intact.
  */
@@ -36,10 +36,10 @@ describe('reporting CSS build integrity', () => {
     const artifactPath = path.join(publicCssDir, 'owa.reporting-css-combined.css');
     const modulePhpPath = path.join(repoRoot, 'modules/Base/Module.php');
 
-    // The seven source stylesheets, in the cascade order the entry lists them.
+    // The six source stylesheets, in the cascade order the entry lists them.
     // Order is load-bearing: later files intentionally override earlier ones.
     const CSS_SOURCES = [
-        'jquery-ui.css', 'chosen.css',
+        'chosen.css',
         'owa.css', 'owa.admin.css', 'owa.report.css', 'owa.grid.css', 'owa.shell.css',
     ];
 
@@ -47,13 +47,13 @@ describe('reporting CSS build integrity', () => {
     const cssPkg = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
         .packages.find((p) => p.name === 'owa.reporting-css-combined.css');
 
-    test('all seven source stylesheets exist', () => {
+    test('all six source stylesheets exist', () => {
         for (const f of CSS_SOURCES) {
             expect(fs.existsSync(path.join(cssSrcDir, f))).toBe(true);
         }
     });
 
-    test('the build manifest lists the seven sources in cascade order', () => {
+    test('the build manifest lists the six sources in cascade order', () => {
         // The entry (source list + order) now lives in base/build.manifest.json,
         // discovered by webpack.config.js. Order is load-bearing.
         expect(cssPkg).toBeDefined();
@@ -104,15 +104,22 @@ describe('reporting CSS build integrity', () => {
             expect(css.length).toBeGreaterThan(40 * 1024);
         });
 
-        test('a signature rule from each source is present (all seven concatenated)', () => {
+        test('a signature rule from each source is present (all six concatenated)', () => {
             if (css === null) return;
             // One distinctive token per source proves it made it into the combine.
-            expect(css).toMatch(/\.ui-dialog-titlebar/);   // jquery-ui.css
             expect(css).toMatch(/\.chosen-container/);     // chosen.css
             expect(css).toMatch(/#owa/);                   // owa.css (OWA app ids)
-            expect(css).toMatch(/\.ui-tabs-nav/);          // jquery-ui tabs
+            expect(css).toMatch(/dialog\.owa_dialog/);    // owa.report.css (owa.dialog.js)
+            expect(css).toMatch(/\.owa_tabs/);            // owa.report.css (owa.tabs.js)
             expect(css).toMatch(/\.owa_gridTable/);       // owa.grid.css
             expect(css).toMatch(/\.owa_navShell/);        // owa.shell.css
+        });
+
+        // Dialogs and tabs are OWA's own; jQuery UI's theme and the rules that
+        // restyled it are gone with it.
+        test('no jQuery UI rule is left', () => {
+            if (css === null) return;
+            expect(css).not.toMatch(/\.ui-(dialog|tabs|widget|button|state|corner|icon|helper|front)\b/);
         });
 
         test('url() asset references are passed through verbatim (url:false)', () => {
@@ -120,7 +127,6 @@ describe('reporting CSS build integrity', () => {
             // These would be rewritten/hashed/inlined if css-loader resolved url()s;
             // they must stay as authored so they resolve against the css/ dir at runtime.
             expect(css).toContain('url("chosen-sprite.png")');
-            expect(css).toContain('images/ui-icons_');
             // owa.report.css no longer points at ../i/: its triangle rules were for
             // classes nothing used, and went with the images.
         });
@@ -144,7 +150,6 @@ describe('reporting CSS build integrity', () => {
             const publicBase = path.dirname(publicCssDir); // public/base
             const copied = [
                 'css/chosen-sprite.png',
-                'css/images/ui-icons_444444_256x240.png',
                 'css/font-awesome/css/all.min.css',
                 'css/owa.css', // dual-role: build input AND served raw to the installer
                 'i/funnel_flow.png', // owa.report.css ../i/ funnel image
