@@ -37,21 +37,21 @@ namespace OWA\Module\Base\Classes;
       * 
       * @var boolean
       */
-     var $hasErrors;
+     public $hasErrors;
      
      /**
       * Error Msgs produced by Validations
       * 
       * @var array
       */
-     var $errorMsgs;
+     public $errorMsgs;
      
      /**
       * Validations to be performed in next validation run
       * 
       * @var array
       */
-     var $validations;
+     public $validations;
           
      /**
       * Adds a validation to be performed in next run
@@ -61,7 +61,7 @@ namespace OWA\Module\Base\Classes;
       * @param string     $validation the name of the validation to run
       * @param array     $conf         configuration array for the object being created
       */
-     function addValidation($name, $value, $validation, $conf) {
+     public function addValidation($name, $value, $validation, $conf) {
                 
         // Construct validatation obj
         $obj = $this->validationFactory($validation, $conf);
@@ -71,7 +71,7 @@ namespace OWA\Module\Base\Classes;
         $this->setValidation( $name, $obj );
     }
     
-    function setValidation($name, $obj) {
+    public function setValidation($name, $obj) {
         
         // add name to validator
         $obj->setName($name);
@@ -83,7 +83,7 @@ namespace OWA\Module\Base\Classes;
      * 
      * @return Object
      */
-    function validationFactory($class_file, $conf = array()) {
+    public function validationFactory($class_file, $conf = array()) {
         
         return \OWA\Core\CoreAPI::validationFactory($class_file, $conf);
     }
@@ -92,7 +92,7 @@ namespace OWA\Module\Base\Classes;
      * Performs a validation run
      * 
      */
-    function doValidations() {
+    public function doValidations() {
         
         foreach ($this->validations as $k) {
             \OWA\Core\CoreAPI::debug('Validating '.$k['name']. ' with '. get_class( $k['obj'] ));
@@ -121,7 +121,7 @@ namespace OWA\Module\Base\Classes;
      * 
      * @return boolean
      */
-    function isValid() {
+    public function isValid() {
         
         if ($this->hasErrors == true):
             return false;
@@ -135,7 +135,7 @@ namespace OWA\Module\Base\Classes;
      * 
      * @return array
      */
-    function getErrorMsgs() {
+    public function getErrorMsgs() {
         
         return $this->errorMsgs;
     }

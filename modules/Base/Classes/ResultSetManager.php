@@ -47,33 +47,33 @@ class ResultSetManager extends \OWA\Core\Base {
      *
      * @var array
      */
-    var $params = array();
+    public $params = array();
 
     /**
      * The lables for calculated measures
      *
      * @var array
      */
-    var $labels = array();
+    public $labels = array();
 
     /**
      * Data Access Object
      *
      * @var object
      */
-    var $db;
+    public $db;
 
     /**
      * The dimensions to groupby
      *
      * @var array
      */
-    var $dimensions = array();
+    public $dimensions = array();
 
-    var $page = 1;
-    var $limit;
-    var $order;
-    var $format;
+    public $page = 1;
+    public $limit;
+    public $order;
+    public $format;
     /**
      * The constraint operators, in the order a clause is tested against them,
      * and what each means. The first found in a clause is the one it means, so
@@ -93,16 +93,16 @@ class ResultSetManager extends \OWA\Core\Base {
     );
 
     /** The keys of CONSTRAINT_OPERATORS, set by the constructor. */
-    var $constraint_operators = array();
-    var $resultSet;
-    var $metrics = array();
-    var $childMetrics = array();
-    var $calculatedMetrics = array();
-    var $query_params = array();
-    var $baseEntity;
+    public $constraint_operators = array();
+    public $resultSet;
+    public $metrics = array();
+    public $childMetrics = array();
+    public $calculatedMetrics = array();
+    public $query_params = array();
+    public $baseEntity;
     /** @var array metric name => the metric object, set by loadMetric() */
-    var $metricObjects = array();
-    var $errors = array();
+    public $metricObjects = array();
+    public $errors = array();
 
     /**
      * Errors that mean the REQUEST is malformed, as opposed to noise.
@@ -114,15 +114,15 @@ class ResultSetManager extends \OWA\Core\Base {
      *
      * @var array
      */
-    var $request_errors = array();
-    var $formatters = array();
-    var $segment;
-    var $resolution = 'day';
-    var $timePeriod;
-    var $all_columns = [];
+    public $request_errors = array();
+    public $formatters = array();
+    public $segment;
+    public $resolution = 'day';
+    public $timePeriod;
+    public $all_columns = [];
     
 
-    function __construct($db = '') {
+    public function __construct($db = '') {
 
         $this->constraint_operators = array_keys( self::CONSTRAINT_OPERATORS );
 
@@ -149,7 +149,7 @@ class ResultSetManager extends \OWA\Core\Base {
     }
 
 
-    function setConstraint($name, $value, $operator = '') {
+    public function setConstraint($name, $value, $operator = '') {
 
         if (empty($operator)) {
             $operator = '=';
@@ -174,7 +174,7 @@ class ResultSetManager extends \OWA\Core\Base {
      * Source Detail report showed the same visit count for every source with no
      * error anywhere. Reported the same way an unknown sort column is.
      */
-    function setConstraints($array) {
+    public function setConstraints($array) {
 
         if (is_array($array)) {
 
@@ -596,7 +596,7 @@ class ResultSetManager extends \OWA\Core\Base {
      * Profile also names the Property whose cube is read, and whose dimensions
      * the query may name (dimensionRegistry()).
      */
-    function setSiteId($siteId) {
+    public function setSiteId($siteId) {
 
         //used for urls
         $this->query_params['siteId'] = $siteId;
@@ -609,7 +609,7 @@ class ResultSetManager extends \OWA\Core\Base {
      *
      * @param string $propertyId
      */
-    function setPropertyId( $propertyId ) {
+    public function setPropertyId( $propertyId ) {
 
         $this->query_params['propertyId'] = (string) $propertyId;
     }
@@ -631,7 +631,7 @@ class ResultSetManager extends \OWA\Core\Base {
      *
      * @param string $propertyId
      */
-    function setVocabularyProperty( $propertyId ) {
+    public function setVocabularyProperty( $propertyId ) {
 
         $this->vocabulary_property_id = (string) $propertyId;
     }
@@ -653,7 +653,7 @@ class ResultSetManager extends \OWA\Core\Base {
                 : $this->propertyIdForRequest() );
     }
 
-    function getSiteId() {
+    public function getSiteId() {
 
         if ( isset( $this->params['siteId'] ) ) {
 
@@ -661,7 +661,7 @@ class ResultSetManager extends \OWA\Core\Base {
         }
     }
 
-    function constraintsStringToArray($string) {
+    public function constraintsStringToArray($string) {
 
         if ($string) {
             //print_r($string);
@@ -676,7 +676,7 @@ class ResultSetManager extends \OWA\Core\Base {
      * Transforms a comma separated string of constraints into array
      * The string format is used in REST API calls.
      */
-    function parseConstraintsString($string) {
+    public function parseConstraintsString($string) {
 
         $constraints = explode(',', (string) $string);
         $constraint_array = array();
@@ -746,12 +746,12 @@ class ResultSetManager extends \OWA\Core\Base {
         }, (string) $value );
     }
 
-    function getConstraints() {
+    public function getConstraints() {
 
         return $this->params['constraints'];
     }
 
-    function getConstraint( $key ) {
+    public function getConstraint( $key ) {
 
         if ( isset( $this->params['constraints'][$key] ) ) {
             return $this->params['constraints'][$key];
@@ -831,7 +831,7 @@ class ResultSetManager extends \OWA\Core\Base {
             : (string) $this->getSiteId();
     }
 
-    function applyConstraints( $constraints = '', $db = '', $entity = '') {
+    public function applyConstraints( $constraints = '', $db = '', $entity = '') {
 
         if ( !$db ) {
             $db = $this->db;
@@ -855,7 +855,7 @@ class ResultSetManager extends \OWA\Core\Base {
      *
      * @param object $db
      */
-    function applySharedMetricCondition( $db ) {
+    public function applySharedMetricCondition( $db ) {
 
         /*
          * The metrics' own condition, when they all share one, in the WHERE
@@ -882,7 +882,7 @@ class ResultSetManager extends \OWA\Core\Base {
      *
      * @return array|null
      */
-    function sharedMetricCondition() {
+    public function sharedMetricCondition() {
 
         if ( ! $this->baseEntity || empty( $this->metrics ) ) {
 
@@ -949,7 +949,7 @@ class ResultSetManager extends \OWA\Core\Base {
 	/**
      * Generate constraint clause using metrics and dimensions
      */
-    function applyConstraint( $constraint, $db = '', $entity= '') {
+    public function applyConstraint( $constraint, $db = '', $entity= '') {
 
         if ( ! $entity ) {
             $entity = $this->baseEntity;
@@ -1052,7 +1052,7 @@ class ResultSetManager extends \OWA\Core\Base {
         return '';
     }
 
-    function setSegment($segment) {
+    public function setSegment($segment) {
 
         $this->query_params['segment'] = $segment;
 
@@ -1103,12 +1103,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $this->segment = array('metrics' => $metrics, 'dimensions' => $dimensions);
     }
 
-    function getSegment() {
+    public function getSegment() {
 
         return $this->segment;
     }
 
-    function getMetricNamesFromSegment() {
+    public function getMetricNamesFromSegment() {
 
         if ( isset($this->segment['metrics'] ) ) {
 
@@ -1119,7 +1119,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function getDimensionNamesFromSegment() {
+    public function getDimensionNamesFromSegment() {
 
         if ( isset( $this->segment['dimensions'] ) ) {
 
@@ -1137,7 +1137,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @return \OWA\Core\Entity|null
      */
-    function loadBaseEntity() {
+    public function loadBaseEntity() {
 
         foreach ( array_unique( array_merge( $this->metrics, $this->getMetricNamesFromConstraints() ) ) as $metric_name ) {
 
@@ -1172,7 +1172,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $this->baseEntity = $entity;
     }
 
-    function getDimensionsFromConstraints() {
+    public function getDimensionsFromConstraints() {
 
         $dims = array();
 
@@ -1191,7 +1191,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $dims;
     }
 
-    function getMetricNamesFromConstraints() {
+    public function getMetricNamesFromConstraints() {
 
         $metrics = array();
         foreach ($this->getConstraints() as $k => $constraint) {
@@ -1210,7 +1210,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @param  string $metric_name
      * @return bool whether the name is a registered metric
      */
-    function loadMetric( $metric_name ) {
+    public function loadMetric( $metric_name ) {
 
         $classes = \OWA\Core\CoreAPI::serviceSingleton()->getMetricClasses( $metric_name );
 
@@ -1241,12 +1241,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return true;
     }
 
-    function isDimension( $name ) {
+    public function isDimension( $name ) {
 
         return $this->dimensionRegistry()->has( $name );
     }
 
-    function isMetric( $name ) {
+    public function isMetric( $name ) {
 
         $metrics = \OWA\Core\CoreAPI::getAllMetrics();
         return in_array( $name, array_keys( $metrics ) );
@@ -1260,7 +1260,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @param $entity    object    the entity object
      * @return array|null
      */
-    function lookupDimension($name, $entity) {
+    public function lookupDimension($name, $entity) {
 
         $dim = $this->dimensionRegistry()->denormalized( $name, $entity->getName() );
 
@@ -1294,7 +1294,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $dim;
     }
 
-    function setLimit($value) {
+    public function setLimit($value) {
 
         if (!empty($value)) {
 
@@ -1313,7 +1313,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * the one everything uses.
      */
 
-    function setSorts($array) {
+    public function setSorts($array) {
 
         if (is_array($array)) {
 
@@ -1326,7 +1326,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function applySorts() {
+    public function applySorts() {
 
         $sorts = $this->params['orderby'];
 
@@ -1393,7 +1393,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
          }
     }
 
-    function sortStringToArray($string) {
+    public function sortStringToArray($string) {
 
         if ($string) {
 
@@ -1435,13 +1435,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function isSortValid($needle) {
+    public function isSortValid($needle) {
 
         $haystack = array_merge($this->metrics, $this->dimensions);
         return in_array($needle, $haystack);
     }
 
-    function setPage($value) {
+    public function setPage($value) {
 
         if (!empty($value)) {
 
@@ -1449,20 +1449,20 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function setOffset($value) {
+    public function setOffset($value) {
 
         if (!empty($value)) {
             $this->params['offset'] = $value;
         }
     }
 
-    function setPeriod($value) {
+    public function setPeriod($value) {
         if (!empty($value)) {
             $this->params['period'] = $value;
         }
     }
     
-    function getTimeResolution() {
+    public function getTimeResolution() {
       
       return $this->resolution;
     }
@@ -1482,7 +1482,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @return int|float
      */
-    function timePeriodRows() {
+    public function timePeriodRows() {
 
         $difference = $this->timePeriod->getDaysDifference();
 
@@ -1502,12 +1502,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     const TREND_AXES = array( 'date', 'dateHour', 'yearMonth', 'year' );
 
     /** Whether the query is by a trend's axis (TREND_AXES), so bounded by the period rather than paged. */
-    function isByDate() {
+    public function isByDate() {
 
         return (bool) array_intersect( self::TREND_AXES, (array) $this->dimensions );
     }
 
-    function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
+    public function setTimePeriod($period_name = '', $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
       
       $map = false;
       
@@ -1632,7 +1632,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
   		}
     }
 
-    function applyMetaDataToResults( $results ) {
+    public function applyMetaDataToResults( $results ) {
 
         $new_rows = array();
         
@@ -1647,7 +1647,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $new_rows;
     }
 
-    function applyMetaDataToSingleResultRow($row) {
+    public function applyMetaDataToSingleResultRow($row) {
 
         $new_row = array();
 
@@ -1743,7 +1743,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      */
     const UNKNOWN_LABEL = '(unknown)';
 
-    function formatDimensionValue( $data_type, $value ) {
+    public function formatDimensionValue( $data_type, $value ) {
 
         if ( $value === null || $value === '' ) {
 
@@ -1778,7 +1778,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $this->formatValue( $data_type, $value );
     }
 
-    function formatValue($type, $value) {
+    public function formatValue($type, $value) {
 
         if (array_key_exists($type, $this->formatters)) {
 
@@ -1796,12 +1796,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * labelled with an empty string and a grid cell shows nothing at all --
      * which reads as missing data rather than as "no".
      */
-    function booleanFormatter($value) {
+    public function booleanFormatter($value) {
 
         return ! empty( $value ) ? \OWA\Core\CoreAPI::t( 'Yes' ) : \OWA\Core\CoreAPI::t( 'No' );
     }
 
-    function numberFormatter($value) {
+    public function numberFormatter($value) {
 	if(is_null($value)){
             return $value;
         }
@@ -1819,7 +1819,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @param int|string|null $value epoch seconds
      * @return string|null
      */
-    function formatDateTime( $value ) {
+    public function formatDateTime( $value ) {
 
         if ( ! is_numeric( $value ) ) {
 
@@ -1837,7 +1837,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @param int|float|string|null $value seconds
      * @return string|null
      */
-    function formatSeconds($value) {
+    public function formatSeconds($value) {
 
         if ( $value === null || $value === '' ) {
 
@@ -1862,7 +1862,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @param int|null $value milliseconds
      * @return string|null
      */
-    function formatMilliseconds($value) {
+    public function formatMilliseconds($value) {
 
         if ( $value === null || $value === '' ) {
 
@@ -1893,7 +1893,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * NULL STAYS NULL, like numberFormatter above: a value the query did not
      * return is not shown as 0.00%.
      */
-    function formatPercentage($value) {
+    public function formatPercentage($value) {
 
         if ( $value === null ) {
 
@@ -1904,7 +1904,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /** NULL stays NULL, for the same reason formatPercentage does. */
-    function formatCurrency($value) {
+    public function formatCurrency($value) {
 
         if ( $value === null ) {
 
@@ -1924,13 +1924,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * return the key so that it can be nested
      * @return string $key
      */
-    function addLabel($key, $label) {
+    public function addLabel($key, $label) {
 
         $this->labels[$key] = $label;
         return $key;
     }
 
-    function getLabel($key = '') {
+    public function getLabel($key = '') {
 
         if (array_key_exists($key, $this->labels)) {
             return $this->labels[$key];
@@ -1944,7 +1944,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * Retrieve the labels of the measures
      *
      */
-    function getLabels() {
+    public function getLabels() {
 
         return $this->labels;
     }
@@ -1953,22 +1953,22 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * Set the labels of the measures
      *
      */
-    function setLabels($array) {
+    public function setLabels($array) {
 
         $this->labels = $array;
     }
 
-    function getPeriod() {
+    public function getPeriod() {
 
         return $this->params['period'];
     }
 
-    function getLimit() {
+    public function getLimit() {
 
         return $this->limit;
     }
     
-    function getPage() {
+    public function getPage() {
 
         return $this->page;
     }
@@ -1979,14 +1979,14 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * Retrieves dimension info from service layer and checks to see if
      * dimension is denromalized or if it is a valid relation
      */
-    function setDimension($name) {
+    public function setDimension($name) {
 
         if ($name) {
             $this->dimensions[] = $name;
         }
     }
 
-    function setDimensions($array) {
+    public function setDimensions($array) {
 
         if ($array) {
 
@@ -1997,14 +1997,14 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function dimensionsStringToArray($string) {
+    public function dimensionsStringToArray($string) {
 
         // add string to query params array for use in URLs.
         $this->query_params['dimensions'] = $string;
         return explode(',', $string);
     }
 
-    function metricsStringToArray($string) {
+    public function metricsStringToArray($string) {
 
         // add string to query params array for use in URLs.
         $this->query_params['metrics'] = $string;
@@ -2015,7 +2015,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     /**
      * Applies dimensional sql to dao object
      */
-    function applyDimensions() {
+    public function applyDimensions() {
 
         foreach ($this->dimensions as $dimension_name) {
             $dim = $this->lookupDimension($dimension_name, $this->baseEntity);
@@ -2027,7 +2027,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function addCalculatedMetric($calc_metric_obj) {
+    public function addCalculatedMetric($calc_metric_obj) {
 
         // add label of calculated metric obj
         $this->addLabel($calc_metric_obj->getName(),$calc_metric_obj->getLabel());
@@ -2036,13 +2036,13 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     }
 
-    function getCalculatedMetricByName($name) {
+    public function getCalculatedMetricByName($name) {
 
         return $this->calculatedMetrics[$name];
     }
 
     // Can only be called after loadBaseEntity().
-    function getMetricImplementation($metric_name) {
+    public function getMetricImplementation($metric_name) {
 
         if (!array_key_exists($metric_name, $this->calculatedMetrics)) {
 
@@ -2054,7 +2054,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 	
 	// generates select statment from metrics
-    function applyMetrics() {
+    public function applyMetrics() {
         //print_r($this->metrics);
         foreach($this->metrics as $k => $metric_name) {
 
@@ -2103,7 +2103,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * NEEDED???
      */
-    function addColumn($name, $col) {
+    public function addColumn($name, $col) {
 
         $this->all_columns[$name] = $col;
     }
@@ -2119,7 +2119,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * Reserved for what a caller can fix by sending a different request.
      * Routine internal misses stay in addError().
      */
-    function addRequestError($msg) {
+    public function addRequestError($msg) {
 
         $this->request_errors[] = $msg;
 
@@ -2127,12 +2127,12 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /** Whether the request is malformed, so no query should run. */
-    function hasRequestErrors() {
+    public function hasRequestErrors() {
 
         return ! empty( $this->request_errors );
     }
 
-    function addError($msg) {
+    public function addError($msg) {
 
         $this->errors[] = $msg;
         \OWA\Core\CoreAPI::debug($msg);
@@ -2141,7 +2141,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     /**
      * @param \OWA\Core\Entity $bm the base entity
      */
-    function computeAggregates( $bm ) {
+    public function computeAggregates( $bm ) {
 
         /*
          * A FILTER ON A METRIC KEEPS GROUPS, so the totals are of the groups it
@@ -2225,7 +2225,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @return array
      */
-    function metricConstraints() {
+    public function metricConstraints() {
 
         $out = array();
 
@@ -2250,7 +2250,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @param object $bm the base entity
      * @return array|null
      */
-    function keptGroupsCondition( $bm ) {
+    public function keptGroupsCondition( $bm ) {
 
         $key   = $this->groupKeySql();
         $inner = $key ? $this->groupKeysQuery() : null;
@@ -2271,7 +2271,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @return string|null
      */
-    function groupKeySql() {
+    public function groupKeySql() {
 
         $parts = array();
 
@@ -2329,7 +2329,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @return array|null
      */
-    function groupKeysQuery() {
+    public function groupKeysQuery() {
 
         $bm  = $this->baseEntity ?: $this->loadBaseEntity();
         $key = $bm ? $this->groupKeySql() : null;
@@ -2380,7 +2380,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @return int
      */
-    function countGroups() {
+    public function countGroups() {
 
         $inner = $this->groupKeysQuery();
 
@@ -2415,7 +2415,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @param string[] $keys
      */
-    function restrictToGroups( array $keys ) {
+    public function restrictToGroups( array $keys ) {
 
         $this->group_keys = array_values( array_unique( array_map( 'strval', $keys ) ) );
     }
@@ -2426,7 +2426,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @param ResultSetManager $other grouped by the same dimensions
      */
-    function excludeGroupsOf( ResultSetManager $other ) {
+    public function excludeGroupsOf( ResultSetManager $other ) {
 
         $this->excluded_groups_of = $other;
     }
@@ -2438,7 +2438,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @param int $offset
      * @param int $count  at least 1
      */
-    function setRowWindow( $offset, $count ) {
+    public function setRowWindow( $offset, $count ) {
 
         $this->row_window = array( max( 0, (int) $offset ), max( 1, (int) $count ) );
         $this->limit      = $this->row_window[1];
@@ -2446,7 +2446,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /** Leave the totals (aggregates) unread: the caller uses the rows only. */
-    function setRowsOnly( $rows_only = true ) {
+    public function setRowsOnly( $rows_only = true ) {
 
         $this->rows_only = (bool) $rows_only;
     }
@@ -2457,7 +2457,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @param object $db
      */
-    function applyGroupConditions( $db ) {
+    public function applyGroupConditions( $db ) {
 
         if ( $this->group_keys === null && ! $this->excluded_groups_of ) {
 
@@ -2496,7 +2496,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         }
     }
 
-    function computeDimensionalRows( $bm ) {
+    public function computeDimensionalRows( $bm ) {
 
         /*
          * A query by anything but a trend's axis that names no page size gets
@@ -2602,7 +2602,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $results;
     }
     
-    function calculateOffset() {
+    public function calculateOffset() {
 		
 		if ( $this->page > 1 ) {
 		
@@ -2619,7 +2619,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @return \OWA\Module\Base\Classes\PaginatedResultSet
      */
-    function getResults() {
+    public function getResults() {
 
         /*
          * A malformed request is not run at all.
@@ -2751,7 +2751,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         return $this->resultSet;
     }
     
-    function generateSegmentQuery( $base_entity ) {
+    public function generateSegmentQuery( $base_entity ) {
 
         $segment = $this->getSegment();
         $segment_entity = $this->entityFor($base_entity->getName());
@@ -2794,7 +2794,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
     }
 
-    function computeCalculatedMetrics($rs) {
+    public function computeCalculatedMetrics($rs) {
 
         foreach ($this->calculatedMetrics as $cm) {
 
@@ -2884,7 +2884,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      *
      * @param    string    $name    the name of the metric
      */
-    function getMetric($name) {
+    public function getMetric($name) {
 
         if ( ! in_array( $name, $this->metrics ) ) {
 
@@ -2895,7 +2895,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     }
 
     /** The dimensions a query can group by, by family. */
-    function relatedDimensions() {
+    public function relatedDimensions() {
 
         $dims = array();
 
@@ -2915,7 +2915,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * are each a share of the total, from a ratio or an average, whose rows
      * are not.
      */
-    function relatedMetrics() {
+    public function relatedMetrics() {
 
         $all       = \OWA\Core\CoreAPI::serviceSingleton()->getAllMetrics();
         $built     = array();

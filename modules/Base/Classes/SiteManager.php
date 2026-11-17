@@ -51,7 +51,7 @@ class SiteManager extends \OWA\Core\Base {
      * For a second site on a domain that already has one -- a website measured
      * by more than one profile -- use createSite().
      */
-    function createNewSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
+    public function createNewSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
 
         $domain = self::domainOnly( $domain );
 
@@ -255,7 +255,7 @@ class SiteManager extends \OWA\Core\Base {
      *                             only way to add one to a Property that has no
      *                             domain to be found by.
      */
-    function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '', $property_id = '', $stream_type = '', $app_id = '' ) {
+    public function createSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '', $property_id = '', $stream_type = '', $app_id = '' ) {
 
         $domain = self::domainOnly( $domain );
 

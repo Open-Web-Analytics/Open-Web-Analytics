@@ -34,27 +34,27 @@ namespace OWA\Module\Base\Classes;
 
 class Service extends \OWA\Core\Base {
 
-    var $init = false;
-    var $request;
-    var $state;
-    var $current_user;
-    var $settings;
-    var $maps = array();
-    var $update_required = false;
-    var $install_required = false;
-    var $modules_needing_updates = array();
-    var $modules = array();
-    var $entities = array();
-    var $metrics = array();
-    var $denormalizedDimensions = array();
-    var $browscap;
-    var $geolocation;
-    var $restApiRoutes = array();
+    public $init = false;
+    public $request;
+    public $state;
+    public $current_user;
+    public $settings;
+    public $maps = array();
+    public $update_required = false;
+    public $install_required = false;
+    public $modules_needing_updates = array();
+    public $modules = array();
+    public $entities = array();
+    public $metrics = array();
+    public $denormalizedDimensions = array();
+    public $browscap;
+    public $geolocation;
+    public $restApiRoutes = array();
 
-    function __construct() {
+    public function __construct() {
     }
 
-    function initializeFramework() {
+    public function initializeFramework() {
 
         if (!$this->isInit()) {
 
@@ -86,7 +86,7 @@ class Service extends \OWA\Core\Base {
      *
      * @param object|null $b
      */
-    function setBrowscap( $b ) {
+    public function setBrowscap( $b ) {
 
         if ( $b === null ) {
 
@@ -119,7 +119,7 @@ class Service extends \OWA\Core\Base {
      * @param  string $ua  the agent to parse; the request's own when empty
      * @return object
      */
-    function getBrowscap( $ua = '' ) {
+    public function getBrowscap( $ua = '' ) {
 
         // An injected parser wins, so a test can hand over a stub.
         if ( ! empty( $this->browscap ) ) {
@@ -143,7 +143,7 @@ class Service extends \OWA\Core\Base {
         return $this->browscap_by_ua[ $key ];
     }
 
-    function _loadModules() {
+    public function _loadModules() {
 
         $present_modules = \OWA\Core\CoreAPI::getPresentModules();
         $am = \OWA\Core\CoreAPI::getActiveModules();
@@ -178,7 +178,7 @@ class Service extends \OWA\Core\Base {
         }
     }
     
-    function _loadEntities() {
+    public function _loadEntities() {
 
         foreach ($this->modules as $k => $module) {
 
@@ -193,7 +193,7 @@ class Service extends \OWA\Core\Base {
         return;
     }
 
-    function _loadFilters() {
+    public function _loadFilters() {
 
         foreach ($this->modules as $k => $module) {
 
@@ -201,7 +201,7 @@ class Service extends \OWA\Core\Base {
         }
     }
 
-    function _loadMetrics() {
+    public function _loadMetrics() {
 
         foreach ($this->modules as $k => $module) {
 
@@ -212,12 +212,12 @@ class Service extends \OWA\Core\Base {
         }
     }
 
-    function getAllMetrics() {
+    public function getAllMetrics() {
 
         return $this->metrics;
     }
 
-    function loadCliCommands() {
+    public function loadCliCommands() {
 
         $command_map = array();
 
@@ -267,7 +267,7 @@ class Service extends \OWA\Core\Base {
      *
      * @return void
      */
-    function loadJobs() {
+    public function loadJobs() {
 
         // The merge validates commands, so the command map must be built first.
         // Both are idempotent.
@@ -408,14 +408,14 @@ class Service extends \OWA\Core\Base {
     /**
      * @return array  every job, keyed by name
      */
-    function getJobs() {
+    public function getJobs() {
 
         $jobs = $this->getMap('scheduled_jobs');
 
         return is_array( $jobs ) ? $jobs : array();
     }
 
-    function _loadDimensions() {
+    public function _loadDimensions() {
 
         foreach ($this->modules as $k => $module) {
 
@@ -427,7 +427,7 @@ class Service extends \OWA\Core\Base {
         }
     }
 
-    function _loadEventProcessors() {
+    public function _loadEventProcessors() {
 
         $processors = array();
 
@@ -443,19 +443,19 @@ class Service extends \OWA\Core\Base {
     /**
      * @return \OWA\Module\Base\Classes\ServiceUser
      */
-    function getCurrentUser() {
+    public function getCurrentUser() {
         if (!$this->isInit()) {
             throw new \Exception('Current User Object could only be get if framework is initialized');
         }
         return $this->current_user;
     }
 
-    function getRequest() {
+    public function getRequest() {
 
         return $this->request;
     }
     
-    function getRestApiRoute( $module, $version, $route_name, $request_method ) {
+    public function getRestApiRoute( $module, $version, $route_name, $request_method ) {
 	    
 	    if ( array_key_exists( $module, $this->restApiRoutes ) ) {
 
@@ -472,22 +472,22 @@ class Service extends \OWA\Core\Base {
 		}
     }
     
-    function setRestApiRoute( $module, $version, $route_name, $request_method, $value ) {
+    public function setRestApiRoute( $module, $version, $route_name, $request_method, $value ) {
 	    
 	    $this->restApiRoutes[$module][$version][ $route_name ][ $request_method ] = $value;
     }
     
-    function getAllRestApiRoutes() {
+    public function getAllRestApiRoutes() {
 	    
 	    return $this->restApiRoutes;
     }
 
-    function getState() {
+    public function getState() {
 
         return $this->request->state;
     }
 
-    function getMapValue($map_name, $name) {
+    public function getMapValue($map_name, $name) {
 
         if (array_key_exists($map_name, $this->maps)) {
 
@@ -504,7 +504,7 @@ class Service extends \OWA\Core\Base {
         }
     }
 
-    function getMap($name) {
+    public function getMap($name) {
 
         if (array_key_exists($name, $this->maps)) {
 
@@ -513,23 +513,23 @@ class Service extends \OWA\Core\Base {
 
     }
 
-    function setMap($name, $map) {
+    public function setMap($name, $map) {
 
         $this->maps[$name] = $map;
     }
 
-    function setMapValue($map_name, $name, $value) {
+    public function setMapValue($map_name, $name, $value) {
 
         $this->maps[$map_name][$name] = $value;
     }
 
-    function setUpdateRequired() {
+    public function setUpdateRequired() {
 
         $this->update_required = true;
         return;
     }
 
-    function isUpdateRequired() {
+    public function isUpdateRequired() {
 
         return $this->update_required;
     }
@@ -540,7 +540,7 @@ class Service extends \OWA\Core\Base {
      * been applied (Base\Module::isUpToDate()) leaves the schema as the jobs
      * expect it, so they keep running.
      */
-    function isSchemaUpdateRequired() {
+    public function isSchemaUpdateRequired() {
 
         foreach ( $this->modules as $module ) {
 
@@ -553,41 +553,41 @@ class Service extends \OWA\Core\Base {
         return false;
     }
 
-    function addModule($module) {
+    public function addModule($module) {
 
         $this->modules[$module->name] = $module;
     }
 
-    function markModuleAsNeedingUpdate($name) {
+    public function markModuleAsNeedingUpdate($name) {
 
         $this->modules_needing_updates[] = $name;
     }
 
-    function getModulesNeedingUpdates() {
+    public function getModulesNeedingUpdates() {
 
         return $this->modules_needing_updates;
     }
 
 
-    function setInstallRequired() {
+    public function setInstallRequired() {
         $this->install_required = true;
     }
 
-    function addEntity($entity_name, $class) {
+    public function addEntity($entity_name, $class) {
 
         $this->entities[$entity_name] = $class;
     }
 
-    function setInit() {
+    public function setInit() {
         $this->init = true;
     }
 
-    function isInit() {
+    public function isInit() {
 
         return $this->init;
     }
 
-    function getModule($name) {
+    public function getModule($name) {
 
         if (array_key_exists($name, $this->modules)) {
             return $this->modules[$name];
@@ -597,7 +597,7 @@ class Service extends \OWA\Core\Base {
 
     }
 
-    function getMetricClasses($name) {
+    public function getMetricClasses($name) {
 
         if (array_key_exists($name, $this->metrics)) {
 
@@ -610,7 +610,7 @@ class Service extends \OWA\Core\Base {
      * Property's custom dimensions are never here, and Classes\DimensionRegistry
      * is what a caller asks.
      */
-    function getDenormalizedDimension($name, $entity) {
+    public function getDenormalizedDimension($name, $entity) {
 
         //print_r($this->denormalizedDimensions);
         if (array_key_exists($name, $this->denormalizedDimensions)) {
@@ -620,7 +620,7 @@ class Service extends \OWA\Core\Base {
         }
     }
 
-    function getCliCommandClass($command) {
+    public function getCliCommandClass($command) {
 
         return $this->getMapValue('cli_commands', $command);
     }

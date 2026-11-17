@@ -33,19 +33,19 @@ namespace OWA\Module\Base\Classes;
 
 class TimePeriod {
 
-    var $period;
-    var $startDate;
-    var $endDate;
-    var $label;
-    var $diff_years;
-    var $diff_months;
-    var $diff_days;
-    var $is_default_period = false;
+    public $period;
+    public $startDate;
+    public $endDate;
+    public $label;
+    public $diff_years;
+    public $diff_months;
+    public $diff_days;
+    public $is_default_period = false;
 
     /** The timestamp a relative period is counted from; null is the clock. */
-    var $now = null;
+    public $now = null;
 
-    function __construct() {
+    public function __construct() {
 
         //parent::__construct();
 
@@ -84,7 +84,7 @@ class TimePeriod {
         return in_array( (string) $period, self::RETIRED_PERIODS, true );
     }
 
-    function getDefaultReportingPeriod() {
+    public function getDefaultReportingPeriod() {
 
         $period = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_reporting_period' );
 
@@ -190,7 +190,7 @@ class TimePeriod {
      *
      * @return array<int, array{key: string, label: string, startDate: string, endDate: string}>
      */
-    function getPresets() {
+    public function getPresets() {
 
         $out = array();
 
@@ -352,7 +352,7 @@ class TimePeriod {
      * @param array $map request parameters
      * @return array{compare: string, startDate: string, endDate: string}|null null when there is none
      */
-    function getCompareFromMap( $map ) {
+    public function getCompareFromMap( $map ) {
 
         $map = (array) $map;
 
@@ -384,7 +384,7 @@ class TimePeriod {
         return $r ? array( 'compare' => $compare, 'startDate' => $r[0], 'endDate' => $r[1] ) : null;
     }
 
-    function setFromMap( $map ) {
+    public function setFromMap( $map ) {
 
         $map = self::normalizeMap( $map );
 
@@ -443,7 +443,7 @@ class TimePeriod {
      *
      * @return array<int, string>
      */
-    function getValidPeriods() {
+    public function getValidPeriods() {
 
         $valid = array_keys( $this->getPeriodLabels() );
         $valid[] = 'date_range';
@@ -451,17 +451,17 @@ class TimePeriod {
         return $valid;
     }
 
-    function isValid( $value ) {
+    public function isValid( $value ) {
 
         return in_array( $value, $this->getValidPeriods(), true );
     }
 
-    function isDefaultPeriod() {
+    public function isDefaultPeriod() {
 
         return $this->is_default_period;
     }
 
-    function set($value = '', $map = array()) {
+    public function set($value = '', $map = array()) {
 
         $this->period = $value;
         $this->_setDates($map);
@@ -469,23 +469,23 @@ class TimePeriod {
         $this->_setDifferences();
     }
 
-    function getStartDate() {
+    public function getStartDate() {
         return $this->startDate;
     }
 
-    function getEndDate() {
+    public function getEndDate() {
         return $this->endDate;
     }
 
-    function getLabel() {
+    public function getLabel() {
         return $this->label;
     }
 
-    function get() {
+    public function get() {
         return $this->period;
     }
 
-    function _setLabel($value = '') {
+    public function _setLabel($value = '') {
 
         $this->label = $this->startDate->getLabel() . ' - ' . $this->endDate->getLabel();
     }
@@ -496,7 +496,7 @@ class TimePeriod {
      *
      * @return array
      */
-    function getPeriodLabels() {
+    public function getPeriodLabels() {
 
         return array(
 
@@ -517,7 +517,7 @@ class TimePeriod {
 
     }
 
-    function _setDates($map = array()) {
+    public function _setDates($map = array()) {
 
         // set() reaches here without going through setFromMap, so normalize again.
         $map = self::normalizeMap( $map );
@@ -677,7 +677,7 @@ class TimePeriod {
         $this->endDate->set($end, 'timestamp');
     }
 
-    function getPeriodProperties() {
+    public function getPeriodProperties() {
 
         $period_params = array();
         $period_params['period'] = $this->get();
@@ -688,7 +688,7 @@ class TimePeriod {
         return $period_params;
     }
 
-    function getAllInfo() {
+    public function getAllInfo() {
 
         $info = array();
         $info['period'] = $this->get();
@@ -714,7 +714,7 @@ class TimePeriod {
      * after today, and the axis runs to its last day while the line stops at
      * today. Every other period's axis ends on its end date.
      */
-    function getAxisEndDate() {
+    public function getAxisEndDate() {
 
         $start = $this->startDate->getTimestamp();
 
@@ -738,7 +738,7 @@ class TimePeriod {
         return $this->endDate->getYyyymmdd();
     }
 
-    function _setDifferences() {
+    public function _setDifferences() {
 
         // calc years diff
         $start = $this->startDate->getYyyymmdd();
@@ -750,17 +750,17 @@ class TimePeriod {
         $this->diff_days = $diff['DaysSince'];
     }
 
-    function getMonthsDifference() {
+    public function getMonthsDifference() {
 
         return $this->diff_months;
     }
 
-    function getYearsDifference() {
+    public function getYearsDifference() {
 
         return $this->diff_years;
     }
 
-    function getDaysDifference() {
+    public function getDaysDifference() {
 
         return $this->diff_days;
     }
@@ -790,7 +790,7 @@ class TimePeriod {
         [NiceString2] => Years: 1, Months: 1, Days: 2
     )
     */
-    function getDateDifference($StartDateString=NULL, $EndDateString=NULL) {
+    public function getDateDifference($StartDateString=NULL, $EndDateString=NULL) {
         $ReturnArray = array();
         
         $SDSplit = sscanf($StartDateString,'%4d%2d%2d');

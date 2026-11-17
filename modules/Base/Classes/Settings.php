@@ -37,24 +37,24 @@ namespace OWA\Module\Base\Classes;
       *
       * @var \OWA\Module\Base\Entity\Configuration
       */
-     var $config;
+     public $config;
 
-     var $default_config;
+     public $default_config;
 
-     var $db_settings = array();
+     public $db_settings = array();
 
-     var $fetched_from_db;
+     public $fetched_from_db;
 
-     var $is_dirty;
+     public $is_dirty;
 
     /** @var bool  whether the shutdown save has been registered for this process */
     protected $shutdown_registered = false;
 
-     var $config_id;
+     public $config_id;
 
-     var $config_from_db;
+     public $config_from_db;
      
-     var $config_file_loaded;
+     public $config_file_loaded;
 
      /** @var bool|null  whether owa_configuration still exists; see legacyBlobIsAuthoritative(). */
      private $legacy_blob_present = null;
@@ -114,7 +114,7 @@ namespace OWA\Module\Base\Classes;
       * This must be called as early as possible in the overall call stack 
       * and certainly before any database access can occur.
       */
-      function __construct() {
+      public function __construct() {
      
         /*
          * Base's declared defaults, before the config file runs: the file may
@@ -340,7 +340,7 @@ namespace OWA\Module\Base\Classes;
          return $out;
      }
 
-     function applyConfigConstants() {
+     public function applyConfigConstants() {
 
         /*
          * WHERE OWA WRITES (Env::dataDir()). Optional: the data directory
@@ -582,7 +582,7 @@ namespace OWA\Module\Base\Classes;
       *
       * @param int|string $id  retained for callers; the install scope has one id
       */
-     function load($id = 1) {
+     public function load($id = 1) {
 
         $this->config_id = $id;
 
@@ -933,7 +933,7 @@ namespace OWA\Module\Base\Classes;
          return array();
      }
 
-     function fetch($module = '') {
+     public function fetch($module = '') {
         
         $v = $this->config->get('settings');
 
@@ -970,7 +970,7 @@ namespace OWA\Module\Base\Classes;
       *
       * @return boolean
       */
-     function save() {
+     public function save() {
 
         if ( $this->legacyBlobIsAuthoritative() ) {
 
@@ -1121,7 +1121,7 @@ namespace OWA\Module\Base\Classes;
       * @param string $key the configuration key
       * @return mixed
       */
-     function get(string $module, string $key) {
+     public function get(string $module, string $key) {
 
          $id = $module . '|' . $key;
 
@@ -1178,7 +1178,7 @@ namespace OWA\Module\Base\Classes;
       * @param mixed $value the configuration value
       * @return boolean
       */
-     function set($module, $key, $value) {
+     public function set($module, $key, $value) {
 
          /*
           * A value set in memory is RESOLVED. Nothing may go to the store for
@@ -1269,7 +1269,7 @@ namespace OWA\Module\Base\Classes;
       * @param string $value the configuration value
       * @depricated
       */
-     function setSetting($module, $key, $value) {
+     public function setSetting($module, $key, $value) {
          return $this->set($module, $key, $value);
      }
 
@@ -2652,7 +2652,7 @@ namespace OWA\Module\Base\Classes;
      /**
       * @param string|null $public_url  the URL OWA is served from; null reads OWA_PUBLIC_URL
       */
-     function setMailerDomain( $public_url = null ) {
+     public function setMailerDomain( $public_url = null ) {
 
 	     // Only a fallback. This runs from the constructor, BEFORE load() merges
 	     // the stored settings in, so overwriting unconditionally would clobber
@@ -2958,7 +2958,7 @@ namespace OWA\Module\Base\Classes;
 
     }
 
-    function reset($module) {
+    public function reset($module) {
 
         if ($module) {
 
@@ -3069,7 +3069,7 @@ namespace OWA\Module\Base\Classes;
         }
     }
 
-    function __destruct() {
+    public function __destruct() {
 
         // Fallback only: saveIfDirty() has normally already run as a shutdown
         // function, while the database was still reachable.
@@ -3086,7 +3086,7 @@ namespace OWA\Module\Base\Classes;
      * @param $isSiteAccesssRequired    boolean    flag for adding to SA list.
      *
      */
-    function addCapabilityToRole( $role, $capability, $isSiteAccessRequired = false ) {
+    public function addCapabilityToRole( $role, $capability, $isSiteAccessRequired = false ) {
 
         $caps = $this->get('base', 'capabilities');
 

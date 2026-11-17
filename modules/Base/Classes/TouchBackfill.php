@@ -55,7 +55,7 @@ class TouchBackfill {
     /** @var int visitors per statement */
     private $per;
 
-    function __construct( $per = self::VISITORS_PER_BATCH ) {
+    public function __construct( $per = self::VISITORS_PER_BATCH ) {
 
         $this->per   = max( 1, (int) $per );
 

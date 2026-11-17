@@ -33,22 +33,22 @@ namespace OWA\Module\Base\Classes;
 
 class State {
 
-    var $stores = array();
-    var $stores_meta = array();
-    var $is_dirty;
-    var $dirty_stores;
-    var $stores_with_cdh = array();
-    var $initial_state = array();
+    public $stores = array();
+    public $stores_meta = array();
+    public $is_dirty;
+    public $dirty_stores;
+    public $stores_with_cdh = array();
+    public $initial_state = array();
 
-    function __construct() {
-
-    }
-
-    function __destruct() {
+    public function __construct() {
 
     }
 
-    function registerStore( $name, $expiration, $length = '', $format = 'json', $type = 'cookie', $cdh = null ) {
+    public function __destruct() {
+
+    }
+
+    public function registerStore( $name, $expiration, $length = '', $format = 'json', $type = 'cookie', $cdh = null ) {
 
         $this->stores_meta[$name] = array(
             'expiration'     => $expiration,
@@ -93,7 +93,7 @@ class State {
         }
     }
 
-    function setState($store, $name, $value, $store_type = '', $is_perminent = false) {
+    public function setState($store, $name, $value, $store_type = '', $is_perminent = false) {
 
         // Not the value: state holds visitor and session identifiers.
         \OWA\Core\CoreAPI::debug(sprintf('populating state for store: %s, name: %s, store type: %s, is_perm: %s', $store, $name, $store_type, $is_perminent));
@@ -135,14 +135,14 @@ class State {
         //owa_coreAPI::debug(print_r($this->stores, true));
     }
 
-    function isCdhRequired($store_name) {
+    public function isCdhRequired($store_name) {
 
         if ( isset( $this->stores_meta[$store_name] ) ) {
             return $this->stores_meta[$store_name]['cdh_required'];
         }
     }
 
-    function set($store, $name, $value, $store_type = '', $is_perminent = false) {
+    public function set($store, $name, $value, $store_type = '', $is_perminent = false) {
 
         if ( ! isset($this->stores[$store] ) ) {
             $this->loadState($store);
@@ -157,7 +157,7 @@ class State {
         }
     }
 
-    function persistState( $store ) {
+    public function persistState( $store ) {
 
         //check to see that store exists.
         if ( isset( $this->stores[ $store ] ) ) {
@@ -186,14 +186,14 @@ class State {
         }
     }
 
-    function setInitialState($store, $value, $store_type = '') {
+    public function setInitialState($store, $value, $store_type = '') {
 
         if ($value) {
             $this->initial_state[$store] = $value;
         }
     }
 
-    function loadState($store, $name = '', $value = '', $store_type = 'cookie') {
+    public function loadState($store, $name = '', $value = '', $store_type = 'cookie') {
 
         //get possible values
         if ( ! $value && isset( $this->initial_state[$store] ) ) {
@@ -258,7 +258,7 @@ class State {
         }
     }
 
-    function clear($store, $name = '') {
+    public function clear($store, $name = '') {
 
         if ( ! isset($this->stores[$store] ) ) {
             $this->loadState($store);
@@ -289,13 +289,13 @@ class State {
         }
     }
 
-    function addStores($array) {
+    public function addStores($array) {
 
         $this->stores = array_merge($this->stores, $array);
         return;
     }
 
-    function getCookieDomainHash($domain = '') {
+    public function getCookieDomainHash($domain = '') {
 
         if ( ! $domain ) {
             $domain = \OWA\Core\CoreAPI::getSetting( 'base', 'cookie_domain' );

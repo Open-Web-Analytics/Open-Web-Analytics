@@ -46,7 +46,7 @@ class TrackingEventHelpers {
     // 0. filter/set derived event properties
     // 0. handler specific logic
 
-    static function getInstance() {
+    public static function getInstance() {
 
         static $o;
 
@@ -1051,12 +1051,12 @@ class TrackingEventHelpers {
     }
 
     /** arrivedPageLocation() and arrivedReferer(): the copy log.php set, kept as it is. */
-    static function arrivedPageLocation( $value, $event ) {
+    public static function arrivedPageLocation( $value, $event ) {
 
         return is_string( $value ) && $value !== '' ? $value : null;
     }
 
-    static function arrivedReferer( $value, $event ) {
+    public static function arrivedReferer( $value, $event ) {
 
         return is_string( $value ) && $value !== '' ? $value : null;
     }
@@ -1241,7 +1241,7 @@ class TrackingEventHelpers {
         }
     }
 
-    static function setDataType( $var, $type = 'string' ) {
+    public static function setDataType( $var, $type = 'string' ) {
 
         switch( $type ) {
 
@@ -1310,7 +1310,7 @@ class TrackingEventHelpers {
     }
 
 
-    function translateCustomVariables( $event ) {
+    public function translateCustomVariables( $event ) {
 
         $maxCustomVars = \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
 
@@ -1331,7 +1331,7 @@ class TrackingEventHelpers {
         }
     }
 
-    static function userAgentDefault( $ua = '') {
+    public static function userAgentDefault( $ua = '') {
 		
 		if (! $ua ) {
 			
@@ -1352,47 +1352,47 @@ class TrackingEventHelpers {
      * which the tracker sends (p_r) and which is the page's own referrer.
      */
 
-    static function requestSecFetchMode( $value = '' ) {
+    public static function requestSecFetchMode( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_FETCH_MODE' );
     }
 
-    static function requestSecFetchSite( $value = '' ) {
+    public static function requestSecFetchSite( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_FETCH_SITE' );
     }
 
-    static function requestSecFetchDest( $value = '' ) {
+    public static function requestSecFetchDest( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_FETCH_DEST' );
     }
 
-    static function requestSecChUa( $value = '' ) {
+    public static function requestSecChUa( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_CH_UA' );
     }
 
-    static function requestSecChUaPlatform( $value = '' ) {
+    public static function requestSecChUaPlatform( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_CH_UA_PLATFORM' );
     }
 
-    static function requestSecChUaMobile( $value = '' ) {
+    public static function requestSecChUaMobile( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_CH_UA_MOBILE' );
     }
 
-    static function requestAcceptEncoding( $value = '' ) {
+    public static function requestAcceptEncoding( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_ACCEPT_ENCODING' );
     }
 
-    static function requestAcceptLanguage( $value = '' ) {
+    public static function requestAcceptLanguage( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_ACCEPT_LANGUAGE' );
     }
 
-    static function requestReferer( $value = '' ) {
+    public static function requestReferer( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_REFERER' );
     }
@@ -1404,12 +1404,12 @@ class TrackingEventHelpers {
      * dollar signs escaped), which removes exactly what those rules look for.
      */
 
-    static function receivedPageLocation( $value, $event ) {
+    public static function receivedPageLocation( $value, $event ) {
 
         return self::received( $value, $event->get( 'page_location' ) );
     }
 
-    static function receivedReferer( $value, $event ) {
+    public static function receivedReferer( $value, $event ) {
 
         return self::received( $value, $event->get( 'HTTP_REFERER' ) );
     }
@@ -1452,7 +1452,7 @@ class TrackingEventHelpers {
      * for that, and still do.
      */
 
-    static function languageDefault() {
+    public static function languageDefault() {
 
         return substr( \OWA\Core\CoreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 );
     }
@@ -1527,7 +1527,7 @@ class TrackingEventHelpers {
         return self::chooseIp( $ip );
     }
 
-    static function ipAddressDefault( $value = '', $event = null ) {
+    public static function ipAddressDefault( $value = '', $event = null ) {
 
         $chosen_ip = self::requestIp();
 
@@ -1573,7 +1573,7 @@ class TrackingEventHelpers {
      * same clock and feeds owa_request.msec -- a column that holds 0 or 1 and
      * nothing else, and is deliberately not being repaired in 1.x.
      */
-    static function edgeTimestampMicroseconds() {
+    public static function edgeTimestampMicroseconds() {
 
         return \OWA\Core\CoreAPI::getRequestTimestampMicroseconds();
     }
@@ -1628,7 +1628,7 @@ class TrackingEventHelpers {
 
 
 
-    static function deriveYyyymmdd( $yyyymmdd, $event ) {
+    public static function deriveYyyymmdd( $yyyymmdd, $event ) {
 
         // Never return an empty yyyymmdd.
         //
@@ -1704,7 +1704,7 @@ class TrackingEventHelpers {
 
     
     
-    static function isSearchEngine( $host ) {
+    public static function isSearchEngine( $host ) {
 		
         if ( ! $host ) {
 	        
@@ -1729,7 +1729,7 @@ class TrackingEventHelpers {
     }
     
     
-    static function getSearchEngineList() {
+    public static function getSearchEngineList() {
 	    
 	    return \OWA\Core\CoreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
     }
@@ -1761,7 +1761,7 @@ class TrackingEventHelpers {
      */
     const STORABLE_URL_SCHEMES = array( 'http', 'https' );
 
-    static function makeUrlStorageSafe( $url ) {
+    public static function makeUrlStorageSafe( $url ) {
 
         if ( $url === null || $url === '' ) {
 
@@ -1814,7 +1814,7 @@ class TrackingEventHelpers {
             $url );
     }
 
-    static function utfEncodeProperty( $string, $event ) {
+    public static function utfEncodeProperty( $string, $event ) {
 	if(is_null($string)){
             return $string;
         }
@@ -1843,22 +1843,22 @@ class TrackingEventHelpers {
             $event->get( 'HTTP_USER_AGENT' ) );
     }
 
-    static function resolveBrowserType( $browser_type, $event ) {
+    public static function resolveBrowserType( $browser_type, $event ) {
 
         return self::browscapFor( $event )->getUaFamily();
     }
 
-    static function resolveBrowserVersion( $version, $event ) {
+    public static function resolveBrowserVersion( $version, $event ) {
 
         return self::browscapFor( $event )->getUaVersion();
     }
 
-    static function resolveOs ( $os, $event ) {
+    public static function resolveOs ( $os, $event ) {
 
         return self::browscapFor( $event )->getOsFamily();
     }
 
-    static function resolveOsVersion( $version, $event ) {
+    public static function resolveOsVersion( $version, $event ) {
 
         return self::browscapFor( $event )->getOsVersion();
     }
@@ -1872,7 +1872,7 @@ class TrackingEventHelpers {
      * reads it and falls through to NULL rather than guessing desktop: a wrong
      * 'desktop' is indistinguishable from a real one.
      */
-    static function resolveDeviceType( $type, $event ) {
+    public static function resolveDeviceType( $type, $event ) {
 
         $bcap = self::browscapFor( $event );
 
@@ -1899,7 +1899,7 @@ class TrackingEventHelpers {
     }
 
     /** 'Other' is the parser saying it has no rule, not a brand. */
-    static function resolveDeviceBrand( $brand, $event ) {
+    public static function resolveDeviceBrand( $brand, $event ) {
 
         $value = (string) self::browscapFor( $event )->getDeviceBrand();
 
@@ -1907,7 +1907,7 @@ class TrackingEventHelpers {
     }
 
     /** As the brand: 'Other' is an absence wearing a value. */
-    static function resolveDeviceModel( $model, $event ) {
+    public static function resolveDeviceModel( $model, $event ) {
 
         $value = (string) self::browscapFor( $event )->getDeviceModel();
 
@@ -1935,29 +1935,29 @@ class TrackingEventHelpers {
         return \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
     }
 
-    static function resolveCountry ( $country, $event ) {
+    public static function resolveCountry ( $country, $event ) {
 
         return self::location( $event )->getCountry();
     }
 
-    static function resolveCity ( $city, $event ) {
+    public static function resolveCity ( $city, $event ) {
 
         return self::location( $event )->getCity();
     }
 
 
 
-    static function resolveCountryCode ( $country_code, $event ) {
+    public static function resolveCountryCode ( $country_code, $event ) {
 
         return self::location( $event )->getCountryCode();
     }
 
-    static function resolveState ( $state, $event ) {
+    public static function resolveState ( $state, $event ) {
 
         return self::location( $event )->getState();
     }
 
-    static function lowercaseString ( $string, $event ) {
+    public static function lowercaseString ( $string, $event ) {
 	if(is_null($string)){
             return($string);
         }
@@ -2011,7 +2011,7 @@ class TrackingEventHelpers {
      * @param  object      $event
      * @return string|null
      */
-    static function screenResolution( $value, $event ) {
+    public static function screenResolution( $value, $event ) {
 
         $value = is_string( $value ) ? strtolower( trim( $value ) ) : '';
 
@@ -2037,7 +2037,7 @@ class TrackingEventHelpers {
      * @param  object      $event
      * @return string|null
      */
-    static function gateUserId( $user_id, $event ) {
+    public static function gateUserId( $user_id, $event ) {
 
         if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'log_visitor_pii' ) ) {
 
@@ -2202,7 +2202,7 @@ class TrackingEventHelpers {
      * @param  string $name  a tagged_* property name
      * @return string|null
      */
-    static function taggedValue( $event, $name ) {
+    public static function taggedValue( $event, $name ) {
 
         if ( ! $event->get( 'is_new_session_start' ) ) {
 
@@ -2271,7 +2271,7 @@ class TrackingEventHelpers {
      * @param object $event
      * @return array the last_touch_* values, or an empty array
      */
-    static function priorTouch( $event ) {
+    public static function priorTouch( $event ) {
 
         if ( ! $event->get( 'is_new_session_start' )
              || (int) $event->get( 'num_prior_sessions' ) < 1
@@ -2313,52 +2313,52 @@ class TrackingEventHelpers {
         return isset( $touch[ $part ] ) ? $touch[ $part ] : null;
     }
 
-    static function resolvePriorTouchSource( $value, $event ) {
+    public static function resolvePriorTouchSource( $value, $event ) {
 
         return self::priorTouchPart( $event, 'source' );
     }
 
-    static function resolvePriorTouchMedium( $value, $event ) {
+    public static function resolvePriorTouchMedium( $value, $event ) {
 
         return self::priorTouchPart( $event, 'medium' );
     }
 
-    static function resolvePriorTouchCampaign( $value, $event ) {
+    public static function resolvePriorTouchCampaign( $value, $event ) {
 
         return self::priorTouchPart( $event, 'campaign' );
     }
 
-    static function resolvePriorTouchAd( $value, $event ) {
+    public static function resolvePriorTouchAd( $value, $event ) {
 
         return self::priorTouchPart( $event, 'ad' );
     }
 
-    static function resolvePriorTouchRefererHost( $value, $event ) {
+    public static function resolvePriorTouchRefererHost( $value, $event ) {
 
         return self::priorTouchPart( $event, 'referer_host' );
     }
 
-    static function resolvePriorTouchTs( $value, $event ) {
+    public static function resolvePriorTouchTs( $value, $event ) {
 
         return self::priorTouchPart( $event, 'ts' );
     }
 
-    static function resolveTaggedSource( $value, $event ) {
+    public static function resolveTaggedSource( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_source' );
     }
 
-    static function resolveTaggedMedium( $value, $event ) {
+    public static function resolveTaggedMedium( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_medium' );
     }
 
-    static function resolveTaggedCampaign( $value, $event ) {
+    public static function resolveTaggedCampaign( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_campaign' );
     }
 
-    static function resolveTaggedAd( $value, $event ) {
+    public static function resolveTaggedAd( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_ad' );
     }
@@ -2367,7 +2367,7 @@ class TrackingEventHelpers {
      * tagged_terms is the one whose halves do not share a stem -- owa_search_terms
      * on the URL, tagged_terms on the wire, tagged_search_terms as the column.
      */
-    static function resolveTaggedTerms( $value, $event ) {
+    public static function resolveTaggedTerms( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_terms' );
     }
@@ -2528,7 +2528,7 @@ class TrackingEventHelpers {
      * where the page does not is a broken report -- /store, /store/ and
      * /store/index.html are one page.
      */
-    static function derivePagePath( $value, $event ) {
+    public static function derivePagePath( $value, $event ) {
 
         $arrived = self::arrivedUrlIfCut( $event, 'page_location' );
 
@@ -2557,7 +2557,7 @@ class TrackingEventHelpers {
      *
      * @return array
      */
-    static function directoryIndexPages() {
+    public static function directoryIndexPages() {
 
         return \OWA\Module\Base\Classes\V2Event::indexPageNames(
             \OWA\Core\CoreAPI::getSetting( 'base', 'directory_index_pages' ) );
@@ -2570,7 +2570,7 @@ class TrackingEventHelpers {
      * appearing in somebody's page report. The tags are still recoverable: they
      * are parsed out of page_location, which keeps them.
      */
-    static function derivePageQuery( $value, $event ) {
+    public static function derivePageQuery( $value, $event ) {
 
         $arrived = self::arrivedUrlIfCut( $event, 'page_location' );
 
@@ -2610,7 +2610,7 @@ class TrackingEventHelpers {
      * kept because a caller building an event in process can still set one, and
      * the column is declared required.
      */
-    static function deriveHost( $value, $event ) {
+    public static function deriveHost( $value, $event ) {
 
         $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
             $event->get( 'page_location' ) );
@@ -2634,7 +2634,7 @@ class TrackingEventHelpers {
      * somebody else's URL, and collapsing it with THIS install's directory index pages
      * would be a category error.
      */
-    static function deriveRefererHost( $value, $event ) {
+    public static function deriveRefererHost( $value, $event ) {
 
         $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
             $event->get( 'HTTP_REFERER' ) );
@@ -2659,7 +2659,7 @@ class TrackingEventHelpers {
      * @param  string $site_id
      * @return string
      */
-    static function cookieDomain( $site_id ) {
+    public static function cookieDomain( $site_id ) {
 
         return $site_id === '' ? '' : trim( (string)
             \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_cookie_domain', 'profile', $site_id ) );
@@ -2669,7 +2669,7 @@ class TrackingEventHelpers {
      * The referrer's query string, as it arrived -- see deriveRefererHost().
      * filterStoredUrls() then removes the query_string_filters parameters.
      */
-    static function deriveRefererQuery( $value, $event ) {
+    public static function deriveRefererQuery( $value, $event ) {
 
         $arrived = self::arrivedUrlIfCut( $event, 'HTTP_REFERER' );
 
@@ -2687,7 +2687,7 @@ class TrackingEventHelpers {
      * the row builder did: target_url is a client property and this is a derived
      * one, so the scopes settle the order.
      */
-    static function deriveTargetHost( $value, $event ) {
+    public static function deriveTargetHost( $value, $event ) {
 
         $parts = \OWA\Module\Base\Classes\V2Event::parseUrl(
             $event->get( 'target_url' ) );
@@ -2724,7 +2724,7 @@ class TrackingEventHelpers {
      * @param  string|null $cookie_domain  tracker_cookie_domain; empty for the default
      * @return bool
      */
-    static function isOutboundHost( $target_host, $page_host, $cookie_domain = '' ) {
+    public static function isOutboundHost( $target_host, $page_host, $cookie_domain = '' ) {
 
         // Nothing to compare: no target, or no page and no configured domain.
         if ( trim( (string) $target_host ) === ''
@@ -2748,7 +2748,7 @@ class TrackingEventHelpers {
      * @param  string|null $cookie_domain  tracker_cookie_domain; empty for the default
      * @return bool
      */
-    static function isSiteHost( $host, $page_host, $cookie_domain = '' ) {
+    public static function isSiteHost( $host, $page_host, $cookie_domain = '' ) {
 
         $host = rtrim( strtolower( trim( (string) $host ) ), '.' );
         $page = rtrim( strtolower( trim( (string) $page_host ) ), '.' );
@@ -2816,13 +2816,13 @@ class TrackingEventHelpers {
      * @param object $event
      * @return int|null
      */
-    static function anchorX( $value, $event ) {
+    public static function anchorX( $value, $event ) {
 
         return self::anchorPoint( 'anchor_x', $value, $event );
     }
 
     /** anchor_y: as anchorX(), down the element's height. */
-    static function anchorY( $value, $event ) {
+    public static function anchorY( $value, $event ) {
 
         return self::anchorPoint( 'anchor_y', $value, $event );
     }
@@ -2853,7 +2853,7 @@ class TrackingEventHelpers {
      * @param object $event
      * @return int|null
      */
-    static function elementAnchor( $value, $event ) {
+    public static function elementAnchor( $value, $event ) {
 
         if ( is_numeric( $event->get( 'anchor_x' ) ) && is_numeric( $event->get( 'anchor_y' ) )
           && is_numeric( $value ) && $value >= 0 && $value <= 9007199254740991 ) {
@@ -2866,7 +2866,7 @@ class TrackingEventHelpers {
         return null;
     }
 
-    static function toMinorUnits( $value, $event ) {
+    public static function toMinorUnits( $value, $event ) {
 
         return Currency::toMinorUnits( $value, self::purchaseCurrency( $event ) );
     }
@@ -2881,7 +2881,7 @@ class TrackingEventHelpers {
      * @param  object $event
      * @return string an ISO 4217 code
      */
-    static function purchaseCurrency( $event ) {
+    public static function purchaseCurrency( $event ) {
 
         $sent = Currency::normalize( $event->get( 'currency' ) );
 
@@ -2907,7 +2907,7 @@ class TrackingEventHelpers {
      * @param  object $event
      * @return int|null
      */
-    static function refundAmount( $event ) {
+    public static function refundAmount( $event ) {
 
         $items = $event->get( 'ct_line_items' );
 
@@ -2956,7 +2956,7 @@ class TrackingEventHelpers {
      * the Property's -- so revenue never sits beside a NULL currency. On any other
      * event a well-formed code is kept and anything else dropped.
      */
-    static function resolveCurrency( $value, $event ) {
+    public static function resolveCurrency( $value, $event ) {
 
         $name = (string) $event->getEventType();
 
@@ -2978,7 +2978,7 @@ class TrackingEventHelpers {
      * Tax and shipping have columns of their own, so a total that kept them
      * counted them twice wherever the three were summed.
      */
-    static function deriveRevenue( $value, $event ) {
+    public static function deriveRevenue( $value, $event ) {
 
         // trackPurchase() and trackRefund() send the value itself, tax and
         // shipping excluded.
@@ -3155,7 +3155,7 @@ class TrackingEventHelpers {
      *
      * @return string|null
      */
-    static function makeUrlCanonical( $url, $event ) {
+    public static function makeUrlCanonical( $url, $event ) {
 	if(is_null($url)){
 	    return $url;
 	}

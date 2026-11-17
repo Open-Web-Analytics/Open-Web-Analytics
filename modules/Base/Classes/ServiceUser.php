@@ -36,12 +36,12 @@ class ServiceUser extends \OWA\Core\Base {
      * @var \OWA\Module\Base\Entity\User
      */
     public $user;
-    var $capabilities = array();
-    var $preferences = array();
-    var $is_authenticated = false;
+    public $capabilities = array();
+    public $preferences = array();
+    public $is_authenticated = false;
     public $assignedSites = array();
 
-    function __construct() {
+    public function __construct() {
         //parent::__construct();
         // create empty user entity
         $this->user = \OWA\Core\CoreAPI::entityFactory('base.user');
@@ -56,7 +56,7 @@ class ServiceUser extends \OWA\Core\Base {
      * @param $user_id    string    the user_id
      * @depricated
      */
-    function load( $user_id = '' ) {
+    public function load( $user_id = '' ) {
 
         if (! $user_id ) {
 
@@ -80,7 +80,7 @@ class ServiceUser extends \OWA\Core\Base {
      *
      * @param $user_obj    object    \owa_user object
      */
-    function loadNewUserByObject($user_obj) {
+    public function loadNewUserByObject($user_obj) {
 	    
         $this->user = $user_obj;
         $this->initInternalProperties();
@@ -91,7 +91,7 @@ class ServiceUser extends \OWA\Core\Base {
         $this->loadAssignedSites();
     }
 
-    function loadRelatedUserData() {
+    public function loadRelatedUserData() {
         $this->capabilities = $this->getCapabilities($this->user->get('role'));
         $this->preferences = $this->getPreferences($this->user->get('user_id'));
 
@@ -100,15 +100,15 @@ class ServiceUser extends \OWA\Core\Base {
      * gets allowed capabilities for the user role
      * @param mixed $role
      */
-    function getCapabilities($role) {
+    public function getCapabilities($role) {
         return \OWA\Core\CoreAPI::getCapabilities( $role );
     }
 
-    function getPreferences($user_id) {
+    public function getPreferences($user_id) {
         return false;
     }
 
-    function getRole() {
+    public function getRole() {
         return $this->user->get('role');
     }
     
@@ -117,18 +117,18 @@ class ServiceUser extends \OWA\Core\Base {
      *
      * @param    $value    string    the user's role
      */
-    function setRole($value) {
+    public function setRole($value) {
 
         $this->user->set('role', $value);
         $this->capabilities = $this->getCapabilities($value);
     }
 
-    function setUserData($name, $value) {
+    public function setUserData($name, $value) {
 
         $this->user->set($name, $value);
     }
 
-    function getUserData($name) {
+    public function getUserData($name) {
 
         return $this->user->get($name);
     }
@@ -140,7 +140,7 @@ class ServiceUser extends \OWA\Core\Base {
      * @param string|null $siteId    only needed if capability requires site access. you need to pass site_id (not id) field
      * @return boolean
      */
-    function isCapable($cap, $siteId = null) {
+    public function isCapable($cap, $siteId = null) {
         \OWA\Core\CoreAPI::debug("Checking if user is capable of: ".$cap);
 
         // is this capability assigned to everyone?
@@ -179,7 +179,7 @@ class ServiceUser extends \OWA\Core\Base {
      * @param    $capability    string    the name of the capability (e.g. 'view_reports')
      * @return    boolean
      */
-    function isSiteAccessRequiredForCapability( $capability ) {
+    public function isSiteAccessRequiredForCapability( $capability ) {
 
         $capabilitiesThatRequireSiteAccess = \OWA\Core\CoreAPI::getSetting('base', 'capabilitiesThatRequireSiteAccess');
         if (is_array($capabilitiesThatRequireSiteAccess) && in_array($capability, $capabilitiesThatRequireSiteAccess)) {
@@ -195,7 +195,7 @@ class ServiceUser extends \OWA\Core\Base {
      * @param    string|null $siteId  the siteId of the site in question; null throws
      * @return    boolean
      */
-    function isSiteAccessible( $siteId ) {
+    public function isSiteAccessible( $siteId ) {
 
         if ( is_null($siteId) ) {
             throw new \InvalidArgumentException('Cannot tell if site is accessible to user without a siteId (none given).');
@@ -216,11 +216,11 @@ class ServiceUser extends \OWA\Core\Base {
     }
 
     // mark the user as authenticated and populate their capabilities
-    function setAuthStatus($bool) {
+    public function setAuthStatus($bool) {
         $this->is_authenticated = true;
     }
 
-    function isAuthenticated() {
+    public function isAuthenticated() {
         return $this->is_authenticated;
     }
 
