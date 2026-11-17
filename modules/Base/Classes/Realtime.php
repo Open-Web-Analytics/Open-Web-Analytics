@@ -22,6 +22,9 @@ namespace OWA\Module\Base\Classes;
  * range a range read, so the cost follows the window rather than the day.
  * The statements run are kept in $statements so a test can assert that on the
  * SQL itself (PLAN 2.16), which a timing test on a small fixture cannot.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-type RecentEvent array{ts: int, type: scalar|null, path: scalar|null, title: scalar|null, country: scalar|null, city: scalar|null, visitor: string}
  */
 class Realtime {
 
@@ -43,15 +46,19 @@ class Realtime {
     /** @var string[] every statement run, in order */
     public $statements = array();
 
+    /** @var string */
     private $property_id;
 
     /** @var string[] the Property's Profiles, which raw is keyed by */
     private $site_ids;
 
+    /** @var int the window's end, microseconds */
     private $end;
 
+    /** @var int the window's start, microseconds */
     private $start;
 
+    /** @var list<int> the yyyymmdd of the window's start and of its end */
     private $days;
 
     /**
@@ -74,7 +81,7 @@ class Realtime {
         );
     }
 
-    /** @return array every card, in one answer */
+    /** @return array<string, mixed> every card, in one answer */
     public function summary() {
 
         $recent_start = $this->end - self::RECENT_MINUTES * 60 * 1000000;
@@ -102,7 +109,7 @@ class Realtime {
      * One visitor's events in the window, newest first.
      *
      * @param  string $visitor_id
-     * @return array[]
+     * @return array<RecentEvent>
      */
     public function visitor( $visitor_id ) {
 
@@ -119,6 +126,10 @@ class Realtime {
 
     // ---- cards -------------------------------------------------------------
 
+    /**
+     * @param  int $from window start, microseconds
+     * @return int
+     */
     private function users( $from ) {
 
         $row = $this->rows( 'SELECT COUNT(DISTINCT visitor_id) AS n FROM {raw} r WHERE {window}', $from );
@@ -126,7 +137,11 @@ class Realtime {
         return (int) ( $row[0]['n'] ?? 0 );
     }
 
-    /** Distinct visitors per minute, oldest first; the last is the current minute. */
+    /**
+     * Distinct visitors per minute, oldest first; the last is the current minute.
+     *
+     * @return array<int, int>
+     */
     private function perMinute() {
 
         $out = array_fill( 0, self::WINDOW_MINUTES, 0 );
@@ -146,6 +161,9 @@ class Realtime {
         return $out;
     }
 
+    /**
+     * @return array<array{path: scalar|null, title: scalar|null, views: int, users: int}>
+     */
     private function pages() {
 
         return array_map( function ( $r ) {
@@ -159,6 +177,9 @@ class Realtime {
           . ' GROUP BY page_path ORDER BY views DESC, users DESC, page_path LIMIT ' . self::TOP ) );
     }
 
+    /**
+     * @return array<array{name: scalar|null, count: int}>
+     */
     private function events() {
 
         return array_map( function ( $r ) {
@@ -175,6 +196,8 @@ class Realtime {
      *
      * Each goal event is a row named by its definition (Classes\GoalMarking),
      * so the breakdown is a GROUP BY.
+     *
+     * @return array{total: int, byGoal: list<array{name: string, count: int}>}
      */
     private function goals() {
 
@@ -198,6 +221,8 @@ class Realtime {
      * captured -- acq_ts, not the row, which a user property can create for a
      * visitor whose acquisition is unknown (Cube\Columns) -- and the screen
      * labels it (unknown), as a report does.
+     *
+     * @return array<array{source: scalar|null, medium: scalar|null, campaign: scalar|null, users: int}>
      */
     private function sources() {
 
@@ -218,7 +243,11 @@ class Realtime {
           . ' GROUP BY source, medium, campaign ORDER BY users DESC, source, medium, campaign LIMIT ' . self::TOP ) );
     }
 
-    /** Every country with a visitor, for the map; the table shows the first few. */
+    /**
+     * Every country with a visitor, for the map; the table shows the first few.
+     *
+     * @return array<array{code: scalar|null, name: scalar|null, users: int}>
+     */
     private function countries() {
 
         return array_map( function ( $r ) {
@@ -231,7 +260,11 @@ class Realtime {
           . ' GROUP BY country_code ORDER BY users DESC, country_code' ) );
     }
 
-    /** Visitors whose location is known, so the map can say how many it cannot show. */
+    /**
+     * Visitors whose location is known, so the map can say how many it cannot show.
+     *
+     * @return int
+     */
     private function located() {
 
         $row = $this->rows(
@@ -240,6 +273,9 @@ class Realtime {
         return (int) ( $row[0]['n'] ?? 0 );
     }
 
+    /**
+     * @return array<array{type: scalar|null, users: int}>
+     */
     private function devices() {
 
         return array_map( function ( $r ) {
@@ -251,6 +287,9 @@ class Realtime {
           . ' GROUP BY device_type ORDER BY users DESC, device_type LIMIT ' . self::TOP ) );
     }
 
+    /**
+     * @return array<RecentEvent>
+     */
     private function recent() {
 
         return array_map( array( $this, 'event' ), $this->rows(
@@ -260,6 +299,10 @@ class Realtime {
 
     // ---- plumbing ----------------------------------------------------------
 
+    /**
+     * @param  Row $r
+     * @return RecentEvent
+     */
     private function event( array $r ) {
 
         return array(
@@ -282,7 +325,7 @@ class Realtime {
      *
      * @param  string   $sql
      * @param  int|null $from   window start, microseconds; the window's own by default
-     * @return array[]
+     * @return array<Row>
      */
     private function rows( $sql, $from = null ) {
 

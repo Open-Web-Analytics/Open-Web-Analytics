@@ -28,103 +28,142 @@ namespace OWA\Module\Base\Classes;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-import-type PeriodInfo from \OWA\Module\Base\Classes\TimePeriod
+ * @phpstan-import-type Readiness from \OWA\Module\Base\Classes\Cube\Status
+ * @phpstan-type Cell array<string, mixed>
+ * @phpstan-type ResultRow array<string, Cell>
+ * @phpstan-type RelatedDimensions array<string, list<array{name: string, label: string}>>
+ * @phpstan-type RelatedMetrics array<string, list<array{name: string, label: string, description: string, group: string, metric_type: string}>>
  */
 class PaginatedResultSet {
 
     /**
      * Unique hash of result set used by front end
      * to see if there are any changes.
+     *
+     * @var string|null
      */
     public $guid;
 	
 	/**
      * Time period of the results
-     * @object
+     *
+     * @var PeriodInfo|null
      */
     public $timePeriod;
     
+    /** @var int|null */
     public $resultsPerPage = 25;
     
     /**
      * The total number of result rows available
      * in the database
+     *
+     * @var int
      */
     public $resultsTotal = 0;
     
     /**
      * The total number of result rows
      * contained in this result set
+     *
+     * @var int|null
      */
     public $resultsReturned;
     
+    /** @var string|null */
     public $sortColumn;
     
+    /** @var string|null asc or desc */
     public $sortOrder;
 
     /**
      * Aggregate values for metrics
+     *
+     * @var ResultRow name => cell
      */
     public $aggregates = [];
 	
 	/**
      * Data set rows
+     *
+     * @var array<int, ResultRow> each row name => cell
      */
 	public $resultsRows = [];
 	
 	/**
      * Labels for metrics and dimensions
+     *
+     * @var array<string, string|null>|null
      */
     public $labels;
 	
 	/**
      * Convienence flag set when there are
      * additional pages of results
+     *
+     * @var bool|null
      */
     public $more;
     
+    /** @var int|null */
     public $page = 1;
     
     /**
      * Total number of pages of results available
+     *
+     * @var float|null
      */
     public $total_pages;
 
     /**
      * The API URL that produces the results
+     *
+     * @var string|null
      */
     public $self;
 
     /**
      * The API URL that produces the next page of results
+     *
+     * @var string|null
      */
     public $next;
 
     /**
      * The API URL that produces the previous page of results
+     *
+     * @var string|null
      */
     public $previous;
 
     /**
      * The base API URL that is used to construct client side pagination links.
      * Does not contain any 'page' params.
+     *
+     * @var string|null
      */
     public $base_url;
 
     /**
      * The list of related dimensions that can be added to the result set
      *
+     * @var RelatedDimensions family => dimensions
      */
     public $relatedDimensions = [];
 
     /**
      * The list of related metrics that can be added to the result set
      *
+     * @var RelatedMetrics group => metrics
      */
     public $relatedMetrics = [];
     
     /**
      * The list of params that make up the query
      *
+     * @var array<string, mixed>|null
      */
     public $queryParams;
     
@@ -132,6 +171,8 @@ class PaginatedResultSet {
      * When the newest data this result reads was built, as unix seconds: the
      * cube moves only when a build runs, so this is what the numbers are "as
      * of". Null with no rows, or where it does not apply.
+     *
+     * @var int|null
      */
     public $asOf = null;
 
@@ -141,6 +182,8 @@ class PaginatedResultSet {
      *
      * Set instead of querying, so a client can tell "not ready" from a real
      * zero -- an empty result set alone cannot say which.
+     *
+     * @var Readiness|null
      */
     public $notReady = null;
 
@@ -148,9 +191,12 @@ class PaginatedResultSet {
      * The comparison period, when the request asked for one (`compare`): its
      * key, startDate, endDate and aggregates. Each metric cell then carries
      * compare_value, compare_formatted_value and change. See CompareMerger.
+     *
+     * @var array<string, mixed>|null
      */
     public $compare = null;
 
+    /** @var list<string>|null */
     public $errors;
 
     /**
@@ -159,7 +205,7 @@ class PaginatedResultSet {
      * Separate because $errors can hold routine entries, such as an unknown
      * sort column. Only these should turn a response into a failure.
      *
-     * @var array
+     * @var list<string>
      */
     public $request_errors = array();
 
@@ -168,26 +214,44 @@ class PaginatedResultSet {
 
     }
 
+    /**
+     * @param  int|null $limit
+     * @return void
+     */
     public function setLimit($limit) {
 
         $this->resultsPerPage = $limit;
     }
 
+    /**
+     * @param  int|null $page
+     * @return void
+     */
     public function setPage($page) {
 
         $this->page = $page;
     }
 
+    /**
+     * @return void
+     */
     public function setMorePages() {
 
         $this->more = true;
     }
 
+    /**
+     * @return int
+     */
     public function calculateOffset() {
 
         return $this->resultsPerPage * ($this->page - 1);
     }
 
+    /**
+     * @param  array<mixed>|null $results
+     * @return void
+     */
     public function countResults( $results = [] ) {
 		
 		$results = $results ?: [];
@@ -214,8 +278,9 @@ class PaginatedResultSet {
      * and is counted with this page's (countResults()), so the pager and the
      * next link reach them.
      *
-     * @param array $rows
+     * @param array<ResultRow> $rows
      * @param int   $fetched
+     * @return void
      */
     public function appendRows( array $rows, $fetched ) {
 
@@ -239,16 +304,29 @@ class PaginatedResultSet {
         $this->createResultSetHash();
     }
 
+    /**
+     * @return int
+     */
     public function getRowCount() {
 
         return $this->resultsTotal;
     }
     
+    /**
+     * @param  array<string, mixed> $params
+     * @return void
+     */
     public function setQueryParams( $params ) {
 	    
 	    $this->queryParams = $params;
     }
 
+    /**
+     * @param  array<int, ResultRow> $results
+     * @param  array<string, mixed>  $query_params
+     * @param  array{resultsPerPage?: int|null, page?: int|null} $options
+     * @return array<int, ResultRow> the rows of this page
+     */
     public function generate( $results, $query_params, $options = []) {
 		
 		$defaults = [
@@ -291,6 +369,9 @@ class PaginatedResultSet {
     /**
 	 * Constructs REST API request urls for the result set
 	 * (base, self, next and previous, etc.)
+	 *
+	 * @param  array<string, mixed> $query_params
+	 * @return void
 	 */
     public function setResultSetUrls( $query_params ) {
 		
@@ -375,6 +456,11 @@ class PaginatedResultSet {
         $this->setQueryParams( $query_params );
     }
     
+    /**
+     * @param  array<string, mixed> $params
+     * @param  string $seperator
+     * @return string
+     */
     public function buildQueryString($params, $seperator = '&') {
 
         $new = array();
@@ -390,15 +476,27 @@ class PaginatedResultSet {
         return http_build_query($new,'', $seperator);
     }
     
+    /**
+     * @param  array<string, string|null> $labels
+     * @return void
+     */
     public function setLabels($labels) {
 
         $this->labels = $labels;
     }
 
+    /**
+     * @param  PeriodInfo $info
+     * @return void
+     */
     public function setPeriodInfo($info) {
         $this->timePeriod = $info;
     }
 
+    /**
+     * @param  string $key
+     * @return string|null|void
+     */
     public function getLabel($key) {
 
         if (array_key_exists($key, $this->labels)) {
@@ -408,14 +506,24 @@ class PaginatedResultSet {
 
     // @todo move this to a proper xml view
     //json formatting has been moved to owa_jsonView
+    /**
+     * @return array<int, ResultRow>
+     */
     public function getDataRows() {
         return $this->resultsRows;
     }
 
+    /**
+     * @return array<int, ResultRow>
+     */
     public function getResultsRows() {
         return $this->resultsRows;
     }
 
+    /**
+     * @param  string $name
+     * @return list<mixed>|false each row's value for it; false with no rows
+     */
     public function getSeries($name) {
 
         $rows = $this->getDataRows();
@@ -435,6 +543,10 @@ class PaginatedResultSet {
         }
     }
 
+    /**
+     * @param  string $name
+     * @return mixed|void
+     */
     public function getAggregateMetric($name) {
 
         if ( array_key_exists( $name, $this->aggregates ) ) {
@@ -444,11 +556,29 @@ class PaginatedResultSet {
         }
     }
 
+    /**
+     * @param  string      $name
+     * @param  mixed       $value
+     * @param  string|null $label
+     * @param  string|null $data_type
+     * @param  mixed       $formatted_value
+     * @return void
+     */
     public function setAggregateMetric($name, $value, $label, $data_type, $formatted_value = '') {
 
         $this->aggregates[$name] = array('result_type' => 'metric', 'name' => $name, 'value' => $value, 'label' => $label, 'data_type' => $data_type, 'formatted_value' => $formatted_value);
     }
 
+    /**
+     * @param  int         $row_num
+     * @param  string      $type      metric or dimension
+     * @param  string      $name
+     * @param  mixed       $value
+     * @param  string|null $label
+     * @param  string|null $data_type
+     * @param  mixed       $formatted_value
+     * @return void
+     */
     public function appendRow($row_num, $type, $name, $value, $label, $data_type, $formatted_value = '') {
 
         $this->resultsRows[$row_num][$name] = array(
@@ -461,6 +591,10 @@ class PaginatedResultSet {
         );
     }
 
+    /**
+     * @param  string $name
+     * @return void
+     */
     public function removeMetric($name) {
 
         if (array_key_exists($name, $this->aggregates)) {
@@ -480,11 +614,18 @@ class PaginatedResultSet {
         }
     }
 
+    /**
+     * @return void
+     */
     public function createResultSetHash() {
 
         $this->guid = md5(serialize($this));
     }
 
+    /**
+     * @param  RelatedDimensions|'' $dims
+     * @return void
+     */
     public function setRelatedDimensions( $dims = '' ) {
 
         if ( $dims ) {
@@ -492,6 +633,10 @@ class PaginatedResultSet {
         }
     }
 
+    /**
+     * @param  RelatedMetrics|'' $metrics
+     * @return void
+     */
     public function setRelatedMetrics( $metrics = '' ) {
 
         if ( $metrics ) {

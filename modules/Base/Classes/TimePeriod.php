@@ -28,21 +28,32 @@ namespace OWA\Module\Base\Classes;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-type PeriodInfo array{period: string|null, startDate: int|string|null, endDate: int|string|null, startTime: int|string|false|null, endTime: int|string|false|null, label: string|null, currentHour: int, axisEndDate: int|string|null}
+ * @phpstan-type DateDifference array{YearsSince: float|int, MonthsSince: float|int, DaysSince: float|int, HoursSince: float|int, MinutesSince: float|int, SecondsSince: int, NiceString: string, NiceString2: string}
  */
 
 
 class TimePeriod {
 
+    /** @var string|null the period's name */
     public $period;
+    /** @var \OWA\Module\Base\Classes\Date */
     public $startDate;
+    /** @var \OWA\Module\Base\Classes\Date */
     public $endDate;
+    /** @var string|null */
     public $label;
+    /** @var float|int|null */
     public $diff_years;
+    /** @var float|int|null */
     public $diff_months;
+    /** @var float|int|null */
     public $diff_days;
+    /** @var bool */
     public $is_default_period = false;
 
-    /** The timestamp a relative period is counted from; null is the clock. */
+    /** @var int|null The timestamp a relative period is counted from; null is the clock. */
     public $now = null;
 
     public function __construct() {
@@ -79,11 +90,18 @@ class TimePeriod {
         'previous_year_dow'   => 'Previous year (same weekdays)',
     );
 
+    /**
+     * @param  mixed $period
+     * @return bool
+     */
     public static function isRetired( $period ) {
 
         return in_array( (string) $period, self::RETIRED_PERIODS, true );
     }
 
+    /**
+     * @return string
+     */
     public function getDefaultReportingPeriod() {
 
         $period = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'default_reporting_period' );
@@ -224,6 +242,9 @@ class TimePeriod {
      *
      * An absent date reads as '' rather than false so it stays a string all the
      * way to sscanf(). Both are empty(), so the branching below is unchanged.
+     *
+     * @param  mixed $map request parameters; anything but an array is none
+     * @return array<string, mixed>
      */
     private static function normalizeMap( $map ) {
 
@@ -260,7 +281,7 @@ class TimePeriod {
      * Static and free of settings so both the web and REST paths can ask
      * before building anything, and so it holds without a database.
      *
-     * @param array $map request parameters
+     * @param array<string, mixed> $map request parameters
      * @return string a user-facing reason, or '' when the map is usable
      */
     public static function getRangeError( $map ) {
@@ -320,7 +341,7 @@ class TimePeriod {
      * compareStartDate and compareEndDate. Two compare dates and no `compare`
      * mean date_range, as two dates and no `period` do.
      *
-     * @param array $map request parameters
+     * @param array<string, mixed> $map request parameters
      * @return string a user-facing reason, or ''
      */
     public static function getCompareError( $map ) {
@@ -349,7 +370,7 @@ class TimePeriod {
     /**
      * The comparison a request asks for, resolved against this period's dates.
      *
-     * @param array $map request parameters
+     * @param array<string, mixed> $map request parameters
      * @return array{compare: string, startDate: string, endDate: string}|null null when there is none
      */
     public function getCompareFromMap( $map ) {
@@ -384,6 +405,10 @@ class TimePeriod {
         return $r ? array( 'compare' => $compare, 'startDate' => $r[0], 'endDate' => $r[1] ) : null;
     }
 
+    /**
+     * @param  array<string, mixed>|null $map request parameters
+     * @return void
+     */
     public function setFromMap( $map ) {
 
         $map = self::normalizeMap( $map );
@@ -451,16 +476,28 @@ class TimePeriod {
         return $valid;
     }
 
+    /**
+     * @param  mixed $value
+     * @return bool
+     */
     public function isValid( $value ) {
 
         return in_array( $value, $this->getValidPeriods(), true );
     }
 
+    /**
+     * @return bool
+     */
     public function isDefaultPeriod() {
 
         return $this->is_default_period;
     }
 
+    /**
+     * @param  string|null $value a period name
+     * @param  array<string, mixed>|false|null $map startDate and endDate, or startTime and endTime
+     * @return void
+     */
     public function set($value = '', $map = array()) {
 
         $this->period = $value;
@@ -469,22 +506,38 @@ class TimePeriod {
         $this->_setDifferences();
     }
 
+    /**
+     * @return \OWA\Module\Base\Classes\Date
+     */
     public function getStartDate() {
         return $this->startDate;
     }
 
+    /**
+     * @return \OWA\Module\Base\Classes\Date
+     */
     public function getEndDate() {
         return $this->endDate;
     }
 
+    /**
+     * @return string|null
+     */
     public function getLabel() {
         return $this->label;
     }
 
+    /**
+     * @return string|null
+     */
     public function get() {
         return $this->period;
     }
 
+    /**
+     * @param  string|null $value unused: the label is the dates'
+     * @return void
+     */
     public function _setLabel($value = '') {
 
         $this->label = $this->startDate->getLabel() . ' - ' . $this->endDate->getLabel();
@@ -494,7 +547,7 @@ class TimePeriod {
      * The predefined periods, in the order the picker offers them: each one's
      * label, and the days it covers.
      *
-     * @return array
+     * @return array<string, array{label: string, covers: string}>
      */
     public function getPeriodLabels() {
 
@@ -517,6 +570,10 @@ class TimePeriod {
 
     }
 
+    /**
+     * @param  array<string, mixed>|false|null $map as set() takes it
+     * @return void
+     */
     public function _setDates($map = array()) {
 
         // set() reaches here without going through setFromMap, so normalize again.
@@ -677,6 +734,9 @@ class TimePeriod {
         $this->endDate->set($end, 'timestamp');
     }
 
+    /**
+     * @return array{period: string|null, startDate: int|string|null, endDate: int|string|null}
+     */
     public function getPeriodProperties() {
 
         $period_params = array();
@@ -688,6 +748,9 @@ class TimePeriod {
         return $period_params;
     }
 
+    /**
+     * @return PeriodInfo
+     */
     public function getAllInfo() {
 
         $info = array();
@@ -713,6 +776,8 @@ class TimePeriod {
      * The week, month, quarter or year a "this ..." period is part of ends
      * after today, and the axis runs to its last day while the line stops at
      * today. Every other period's axis ends on its end date.
+     *
+     * @return int|string|null
      */
     public function getAxisEndDate() {
 
@@ -738,6 +803,9 @@ class TimePeriod {
         return $this->endDate->getYyyymmdd();
     }
 
+    /**
+     * @return void
+     */
     public function _setDifferences() {
 
         // calc years diff
@@ -750,16 +818,25 @@ class TimePeriod {
         $this->diff_days = $diff['DaysSince'];
     }
 
+    /**
+     * @return float|int|null
+     */
     public function getMonthsDifference() {
 
         return $this->diff_months;
     }
 
+    /**
+     * @return float|int|null
+     */
     public function getYearsDifference() {
 
         return $this->diff_years;
     }
 
+    /**
+     * @return float|int|null
+     */
     public function getDaysDifference() {
 
         return $this->diff_days;
@@ -790,6 +867,11 @@ class TimePeriod {
         [NiceString2] => Years: 1, Months: 1, Days: 2
     )
     */
+    /**
+     * @param  int|string|null $StartDateString yyyymmdd
+     * @param  int|string|null $EndDateString   yyyymmdd
+     * @return DateDifference
+     */
     public function getDateDifference($StartDateString=NULL, $EndDateString=NULL) {
         $ReturnArray = array();
         
