@@ -86,7 +86,11 @@ class AttributedStep extends Step {
             $this->own->execute( $context ) );
     }
 
-    /** True when the prior touch is no older than the lookback. */
+    /**
+     * True when the prior touch is no older than the lookback.
+     *
+     * @return string SQL
+     */
     private function withinWindow( Context $context ) {
 
         return sprintf( '(%1$s IS NOT NULL AND %1$s <= %2$s AND %1$s >= %2$s - %3$d)',

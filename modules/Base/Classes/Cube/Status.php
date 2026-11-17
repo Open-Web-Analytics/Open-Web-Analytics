@@ -24,6 +24,19 @@ namespace OWA\Module\Base\Classes\Cube;
  *   red     reports are wrong or will stop updating unless someone acts
  *   yellow  something is off that the next scheduled build, or time, resolves
  *   green   nothing to do
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type Span from \OWA\Core\Db
+ * @phpstan-import-type JobRegistration from \OWA\Core\Module
+ * @phpstan-type JobState array{job: JobRegistration|null, row: Row|null, next: int|null, running: bool, reason: string|null}
+ * @phpstan-type Check array{key: string, label: string, level: string, detail: string}
+ * @phpstan-type Summary array{property_id: string, name: string, table: string, exists: bool, checks: list<Check>, behind_from: int|null, scheduler: JobState, level: string}
+ * @phpstan-type DayRow array{day: int, raw: int, cube: int, partition: string, built_at: int|null, settled: bool}
+ * @phpstan-type PartitionFacts array{count: int, first: int|null, lead_end: int|null, daily_through: int|null, today_daily: bool, catch_all: string, catch_all_rows: int}
+ * @phpstan-type Readiness array{state: string, headline: string, message: string, cron: string, property_id: string}
+ *
+ * JobState is JobStatus::forJob()'s answer. A Check's level is GREEN, YELLOW
+ * or RED.
  */
 class Status {
 
@@ -45,7 +58,7 @@ class Status {
      * Every cube, plus every Property that has collected but has no cube yet,
      * worst first.
      *
-     * @return array[] one summary() per Property
+     * @return list<Summary> one summary() per Property
      */
     public static function all() {
 
@@ -72,8 +85,8 @@ class Status {
      * One Property's cube: its checks and the worst of them.
      *
      * @param string     $property_id
-     * @param array|null $job  JobStatus::forJob( self::JOB ), passed in by all() so it is read once
-     * @return array ['property_id','name','table','exists','level','checks','behind_from','scheduler']
+     * @param JobState|null $job  JobStatus::forJob( self::JOB ), passed in by all() so it is read once
+     * @return Summary
      */
     public static function summary( $property_id, $job = null ) {
 
@@ -134,7 +147,7 @@ class Status {
      * summary(), plus what the detail screen tabulates.
      *
      * @param string $property_id
-     * @return array summary() + ['days','partitions','dimensions']
+     * @return array{property_id: string, name: string, table: string, exists: bool, checks: list<Check>, behind_from: int|null, scheduler: JobState, level: string, days: list<DayRow>, partitions: PartitionFacts|array{}, dimensions: list<Row>}  summary() plus the tables
      */
     public static function detail( $property_id ) {
 
@@ -160,7 +173,9 @@ class Status {
      * holds the day and when it was last built. A gap is raw above zero with
      * the cube at zero, or the two disagreeing on a settled day.
      *
-     * @return array[] newest first
+     * @param  string $property_id
+     * @param  string $table  its cube
+     * @return list<DayRow> newest first
      */
     public static function recentDays( $property_id, $table ) {
 
@@ -213,7 +228,7 @@ class Status {
      * or the next build.
      *
      * @param string $site_id
-     * @return array|null ['state','headline','message','cron','property_id']
+     * @return Readiness|null
      */
     public static function readiness( $site_id ) {
 
@@ -224,7 +239,7 @@ class Status {
      * readiness() for a Property, which is what a report is of.
      *
      * @param string $property_id '' when there is none
-     * @return array|null
+     * @return Readiness|null
      */
     public static function readinessOfProperty( $property_id ) {
 
@@ -253,7 +268,7 @@ class Status {
      * @param string   $property_id  '' when the Profile has no Property
      * @param bool     $scheduler_down
      * @param int|null $next         when the next scheduled build is due
-     * @return array
+     * @return Readiness
      */
     public static function readinessFor( $property_id, $scheduler_down, $next ) {
 
@@ -350,7 +365,7 @@ class Status {
      * How far the cube's partitions reach, and what is in the catch-all.
      *
      * @param string $table
-     * @return array ['count','first','daily_through','lead_end','today_daily','catch_all','catch_all_rows']
+     * @return PartitionFacts
      */
     public static function partitionFacts( $table ) {
 
@@ -397,7 +412,12 @@ class Status {
         return $out;
     }
 
-    /** Whether the scheduled build is running on time, as cmd=schedule-status judges it. */
+    /**
+     * Whether the scheduled build is running on time, as cmd=schedule-status judges it.
+     *
+     * @param  JobState $job
+     * @return Check
+     */
     protected static function schedulerCheck( array $job ) {
 
         $health = \OWA\Module\Base\Classes\SchedulerHealth::problem();
@@ -431,6 +451,10 @@ class Status {
      * The run's message is where the builder records it -- "<table> stopped at
      * <partition>: <reason>", first failure first -- and the scheduler keeps it
      * in last_message.
+     *
+     * @param  JobState $job
+     * @param  string   $table  this Property's cube
+     * @return Check
      */
     protected static function lastBuildCheck( array $job, $table ) {
 
@@ -460,7 +484,13 @@ class Status {
             $when ) );
     }
 
-    /** Whether everything before yesterday is settled. */
+    /**
+     * Whether everything before yesterday is settled.
+     *
+     * @param  int|null $behind_from  Builder::catchUpFrom()'s answer
+     * @param  bool     $stuck        the scheduler or the last build is red
+     * @return Check
+     */
     protected static function builtCheck( $behind_from, $stuck ) {
 
         if ( $behind_from === null ) {
@@ -475,7 +505,12 @@ class Status {
             self::day( $behind_from ) ) );
     }
 
-    /** Rows in the catch-all, how far the lead reaches, and whether today is a daily partition. */
+    /**
+     * Rows in the catch-all, how far the lead reaches, and whether today is a daily partition.
+     *
+     * @param  string $table
+     * @return Check
+     */
     protected static function partitionsCheck( $table ) {
 
         $facts = self::partitionFacts( $table );
@@ -525,7 +560,12 @@ class Status {
             self::day( (int) date( 'Ymd', strtotime( $facts['lead_end'] . ' -1 day' ) ) ) ) );
     }
 
-    /** Custom dimensions whose column is not on the cube yet, or could not be added. */
+    /**
+     * Custom dimensions whose column is not on the cube yet, or could not be added.
+     *
+     * @param  string $property_id
+     * @return Check
+     */
     protected static function dimensionsCheck( $property_id ) {
 
         $failed  = 0;
@@ -570,7 +610,7 @@ class Status {
      * @param int           $from
      * @param int           $to
      * @param string[]|null $sites  null for every row (a cube holds one Property's)
-     * @return array yyyymmdd => count
+     * @return array<int, int> yyyymmdd => count
      */
     protected static function countsByDay( $table, $from, $to, $sites ) {
 
@@ -600,6 +640,13 @@ class Status {
         return $out;
     }
 
+    /**
+     * The partition holding a day, or null.
+     *
+     * @param  list<Span> $spans
+     * @param  int $day  yyyymmdd
+     * @return Span|null
+     */
     protected static function spanFor( array $spans, $day ) {
 
         foreach ( $spans as $span ) {
@@ -613,11 +660,19 @@ class Status {
         return null;
     }
 
+    /**
+     * @param  Span $span
+     * @return bool
+     */
     protected static function isOneDay( array $span ) {
 
         return date( 'Ymd', strtotime( $span['start'] . ' +1 day' ) ) === (string) $span['less_than'];
     }
 
+    /**
+     * @param  string $property_id
+     * @return string its name, or the id when it has none
+     */
     protected static function propertyName( $property_id ) {
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
@@ -626,7 +681,12 @@ class Status {
         return (string) ( $property->get( 'name' ) ?: $property_id );
     }
 
-    /** yyyymmdd as a person reads it. */
+    /**
+     * yyyymmdd as a person reads it.
+     *
+     * @param  int|string|null $yyyymmdd
+     * @return string
+     */
     public static function day( $yyyymmdd ) {
 
         $ts = strtotime( (string) $yyyymmdd );
@@ -634,12 +694,24 @@ class Status {
         return $ts ? \OWA\Core\Strings::formatDate( $ts, 'dMMMy', 'j M Y' ) : (string) $yyyymmdd;
     }
 
+    /**
+     * @param  string $key
+     * @param  string $label
+     * @param  string $level  GREEN, YELLOW or RED
+     * @param  string $detail
+     * @return Check
+     */
     protected static function check( $key, $label, $level, $detail ) {
 
         return array( 'key' => $key, 'label' => $label, 'level' => $level, 'detail' => $detail );
     }
 
-    /** The worst level among the checks. */
+    /**
+     * The worst level among the checks.
+     *
+     * @param  array<array{level: string}> $checks
+     * @return string
+     */
     public static function worst( array $checks ) {
 
         $level = self::GREEN;

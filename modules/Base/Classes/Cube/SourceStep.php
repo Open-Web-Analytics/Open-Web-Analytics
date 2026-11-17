@@ -84,7 +84,12 @@ class SourceStep extends Step {
             $tag, self::hostSource( $host ) );
     }
 
-    /** A referring host as a source: lower case, an app as its site, without a leading www. */
+    /**
+     * A referring host as a source: lower case, an app as its site, without a leading www.
+     *
+     * @param  string $host  SQL for the host
+     * @return string SQL
+     */
     private static function hostSource( $host ) {
 
         $lower = sprintf( 'LOWER(%s)', $host );

@@ -115,7 +115,7 @@ class Cubes {
      * are there -- including one whose Property has since been deleted, which
      * nothing else would name.
      *
-     * @return array  property id => table name
+     * @return array<int|string, string>  property id => table name; a numeric id is an int key
      */
     public static function existing() {
 
@@ -277,7 +277,7 @@ class Cubes {
      *
      * @param int $from yyyymmdd
      * @param int $to   yyyymmdd, inclusive
-     * @return array ['properties' => string[], 'orphan_rows' => int]
+     * @return array{properties: list<string>, orphan_rows: int}
      */
     public static function collecting( $from, $to ) {
 
@@ -313,7 +313,7 @@ class Cubes {
         return array( 'properties' => $properties, 'orphan_rows' => $orphans );
     }
 
-    /** @var array property id => bool, for this request */
+    /** @var array<int|string, bool> property id => bool, for this request; a numeric id is an int key */
     protected static $exists = array();
 
     /**
@@ -344,7 +344,11 @@ class Cubes {
         return self::$exists[ $id ];
     }
 
-    /** Test seam: forget what exists() has answered. */
+    /**
+     * Test seam: forget what exists() has answered.
+     *
+     * @return void
+     */
     public static function forgetExistence() {
 
         self::$exists = array();

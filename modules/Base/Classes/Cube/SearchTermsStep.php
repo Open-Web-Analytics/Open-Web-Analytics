@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Classes\Cube;
  */
 class SearchTermsStep extends ComputeStep {
 
-    /** @var array|null domain => query param, from the engine list */
+    /** @var array<array{domain?: string, query_param?: string}>|null the engine list (conf/searchengines.php, filtered), loaded on first use */
     private $engines = null;
 
     public function reads() {

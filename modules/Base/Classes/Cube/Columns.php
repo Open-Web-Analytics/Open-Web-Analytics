@@ -81,14 +81,14 @@ class Columns {
         'acquisition.missing' => 'v.acq_ts IS NULL',
     );
 
-    /** @var array logical session name => true, for the ones referenced */
+    /** @var array<string, true> logical session name => true, for the ones referenced */
     private $session_used = array();
 
-    /** @var array the definitions */
+    /** @var array<mixed> the definitions: column => its definition, as cube_columns.php gives them */
     private $definitions;
 
     /**
-     * @param array|null $definitions defaults to the shipped config
+     * @param array<mixed>|null $definitions column => its definition; defaults to the shipped config
      */
     public function __construct( $definitions = null ) {
 
@@ -138,7 +138,7 @@ class Columns {
     /**
      * Which session values the definitions referenced.
      *
-     * @return array logical name => window alias
+     * @return array<string, string> logical name => window alias
      */
     public function sessionSources() {
 
@@ -154,7 +154,7 @@ class Columns {
 
     /**
      * @param string $column
-     * @param array  $definition
+     * @param array<mixed> $definition  one column's definition: kind and what that kind reads
      * @return Step
      * @throws \RuntimeException
      */
@@ -248,7 +248,7 @@ class Columns {
 
     /**
      * @param string $column
-     * @param array  $definition
+     * @param array<mixed> $definition
      * @return ComputeStep
      * @throws \RuntimeException
      */
@@ -286,14 +286,18 @@ class Columns {
         return $step;
     }
 
-    /** The only literal the cube has. @return int */
+    /**
+     * The only literal the cube has.
+     *
+     * @return int
+     */
     public function literalValue( Context $context ) {
 
         return $context->built_at;
     }
 
     /**
-     * @param array $definition
+     * @param array<mixed> $definition
      * @return string|null
      */
     private function test( array $definition ) {
@@ -359,7 +363,7 @@ class Columns {
 
     /**
      * @param string $source
-     * @return array (scope, name)
+     * @return array{string, string} (scope, name)
      * @throws \RuntimeException
      */
     private function split( $source ) {

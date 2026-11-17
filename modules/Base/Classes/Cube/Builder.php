@@ -43,6 +43,16 @@ namespace OWA\Module\Base\Classes\Cube;
  * so the level-triggered scheduler needs no bookkeeping. That is why a step
  * failing aborts the run rather than being skipped: a build that sometimes
  * includes a column is not convergent.
+ *
+ * @phpstan-import-type Span from \OWA\Core\Db
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type Clause from ComputeStep
+ * @phpstan-type StepAccount array{step: string, column: string, kind: string, computed: int, msec: float, ok: bool, error: string}
+ * @phpstan-type BuildResult array{ok: bool, partition: string, rows: int, sql: string, steps: int, computed: int, failed: int, error: string, after?: string[]}
+ *
+ * A StepAccount is what one step did on a build; a BuildResult is what
+ * rebuild() did to one partition: after holds the statements run after the
+ * build, by column, once the steps have run.
  */
 class Builder {
 
@@ -103,13 +113,13 @@ class Builder {
     /** @var \OWA\Core\Db */
     protected $db;
 
-    /** @var array table name by role */
+    /** @var array<string, string> table name by role: target, raw, visitors, staging, computed */
     protected $tables = array();
 
     /** @var Step[] keyed by column */
     protected $steps = array();
 
-    /** @var array per-step accounting from the last build */
+    /** @var list<StepAccount> per-step accounting from the last build */
     protected $accounting = array();
 
     /** @var Columns */
@@ -279,7 +289,7 @@ class Builder {
      *
      * @param int $from yyyymmdd
      * @param int $to   yyyymmdd, inclusive
-     * @return array of ['name','start','less_than']
+     * @return list<Span>
      */
     public function partitions( $from, $to ) {
 
@@ -305,7 +315,7 @@ class Builder {
      * partition look unsettled, which costs one rebuild and leaves it
      * single-valued again. So LIMIT 1, not a scan for the MAX.
      *
-     * @param array $span from partitions()
+     * @param Span $span from partitions()
      * @return int|null microseconds
      */
     public function builtAt( array $span ) {
@@ -319,7 +329,7 @@ class Builder {
     /**
      * Whether raw holds any row of this Property in the partition's period.
      *
-     * @param array $span
+     * @param Span $span
      * @return bool
      */
     public function hasRaw( array $span ) {
@@ -349,7 +359,7 @@ class Builder {
      * row whose stamp is older than its built_at; the session-length margin
      * covers that, since no build within it counts as current.
      *
-     * @param array $span from partitions()
+     * @param Span $span from partitions()
      * @return bool
      */
     public function isCurrent( array $span ) {
@@ -419,7 +429,7 @@ class Builder {
      * An unsettled partition may be missing rows and terminal values, so a
      * scheduled build rebuilds it.
      *
-     * @param array    $span
+     * @param Span     $span
      * @param int|null $built_at from builtAt()
      * @return bool
      */
@@ -502,20 +512,13 @@ class Builder {
     /**
      * What each step did on the last build.
      *
-     * @return array of ['step','column','kind','computed','ok','error']
+     * @return list<StepAccount>
      */
     public function accounting() {
 
         return $this->accounting;
     }
 
-    /**
-     * Build one partition and swap it in.
-     *
-     * @param array $span    from partitions()
-     * @param bool  $dry_run compose the statement, run nothing
-     * @return array ['ok','partition','rows','sql','after','steps','computed','failed']
-     */
     /**
      * A Property's attribution lookback, in days: its own setting, else the
      * install's, else 90. Read at build time, so a change reaches history when
@@ -552,9 +555,9 @@ class Builder {
      * The connection is shared -- the scheduler drains the ingest queue on it
      * too -- so the level it had is put back, whatever the build does.
      *
-     * @param array $span
-     * @param bool  $dry_run
-     * @return array
+     * @param Span $span    from partitions()
+     * @param bool $dry_run compose the statement, run nothing
+     * @return BuildResult
      */
     public function rebuild( array $span, $dry_run = false ) {
 
@@ -611,7 +614,7 @@ class Builder {
      * there (1665), so that server keeps the locking read. MIXED logs those
      * writes by row, which is allowed.
      *
-     * @param array $variables  the session's, by lowercase name: transaction_isolation
+     * @param array<string, scalar|null> $variables  the session's, by lowercase name: transaction_isolation
      *                          (MySQL 8, MariaDB 11.1) or tx_isolation (MariaDB before
      *                          it), log_bin, binlog_format
      * @return string|null  the level as SET spells it, or null to leave it alone
@@ -641,9 +644,11 @@ class Builder {
     }
 
     /**
-     * @param array $span
-     * @param bool  $dry_run
-     * @return array
+     * Build one partition and swap it in.
+     *
+     * @param Span $span    from partitions()
+     * @param bool $dry_run compose the statement, run nothing
+     * @return BuildResult
      */
     protected function build( array $span, $dry_run ) {
 
@@ -839,7 +844,7 @@ class Builder {
      * guarantee is that running it twice produces the same partition.
      *
      * @param Context $context
-     * @return array column => SQL expression
+     * @return array<string, string> column => SQL expression
      * @throws \RuntimeException
      */
     protected function runSteps( Context $context ) {
@@ -925,8 +930,8 @@ class Builder {
      * Projects the union of their reads, and ORs their rendered predicates. One
      * query per page however many are registered, and none at all when none is.
      *
-     * @param array $span
-     * @return \Generator pages of at most $candidate_page rows
+     * @param Span $span
+     * @return \Generator<int, list<Row>> pages of at most $candidate_page rows
      */
     protected function candidatePages( array $span ) {
 
@@ -1011,7 +1016,7 @@ class Builder {
      * A.1.23 gives about dimensions: the first non-MySQL store would otherwise
      * rewrite every one by hand.
      *
-     * @param array $clause (column, operator[, value])
+     * @param Clause $clause (column, operator[, value])
      * @return string
      * @throws \RuntimeException on an unknown operator or column
      */
@@ -1153,7 +1158,7 @@ class Builder {
     /**
      * Which joins some registered step asked for.
      *
-     * @return array alias => true
+     * @return array<string, true> alias => true
      */
     protected function requiredJoins() {
 
@@ -1173,8 +1178,8 @@ class Builder {
     /**
      * Compose the one statement a build runs.
      *
-     * @param array $span
-     * @param array $expressions column => SQL
+     * @param Span $span
+     * @param array<string, string> $expressions column => SQL
      * @return string
      */
     protected function statement( array $span, array $expressions ) {
@@ -1532,7 +1537,7 @@ class Builder {
      * UPDATE ... FROM. One statement behind one dialect constant when a second
      * backend exists -- there is nothing to abstract over with one.
      *
-     * @param array $span
+     * @param Span $span
      * @return bool
      */
     protected function advanceLastSeen( array $span ) {
@@ -1616,7 +1621,7 @@ class Builder {
      * next run builds it in, because isCurrent() sees its created_at. A raw
      * row missing that was stamped before the build began is one.
      *
-     * @param array $span
+     * @param Span $span
      * @param int   $built    rows in staging
      * @param int   $built_at microseconds, when this build began
      * @return string|null
@@ -1658,7 +1663,10 @@ class Builder {
         return null;
     }
 
-    /** @return int raw rows the partition should hold */
+    /**
+     * @param  Span $span
+     * @return int raw rows the partition should hold
+     */
     protected function countRaw( array $span ) {
 
         return $this->count( $this->tables['raw'] . ' r', sprintf(

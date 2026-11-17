@@ -16,6 +16,9 @@ namespace OWA\Module\Base\Classes\Cube;
  * steps are registered, which is the shape the design refuses. The only rows
  * PHP ever sees are the ones the shared candidate pass already fetched, and
  * they arrive here.
+ *
+ * @phpstan-import-type Span from \OWA\Core\Db
+ * @phpstan-import-type Row from \OWA\Core\Db
  */
 class Context {
 
@@ -37,7 +40,7 @@ class Context {
     /** Alias of the Profile each raw row was collected for (owa_site). */
     const PROFILE = 'p';
 
-    /** @var array the partition being built: name, start, less_than */
+    /** @var Span the partition being built */
     public $span;
 
     /** @var int microseconds stamped on every row of this build */
@@ -46,7 +49,7 @@ class Context {
     /** @var int a session whose last event is older than this has closed */
     public $closed_before;
 
-    /** @var array rows the candidate pass returned, keyed by nothing in particular */
+    /** @var list<Row> rows the candidate pass returned */
     public $candidates = array();
 
     /**
@@ -82,7 +85,7 @@ class Context {
     }
 
     /**
-     * @param array $span
+     * @param Span  $span
      * @param int   $built_at
      * @param int   $closed_before
      * @param int   $lookback_days

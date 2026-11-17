@@ -25,6 +25,11 @@ namespace OWA\Module\Base\Classes\Cube;
  * THE RULES ARE CONFIGURATION, conf/channels.php: an ordered list, first
  * match winning. An install replaces the file to change them, and a rebuild
  * re-applies them to history.
+ *
+ * @phpstan-type ChannelRule array{channel: string, any?: array<mixed>, all?: array<mixed>}
+ *
+ * A ChannelRule is one rule of conf/channels.php once validate() has read it;
+ * its conditions are nested config, read by group() and condition().
  */
 class ChannelStep extends Step {
 
@@ -67,7 +72,8 @@ class ChannelStep extends Step {
      * A row whose source is the sentinel -- an acquisition never captured --
      * keeps the sentinel: a channel of Unassigned would claim a reading.
      *
-     * @param  array[]|null $definitions the rules; null reads the configured ones
+     * @param  array<mixed>|null $definitions the rules, not yet validated; null reads the configured ones
+     * @return string SQL
      * @throws \RuntimeException on a rule the compiler cannot read
      */
     public function rules( Context $context, ?array $definitions = null ) {
@@ -99,7 +105,7 @@ class ChannelStep extends Step {
      * and a merge could only append.
      *
      * @param  string|null $data_dir the data directory; null for the install's
-     * @return array[]
+     * @return list<ChannelRule>
      * @throws \RuntimeException
      */
     public static function definitions( $data_dir = null ) {
@@ -112,8 +118,8 @@ class ChannelStep extends Step {
     }
 
     /**
-     * @param  mixed $rules
-     * @return array[]
+     * @param  mixed $rules  whatever the rules file returned
+     * @return list<ChannelRule>
      * @throws \RuntimeException
      */
     private static function validate( $rules ) {
@@ -146,7 +152,8 @@ class ChannelStep extends Step {
     /**
      * The channel names, in the order the rules test them, then Unassigned.
      *
-     * @param  array[]|null $definitions the rules; null reads the configured ones
+     * @param  array<mixed>|null $definitions the rules, not yet validated; null reads the configured ones
+     * @return list<string>
      */
     public static function channels( ?array $definitions = null ) {
 
@@ -160,7 +167,15 @@ class ChannelStep extends Step {
         return array_merge( array_keys( $out ), array( 'Unassigned' ) );
     }
 
-    /** An any/all group as one parenthesised test. */
+    /**
+     * An any/all group as one parenthesised test.
+     *
+     * @param  array<mixed> $group  a rule, or a nested [ 'any' | 'all' => conditions ]
+     * @param  array<string, string> $fields  field => its SQL
+     * @param  string $where  the rule, for a refusal's message
+     * @return string SQL
+     * @throws \RuntimeException
+     */
     private static function group( array $group, array $fields, Context $context, $where ) {
 
         $join  = isset( $group['all'] ) ? ' AND ' : ' OR ';
@@ -183,7 +198,15 @@ class ChannelStep extends Step {
         return '(' . implode( $join, $tests ) . ')';
     }
 
-    /** One [ field, operator, value ] as SQL. */
+    /**
+     * One [ field, operator, value ] as SQL.
+     *
+     * @param  array<mixed> $condition
+     * @param  array<string, string> $fields  field => its SQL
+     * @param  string $where  the rule, for a refusal's message
+     * @return string SQL
+     * @throws \RuntimeException
+     */
     private static function condition( array $condition, array $fields, Context $context, $where ) {
 
         list( $field, $operator, $value ) = array_pad( array_values( $condition ), 3, null );

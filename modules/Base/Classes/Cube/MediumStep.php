@@ -84,6 +84,8 @@ class MediumStep extends Step {
      *
      * CampaignStep mirrors it for an untagged visit's campaign, so the two
      * are one expression and cannot disagree.
+     *
+     * @return string SQL
      */
     public function untagged( Context $context ) {
 
