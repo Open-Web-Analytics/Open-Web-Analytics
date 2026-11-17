@@ -99,4 +99,34 @@ final class SqsOptionsPageTest extends TestCase {
         $this->assertStringContainsString( "OWA_SQS_QUEUE_URL', 'https://sqs.us-east-1.amazonaws.com/123456789012/owa-tracker-ingest-abc123def456'", $html );
         $this->assertStringNotContainsString( 'OWA_ACTIVE_MODULES', $html );
     }
+
+    /**
+     * In use, the page says whether every beacon is queued. The template reads
+     * 'queued' then, and the screen did not hand it over, so the page rendered
+     * as nothing whenever SQS was the queue.
+     */
+    public function testThePageRendersWhileSqsIsTheQueue(): void {
+
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'the settings chrome loads the site list' );
+        }
+
+        $was = \OWA\Module\Base\Classes\TrackerIngest::$backend;
+        \OWA\Module\Base\Classes\TrackerIngest::$backend = 'sqs';
+
+        try {
+
+            $data = (array) ( new \OWA\Module\Sqs\Controller\OptionsSqs( [] ) )->action();
+
+            $view = \OWA\Core\CoreAPI::subViewFactory( $data['subview'], $data );
+            $view->setData( $data );
+            $html = (string) $view->assembleSubView( $data );
+
+        } finally {
+
+            \OWA\Module\Base\Classes\TrackerIngest::$backend = $was;
+        }
+
+        $this->assertStringContainsString( 'OWA_SQS_QUEUE_URL</code> is set', $html );
+    }
 }
