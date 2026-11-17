@@ -28,6 +28,10 @@ namespace OWA\Module\Base\Classes;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-import-type Bindings from \OWA\Core\Db
+ * @phpstan-type Field array<string, mixed>
+ * @phpstan-type FieldSet array<string, mixed>
  */
  
  class Settings {
@@ -39,34 +43,41 @@ namespace OWA\Module\Base\Classes;
       */
      public $config;
 
+     /** @var array<string, array<string, mixed>> module => key => the declared default */
      public $default_config;
 
+     /** @var array<mixed> module => key => the value stored install-wide */
      public $db_settings = array();
 
+     /** @var mixed nothing sets it */
      public $fetched_from_db;
 
+     /** @var bool|null whether a setting changed since the last save */
      public $is_dirty;
 
     /** @var bool  whether the shutdown save has been registered for this process */
     protected $shutdown_registered = false;
 
+     /** @var int|string|null */
      public $config_id;
 
+     /** @var bool|null whether load() read stored settings */
      public $config_from_db;
      
+     /** @var bool|null */
      public $config_file_loaded;
 
      /** @var bool|null  whether owa_configuration still exists; see legacyBlobIsAuthoritative(). */
      private $legacy_blob_present = null;
 
-     /** @var array  "module|key" => registration args. The catalogue. */
+     /** @var array<string, Field>  "module|key" => registration args. The catalogue. */
      private $registry = array();
 
-     /** @var array  id => fieldset declaration. Chrome only; see registerFieldSet(). */
+     /** @var array<string, FieldSet>  id => fieldset declaration. Chrome only; see registerFieldSet(). */
      private $fieldsets = array();
 
      /**
-      * @var array  module => true for modules that ship a settings.php.
+      * @var array<string, bool>  module => true for modules that ship a settings.php.
       *
       * Adoption is per module. A module that has declared nothing keeps having
       * ALL of its stored settings loaded at boot, exactly as before registration
@@ -80,7 +91,7 @@ namespace OWA\Module\Base\Classes;
      /** @var bool  the undeclared-module warning is once per process, not per boot. */
      private $warned_about_undeclared = false;
 
-     /** @var array  "module|key" => true for rows the BOOT query already applied. */
+     /** @var array<string, bool>  "module|key" => true for rows the BOOT query already applied. */
      private $loaded_at_boot = array();
 
      /**
@@ -92,7 +103,7 @@ namespace OWA\Module\Base\Classes;
       */
      private $resolving = false;
 
-     /** @var array  "module|key" => true for registered keys not yet resolved. */
+     /** @var array<string, bool>  "module|key" => true for registered keys not yet resolved. */
      private $pending = array();
 
      /**
@@ -102,7 +113,7 @@ namespace OWA\Module\Base\Classes;
       * and remembering it is what keeps a key with no row from being queried
       * on every read.
       *
-      * @var array
+      * @var array<string, bool>
       */
      private $loaded = array();
 
@@ -153,6 +164,9 @@ namespace OWA\Module\Base\Classes;
         $this->setupPaths();        
     }
      
+     /**
+      * @return void
+      */
      public function setTimezone() {
 
          // set default timezone while surpressing any warning
@@ -178,11 +192,17 @@ namespace OWA\Module\Base\Classes;
         return false;
      }
      
+     /**
+      * @return bool|null
+      */
      public function isConfigFileLoaded() {
          
          return $this->config_file_loaded;
      }
 
+     /**
+      * @return void
+      */
      private function loadConfigFile() {
  
         /*
@@ -202,6 +222,12 @@ namespace OWA\Module\Base\Classes;
      /**
       * Set a value that came from a config-file constant, and remember that it
       * did. Same as set(), plus the ledger entry.
+      *
+      * @param  string $module
+      * @param  string $key
+      * @param  mixed  $value
+      * @param  string $constant the constant's name
+      * @return bool
       */
      private function setFromConfigConstant( $module, $key, $value, $constant ) {
 
@@ -269,6 +295,9 @@ namespace OWA\Module\Base\Classes;
       * Creates an entry for a key nothing declared -- a constant governs it
       * whether or not a module got round to describing it.
       *
+      * @param  string $module
+      * @param  string $key
+      * @param  string $constant the constant's name
       * @return void
       */
      public function noteConfigConstant( $module, $key, $constant ) {
@@ -298,6 +327,8 @@ namespace OWA\Module\Base\Classes;
       * records one has to be able to put things back, and without this it
       * would leave the singleton claiming a constant that is not defined.
       *
+      * @param  string $module
+      * @param  string $key
       * @return void
       */
      public function forgetConfigConstant( $module, $key ) {
@@ -321,7 +352,7 @@ namespace OWA\Module\Base\Classes;
      /**
       * Every setting a config-file constant governs, as module => key => name.
       *
-      * @return array
+      * @return array<string, array<string, mixed>>
       */
      public function configConstants() {
 
@@ -340,6 +371,9 @@ namespace OWA\Module\Base\Classes;
          return $out;
      }
 
+     /**
+      * @return void
+      */
      public function applyConfigConstants() {
 
         /*
@@ -528,7 +562,8 @@ namespace OWA\Module\Base\Classes;
      /**
       * Ovverrides settings - used in some controllers (@see \OWA\Core\Caller )
       * @param string $module
-      * @param array $config
+      * @param array<string, mixed> $config
+      * @return void
       */
      public function applyModuleOverrides($module, $config) {
 
@@ -581,6 +616,7 @@ namespace OWA\Module\Base\Classes;
       * way round as save() decides where to write.
       *
       * @param int|string $id  retained for callers; the install scope has one id
+      * @return void
       */
      public function load($id = 1) {
 
@@ -703,7 +739,7 @@ namespace OWA\Module\Base\Classes;
       * ONE query: the blob this replaced was read whole because a blob cannot
       * be read in part, and rows would otherwise cost a query each.
       *
-      * @return array
+      * @return array<mixed> module => key => value
       */
      private function readInstallSettings() {
 
@@ -789,6 +825,8 @@ namespace OWA\Module\Base\Classes;
       * Forget which store is authoritative.
       *
       * For Update043 and its rollback, which change the answer mid-request.
+      *
+      * @return void
       */
      public function settingStoreRecheck() {
 
@@ -873,7 +911,7 @@ namespace OWA\Module\Base\Classes;
       *
       * Only reachable during the migration window -- see load().
       *
-      * @return array
+      * @return array<mixed> module => key => value
       */
      private function readLegacyConfigurationBlob() {
 
@@ -908,18 +946,15 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * Fetches a modules entire configuration array
-      *
-      * @param string $module The name of module whose configuration values you want to fetch
-      * @return array Config values
-      */
-     /**
       * One module's whole settings map, or an empty array when it has none.
       *
       * fetch() indexes $v[$module] unguarded, so asking it about a module that
       * has never stored a setting is an undefined-key warning rather than an
       * empty answer. Callers that iterate a map -- the scoped settings screens
       * -- need the empty answer.
+      *
+      * @param  string $module
+      * @return array<mixed> key => value
       */
      public function getModuleSettings( $module = 'base' ) {
 
@@ -933,6 +968,12 @@ namespace OWA\Module\Base\Classes;
          return array();
      }
 
+     /**
+      * Fetches a modules entire configuration array
+      *
+      * @param string $module The name of module whose configuration values you want to fetch; '' for base
+      * @return mixed Config values
+      */
      public function fetch($module = '') {
         
         $v = $this->config->get('settings');
@@ -1009,7 +1050,7 @@ namespace OWA\Module\Base\Classes;
       * Store one row per setting, and optionally remove the rows for keys that
       * are no longer held.
       *
-      * @param  array $settings [module][key] => value
+      * @param  array<mixed> $settings [module][key] => value
       * @param  bool  $prune    delete stored keys absent from $settings
       * @return boolean
       */
@@ -1069,6 +1110,9 @@ namespace OWA\Module\Base\Classes;
       * always the same row and two writers cannot produce two rows that
       * disagree. See Entity\Setting::makeId().
       *
+      * @param  string $module
+      * @param  string $key
+      * @param  mixed  $value
       * @return boolean
       */
      private function writeInstallSetting( $module, $key, $value ) {
@@ -1105,6 +1149,10 @@ namespace OWA\Module\Base\Classes;
 
      /**
       * Remove one install-scope row, so the key reverts to its code default.
+      *
+      * @param  string $module
+      * @param  string $key
+      * @return bool
       */
      private function deleteInstallSetting( $module, $key ) {
 
@@ -1221,6 +1269,9 @@ namespace OWA\Module\Base\Classes;
       * ever pending and no stored value would ever have been read again. The
       * test that counts the batch query caught it on the first run.
       *
+      * @param  string $module
+      * @param  string $key
+      * @param  mixed  $value
       * @return void
       */
      private function seedDefault( $module, $key, $value ) {
@@ -1234,6 +1285,9 @@ namespace OWA\Module\Base\Classes;
       * The shared mechanism under set() and seedDefault(). It exists so those
       * two can differ in what they RECORD while agreeing on what they store.
       *
+      * @param  string $module
+      * @param  string $key
+      * @param  mixed  $value
       * @return void
       */
      private function writeValue( $module, $key, $value ) {
@@ -1266,21 +1320,14 @@ namespace OWA\Module\Base\Classes;
       *
       * @param string $module the name of the module
       * @param string $key the configuration key
-      * @param string $value the configuration value
+      * @param mixed  $value the configuration value
+      * @return bool
       * @depricated
       */
      public function setSetting($module, $key, $value) {
          return $this->set($module, $key, $value);
      }
 
-     /**
-      * Adds Setting value to be configuration and persistant data store
-      *
-      * @param string $module the name of the module
-      * @param string $key the configuration key
-      * @param string $value the configuration value
-      * @return
-      */
      /**
       * Why a value cannot be stored for a setting, or null when it can.
       *
@@ -1420,9 +1467,9 @@ namespace OWA\Module\Base\Classes;
       * declaration's `keys` when it declares them; a later pair for a name
       * replaces an earlier one.
       *
-      * @param  array $args  the declaration
+      * @param  Field $args  the declaration
       * @param  mixed $text
-      * @return array|null   name => value, or null when the text is not in that form
+      * @return array<string, string>|null   name => value, or null when the text is not in that form
       */
      public static function mapPairs( array $args, $text ) {
 
@@ -1470,9 +1517,9 @@ namespace OWA\Module\Base\Classes;
       * non-empty string. A stored value naming a key the declaration has
       * since dropped loses that key here rather than failing.
       *
-      * @param  array $args
-      * @param  array $map
-      * @return array
+      * @param  Field        $args
+      * @param  array<mixed> $map
+      * @return array<string, string>
       */
      public static function mapValue( array $args, array $map ) {
 
@@ -1493,7 +1540,7 @@ namespace OWA\Module\Base\Classes;
      /**
       * A `map` value as a person types it, for a text control: see mapPairs().
       *
-      * @param  array $args
+      * @param  Field $args
       * @param  mixed $value
       * @return string
       */
@@ -1514,6 +1561,14 @@ namespace OWA\Module\Base\Classes;
          return implode( ', ', $out );
      }
 
+     /**
+      * Adds Setting value to be configuration and persistant data store
+      *
+      * @param string $module the name of the module
+      * @param string $key the configuration key
+      * @param mixed  $value the configuration value
+      * @return null
+      */
      public function persistSetting($module, $key, $value) {
 
          /*
@@ -1558,7 +1613,7 @@ namespace OWA\Module\Base\Classes;
              \OWA\Core\CoreAPI::notice( sprintf(
                  'Refusing to persist %s.%s: %s.', $module, $key, $why ) );
 
-             return;
+             return null;
          }
 
          $problem = $this->valueProblem( $module, $key, $value );
@@ -1567,7 +1622,7 @@ namespace OWA\Module\Base\Classes;
 
              \OWA\Core\CoreAPI::notice( sprintf( 'Refusing to persist %s.%s: %s', $module, $key, $problem ) );
 
-             return;
+             return null;
          }
 
          $value = $this->normalizedValue( $module, $key, $value );
@@ -1601,11 +1656,13 @@ namespace OWA\Module\Base\Classes;
                  $this->markDirty();
              }
 
-             return;
+             return null;
          }
 
          $this->db_settings[$module][$key] = $value;
          $this->markDirty();
+
+         return null;
      }
 
      /**
@@ -1691,7 +1748,7 @@ namespace OWA\Module\Base\Classes;
       * the two cannot come to different conclusions about which modules are
       * still relying on the fallback.
       *
-      * @return array module names
+      * @return list<mixed> module names
       */
      public function undeclaredModules() {
 
@@ -1719,7 +1776,7 @@ namespace OWA\Module\Base\Classes;
      /**
       * Modules that ship a settings.php.
       *
-      * @return array module names
+      * @return list<string> module names
       */
      public function declaredModules() {
 
@@ -1746,7 +1803,7 @@ namespace OWA\Module\Base\Classes;
       * ship declarations, so there will always be modules resolved wholesale --
       * and this will always have to hold their constants out of it.
       *
-      * @param  array $params the statement's bindings, appended to
+      * @param  Bindings $params the statement's bindings, appended to
       * @return string a leading " AND NOT ( ... )", or ''
       */
      private function constantExclusion( array &$params ) {
@@ -1783,7 +1840,7 @@ namespace OWA\Module\Base\Classes;
       * Only what the registry declares eager. Everything else is resolved when
       * something asks for it.
       *
-      * @return array
+      * @return array<string, list<string>>
       */
      public function eagerSettings() {
 
@@ -1837,7 +1894,7 @@ namespace OWA\Module\Base\Classes;
       * modules that HAVE declared, and is the right place to surface the
       * warning for those that have not.
       *
-      * @param  array $params the statement's bindings, appended to
+      * @param  Bindings $params the statement's bindings, appended to
       * @return string
       */
      private function eagerPredicate( array &$params ) {
@@ -1898,7 +1955,7 @@ namespace OWA\Module\Base\Classes;
       * exactly right -- these are eager wherever they occur, including for a
       * third-party module core has never heard of.
       *
-      * @return array
+      * @return list<string>
       */
      public static function mechanicalSettingNames() {
 
@@ -1924,7 +1981,7 @@ namespace OWA\Module\Base\Classes;
       *
       * @param string $module
       * @param string $key
-      * @param array  $args  default, autoload, and optional chrome
+      * @param Field  $args  default, autoload, and optional chrome
       * @return void
       */
      public function registerField( $module, $key, array $args = array() ) {
@@ -1994,7 +2051,7 @@ namespace OWA\Module\Base\Classes;
       * that lists a setting which is NOT storable is a page promising to save
       * something that cannot be saved. See fieldSetProblems().
       *
-      * @param array $set
+      * @param FieldSet $set
       * @return void
       */
      public function registerFieldSet( array $set ) {
@@ -2002,7 +2059,11 @@ namespace OWA\Module\Base\Classes;
          $this->fieldsets[ (string) $set['id'] ] = $set;
      }
 
-     /** Every registered fieldset, as id => declaration. */
+     /**
+      * Every registered fieldset, as id => declaration.
+      *
+      * @return array<string, FieldSet>
+      */
      public function registeredFieldSets() {
 
          return $this->fieldsets;
@@ -2028,7 +2089,7 @@ namespace OWA\Module\Base\Classes;
       * This QUERIES. It is for an operator asking what is wrong, not for a
       * request path.
       *
-      * @return array human-readable strings
+      * @return list<string> human-readable strings
       */
      public function declarationProblems() {
 
@@ -2083,7 +2144,7 @@ namespace OWA\Module\Base\Classes;
       * setting nobody registered renders an empty row, and one naming a
       * setting that is not storable renders a form whose save does nothing.
       *
-      * @return array
+      * @return list<string>
       */
      public function fieldSetProblems() {
 
@@ -2137,6 +2198,8 @@ namespace OWA\Module\Base\Classes;
       * a browser made up. Every module declares its settings, its mechanical
       * is_active and schema_version included (Module::mechanicalSettings()).
       *
+      * @param  string $module
+      * @param  string $key
       * @return bool
       */
      public function mayPersistInstallWide( $module, $key ) {
@@ -2180,7 +2243,9 @@ namespace OWA\Module\Base\Classes;
       * null as "install only" would refuse the writes the Observation Settings
       * screen has always made.
       *
-      * @return array|null
+      * @param  string $module
+      * @param  string $key
+      * @return list<mixed>|null
       */
      public function scopesFor( $module, $key ) {
 
@@ -2207,6 +2272,9 @@ namespace OWA\Module\Base\Classes;
       * third-party module, or base before it declares, keeps working exactly
       * as it did. Only a setting that HAS declared its scopes is held to them.
       *
+      * @param  string $module
+      * @param  string $key
+      * @param  string $scopeType
       * @return bool
       */
      public function mayWriteAtScope( $module, $key, $scopeType ) {
@@ -2238,7 +2306,7 @@ namespace OWA\Module\Base\Classes;
       * `autoload` implies it. Declaring that boot must fetch a value only
       * means anything if a value can exist.
       *
-      * @param  array $args
+      * @param  Field $args
       * @return bool
       */
      public static function isStorable( array $args ) {
@@ -2257,7 +2325,13 @@ namespace OWA\Module\Base\Classes;
          return ! empty( $args['storable'] ) || ! empty( $args['autoload'] );
      }
 
-     /** Whatever was registered for a key, or an empty array. */
+     /**
+      * Whatever was registered for a key, or an empty array.
+      *
+      * @param  string $module
+      * @param  string $key
+      * @return Field
+      */
      public function registeredField( $module, $key ) {
 
          return $this->registry[ $module . '|' . $key ] ?? array();
@@ -2274,18 +2348,33 @@ namespace OWA\Module\Base\Classes;
       * would have accepted a stored db_class_dir. Caught by the contract test
       * the moment the baked-in paths were removed.
       */
+     /**
+      * @param  string $module
+      * @param  string $key
+      * @return bool
+      */
      public function isRegistered( $module, $key ) {
 
          return isset( $this->registry[ $module . '|' . $key ] );
      }
 
-     /** Every registered key, as "module|key" => args. */
+     /**
+      * Every registered key, as "module|key" => args.
+      *
+      * @return array<string, Field>
+      */
      public function registeredFields() {
 
          return $this->registry;
      }
 
-     /** Whether this key has already been resolved against the database. */
+     /**
+      * Whether this key has already been resolved against the database.
+      *
+      * @param  string $module
+      * @param  string $key
+      * @return bool
+      */
      private function isLoaded( $module, $key ) {
 
          return isset( $this->loaded[ $module . '|' . $key ] );
@@ -2405,6 +2494,8 @@ namespace OWA\Module\Base\Classes;
       * The row goes on the next save(), through the pruning that already
       * removes stored keys db_settings no longer holds.
       *
+      * @param  string $module
+      * @param  string $key
       * @return void
       */
      public function removeSetting( $module, $key ) {
@@ -2448,7 +2539,7 @@ namespace OWA\Module\Base\Classes;
       * because a config-file constant governs it. Nothing to update when a
       * setting is added -- the declaration is the source.
       *
-      * @return array module => key => true
+      * @return array<string, array<string, bool>> module => key => true
       */
      public static function staticSettings() {
 
@@ -2600,7 +2691,7 @@ namespace OWA\Module\Base\Classes;
       *
       * Caller is responsible for save().
       *
-      * @return array list of "module.key" entries removed
+      * @return list<string> the "module.key" entries removed
       */
      public function pruneRedundantPersistedSettings() {
 
@@ -2634,6 +2725,11 @@ namespace OWA\Module\Base\Classes;
      /**
       * Replaces all values of a particular module's configuration
       * @todo: search to see where else this is used. If unused then make it for use in persist only.
+      *
+      * @param  string       $module
+      * @param  array<mixed> $values key => value
+      * @param  bool         $persist
+      * @return void
       */
      private function replace($module, $values, $persist = false) {
 
@@ -2651,6 +2747,7 @@ namespace OWA\Module\Base\Classes;
 
      /**
       * @param string|null $public_url  the URL OWA is served from; null reads OWA_PUBLIC_URL
+      * @return void
       */
      public function setMailerDomain( $public_url = null ) {
 
@@ -2846,7 +2943,8 @@ namespace OWA\Module\Base\Classes;
      /**
       * Writes the config file based on the default config file - but with the given database credentials
       *
-      * @param array $config_values with the database setting keys
+      * @param array<string, string> $config_values with the database setting keys
+      * @return true
       */
      public function createConfigFile($config_values) {
 
@@ -2958,6 +3056,10 @@ namespace OWA\Module\Base\Classes;
 
     }
 
+    /**
+     * @param  string $module
+     * @return bool
+     */
     public function reset($module) {
 
         if ($module) {
@@ -2976,6 +3078,7 @@ namespace OWA\Module\Base\Classes;
      * sets and checks the cookie domain setting
      *
      * @param mixed $domain
+     * @return void
      */
     public function setCookieDomain ($domain = '') {
 
@@ -3027,6 +3130,8 @@ namespace OWA\Module\Base\Classes;
      * destructor it also turns a CLI command that did its job into exit
      * status 255. Registering here fixes both, and costs one callback per
      * process that actually changes a setting.
+     *
+     * @return void
      */
     protected function markDirty() {
 
@@ -3081,10 +3186,10 @@ namespace OWA\Module\Base\Classes;
      * not already exist. Also adds the capability to the
      * siteAccessRequired list if role is not 'everyone'.
      *
-     * @param $role                        string    role name.
-     * @param $capability                string    capability name.
-     * @param $isSiteAccesssRequired    boolean    flag for adding to SA list.
-     *
+     * @param string               $role                 role name.
+     * @param string|array<string> $capability           capability name, or several.
+     * @param bool                 $isSiteAccessRequired flag for adding to SA list.
+     * @return void
      */
     public function addCapabilityToRole( $role, $capability, $isSiteAccessRequired = false ) {
 

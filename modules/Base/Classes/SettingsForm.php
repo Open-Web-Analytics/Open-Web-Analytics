@@ -31,6 +31,10 @@ namespace OWA\Module\Base\Classes;
  * DESCRIPTIONS ARE HTML, and deliberately: they carry <strong> and <br>, and
  * they come from declaration files in the repository, never from a request.
  * Values, labels, keys and option text are all escaped.
+ *
+ * @phpstan-import-type Field from \OWA\Module\Base\Classes\Settings
+ * @phpstan-import-type FieldSet from \OWA\Module\Base\Classes\Settings
+ * @phpstan-type Posted array{config?: array<mixed>, override?: array<mixed>}
  */
 class SettingsForm {
 
@@ -44,12 +48,12 @@ class SettingsForm {
      * would show the mistake to the wrong person.
      *
      * @param  string $do     the page's action name, e.g. base.optionsGeneral
-     * @param  array|null $panels where to look, defaulting to every loaded
+     * @param  array<mixed>|null $panels where to look, defaulting to every loaded
      *                    module's. A module registers its pages only when it is
      *                    ACTIVE, and is_active lives in the database, so passing
      *                    one module's own panels is how this is exercised
      *                    without an activated install.
-     * @return array ordered fieldset declarations
+     * @return list<FieldSet> ordered fieldset declarations
      */
     public static function pageFieldSets( $do, $panels = null ) {
 
@@ -112,7 +116,7 @@ class SettingsForm {
      * them without Base naming it.
      *
      * @param  string $group
-     * @return array
+     * @return list<FieldSet>
      */
     public static function groupFieldSets( $group ) {
 
@@ -140,7 +144,7 @@ class SettingsForm {
      * registered under it, which renders nothing.
      *
      * @param  string $id
-     * @return array
+     * @return FieldSet
      */
     public static function registeredFieldSet( $id ) {
 
@@ -152,7 +156,7 @@ class SettingsForm {
     /**
      * One fieldset, as HTML.
      *
-     * @param  array  $set    from Settings::registeredFieldSets()
+     * @param  FieldSet $set  from Settings::registeredFieldSets()
      * @param  string $ns     a prefix for each field's name; OWA's own forms use none
      * @return string
      */
@@ -286,11 +290,11 @@ class SettingsForm {
     /**
      * One fieldset for a level below the install, as HTML.
      *
-     * @param  array       $set
+     * @param  FieldSet    $set
      * @param  string      $scopeType  property or profile
      * @param  string|null $scopeId    null for one not created yet
      * @param  string      $ns
-     * @param  array|null  $posted     a refused post to redisplay: array( 'config' => ..., 'override' => ... )
+     * @param  Posted|null $posted     a refused post to redisplay: array( 'config' => ..., 'override' => ... )
      * @param  bool        $collapsible as a closed group, its legend and description the heading a person
      *                                  opens it by. Open when redisplaying a refused post, so a refused value
      *                                  is not hidden from the person who has to fix it.
@@ -366,7 +370,7 @@ class SettingsForm {
      * @param  string      $scopeType
      * @param  string|null $scopeId
      * @param  string      $ns
-     * @param  array|null  $posted  see scopedFieldSet()
+     * @param  Posted|null $posted  see scopedFieldSet()
      * @return string
      */
     public static function scopedField( $module, $key, $scopeType, $scopeId, $ns = '', $posted = null ) {
@@ -535,7 +539,7 @@ class SettingsForm {
      * answers false. 0 is a value, and so is a boolean's false.
      *
      * @param  mixed $value
-     * @param  array $args  the declaration
+     * @param  Field $args  the declaration
      * @return bool
      */
     protected static function hasNoValue( $value, array $args = array() ) {
@@ -554,7 +558,7 @@ class SettingsForm {
      *
      * @param  string $module
      * @param  string $key
-     * @param  array  $args
+     * @param  Field  $args
      * @param  string $field  the control, and its switch when it has one
      * @param  string $notes
      * @param  string $class  a further class for the field row
@@ -589,8 +593,8 @@ class SettingsForm {
      * @param  string      $scopeType
      * @param  string|null $scopeId   null or '' for a level not created yet,
      *                                which holds nothing and inherits the install
-     * @return array own (bool), value (this level's), inherited (the value in
-     *               force without it), from (the level that supplies that)
+     * @return array{own: bool, value: mixed, inherited: mixed, from: mixed} value is this level's, inherited the
+     *               value in force without it, from the level that supplies that
      */
     public static function inheritance( $module, $key, $scopeType, $scopeId ) {
 
@@ -636,11 +640,11 @@ class SettingsForm {
      * scopedField() would render, so a post cannot reach a setting the screen
      * does not offer.
      *
-     * @param  array  $set
-     * @param  string $scopeType
-     * @param  string $scopeId
-     * @param  array  $config    posted config[module.key]
-     * @param  array  $override  posted override[module.key]
+     * @param  FieldSet     $set
+     * @param  string       $scopeType
+     * @param  string       $scopeId
+     * @param  array<mixed> $config    posted config[module.key]
+     * @param  array<mixed> $override  posted override[module.key]
      * @return bool   every write succeeded
      */
     public static function saveScoped( array $set, $scopeType, $scopeId, $config, $override ) {
@@ -714,12 +718,12 @@ class SettingsForm {
      * field given a value. A controller adds these as validation errors so the
      * form says what was wrong; the write chokepoint refuses them regardless.
      *
-     * @param  array  $set
-     * @param  string $scopeType
-     * @param  string $scopeId
-     * @param  array  $config
-     * @param  array  $override
-     * @return array  module.key => message
+     * @param  FieldSet     $set
+     * @param  string       $scopeType
+     * @param  string       $scopeId
+     * @param  array<mixed> $config
+     * @param  array<mixed> $override
+     * @return array<string, string>  module.key => message
      */
     public static function scopedProblems( array $set, $scopeType, $scopeId, $config, $override ) {
 
@@ -763,7 +767,7 @@ class SettingsForm {
      * timezone by its option's label, a map as its name=value pairs and a list
      * comma-separated. Empty stays empty; the caller says "Not set".
      *
-     * @param  array $args
+     * @param  Field $args
      * @param  mixed $value
      * @return string
      */
@@ -804,13 +808,26 @@ class SettingsForm {
         return (string) $value;
     }
 
-    /** The id of a setting's control, which its title labels. */
+    /**
+     * The id of a setting's control, which its title labels.
+     *
+     * @param  string $module
+     * @param  string $key
+     * @return string
+     */
     protected static function controlId( $module, $key ) {
 
         return 'owa-setting-' . preg_replace( '/[^A-Za-z0-9_-]/', '-', $module . '.' . $key );
     }
 
-    /** The value a control shows when none is given: the setting's, except a secret's, which is never printed. */
+    /**
+     * The value a control shows when none is given: the setting's, except a secret's, which is never printed.
+     *
+     * @param  string $module
+     * @param  string $key
+     * @param  Field  $args
+     * @return mixed
+     */
     protected static function storedValue( $module, $key, array $args ) {
 
         return empty( $args['secret'] ) ? \OWA\Core\CoreAPI::getSetting( $module, $key ) : '';
@@ -821,7 +838,7 @@ class SettingsForm {
      *
      * @param  string $module
      * @param  string $key
-     * @param  array  $args     the declaration
+     * @param  Field  $args     the declaration
      * @param  string $ns
      * @param  bool   $disabled governed by a constant, or inheriting
      * @param  mixed  $value    what to show; omitted, the install's value
@@ -900,7 +917,7 @@ class SettingsForm {
      * and what any other grouped list would get for free.
      *
      * @param  string $name
-     * @param  array  $options value => label, or group => (value => label)
+     * @param  array<mixed> $options value => label, or group => (value => label)
      * @param  string $current
      * @param  string $off     the disabled attribute, or ''
      * @return string
@@ -960,7 +977,7 @@ class SettingsForm {
      * What a boolean offers. Off and On, in that order, as the screens have
      * always spelled it.
      *
-     * @return array
+     * @return array<int, string> 0 and 1, which PHP makes of the keys '0' and '1'
      */
     protected static function boolOptions() {
 
@@ -974,8 +991,8 @@ class SettingsForm {
      * Both because a declaration should be able to say `array( 'a', 'b' )` when
      * that is all it means.
      *
-     * @param  array $args
-     * @return array
+     * @param  Field $args
+     * @return array<mixed> value => label
      */
     protected static function options( array $args ) {
 
@@ -1000,7 +1017,7 @@ class SettingsForm {
      * require, NOT require_once: a second require_once in the same process
      * answers true instead of the array.
      *
-     * @return array country name => (zone => display name)
+     * @return array<string, array<string, string>> country name => (zone => display name)
      */
     protected static function timezones() {
 
@@ -1049,7 +1066,7 @@ class SettingsForm {
      * and it names what is missing.
      *
      * @param  string $key
-     * @param  array  $args
+     * @param  Field  $args
      * @return string
      */
     protected static function label( $key, array $args ) {
