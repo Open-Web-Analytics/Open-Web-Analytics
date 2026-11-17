@@ -159,6 +159,66 @@ class StateManager {
 	}
 
 	/**
+	 * Whether the browser holds this store's cookie RIGHT NOW.
+	 *
+	 * Reads document.cookie live rather than this.cookies, which is the jar as
+	 * it was when the page loaded; the question is whether the cookie is still
+	 * there. A value that belongs to this cookie domain counts. So does one this
+	 * tracker cannot judge -- written by a newer tracker, or not decodable --
+	 * because the point of asking is never to overwrite something that is there.
+	 * A value stamped for another cookie domain (a parent domain's tracker using
+	 * the same name) does not count: it is not this store.
+	 */
+	isPersistedNow( store_name ) {
+
+		var jar = Util.readAllCookies() || {};
+		var values = jar[ OWA.getSetting( 'ns' ) + store_name ] || [];
+		var hashing = OWA.getSetting( 'hashCookiesToDomain' );
+		var dhash = hashing ? Util.getCookieDomainHash( OWA.getSetting( 'cookie_domain' ) ) : null;
+
+		for ( var i = 0; i < values.length; i++ ) {
+
+			var value;
+
+			try {
+				value = Util.decodeCookieValue( unescape( values[ i ] ) );
+			} catch ( e ) {
+				return true;
+			}
+
+			if ( ! this.canRead( value ) || ! hashing ) {
+				return true;
+			}
+
+			if ( value && typeof value === 'object' && value.cdh == dhash ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Write a store back to its cookie from memory, if the browser no longer
+	 * holds it. Answers whether it wrote.
+	 *
+	 * Only a MISSING cookie is restored. One holding different values was put
+	 * there by something else -- another tab, a newer page -- and is left alone.
+	 * Goes through persist(), so a store that is memory-only or still waiting on
+	 * its session decision is not written by this either.
+	 */
+	restoreIfMissing( store_name ) {
+
+		if ( ! this.isPresent( store_name ) || this.isPersistedNow( store_name ) ) {
+			return false;
+		}
+
+		this.persist( store_name, true );
+
+		return this.isPersistedNow( store_name );
+	}
+
+	/**
 	 * Read one value straight out of the persisted store, without merging
 	 * anything into memory.
 	 *

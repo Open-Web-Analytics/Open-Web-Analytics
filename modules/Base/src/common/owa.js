@@ -156,6 +156,16 @@ class OWA {
     }
 
     /**
+     * Write a store back to its cookie from memory if the browser no longer
+     * holds it. Answers whether it wrote. See StateManager restoreIfMissing().
+     */
+    restoreStateIfMissing( store_name ) {
+
+        this.initializeStateManager();
+        return this.state.restoreIfMissing( store_name );
+    }
+
+    /**
      * Register the state manager's own listeners.
      *
      * Only one is fixed. The rest are subscribed on demand, because which
