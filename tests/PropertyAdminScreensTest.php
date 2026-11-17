@@ -556,6 +556,15 @@ final class PropertyAdminScreensTest extends TestCase
             'view->panels', $wrapper,
             'The hierarchy wrapper renders the settings panels.' );
 
+    }
+
+    /** Each hierarchy screen ends on the hierarchy wrapper, not the settings nav. */
+    public function testTheHierarchyScreensRenderInTheHierarchyWrapper(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'The screens load the Organization from the database.' );
+        }
+
         foreach ( array( 'OrganizationProfile', 'PropertyProfile', 'SitesProfile' ) as $screen ) {
 
             $this->assertSame( 'base.optionsHierarchy',

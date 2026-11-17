@@ -399,7 +399,7 @@ class Cli extends \OWA\Core\AdminController {
     }
 
     /** A byte count as KB, or as MB above one megabyte. */
-    protected function readableSize( $bytes ) {
+    protected static function readableSize( $bytes ) {
 
         return $bytes > 1048576
             ? sprintf( '%.1f MB', $bytes / 1048576 )

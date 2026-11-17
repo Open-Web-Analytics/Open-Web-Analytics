@@ -9,15 +9,12 @@ final class CliReadableSizeTest extends TestCase
 {
     public function testKilobytesThenMegabytes(): void
     {
-        $cli = new class( array() ) extends \OWA\Core\Controller\Cli {
-            public function size( $bytes ) {
-                return $this->readableSize( $bytes );
-            }
-        };
+        // Static, so no command is built: a Cli constructor exits outside cli.php.
+        $size = fn ( $bytes ) => ( new \ReflectionMethod( \OWA\Core\Controller\Cli::class, 'readableSize' ) )->invoke( null, $bytes );
 
-        $this->assertSame( '0 KB', $cli->size( 0 ) );
-        $this->assertSame( '2 KB', $cli->size( 2048 ) );
-        $this->assertSame( '1024 KB', $cli->size( 1048576 ) );
-        $this->assertSame( '1.5 MB', $cli->size( 1572864 ) );
+        $this->assertSame( '0 KB', $size( 0 ) );
+        $this->assertSame( '2 KB', $size( 2048 ) );
+        $this->assertSame( '1024 KB', $size( 1048576 ) );
+        $this->assertSame( '1.5 MB', $size( 1572864 ) );
     }
 }
