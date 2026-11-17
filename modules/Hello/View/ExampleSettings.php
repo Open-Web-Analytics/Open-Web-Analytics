@@ -41,14 +41,18 @@ class ExampleSettings extends \OWA\Core\View {
     }
 
     /**
+     * Names the template. The heading is not set here: Core\View hands every
+     * registered settings page its title as settings_page_title, from
+     * Module::registerSettingsPage(), so the page and its nav link carry the
+     * same name. A value of the view's own goes to the template with
+     * $this->body->set( $name, $value ).
+     *
      * @param  array<string, mixed> $data the view's data, View::$data: name => value
      * @return void
      */
     public function render($data) {
 
-        // load template
         $this->body->setTemplateFile('hello', 'example_settings.php');
-        // assign headline
     }
 
 
