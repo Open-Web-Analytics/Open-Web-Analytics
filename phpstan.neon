@@ -1,10 +1,8 @@
 ########################################################################
-# PHPStan, level 5, over everything OWA ships: Core, every module and
+# PHPStan, level 6, over everything OWA ships: Core, every module and
 # its templates, the REST API and the root entry points. No baseline.
 #
 #   composer phpstan
-#
-# which then runs phpstan.level6.neon: level 6 over the paths typed for it.
 #
 # The entity factory extension (tests/phpstan/) loads through Composer's
 # autoload-dev, so plain `phpstan analyse` finds it after `composer install`.
@@ -16,7 +14,7 @@
 parameters:
     parallel:
         maximumNumberOfProcesses: 1
-    level: 5
+    level: 6
     paths:
         - Core
         - modules
