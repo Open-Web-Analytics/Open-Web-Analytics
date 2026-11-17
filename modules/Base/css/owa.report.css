@@ -128,7 +128,8 @@
 }
 
 /*
- * The period picker (owa.periodpicker.js): a button, and a panel under it.
+ * The period picker (owa.periodpicker.js): a button, and a panel under it,
+ * or above or over it when the window has no room below.
  * Left column: the presets, grouped Relative / Fixed, and the Compare switch
  * with its comparisons. Right: the date fields, then a calendar that scrolls
  * through the months. Under 600px wide the panel is a full-screen sheet.
@@ -168,6 +169,9 @@
     box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
     text-align: left;
 }
+/* Fixed where owa.periodpicker.js puts it (placePanel), so the content box
+   that scrolls round it cannot clip it. */
+.owa_periodPanel.is-placed { position: fixed; right: auto; overflow-y: auto; }
 .owa_periodSheetHead, .owa_periodChips, .owa_periodPhoneCompare { display: none; }
 .owa_periodBody { display: grid; grid-template-columns: 290px minmax(0, 1fr); }
 

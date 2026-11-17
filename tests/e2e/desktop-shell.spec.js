@@ -99,3 +99,56 @@ for (const size of SIZES) {
         }
     });
 }
+
+/**
+ * The date range panel opens in the window, wherever its button is: under the
+ * report title when the head wraps, and beside a nav column that leaves the
+ * content box narrower than the panel. Its four corners are the panel itself,
+ * so nothing clips it or draws over it. A tablet's panel opens the same way;
+ * a phone's is a sheet (mobile-layout.spec.js).
+ */
+const PANEL_SIZES = [
+    { width: 901, height: 700 },
+    { width: 1024, height: 768 },
+    { width: 1440, height: 900 },
+    { width: 820, height: 1180 },
+];
+
+for (const size of PANEL_SIZES) {
+
+    test.describe(`the date range panel at ${size.width}x${size.height}`, () => {
+
+        test.use({ viewport: size });
+
+        for (const id of ['dashboard', 'pages']) {
+
+            test(`opens inside the window on ${id}`, async ({ page }) => {
+                await adminLogin(page);
+                await page.goto(report(id), { waitUntil: 'networkidle' });
+
+                await page.locator('[data-ui="period-trigger"]').click();
+
+                const panel = page.getByRole('dialog', { name: 'Date range' });
+
+                await expect(panel).toBeVisible();
+
+                const box = await panel.boundingBox();
+
+                expect(box.x).toBeGreaterThanOrEqual(0);
+                expect(box.y).toBeGreaterThanOrEqual(0);
+                expect(box.x + box.width).toBeLessThanOrEqual(size.width);
+                expect(box.y + box.height).toBeLessThanOrEqual(size.height);
+
+                const corners = await panel.evaluate((el) => {
+                    const r = el.getBoundingClientRect();
+
+                    return [[r.left + 4, r.top + 4], [r.right - 4, r.top + 4],
+                        [r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4]]
+                        .map(([x, y]) => el.contains(document.elementFromPoint(x, y)));
+                });
+
+                expect(corners).toEqual([true, true, true, true]);
+            });
+        }
+    });
+}
