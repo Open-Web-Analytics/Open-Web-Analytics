@@ -40,10 +40,10 @@ namespace OWA\Module\Base\Classes\Beacon;
  */
 class Compat {
 
-    /** @var array|null the indexed renames, old => new */
+    /** @var array<string, string>|null the indexed renames, old => new */
     private static $renames = null;
 
-    /** @var array|null old event name => current event name */
+    /** @var array<string, string>|null old event name => current event name */
     private static $event_names = null;
 
     /**
@@ -53,7 +53,7 @@ class Compat {
      * the admission gate, the dispatch name, the processor router, the handlers
      * -- sees only current names.
      *
-     * @return array old name => current name
+     * @return array<string, string> old name => current name
      */
     public static function eventNames() {
 
@@ -93,7 +93,7 @@ class Compat {
      * entry may be DELETED, not about how it is applied. Both are the same
      * operation here.
      *
-     * @return array old name => current name
+     * @return array<string, string> old name => current name
      */
     public static function renames() {
 
@@ -114,12 +114,6 @@ class Compat {
         return self::$renames;
     }
 
-    /**
-     * Put the current spelling on the event for anything sent under an old one.
-     *
-     * @param object $event
-     * @return int how many renames were applied, for callers that want to log
-     */
     /**
      * Properties an OLDER beacon generation carries that the current format
      * does not declare.
@@ -148,8 +142,8 @@ class Compat {
      * NOT offer them. That asymmetry is the point: an older beacon may carry
      * one, and nothing in the current vocabulary may be written against one.
      *
-     * @param  array $properties  the regular (client-settable) map
-     * @return array
+     * @param  array<string, array<string, mixed>> $properties  the regular (client-settable) map: property => its definition
+     * @return array<string, array<string, mixed>>
      */
     public static function contributeClientProperties( $properties ) {
 
@@ -175,8 +169,8 @@ class Compat {
      *
      * Same contribution point, the derived map rather than the regular one.
      *
-     * @param  array $properties  the derived map
-     * @return array
+     * @param  array<string, array<string, mixed>> $properties  the derived map: property => its definition
+     * @return array<string, array<string, mixed>>
      */
     public static function contributeDerivedProperties( $properties ) {
 
@@ -214,7 +208,11 @@ class Compat {
         return $properties;
     }
 
-    /** How many slots that generation carried, which is still a setting. */
+    /**
+     * How many slots that generation carried, which is still a setting.
+     *
+     * @return int
+     */
     private static function slotCount() {
 
         return (int) \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
@@ -267,6 +265,12 @@ class Compat {
         return $applied;
     }
 
+    /**
+     * Put the current spelling on the event for anything sent under an old one.
+     *
+     * @param object $event
+     * @return int how many renames were applied, for callers that want to log
+     */
     public static function apply( $event ) {
 
         $applied = 0;
