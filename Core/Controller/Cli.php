@@ -36,7 +36,7 @@ namespace OWA\Core\Controller;
 
 class Cli extends \OWA\Core\AdminController {
 
-    var $is_admin = true;
+    public $is_admin = true;
 
     /** getJobLease() for a command that does not derive its own, in seconds. */
     const DEFAULT_JOB_LEASE = 21600;   // 6 hours
@@ -47,7 +47,7 @@ class Cli extends \OWA\Core\AdminController {
      * @param array $params
      * @return \OWA\Core\Controller
      */
-    function __construct($params) {
+    public function __construct($params) {
 
         if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::CLI ) ) {
 
@@ -226,7 +226,7 @@ class Cli extends \OWA\Core\AdminController {
      *
      * @return mixed
      */
-    function doAction() {
+    public function doAction() {
 
         $data = parent::doAction();
 

@@ -19,7 +19,7 @@ namespace OWA\Core\View;
 
 class Cli extends \OWA\Core\View {
     
-    function pre() {
+    public function pre() {
 	    
 	    $this->t->set_template('wrapper_blank.php');
         $this->body->set_template('msgsCli.php');
@@ -44,7 +44,7 @@ class Cli extends \OWA\Core\View {
     /**
 	 * Sets the data payload of the response
 	 */
-    function setResponseData( $data ) {
+    public function setResponseData( $data ) {
 	    
 	    $this->body->set( 'response_data', $data );
     }

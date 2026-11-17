@@ -37,26 +37,26 @@ class Template extends TemplateEngine {
      *
      * @var array
      */
-    var $config;
+    public $config;
 
-    var $module_local_template_dir;
+    public $module_local_template_dir;
 
-    var $module_template_dir;
+    public $module_template_dir;
 
-    var $e;
+    public $e;
 
-    var $period;
+    public $period;
 
-    var $time_now;
+    public $time_now;
 
     /**
      * Params passed by calling caller
      *
      * @var array
      */
-    var $caller_params;
+    public $caller_params;
 
-    function __construct( $module = null, $caller_params = array() ) {
+    public function __construct( $module = null, $caller_params = array() ) {
 
         $this->caller_params = $caller_params;
 
@@ -75,7 +75,7 @@ class Template extends TemplateEngine {
         $this->time_now = \OWA\Core\Lib::time_now();
     }
 
-    function _setTemplateDir($module) {
+    public function _setTemplateDir($module) {
 
         // set module template dir (on-disk module dir is PascalCase; PSR-4)
         $this->module_template_dir = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $module ) . '/templates/';
@@ -86,7 +86,7 @@ class Template extends TemplateEngine {
         return;
     }
 
-    function getTemplatePath($module, $file) {
+    public function getTemplatePath($module, $file) {
 
         $this->_setTemplateDir($module);
 
@@ -119,7 +119,7 @@ class Template extends TemplateEngine {
      * @depricated
      * @param string $file
      */
-    function set_template($file = null) {
+    public function set_template($file = null) {
 
         if (!$file):
             \OWA\Core\CoreAPI::error('No template file was specified.');
@@ -173,7 +173,7 @@ class Template extends TemplateEngine {
         return (string) $file;
     }
     
-    function setTemplateFile($module, $file) {
+    public function setTemplateFile($module, $file) {
 
         //choose file
         $filepath = $this->getTemplatePath($module, $file);
@@ -191,7 +191,7 @@ class Template extends TemplateEngine {
      * @param string $trailing
      * @return string
      */
-    function truncate ($str, $length=10, $trailing='...')  {
+    public function truncate ($str, $length=10, $trailing='...')  {
 
       return \OWA\Core\Lib::truncate ($str, $length, $trailing);
     }
@@ -264,7 +264,7 @@ class Template extends TemplateEngine {
 
 
 
-    function makeWikiLink( $page ) {
+    public function makeWikiLink( $page ) {
 
         return sprintf( '%s/%s', $this->config['wiki_url'], $page );
     }
@@ -288,12 +288,12 @@ class Template extends TemplateEngine {
      * @param string $key
      * @return string
      */
-    function configFileConstantFor( $module, $key ) {
+    public function configFileConstantFor( $module, $key ) {
 
         return \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( $module, $key );
     }
 
-    function makeParamString($params = array(), $add_state = false, $format = 'query', $namespace = true) {
+    public function makeParamString($params = array(), $add_state = false, $format = 'query', $namespace = true) {
 
         $all_params = array();
 
@@ -348,7 +348,7 @@ class Template extends TemplateEngine {
 
     }
 
-    function getAllStateParams() {
+    public function getAllStateParams() {
 
         $all_params = array();
 
@@ -381,7 +381,7 @@ class Template extends TemplateEngine {
      *                                    keys of it to add (array( 'propertyId' ))
      * @return string
      */
-    function makeLink($params = array(), $add_state = false, $url = '', $xml = false, $add_nonce = false) {
+    public function makeLink($params = array(), $add_state = false, $url = '', $xml = false, $add_nonce = false) {
 
         $all_params = array();
 
@@ -454,7 +454,7 @@ class Template extends TemplateEngine {
 
     }
 
-    function escapeForXml($string) {
+    public function escapeForXml($string) {
 
         $string = str_replace(array('&', '"', "'", '<', '>' ), array('&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'), $string);
         // removes non-ascii chars
@@ -462,7 +462,7 @@ class Template extends TemplateEngine {
         return $string;
     }
 
-    function makeAbsoluteLink($params = array(), $add_state = false, $url = '', $xml = false) {
+    public function makeAbsoluteLink($params = array(), $add_state = false, $url = '', $xml = false) {
 
         if (empty($url)):
             $url = $this->config['main_absolute_url'];
@@ -517,7 +517,7 @@ class Template extends TemplateEngine {
      * @param    string    $resourceKey    which param names the resource
      * @return    string
      */
-    function makeOverlayApiLink( $params, $resourceKey ) {
+    public function makeOverlayApiLink( $params, $resourceKey ) {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
 
@@ -559,7 +559,7 @@ class Template extends TemplateEngine {
      *
      * @param string $method GET, POST, DELETE, ...
      */
-    function makeApiLink($params = array(), $add_state = false, $method = 'GET') {
+    public function makeApiLink($params = array(), $add_state = false, $method = 'GET') {
 
         $url = $this->config['rest_api_url'];
 
@@ -568,7 +568,7 @@ class Template extends TemplateEngine {
         return $this->makeLink($params, $add_state, $url);
     }
 
-    function makeImageLink($path, $absolute = false) {
+    public function makeImageLink($path, $absolute = false) {
 
         // Server-rendered images live in the public/ asset tree (the build copies
         // base/i/ -> public/base/i/), NOT the module source tree -- modules_url is
@@ -617,7 +617,7 @@ class Template extends TemplateEngine {
      * @param bool $absolute
      * @return string|false
      */
-    function makeImageLinkIfPresent( $path, $absolute = false ) {
+    public function makeImageLinkIfPresent( $path, $absolute = false ) {
 
         if ( ! $path || ! self::assetsAreBuilt() ) {
 
@@ -642,7 +642,7 @@ class Template extends TemplateEngine {
     }
 
 
-    function setTemplate($file) {
+    public function setTemplate($file) {
 
         $this->set_template($file);
         return $this->file;
@@ -685,7 +685,7 @@ class Template extends TemplateEngine {
      * One bug goes with it: an empty array used to return '}' on its own, since
      * substr('{', 0, -2) is ''. It now returns '{}'.
      */
-    function makeJson($array) {
+    public function makeJson($array) {
 
         $reserved_words = \OWA\Core\CoreAPI::getSetting('base', 'reserved_words');
 
@@ -719,14 +719,14 @@ class Template extends TemplateEngine {
             JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_FORCE_OBJECT );
     }
 
-    function headerActions() {
+    public function headerActions() {
 
         return;
     }
 
 
 
-    function makePaginationFromResultSet($pagination, $map = array(), $add_state = true, $template = '') {
+    public function makePaginationFromResultSet($pagination, $map = array(), $add_state = true, $template = '') {
 
         $pages = '';
         //print_r($pagination);
@@ -769,7 +769,7 @@ class Template extends TemplateEngine {
         return $pages;
     }
 
-    function get($name) {
+    public function get($name) {
 
         if (array_key_exists($name, $this->vars)) {
             return $this->vars[$name];
@@ -779,7 +779,7 @@ class Template extends TemplateEngine {
 
     }
 
-    function getValue( $key, $var) {
+    public function getValue( $key, $var) {
 
         if ( isset( $var ) && is_array( $var ) ) {
             if ( array_key_exists( $key, $var) ) {
@@ -1145,7 +1145,7 @@ class Template extends TemplateEngine {
      * @param     string    $action the action that the nonce should be tied to.
      * @return    string The html fragment
      */
-    function createNonceFormField($action) {
+    public function createNonceFormField($action) {
 
         return sprintf(
                 '<input type="hidden" name="nonce" value="%s">',
@@ -1165,7 +1165,7 @@ class Template extends TemplateEngine {
      * @param string $language the label in the box's top bar
      * @return string HTML
      */
-    function codeBlock( $code, $language = 'HTML' ) {
+    public function codeBlock( $code, $language = 'HTML' ) {
 
         $e = function ( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES, 'UTF-8' ); };
 
@@ -1186,7 +1186,7 @@ class Template extends TemplateEngine {
      * @param    string    $output        The String to be output into the template
      * @param    bool    $sanitize    Flag that will sanitize the output for display
      */
-    function out($output, $sanitize = true, $decode_special_entities = false) {
+    public function out($output, $sanitize = true, $decode_special_entities = false) {
 
         if ( $sanitize ) {
             $output = $this->escape($output);
@@ -1237,7 +1237,7 @@ class Template extends TemplateEngine {
      * @param string $text      the sentence, from CoreAPI::t() or tn()
      * @param string ...$markup HTML for its placeholders, in order
      */
-    function outMarkup( $text, ...$markup ) {
+    public function outMarkup( $text, ...$markup ) {
 
         echo vsprintf( $this->escape( (string) $text ), array_map( 'strval', $markup ) );
     }
@@ -1260,7 +1260,7 @@ class Template extends TemplateEngine {
      * @param string $url  the URL to emit
      * @param bool   $echo when true (default) echo the value, else return it
      */
-    function safeHref( $url, $echo = true ) {
+    public function safeHref( $url, $echo = true ) {
 
         $safe = \OWA\Module\Base\Classes\Sanitize::sanitizeHref( $url );
         $safe = $this->escape( $safe );
@@ -1272,11 +1272,11 @@ class Template extends TemplateEngine {
         return $safe;
     }
 
-    function formatCurrency($value) {
+    public function formatCurrency($value) {
         return \OWA\Core\Lib::formatCurrency( $value, \OWA\Core\CoreAPI::getSetting( 'base', 'currencyLocal' ), \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' ) );
     }
 
-    function getCurrentUser() {
+    public function getCurrentUser() {
 
         return \OWA\Core\CoreAPI::getCurrentUser();
     }

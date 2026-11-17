@@ -33,20 +33,20 @@ namespace OWA\Core\Validation;
  class Validation {
  	 
  	 // name of param being validated.
- 	 var $name;
+ 	 public $name;
      // hold config
-     var $conf;
+     public $conf;
 
      // hold values to validate
-     var $values;
+     public $values;
 
-     var $hasError;
+     public $hasError;
 
-     var $errorMsg;
+     public $errorMsg;
 
-     var $errorMsgTemplate;
+     public $errorMsgTemplate;
 
-     function __construct($conf = array()) {
+     public function __construct($conf = array()) {
 
          if (array_key_exists('errorMsgTemplate', $conf)) {
              $this->errorMsgTemplate = $conf['errorMsgTemplate'];
@@ -60,31 +60,31 @@ namespace OWA\Core\Validation;
 
      }
 	 
-	 function setName( $name ) {
+	 public function setName( $name ) {
 		 
 	 	$this->name = $name;	
 	 }
 	 
-	 function getName() {
+	 public function getName() {
 		 
 		 return $this->name;
 	 }
 	 
-     function validate() {
+     public function validate() {
 
          return false;
      }
 
-     function getErrorMsg() {
+     public function getErrorMsg() {
 
          return $this->errorMsg;
      }
 
-     function setErrorMessage($msg) {
+     public function setErrorMessage($msg) {
          $this->errorMsg = $msg;
      }
 
-     function isValid() {
+     public function isValid() {
 
          if ($this->hasError == true):
              return false;
@@ -93,32 +93,32 @@ namespace OWA\Core\Validation;
          endif;
      }
 
-     function setConfigArray($array) {
+     public function setConfigArray($array) {
 
          $this->conf = $array;
          return;
      }
 
-     function getConfig($name) {
+     public function getConfig($name) {
 
          if (isset( $this->conf[$name] ) ) {
              return $this->conf[$name];
          }
      }
 
-     function setValues($values) {
+     public function setValues($values) {
 
          $this->values = $values;
          return;
      }
 
-     function getValues() {
+     public function getValues() {
 
          return $this->values;
 
      }
 
-     function hasError() {
+     public function hasError() {
 
          $this->hasError = true;
          return;

@@ -20,17 +20,17 @@ namespace OWA\Core\View;
 class Mail extends \OWA\Core\View {
 
     // post office
-    var $po;
-    var $postProcessView = true;
+    public $po;
+    public $postProcessView = true;
 
-    function __construct() {
+    public function __construct() {
 
         // make this a service
         $this->po = new \OWA\Module\Base\Classes\Mailer;
         parent::__construct();
     }
 
-    function postProcess() {
+    public function postProcess() {
 
         $this->po->setHtmlBody( $this->t->fetch() );
 
@@ -41,7 +41,7 @@ class Mail extends \OWA\Core\View {
         return $this->po->sendMail();
     }
 
-    function setMailSubject($sbj) {
+    public function setMailSubject($sbj) {
 
         $this->po->setSubject( $sbj );
     }
@@ -53,7 +53,7 @@ class Mail extends \OWA\Core\View {
      *
      * @return int how many were added
      */
-    function addMailToAddress($email, $name = '') {
+    public function addMailToAddress($email, $name = '') {
 
         $added     = 0;
         $addresses = array_values( array_filter( array_map( 'trim', explode( ',', (string) $email ) ), static fn ( $address ) => $address !== '' ) );

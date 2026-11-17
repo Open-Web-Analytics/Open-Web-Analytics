@@ -24,7 +24,7 @@ namespace OWA\Core\View;
  */
 class RestApi extends \OWA\Core\View {
 	
-	function __construct() {
+	public function __construct() {
 	 	
 	 	parent::__construct();
 	 	
@@ -39,7 +39,7 @@ class RestApi extends \OWA\Core\View {
 	 * abstract view to worry about or have ot deal with.
 	 *
 	 */
-    function pre() {
+    public function pre() {
 
         // The response is JSON. It was optionally JSONP -- the same body wrapped
         // in a caller-named function so it could be loaded with a <script> tag,
@@ -91,7 +91,7 @@ class RestApi extends \OWA\Core\View {
     }
     
     /** The response's data: the value of the key a controller named with restResponse(). */
-    function render() {
+    public function render() {
 
         if ( ! empty( $this->data['response_key'] ) ) {
 
@@ -102,7 +102,7 @@ class RestApi extends \OWA\Core\View {
     /**
 	 * Sets the data payload of the response
 	 */
-    function setResponseData( $data ) {
+    public function setResponseData( $data ) {
 
 	    $this->body->set( 'response_data', self::toResponseData( $data ) );
     }
@@ -311,7 +311,7 @@ class RestApi extends \OWA\Core\View {
         return null;
     }
 
-    function addCorsHeaders() {
+    public function addCorsHeaders() {
 
 	    $s = \OWA\Core\CoreAPI::serviceSingleton();
 	    $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');

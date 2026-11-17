@@ -37,38 +37,38 @@ class Auth extends \OWA\Core\Base {
      *
      * @var mixed
      */
-    var $u;
+    public $u;
 
     /**
      * Array of permission roles that users can have
      *
      * @var array
      */
-    var $roles;
+    public $roles;
 
-    var $status_msg;
+    public $status_msg;
 
     /**
      * Login credentials
      *
      * @var array
      */
-    var $credentials = array();
+    public $credentials = array();
 
     /**
      * Status of Authentication
      *
      * @var boolean
      */
-    var $auth_status = false;
+    public $auth_status = false;
 
-    var $_is_user = false;
+    public $_is_user = false;
 
-    var $params;
+    public $params;
 
-    var $auth_method;
+    public $auth_method;
 
-    var $eq;
+    public $eq;
 
     /**
      * How long a session cookie is valid from when it is issued, in seconds.
@@ -117,7 +117,7 @@ class Auth extends \OWA\Core\Base {
      *
      * @return \OWA\Core\Auth
      */
-    function __construct() {
+    public function __construct() {
 
         // register auth cookies
         \OWA\Core\CoreAPI::registerStateStore('u', time()+3600*24*365*10, '', '', 'cookie');
@@ -140,7 +140,7 @@ class Auth extends \OWA\Core\Base {
      *
      * @param string[]|null $methods login_form, overlay_token, app_password, cookies
      */
-    function authenticateUser( $methods = null ) {
+    public function authenticateUser( $methods = null ) {
 
         $accepts = function ( $method ) use ( $methods ) {
 
@@ -246,7 +246,7 @@ class Auth extends \OWA\Core\Base {
      * @param    string    $token
      * @return    boolean
      */
-    function authByOverlayToken( $token ) {
+    public function authByOverlayToken( $token ) {
 
         $action = self::routedAction();
 
@@ -355,7 +355,7 @@ class Auth extends \OWA\Core\Base {
      * @param  string|null $user_id the Basic auth user, which must be the password's own
      * @return bool
      */
-    function authByAppPassword( $token, $user_id = null ) {
+    public function authByAppPassword( $token, $user_id = null ) {
 
         if ( ! \OWA\Core\CoreAPI::getSetting( 'base', 'app_passwords_enabled' ) ) {
 
@@ -447,7 +447,7 @@ class Auth extends \OWA\Core\Base {
      * so a session ends between SESSION_REFRESH_BELOW and SESSION_LIFETIME
      * after its last request, not at a fixed time after its sign-in.
      */
-    function authByCookies($user_id, $credential) {
+    public function authByCookies($user_id, $credential) {
 
         // set credentials
         $this->credentials['user_id'] = \OWA\Module\Base\Classes\Sanitize::cleanUserId( $user_id );
@@ -475,7 +475,7 @@ class Auth extends \OWA\Core\Base {
         }
     }
 
-    function authByInput($user_id, $password) {
+    public function authByInput($user_id, $password) {
 
         // set credentials
         $this->credentials['user_id'] = \OWA\Module\Base\Classes\Sanitize::cleanUserId( $user_id );
@@ -497,7 +497,7 @@ class Auth extends \OWA\Core\Base {
      * @param mixed $key
      * @return bool
      */
-    function authenticateUserTempPasskey( $key ) {
+    public function authenticateUserTempPasskey( $key ) {
 
         // Only a current key finds its account: an expired one, or one minted
         // before keys expired, sets nothing (User::TEMP_PASSKEY_PATTERN).
@@ -532,7 +532,7 @@ class Auth extends \OWA\Core\Base {
      * injected into any OWA page would have the account. Secure on an HTTPS
      * request (Lib::isHttps()).
      */
-    function saveCredentials() {
+    public function saveCredentials() {
 
         \OWA\Core\CoreAPI::debug('saving user credentials to cookies');
 
@@ -568,18 +568,18 @@ class Auth extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function deleteCredentials() {
+    public function deleteCredentials() {
 
         return \OWA\Core\CoreAPI::clearState('p');
     }
 
-    function encryptOldPassword($password) {
+    public function encryptOldPassword($password) {
 
         return \OWA\Core\Lib::encryptOldPassword($password);
 
     }
 
-    function getUser() {
+    public function getUser() {
 
         // fetch user object from the db
         \OWA\Core\CoreAPI::debug('auth get user: '. $this->credentials['user_id'] );
@@ -596,7 +596,7 @@ class Auth extends \OWA\Core\Base {
      */
     const LEGACY_GENERATED_PASSWORD = '/^(\\$2[aby]?\\$\\d\\d|\\$argon)$/';
 
-    static function isLegacyGeneratedPassword( $password ) {
+    public static function isLegacyGeneratedPassword( $password ) {
 
         return is_string( $password ) && preg_match( self::LEGACY_GENERATED_PASSWORD, $password ) === 1;
     }
@@ -607,7 +607,7 @@ class Auth extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function isUser() {
+    public function isUser() {
 
         // get current user
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
@@ -692,7 +692,7 @@ class Auth extends \OWA\Core\Base {
      * @param int    $expires unix timestamp
      * @return string
      */
-    static function sessionCredential( $user_id, $session_epoch, $password_hash, $expires ) {
+    public static function sessionCredential( $user_id, $session_epoch, $password_hash, $expires ) {
 
         $expires = (int) $expires;
 
@@ -718,7 +718,7 @@ class Auth extends \OWA\Core\Base {
      * @param mixed $credential
      * @return int|null
      */
-    static function sessionCredentialExpiry( $credential ) {
+    public static function sessionCredentialExpiry( $credential ) {
 
         if ( ! is_string( $credential ) || ! preg_match( self::SESSION_CREDENTIAL_PATTERN, $credential, $m ) ) {
 
@@ -739,7 +739,7 @@ class Auth extends \OWA\Core\Base {
      * @param int|null $now
      * @return bool
      */
-    static function isValidSessionCredential( $credential, $user_id, $session_epoch, $password_hash, $now = null ) {
+    public static function isValidSessionCredential( $credential, $user_id, $session_epoch, $password_hash, $now = null ) {
 
         $expires = self::sessionCredentialExpiry( $credential );
 
@@ -761,7 +761,7 @@ class Auth extends \OWA\Core\Base {
      * @param int|null $now
      * @return bool
      */
-    static function sessionCredentialNeedsRefresh( $credential, $now = null ) {
+    public static function sessionCredentialNeedsRefresh( $credential, $now = null ) {
 
         $expires = self::sessionCredentialExpiry( $credential );
 

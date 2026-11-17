@@ -38,7 +38,7 @@ namespace OWA\Core\Validation;
  */
 class DateRange extends \OWA\Core\Validation\Validation {
 
-    function validate() {
+    public function validate() {
 
         $error = \OWA\Module\Base\Classes\TimePeriod::getRangeError(
             (array) $this->getValues() );

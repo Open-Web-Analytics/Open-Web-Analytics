@@ -42,7 +42,7 @@ namespace OWA\Core;
 
 class AdminController extends \OWA\Core\Controller {
     
-    var $is_admin = true;
+    public $is_admin = true;
 
     /**
      * The session cookies, unless the controller declares otherwise.
@@ -59,7 +59,7 @@ class AdminController extends \OWA\Core\Controller {
      *
      * @return string[]|null
      */
-    function acceptedAuthMethods() {
+    public function acceptedAuthMethods() {
 
         if ( $this->auth_methods !== null
              || ! \OWA\Core\RequestType::isWebApp() ) {

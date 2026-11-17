@@ -37,7 +37,7 @@ class Observer extends \OWA\Core\Base {
      *
      * @var array
      */
-    var $m;
+    public $m;
 
     /**
      * Run an action with this event as its `event` parameter.
@@ -45,7 +45,7 @@ class Observer extends \OWA\Core\Base {
      * @param string $action
      * @return mixed
      */
-    function handleEvent( $action ) {
+    public function handleEvent( $action ) {
 
         \OWA\Core\CoreAPI::performAction( $action, array( 'event' => $this->m ) );
 
@@ -61,7 +61,7 @@ class Observer extends \OWA\Core\Base {
      * @param string $msg
      * @return bool whether the transport accepted it
      */
-    function sendMail( $email_address, $subject, $msg ) {
+    public function sendMail( $email_address, $subject, $msg ) {
 
         $mailer = $this->mailer();
         $mailer->setSubject( (string) $subject );

@@ -42,7 +42,7 @@ class Update extends \OWA\Core\Base {
      *
      * @var string
      */
-    var $module_name;
+    public $module_name;
 
     /**
      * Schema Version Number
@@ -57,9 +57,9 @@ class Update extends \OWA\Core\Base {
      *
      * @var integer
      */
-    var $schema_version;
+    public $schema_version;
 
-    var $is_cli_mode_required = false;
+    public $is_cli_mode_required = false;
 
     /**
      * Set by an update that stops for the operator rather than failing: a
@@ -69,7 +69,7 @@ class Update extends \OWA\Core\Base {
      *
      * @var string
      */
-    var $awaiting = '';
+    public $awaiting = '';
 
     /**
      * Tables to use instead of the install's, by the key tableFor() is given.
@@ -79,7 +79,7 @@ class Update extends \OWA\Core\Base {
      */
     public $tables = array();
 
-    function isCliModeRequired() {
+    public function isCliModeRequired() {
 
         return $this->is_cli_mode_required;
     }
@@ -112,7 +112,7 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function apply($force = false) {
+    public function apply($force = false) {
 
         // check for schema version. abort if not present or else updates will get out of sync.
         if (empty($this->schema_version)) {
@@ -206,9 +206,9 @@ class Update extends \OWA\Core\Base {
      *
      * @var string
      */
-    var $down_does_not_restore = '';
+    public $down_does_not_restore = '';
 
-    function rollback() {
+    public function rollback() {
 
         $current_version = $this->c->get( $this->module_name, 'schema_version' );
 
@@ -261,7 +261,7 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function pre() {
+    public function pre() {
 
         return true;
     }
@@ -271,7 +271,7 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function post() {
+    public function post() {
 
         return true;
     }
@@ -375,7 +375,7 @@ class Update extends \OWA\Core\Base {
         return $entity->dropColumn( $column ) !== false;
     }
 
-    function up( $force = false ) {
+    public function up( $force = false ) {
 
         return false;
     }
@@ -385,7 +385,7 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function down() {
+    public function down() {
 
         return false;
     }

@@ -32,7 +32,7 @@ namespace OWA\Core\Validation;
  
  class EmailAddress extends \OWA\Core\Validation\Validation {
      
-     function validate() {
+     public function validate() {
          
          $error = $this->getErrorMsg();
          

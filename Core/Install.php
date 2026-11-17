@@ -37,21 +37,21 @@ class Install extends \OWA\Core\Base{
      *
      * @var object
      */
-    var $db;
+    public $db;
 
     /**
      * Version of string
      *
      * @var string
      */
-    var $version;
+    public $version;
 
     /**
      * Params array
      *
      * @var array
      */
-    var $params;
+    public $params;
 
     /**
      * Constructor
@@ -59,7 +59,7 @@ class Install extends \OWA\Core\Base{
      * @return \OWA\Core\Install
      */
 
-    function __construct() {
+    public function __construct() {
 
         parent::__construct();
         $this->db = \OWA\Core\CoreAPI::dbSingleton();

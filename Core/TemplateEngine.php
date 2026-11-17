@@ -42,28 +42,28 @@ class TemplateEngine {
      *
      * @var string
      */
-    var $template_dir;
+    public $template_dir;
 
     /**
      * Template Variables
      *
      * @var array
      */
-    var $vars = array();
+    public $vars = array();
 
     /**
      * Template file, null until one is set
      *
      * @var string|null
      */
-    var $file;
+    public $file;
 
     /**
      * Constructor
      *
      * @access public
      */
-    function __construct() {
+    public function __construct() {
 
     }
 
@@ -72,7 +72,7 @@ class TemplateEngine {
      *
      * @param string $file
      */
-    function set_template($file = null) {
+    public function set_template($file = null) {
         $this->file = $this->template_dir.$file;
         return;
     }
@@ -84,7 +84,7 @@ class TemplateEngine {
      * @param mixed $value
      * @access public
      */
-    function set($name, $value) {
+    public function set($name, $value) {
 
         if (is_object($value)) {
             if ($value instanceof $this) {
@@ -103,7 +103,7 @@ class TemplateEngine {
      * @return string $contents
      * @access public
      */
-    function fetch($file = null) {
+    public function fetch($file = null) {
         if(!$file):
              $__owa_template_file = $this->file;
         else:

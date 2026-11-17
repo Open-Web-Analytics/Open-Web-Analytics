@@ -40,7 +40,7 @@ class Mysql extends \OWA\Core\Db {
      */
     protected $connect_failed = false;
 
-    function connect() {
+    public function connect() {
 
         if ( $this->connect_failed ) {
 
@@ -167,7 +167,7 @@ class Mysql extends \OWA\Core\Db {
      * @access     public
      *
      */
-    function query( $sql, array $params = array() ) {
+    public function query( $sql, array $params = array() ) {
   
           if ( $this->connection_status == false) {
 
@@ -241,7 +241,7 @@ class Mysql extends \OWA\Core\Db {
         return $this->new_result;
     }
 
-    function close() {
+    public function close() {
 
         // mysqli_close() on a handle that is already closed raises an Error in
         // PHP 8, and @ cannot suppress an Error. Db::__destruct() closes when
@@ -274,7 +274,7 @@ class Mysql extends \OWA\Core\Db {
      * @param  array  $params
      * @return \Generator
      */
-    function get_result_iterator( $sql, array $params = array() ) {
+    public function get_result_iterator( $sql, array $params = array() ) {
 
         if ( $sql ) {
 
@@ -304,7 +304,7 @@ class Mysql extends \OWA\Core\Db {
      * @return     array|null
      * @access  public
      */
-    function get_results( $sql, array $params = array() ) {
+    public function get_results( $sql, array $params = array() ) {
 
         if ( $sql ) {
 
@@ -345,7 +345,7 @@ class Mysql extends \OWA\Core\Db {
      * @param string $sql
      * @return array|null
      */
-    function get_row($sql, array $params = array()) {
+    public function get_row($sql, array $params = array()) {
 
         $result = $this->query($sql, $params);
 
@@ -412,7 +412,7 @@ class Mysql extends \OWA\Core\Db {
      * @param string $string
      * @return string
      */
-    function prepare( $string ) {
+    public function prepare( $string ) {
         if(is_null($string)){
             return $string;
         }
@@ -504,7 +504,7 @@ class Mysql extends \OWA\Core\Db {
         return $result;
     }
 
-    function getAffectedRows() {
+    public function getAffectedRows() {
 
         // A bound statement's affected-row count is captured at execute time
         // (see executeBound) because the statement handle is closed immediately;

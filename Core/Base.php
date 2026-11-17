@@ -41,40 +41,40 @@ class Base {
      *
      * @var array
      */
-    var $config;
+    public $config;
 
     /**
      * Error Logger
      *
      * @var object
      */
-    var $e;
+    public $e;
 
     /**
      * Configuration Entity
      *
      * @var \OWA\Module\Base\Classes\Settings  Object global configuration object
      */
-    var $c;
+    public $c;
 
     /**
      * Module that this class belongs to
      *
      * @var string
      */
-    var $module;
+    public $module;
 
     /**
      * Request Params
      *
      * @var array
      */
-    var $params;
+    public $params;
 
     /**
      * Base Constructor
      */
-    function __construct() {
+    public function __construct() {
         // Nothing is fetched here on purpose. Unsetting these declared
         // properties is what routes the first read of each through __get below,
         // which is where they are actually built. See that method for why.
@@ -151,7 +151,7 @@ class Base {
      * @param array $substitutions
      * @return array
      */
-    function getMsg($code, $substitutions = []) {
+    public function getMsg($code, $substitutions = []) {
 
         static $_owa_messages;
 

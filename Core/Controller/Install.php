@@ -34,9 +34,9 @@ namespace OWA\Core\Controller;
 
 class Install extends \OWA\Core\Controller {
 
-    var $im;
+    public $im;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
         
         
         // needed just in case a re-install happens and updates are also needed.
@@ -62,7 +62,7 @@ class Install extends \OWA\Core\Controller {
      * after install, anyone could still open the install screens, and post
      * base.installBase -- which re-ran the schema install and added a site.
      */
-    function doAction() {
+    public function doAction() {
 
         if ( $this->isInstallComplete() ) {
 
@@ -76,27 +76,27 @@ class Install extends \OWA\Core\Controller {
         return parent::doAction();
     }
 
-    function installSchema() {
+    public function installSchema() {
         
         return $this->im->installSchema();
     }
 
-    function createAdminUser( $user_id, $email_address, $password = '' ) {
+    public function createAdminUser( $user_id, $email_address, $password = '' ) {
 
         return $this->im->createAdminUser( $user_id, $email_address, $password );
     }
 
-    function createDefaultSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
+    public function createDefaultSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
         
         return $this->im->createDefaultSite( $domain, $name, $description, $site_family, $site_id );
     }
 
-    function checkDbConnection() {
+    public function checkDbConnection() {
         
         return $this->im->checkDbConnection();
     }
     
-    function isInstallComplete() {
+    public function isInstallComplete() {
 	    
 	    return $this->im->isInstallComplete();
     }

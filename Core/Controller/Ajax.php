@@ -24,14 +24,14 @@ namespace OWA\Core\Controller;
  */
 class Ajax extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
         $this->setNonceRequired();
     }
 
-    function doAction() {
+    public function doAction() {
 
         if ( \OWA\Core\CoreAPI::serviceSingleton()->request->getRequestType() !== 'POST' ) {
 
@@ -61,7 +61,7 @@ class Ajax extends \OWA\Core\AdminController {
         return $this->data;
     }
 
-    function notAuthenticatedAction() {
+    public function notAuthenticatedAction() {
 
         if ( \OWA\Core\Auth::get_instance()->refusedLegacyApiKey() ) {
 
@@ -71,7 +71,7 @@ class Ajax extends \OWA\Core\AdminController {
         return $this->answer( 401, \OWA\Core\CoreAPI::t( 'You are signed out. Sign in again and retry.' ) );
     }
 
-    function nonceFailedAction() {
+    public function nonceFailedAction() {
 
         if ( ! \OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated() ) {
 
@@ -81,18 +81,18 @@ class Ajax extends \OWA\Core\AdminController {
         return $this->answer( 403, $this->getMsg( 2005 )['message'] );
     }
 
-    function authenticatedButNotCapableAction( $additionalMessage = '' ) {
+    public function authenticatedButNotCapableAction( $additionalMessage = '' ) {
 
         return $this->answer( 403, $this->getMsg( 2003 )['message'] );
     }
 
-    function updateAction() {
+    public function updateAction() {
 
         return $this->answer( 503, \OWA\Core\CoreAPI::t( 'Cannot perform action. OWA Updates required.' ) );
     }
 
     /** The first validation message. */
-    function errorAction() {
+    public function errorAction() {
 
         // Controller::get() reads request params, not data.
         $messages = array_values( array_filter( (array) ( $this->data['validation_errors'] ?? array() ), 'is_string' ) );

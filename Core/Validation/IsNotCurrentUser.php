@@ -32,7 +32,7 @@ namespace OWA\Core\Validation;
  
 class IsNotCurrentUser extends \OWA\Core\Validation\Validation {
      
-     function validate() {
+     public function validate() {
          
          $value = $this->getValues();
          $cu = \OWA\Core\CoreAPI::getCurrentUser();

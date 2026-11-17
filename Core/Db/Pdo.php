@@ -84,7 +84,7 @@ abstract class Pdo extends \OWA\Core\Db
      */
     abstract protected function sessionSqlMode();
 
-    function connect() {
+    public function connect() {
 
         if ( $this->connect_failed ) {
 
@@ -166,7 +166,7 @@ abstract class Pdo extends \OWA\Core\Db
      * @param string $sql
      * @return \PDOStatement|false
      */
-    function query( $sql, array $params = array() ) {
+    public function query( $sql, array $params = array() ) {
 
         if ( $this->connection_status == false ) {
 
@@ -287,7 +287,7 @@ abstract class Pdo extends \OWA\Core\Db
         return $this->new_result;
     }
 
-    function close() {
+    public function close() {
 
         // PDO closes on refcount drop; there is no explicit close. Clearing the
         // handle is the close, and it must also clear the latch so a later
@@ -309,7 +309,7 @@ abstract class Pdo extends \OWA\Core\Db
      * @param string $sql
      * @return array|null
      */
-    function get_results( $sql, array $params = array() ) {
+    public function get_results( $sql, array $params = array() ) {
 
         if ( $sql ) {
 
@@ -355,7 +355,7 @@ abstract class Pdo extends \OWA\Core\Db
      * @param  array  $params
      * @return \Generator
      */
-    function get_result_iterator( $sql, array $params = array() ) {
+    public function get_result_iterator( $sql, array $params = array() ) {
 
         if ( $sql ) {
 
@@ -380,7 +380,7 @@ abstract class Pdo extends \OWA\Core\Db
      * @param string $sql
      * @return array|null
      */
-    function get_row( $sql, array $params = array() ) {
+    public function get_row( $sql, array $params = array() ) {
 
         $result = $this->query( $sql, $params );
 
@@ -404,7 +404,7 @@ abstract class Pdo extends \OWA\Core\Db
      * @param string $string
      * @return string
      */
-    function prepare( $string ) {
+    public function prepare( $string ) {
 
         if ( is_null( $string ) ) {
 
@@ -509,7 +509,7 @@ abstract class Pdo extends \OWA\Core\Db
         return \PDO::PARAM_STR;
     }
 
-    function getAffectedRows() {
+    public function getAffectedRows() {
 
         return $this->last_statement instanceof \PDOStatement
             ? $this->last_statement->rowCount()

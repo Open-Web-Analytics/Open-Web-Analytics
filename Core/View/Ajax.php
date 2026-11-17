@@ -9,7 +9,7 @@ namespace OWA\Core\View;
  */
 class Ajax extends \OWA\Core\View {
 
-    function render() {
+    public function render() {
 
         $this->t->set_template( 'wrapper_blank.php' );
         $this->body->set_template( 'json.php' );

@@ -40,21 +40,21 @@ abstract class Module {
      *
      * @var string
      */
-    var $name;
+    public $name;
 
     /**
      * Description of Module
      *
      * @var string
      */
-    var $description;
+    public $description;
 
     /**
      * Version of Module
      *
      * @var string
      */
-    var $version;
+    public $version;
 
     /**
      * Schema Version of Module
@@ -68,14 +68,14 @@ abstract class Module {
      *
      * @var string
      */
-    var $author;
+    public $author;
 
     /**
      * name used in display situations
      *
      * @var mixed
      */
-    var $display_name;
+    public $display_name;
 
     /**
      * Array of link information for admin panels that this module implements.
@@ -95,14 +95,14 @@ abstract class Module {
      */
     const FACT_ENTITY = 'base.event';
 
-    var $admin_panels;
+    public $admin_panels;
 
     /**
      * Array of navigation links that this module implements
      *
      * @var array
      */
-    var $nav_links;
+    public $nav_links;
 
     /**
      * Whether registerReports() has run for this module this request.
@@ -119,7 +119,7 @@ abstract class Module {
      *
      * @var mixed
      */
-    var $metrics;
+    public $metrics;
 
     /**
      * The Module Group that the module belongs to.
@@ -128,28 +128,28 @@ abstract class Module {
      *
      * @var string
      */
-    var $group;
+    public $group;
 
     /**
      * Array of Entities that are implmented by the module
      *
      * @var array
      */
-    var $entities = array();
+    public $entities = array();
 
     /**
      * Required Schema Version
      *
      * @var int
      */
-    var $required_schema_version;
+    public $required_schema_version;
 
     /**
      * Available Updates
      *
      * @var array
      */
-    var $updates = array();
+    public $updates = array();
 
     /**
      * Event Processors Map
@@ -162,30 +162,30 @@ abstract class Module {
      *
      * @var string
      */
-    var $update_awaiting = '';
+    public $update_awaiting = '';
 
-    var $event_processors = array();
+    public $event_processors = array();
 
     /**
      * Dimensions, name => entity => registration
      *
      * @var array
      */
-    var $denormalizedDimensions = array();
+    public $denormalizedDimensions = array();
 
     /**
      * cli_commands
      *
      * @var array
      */
-    var $cli_commands = array();
+    public $cli_commands = array();
 
     /**
      * Scheduled jobs this module contributes, keyed by job name.
      *
      * @var array
      */
-    var $scheduled_jobs = array();
+    public $scheduled_jobs = array();
 
     /**
      * Update from CLI Required flag
@@ -195,21 +195,21 @@ abstract class Module {
      *
      * @var boolean
      */
-    var $update_from_cli_required;
+    public $update_from_cli_required;
     
     /**
 	 * Filesystem path of the module's directory
 	 */
-    var $path;
+    public $path;
 
-	var $config_required;
+	public $config_required;
 
     /**
      * Constructor
      *
      *
      */
-    function __construct() {
+    public function __construct() {
 		
 		// runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
 		$this->path = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
@@ -259,7 +259,7 @@ abstract class Module {
 
     }
     
-    function init() {
+    public function init() {
 	    
 	    return false;
     }
@@ -268,7 +268,7 @@ abstract class Module {
      * Method for registering event processors
      *
      */
-    function _registerEventProcessors() {
+    public function _registerEventProcessors() {
 
         return false;
     }
@@ -279,7 +279,7 @@ abstract class Module {
      * @access public
      * @return array
      */
-    function getAdminPanels() {
+    public function getAdminPanels() {
 
         return $this->admin_panels;
     }
@@ -291,7 +291,7 @@ abstract class Module {
      * @access public
      * @return array
      */
-    function getNavigationLinks() {
+    public function getNavigationLinks() {
 
         return $this->nav_links;
     }
@@ -304,7 +304,7 @@ abstract class Module {
      * @access public
      * @return void
      */
-    function _registerEventHandlers() {
+    public function _registerEventHandlers() {
 
         return;
     }
@@ -316,7 +316,7 @@ abstract class Module {
      * @param string|object $handler_name
      * @return boolean
      */
-    function registerEventHandler($event_name, $handler_name, $method = 'notify', $dir = 'handlers') {
+    public function registerEventHandler($event_name, $handler_name, $method = 'notify', $dir = 'handlers') {
 
         /*
          * Once per module, event and handler. A module attaches its handlers
@@ -349,7 +349,7 @@ abstract class Module {
      * @param string $dir
      * @return void
      */
-    function registerFilter($filter_name, $handler_name, $method = '', $priority = 10, $dir = 'filters') {
+    public function registerFilter($filter_name, $handler_name, $method = '', $priority = 10, $dir = 'filters') {
 
         // if it's an object
         if ( is_object( $handler_name ) ) {
@@ -600,7 +600,7 @@ abstract class Module {
      * @access public
      * @return void
      */
-    function registerAdminPanels() {
+    public function registerAdminPanels() {
 
         return;
     }
@@ -626,7 +626,7 @@ abstract class Module {
      * @param array $page
      * @return bool
      */
-    function registerSettingsPage( $page ) {
+    public function registerSettingsPage( $page ) {
 
         $title = (string) ( $page['title'] ?? '' );
 
@@ -680,7 +680,7 @@ abstract class Module {
      * Registers an admin panel with this module
      *
      */
-    function registerSettingsPanel($panel) {
+    public function registerSettingsPanel($panel) {
 
         // Keyed by the page's action, so registering it again replaces it. A
         // request asks for the panels more than once (a settings screen's nav,
@@ -746,12 +746,12 @@ abstract class Module {
      *
      * This method must be defined in concrete module classes in order for entities to be registered.
      */
-    function _registerEntities() {
+    public function _registerEntities() {
 
         return false;
     }
 
-    function registerNavigation() {
+    public function registerNavigation() {
 
         return false;
     }
@@ -769,7 +769,7 @@ abstract class Module {
      * direction that path has been going. registerNavigation() is the precedent
      * to follow, and for exactly the same reason.
      */
-    function registerReports() {
+    public function registerReports() {
 
         return false;
     }
@@ -866,7 +866,7 @@ abstract class Module {
      *
      * @param $entity_name array or string
      */
-    function registerEntity($entity_name) {
+    public function registerEntity($entity_name) {
 
         if (is_array($entity_name)) {
             $this->entities = array_merge($this->entities, $entity_name);
@@ -875,7 +875,7 @@ abstract class Module {
         }
     }
 
-    function getEntities() {
+    public function getEntities() {
 
         return $this->entities;
     }
@@ -886,7 +886,7 @@ abstract class Module {
      * Creates database tables and sets schema version
      *
      */
-    function install() {
+    public function install() {
 
         \OWA\Core\CoreAPI::notice('Starting installation of module: '.$this->name);
 
@@ -1013,12 +1013,12 @@ abstract class Module {
      * Post installation hook
      *
      */
-    function postInstall() {
+    public function postInstall() {
 
         return true;
     }
 
-    function isCliUpdateModeRequired() {
+    public function isCliUpdateModeRequired() {
 
         return $this->update_from_cli_required;
     }
@@ -1027,7 +1027,7 @@ abstract class Module {
      * Checks for and applies schema upgrades for the module
      *
      */
-    function update() {
+    public function update() {
 
         // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment)
         $files = \OWA\Core\Lib::listDir(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($this->name) . '/Update', false);
@@ -1108,7 +1108,7 @@ abstract class Module {
      * Places the Module into the active module list in the global configuration
      *
      */
-    function activate() {
+    public function activate() {
 	
 		$ret = \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', true );
         \OWA\Core\CoreAPI::notice("Module $this->name activated");
@@ -1121,7 +1121,7 @@ abstract class Module {
      * the active module list in the global configuration
      *
      */
-    function deactivate() {
+    public function deactivate() {
 
         // A module its own constant activates stays active while it is set (ModuleActivation).
         $constant = self::activatedByConstant( $this->name );
@@ -1156,7 +1156,7 @@ abstract class Module {
      * Whether nothing is pending for this module: an update is due when this
      * is false. Its schema, here; Base adds the release (Module::isUpToDate()).
      */
-    function isUpToDate() {
+    public function isUpToDate() {
 
         return $this->isSchemaCurrent();
     }
@@ -1165,7 +1165,7 @@ abstract class Module {
      * Checks to se if the schema is up to date
      *
      */
-    function isSchemaCurrent() {
+    public function isSchemaCurrent() {
 
         $current_schema = $this->getSchemaVersion();
         $required_schema = $this->getRequiredSchemaVersion();
@@ -1180,7 +1180,7 @@ abstract class Module {
         return false;
     }
 
-    function getSchemaVersion() {
+    public function getSchemaVersion() {
 
         $current_schema = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
@@ -1197,7 +1197,7 @@ abstract class Module {
         return $current_schema;
     }
 
-    function getRequiredSchemaVersion() {
+    public function getRequiredSchemaVersion() {
 
         return $this->required_schema_version;
     }
@@ -1217,7 +1217,7 @@ abstract class Module {
      * @param string|string[] $event_types current names
      * @param string          $processor   an action, e.g. acme.processEvent
      */
-    function addTrackingEventProcessor( $event_types, $processor ) {
+    public function addTrackingEventProcessor( $event_types, $processor ) {
 
         $names = array();
 
@@ -1229,7 +1229,7 @@ abstract class Module {
         $this->addEventProcessor( $names, $processor );
     }
 
-    function addEventProcessor($event_types, $processor) {
+    public function addEventProcessor($event_types, $processor) {
         
         if ( is_string( $event_types ) ) {
             
@@ -1264,7 +1264,7 @@ abstract class Module {
      *
      *
      */
-    function registerMetricDefinition( $params ) {
+    public function registerMetricDefinition( $params ) {
 
         $map = array(
             'name'            => '',
@@ -1370,7 +1370,7 @@ abstract class Module {
      * @param     $foreign_key_name string recorded with the dimension; nothing reads it
      * @param    $denormalized    boolean    must be true: a dimension is a column of the fact table
      */
-    function registerDimension(
+    public function registerDimension(
             $dim_name, $entity_names, $column, $label, $family,
             $description = '', $foreign_key_name = '',
             $denormalized = false, $data_type = 'string',
@@ -1577,7 +1577,7 @@ abstract class Module {
         return $entries;
     }
 
-    function registerActions() {
+    public function registerActions() {
 
         return false;
     }
@@ -1609,7 +1609,7 @@ abstract class Module {
      *                                     written before PSR-4 passes a class file path here and the
      *                                     configuration after it; the path is ignored.
      */
-    function registerRestApiRoute( $version, $route_name, $request_method, $class_name, $params = [], $legacy_params = [] ) {
+    public function registerRestApiRoute( $version, $route_name, $request_method, $class_name, $params = [], $legacy_params = [] ) {
 
         if ( is_string( $params ) ) {
 
@@ -1620,7 +1620,7 @@ abstract class Module {
             array( 'class_name' => $class_name, 'conf' => $params ) );
     }
 
-    function registerCliCommand($command, $class) {
+    public function registerCliCommand($command, $class) {
 
         $this->cli_commands[$command] = $class;
     }
@@ -1667,7 +1667,7 @@ abstract class Module {
      *                             it, and cmd=schedule-status format=markdown
      *                             writes it out for the wiki
      */
-    function registerJob( $name, $command, $schedule, $params, $description = '' ) {
+    public function registerJob( $name, $command, $schedule, $params, $description = '' ) {
 
         $this->scheduled_jobs[ $name ] = array(
             'name'        => $name,
@@ -1723,7 +1723,7 @@ abstract class Module {
      *                                     PSR-4 passes a class file path here and the array after it;
      *                                     the path is ignored.
      */
-    function registerImplementation( $type, $key, $class_name, $params = [], $legacy_params = [] ) {
+    public function registerImplementation( $type, $key, $class_name, $params = [], $legacy_params = [] ) {
 
         if ( is_string( $params ) ) {
 
@@ -1762,7 +1762,7 @@ abstract class Module {
      * The key of the array is the name the property
      */
 
-    function registerTrackingProperties( $type, $properties = array() ) {
+    public function registerTrackingProperties( $type, $properties = array() ) {
 
         switch( strtolower( $type ) ) {
 
@@ -1799,7 +1799,7 @@ abstract class Module {
      * This method is called by a module's constructor
      * and should be redefined in a concrete module class.
      */
-    function registerApiMethods() {
+    public function registerApiMethods() {
 
         return false;
     }
@@ -1810,7 +1810,7 @@ abstract class Module {
      * This method is called by a module's constructor
      * and should be redefined in a concrete module class.
      */
-    function registerCliCommands() {
+    public function registerCliCommands() {
 
         return false;
     }
@@ -1820,7 +1820,7 @@ abstract class Module {
      *
      * Called by a module's constructor; redefine in a concrete module class.
      */
-    function registerJobs() {
+    public function registerJobs() {
 
         return false;
     }
@@ -1831,7 +1831,7 @@ abstract class Module {
      * This method is called by a module's constructor
      * and should be redefined in a concrete module class.
      */
-    function registerDimensions() {
+    public function registerDimensions() {
 
         return false;
     }
@@ -1842,7 +1842,7 @@ abstract class Module {
      * This method is called by a module's constructor
      * and should be redefined in a concrete module class.
      */
-    function registerFilters() {
+    public function registerFilters() {
 
         return false;
     }

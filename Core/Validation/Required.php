@@ -32,7 +32,7 @@ namespace OWA\Core\Validation;
  
  class Required extends \OWA\Core\Validation\Validation {
           
-     function validate() {
+     public function validate() {
          
          $value = $this->getValues();
          

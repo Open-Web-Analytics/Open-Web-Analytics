@@ -473,7 +473,7 @@ trait MysqlDialect
      *
      * @return bool
      */
-    function supportsPartitioning() {
+    public function supportsPartitioning() {
 
         return defined( 'OWA_DTD_PARTITION_BY_RANGE' );
     }
@@ -484,7 +484,7 @@ trait MysqlDialect
      * @param string $table_name
      * @return array of ['name' => string, 'less_than' => string, 'rows' => int]
      */
-    function listPartitions( $table_name ) {
+    public function listPartitions( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -519,7 +519,7 @@ trait MysqlDialect
      * @param string $name
      * @return bool|null null when the name cannot be one
      */
-    function databaseExists( $name ) {
+    public function databaseExists( $name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]{1,64}$/', (string) $name ) ) {
 
@@ -540,7 +540,7 @@ trait MysqlDialect
      * @param string $name
      * @return bool
      */
-    function createDatabase( $name ) {
+    public function createDatabase( $name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]{1,64}$/', (string) $name ) ) {
 
@@ -560,7 +560,7 @@ trait MysqlDialect
      * @param string $name
      * @return bool
      */
-    function dropDatabase( $name ) {
+    public function dropDatabase( $name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]{1,64}$/', (string) $name ) ) {
 
@@ -579,7 +579,7 @@ trait MysqlDialect
      * @param string $table_name
      * @return array|null ['rows' => int, 'bytes' => int], or null when unknown
      */
-    function tableSize( $table_name ) {
+    public function tableSize( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -618,7 +618,7 @@ trait MysqlDialect
      * @param string $column
      * @return array|null  ['rows','min','max'], or null where it cannot be read
      */
-    function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
+    public function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
 
         foreach ( array( $table_name, $partition, $column ) as $identifier ) {
 
@@ -662,7 +662,7 @@ trait MysqlDialect
      * @param string $prefix
      * @return string[]
      */
-    function listColumns( $table_name, $prefix = '' ) {
+    public function listColumns( $table_name, $prefix = '' ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
           || ( $prefix !== '' && ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $prefix ) ) ) {
@@ -718,7 +718,7 @@ trait MysqlDialect
      * @param string $table_name
      * @return bool|null
      */
-    function hasInstantColumns( $table_name ) {
+    public function hasInstantColumns( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -781,7 +781,7 @@ trait MysqlDialect
         return $counters;
     }
 
-    function getPrimaryKeyColumns( $table_name ) {
+    public function getPrimaryKeyColumns( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -828,7 +828,7 @@ trait MysqlDialect
      * @param string $table_name
      * @return bool
      */
-    function tableExists( $table_name ) {
+    public function tableExists( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -843,7 +843,7 @@ trait MysqlDialect
         return ( is_array( $row ) && isset( $row['n'] ) && (int) $row['n'] > 0 );
     }
 
-    function indexExists( $table_name, $column_name ) {
+    public function indexExists( $table_name, $column_name ) {
 
         $cols = $this->normalizeIndexColumns( $column_name );
 

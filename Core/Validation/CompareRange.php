@@ -29,7 +29,7 @@ namespace OWA\Core\Validation;
  */
 class CompareRange extends \OWA\Core\Validation\Validation {
 
-    function validate() {
+    public function validate() {
 
         $error = \OWA\Module\Base\Classes\TimePeriod::getCompareError(
             (array) $this->getValues() );

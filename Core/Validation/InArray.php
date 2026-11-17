@@ -32,7 +32,7 @@ namespace OWA\Core\Validation;
  
  class InArray extends \OWA\Core\Validation\Validation {
 
-     function validate() {
+     public function validate() {
 
         $value = $this->getValues();
         $possible_values = $this->getConfig('possible_values');

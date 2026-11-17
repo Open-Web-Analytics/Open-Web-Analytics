@@ -43,19 +43,19 @@ class Http {
      *
      * @var array
      */
-    var $config;
+    public $config;
 
     /**
      * Error handler
      *
      * @var object
      */
-    var $e;
+    public $e;
 
-    var $http;
+    public $http;
 
-    var $response;
-    function __construct() {
+    public $response;
+    public function __construct() {
 	    
 	    $this->http = new Client( [
 		    
@@ -64,7 +64,7 @@ class Http {
 	    ] );
 
     }
-   function getRequest($url, $arguments = '') {
+   public function getRequest($url, $arguments = '') {
 		
 		$this->response = '';
 		
@@ -112,7 +112,7 @@ class Http {
         }
     }
     
-   function getResponseStatusCode() {
+   public function getResponseStatusCode() {
 	    
 	    if ( $this->response ) {
 		 
@@ -120,7 +120,7 @@ class Http {
 		}
     }
     
-   function getResponseBody() {
+   public function getResponseBody() {
 
 	      if ( $this->response ) {
 

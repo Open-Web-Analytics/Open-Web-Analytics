@@ -35,18 +35,18 @@ namespace OWA\Core;
 #[\AllowDynamicProperties]
 class RequestContainer {
 
-    var $cli_args;
-    var $is_https;
-    var $owa_params = array();
-    var $cookies = array();
-    var $owa_cookies = array();
-    var $session = array();
-    var $request = array();
-    var $server;
-    var $guid;
-    var $state;
-    var $request_type = '';
-    var $timestamp;
+    public $cli_args;
+    public $is_https;
+    public $owa_params = array();
+    public $cookies = array();
+    public $owa_cookies = array();
+    public $session = array();
+    public $request = array();
+    public $server;
+    public $guid;
+    public $state;
+    public $request_type = '';
+    public $timestamp;
 
     /**
      * The same instant as $timestamp, in microseconds.
@@ -58,15 +58,15 @@ class RequestContainer {
      *
      * @var int
      */
-    var $timestamp_usec;
+    public $timestamp_usec;
 
-    var $current_url;
+    public $current_url;
 
     /**
      * Constructor
      *
      */
-    function __construct() {
+    public function __construct() {
 
         /*
          * EDGE RECEIPT. One reading, taken once, for the life of this request.
@@ -313,7 +313,7 @@ class RequestContainer {
         }
     }
 
-    function getParam($name) {
+    public function getParam($name) {
 
         if (array_key_exists($name, $this->owa_params)) {
             return $this->owa_params[$name];
@@ -323,13 +323,13 @@ class RequestContainer {
 
     }
 
-    function setParam($name, $value) {
+    public function setParam($name, $value) {
 
         $this->owa_params[$name] = $value;
         return true;
     }
 
-    function getRequestParam($name) {
+    public function getRequestParam($name) {
 
         if (array_key_exists($name, $this->request)) {
             return $this->request[$name];
@@ -338,18 +338,18 @@ class RequestContainer {
         }
     }
 
-    function getAllOwaParams() {
+    public function getAllOwaParams() {
 
         return $this->owa_params;
     }
 
-    function mergeParams($params) {
+    public function mergeParams($params) {
 
         $this->owa_params = array_merge($this->owa_params, $params);
         return;
     }
 
-    function getServerParam($name) {
+    public function getServerParam($name) {
 
         if (array_key_exists($name, $this->server)) {
             return $this->server[$name];
@@ -358,7 +358,7 @@ class RequestContainer {
         }
     }
 
-    function decodeRequestParams() {
+    public function decodeRequestParams() {
 
         $params = array();
         // Apply caller specific params

@@ -32,7 +32,7 @@ namespace OWA\Core\Validation;
  
  class SubStringMatch extends \OWA\Core\Validation\Validation {
 
-     function validate() {
+     public function validate() {
 
          $value = $this->getValues();
          $length = strlen($this->getConfig('match'));

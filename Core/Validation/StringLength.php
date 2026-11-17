@@ -32,7 +32,7 @@ namespace OWA\Core\Validation;
  
  class StringLength extends \OWA\Core\Validation\Validation {
 
-     function validate() {
+     public function validate() {
 
          $value = $this->getValues();
          $length = $this->getConfig('length');
