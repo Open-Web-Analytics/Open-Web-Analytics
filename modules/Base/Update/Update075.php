@@ -81,7 +81,7 @@ class Update075 extends \OWA\Core\Update {
 
         $after = array( 0, 0 );
 
-        while ( $rows = $this->batch( 'r.event_type NOT IN (' . $this->firstClass() . ')', $after ) ) {
+        while ( $rows = $this->batch( 'NOT IN', $after ) ) {
 
             foreach ( $rows as $row ) {
 
@@ -175,7 +175,7 @@ class Update075 extends \OWA\Core\Update {
         $unmatched = 0;
         $first     = null;
 
-        while ( $rows = $this->batch( 'r.event_type IN (' . $this->firstClass() . ')', $after ) ) {
+        while ( $rows = $this->batch( 'IN', $after ) ) {
 
             foreach ( $rows as $row ) {
 
@@ -230,31 +230,23 @@ class Update075 extends \OWA\Core\Update {
     /**
      * The next flagged rows after a (yyyymmdd, id) position, in that order.
      *
-     * @param  string $which  SQL on r.event_type
+     * The first-class event names are the IN list: a trigger is one, a
+     * conversion row is not.
+     *
+     * @param  string $in     'IN' or 'NOT IN' the first-class event names
      * @param  array  $after  array( yyyymmdd, id )
      * @return array
      */
-    private function batch( $which, array $after ) {
+    private function batch( $in, array $after ) {
 
-        $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $raw   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+        $names = array_values( \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() );
 
         return array_map( function ( $r ) { return (array) $r; }, (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
-            'SELECT r.* FROM %s r WHERE r.is_goal_event = 1 AND %s'
+            'SELECT r.* FROM %s r WHERE r.is_goal_event = 1 AND r.event_type %s (%s)'
           . ' AND (r.yyyymmdd > ? OR (r.yyyymmdd = ? AND r.id > ?)) ORDER BY r.yyyymmdd, r.id LIMIT %d',
-            $raw, $which, self::BATCH ),
-            array( $after[0], $after[0], $after[1] ) ) );
-    }
-
-    /** The first-class event names, quoted for an IN list: a trigger is one, a conversion row is not. */
-    private function firstClass() {
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
-        return implode( ', ', array_map( function ( $name ) use ( $db ) {
-
-            return "'" . $db->prepare( $name ) . "'";
-
-        }, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() ) );
+            $raw, $in === 'NOT IN' ? 'NOT IN' : 'IN', \OWA\Core\Db::placeholders( count( $names ) ), self::BATCH ),
+            array_merge( $names, array( $after[0], $after[0], $after[1] ) ) ) );
     }
 
     /** @var array site_id => list of array( 'event' => GoalEventDefinition, 'conditions' => array ) */

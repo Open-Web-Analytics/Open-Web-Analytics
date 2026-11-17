@@ -42,7 +42,7 @@ class InstallCheckEnv extends \OWA\Core\Controller\Install {
          * the disagreement would be invisible: nobody runs the installer on a
          * working instance, or the diagnostic on a fresh one.
          */
-        $config_file = $this->c->get( 'base', 'config_file' );
+        $config_file = \OWA\Core\CoreAPI::getSetting( 'base', 'config_file' );
 
         // Paths relative to OWA's directory: anyone can open this page
         // before OWA is installed.

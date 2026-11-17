@@ -29,13 +29,12 @@ final class SpamPageOriginRulesTest extends TestCase
     }
 
     /** GHOST_PAGE_HOST against a Profile whose hosts the test names. */
-    private function ghost(string $page, string $domain, string $aliases = ''): bool
+    private function ghost(string $page, string $domain): bool
     {
-        $rule = new class($domain, $aliases) extends GhostPageHost {
+        $rule = new class($domain) extends GhostPageHost {
             private $domain;
-            private $aliases;
-            public function __construct($domain, $aliases) { $this->domain = $domain; $this->aliases = $aliases; }
-            protected function profileHosts($site_id) { return Hosts::profileHosts($this->domain, $this->aliases); }
+            public function __construct($domain) { $this->domain = $domain; }
+            protected function profileHosts($site_id) { return Hosts::profileHosts($this->domain); }
         };
 
         return $rule->test($this->event($page), []);
@@ -54,11 +53,10 @@ final class SpamPageOriginRulesTest extends TestCase
         $this->assertSame('', Hosts::of('/relative/only'));
     }
 
-    public function testAProfilesHostsAreItsDomainAndAliases(): void
+    public function testAProfilesHostIsItsDomain(): void
     {
-        $this->assertSame(['example.com', 'example.org', 'shop.example.net'],
-            Hosts::profileHosts('https://www.example.com', ' example.org, https://shop.example.net/ ,'));
-        $this->assertSame([], Hosts::profileHosts('', 'example.org'), 'no domain, no hosts');
+        $this->assertSame(['example.com'], Hosts::profileHosts('https://www.example.com'));
+        $this->assertSame([], Hosts::profileHosts(''), 'no domain, no hosts');
     }
 
     // ---- GHOST_PAGE_HOST --------------------------------------------------
@@ -79,12 +77,6 @@ final class SpamPageOriginRulesTest extends TestCase
         $this->assertFalse($this->ghost('https://example.com:8080/a', 'example.com'));
     }
 
-    public function testAnAliasHost(): void
-    {
-        $this->assertFalse($this->ghost('https://example.org/a', 'https://example.com', 'example.org, example.net'));
-        $this->assertTrue($this->ghost('https://example.io/a', 'https://example.com', 'example.org, example.net'));
-    }
-
     public function testAnotherHostFires(): void
     {
         $this->assertTrue($this->ghost('https://spam.example/landing', 'example.com'));
@@ -101,20 +93,11 @@ final class SpamPageOriginRulesTest extends TestCase
         }
     }
 
-    /** ...and of each alias. */
-    public function testASubdomainOfAnAliasIsOnTheSite(): void
-    {
-        $this->assertFalse($this->ghost('https://blog.example.org/', 'example.com', 'example.org'));
-        $this->assertFalse($this->ghost('https://www.blog.example.org/', 'example.com', 'www.example.org'));
-        $this->assertTrue($this->ghost('https://blog.example.net/', 'example.com', 'example.org'));
-    }
-
     /** A host that only ends in the same letters is not a subdomain. */
     public function testASuffixThatOnlyLooksLikeASubdomainFires(): void
     {
         $this->assertTrue($this->ghost('https://badexample.com/', 'example.com'));
         $this->assertTrue($this->ghost('https://www.badexample.com/', 'www.example.com'));
-        $this->assertTrue($this->ghost('https://shopexample.org/', 'example.com', 'example.org'));
 
         $this->assertFalse(Hosts::isWithin('badexample.com', ['example.com']));
         $this->assertTrue(Hosts::isWithin('shop.example.com', ['example.com']));
@@ -131,6 +114,47 @@ final class SpamPageOriginRulesTest extends TestCase
     public function testNoPageLocationIsNotAGhost(): void
     {
         $this->assertFalse($this->ghost('', 'example.com'));
+    }
+
+    /**
+     * Against a stored Profile: only its domain and the domain's subdomains are
+     * its hosts. Another domain fires, whatever an installation still holds
+     * under the old domain_aliases name.
+     */
+    public function testAStoredProfilesHostsAreItsDomainAndItsSubdomainsOnly(): void
+    {
+        if (!owa_test_db_available()) {
+            $this->markTestSkipped('reads the Profile\'s domain');
+        }
+
+        $site    = 'owa-ghost-host-site';
+        $db      = \OWA\Core\CoreAPI::dbSingleton();
+        $aliases = \OWA\Core\CoreAPI::getSetting('base', 'domain_aliases');
+
+        $db->query('DELETE FROM owa_site WHERE site_id = ?', [$site]);
+        $db->query(sprintf("INSERT INTO owa_site (id, site_id, property_id, name, domain) VALUES (%s, ?, 0, 'Ghost host fixture', 'www.example.com')",
+            \OWA\Core\CoreAPI::entityFactory('base.site')->generateId($site)), [$site]);
+
+        try {
+            \OWA\Core\CoreAPI::setSetting('base', 'domain_aliases', 'example.org');
+
+            $rule = new GhostPageHost();
+            $test = function (string $page) use ($rule, $site): bool {
+                $event = $this->event($page);
+                $event->setSiteId($site);
+
+                return $rule->test($event, []);
+            };
+
+            $this->assertFalse($test('https://example.com/a'));
+            $this->assertFalse($test('https://www.example.com/a'));
+            $this->assertFalse($test('https://shop.example.com/a'));
+            $this->assertTrue($test('https://example.org/a'), 'another domain is not the Profile\'s');
+            $this->assertTrue($test('https://blog.example.org/a'));
+        } finally {
+            \OWA\Core\CoreAPI::setSetting('base', 'domain_aliases', $aliases);
+            $db->query('DELETE FROM owa_site WHERE site_id = ?', [$site]);
+        }
     }
 
     // ---- REFERER_MISMATCH and NO_REFERER ----------------------------------

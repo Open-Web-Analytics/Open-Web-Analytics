@@ -406,6 +406,14 @@ with a scheme (the settings screens, `POST /v1/sites`, `cmd=add-site`, the
 installer) is stored without it. A heatmap opens its page on the scheme and
 host the page's clicks recorded, and on the domain over https when none did.
 
+### Domain Aliases is gone
+
+The Domain Aliases setting is removed from the Profile's Observation Settings.
+A page that arrives on a host other than the Profile's domain or one of its
+subdomains is stored as it arrived and is not rewritten to the domain. To track
+another domain, add it as its own Profile in the same Property. Update090
+deletes the stored `domain_aliases` rows; its down() does not put them back.
+
 ### The API key and request signature are refused
 
 1.x signed a REST request in with the user's API key (`apiKey`, or the

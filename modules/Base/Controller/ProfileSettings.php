@@ -46,8 +46,7 @@ class ProfileSettings extends \OWA\Core\AdminController {
          */
         if ( $site_id ) {
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->getByColumn( 'site_id', $site_id );
+            $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
             $site_properties = $site->_getProperties();
         }

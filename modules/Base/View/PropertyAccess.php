@@ -29,14 +29,12 @@ class PropertyAccess extends \OWA\Core\View {
 
     /*
      * Every user, because the form REPLACES the whole grant set: a user missing
-     * from the rendered list is a user revoked on submit. Same query the site
-     * profile view used when this form lived on that page -- hardcoded table
-     * name and all, kept identical so the split changed no behaviour.
+     * from the rendered list is a user revoked on submit.
      */
     private function getAllUserRows() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom( 'owa_user' );
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName() );
         $db->selectColumn( '*' );
 
         return $db->getAllRows();

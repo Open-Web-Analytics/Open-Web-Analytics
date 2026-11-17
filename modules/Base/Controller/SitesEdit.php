@@ -60,11 +60,10 @@ class SitesEdit extends \OWA\Core\AdminController {
 
         // This needs form validation in a bad way.
 
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
         if (! $this->getParam('siteId')) {
             throw new \InvalidArgumentException('No siteId passed on request');
         }
-        $site->load( $site->generateId( $this->getParam('siteId') ) );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $this->getParam('siteId') );
         $site->set('name', $this->getParam( 'name' ) );
         $site->set('domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) ) );
 

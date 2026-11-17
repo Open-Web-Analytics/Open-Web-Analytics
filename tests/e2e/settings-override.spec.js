@@ -52,10 +52,15 @@ async function save(page) {
 test('a Property setting inherits until its Override switch is on', async ({ page }) => {
     await adminLogin(page);
 
-    // domain_aliases has nothing set above the Profile: a plain field, no switch to turn on.
+    // query_string_filters has nothing set above the Profile: a plain field, no switch to turn on.
     await page.goto(PROFILE_SCREEN, { waitUntil: 'networkidle' });
-    await expect(page.locator('input[name="config[base.domain_aliases]"]')).toBeEnabled();
-    await expect(page.locator('input[name="override[base.domain_aliases]"]')).toHaveCount(0);
+    const filters = page.locator('[data-ui="setting:base.query_string_filters"]');
+    await expect(filters.getByRole('textbox', { name: 'URL Parameters' })).toBeEnabled();
+    await expect(filters.getByRole('switch')).toHaveCount(0);
+
+    // Domain Aliases is gone.
+    await expect(page.getByLabel('Domain Aliases')).toHaveCount(0);
+    await expect(page.locator('[name="config[base.domain_aliases]"]')).toHaveCount(0);
 
     // And e-commerce is no longer offered per Profile.
     await expect(page.locator('[name="config[base.enableEcommerceReporting]"]')).toHaveCount(0);

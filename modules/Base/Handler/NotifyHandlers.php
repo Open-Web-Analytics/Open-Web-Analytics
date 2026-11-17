@@ -64,9 +64,7 @@ class NotifyHandlers extends \OWA\Core\Observer {
                 return OWA_EHS_EVENT_HANDLED;
             }
 
-            $s = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            
-            $s->load( $s->generateId( $event->getSiteId() ) );
+            $s = \OWA\Module\Base\Entity\Site::forSiteId( $event->getSiteId() );
 
             if ( $s->wasPersisted() ) {
 

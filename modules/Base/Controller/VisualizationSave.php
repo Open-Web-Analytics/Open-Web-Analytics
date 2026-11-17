@@ -312,8 +312,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
         } else {
 
-            $report->set( 'id', $report->generateId(
-                'visualization:' . uniqid( '', true ) ) );
+            $report->set( 'id', \OWA\Core\Lib::randomId( \OWA\Core\Lib::useNarrowGuid() ) );
             $report->set( 'user_id', (string) $user->getUserData( 'user_id' ) );
             // Of the Property the builder was on, for good.
             $report->set( 'property_id', $propertyId );

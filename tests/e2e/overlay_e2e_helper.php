@@ -281,11 +281,18 @@ function seedClicks(string $site_id): void
     $now = time();
     $i   = 0;
 
+    // The heatmap asks for today, so no click is stamped before today began:
+    // seeded in the first seconds after midnight, the last of them would
+    // otherwise land on yesterday and drop out of the result.
+    $today = new \OWA\Module\Base\Classes\TimePeriod();
+    $today->set('today');
+    $start = (int) $today->startDate->getTimestamp();
+
     foreach (OVERLAY_CLICK_POINTS as $point) {
 
         for ($k = 0; $k < $point['n']; $k++) {
 
-            $rc->setTimestamp($now - $i);
+            $rc->setTimestamp(max($now - $i, $start));
 
             $url = OVERLAY_DOMAIN . OVERLAY_PAGE_PATH;
 

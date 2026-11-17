@@ -50,7 +50,7 @@ class UsersResetPassword extends \OWA\Core\Controller {
          */
         if ( ! $u->get('id') ) {
 
-            $this->e->debug( 'Password reset requested for an address with no account.' );
+            \OWA\Core\CoreAPI::debug( 'Password reset requested for an address with no account.' );
 
             return;
         }
@@ -71,7 +71,7 @@ class UsersResetPassword extends \OWA\Core\Controller {
 
         $u->set('temp_passkey', \OWA\Module\Base\Entity\User::newTempPasskey( \OWA\Module\Base\Entity\User::RESET_TTL ) );
         $status = $u->update();
-        $this->e->debug('status: '.$status);
+        \OWA\Core\CoreAPI::debug('status: '.$status);
         
         if ($status === true) {
     
@@ -81,7 +81,7 @@ class UsersResetPassword extends \OWA\Core\Controller {
             
         } else {
         
-            $this->e->debug( "could not update password in db." );
+            \OWA\Core\CoreAPI::debug( "could not update password in db." );
         }
     }
     

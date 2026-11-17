@@ -266,8 +266,7 @@ class GoalMigrator extends FactMigrator {
     /** The Property a site belongs to. */
     public static function propertyFor( $site_id ) {
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->getByColumn( 'site_id', $site_id );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
         return $site->get( 'property_id' );
     }

@@ -205,9 +205,8 @@ class Update043 extends \OWA\Core\Update {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $row = $db->get_row( sprintf( "SELECT settings FROM %s WHERE id = '%s'",
-            $legacy->getTableName(),
-            $db->prepare( (string) $this->c->get( 'base', 'configuration_id' ) ) ) );
+        $row = $db->get_row( sprintf( 'SELECT settings FROM %s WHERE id = ?', $legacy->getTableName() ),
+            [ (string) $this->c->get( 'base', 'configuration_id' ) ] );
 
         if ( ! $row ) {
 
@@ -228,17 +227,17 @@ class Update043 extends \OWA\Core\Update {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $table = $legacy->getTableName();
-        $id    = $db->prepare( (string) $this->c->get( 'base', 'configuration_id' ) );
+        $id    = (string) $this->c->get( 'base', 'configuration_id' );
 
         /*
          * Delete then insert, rather than deciding between them: there is one
          * row, and asking whether it is there first is the step that went
          * wrong when an entity answered from cache.
          */
-        $db->query( sprintf( "DELETE FROM %s WHERE id = '%s'", $table, $id ) );
+        $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), [ $id ] );
 
-        return $db->query( sprintf( "INSERT INTO %s (id, settings) VALUES ('%s', '%s')",
-            $table, $id, $db->prepare( serialize( $settings ) ) ) ) !== false;
+        return $db->query( sprintf( 'INSERT INTO %s (id, settings) VALUES (?, ?)', $table ),
+            [ $id, serialize( $settings ) ] ) !== false;
     }
 
     /**
@@ -264,21 +263,21 @@ class Update043 extends \OWA\Core\Update {
 
         // makeId() is a pure hash of the four parts, so it is safe to take
         // from the entity; only its STORAGE is what must not go through one.
-        $id = $db->prepare( (string) $setting->makeId(
-            'install', self::INSTALL_SCOPE_ID, $module, $name ) );
+        $id = (string) $setting->makeId( 'install', self::INSTALL_SCOPE_ID, $module, $name );
 
-        $db->query( sprintf( "DELETE FROM %s WHERE id = '%s'", $table, $id ) );
+        $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), [ $id ] );
 
         return $db->query( sprintf(
-            "INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)"
-          . " VALUES ('%s', 'install', '%s', '%s', '%s', '%s', 1, '%s')",
-            $table,
+            'INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)'
+          . " VALUES (?, 'install', ?, ?, ?, ?, 1, ?)",
+            $table ), [
             $id,
-            $db->prepare( self::INSTALL_SCOPE_ID ),
-            $db->prepare( (string) $module ),
-            $db->prepare( (string) $name ),
-            $db->prepare( serialize( $value ) ),
-            $db->prepare( (string) \OWA\Core\CoreAPI::getRequestTimestamp() ) ) ) !== false;
+            (string) self::INSTALL_SCOPE_ID,
+            (string) $module,
+            (string) $name,
+            serialize( $value ),
+            (string) \OWA\Core\CoreAPI::getRequestTimestamp(),
+        ] ) !== false;
     }
 }
 

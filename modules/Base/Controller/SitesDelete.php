@@ -53,8 +53,7 @@ class SitesDelete extends \OWA\Core\AdminController {
      */
     function action() {
 
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->load( $site->generateId( $this->getParam( 'siteId' ) ) );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $this->getParam( 'siteId' ) );
 
         if ( $site->wasPersisted() ) {
 

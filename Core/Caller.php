@@ -113,6 +113,7 @@ class Caller extends \OWA\Core\Base {
                
         if ( $this->c->isConfigFilePresent() && \OWA\Core\ServerRole::readsStoredSettings() && ! defined( 'OWA_INSTALLING' ) )  {
             
+            // The boot load itself: read from the config object it is loading into.
             $this->c->load( $this->c->get( 'base', 'configuration_id' ) );
         }
         

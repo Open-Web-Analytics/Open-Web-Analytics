@@ -71,8 +71,7 @@ class PropertyGrants {
 
         foreach ( \OWA\Module\Base\Classes\Cube\Cubes::siteIds( $property_id ) as $site_id ) {
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->getByColumn( 'site_id', $site_id );
+            $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
             if ( $site->get( 'id' ) ) {
 

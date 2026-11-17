@@ -39,8 +39,7 @@ class SitesProfile extends \OWA\Core\View {
             $this->body->set('action', 'base.sitesEdit');
             $this->body->set('headline', \OWA\Core\CoreAPI::t( 'Profile Details' ));
 
-            $siteEntity = \OWA\Core\CoreAPI::entityFactory('base.site');
-            $siteEntity->getByColumn('site_id', $this->get('siteId'));
+            $siteEntity = \OWA\Module\Base\Entity\Site::forSiteId( $this->get('siteId') );
             $this->body->set('siteEntity', $siteEntity);
 
         } else {
@@ -131,7 +130,7 @@ class SitesProfile extends \OWA\Core\View {
      */
     private function getAllUserRows() {
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom('owa_user');
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName() );
         $db->selectColumn("*");
         return $db->getAllRows();
     }

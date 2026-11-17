@@ -21,8 +21,8 @@ class Hosts {
     /**
      * A URL's or a bare host's comparable host, '' when it has none.
      *
-     * A Profile's domain is stored with a scheme or without one, and an alias
-     * may be typed either way, so both shapes are read.
+     * A Profile's domain is stored with a scheme or without one, so both
+     * shapes are read.
      *
      * @param  mixed $value  a URL, or a host with or without a port or path
      * @return string
@@ -91,40 +91,23 @@ class Hosts {
     }
 
     /**
-     * The hosts a Profile's pages may be on: its domain and its aliases.
+     * The hosts a Profile's pages may be on: its domain. isWithin() counts a
+     * subdomain of it as well.
      *
-     * @param  string $domain   Site::getDomainName(), or the stored value
-     * @param  mixed  $aliases  the domain_aliases setting, comma-separated
+     * @param  string $domain  Site::getDomainName(), or the stored value
      * @return string[]  comparable hosts; none when the Profile has no domain
      */
-    public static function profileHosts( $domain, $aliases ) {
+    public static function profileHosts( $domain ) {
 
         $own = self::of( $domain );
 
-        if ( $own === '' ) {
-
-            return array();
-        }
-
-        $hosts = array( $own => true );
-
-        foreach ( explode( ',', is_array( $aliases ) ? implode( ',', $aliases ) : (string) $aliases ) as $alias ) {
-
-            $alias = self::of( $alias );
-
-            if ( $alias !== '' ) {
-
-                $hosts[ $alias ] = true;
-            }
-        }
-
-        return array_keys( $hosts );
+        return $own === '' ? array() : array( $own );
     }
 
     /**
-     * The hosts of the Profile a site id names, as it resolves them: its domain
-     * (Site::getDomainName()) and its domain_aliases setting, Profile then
-     * install. None for a Profile with no domain, or none at all.
+     * The hosts of the Profile a site id names: its domain
+     * (Site::getDomainName()). None for a Profile with no domain, or none at
+     * all.
      *
      * @param  string $site_id
      * @return string[]
@@ -136,15 +119,14 @@ class Hosts {
             return array();
         }
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $site_id ) );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
         if ( ! $site->wasPersisted() ) {
 
             return array();
         }
 
-        return self::profileHosts( $site->getDomainName(), $site->getSiteSetting( 'domain_aliases' ) );
+        return self::profileHosts( $site->getDomainName() );
     }
 }
 

@@ -340,9 +340,9 @@ $owa_max        = (int) $view->get('max_widgets');
     // than written here -- a list of our own would eventually offer a name the
     // validator refuses, and a typo would be indistinguishable from a name that
     // was never real.
-    var METRICS    = <?php echo json_encode( (array) $view->get('metric_choices') ); ?>;
-    var DIMENSIONS = <?php echo json_encode( (array) $view->get('dimension_choices') ); ?>;
-    var TYPES      = <?php echo json_encode( $owa_types ); ?>;
+    var METRICS    = <?php echo $view->scriptJson( (array) $view->get('metric_choices') ); ?>;
+    var DIMENSIONS = <?php echo $view->scriptJson( (array) $view->get('dimension_choices') ); ?>;
+    var TYPES      = <?php echo $view->scriptJson( $owa_types ); ?>;
     var MAX         = <?php echo (int) $owa_max; ?>;
     var MAX_METRICS    = <?php echo (int) $view->get('max_metrics'); ?>;
     var MAX_DIMENSIONS = <?php echo (int) $view->get('max_dimensions'); ?>;
@@ -356,31 +356,31 @@ $owa_max        = (int) $view->get('max_widgets');
      * the definition on save, and a second copy is how the two come to
      * disagree about a type added later.
      */
-    var FULL_WIDTH_TYPES   = <?php echo json_encode( array_values( (array) $view->get('full_width_types') ) ); ?>;
-    var SINGLE_FIELD_TYPES = <?php echo json_encode( array_values( (array) $view->get('single_field_types') ) ); ?>;
-    var DEFAULT_COLSPANS   = <?php echo json_encode( (object) (array) $view->get('default_colspans') ); ?>;
+    var FULL_WIDTH_TYPES   = <?php echo $view->scriptJson( array_values( (array) $view->get('full_width_types') ) ); ?>;
+    var SINGLE_FIELD_TYPES = <?php echo $view->scriptJson( array_values( (array) $view->get('single_field_types') ) ); ?>;
+    var DEFAULT_COLSPANS   = <?php echo $view->scriptJson( (object) (array) $view->get('default_colspans') ); ?>;
 
     // The width a NEW widget of each type is added at; see CustomReports::NEW_WIDGET_COLSPANS.
-    var NEW_COLSPANS = <?php echo json_encode( (object) \OWA\Module\Base\Classes\CustomReports::NEW_WIDGET_COLSPANS ); ?>;
+    var NEW_COLSPANS = <?php echo $view->scriptJson( (object) \OWA\Module\Base\Classes\CustomReports::NEW_WIDGET_COLSPANS ); ?>;
 
     // The widths and heights the panel offers, and how a card says them.
-    var WIDTHS       = <?php echo json_encode( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::WIDTHS ), array_values( \OWA\Module\Base\Classes\CustomReports::translatedTable( \OWA\Module\Base\Classes\CustomReports::WIDTHS ) ) ) ); ?>;
-    var HEIGHTS      = <?php echo json_encode( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::HEIGHTS ), array_values( \OWA\Module\Base\Classes\CustomReports::translatedTable( \OWA\Module\Base\Classes\CustomReports::HEIGHTS ) ) ) ); ?>;
-    var WIDTH_WORDS  = <?php echo json_encode( array(
+    var WIDTHS       = <?php echo $view->scriptJson( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::WIDTHS ), array_values( \OWA\Module\Base\Classes\CustomReports::translatedTable( \OWA\Module\Base\Classes\CustomReports::WIDTHS ) ) ) ); ?>;
+    var HEIGHTS      = <?php echo $view->scriptJson( array_map( null, array_keys( \OWA\Module\Base\Classes\CustomReports::HEIGHTS ), array_values( \OWA\Module\Base\Classes\CustomReports::translatedTable( \OWA\Module\Base\Classes\CustomReports::HEIGHTS ) ) ) ); ?>;
+    var WIDTH_WORDS  = <?php echo $view->scriptJson( array(
         12 => \OWA\Core\CoreAPI::t( 'Full width' ),
         8  => \OWA\Core\CoreAPI::t( 'Two thirds' ),
         6  => \OWA\Core\CoreAPI::t( 'Half width' ),
         4  => \OWA\Core\CoreAPI::t( 'One third' ),
         3  => \OWA\Core\CoreAPI::t( 'One quarter' ),
-    ), JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
-    var HEIGHT_WORDS = <?php echo json_encode( array( 1 => \OWA\Core\CoreAPI::t( 'short' ), 2 => \OWA\Core\CoreAPI::t( 'tall' ) ), JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
+    ) ); ?>;
+    var HEIGHT_WORDS = <?php echo $view->scriptJson( array( 1 => \OWA\Core\CoreAPI::t( 'short' ), 2 => \OWA\Core\CoreAPI::t( 'tall' ) ) ); ?>;
 
     /*
      * The words this script writes, translated. %s, or %1$s and %2$s, is a
      * value filled in by say(). A counted phrase has a form per count, chosen
      * by tn() for each count the script can meet.
      */
-    var TEXT = <?php echo json_encode( array(
+    var TEXT = <?php echo $view->scriptJson( array(
         'widgetN'           => \OWA\Core\CoreAPI::t( 'Widget %s' ),
         'widget'            => \OWA\Core\CoreAPI::t( 'Widget' ),
         'nameNotFound'      => \OWA\Core\CoreAPI::t( 'Name not found.' ),
@@ -437,7 +437,7 @@ $owa_max        = (int) $view->get('max_widgets');
         }, array_combine( range( 1, \OWA\Core\ReportGrid::MAX_ROWSPAN ), range( 1, \OWA\Core\ReportGrid::MAX_ROWSPAN ) ) ),
         // Counted by the most a report may hold, the figure the phrase ends on.
         'budget'        => \OWA\Core\CoreAPI::tn( '%1$s of %2$s widget', '%1$s of %2$s widgets', $owa_max ),
-    ), JSON_HEX_TAG | JSON_HEX_AMP ); ?>;
+    ) ); ?>;
 
     /** A TEXT pattern with its %s, %d or %1$s placeholders filled, in order. */
     function say( pattern ) {
@@ -465,7 +465,7 @@ $owa_max        = (int) $view->get('max_widgets');
      * constrained on, so every destination offered here is one that will
      * actually read the value the link carries.
      */
-    var LINK_TARGETS = <?php echo json_encode( (object) (array) $view->get('link_targets') ); ?>;
+    var LINK_TARGETS = <?php echo $view->scriptJson( (object) (array) $view->get('link_targets') ); ?>;
 
     /*
      * Where a "View Full Report" link can go, per dimension.
@@ -474,12 +474,12 @@ $owa_max        = (int) $view->get('max_widgets');
      * widget's dimension, but the destination must read no parameter, because
      * this link carries no value from the row.
      */
-    var MORE_TARGETS = <?php echo json_encode( (object) (array) $view->get('more_targets') ); ?>;
+    var MORE_TARGETS = <?php echo $view->scriptJson( (object) (array) $view->get('more_targets') ); ?>;
 
-    var MORE_LABEL = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL ); ?>;
+    var MORE_LABEL = <?php echo $view->scriptJson( \OWA\Module\Base\Classes\CustomReports::MORE_LABEL ); ?>;
 
     /* The same icons the type chooser shows, for the pill in the modal. */
-    var TYPE_ICONS = <?php echo json_encode( (object) \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_ICONS ); ?>;
+    var TYPE_ICONS = <?php echo $view->scriptJson( (object) \OWA\Module\Base\Classes\CustomReports::WIDGET_TYPE_ICONS ); ?>;
 
     /*
      * The types whose link column is unambiguous.
@@ -494,7 +494,7 @@ $owa_max        = (int) $view->get('max_widgets');
      * dimension -> the value it is fixed to, for the types that do not choose.
      * A trend is a metric over time; that is what makes it a trend.
      */
-    var FIXED_DIMENSIONS = <?php echo json_encode( (object) (array) $view->get('fixed_dimensions') ); ?>;
+    var FIXED_DIMENSIONS = <?php echo $view->scriptJson( (object) (array) $view->get('fixed_dimensions') ); ?>;
 
     /*
      * How many dimensions a fixed-dimension type may add beyond its first.
@@ -502,19 +502,19 @@ $owa_max        = (int) $view->get('max_widgets');
      * A trend is always over a date -- that is what makes it a trend -- and may
      * be broken out by ONE other dimension, whose values become its lines.
      */
-    var FIXED_DIMENSION_EXTRA = <?php echo json_encode( (object) (array) $view->get('fixed_dimension_extra') ); ?>;
+    var FIXED_DIMENSION_EXTRA = <?php echo $view->scriptJson( (object) (array) $view->get('fixed_dimension_extra') ); ?>;
 
     /*
      * The dimensions that measure time. A trend's axis is one of these, so none
      * of them can also be what it is broken out BY. See
      * CustomReports::timeDimensions().
      */
-    var TIME_DIMENSIONS = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::timeDimensions() ); ?>;
+    var TIME_DIMENSIONS = <?php echo $view->scriptJson( \OWA\Module\Base\Classes\CustomReports::timeDimensions() ); ?>;
 
-    var SINGLE_METRIC_TYPES = <?php echo json_encode( array_values( (array) $view->get('single_metric_types') ) ); ?>;
+    var SINGLE_METRIC_TYPES = <?php echo $view->scriptJson( array_values( (array) $view->get('single_metric_types') ) ); ?>;
 
     // Types that show totals, so the form asks for no dimensions; see CustomReports::UNGROUPED_TYPES.
-    var UNGROUPED_TYPES = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::UNGROUPED_TYPES ); ?>;
+    var UNGROUPED_TYPES = <?php echo $view->scriptJson( \OWA\Module\Base\Classes\CustomReports::UNGROUPED_TYPES ); ?>;
 
     function fixedDimension( type ) {
         return Object.prototype.hasOwnProperty.call( FIXED_DIMENSIONS, type )
@@ -552,7 +552,7 @@ $owa_max        = (int) $view->get('max_widgets');
      * added, and the symptom of that is a chart with no line rather than an
      * error anybody would notice.
      */
-    var CHART_TYPES = <?php echo json_encode( array_values( (array) $view->get('chart_types') ) ); ?>;
+    var CHART_TYPES = <?php echo $view->scriptJson( array_values( (array) $view->get('chart_types') ) ); ?>;
 
     /*
      * OWN_METRIC_TYPES used to be read here, to say on the form which types
@@ -623,7 +623,7 @@ $owa_max        = (int) $view->get('max_widgets');
         return isSingleField( type ) ? 1 : MAX_DIMENSIONS;
     }
 
-    var definition = <?php echo json_encode( $owa_definition ) ?: '{}'; ?>;
+    var definition = <?php echo $view->scriptJson( $owa_definition ) ?: '{}'; ?>;
 
     /*
      * The state. The canvas is a rendering of this array, not the reverse: a

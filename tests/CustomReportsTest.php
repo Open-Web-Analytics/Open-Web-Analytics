@@ -1206,8 +1206,8 @@ final class CustomReportsTest extends TestCase
     {
         $template = file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/custom_report_edit.php');
 
-        $this->assertStringContainsString(
-            'var TIME_DIMENSIONS = <?php echo json_encode( \OWA\Module\Base\Classes\CustomReports::timeDimensions() ); ?>;',
+        $this->assertMatchesRegularExpression(
+            '/var TIME_DIMENSIONS = <\?php echo [^;]*\\\\CustomReports::timeDimensions\(\) \); \?>;/',
             $template);
     }
 

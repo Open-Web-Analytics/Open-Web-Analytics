@@ -88,7 +88,7 @@
                         ? $countryCode2Name[$country]
                         : sprintf( \OWA\Core\CoreAPI::t( 'unknown - %s' ), $country );
 
-                    echo sprintf('<optgroup label="%s">', htmlspecialchars($country_name));
+                    echo sprintf('<optgroup label="%s">', $view->escape( $country_name ));
 
                     foreach ( $zones as $value ) {
 
@@ -97,10 +97,10 @@
                         if ( ! $selected_already && $current === $value ) {
                             $selected_already = true;
                             echo sprintf('<option selected="yes" value="%s">%s</option>',
-                                htmlspecialchars($value), htmlspecialchars($display_value));
+                                $view->escape( $value ), $view->escape( $display_value ));
                         } else {
                             echo sprintf('<option value="%s">%s</option>',
-                                htmlspecialchars($value), htmlspecialchars($display_value));
+                                $view->escape( $value ), $view->escape( $display_value ));
                         }
                     }
 
@@ -115,10 +115,10 @@
             </span>
             <?php if ( $tz_constant ) { ?>
             <span class="owa_installHint"><?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Set by %1$s in %2$s, which overrides any value chosen here. Remove the constant to choose a timezone from this page.' ),
-                '<code>' . htmlspecialchars( (string) $tz_constant, ENT_QUOTES, 'UTF-8' ) . '</code>',
+                '<code>' . $view->escape( (string) $tz_constant ) . '</code>',
                 '<code>owa-config.php</code>' ); ?></span>
             <?php } else { ?>
-            <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Statistics are bucketed into days using this timezone.' ) ); ?> <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%s: existing data keeps the day boundaries it was recorded with.' ), '<strong>' . htmlspecialchars( \OWA\Core\CoreAPI::t( 'Changing it later is not retroactive' ), ENT_QUOTES, 'UTF-8' ) . '</strong>' ); ?></span>
+            <span class="owa_installHint"><?php $view->out( \OWA\Core\CoreAPI::t( 'Statistics are bucketed into days using this timezone.' ) ); ?> <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%s: existing data keeps the day boundaries it was recorded with.' ), '<strong>' . $view->escape( \OWA\Core\CoreAPI::t( 'Changing it later is not retroactive' ) ) . '</strong>' ); ?></span>
             <?php } ?>
         </div>
 

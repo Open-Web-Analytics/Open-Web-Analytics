@@ -319,7 +319,7 @@ class NotificationManager {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $db->selectFrom( 'owa_notification' );
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.notification' )->getTableName() );
         $db->selectColumn( 'published_at' );
         $db->where( 'source', $source );
         $db->orderBy( 'published_at', 'DESC' );
@@ -359,7 +359,7 @@ class NotificationManager {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $db->selectFrom( 'owa_notification' );
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.notification' )->getTableName() );
         $db->selectColumn( '*' );
         $db->where( 'source', $source );
         $db->where( 'source_key', (string) $sourceKey );
@@ -399,7 +399,7 @@ class NotificationManager {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $db->selectFrom( 'owa_notification' );
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.notification' )->getTableName() );
         $db->selectColumn( '*' );
         $db->orderBy( 'published_at', 'DESC' );
         // Bounded so this cannot become an unbounded read years from now. Far
@@ -465,7 +465,7 @@ class NotificationManager {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $db->selectFrom( 'owa_notification_state' );
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.notification_state' )->getTableName() );
         $db->selectColumn( '*' );
         $db->where( 'user_id', (string) $userId );
 
