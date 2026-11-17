@@ -2030,7 +2030,7 @@ OWA.areaChart.prototype = {
 
         var url  = new URL( this.explorer.resultSet.self, window.location.href );
         var key  = 'dimensions';
-        var dims = OWA.util.urldecode( url.searchParams.get( key ) || '' ).split( ',' );
+        var dims = ( url.searchParams.get( key ) || '' ).split( ',' );
 
         var was = this.xDimension;
 
@@ -2105,7 +2105,7 @@ OWA.areaChart.prototype = {
         var url  = new URL( this.explorer.resultSet.self, window.location.href );
         var key  = 'dimensions';
 
-        var dims = OWA.util.urldecode( url.searchParams.get( key ) || '' )
+        var dims = ( url.searchParams.get( key ) || '' )
             .split( ',' )
             .map( function ( n ) { return n.trim(); } )
             .filter( Boolean );

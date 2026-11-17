@@ -147,12 +147,13 @@ class OWA {
 
     /**
      * Read a value out of a store's cookie without merging anything into
-     * memory. For the values the session decision itself depends on.
+     * memory. For the values the session decision itself depends on. `live`
+     * reads the jar as it is now rather than as it was when the page loaded.
      */
-    getPersistedState( store_name, key ) {
+    getPersistedState( store_name, key, live ) {
 
         this.initializeStateManager();
-        return this.state.getPersisted( store_name, key );
+        return this.state.getPersisted( store_name, key, live );
     }
 
     /**
