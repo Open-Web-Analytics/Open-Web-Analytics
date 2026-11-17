@@ -247,7 +247,8 @@ OWA.resultSetExplorer.prototype = {
 
         // get current list of dimensions from url
         var url = new URL( this.resultSet.self, window.location.href );
-        var dims = OWA.util.urldecode(url.searchParams.get('dimensions'));
+        // get() has already decoded the value once, which is all the server encoded.
+        var dims = url.searchParams.get('dimensions') || '';
 
         var new_dims = [];
 
@@ -2965,7 +2966,7 @@ OWA.linkTrendToGrid = function ( trend, grid, count ) {
 
         sortedBy = rs.sortColumn;
 
-        var dims = OWA.util.urldecode( new URL( rs.self, window.location.href ).searchParams.get( 'dimensions' ) || '' )
+        var dims = ( new URL( rs.self, window.location.href ).searchParams.get( 'dimensions' ) || '' )
             .split( ',' )
             .map( function ( d ) { return d.trim(); } )
             .filter( Boolean );

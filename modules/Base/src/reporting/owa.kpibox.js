@@ -203,8 +203,7 @@ OWA.kpiBox.prototype = {
             return [];
         }
 
-        var raw = OWA.util.urldecode(
-            new URL( resultSet.self, window.location.href ).searchParams.get( 'metrics' ) || '' );
+        var raw = new URL( resultSet.self, window.location.href ).searchParams.get( 'metrics' ) || '';
 
         return raw.split( ',' )
             .map( function ( name ) { return name.trim(); } )

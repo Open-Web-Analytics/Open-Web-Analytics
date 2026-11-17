@@ -122,26 +122,27 @@ describe( 'a value read from a result set\'s URL', () => {
 
     /*
      * kpiBox.queryMetrics(), linkTrendToGrid() and the trend's granularity and
-     * breakdown controls run the value through OWA.util.urldecode() again, so
-     * a + the server sent as %2B reaches them as a space, and %2541 as A.
+     * breakdown controls read the value decoded ONCE, as the server encoded it
+     * once: a + sent as %2B stays a +, and %2541 stays %41. They used to run it
+     * through OWA.util.urldecode() a second time.
      */
-    test( 'the metric boxes read the metrics decoded twice', () => {
+    test( 'the metric boxes read the metrics as the server sent them', () => {
         expect( OWA.kpiBox.prototype.queryMetrics( { self: SELF } ) ).toEqual( [ 'visits', 'pageViews' ] );
-        expect( OWA.kpiBox.prototype.queryMetrics( { self: ENCODED } ) ).toEqual( [ 'visits x', 'A' ] );
+        expect( OWA.kpiBox.prototype.queryMetrics( { self: ENCODED } ) ).toEqual( [ 'visits+x', '%41' ] );
         expect( OWA.kpiBox.prototype.queryMetrics( { self: API + '?dimensions=date' } ) ).toEqual( [] );
     } );
 
-    test( 'the trend linked to a grid reads the grid\'s dimensions decoded twice', () => {
+    test( 'the trend linked to a grid reads the grid\'s dimensions as the server sent them', () => {
         const row = {
-            'browserType 1': { value: 'Chrome', formatted_value: 'Chrome' },
-            'osType%': { value: 'Mac', formatted_value: 'Mac' },
+            'browserType+1': { value: 'Chrome', formatted_value: 'Chrome' },
+            'osType%25': { value: 'Mac', formatted_value: 'Mac' },
         };
         const g = { resultSet: { self: ENCODED, resultsRows: [ row ] }, setResultSet( rs ) { this.resultSet = rs; } };
         const trendExplorer = { areaChart: { plotRows: jest.fn() } };
 
         OWA.linkTrendToGrid( trendExplorer, g );
 
-        expect( trendExplorer.areaChart.plotRows.mock.calls[0][0] ).toEqual( [ 'browserType 1', 'osType%' ] );
+        expect( trendExplorer.areaChart.plotRows.mock.calls[0][0] ).toEqual( [ 'browserType+1', 'osType%25' ] );
     } );
 } );
 
@@ -173,6 +174,13 @@ describe( 'the URL a grid asks for next', () => {
 
         explorer.changeDimension( '', 'browserType' );
         expect( php( requested ) ).toEqual( params( { dimensions: 'date,medium,browserType' }, [ 'page' ] ) );
+    } );
+
+    test( 'a swapped dimension on a URL with no dimensions asks for nothing, and does not throw', () => {
+        explorer.resultSet = { self: API + '?metrics=visits&do=reports' };
+
+        expect( () => explorer.changeDimension( 'medium', 'source' ) ).not.toThrow();
+        expect( requested ).toBeNull();
     } );
 
     test( 'a dimension list', () => {
@@ -286,17 +294,17 @@ describe( 'the URL a trend asks for next', () => {
         expect( php( u ) ).toEqual( params( { dimensions: 'date,browserType', resultsPerPage: '1000' }, [ 'page' ] ) );
     } );
 
-    test( 'the grain and the breakdown read the URL\'s dimensions decoded twice', () => {
+    test( 'the grain and the breakdown read the URL\'s dimensions as the server sent them', () => {
         const c = chart();
         c.explorer.resultSet.self = ENCODED;
-        c.xDimension = 'browserType 1';
-        c.options.series = [ { x: 'browserType 1' } ];
+        c.xDimension = 'browserType+1';
+        c.options.series = [ { x: 'browserType+1' } ];
 
         c.changeGranularity( 'month' );
 
         expect( php( c.explorer.getNewResultSet.mock.calls[0][0] ) ).toEqual( [
             [ 'metrics', 'visits+x,%41' ],
-            [ 'dimensions', 'month,osType%' ],
+            [ 'dimensions', 'month,osType%25' ],
             [ 'do', 'reports' ],
             [ 'sort', 'month' ],
         ] );
