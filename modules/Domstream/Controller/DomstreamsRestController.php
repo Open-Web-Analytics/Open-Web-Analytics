@@ -16,7 +16,7 @@ namespace OWA\Module\Domstream\Controller;
  */
 class DomstreamsRestController extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'view_reports' );
@@ -26,13 +26,13 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
         $this->setAuthMethods( array( 'overlay_token', 'app_password', 'cookies' ) );
     }
 
-    function validate() {
+    public function validate() {
 
         $this->addValidation( 'siteId', $this->getParam( 'siteId' ), 'required', array( 'stopOnError' => true ) );
         $this->addValidation( 'recording_id', $this->getParam( 'recording_id' ), 'required', array( 'stopOnError' => true ) );
     }
 
-    function action() {
+    public function action() {
 
         $this->set( 'response', self::recording(
             (string) $this->getParam( 'siteId' ), (string) $this->getParam( 'recording_id' ) ) );
@@ -41,7 +41,7 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
     /**
      * @param  string $site_id
      * @param  string $recording_id
-     * @return array  recording_id, viewport_w, viewport_h, samples
+     * @return array{recording_id: string, viewport_w: int|null, viewport_h: int|null, samples: list<mixed>}
      */
     public static function recording( $site_id, $recording_id ) {
 
@@ -96,12 +96,12 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
         return $out;
     }
 
-    function success() {
+    public function success() {
 
         $this->restResponse( 201, 'response' );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->restResponse( 422, 'response' );
     }

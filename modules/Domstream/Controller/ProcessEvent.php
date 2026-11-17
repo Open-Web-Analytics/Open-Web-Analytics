@@ -25,7 +25,7 @@ class ProcessEvent extends \OWA\Core\Controller {
     /** @var object */
     private $event;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->event = ( isset( $params['event'] ) && is_object( $params['event'] ) )
             ? $params['event']
@@ -34,7 +34,7 @@ class ProcessEvent extends \OWA\Core\Controller {
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         if ( ! $this->event ) {
 
@@ -64,7 +64,7 @@ class ProcessEvent extends \OWA\Core\Controller {
     /**
      * Write the chunk and its payload together, or neither.
      *
-     * @param  array $rows from Chunk::fromEvent()
+     * @param  array{chunk: array<string, int|string|null>, payload: array{id: int, yyyymmdd: int, payload: string}} $rows from Chunk::fromEvent()
      * @return bool  true when stored now or already stored
      */
     public static function store( array $rows ) {
