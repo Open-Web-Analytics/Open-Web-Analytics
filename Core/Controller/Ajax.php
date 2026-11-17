@@ -24,6 +24,9 @@ namespace OWA\Core\Controller;
  */
 class Ajax extends \OWA\Core\AdminController {
 
+    /**
+     * @param array<string, mixed> $params request params: name => value, as sent
+     */
     public function __construct( $params ) {
 
         parent::__construct( $params );
@@ -31,6 +34,10 @@ class Ajax extends \OWA\Core\AdminController {
         $this->setNonceRequired();
     }
 
+    /**
+     * @return mixed answer()'s data for a non-POST, else parent::doAction()'s
+     *               result: whatever the action returned
+     */
     public function doAction() {
 
         if ( \OWA\Core\CoreAPI::serviceSingleton()->request->getRequestType() !== 'POST' ) {
@@ -47,8 +54,8 @@ class Ajax extends \OWA\Core\AdminController {
      *
      * @param  int         $status HTTP status
      * @param  string|null $error  a message for the person, already translated
-     * @param  mixed       $data   the payload
-     * @return array
+     * @param  mixed       $data   the payload, any JSON-encodable value
+     * @return array<string, mixed> the controller's data: name => value
      */
     protected function answer( $status, $error = null, $data = null ) {
 
@@ -61,6 +68,9 @@ class Ajax extends \OWA\Core\AdminController {
         return $this->data;
     }
 
+    /**
+     * @return array<string, mixed> answer()'s data
+     */
     public function notAuthenticatedAction() {
 
         if ( \OWA\Core\Auth::get_instance()->refusedLegacyApiKey() ) {
@@ -71,6 +81,9 @@ class Ajax extends \OWA\Core\AdminController {
         return $this->answer( 401, \OWA\Core\CoreAPI::t( 'You are signed out. Sign in again and retry.' ) );
     }
 
+    /**
+     * @return array<string, mixed> answer()'s data
+     */
     public function nonceFailedAction() {
 
         if ( ! \OWA\Core\CoreAPI::getCurrentUser()->isAuthenticated() ) {
@@ -81,17 +94,28 @@ class Ajax extends \OWA\Core\AdminController {
         return $this->answer( 403, $this->getMsg( 2005 )['message'] );
     }
 
+    /**
+     * @param  string $additionalMessage unused: the answer carries the message alone
+     * @return array<string, mixed> answer()'s data
+     */
     public function authenticatedButNotCapableAction( $additionalMessage = '' ) {
 
         return $this->answer( 403, $this->getMsg( 2003 )['message'] );
     }
 
+    /**
+     * @return array<string, mixed> answer()'s data
+     */
     public function updateAction() {
 
         return $this->answer( 503, \OWA\Core\CoreAPI::t( 'Cannot perform action. OWA Updates required.' ) );
     }
 
-    /** The first validation message. */
+    /**
+     * The first validation message.
+     *
+     * @return array<string, mixed> answer()'s data
+     */
     public function errorAction() {
 
         // Controller::get() reads request params, not data.

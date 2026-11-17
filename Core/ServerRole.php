@@ -30,6 +30,8 @@ namespace OWA\Core;
  *
  * A CLI command names the roles it runs under (Controller\Cli::serverRoles(),
  * by default full and worker); cli.php refuses one this role is not among.
+ *
+ * @phpstan-type BootProblem array{status: int, message: string}
  */
 final class ServerRole {
 
@@ -154,7 +156,10 @@ final class ServerRole {
         return implode( ',', $this->roles );
     }
 
-    /** @return bool */
+    /**
+     * @param  string $role one of the role constants
+     * @return bool
+     */
     public function is( $role ) {
 
         return in_array( $role, $this->roles, true );
@@ -173,7 +178,10 @@ final class ServerRole {
         return array_values( array_intersect( RequestType::ALL, $types ) );
     }
 
-    /** @return bool */
+    /**
+     * @param  string $request_type one of RequestType::ALL
+     * @return bool
+     */
     public function serves( $request_type ) {
 
         return in_array( (string) $request_type, $this->requestTypes(), true );
@@ -233,7 +241,7 @@ final class ServerRole {
     /**
      * The OWA_ constants defined in this process, name => value.
      *
-     * @return array
+     * @return array<string, mixed> name => value, whatever type it was defined with
      */
     public static function definedConstants() {
 
@@ -253,11 +261,12 @@ final class ServerRole {
     /**
      * What stops this role running on a configuration.
      *
-     * @param array $defined  the OWA_ constants defined, name => value
-     * @param array $backends the queue backends configured, type => constant
-     *                        (ModuleActivation::queueBackends())
-     * @param array $backend_constants every constant that would configure one
-     * @return string[] one sentence per problem
+     * @param array<string, mixed>  $defined  the OWA_ constants defined, name => value
+     * @param array<string, string> $backends the queue backends configured, type => constant
+     *                                        (ModuleActivation::queueBackends())
+     * @param list<mixed> $backend_constants every constant that would configure one
+     *                                       (ModuleActivation::queueBackendConstants())
+     * @return list<string> one sentence per problem
      */
     public function configProblems( array $defined, array $backends, array $backend_constants = array() ) {
 
@@ -304,10 +313,10 @@ final class ServerRole {
      * writes it.
      *
      * @param string     $request_type
-     * @param array|null $defined  the OWA_ constants; this process's when null
+     * @param array<string, mixed>|null $defined  the OWA_ constants; this process's when null
      * @param bool|null  $configured whether owa-config.php exists; this install's when null
      * @param bool|null  $installing whether the installer is running (OWA_INSTALLING); this process's when null
-     * @return array|null status (HTTP), message (for the log and the CLI)
+     * @return BootProblem|null status (HTTP), message (for the log and the CLI)
      */
     public static function bootProblem( $request_type, $defined = null, $configured = null, $installing = null ) {
 
@@ -350,7 +359,7 @@ final class ServerRole {
      * beacon by the time OWA boots, so a tracking request only logs.
      *
      * @param string $request_type
-     * @param array  $problem from bootProblem()
+     * @param BootProblem $problem from bootProblem()
      * @return never
      */
     public static function refuse( $request_type, array $problem ) {
@@ -381,7 +390,7 @@ final class ServerRole {
     /**
      * Constants in owa-config.php that are retired, and what to do about each.
      *
-     * @param array|null $defined the OWA_ constants; this process's when null
+     * @param array<string, mixed>|null $defined the OWA_ constants; this process's when null
      * @return array<string,string> constant => what to do
      */
     public static function upgradeNotices( $defined = null ) {

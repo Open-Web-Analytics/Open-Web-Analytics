@@ -59,6 +59,11 @@ class Update extends \OWA\Core\Base {
      */
     public $schema_version;
 
+    /**
+     * Whether this update may run only from the command line.
+     *
+     * @var bool
+     */
     public $is_cli_mode_required = false;
 
     /**
@@ -79,6 +84,9 @@ class Update extends \OWA\Core\Base {
      */
     public $tables = array();
 
+    /**
+     * @return bool
+     */
     public function isCliModeRequired() {
 
         return $this->is_cli_mode_required;
@@ -110,7 +118,8 @@ class Update extends \OWA\Core\Base {
     /**
      * Applies an update
      *
-     * @return boolean
+     * @param  bool $force apply it whatever the recorded schema version
+     * @return bool
      */
     public function apply($force = false) {
 
@@ -188,6 +197,15 @@ class Update extends \OWA\Core\Base {
 
 
     /**
+     * What down() cannot put back, in a sentence, for an update whose up()
+     * deletes or merges data. Empty for an exact inverse. Logged when the
+     * rollback starts.
+     *
+     * @var string
+     */
+    public $down_does_not_restore = '';
+
+    /**
      * Rollsback an update
      *
      * Returns true ONLY when down() ran and succeeded. Refusing an
@@ -199,15 +217,6 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean true if the rollback was applied, false if refused or failed
      */
-    /**
-     * What down() cannot put back, in a sentence, for an update whose up()
-     * deletes or merges data. Empty for an exact inverse. Logged when the
-     * rollback starts.
-     *
-     * @var string
-     */
-    public $down_does_not_restore = '';
-
     public function rollback() {
 
         $current_version = $this->c->get( $this->module_name, 'schema_version' );
@@ -303,8 +312,10 @@ class Update extends \OWA\Core\Base {
      * Interpolated, not bound: SHOW COLUMNS takes no parameters, and both values
      * come from the migration's own code rather than from a request.
      *
-     * @param  object $entity a table entity
+     * @param  object $entity     a table entity
      * @param  string $column
+     * @param  string $definition the column's SQL type, for a column the entity
+     *                            no longer declares; '' to ask the entity
      * @return bool   false only when the column is genuinely missing and could
      *                not be added
      */
@@ -375,6 +386,12 @@ class Update extends \OWA\Core\Base {
         return $entity->dropColumn( $column ) !== false;
     }
 
+    /**
+     * Applies the schema change.
+     *
+     * @param  bool $force
+     * @return bool
+     */
     public function up( $force = false ) {
 
         return false;

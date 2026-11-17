@@ -49,7 +49,7 @@ class Install extends \OWA\Core\Base{
     /**
      * Params array
      *
-     * @var array
+     * @var array<string, mixed> name => value as the request carried it
      */
     public $params;
 

@@ -44,8 +44,7 @@ class Cli extends \OWA\Core\AdminController {
     /**
      * Constructor
      *
-     * @param array $params
-     * @return \OWA\Core\Controller
+     * @param array<string, mixed> $params request params: name => value, as sent
      */
     public function __construct($params) {
 
@@ -308,8 +307,8 @@ class Cli extends \OWA\Core\AdminController {
      * them all or does not say what it takes.
      *
      * @param string $class
-     * @param array  $params
-     * @return string[]
+     * @param array<int|string, mixed> $params argument => value, any type: only the keys are read
+     * @return list<string>
      */
     public static function undeclaredArguments( $class, array $params ) {
 
@@ -327,7 +326,7 @@ class Cli extends \OWA\Core\AdminController {
      * The outcome, for the dispatcher. The FIRST message wins, so what is
      * recorded is the first thing that went wrong rather than the last.
      *
-     * @return array
+     * @return array{outcome: string, message: string}
      */
     public function getCliOutcome() {
 
@@ -398,7 +397,12 @@ class Cli extends \OWA\Core\AdminController {
         $this->job_lease = $lease;
     }
 
-    /** A byte count as KB, or as MB above one megabyte. */
+    /**
+     * A byte count as KB, or as MB above one megabyte.
+     *
+     * @param  int|float $bytes
+     * @return string
+     */
     protected static function readableSize( $bytes ) {
 
         return $bytes > 1048576
