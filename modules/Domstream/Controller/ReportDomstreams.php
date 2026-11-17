@@ -23,6 +23,11 @@ namespace OWA\Module\Domstream\Controller;
  * recording happens inside one visit and every dimension offered is a visit
  * property, so selecting people would return their recordings from other
  * visits too.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type Bindings from \OWA\Core\Db
+ * @phpstan-import-type Cell from \OWA\Module\Base\Classes\PaginatedResultSet
+ * @phpstan-import-type ResultRow from \OWA\Module\Base\Classes\PaginatedResultSet
  */
 class ReportDomstreams extends \OWA\Core\ReportController {
 
@@ -33,7 +38,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
     /** @var \OWA\Module\Base\Classes\ReportSegment|null */
     private $segment = null;
 
-    function action() {
+    public function action() {
 
         $page_path = (string) $this->getParam( 'pagePath' );
 
@@ -76,6 +81,11 @@ class ReportDomstreams extends \OWA\Core\ReportController {
                             'domstreams_constraints', 'domstreams_segment_error' ] ] );
     }
 
+    /**
+     * The report's segment, made once from the request.
+     *
+     * @return \OWA\Module\Base\Classes\ReportSegment
+     */
     private function segment() {
 
         if ( ! $this->segment ) {
@@ -92,15 +102,18 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         return $this->segment;
     }
 
+    /**
+     * @return string the chunk table's name
+     */
     private static function table() {
 
         return \OWA\Core\CoreAPI::entityFactory( 'domstream.domstream_chunk' )->getTableName();
     }
 
     /**
-     * @param  string     $page_path '' for every page
-     * @param  array|null $subjects  session ids a segment selected, null for no segment
-     * @return array sql, params
+     * @param  string           $page_path '' for every page
+     * @param  list<mixed>|null $subjects  session ids a segment selected, as ReportSegment::subjects() answers; null for no segment
+     * @return array{sql: string, params: Bindings}
      */
     private function scopeClause( $page_path, $subjects ) {
 
@@ -148,6 +161,14 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         return array( 'sql' => implode( ' AND ', $where ), 'params' => $params );
     }
 
+    /**
+     * A page of recordings, newest first: a row per recording_id.
+     *
+     * @param  string           $page_path '' for every page
+     * @param  list<mixed>|null $subjects  as scopeClause() takes them
+     * @param  int              $page      from 1
+     * @return list<Row>
+     */
     private function listRecordings( $page_path, $subjects, $page = 1 ) {
 
         $scope  = $this->scopeClause( $page_path, $subjects );
@@ -175,6 +196,11 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         return $rows === null ? array() : (array) $rows;
     }
 
+    /**
+     * @param  string           $page_path '' for every page
+     * @param  list<mixed>|null $subjects  as scopeClause() takes them
+     * @return int
+     */
     private function countRecordings( $page_path, $subjects ) {
 
         $scope = $this->scopeClause( $page_path, $subjects );
@@ -186,6 +212,12 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         return $row ? (int) ( (array) $row )['total'] : 0;
     }
 
+    /**
+     * The recordings in a result set's shape, for the grid.
+     *
+     * @param  list<Row> $recordings as listRecordings() answers them
+     * @return array{resultsRows: list<ResultRow>, resultsReturned: int, resultsTotal: int, guid: string}
+     */
     private function asResultSet( array $recordings ) {
 
         $rows = array();
@@ -225,6 +257,12 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         );
     }
 
+    /**
+     * The Play cell's data: what the grid's overlayLink formatter needs.
+     *
+     * @param  Row $r a row of listRecordings()
+     * @return array{overlay: string, url: string, width: int, height: int, label: string} url '' for no Play link
+     */
     private function playerPayload( array $r ) {
 
         $template = new \OWA\Core\Template();
@@ -268,6 +306,10 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         );
     }
 
+    /**
+     * @param  int    $seconds
+     * @return string h:mm:ss
+     */
     private static function asClock( $seconds ) {
 
         $seconds = max( 0, (int) $seconds );
@@ -275,6 +317,15 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         return sprintf( '%d:%02d:%02d', intdiv( $seconds, 3600 ), intdiv( $seconds % 3600, 60 ), $seconds % 60 );
     }
 
+    /**
+     * @param  string      $type      dimension or metric
+     * @param  string      $name
+     * @param  string      $label
+     * @param  mixed       $value
+     * @param  string|null $formatted the value as shown; null for the value as a string
+     * @param  string      $dataType
+     * @return Cell
+     */
     private static function cell( $type, $name, $label, $value, $formatted = null, $dataType = 'string' ) {
 
         return array(

@@ -34,7 +34,7 @@ class CorsPreflight extends \OWA\Core\View\RestApi {
     /** The methods the API's routes answer. */
     const ALLOWED_METHODS = 'GET, POST, DELETE, OPTIONS';
 
-    function render() {
+    public function render() {
 
         /*
          * The origin is granted, or not, in RestApi::pre() -- only a tracked

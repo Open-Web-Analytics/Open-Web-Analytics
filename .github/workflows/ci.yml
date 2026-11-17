@@ -46,8 +46,7 @@ jobs:
       - name: Lint (php -l)
         run: composer run-script lint
 
-      # Level 5 over the whole tree, templates included, then level 6 over the
-      # paths in phpstan.level6.neon; no baseline.
+      # Level 6 over the whole tree, templates included; no baseline.
       - name: Static analysis (PHPStan)
         run: composer run-script phpstan
 

@@ -12,7 +12,7 @@ namespace OWA\Module\MaxmindGeoip\Controller;
  */
 class OptionsGeoip extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -24,7 +24,7 @@ class OptionsGeoip extends \OWA\Core\AdminController {
         $this->setRequiredCapability( 'edit_settings' );
     }
 
-    function action() {
+    public function action() {
 
         $edition = \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
 

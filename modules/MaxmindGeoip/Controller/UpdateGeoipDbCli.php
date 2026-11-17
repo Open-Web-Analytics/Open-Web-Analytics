@@ -76,14 +76,14 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         );
     }
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $dry_run   = (bool) $this->getParam( 'dry-run' );
         $scheduled = (bool) $this->getParam( 'scheduled' );
@@ -347,6 +347,8 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      * The file whose mtime records a download that has not yet installed.
      * Beside the database, in the directory already checked as writable.
      *
+     * @param  string $dir     the database's directory, as dataDir() answers it
+     * @param  string $edition the edition, as GeoLite2-City
      * @return string
      */
     protected function attemptMarker( $dir, $edition ) {
@@ -372,6 +374,8 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
+     * @param  string $url         the download service's URL for the edition
+     * @param  string $destination the file the archive is written to
      * @return int|string bytes written, or the reason it failed
      */
     protected function download( $url, $destination ) {
@@ -550,6 +554,9 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      * rather than assumed, and moved into place only once it is whole -- a
      * half-extracted database would be read by the very next request.
      *
+     * @param  string $archive the downloaded .tar.gz
+     * @param  string $dir     the database's directory, as dataDir() answers it
+     * @param  string $edition the edition, as GeoLite2-City
      * @return string|null the path written, or the reason it failed
      */
     protected function extractDatabase( $archive, $dir, $edition ) {
@@ -629,6 +636,8 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      * Exactly one previous copy is kept. Keeping more would accumulate 60MB at
      * a time for a file that is replaced twice a week.
      *
+     * @param  string $found       the unpacked .mmdb
+     * @param  string $destination the database's path
      * @return string|null the installed path, or the reason it failed
      */
     protected function installDatabase( $found, $destination ) {
@@ -666,6 +675,12 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         return $destination;
     }
 
+    /**
+     * Deletes a directory and everything in it.
+     *
+     * @param  string $dir
+     * @return void
+     */
     protected function removeTree( $dir ) {
 
         if ( ! is_dir( $dir ) ) {
@@ -690,6 +705,8 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
      * Why the database cannot be written, or null if it can. Same three
      * distinct answers as the user-agent patterns command, for the same reason.
      *
+     * @param  string $dir     the database's directory, as dataDir() answers it
+     * @param  string $edition the edition, as GeoLite2-City
      * @return string|null
      */
     protected function whyNotWritable( $dir, $edition = 'GeoLite2-City' ) {

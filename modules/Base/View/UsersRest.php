@@ -16,7 +16,7 @@ namespace OWA\Module\Base\View;
  */
 class UsersRest extends \OWA\Core\View\RestApi {
         
-    function render() {
+    public function render() {
 
         // Private fields are declared on the User entity, so setResponseData()
         // applies them here and on every other route returning a user.

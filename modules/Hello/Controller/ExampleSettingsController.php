@@ -33,14 +33,14 @@ namespace OWA\Module\Hello\Controller;
 
 class ExampleSettingsController extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         parent::__construct($params);
         $this->type = 'options';
         $this->setRequiredCapability('edit_settings');
     }
 
-    function action() {
+    public function action() {
 
         // add data to container
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );

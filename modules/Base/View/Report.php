@@ -32,9 +32,19 @@ namespace OWA\Module\Base\View;
  */
 
 class Report extends \OWA\Core\View {
-    var $report_params;
 
-    function render($data) {
+    /**
+     * The request's params less guid and caller, for the report's controls.
+     *
+     * @var array<string, mixed>
+     */
+    public $report_params;
+
+    /**
+     * @param  array<string, mixed> $data the view's data, View::$data: name => value
+     * @return void
+     */
+    public function render($data) {
 
         // Set Page title
         $this->t->set('page_title', $this->get('title'));
@@ -157,8 +167,9 @@ class Report extends \OWA\Core\View {
      *
      * @access public
      * @param \OWA\Module\Base\Classes\TimePeriod $period
+     * @return void
      */
-    function setPeriod( $period ) {
+    public function setPeriod( $period ) {
 
         // set in various templates and params
         $this->data['params']['period'] = $period->get();

@@ -33,14 +33,18 @@ namespace OWA\Module\Hello\View;
 
 class ExampleSettings extends \OWA\Core\View {
 
-    function __construct() {
+    public function __construct() {
 
         parent::__construct();
 
         $this->_setPageType( 'Administration Page' );
     }
 
-    function render($data) {
+    /**
+     * @param  array<string, mixed> $data the view's data, View::$data: name => value
+     * @return void
+     */
+    public function render($data) {
 
         // load template
         $this->body->setTemplateFile('hello', 'example_settings.php');

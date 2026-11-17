@@ -31,11 +31,17 @@ namespace OWA\Module\Base\View;
  */
 class SitesRest extends \OWA\Core\View\RestApi {
 
-    function render() {
+    public function render() {
 
         $this->setResponseData( $this->addPropertyNames( $this->get( 'tracked_sites' ) ) );
     }
 
+    /**
+     * The Profiles as plain arrays, each with its Property's name.
+     *
+     * @param  array<\OWA\Module\Base\Entity\Site>|false $sites site_id => the Profile, as getSitesAllowedForCurrentUser() returns them; false when not set
+     * @return array<array<string, mixed>> site_id => the Profile's columns and property_name
+     */
     private function addPropertyNames( $sites ) {
 
         /*

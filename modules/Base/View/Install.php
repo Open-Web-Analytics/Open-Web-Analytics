@@ -33,7 +33,11 @@ namespace OWA\Module\Base\View;
 
 class Install extends \OWA\Core\View {
 
-    function render($data) {
+    /**
+     * @param  array<string, mixed> $data the view's data, View::$data: name => value
+     * @return void
+     */
+    public function render($data) {
 
         //page title
         $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'Installation' ));

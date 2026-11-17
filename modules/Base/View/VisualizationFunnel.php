@@ -31,7 +31,10 @@ namespace OWA\Module\Base\View;
 
 class VisualizationFunnel extends \OWA\Core\View {
 
-    function render() {
+    /**
+     * @return void
+     */
+    public function render() {
 
         $this->body->set_template('visualization_funnel.php');
         $this->body->set('funnel', $this->get('funnel'));

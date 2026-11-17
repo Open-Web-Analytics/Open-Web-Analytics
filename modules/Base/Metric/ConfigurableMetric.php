@@ -36,7 +36,7 @@ namespace OWA\Module\Base\Metric;
 
 class ConfigurableMetric extends \OWA\Core\Metric {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
         
         $this->setMetricType( $params['metric_type'] );
         $this->setName( $params['name'] );

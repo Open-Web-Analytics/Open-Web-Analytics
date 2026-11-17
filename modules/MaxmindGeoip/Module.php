@@ -33,9 +33,15 @@ namespace OWA\Module\MaxmindGeoip;
 
 class Module extends \OWA\Core\Module {
 
-    var $method;
+    /**
+     * The lookup the geolocation filter calls on the maxmind class, by the
+     * lookup_method setting: getLocation or getLocationFromWebService.
+     *
+     * @var string
+     */
+    public $method;
 
-    function __construct() {
+    public function __construct() {
 
         $this->name = 'maxmind_geoip';
         $this->display_name = 'Maxmind GeoIP';
@@ -82,7 +88,7 @@ class Module extends \OWA\Core\Module {
      * maintaining a database it does not read -- and one that activates the
      * module gets it with nothing further to do.
      */
-    function registerCliCommands() {
+    public function registerCliCommands() {
 
         $this->registerCliCommand( 'update-geoip-db', 'maxmind_geoip.updateGeoipDbCli' );
     }
@@ -105,7 +111,7 @@ class Module extends \OWA\Core\Module {
      * is a HEAD request, which does not count against the account's download
      * limit; MaxMind publish twice a week, so a copy is at most a week behind.
      */
-    function registerJobs() {
+    public function registerJobs() {
 
         $this->registerJob(
             'refresh-geoip-db', 'update-geoip-db',
@@ -115,7 +121,7 @@ class Module extends \OWA\Core\Module {
           . 'account\'s download limit. Does nothing until a MaxMind licence key is set.' );
     }
 
-    function registerActions() {
+    public function registerActions() {
 
         $this->registerAction(
             'maxmind_geoip.updateGeoipDbCli',
@@ -139,7 +145,7 @@ class Module extends \OWA\Core\Module {
      * In the Instance section, after Base's pages: the nav drops a section it
      * does not build.
      */
-    function registerAdminPanels() {
+    public function registerAdminPanels() {
 
         $this->registerSettingsPage( array(
             'do'        => 'maxmind_geoip.optionsGeoip',
@@ -165,7 +171,7 @@ class Module extends \OWA\Core\Module {
         ) );
     }
 
-    function registerFilters() {
+    public function registerFilters() {
 
         if ( \OWA\Core\CoreAPI::getSetting('base', 'geolocation_service') === 'maxmind' ) {
 

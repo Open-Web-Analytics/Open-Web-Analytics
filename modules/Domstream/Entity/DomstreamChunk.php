@@ -23,7 +23,7 @@ namespace OWA\Module\Domstream\Entity;
  */
 class DomstreamChunk extends \OWA\Core\Entity {
 
-    function __construct() {
+    public function __construct() {
 
         $this->setTableName( 'domstream_chunk' );
 
