@@ -35,6 +35,10 @@ namespace OWA\Module\Base\Classes;
  * THE SETTINGS ARE THE ROUTINE POLICY. The scheduled partition-rotate reads
  * them and takes no keep=. partition-drop is the manual prune, for raw or a
  * cube on its own, and is not bound by them.
+ *
+ * @phpstan-type Drops array{table: string, months: int, cutoff: int|null, effective: int|null, partitions: list<string>, rows: int}
+ * @phpstan-type Backfill array{property_id: string, table: string, from: int, to: int, held_from: int, events: int, minutes: list<int>}
+ * @phpstan-type Section array{tone: string, title: string, proceed: string, paragraphs: list<string>}
  */
 class Retention {
 
@@ -159,7 +163,7 @@ class Retention {
      *
      * @param string $table
      * @param int    $months
-     * @return array cutoff, effective (the boundary reached), partitions, rows (estimated)
+     * @return Drops effective is the boundary reached; rows are estimated
      */
     public static function dropsFor( $table, $months ) {
 
@@ -199,9 +203,9 @@ class Retention {
      * first day in raw when that is later. One that starts later than that is
      * owed the months between, which raw still has.
      *
-     * @param array $cube_months property id => months, to ask "what if"; others read their settings
+     * @param array<int|string, mixed> $cube_months property id => months, to ask "what if"; others read their settings
      * @param int|null $raw     raw's window, to ask "what if"
-     * @return array[] property_id, table, from, to (yyyymmdd), events, minutes (low, high)
+     * @return list<Backfill> from and to are yyyymmdd; minutes are [ low, high ]
      */
     public static function backfills( array $cube_months = array(), $raw = null ) {
 
@@ -229,7 +233,7 @@ class Retention {
      * @param string $property_id
      * @param string $table
      * @param int    $months
-     * @return array|null
+     * @return Backfill|null
      */
     public static function backfillFor( $property_id, $table, $months ) {
 
@@ -273,7 +277,7 @@ class Retention {
      * Queue the rebuild each cube is owed. Deduplicated per Property, so saving
      * twice or a rotate after a save queues it once.
      *
-     * @param array[] $backfills from backfills()
+     * @param list<Backfill> $backfills from backfills()
      * @return int jobs queued
      */
     public static function enqueueBackfills( array $backfills ) {
@@ -331,9 +335,9 @@ class Retention {
      * matters contributes a section; the title and the button come from the
      * most serious of them.
      *
-     * @param array $proposed raw => months (install screen), cube => months, property_id (Property screen),
+     * @param array<string, mixed> $proposed raw => months (install screen), cube => months, property_id (Property screen),
      *                        or cube_default => months (install screen)
-     * @return array needed, tone ('danger' or 'notice'), title, paragraphs, proceed
+     * @return array{needed: bool, tone?: string, title?: string, paragraphs?: list<string>, proceed?: string} tone is 'danger' or 'notice'
      */
     public static function preview( array $proposed ) {
 
@@ -454,7 +458,11 @@ class Retention {
         );
     }
 
-    /** @return string[] */
+    /**
+     * @param  int   $months
+     * @param  Drops $drop
+     * @return list<string>
+     */
     private static function rawParagraphs( $months, array $drop ) {
 
         $when = self::when();
@@ -483,7 +491,10 @@ class Retention {
         return $out;
     }
 
-    /** @return string[] */
+    /**
+     * @param  array<string, int> $shorter property id => its new window, in months
+     * @return list<string>
+     */
     private static function cubeShorterParagraphs( array $shorter ) {
 
         $months     = array_unique( array_values( $shorter ) );
@@ -503,7 +514,10 @@ class Retention {
         );
     }
 
-    /** @return string[] */
+    /**
+     * @param  list<Backfill> $owed
+     * @return list<string>
+     */
     private static function rebuildParagraphs( array $owed ) {
 
         $events = 0;
@@ -537,7 +551,11 @@ class Retention {
         );
     }
 
-    /** "the next daily maintenance run (Tue 6 Oct, 04:12)", for "At ..." or "From ... on". */
+    /**
+     * "the next daily maintenance run (Tue 6 Oct, 04:12)", for "At ..." or "From ... on".
+     *
+     * @return string
+     */
     private static function when() {
 
         $next = self::nextRotate();
@@ -548,7 +566,12 @@ class Retention {
             : \OWA\Core\CoreAPI::t( 'the next maintenance run, once the scheduler is running' );
     }
 
-    /** 20240101 as "1 Jan 2024". */
+    /**
+     * 20240101 as "1 Jan 2024".
+     *
+     * @param  int|string|null $yyyymmdd
+     * @return string
+     */
     private static function day( $yyyymmdd ) {
 
         $d = \DateTimeImmutable::createFromFormat( 'Ymd', (string) $yyyymmdd );
@@ -596,7 +619,13 @@ class Retention {
         return \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
     }
 
-    /** A window that keeps less than another. 0 keeps everything. */
+    /**
+     * A window that keeps less than another. 0 keeps everything.
+     *
+     * @param  mixed $a months, as months() reads it
+     * @param  mixed $b months, as months() reads it
+     * @return bool
+     */
     public static function shorter( $a, $b ) {
 
         $a = self::months( $a );
@@ -605,7 +634,12 @@ class Retention {
         return $a > 0 && ( $b <= 0 || $a < $b );
     }
 
-    /** A stored or posted value as whole months, 0 for none or nonsense. */
+    /**
+     * A stored or posted value as whole months, 0 for none or nonsense.
+     *
+     * @param  mixed $value
+     * @return int
+     */
     public static function months( $value ) {
 
         return is_numeric( $value ) && (int) $value > 0 ? (int) $value : 0;
@@ -635,6 +669,9 @@ class Retention {
     /**
      * Raw events for these sites between two days, inclusive.
      *
+     * @param  string[] $sites
+     * @param  int      $from yyyymmdd
+     * @param  int      $to   yyyymmdd
      * @return int
      */
     private static function countRaw( array $sites, $from, $to ) {

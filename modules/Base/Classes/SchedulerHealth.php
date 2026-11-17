@@ -30,6 +30,9 @@ namespace OWA\Module\Base\Classes;
  * scheduler; an installation whose only job is monthly keeps the forty days,
  * because anything shorter would cry wolf and teach people to ignore the
  * banner.
+ *
+ * @phpstan-type Problem array{headline: string, message: string}
+ * @phpstan-import-type JobRegistration from \OWA\Core\Module
  */
 class SchedulerHealth {
 
@@ -50,7 +53,7 @@ class SchedulerHealth {
     /** A stop is this many of the most frequent job's intervals without a run. */
     const MISSED_INTERVALS = 3;
 
-    /** @var array|null|false  false = not yet computed */
+    /** @var Problem|null|false  false = not yet computed */
     protected static $memo = false;
 
     /**
@@ -59,7 +62,7 @@ class SchedulerHealth {
      * Memoised: this is consulted on every admin page render, and the answer
      * cannot change within a single request.
      *
-     * @return array|null  ['headline' => string, 'message' => string]
+     * @return Problem|null
      */
     public static function problem() {
 
@@ -74,7 +77,7 @@ class SchedulerHealth {
     }
 
     /**
-     * @return array|null
+     * @return Problem|null
      */
     protected static function check() {
 
@@ -141,7 +144,7 @@ class SchedulerHealth {
      * A job's interval is the gap between its next two occurrences, which is
      * exact for the evenly spread schedules OWA registers.
      *
-     * @param array $jobs name => job, as JobStatus::jobs() returns them
+     * @param array<string, JobRegistration> $jobs name => job, as JobStatus::jobs() returns them
      * @param int|null $now
      * @return int seconds
      */
@@ -181,7 +184,7 @@ class SchedulerHealth {
      * MIN_SILENT_FOR -- Service::loadJobs() is otherwise left to the scheduler
      * commands.
      *
-     * @return array
+     * @return array<string, JobRegistration>
      */
     protected static function registeredJobs() {
 
