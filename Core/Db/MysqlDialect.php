@@ -398,6 +398,23 @@ if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT_DEFAULT' ) ) { define('OWA_DTD_TABLE_R
 trait MysqlDialect
 {
     /**
+     * The encoding to negotiate on the connection.
+     *
+     * Deliberately NOT "whatever the tables are declared with" -- tables may
+     * differ from one another, and the connection has to serve all of them.
+     * It is a ceiling in both directions, so it is set to the widest encoding
+     * and each table decides for itself underneath it.
+     *
+     * @return string
+     */
+    protected function connectionCharacterEncoding() {
+
+        return defined( 'OWA_DTD_CONNECTION_ENCODING' )
+            ? (string) OWA_DTD_CONNECTION_ENCODING
+            : 'utf8mb4';
+    }
+
+    /**
      * The session sql_mode to apply on connect, or null to leave the server's.
      *
      * OWA sent `SET SESSION sql_mode=''` on every connection for years, which
@@ -430,23 +447,6 @@ trait MysqlDialect
      *
      * @return string|null
      */
-    /**
-     * The encoding to negotiate on the connection.
-     *
-     * Deliberately NOT "whatever the tables are declared with" -- tables may
-     * differ from one another, and the connection has to serve all of them.
-     * It is a ceiling in both directions, so it is set to the widest encoding
-     * and each table decides for itself underneath it.
-     *
-     * @return string
-     */
-    protected function connectionCharacterEncoding() {
-
-        return defined( 'OWA_DTD_CONNECTION_ENCODING' )
-            ? (string) OWA_DTD_CONNECTION_ENCODING
-            : 'utf8mb4';
-    }
-
     protected function sessionSqlMode() {
 
         if ( defined( 'OWA_DB_SQL_MODE' ) ) {
@@ -473,7 +473,7 @@ trait MysqlDialect
      *
      * @return bool
      */
-    function supportsPartitioning() {
+    public function supportsPartitioning() {
 
         return defined( 'OWA_DTD_PARTITION_BY_RANGE' );
     }
@@ -482,9 +482,9 @@ trait MysqlDialect
      * The partitions on a table, in range order.
      *
      * @param string $table_name
-     * @return array of ['name' => string, 'less_than' => string, 'rows' => int]
+     * @return list<array{name: string, less_than: string, rows: int}>
      */
-    function listPartitions( $table_name ) {
+    public function listPartitions( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -519,7 +519,7 @@ trait MysqlDialect
      * @param string $name
      * @return bool|null null when the name cannot be one
      */
-    function databaseExists( $name ) {
+    public function databaseExists( $name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]{1,64}$/', (string) $name ) ) {
 
@@ -540,7 +540,7 @@ trait MysqlDialect
      * @param string $name
      * @return bool
      */
-    function createDatabase( $name ) {
+    public function createDatabase( $name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]{1,64}$/', (string) $name ) ) {
 
@@ -560,7 +560,7 @@ trait MysqlDialect
      * @param string $name
      * @return bool
      */
-    function dropDatabase( $name ) {
+    public function dropDatabase( $name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]{1,64}$/', (string) $name ) ) {
 
@@ -577,9 +577,9 @@ trait MysqlDialect
      * default (information_schema_stats_expiry), so they are "about".
      *
      * @param string $table_name
-     * @return array|null ['rows' => int, 'bytes' => int], or null when unknown
+     * @return array{rows: int, bytes: int}|null  null when unknown
      */
-    function tableSize( $table_name ) {
+    public function tableSize( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -616,9 +616,9 @@ trait MysqlDialect
      * @param string $table_name
      * @param string $partition
      * @param string $column
-     * @return array|null  ['rows','min','max'], or null where it cannot be read
+     * @return array{rows: int, min: string|null, max: string|null}|null  null where it cannot be read
      */
-    function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
+    public function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
 
         foreach ( array( $table_name, $partition, $column ) as $identifier ) {
 
@@ -662,7 +662,7 @@ trait MysqlDialect
      * @param string $prefix
      * @return string[]
      */
-    function listColumns( $table_name, $prefix = '' ) {
+    public function listColumns( $table_name, $prefix = '' ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name )
           || ( $prefix !== '' && ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $prefix ) ) ) {
@@ -718,7 +718,7 @@ trait MysqlDialect
      * @param string $table_name
      * @return bool|null
      */
-    function hasInstantColumns( $table_name ) {
+    public function hasInstantColumns( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -781,7 +781,7 @@ trait MysqlDialect
         return $counters;
     }
 
-    function getPrimaryKeyColumns( $table_name ) {
+    public function getPrimaryKeyColumns( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -828,7 +828,7 @@ trait MysqlDialect
      * @param string $table_name
      * @return bool
      */
-    function tableExists( $table_name ) {
+    public function tableExists( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
 
@@ -843,7 +843,12 @@ trait MysqlDialect
         return ( is_array( $row ) && isset( $row['n'] ) && (int) $row['n'] > 0 );
     }
 
-    function indexExists( $table_name, $column_name ) {
+    /**
+     * @param  string $table_name
+     * @param  string $column_name  one column, or several comma-separated
+     * @return bool
+     */
+    public function indexExists( $table_name, $column_name ) {
 
         $cols = $this->normalizeIndexColumns( $column_name );
 

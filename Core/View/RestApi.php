@@ -24,7 +24,7 @@ namespace OWA\Core\View;
  */
 class RestApi extends \OWA\Core\View {
 	
-	function __construct() {
+	public function __construct() {
 	 	
 	 	parent::__construct();
 	 	
@@ -35,11 +35,12 @@ class RestApi extends \OWA\Core\View {
     }
     
     /**
-	 * Used to set values of the response that we do not want the
-	 * abstract view to worry about or have ot deal with.
-	 *
-	 */
-    function pre() {
+     * Used to set values of the response that we do not want the
+     * abstract view to worry about or have ot deal with.
+     *
+     * @return void
+     */
+    public function pre() {
 
         // The response is JSON. It was optionally JSONP -- the same body wrapped
         // in a caller-named function so it could be loaded with a <script> tag,
@@ -90,8 +91,12 @@ class RestApi extends \OWA\Core\View {
         $this->body->set('error', $error);
     }
     
-    /** The response's data: the value of the key a controller named with restResponse(). */
-    function render() {
+    /**
+     * The response's data: the value of the key a controller named with restResponse().
+     *
+     * @return void
+     */
+    public function render() {
 
         if ( ! empty( $this->data['response_key'] ) ) {
 
@@ -100,9 +105,12 @@ class RestApi extends \OWA\Core\View {
     }
 
     /**
-	 * Sets the data payload of the response
-	 */
-    function setResponseData( $data ) {
+     * Sets the data payload of the response
+     *
+     * @param  mixed $data the payload, any type: an entity in it is reduced to its public properties
+     * @return void
+     */
+    public function setResponseData( $data ) {
 
 	    $this->body->set( 'response_data', self::toResponseData( $data ) );
     }
@@ -174,6 +182,8 @@ class RestApi extends \OWA\Core\View {
      * Only 'value' is emitted per column. The old shape carried whatever public
      * members DbColumn happened to have, which meant schema details rode along
      * in a public payload; consumers read .value, and that is what is promised.
+     *
+     * @return array{properties: array<string, array{value: mixed}>} a column's value is of the column's type
      */
     protected static function toPropertyBag( \OWA\Core\Entity $entity ) {
 
@@ -187,6 +197,39 @@ class RestApi extends \OWA\Core\View {
 	    return array( 'properties' => $properties );
     }
     
+    /**
+     * The host without a leading `www.`, when what is left is still a domain
+     * of two labels or more: `www.example.com` is `example.com`; `www.com`
+     * stays as it is.
+     *
+     * @param  string $host
+     * @return string
+     */
+    private static function withoutWww( $host ) {
+
+        $rest = substr( $host, 4 );
+
+        return strncasecmp( $host, 'www.', 4 ) === 0 && strpos( $rest, '.' ) !== false ? $rest : $host;
+    }
+
+    /**
+     * An origin's port: the one it names, else its scheme's default.
+     *
+     * @param  string $origin
+     * @return int
+     */
+    private static function originPort( $origin ) {
+
+        $port = parse_url( $origin, PHP_URL_PORT );
+
+        if ( $port ) {
+
+            return (int) $port;
+        }
+
+        return strtolower( (string) parse_url( $origin, PHP_URL_SCHEME ) ) === 'https' ? 443 : 80;
+    }
+
     /**
      * Decides whether an Origin belongs to one of this installation's sites.
      *
@@ -202,35 +245,12 @@ class RestApi extends \OWA\Core\View {
      *
      * Pure: no request, no database, no headers. See tests/CorsOriginMatchTest.
      *
-     * @param    string    $origin    the request's Origin header
-     * @param    array    $sites    site rows as getSitesList() returns them
+     * @param    mixed    $origin    the request's Origin header as read: anything
+     *                               but a non-empty string is refused
+     * @param    array<mixed> $sites  site rows as getSitesList() returns them;
+     *                               an element that is not an array is skipped
      * @return    string|null    the Origin to echo back, or null to refuse
      */
-    /**
-     * The host without a leading `www.`, when what is left is still a domain
-     * of two labels or more: `www.example.com` is `example.com`; `www.com`
-     * stays as it is.
-     */
-    private static function withoutWww( $host ) {
-
-        $rest = substr( $host, 4 );
-
-        return strncasecmp( $host, 'www.', 4 ) === 0 && strpos( $rest, '.' ) !== false ? $rest : $host;
-    }
-
-    /** An origin's port: the one it names, else its scheme's default. */
-    private static function originPort( $origin ) {
-
-        $port = parse_url( $origin, PHP_URL_PORT );
-
-        if ( $port ) {
-
-            return (int) $port;
-        }
-
-        return strtolower( (string) parse_url( $origin, PHP_URL_SCHEME ) ) === 'https' ? 443 : 80;
-    }
-
     public static function matchAllowedOrigin( $origin, array $sites ) {
 
         if ( ! is_string( $origin ) || $origin === '' ) {
@@ -311,7 +331,10 @@ class RestApi extends \OWA\Core\View {
         return null;
     }
 
-    function addCorsHeaders() {
+    /**
+     * @return void
+     */
+    public function addCorsHeaders() {
 
 	    $s = \OWA\Core\CoreAPI::serviceSingleton();
 	    $HTTP_ORIGIN = $s->request->getServerParam('HTTP_ORIGIN');

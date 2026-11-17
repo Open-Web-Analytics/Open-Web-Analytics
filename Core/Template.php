@@ -28,6 +28,13 @@ namespace OWA\Core;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-type LinkParams array<string, scalar|null>
+ * @phpstan-type CallerParams array{module?: string, link_state?: array<string, mixed>, keep_state?: bool|list<string>, view?: string, subview?: string}
+ * @phpstan-type RailItem array{label: string, href: string, current: bool, heading?: string, icon?: string}
+ * @phpstan-type RailSection array{id: string, label: string, icon: string, href: string, current: bool, items: list<RailItem>, foot: bool}
+ * @phpstan-type SettingsEntry array{label: string, do: string, params?: array<string, scalar|null>, capability?: string, current_for?: list<string>}
+ * @phpstan-type SettingsItem array{label: string, href: string, current: bool}
  */
 
 class Template extends TemplateEngine {
@@ -35,28 +42,40 @@ class Template extends TemplateEngine {
     /**
      * Configuration
      *
-     * @var array
+     * @var array<string, mixed> the base module's settings, each of its own type
      */
-    var $config;
+    public $config;
 
-    var $module_local_template_dir;
+    /** @var string */
+    public $module_local_template_dir;
 
-    var $module_template_dir;
+    /** @var string */
+    public $module_template_dir;
 
-    var $e;
+    /** @var \OWA\Module\Base\Classes\Error */
+    public $e;
 
-    var $period;
+    /** @var mixed nothing in OWA sets or reads it */
+    public $period;
 
-    var $time_now;
+    /** @var array<string, string|int> Lib::time_now() when the template was made */
+    public $time_now;
 
     /**
      * Params passed by calling caller
      *
-     * @var array
+     * link_state is the request's params as they arrived (View::_setLinkState()).
+     *
+     * @var CallerParams
      */
-    var $caller_params;
+    public $caller_params;
 
-    function __construct( $module = null, $caller_params = array() ) {
+    /**
+     * @param string|null  $module        the module whose templates are looked up, read only
+     *                                    when $caller_params names one; else base
+     * @param CallerParams $caller_params
+     */
+    public function __construct( $module = null, $caller_params = array() ) {
 
         $this->caller_params = $caller_params;
 
@@ -75,7 +94,11 @@ class Template extends TemplateEngine {
         $this->time_now = \OWA\Core\Lib::time_now();
     }
 
-    function _setTemplateDir($module) {
+    /**
+     * @param  string|null $module
+     * @return void
+     */
+    public function _setTemplateDir($module) {
 
         // set module template dir (on-disk module dir is PascalCase; PSR-4)
         $this->module_template_dir = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $module ) . '/templates/';
@@ -86,7 +109,12 @@ class Template extends TemplateEngine {
         return;
     }
 
-    function getTemplatePath($module, $file) {
+    /**
+     * @param  string      $module
+     * @param  string|null $file
+     * @return string|false the template's full path; false when there is none
+     */
+    public function getTemplatePath($module, $file) {
 
         $this->_setTemplateDir($module);
 
@@ -117,9 +145,10 @@ class Template extends TemplateEngine {
     /**
      * Set the template file
      * @depricated
-     * @param string $file
+     * @param  string|null $file
+     * @return bool whether the file was found
      */
-    function set_template($file = null) {
+    public function set_template($file = null) {
 
         if (!$file):
             \OWA\Core\CoreAPI::error('No template file was specified.');
@@ -160,6 +189,9 @@ class Template extends TemplateEngine {
      * and any character outside [A-Za-z0-9._-]. This neutralizes payloads
      * that rely on quoted-printable escapes, angle brackets, question marks,
      * or backticks surviving into an error-log line.
+     *
+     * @param  mixed  $file a template name as configured: anything but a string is ''
+     * @return string
      */
     public static function sanitizeTemplateName( $file ) {
 
@@ -172,8 +204,13 @@ class Template extends TemplateEngine {
 
         return (string) $file;
     }
-    
-    function setTemplateFile($module, $file) {
+
+    /**
+     * @param  string $module
+     * @param  string $file
+     * @return void
+     */
+    public function setTemplateFile($module, $file) {
 
         //choose file
         $filepath = $this->getTemplatePath($module, $file);
@@ -191,7 +228,7 @@ class Template extends TemplateEngine {
      * @param string $trailing
      * @return string
      */
-    function truncate ($str, $length=10, $trailing='...')  {
+    public function truncate ($str, $length=10, $trailing='...')  {
 
       return \OWA\Core\Lib::truncate ($str, $length, $trailing);
     }
@@ -216,8 +253,8 @@ class Template extends TemplateEngine {
      * instead -- array('do' => 'base.report', 'reportId' => 'pages') -- and a
      * plain string still means what it always meant.
      *
-     * @param array $link a nav link struct
-     * @return array parameters for makeLink()
+     * @param array<string, mixed> $link a nav link struct: ref, anchortext, priviledge, ...
+     * @return array<string, mixed> parameters for makeLink(): a ref given as a map is returned as given
      */
     public function navLinkParams( $link ) {
 
@@ -236,8 +273,8 @@ class Template extends TemplateEngine {
      * Every parameter the ref names has to match, which for a report means the
      * reportId as well as the action.
      *
-     * @param array $link a nav link struct
-     * @param array $params the current request parameters
+     * @param array<string, mixed> $link a nav link struct: ref, anchortext, priviledge, ...
+     * @param array<string, mixed> $params the current request parameters
      * @return bool
      */
     public function navLinkIsCurrent( $link, $params ) {
@@ -264,7 +301,11 @@ class Template extends TemplateEngine {
 
 
 
-    function makeWikiLink( $page ) {
+    /**
+     * @param  string $page
+     * @return string
+     */
+    public function makeWikiLink( $page ) {
 
         return sprintf( '%s/%s', $this->config['wiki_url'], $page );
     }
@@ -288,12 +329,19 @@ class Template extends TemplateEngine {
      * @param string $key
      * @return string
      */
-    function configFileConstantFor( $module, $key ) {
+    public function configFileConstantFor( $module, $key ) {
 
         return \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( $module, $key );
     }
 
-    function makeParamString($params = array(), $add_state = false, $format = 'query', $namespace = true) {
+    /**
+     * @param  LinkParams $params
+     * @param  bool       $add_state
+     * @param  string     $format    query, cookie or json
+     * @param  bool       $namespace not read
+     * @return string|false false when json_encode() fails
+     */
+    public function makeParamString($params = array(), $add_state = false, $format = 'query', $namespace = true) {
 
         $all_params = array();
 
@@ -348,7 +396,12 @@ class Template extends TemplateEngine {
 
     }
 
-    function getAllStateParams() {
+    /**
+     * The link state, then the period's properties when a timePeriod is set.
+     *
+     * @return array<string, mixed> name => value, the link state as the request carried it
+     */
+    public function getAllStateParams() {
 
         $all_params = array();
 
@@ -376,12 +429,15 @@ class Template extends TemplateEngine {
      * On a screen that keeps state in its links (View::keepStateInLinks()),
      * a link asking for none gets those keys.
      *
-     * @param array $params
-     * @param boolean|string[] $add_state true for all of the link state, or the
+     * @param LinkParams $params
+     * @param bool|list<string> $add_state true for all of the link state, or the
      *                                    keys of it to add (array( 'propertyId' ))
+     * @param string $url  the base URL; main_url when empty
+     * @param bool   $xml  whether to escape the link for XML
+     * @param bool   $add_nonce
      * @return string
      */
-    function makeLink($params = array(), $add_state = false, $url = '', $xml = false, $add_nonce = false) {
+    public function makeLink($params = array(), $add_state = false, $url = '', $xml = false, $add_nonce = false) {
 
         $all_params = array();
 
@@ -454,7 +510,11 @@ class Template extends TemplateEngine {
 
     }
 
-    function escapeForXml($string) {
+    /**
+     * @param  string $string
+     * @return string
+     */
+    public function escapeForXml($string) {
 
         $string = str_replace(array('&', '"', "'", '<', '>' ), array('&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'), $string);
         // removes non-ascii chars
@@ -462,7 +522,14 @@ class Template extends TemplateEngine {
         return $string;
     }
 
-    function makeAbsoluteLink($params = array(), $add_state = false, $url = '', $xml = false) {
+    /**
+     * @param  LinkParams        $params
+     * @param  bool|list<string> $add_state
+     * @param  string            $url  the base URL; main_absolute_url when empty
+     * @param  bool              $xml
+     * @return string
+     */
+    public function makeAbsoluteLink($params = array(), $add_state = false, $url = '', $xml = false) {
 
         if (empty($url)):
             $url = $this->config['main_absolute_url'];
@@ -513,11 +580,11 @@ class Template extends TemplateEngine {
      * pagePath==/pricing, and no token ever matched -- every heatmap's data
      * was refused with a 401 and the overlay drew nothing.
      *
-     * @param    array    $params        the API request params
+     * @param    LinkParams $params      the API request params
      * @param    string    $resourceKey    which param names the resource
      * @return    string
      */
-    function makeOverlayApiLink( $params, $resourceKey ) {
+    public function makeOverlayApiLink( $params, $resourceKey ) {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
 
@@ -557,9 +624,12 @@ class Template extends TemplateEngine {
     /**
      * A REST link with a nonce for the HTTP method the page sends it with.
      *
-     * @param string $method GET, POST, DELETE, ...
+     * @param LinkParams        $params    version, module and do, and the request's own
+     * @param bool|list<string> $add_state
+     * @param string            $method    GET, POST, DELETE, ...
+     * @return string
      */
-    function makeApiLink($params = array(), $add_state = false, $method = 'GET') {
+    public function makeApiLink($params = array(), $add_state = false, $method = 'GET') {
 
         $url = $this->config['rest_api_url'];
 
@@ -568,7 +638,12 @@ class Template extends TemplateEngine {
         return $this->makeLink($params, $add_state, $url);
     }
 
-    function makeImageLink($path, $absolute = false) {
+    /**
+     * @param  string $path     under the public/ asset tree
+     * @param  bool   $absolute not read: the assets URL is absolute
+     * @return string
+     */
+    public function makeImageLink($path, $absolute = false) {
 
         // Server-rendered images live in the public/ asset tree (the build copies
         // base/i/ -> public/base/i/), NOT the module source tree -- modules_url is
@@ -617,7 +692,7 @@ class Template extends TemplateEngine {
      * @param bool $absolute
      * @return string|false
      */
-    function makeImageLinkIfPresent( $path, $absolute = false ) {
+    public function makeImageLinkIfPresent( $path, $absolute = false ) {
 
         if ( ! $path || ! self::assetsAreBuilt() ) {
 
@@ -641,8 +716,11 @@ class Template extends TemplateEngine {
         return $this->makeImageLink( $path, $absolute );
     }
 
-
-    function setTemplate($file) {
+    /**
+     * @param  string      $file
+     * @return string|null the template's full path; the one set before when $file is not found
+     */
+    public function setTemplate($file) {
 
         $this->set_template($file);
         return $this->file;
@@ -684,8 +762,12 @@ class Template extends TemplateEngine {
      *
      * One bug goes with it: an empty array used to return '}' on its own, since
      * substr('{', 0, -2) is ''. It now returns '{}'.
+     *
+     * @param  array<mixed> $array values of any type: an object by its
+     *                             toString(), an array as 'Array'
+     * @return string|false false when json_encode() fails
      */
-    function makeJson($array) {
+    public function makeJson($array) {
 
         $reserved_words = \OWA\Core\CoreAPI::getSetting('base', 'reserved_words');
 
@@ -719,14 +801,24 @@ class Template extends TemplateEngine {
             JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_FORCE_OBJECT );
     }
 
-    function headerActions() {
+    /**
+     * @return void
+     */
+    public function headerActions() {
 
         return;
     }
 
 
 
-    function makePaginationFromResultSet($pagination, $map = array(), $add_state = true, $template = '') {
+    /**
+     * @param  object{page: int, total_pages: int} $pagination
+     * @param  LinkParams        $map       each page's link params, page aside
+     * @param  bool|list<string> $add_state
+     * @param  string            $template  not read
+     * @return string HTML; '' for one page
+     */
+    public function makePaginationFromResultSet($pagination, $map = array(), $add_state = true, $template = '') {
 
         $pages = '';
         //print_r($pagination);
@@ -769,7 +861,11 @@ class Template extends TemplateEngine {
         return $pages;
     }
 
-    function get($name) {
+    /**
+     * @param  string $name
+     * @return mixed  a view var, any type; false when it is not set
+     */
+    public function get($name) {
 
         if (array_key_exists($name, $this->vars)) {
             return $this->vars[$name];
@@ -779,7 +875,12 @@ class Template extends TemplateEngine {
 
     }
 
-    function getValue( $key, $var) {
+    /**
+     * @param  int|string $key
+     * @param  mixed      $var  only an array is looked in
+     * @return mixed      $var[$key], any type; null when it is not there
+     */
+    public function getValue( $key, $var) {
 
         if ( isset( $var ) && is_array( $var ) ) {
             if ( array_key_exists( $key, $var) ) {
@@ -807,13 +908,13 @@ class Template extends TemplateEngine {
      * `current_for` is also current on those screens: each is a set of params
      * that must all match, and a value ending in `*` matches by its prefix.
      *
-     * @param array  $nav        the Reports navigation group
-     * @param string $propertyId the Property every report link is of
-     * @param array  $params     the request's params, to mark what is current
+     * @param array<array<string, mixed>> $nav the Reports navigation group: nav link structs
+     * @param string|null $propertyId the Property every report link is of
+     * @param array<string, mixed> $params the request's params, to mark what is current
      * @param string $accessSiteId a Profile of the Property, which each link's
      *                           capability is checked against
      * @param bool   $inSettings whether this screen is a settings screen
-     * @return array[] id, label, icon, href, current, items, foot
+     * @return list<RailSection>
      */
     public function navRail( $nav, $propertyId, $params = array(), $accessSiteId = '', $inSettings = false ) {
 
@@ -904,8 +1005,8 @@ class Template extends TemplateEngine {
     /**
      * Whether the request is one of the screens a section also answers for.
      *
-     * @param array $section a nav section, with `current_for` param sets
-     * @param array $params  the request's params
+     * @param array<string, mixed> $section a nav section, with `current_for` param sets
+     * @param array<string, mixed> $params  the request's params
      * @return bool
      */
     private function navIsCurrentFor( $section, $params ) {
@@ -943,8 +1044,8 @@ class Template extends TemplateEngine {
      *
      * Items sharing a `heading` are one group, in the order they come.
      *
-     * @param array[] $rail as navRail() returns it
-     * @return array|null title, groups
+     * @param list<RailSection> $rail as navRail() returns it
+     * @return array{title: string, groups: list<array{heading: string, items: list<RailItem>}>}|null
      */
     public static function reportColumn( $rail ) {
 
@@ -993,9 +1094,9 @@ class Template extends TemplateEngine {
      * Every entry links with the Property in the link state, so the next
      * screen is of the same one; an entry naming its own keeps that.
      *
-     * @param array $hierarchyNav as Controller::getHierarchyNav() returns it
-     * @param array $params       the request's params
-     * @return array[] heading, items (label, href, current)
+     * @param array<string, list<SettingsEntry>> $hierarchyNav as Controller::getHierarchyNav() returns it
+     * @param array<string, mixed> $params the request's params
+     * @return list<array{heading: string, items: list<SettingsItem>}>
      */
     public function settingsColumn( $hierarchyNav, $params = array() ) {
 
@@ -1066,9 +1167,9 @@ class Template extends TemplateEngine {
      * The tabs of a Profile's page: the hierarchy nav's 'Observation Profile'
      * group, on a screen that is one of them. Empty anywhere else.
      *
-     * @param array $hierarchyNav
-     * @param array $params
-     * @return array[] label, href, current
+     * @param array<string, list<SettingsEntry>> $hierarchyNav
+     * @param array<string, mixed> $params
+     * @return list<SettingsItem>
      */
     public function profileTabs( $hierarchyNav, $params = array() ) {
 
@@ -1112,8 +1213,8 @@ class Template extends TemplateEngine {
      * `edit` aside, which says how the screen is opened rather than which
      * thing it is about.
      *
-     * @param array $entry  a hierarchy nav entry
-     * @param array $params the request's params
+     * @param SettingsEntry $entry  a hierarchy nav entry
+     * @param array<string, mixed> $params the request's params
      * @return bool
      */
     public static function settingsEntryIsCurrent( $entry, $params ) {
@@ -1145,7 +1246,7 @@ class Template extends TemplateEngine {
      * @param     string    $action the action that the nonce should be tied to.
      * @return    string The html fragment
      */
-    function createNonceFormField($action) {
+    public function createNonceFormField($action) {
 
         return sprintf(
                 '<input type="hidden" name="nonce" value="%s">',
@@ -1165,7 +1266,7 @@ class Template extends TemplateEngine {
      * @param string $language the label in the box's top bar
      * @return string HTML
      */
-    function codeBlock( $code, $language = 'HTML' ) {
+    public function codeBlock( $code, $language = 'HTML' ) {
 
         $e = function ( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES, 'UTF-8' ); };
 
@@ -1183,10 +1284,13 @@ class Template extends TemplateEngine {
     /**
      * Outputs data into the template
      *
-     * @param    string    $output        The String to be output into the template
+     * @param    mixed   $output     the value to print, any type: escape() makes
+     *                               it a string; unsanitized it is echoed as is
      * @param    bool    $sanitize    Flag that will sanitize the output for display
+     * @param    bool    $decode_special_entities whether an escaped & is printed as &
+     * @return   void
      */
-    function out($output, $sanitize = true, $decode_special_entities = false) {
+    public function out($output, $sanitize = true, $decode_special_entities = false) {
 
         if ( $sanitize ) {
             $output = $this->escape($output);
@@ -1236,8 +1340,9 @@ class Template extends TemplateEngine {
      *
      * @param string $text      the sentence, from CoreAPI::t() or tn()
      * @param string ...$markup HTML for its placeholders, in order
+     * @return void
      */
-    function outMarkup( $text, ...$markup ) {
+    public function outMarkup( $text, ...$markup ) {
 
         echo vsprintf( $this->escape( (string) $text ), array_map( 'strval', $markup ) );
     }
@@ -1259,8 +1364,9 @@ class Template extends TemplateEngine {
      *
      * @param string $url  the URL to emit
      * @param bool   $echo when true (default) echo the value, else return it
+     * @return string the value, escaped
      */
-    function safeHref( $url, $echo = true ) {
+    public function safeHref( $url, $echo = true ) {
 
         $safe = \OWA\Module\Base\Classes\Sanitize::sanitizeHref( $url );
         $safe = $this->escape( $safe );
@@ -1272,11 +1378,18 @@ class Template extends TemplateEngine {
         return $safe;
     }
 
-    function formatCurrency($value) {
+    /**
+     * @param  int|float $value minor units of the install's currency
+     * @return string
+     */
+    public function formatCurrency($value) {
         return \OWA\Core\Lib::formatCurrency( $value, \OWA\Core\CoreAPI::getSetting( 'base', 'currencyLocal' ), \OWA\Core\CoreAPI::getSetting( 'base', 'currencyISO3' ) );
     }
 
-    function getCurrentUser() {
+    /**
+     * @return \OWA\Module\Base\Classes\ServiceUser
+     */
+    public function getCurrentUser() {
 
         return \OWA\Core\CoreAPI::getCurrentUser();
     }

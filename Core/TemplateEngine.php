@@ -42,37 +42,38 @@ class TemplateEngine {
      *
      * @var string
      */
-    var $template_dir;
+    public $template_dir;
 
     /**
      * Template Variables
      *
-     * @var array
+     * @var array<string, mixed> name => the value a template reads as $view->name, any type
      */
-    var $vars = array();
+    public $vars = array();
 
     /**
      * Template file, null until one is set
      *
      * @var string|null
      */
-    var $file;
+    public $file;
 
     /**
      * Constructor
      *
      * @access public
      */
-    function __construct() {
+    public function __construct() {
 
     }
 
     /**
      * Set the template file
      *
-     * @param string $file
+     * @param  string|null $file
+     * @return void
      */
-    function set_template($file = null) {
+    public function set_template($file = null) {
         $this->file = $this->template_dir.$file;
         return;
     }
@@ -81,10 +82,11 @@ class TemplateEngine {
      * Set a template variable
      *
      * @param string $name
-     * @param mixed $value
+     * @param mixed $value any type; a template engine is fetched and stored as its output
+     * @return void
      * @access public
      */
-    function set($name, $value) {
+    public function set($name, $value) {
 
         if (is_object($value)) {
             if ($value instanceof $this) {
@@ -103,7 +105,7 @@ class TemplateEngine {
      * @return string $contents
      * @access public
      */
-    function fetch($file = null) {
+    public function fetch($file = null) {
         if(!$file):
              $__owa_template_file = $this->file;
         else:

@@ -45,7 +45,7 @@ interface IntakeQueue {
     /**
      * Queue one envelope.
      *
-     * @param  array $envelope
+     * @param  array<string, mixed> $envelope
      * @param  int   $delay     seconds before it may be received
      * @param  bool  $replayed  sent back from the dead-letter queue, which the daily replay does once
      * @return bool  whether it was accepted
@@ -58,17 +58,31 @@ interface IntakeQueue {
      *
      * @param  int $max
      * @param  int $visibility
-     * @return IntakeMessage[]  empty when nothing is due
+     * @return list<IntakeMessage>  empty when nothing is due
      */
     public function receive( $max, $visibility );
 
-    /** Ingested: remove it. */
+    /**
+     * Ingested: remove it.
+     *
+     * @return bool whether it was removed
+     */
     public function ack( IntakeMessage $message );
 
-    /** Not ingested: deliver it again after $delay seconds, its receive count kept. */
+    /**
+     * Not ingested: deliver it again after $delay seconds, its receive count kept.
+     *
+     * @param  int  $delay seconds
+     * @return bool whether it was released
+     */
     public function release( IntakeMessage $message, $delay );
 
-    /** Given up on: moved to the dead-letter queue with $reason. */
+    /**
+     * Given up on: moved to the dead-letter queue with $reason.
+     *
+     * @param  string $reason
+     * @return bool   whether it was moved
+     */
     public function deadLetter( IntakeMessage $message, $reason );
 
     /**
@@ -94,7 +108,7 @@ interface IntakeQueue {
      * messages is null when the queue could not be read, and an `error` key
      * may say why.
      *
-     * @return array messages, oldest_age, and optionally error
+     * @return array{messages: int|null, oldest_age: int|null, error?: string|null}
      */
     public function stats();
 }

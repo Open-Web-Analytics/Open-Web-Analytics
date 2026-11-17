@@ -42,7 +42,7 @@ namespace OWA\Core;
 
 class AdminController extends \OWA\Core\Controller {
     
-    var $is_admin = true;
+    public $is_admin = true;
 
     /**
      * The session cookies, unless the controller declares otherwise.
@@ -59,7 +59,7 @@ class AdminController extends \OWA\Core\Controller {
      *
      * @return string[]|null
      */
-    function acceptedAuthMethods() {
+    public function acceptedAuthMethods() {
 
         if ( $this->auth_methods !== null
              || ! \OWA\Core\RequestType::isWebApp() ) {
@@ -75,10 +75,11 @@ class AdminController extends \OWA\Core\Controller {
      * settings nav under it, and the base.optionsHierarchy view. Every
      * settings screen carries it, module screens included.
      *
-     * @param array  $params     merged into the request's params: the siteId or
+     * @param array<string, string> $params merged into the request's params: the siteId or
      *                           propertyId the screen resolved, or nothing
      * @param string $siteId     the Profile the screen is about, as getHierarchyNav() takes it
      * @param string $propertyId the Property in context, as getHierarchyNav() takes it
+     * @return void
      */
     protected function settingsChrome( array $params, $siteId = '', $propertyId = '' ) {
 

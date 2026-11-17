@@ -38,6 +38,9 @@ namespace OWA\Core;
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
+ *
+ * @phpstan-type MetricSet array{label: string, metrics: string, chartMetric: string}
+ *         metrics is a comma-separated list of metric names
  */
 class MetricSets {
 
@@ -85,7 +88,7 @@ class MetricSets {
      * Strings::LABEL_TABLES table, catalogued from SETS.
      *
      * @param  string $key
-     * @return array
+     * @return MetricSet
      */
     public static function translatedSet( $key ) {
 
@@ -108,7 +111,7 @@ class MetricSets {
      * never had an effect.
      *
      * @param string|int $propertyId
-     * @return array<string, array>
+     * @return array<string, MetricSet>
      */
     public static function forProperty( $propertyId ) {
 

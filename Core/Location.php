@@ -39,42 +39,42 @@ class Location {
      *
      * @var string
      */
-    var $city;
+    public $city;
 
     /**
      * Country
      *
      * @var string
      */
-    var $country;
+    public $country;
 
     /**
      * Latitude coordinates
      *
      * @var string
      */
-    var $latitude;
+    public $latitude;
 
     /**
      * Longitude coordinates
      *
      * @var string
      */
-    var $longitude;
+    public $longitude;
 
     /**
      * Location of concrete class plugins
      *
      * @var mixed
      */
-    var $plugin_dir;
+    public $plugin_dir;
 
     /**
      * Constructor
      *
      * @return \OWA\Core\Location
      */
-    function __construct() {
+    public function __construct() {
 
     }
 }

@@ -42,7 +42,7 @@ class Update extends \OWA\Core\Base {
      *
      * @var string
      */
-    var $module_name;
+    public $module_name;
 
     /**
      * Schema Version Number
@@ -57,9 +57,14 @@ class Update extends \OWA\Core\Base {
      *
      * @var integer
      */
-    var $schema_version;
+    public $schema_version;
 
-    var $is_cli_mode_required = false;
+    /**
+     * Whether this update may run only from the command line.
+     *
+     * @var bool
+     */
+    public $is_cli_mode_required = false;
 
     /**
      * Set by an update that stops for the operator rather than failing: a
@@ -69,7 +74,7 @@ class Update extends \OWA\Core\Base {
      *
      * @var string
      */
-    var $awaiting = '';
+    public $awaiting = '';
 
     /**
      * Tables to use instead of the install's, by the key tableFor() is given.
@@ -79,7 +84,10 @@ class Update extends \OWA\Core\Base {
      */
     public $tables = array();
 
-    function isCliModeRequired() {
+    /**
+     * @return bool
+     */
+    public function isCliModeRequired() {
 
         return $this->is_cli_mode_required;
     }
@@ -110,9 +118,10 @@ class Update extends \OWA\Core\Base {
     /**
      * Applies an update
      *
-     * @return boolean
+     * @param  bool $force apply it whatever the recorded schema version
+     * @return bool
      */
-    function apply($force = false) {
+    public function apply($force = false) {
 
         // check for schema version. abort if not present or else updates will get out of sync.
         if (empty($this->schema_version)) {
@@ -188,6 +197,15 @@ class Update extends \OWA\Core\Base {
 
 
     /**
+     * What down() cannot put back, in a sentence, for an update whose up()
+     * deletes or merges data. Empty for an exact inverse. Logged when the
+     * rollback starts.
+     *
+     * @var string
+     */
+    public $down_does_not_restore = '';
+
+    /**
      * Rollsback an update
      *
      * Returns true ONLY when down() ran and succeeded. Refusing an
@@ -199,16 +217,7 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean true if the rollback was applied, false if refused or failed
      */
-    /**
-     * What down() cannot put back, in a sentence, for an update whose up()
-     * deletes or merges data. Empty for an exact inverse. Logged when the
-     * rollback starts.
-     *
-     * @var string
-     */
-    var $down_does_not_restore = '';
-
-    function rollback() {
+    public function rollback() {
 
         $current_version = $this->c->get( $this->module_name, 'schema_version' );
 
@@ -261,7 +270,7 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function pre() {
+    public function pre() {
 
         return true;
     }
@@ -271,7 +280,7 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function post() {
+    public function post() {
 
         return true;
     }
@@ -303,8 +312,10 @@ class Update extends \OWA\Core\Base {
      * Interpolated, not bound: SHOW COLUMNS takes no parameters, and both values
      * come from the migration's own code rather than from a request.
      *
-     * @param  object $entity a table entity
+     * @param  object $entity     a table entity
      * @param  string $column
+     * @param  string $definition the column's SQL type, for a column the entity
+     *                            no longer declares; '' to ask the entity
      * @return bool   false only when the column is genuinely missing and could
      *                not be added
      */
@@ -375,7 +386,13 @@ class Update extends \OWA\Core\Base {
         return $entity->dropColumn( $column ) !== false;
     }
 
-    function up( $force = false ) {
+    /**
+     * Applies the schema change.
+     *
+     * @param  bool $force
+     * @return bool
+     */
+    public function up( $force = false ) {
 
         return false;
     }
@@ -385,7 +402,7 @@ class Update extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function down() {
+    public function down() {
 
         return false;
     }

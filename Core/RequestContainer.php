@@ -35,18 +35,47 @@ namespace OWA\Core;
 #[\AllowDynamicProperties]
 class RequestContainer {
 
-    var $cli_args;
-    var $is_https;
-    var $owa_params = array();
-    var $cookies = array();
-    var $owa_cookies = array();
-    var $session = array();
-    var $request = array();
-    var $server;
-    var $guid;
-    var $state;
-    var $request_type = '';
-    var $timestamp;
+    /** @var list<string>|null the CLI's argv; null on a web request */
+    public $cli_args;
+
+    /** @var bool|null true on an HTTPS request, else unset */
+    public $is_https;
+
+    /**
+     * The request's params by their un-namespaced names.
+     *
+     * Keyed by name; PHP turns a numeric name into an int key.
+     *
+     * @var array<mixed> a string, or an array PHP decoded; setParam() stores anything
+     */
+    public $owa_params = array();
+
+    /** @var array<list<string>> name => each value a cookie of that name carried */
+    public $cookies = array();
+
+    /** @var array<list<string>> the cookies in OWA's namespace, the prefix removed */
+    public $owa_cookies = array();
+
+    /** @var array<mixed> the PHP session's values */
+    public $session = array();
+
+    /** @var array<mixed> the request's params, cleaned, as named on the request */
+    public $request = array();
+
+    /** @var array<mixed> the request's server variables */
+    public $server;
+
+    /** @var string */
+    public $guid;
+
+    /** @var \OWA\Module\Base\Classes\State */
+    public $state;
+
+    /** @var string REQUEST_METHOD, 'cli', or '' */
+    public $request_type = '';
+
+    /** @var int the edge receipt in seconds */
+    public $timestamp;
 
     /**
      * The same instant as $timestamp, in microseconds.
@@ -58,15 +87,16 @@ class RequestContainer {
      *
      * @var int
      */
-    var $timestamp_usec;
+    public $timestamp_usec;
 
-    var $current_url;
+    /** @var string|null null on a CLI request */
+    public $current_url;
 
     /**
      * Constructor
      *
      */
-    function __construct() {
+    public function __construct() {
 
         /*
          * EDGE RECEIPT. One reading, taken once, for the life of this request.
@@ -313,7 +343,11 @@ class RequestContainer {
         }
     }
 
-    function getParam($name) {
+    /**
+     * @param  string $name
+     * @return mixed  as owa_params holds it; false when absent
+     */
+    public function getParam($name) {
 
         if (array_key_exists($name, $this->owa_params)) {
             return $this->owa_params[$name];
@@ -323,13 +357,22 @@ class RequestContainer {
 
     }
 
-    function setParam($name, $value) {
+    /**
+     * @param  string $name
+     * @param  mixed  $value any type a caller stores
+     * @return true
+     */
+    public function setParam($name, $value) {
 
         $this->owa_params[$name] = $value;
         return true;
     }
 
-    function getRequestParam($name) {
+    /**
+     * @param  string $name
+     * @return mixed  as the request carried it; false when absent
+     */
+    public function getRequestParam($name) {
 
         if (array_key_exists($name, $this->request)) {
             return $this->request[$name];
@@ -338,18 +381,29 @@ class RequestContainer {
         }
     }
 
-    function getAllOwaParams() {
+    /**
+     * @return array<mixed>
+     */
+    public function getAllOwaParams() {
 
         return $this->owa_params;
     }
 
-    function mergeParams($params) {
+    /**
+     * @param  array<mixed> $params name => value; each replaces the one held
+     * @return void
+     */
+    public function mergeParams($params) {
 
         $this->owa_params = array_merge($this->owa_params, $params);
         return;
     }
 
-    function getServerParam($name) {
+    /**
+     * @param  string $name
+     * @return mixed  as $_SERVER holds it; false when absent
+     */
+    public function getServerParam($name) {
 
         if (array_key_exists($name, $this->server)) {
             return $this->server[$name];
@@ -358,7 +412,10 @@ class RequestContainer {
         }
     }
 
-    function decodeRequestParams() {
+    /**
+     * @return void
+     */
+    public function decodeRequestParams() {
 
         $params = array();
         // Apply caller specific params
@@ -380,6 +437,9 @@ class RequestContainer {
 
     }
 
+    /**
+     * @return int
+     */
     public function getTimestamp() {
 
         return $this->timestamp;
@@ -405,7 +465,8 @@ class RequestContainer {
      * the two: multiplying up cannot invent precision, where truncating down would
      * throw some away.
      *
-     * @param int $seconds
+     * @param  int $seconds
+     * @return void
      */
     public function setTimestamp( $seconds ) {
 
@@ -423,11 +484,17 @@ class RequestContainer {
         return $this->timestamp_usec;
     }
 
+    /**
+     * @return string|null
+     */
     public function getCurrentUrl() {
 
         return $this->current_url;
     }
 
+    /**
+     * @return string
+     */
     public function getRequestType() {
 
         return strtoupper( $this->request_type );

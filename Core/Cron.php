@@ -29,6 +29,11 @@ namespace OWA\Core;
  * a gap leaves the same state as three would have. A job that processes
  * "yesterday's data" is incremental and must not be registered without being
  * made convergent first.
+ *
+ * CronFields: parse()'s five sets of permitted values, minute to day-of-week,
+ * each sorted and unique.
+ *
+ * @phpstan-type CronFields list<list<int>>
  */
 class Cron {
 
@@ -167,7 +172,7 @@ class Cron {
      * back to a default, which would run something on a cadence nobody chose.
      *
      * @param string $expr
-     * @return array|null  five arrays of ints, or null
+     * @return CronFields|null
      */
     public static function parse( $expr ) {
 
@@ -221,7 +226,7 @@ class Cron {
      * @param string $field
      * @param int    $min
      * @param int    $max
-     * @return array|null  sorted, unique ints within [$min,$max]
+     * @return list<int>|null  sorted, unique ints within [$min,$max]
      */
     protected static function parseField( $field, $min, $max ) {
 
@@ -309,9 +314,9 @@ class Cron {
      * cron's own rule and surprises everyone who has not met it: `0 0 1 * 1`
      * means "the 1st, and every Monday", not "Mondays that fall on the 1st".
      *
-     * @param array  $parsed
-     * @param int    $when      unix timestamp
-     * @param string $timezone
+     * @param CronFields $parsed
+     * @param int        $when      unix timestamp
+     * @param string     $timezone
      * @return bool
      */
     public static function matches( array $parsed, $when, $timezone ) {
@@ -349,10 +354,10 @@ class Cron {
      * idempotent within its occurrence: every later tick in the same period
      * computes the same slot, finds it satisfied, and does nothing.
      *
-     * @param array    $parsed
-     * @param int|null $last_slot
-     * @param int      $now
-     * @param string   $timezone
+     * @param CronFields $parsed
+     * @param int|null   $last_slot
+     * @param int        $now
+     * @param string     $timezone
      * @return int|null
      */
     public static function dueSlot( array $parsed, $last_slot, $now, $timezone ) {
@@ -374,9 +379,9 @@ class Cron {
      * last run would otherwise walk 43,200 minutes on every tick, which at a
      * tick a minute is quadratic and would dominate the dispatcher.
      *
-     * @param array  $parsed
-     * @param int    $when
-     * @param string $timezone
+     * @param CronFields $parsed
+     * @param int        $when
+     * @param string     $timezone
      * @return int|null
      */
     public static function previousMatch( array $parsed, $when, $timezone ) {
@@ -426,9 +431,9 @@ class Cron {
     /**
      * The next matching minute strictly after $when. For reporting only.
      *
-     * @param array  $parsed
-     * @param int    $when
-     * @param string $timezone
+     * @param CronFields $parsed
+     * @param int        $when
+     * @param string     $timezone
      * @return int|null
      */
     public static function nextAfter( array $parsed, $when, $timezone ) {
@@ -477,7 +482,7 @@ class Cron {
      * cron's own rule and surprises everyone who has not met it: `0 0 1 * 1`
      * means "the 1st, and every Monday", not "Mondays that fall on the 1st".
      *
-     * @param array              $parsed
+     * @param CronFields         $parsed
      * @param \DateTimeImmutable $day
      * @return bool
      */

@@ -84,6 +84,8 @@ class OverlayToken {
      * @param    string    $resourceKey    the request param naming the resource
      * @param    string    $resource    the one value of that param this permits
      * @param    int        $ttl        lifetime in seconds
+     * @param    array<string, string> $scope SCOPE key => the request value it is bound to;
+     *                                       an absent key is bound to ''
      * @return    string    a URL-safe token
      */
     public static function mint( $userId, $action, $resourceKey, $resource, $ttl = self::DEFAULT_TTL, array $scope = array() ) {
@@ -113,8 +115,9 @@ class OverlayToken {
      * Returns the token's claims, or null if it is not a token this
      * installation minted, or has expired.
      *
-     * @param    string    $token
-     * @return    array|null
+     * @param    mixed     $token     as the request carried it: only a string can be one
+     * @return    array<string, mixed>|null user_id, action, resource_key, resource, scope
+     *                                      and exp, as the token's JSON carried them
      */
     public static function verify( $token ) {
 
@@ -225,6 +228,9 @@ class OverlayToken {
     /**
      * The signature covers the whole payload, so every claim in it -- the user,
      * the action, the resource and the expiry alike -- is uneditable in a URL.
+     *
+     * @param  string $payload
+     * @return string
      */
     private static function sign( $payload ) {
 
@@ -233,6 +239,9 @@ class OverlayToken {
         ), '+/', '-_' ), '=' );
     }
 
+    /**
+     * @return string
+     */
     private static function key() {
 
         // The install's nonce secret, reused rather than adding another
@@ -241,11 +250,19 @@ class OverlayToken {
         return (string) \OWA\Core\CoreAPI::getSalt( 'nonce' );
     }
 
+    /**
+     * @param  array<string, mixed> $claims
+     * @return string
+     */
     private static function encode( array $claims ) {
 
         return rtrim( strtr( base64_encode( json_encode( $claims ) ), '+/', '-_' ), '=' );
     }
 
+    /**
+     * @param  string $payload
+     * @return string '' when it is not base64
+     */
     private static function decode( $payload ) {
 
         return (string) base64_decode( strtr( $payload, '-_', '+/' ), true );

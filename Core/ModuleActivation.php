@@ -23,6 +23,8 @@ namespace OWA\Core;
  * it off. A module that declares an intake queue type and is activated this
  * way is a queue backend for the tracking intake (TrackerIngest::backend()).
  *
+ * @phpstan-import-type ActivationDeclaration from Module
+ *
  * Read from the declarations on disk, because activation is decided before any
  * module object exists (Module::settingsRegistry()).
  */
@@ -31,7 +33,7 @@ final class ModuleActivation {
     /**
      * Every module's declaration, module name => activated_by, intake_queue_type.
      *
-     * @return array
+     * @return array<string, ActivationDeclaration>
      */
     public static function declarations() {
 
@@ -41,8 +43,9 @@ final class ModuleActivation {
     /**
      * The first of the constants that is set, or null.
      *
-     * @param string[]   $constants
-     * @param array|null $defined the OWA_ constants, name => value; this process's when null
+     * @param array<mixed> $constants constant names, as a settings.php declared them
+     * @param array<string, mixed>|null $defined the OWA_ constants, name => value;
+     *                                           this process's when null
      * @return string|null
      */
     public static function setConstant( array $constants, $defined = null ) {
@@ -65,9 +68,10 @@ final class ModuleActivation {
     /**
      * The modules a constant activates, module name => the constant.
      *
-     * @param array|null $defined
-     * @param array|null $declarations
-     * @return array
+     * @param array<string, mixed>|null $defined the OWA_ constants, name => value;
+     *                                           this process's when null
+     * @param array<string, ActivationDeclaration>|null $declarations declarations() when null
+     * @return array<string, string>
      */
     public static function activeByConstant( $defined = null, $declarations = null ) {
 
@@ -91,9 +95,10 @@ final class ModuleActivation {
      * configured it. More than one is a configuration error
      * (ServerRole::configProblems()).
      *
-     * @param array|null $defined
-     * @param array|null $declarations
-     * @return array
+     * @param array<string, mixed>|null $defined the OWA_ constants, name => value;
+     *                                           this process's when null
+     * @param array<string, ActivationDeclaration>|null $declarations declarations() when null
+     * @return array<string, string>
      */
     public static function queueBackends( $defined = null, $declarations = null ) {
 
@@ -117,8 +122,8 @@ final class ModuleActivation {
      * Every constant that would configure a queue backend, for a message
      * saying what to set.
      *
-     * @param array|null $declarations
-     * @return string[]
+     * @param array<string, ActivationDeclaration>|null $declarations declarations() when null
+     * @return list<mixed> the constant names, as each settings.php declared them
      */
     public static function queueBackendConstants( $declarations = null ) {
 

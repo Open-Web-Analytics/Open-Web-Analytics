@@ -32,7 +32,10 @@ namespace OWA\Core\Validation;
  
  class UserName extends \OWA\Core\Validation\Validation {
 
-     function validate() {
+     /**
+      * @return void
+      */
+     public function validate() {
 
          $error = $this->getErrorMsg();
 

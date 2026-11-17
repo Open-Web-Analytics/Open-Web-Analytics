@@ -28,6 +28,15 @@ namespace OWA\Core;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * NavLink: one report nav link, as getLinkStruct() builds it. NavItem: a nav
+ * subgroup, a NavLink with its links under `subgroup`; only `subgroup` when a
+ * link was added before the subgroup was.
+ *
+ * @phpstan-type NavLink array{ref: string|array<string, string>, anchortext: string, order: int|null, priviledge: string, icon_class: string}
+ * @phpstan-type NavItem array{ref?: string|array<string, string>, anchortext?: string, order?: int|null, priviledge?: string, icon_class?: string, subgroup?: list<NavLink>}
+ * @phpstan-type ActivationDeclaration array{activated_by: list<mixed>, intake_queue_type: string}
+ * @phpstan-type JobRegistration array{name: string, command: string, schedule: string, params: array<mixed>, description: string, module: string, source: string}
  */
 
 // Modules set properties they do not declare; this attribute is PHP 8.2's
@@ -40,21 +49,21 @@ abstract class Module {
      *
      * @var string
      */
-    var $name;
+    public $name;
 
     /**
      * Description of Module
      *
      * @var string
      */
-    var $description;
+    public $description;
 
     /**
      * Version of Module
      *
      * @var string
      */
-    var $version;
+    public $version;
 
     /**
      * Schema Version of Module
@@ -68,20 +77,15 @@ abstract class Module {
      *
      * @var string
      */
-    var $author;
+    public $author;
 
     /**
      * name used in display situations
      *
      * @var mixed
      */
-    var $display_name;
+    public $display_name;
 
-    /**
-     * Array of link information for admin panels that this module implements.
-     *
-     * @var array
-     */
     /**
      * What a report nav item shows when its module names no icon.
      * Present in the bundled font-awesome, and in the same v4-prefix family the
@@ -95,14 +99,21 @@ abstract class Module {
      */
     const FACT_ENTITY = 'base.event';
 
-    var $admin_panels;
+    /**
+     * The settings panels this module registers, keyed by the page's action
+     * (registerSettingsPanel()); null until it registers one.
+     *
+     * @var array<int|string, array<string, mixed>>|null
+     */
+    public $admin_panels;
 
     /**
-     * Array of navigation links that this module implements
+     * Array of navigation links that this module implements: group =>
+     * subgroup => item; null until it adds one.
      *
-     * @var array
+     * @var array<string, array<string, NavItem>>|null
      */
-    var $nav_links;
+    public $nav_links;
 
     /**
      * Whether registerReports() has run for this module this request.
@@ -111,6 +122,8 @@ abstract class Module {
      * own flag rather than inferred from the registry being non-empty, because
      * a module that legitimately registers no reports would otherwise be asked
      * again on every lookup.
+     *
+     * @var bool
      */
     public $reports_registered = false;
 
@@ -119,7 +132,7 @@ abstract class Module {
      *
      * @var mixed
      */
-    var $metrics;
+    public $metrics;
 
     /**
      * The Module Group that the module belongs to.
@@ -128,88 +141,96 @@ abstract class Module {
      *
      * @var string
      */
-    var $group;
+    public $group;
 
     /**
-     * Array of Entities that are implmented by the module
+     * Array of Entities that are implmented by the module, by name
      *
-     * @var array
+     * @var list<string>
      */
-    var $entities = array();
+    public $entities = array();
 
     /**
      * Required Schema Version
      *
      * @var int
      */
-    var $required_schema_version;
+    public $required_schema_version;
 
     /**
-     * Available Updates
+     * Available Updates, schema version => update
      *
-     * @var array
+     * @var array<int, \OWA\Core\Update>
      */
-    var $updates = array();
+    public $updates = array();
 
-    /**
-     * Event Processors Map
-     *
-     * @var array
-     */
     /**
      * What the last update() stopped for, when an update stopped for the
      * operator rather than failing (Update::$awaiting); '' otherwise.
      *
      * @var string
      */
-    var $update_awaiting = '';
+    public $update_awaiting = '';
 
-    var $event_processors = array();
+    /**
+     * Event Processors Map, event type => processor action
+     *
+     * @var array<string, string>
+     */
+    public $event_processors = array();
 
     /**
      * Dimensions, name => entity => registration
      *
-     * @var array
+     * @var array<string, array<string, array<string, mixed>>>
      */
-    var $denormalizedDimensions = array();
+    public $denormalizedDimensions = array();
 
     /**
-     * cli_commands
+     * cli_commands, command => action
      *
-     * @var array
+     * @var array<string, string>
      */
-    var $cli_commands = array();
+    public $cli_commands = array();
 
     /**
      * Scheduled jobs this module contributes, keyed by job name.
      *
-     * @var array
+     * @var array<string, JobRegistration>
      */
-    var $scheduled_jobs = array();
+    public $scheduled_jobs = array();
 
     /**
      * Update from CLI Required flag
      *
      * Used by controllers to see if an update error was becuase it needs
      * to be applied from the command line instead of via the browser.
+     * Null until update() stops for it.
      *
-     * @var boolean
+     * @var bool|null
      */
-    var $update_from_cli_required;
+    public $update_from_cli_required;
     
     /**
 	 * Filesystem path of the module's directory
+	 *
+	 * @var string
 	 */
-    var $path;
+    public $path;
 
-	var $config_required;
+    /**
+     * Shown on the Modules screen; nothing else reads it.
+     *
+     * @var bool|null
+     */
+	public $config_required;
 
     /**
      * Constructor
      *
      *
      */
-    function __construct() {
+    public function __construct() {
 		
 		// runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
 		$this->path = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
@@ -259,7 +280,12 @@ abstract class Module {
 
     }
     
-    function init() {
+    /**
+     * Initial registration hook, called first by the constructor.
+     *
+     * @return mixed unread: the constructor ignores it
+     */
+    public function init() {
 	    
 	    return false;
     }
@@ -267,8 +293,9 @@ abstract class Module {
     /**
      * Method for registering event processors
      *
+     * @return mixed unread: the constructor ignores it
      */
-    function _registerEventProcessors() {
+    public function _registerEventProcessors() {
 
         return false;
     }
@@ -277,9 +304,9 @@ abstract class Module {
      * Returns array of admin Links for this module to be used in navigation
      *
      * @access public
-     * @return array
+     * @return array<int|string, array<string, mixed>>|null null when it registers none
      */
-    function getAdminPanels() {
+    public function getAdminPanels() {
 
         return $this->admin_panels;
     }
@@ -289,9 +316,9 @@ abstract class Module {
      * used in report navigation
      *
      * @access public
-     * @return array
+     * @return array<string, array<string, NavItem>>|null null when it adds none
      */
-    function getNavigationLinks() {
+    public function getNavigationLinks() {
 
         return $this->nav_links;
     }
@@ -304,7 +331,7 @@ abstract class Module {
      * @access public
      * @return void
      */
-    function _registerEventHandlers() {
+    public function _registerEventHandlers() {
 
         return;
     }
@@ -312,11 +339,14 @@ abstract class Module {
     /**
      * Attaches an event handler to the event queue
      *
-     * @param string|array $event_name
-     * @param string|object $handler_name
-     * @return boolean
+     * @param string|list<string> $event_name
+     * @param string|object $handler_name a handler class of this module, by
+     *                                    file name in $dir, or the handler
+     * @param string $method
+     * @param string $dir
+     * @return bool
      */
-    function registerEventHandler($event_name, $handler_name, $method = 'notify', $dir = 'handlers') {
+    public function registerEventHandler($event_name, $handler_name, $method = 'notify', $dir = 'handlers') {
 
         /*
          * Once per module, event and handler. A module attaches its handlers
@@ -349,7 +379,7 @@ abstract class Module {
      * @param string $dir
      * @return void
      */
-    function registerFilter($filter_name, $handler_name, $method = '', $priority = 10, $dir = 'filters') {
+    public function registerFilter($filter_name, $handler_name, $method = '', $priority = 10, $dir = 'filters') {
 
         // if it's an object
         if ( is_object( $handler_name ) ) {
@@ -392,7 +422,8 @@ abstract class Module {
      * `label` and `description` if a fieldset will render it.
      *
      * @param string $key
-     * @param array  $args
+     * @param array<string, mixed> $args name => value, any type: `default` is
+     *                                   the setting's own
      * @return void
      */
     public function registerSettingsField( $key, array $args = array() ) {
@@ -417,7 +448,7 @@ abstract class Module {
      * module, so a bare 'tracking' becomes 'base.tracking' and two modules
      * cannot collide.
      *
-     * @param array $set
+     * @param array<string, mixed> $set id, legend, description, settings
      * @return void
      */
     public function registerSettingsFieldSet( array $set ) {
@@ -456,7 +487,7 @@ abstract class Module {
      * and wants a label for it -- but settingsRegistry() merges the chrome and
      * keeps autoload forced on.
      *
-     * @return array
+     * @return array<string, array{autoload: bool}>
      */
     public static function mechanicalSettings() {
 
@@ -515,7 +546,7 @@ abstract class Module {
      *
      *     'activated_by' => [ 'OWA_SQS_QUEUE_URL' ], 'intake_queue_type' => 'sqs'
      *
-     * @return array{fields: array, declared: array, activation: array}
+     * @return array{fields: array<string, array<mixed>>, declared: array<string, true>, activation: array<string, ActivationDeclaration>}
      */
     public static function settingsRegistry() {
 
@@ -600,7 +631,7 @@ abstract class Module {
      * @access public
      * @return void
      */
-    function registerAdminPanels() {
+    public function registerAdminPanels() {
 
         return;
     }
@@ -623,10 +654,10 @@ abstract class Module {
      * are still written for registerSettingsPanel's consumers, which read the
      * older shape.
      *
-     * @param array $page
-     * @return bool
+     * @param array<string, mixed> $page
+     * @return true
      */
-    function registerSettingsPage( $page ) {
+    public function registerSettingsPage( $page ) {
 
         $title = (string) ( $page['title'] ?? '' );
 
@@ -679,8 +710,10 @@ abstract class Module {
     /**
      * Registers an admin panel with this module
      *
+     * @param  array<string, mixed> $panel
+     * @return true
      */
-    function registerSettingsPanel($panel) {
+    public function registerSettingsPanel($panel) {
 
         // Keyed by the page's action, so registering it again replaces it. A
         // request asks for the panels more than once (a settings screen's nav,
@@ -699,16 +732,6 @@ abstract class Module {
     }
 
     /**
-     * Adds a new Subgroup in the navigation
-     *
-     * @param string $subgroupName
-     * @param string|array $ref an action name, or link params (reportRef())
-     * @param string $anchortext
-     * @param integer $order
-     * @param string $priviledge
-     * @param string $groupName
-     */
-    /**
      * A top-level report nav item.
      *
      * $icon_class defaults to a generic chart rather than to nothing. The
@@ -722,6 +745,15 @@ abstract class Module {
      * $order places the item among the group's others, lowest first
      * (CoreAPI::sortNavigation). Omitted, it follows every item that gave one,
      * in registration order.
+     *
+     * @param string $subgroupName
+     * @param string|array<string, string> $ref an action name, or link params (reportRef())
+     * @param string $anchortext
+     * @param int|null $order
+     * @param string $priviledge
+     * @param string $groupName
+     * @param string $icon_class
+     * @return void
      */
     public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = null, $priviledge = 'view_reports', $groupName = 'Reports', $icon_class = self::DEFAULT_NAV_ICON) {
         $this->nav_links[$groupName][$subgroupName] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge, $icon_class);
@@ -731,11 +763,12 @@ abstract class Module {
      * Adds a new Link to an existing Subgroup in the navigation
      *
      * @param string $subgroupName
-     * @param string|array $ref an action name, or link params (reportRef())
+     * @param string|array<string, string> $ref an action name, or link params (reportRef())
      * @param string $anchortext
-     * @param integer|null $order lowest first; omitted, after those that give one
+     * @param int|null $order lowest first; omitted, after those that give one
      * @param string $priviledge
      * @param string $groupName
+     * @return void
      */
     public function addNavigationLinkInSubGroup($subgroupName, $ref, $anchortext, $order = null, $priviledge = 'view_reports', $groupName = 'Reports') {
         $this->nav_links[$groupName][$subgroupName]['subgroup'][] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge);
@@ -745,13 +778,20 @@ abstract class Module {
      * Abstract method for registering a module's entities
      *
      * This method must be defined in concrete module classes in order for entities to be registered.
+     *
+     * @return mixed unread: the constructor ignores it
      */
-    function _registerEntities() {
+    public function _registerEntities() {
 
         return false;
     }
 
-    function registerNavigation() {
+    /**
+     * Hook for adding report nav links, called when the nav is built.
+     *
+     * @return mixed unread: the nav builder ignores it
+     */
+    public function registerNavigation() {
 
         return false;
     }
@@ -768,10 +808,30 @@ abstract class Module {
      * json_decode on the logging path for each one, which is the opposite of the
      * direction that path has been going. registerNavigation() is the precedent
      * to follow, and for exactly the same reason.
+     *
+     * @return mixed unread: the registry ignores it
      */
-    function registerReports() {
+    public function registerReports() {
 
         return false;
+    }
+
+    /**
+     * A navigation ref pointing at a report by its id.
+     *
+     * Reports are reached through one action now, so the action alone no longer
+     * says which report -- addNavigationLink('base.reportPages') has nothing to
+     * become except the pair.
+     *
+     *     $this->addNavigationLinkInSubGroup(
+     *         'Content', $this->reportRef( 'pages' ), 'Top Pages', 1 );
+     *
+     * @param string $id a registered report id
+     * @return array{do: string, reportId: string} link parameters
+     */
+    protected function reportRef( $id ) {
+
+        return array( 'do' => 'base.report', 'reportId' => $id );
     }
 
     /**
@@ -805,26 +865,9 @@ abstract class Module {
      * costs no parsing at all.
      *
      * @param string       $id          stable, url-safe, human-meaningful
-     * @param string|array $definition  json path relative to the module, or ['controller' => action]
+     * @param string|array<string, string> $definition  json path relative to the module, or ['controller' => action]
+     * @return bool false when another module holds the id
      */
-    /**
-     * A navigation ref pointing at a report by its id.
-     *
-     * Reports are reached through one action now, so the action alone no longer
-     * says which report -- addNavigationLink('base.reportPages') has nothing to
-     * become except the pair.
-     *
-     *     $this->addNavigationLinkInSubGroup(
-     *         'Content', $this->reportRef( 'pages' ), 'Top Pages', 1 );
-     *
-     * @param string $id a registered report id
-     * @return array link parameters
-     */
-    protected function reportRef( $id ) {
-
-        return array( 'do' => 'base.report', 'reportId' => $id );
-    }
-
     protected function registerReport( $id, $definition ) {
 
         if ( is_string( $definition ) ) {
@@ -864,9 +907,10 @@ abstract class Module {
      * Can take an array of entities or just a single entity as a string.
      * Will add an enetiy to the module's entity array. Required for entity installation, etc.
      *
-     * @param $entity_name array or string
+     * @param string|list<string> $entity_name
+     * @return void
      */
-    function registerEntity($entity_name) {
+    public function registerEntity($entity_name) {
 
         if (is_array($entity_name)) {
             $this->entities = array_merge($this->entities, $entity_name);
@@ -875,7 +919,10 @@ abstract class Module {
         }
     }
 
-    function getEntities() {
+    /**
+     * @return list<string>
+     */
+    public function getEntities() {
 
         return $this->entities;
     }
@@ -885,8 +932,9 @@ abstract class Module {
      *
      * Creates database tables and sets schema version
      *
+     * @return bool false when a table was not created
      */
-    function install() {
+    public function install() {
 
         \OWA\Core\CoreAPI::notice('Starting installation of module: '.$this->name);
 
@@ -1012,13 +1060,18 @@ abstract class Module {
     /**
      * Post installation hook
      *
+     * @return bool
      */
-    function postInstall() {
+    public function postInstall() {
 
         return true;
     }
 
-    function isCliUpdateModeRequired() {
+    /**
+     * @return bool|null true when update() stopped for an update that runs from
+     *                   the CLI only; null until it does
+     */
+    public function isCliUpdateModeRequired() {
 
         return $this->update_from_cli_required;
     }
@@ -1026,8 +1079,9 @@ abstract class Module {
     /**
      * Checks for and applies schema upgrades for the module
      *
+     * @return bool
      */
-    function update() {
+    public function update() {
 
         // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment)
         $files = \OWA\Core\Lib::listDir(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($this->name) . '/Update', false);
@@ -1091,7 +1145,7 @@ abstract class Module {
 
             if ($ret == true) {
                 \OWA\Core\CoreAPI::notice("Update Succeeded");
-            } elseif ( ( $obj->awaiting ?? '' ) !== '' ) {
+            } elseif ( $obj->awaiting !== '' ) {
                 // Stopped for the operator, not failed: see Update::$awaiting.
                 $this->update_awaiting = $obj->awaiting;
                 return false;
@@ -1107,8 +1161,9 @@ abstract class Module {
     /**
      * Places the Module into the active module list in the global configuration
      *
+     * @return null CoreAPI::persistSetting() answers nothing
      */
-    function activate() {
+    public function activate() {
 	
 		$ret = \OWA\Core\CoreAPI::persistSetting( $this->name, 'is_active', true );
         \OWA\Core\CoreAPI::notice("Module $this->name activated");
@@ -1120,8 +1175,9 @@ abstract class Module {
      * Deactivates the module by removing it from
      * the active module list in the global configuration
      *
+     * @return bool false while a constant in owa-config.php keeps it active
      */
-    function deactivate() {
+    public function deactivate() {
 
         // A module its own constant activates stays active while it is set (ModuleActivation).
         $constant = self::activatedByConstant( $this->name );
@@ -1155,8 +1211,10 @@ abstract class Module {
     /**
      * Whether nothing is pending for this module: an update is due when this
      * is false. Its schema, here; Base adds the release (Module::isUpToDate()).
+     *
+     * @return bool
      */
-    function isUpToDate() {
+    public function isUpToDate() {
 
         return $this->isSchemaCurrent();
     }
@@ -1164,8 +1222,9 @@ abstract class Module {
     /**
      * Checks to se if the schema is up to date
      *
+     * @return bool
      */
-    function isSchemaCurrent() {
+    public function isSchemaCurrent() {
 
         $current_schema = $this->getSchemaVersion();
         $required_schema = $this->getRequiredSchemaVersion();
@@ -1180,7 +1239,10 @@ abstract class Module {
         return false;
     }
 
-    function getSchemaVersion() {
+    /**
+     * @return int|string the stored schema_version, as stored; 1 when none is
+     */
+    public function getSchemaVersion() {
 
         $current_schema = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
@@ -1197,15 +1259,14 @@ abstract class Module {
         return $current_schema;
     }
 
-    function getRequiredSchemaVersion() {
+    /**
+     * @return int
+     */
+    public function getRequiredSchemaVersion() {
 
         return $this->required_schema_version;
     }
 
-    /**
-     * Adds an event processor class to the processor array. This is used to determin
-     * which class to use to process a particular event
-     */
     /**
      * Route tracking events of these types to a processor action.
      *
@@ -1216,8 +1277,9 @@ abstract class Module {
      *
      * @param string|string[] $event_types current names
      * @param string          $processor   an action, e.g. acme.processEvent
+     * @return void
      */
-    function addTrackingEventProcessor( $event_types, $processor ) {
+    public function addTrackingEventProcessor( $event_types, $processor ) {
 
         $names = array();
 
@@ -1229,7 +1291,15 @@ abstract class Module {
         $this->addEventProcessor( $names, $processor );
     }
 
-    function addEventProcessor($event_types, $processor) {
+    /**
+     * Adds an event processor class to the processor array. This is used to determin
+     * which class to use to process a particular event
+     *
+     * @param string|list<string> $event_types dispatch names
+     * @param string              $processor   an action
+     * @return void
+     */
+    public function addEventProcessor($event_types, $processor) {
         
         if ( is_string( $event_types ) ) {
             
@@ -1262,9 +1332,10 @@ abstract class Module {
      *        'numerator', 'denominator'      // a calculated ratio, each a metric name
      *        'minuend', 'subtrahend'         // a calculated difference, each a metric name
      *
-     *
+     * @param array<string, mixed> $params the keys above => value; others are dropped
+     * @return void
      */
-    function registerMetricDefinition( $params ) {
+    public function registerMetricDefinition( $params ) {
 
         $map = array(
             'name'            => '',
@@ -1361,16 +1432,19 @@ abstract class Module {
      *
      * registers a dimension for use by metrics in producing results sets.
      *
-     * @param    $dim_name string
-     * @param    $entity_names    string||array Module::FACT_ENTITY; a registration on any other is refused
-     * @param    $column    string the name of the column that represents the dimension
-     * @param     $family    string the name of the group or family that this dimension belongs to. optional.
-     * @param    $description    string    a short description of this metric, used in various interfaces.
-     * @param    $label    string the lable of the dimension
-     * @param     $foreign_key_name string recorded with the dimension; nothing reads it
-     * @param    $denormalized    boolean    must be true: a dimension is a column of the fact table
+     * @param string $dim_name
+     * @param string|list<string> $entity_names Module::FACT_ENTITY; a registration on any other is refused
+     * @param string $column the name of the column that represents the dimension
+     * @param string $label the lable of the dimension
+     * @param string $family the name of the group or family that this dimension belongs to. optional.
+     * @param string $description a short description of this metric, used in various interfaces.
+     * @param string $foreign_key_name recorded with the dimension; nothing reads it
+     * @param bool   $denormalized must be true: a dimension is a column of the fact table
+     * @param string $data_type
+     * @param array<string, mixed> $options more of the registration, name => value
+     * @return void
      */
-    function registerDimension(
+    public function registerDimension(
             $dim_name, $entity_names, $column, $label, $family,
             $description = '', $foreign_key_name = '',
             $denormalized = false, $data_type = 'string',
@@ -1523,7 +1597,7 @@ abstract class Module {
      * failure would surface as an empty report rather than as a bad file.
      *
      * @param  string $kind 'dimensions' or 'metrics'
-     * @return array|null the declaration, or null when there is no usable file
+     * @return array<mixed>|null the declaration, or null when there is no usable file
      */
     private function readVocabulary( $kind ) {
 
@@ -1558,8 +1632,8 @@ abstract class Module {
      * reports and the REST metadata alike. Strings::extract() catalogues them
      * from the config file.
      *
-     * @param  array $entries name => metric or dimension declaration
-     * @return array
+     * @param  array<mixed> $entries name => metric or dimension declaration
+     * @return array<mixed> $entries with those values translated
      */
     public static function translatedVocabulary( array $entries ) {
 
@@ -1577,7 +1651,12 @@ abstract class Module {
         return $entries;
     }
 
-    function registerActions() {
+    /**
+     * Hook for registering this module's actions, called by the constructor.
+     *
+     * @return mixed unread: the constructor ignores it
+     */
+    public function registerActions() {
 
         return false;
     }
@@ -1586,10 +1665,11 @@ abstract class Module {
     /**
      * Registers a Web Action and ontroller Implementation
      *
-     * @param    $action_name    string    the name of the action used as the value in the 'do' url param
-     * @param    $class_name     string    the name of the controller class, PSR-4 autoloadable
-     * @param    $file           string    ignored: a class file path, which modules written before
-     *                                     PSR-4 still pass
+     * @param string $action_name the name of the action used as the value in the 'do' url param
+     * @param string $class_name  the name of the controller class, PSR-4 autoloadable
+     * @param string $file        ignored: a class file path, which modules written before
+     *                            PSR-4 still pass
+     * @return void
      */
     protected function registerAction( $action_name, $class_name, $file = '' ) {
 
@@ -1601,15 +1681,17 @@ abstract class Module {
      *
      * Routes are unique to the version/action/request_method combination
      *
-     * @param	 $version		 string	   the version namespace of the route
-     * @param    $route__name    string    the name of the action used as the value in the 'do' param of the request
-     * @param	 $request_method string	   the HTTP request method.
-     * @param    $class_name     string    the class name of the controller, PSR-4 autoloadable
-     * @param    $params         array     the route's configuration, e.g. params_order. A module
+     * @param string $version        the version namespace of the route
+     * @param string $route_name     the name of the action used as the value in the 'do' param of the request
+     * @param string $request_method the HTTP request method.
+     * @param string $class_name     the class name of the controller, PSR-4 autoloadable
+     * @param array<string, mixed>|string $params the route's configuration, e.g. params_order. A module
      *                                     written before PSR-4 passes a class file path here and the
      *                                     configuration after it; the path is ignored.
+     * @param array<string, mixed> $legacy_params the configuration, when $params is a path
+     * @return void
      */
-    function registerRestApiRoute( $version, $route_name, $request_method, $class_name, $params = [], $legacy_params = [] ) {
+    public function registerRestApiRoute( $version, $route_name, $request_method, $class_name, $params = [], $legacy_params = [] ) {
 
         if ( is_string( $params ) ) {
 
@@ -1620,7 +1702,12 @@ abstract class Module {
             array( 'class_name' => $class_name, 'conf' => $params ) );
     }
 
-    function registerCliCommand($command, $class) {
+    /**
+     * @param string $command the name typed after cmd=
+     * @param string $class   the action it runs
+     * @return void
+     */
+    public function registerCliCommand($command, $class) {
 
         $this->cli_commands[$command] = $class;
     }
@@ -1649,25 +1736,18 @@ abstract class Module {
      * today. A job that processes "yesterday's data" is incremental and will
      * quietly skip days -- make it convergent before registering it.
      *
-     * @param string $name      job identity, unique across all modules
-     * @param string $command   a name registered with registerCliCommand()
-     * @param string $schedule  a cron expression, an @alias, or 'off'
-     * @param array  $params    arguments passed to the controller verbatim
+     * @param string $name        job identity, unique across all modules
+     * @param string $command     a name registered with registerCliCommand()
+     * @param string $schedule    a cron expression, an @alias, or 'off'
+     * @param array<mixed> $params arguments passed to the controller verbatim,
+     *                             name => value
+     * @param string $description what it does, in a sentence or two, for an
+     *                            administrator: the System Health screen shows
+     *                            it, and cmd=schedule-status format=markdown
+     *                            writes it out for the wiki
      * @return void
      */
-    /**
-     * Register a recurring job, run by cmd=schedule-run.
-     *
-     * @param string $name         the job's name, unique across modules
-     * @param string $command      the CLI command it runs
-     * @param string $schedule     a cron expression
-     * @param array  $params       the command's arguments
-     * @param string $description  what it does, in a sentence or two, for an
-     *                             administrator: the System Health screen shows
-     *                             it, and cmd=schedule-status format=markdown
-     *                             writes it out for the wiki
-     */
-    function registerJob( $name, $command, $schedule, $params, $description = '' ) {
+    public function registerJob( $name, $command, $schedule, $params, $description = '' ) {
 
         $this->scheduled_jobs[ $name ] = array(
             'name'        => $name,
@@ -1689,6 +1769,7 @@ abstract class Module {
      * would put exactly the installs most likely to share an image back on the
      * same minute. The directory path differs per install even then.
      *
+     * @param  string $job the job's name
      * @return string
      */
     protected function jobSeed( $job ) {
@@ -1716,14 +1797,16 @@ abstract class Module {
      * Implemntations can be overridden by other modules if they share the same key so consider using
      * modules namespacing for the key (i.e. module_name.key) to avoid conflicts.
      *
-     * @param    $type	string	the type/category of implementation		actions|event_queues
-     * @param    $key  string	the key name of the specific implmentation
-     * @param    $class_name     string    the name of the class, PSR-4 autoloadable
-     * @param    $params         array     passed to the class's constructor. A module written before
+     * @param string $type       the type/category of implementation: actions|event_queues
+     * @param string $key        the key name of the specific implmentation
+     * @param string $class_name the name of the class, PSR-4 autoloadable
+     * @param array<mixed>|string $params passed to the class's constructor. A module written before
      *                                     PSR-4 passes a class file path here and the array after it;
      *                                     the path is ignored.
+     * @param array<mixed> $legacy_params the constructor's array, when $params is a path
+     * @return void
      */
-    function registerImplementation( $type, $key, $class_name, $params = [], $legacy_params = [] ) {
+    public function registerImplementation( $type, $key, $class_name, $params = [], $legacy_params = [] ) {
 
         if ( is_string( $params ) ) {
 
@@ -1747,7 +1830,7 @@ abstract class Module {
      *        regular       = properties that are set by clients
      *        derived          = properties that are derived from or dependant on other properties
      *
-     * @param array $properties an associative array of tracking properties
+     * @param array<string, array<string, mixed>> $properties an associative array of tracking properties
      *
      * Example:
      *
@@ -1760,9 +1843,10 @@ abstract class Module {
      *
      *
      * The key of the array is the name the property
+     *
+     * @return void
      */
-
-    function registerTrackingProperties( $type, $properties = array() ) {
+    public function registerTrackingProperties( $type, $properties = array() ) {
 
         switch( strtolower( $type ) ) {
 
@@ -1798,8 +1882,10 @@ abstract class Module {
      *
      * This method is called by a module's constructor
      * and should be redefined in a concrete module class.
+     *
+     * @return mixed unread: the constructor ignores it
      */
-    function registerApiMethods() {
+    public function registerApiMethods() {
 
         return false;
     }
@@ -1809,8 +1895,10 @@ abstract class Module {
      *
      * This method is called by a module's constructor
      * and should be redefined in a concrete module class.
+     *
+     * @return mixed unread: the constructor ignores it
      */
-    function registerCliCommands() {
+    public function registerCliCommands() {
 
         return false;
     }
@@ -1819,8 +1907,10 @@ abstract class Module {
      * Abstract method for registering scheduled jobs.
      *
      * Called by a module's constructor; redefine in a concrete module class.
+     *
+     * @return mixed unread: the constructor ignores it
      */
-    function registerJobs() {
+    public function registerJobs() {
 
         return false;
     }
@@ -1830,8 +1920,10 @@ abstract class Module {
      *
      * This method is called by a module's constructor
      * and should be redefined in a concrete module class.
+     *
+     * @return mixed unread: the constructor ignores it
      */
-    function registerDimensions() {
+    public function registerDimensions() {
 
         return false;
     }
@@ -1841,19 +1933,23 @@ abstract class Module {
      *
      * This method is called by a module's constructor
      * and should be redefined in a concrete module class.
+     *
+     * @return mixed unread: the constructor ignores it
      */
-    function registerFilters() {
+    public function registerFilters() {
 
         return false;
     }
 
     /**
      * Retuns internal struct array used for saving link infos
-     * @param string|array $ref
+     *
+     * @param string|array<string, string> $ref
      * @param string $anchortext
-     * @param integer|null $order
+     * @param int|null $order
      * @param string $priviledge
-     * @return array
+     * @param string $icon_class
+     * @return NavLink
      */
     private function getLinkStruct($ref,$anchortext,$order,$priviledge, $icon_class = '') {
         return array('ref' => $ref,
@@ -1863,6 +1959,11 @@ abstract class Module {
                     'icon_class' => $icon_class);
     }
 
+    /**
+     * @param string               $name
+     * @param array<string, mixed> $map  the queue's configuration, name => value
+     * @return void
+     */
     protected function registerEventQueue( $name, $map ) {
 
         $map['queue_name'] = $name;

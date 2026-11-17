@@ -34,9 +34,13 @@ namespace OWA\Core\Controller;
 
 class Install extends \OWA\Core\Controller {
 
-    var $im;
+    /** @var \OWA\Module\Base\Classes\InstallManager */
+    public $im;
 
-    function __construct( $params ) {
+    /**
+     * @param array<string, mixed> $params request params: name => value, as sent
+     */
+    public function __construct( $params ) {
         
         
         // needed just in case a re-install happens and updates are also needed.
@@ -61,8 +65,11 @@ class Install extends \OWA\Core\Controller {
      * Controller::doAction() goes on to action() whatever pre() returns. So
      * after install, anyone could still open the install screens, and post
      * base.installBase -- which re-ran the schema install and added a site.
+     *
+     * @return mixed an empty array after the redirect, else parent::doAction()'s
+     *               result: whatever the action returned
      */
-    function doAction() {
+    public function doAction() {
 
         if ( $this->isInstallComplete() ) {
 
@@ -76,27 +83,51 @@ class Install extends \OWA\Core\Controller {
         return parent::doAction();
     }
 
-    function installSchema() {
+    /**
+     * @return bool false when the database is refused or a table was not created
+     */
+    public function installSchema() {
         
         return $this->im->installSchema();
     }
 
-    function createAdminUser( $user_id, $email_address, $password = '' ) {
+    /**
+     * @param  string $user_id
+     * @param  string $email_address
+     * @param  string $password
+     * @return string|false|null the password; false when it is empty; null when
+     *                           an admin or the user_id already exists
+     */
+    public function createAdminUser( $user_id, $email_address, $password = '' ) {
 
         return $this->im->createAdminUser( $user_id, $email_address, $password );
     }
 
-    function createDefaultSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
+    /**
+     * @param  string $domain
+     * @param  string $name
+     * @param  string $description
+     * @param  string $site_family
+     * @param  string $site_id
+     * @return string|false the site_id, or false when the site was not created
+     */
+    public function createDefaultSite( $domain, $name = '', $description = '', $site_family = '', $site_id = '' ) {
         
         return $this->im->createDefaultSite( $domain, $name, $description, $site_family, $site_id );
     }
 
-    function checkDbConnection() {
+    /**
+     * @return bool
+     */
+    public function checkDbConnection() {
         
         return $this->im->checkDbConnection();
     }
     
-    function isInstallComplete() {
+    /**
+     * @return bool
+     */
+    public function isInstallComplete() {
 	    
 	    return $this->im->isInstallComplete();
     }

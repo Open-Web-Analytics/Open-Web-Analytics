@@ -37,44 +37,44 @@ namespace OWA\Core;
 class Base {
 
     /**
-     * Configuration
+     * Configuration: the base module's settings, key => value
      *
-     * @var array
+     * @var array<string, mixed> a setting's value is any type
      */
-    var $config;
+    public $config;
 
     /**
      * Error Logger
      *
      * @var object
      */
-    var $e;
+    public $e;
 
     /**
      * Configuration Entity
      *
      * @var \OWA\Module\Base\Classes\Settings  Object global configuration object
      */
-    var $c;
+    public $c;
 
     /**
      * Module that this class belongs to
      *
      * @var string
      */
-    var $module;
+    public $module;
 
     /**
      * Request Params
      *
-     * @var array
+     * @var array<mixed> name => value as the request carried it
      */
-    var $params;
+    public $params;
 
     /**
      * Base Constructor
      */
-    function __construct() {
+    public function __construct() {
         // Nothing is fetched here on purpose. Unsetting these declared
         // properties is what routes the first read of each through __get below,
         // which is where they are actually built. See that method for why.
@@ -106,6 +106,10 @@ class Base {
      * read rather than at construction. Where that differs, later is the more
      * correct of the two: an object built before a module applied its overrides
      * used to keep the values from before them.
+     *
+     * @param  string $name
+     * @return \OWA\Module\Base\Classes\Error|\OWA\Module\Base\Classes\Settings|array<string, mixed>|null
+     *         $e, $c, $config; null for any other name
      */
     public function __get( $name ) {
 
@@ -138,6 +142,9 @@ class Base {
      * isset() and empty() have to agree with __get, or a lazy property reads as
      * missing -- including isset($this->config['some_key']), which asks about
      * the property first and only then about the offset.
+     *
+     * @param  string $name
+     * @return bool
      */
     public function __isset( $name ) {
 
@@ -147,11 +154,14 @@ class Base {
     /**
      * Retrieves string message from mesage file
      *
-     * @param integer $code
-     * @param array $substitutions
-     * @return array
+     * @param  int|string|null $code a messages.php key; a string when a request
+     *                              carried it
+     * @param  array<string, mixed> $substitutions message part => its vsprintf()
+     *                                            argument list, or a single argument
+     * @return array<string, string> part (headline, message) => text; empty for an
+     *                               unknown code
      */
-    function getMsg($code, $substitutions = []) {
+    public function getMsg($code, $substitutions = []) {
 
         static $_owa_messages;
 
@@ -183,8 +193,8 @@ class Base {
     }
 
     /**
-     * @param $code
-     * @param array $substitutions
+     * @param  int|string|null $code as getMsg() takes it
+     * @param  array<string, mixed> $substitutions as getMsg() takes them
      * @return string
      */
     public function getMsgAsString($code, $substitutions = [])

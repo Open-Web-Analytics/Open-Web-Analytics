@@ -29,6 +29,8 @@ namespace OWA\Core;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-type MetricCondition array{column?: string, value?: scalar, operator?: string}
  */
 class Metric extends \OWA\Core\Base {
 
@@ -66,68 +68,106 @@ class Metric extends \OWA\Core\Base {
      * ['column' => ..., 'value' => ..., 'operator' => '=']. Empty means every
      * row, which is what every metric did before conditions existed.
      *
-     * @var array
+     * @var MetricCondition
      */
     protected $condition = array();
 
     /**
      * Current Time
      *
-     * @var array
+     * @var array<string, int|string> as Lib::time_now() answers; nothing here sets it
      */
-    var $time_now = array();
+    public $time_now = array();
     
     /**
      * Data
      *
-     * @var array
+     * @var mixed nothing here sets or reads it
      */
-    var $data;
+    public $data;
     
     /**
      * The params of the caller, either a report or graph
      *
-     * @var array
+     * @var array<string, mixed> name => value, any type
      */
-    var $params = array();
+    public $params = array();
         
     /**
      * The lables for calculated measures
      *
-     * @var array
+     * @var array<string, string> name => label
      */
-    var $labels = array();
+    public $labels = array();
     
     /**
      * Data Access Object
      *
      * @var object
      */
-    var $db;
+    public $db;
     
-    var $page;
+    /** @var mixed nothing here sets or reads it */
+    public $page;
     
-    var $limit;
+    /** @var mixed nothing here sets or reads it */
+    public $limit;
     
-    var $order;
+    /** @var mixed nothing here sets or reads it */
+    public $order;
     
-    var $table;
+    /** @var mixed nothing here sets or reads it */
+    public $table;
     
-    var $select = array();
+    /**
+     * An old style metric's SELECT, set by the metric itself: [expression, alias].
+     *
+     * @var list<string>
+     */
+    public $select = array();
     
-    var $column;
+    /**
+     * The counted column, qualified by the entity's alias. See setColumn().
+     *
+     * @var string|null
+     */
+    public $column;
     
-    var $is_calculated = false;
+    /** @var bool */
+    public $is_calculated = false;
     
-    var $data_type;
+    /**
+     * One of $supported_data_types; null until setDataType() is given one.
+     *
+     * @var string|null
+     */
+    public $data_type;
     
-    var $name;
+    /** @var string|null null until setName() */
+    public $name;
     
-    var $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency', 'milliseconds');
+    /** @var list<string> */
+    public $supported_data_types = array('percentage', 'decimal', 'integer', 'url', 'yyyymmdd', 'timestamp', 'string', 'currency', 'milliseconds');
 
-    var $type, $entity, $all_columns;
+    /**
+     * The aggregation (count, distinct_count, sum, boolean_true_count,
+     * avg_difference) or calculated, ratio, difference; null until
+     * setMetricType().
+     *
+     * @var string|null
+     */
+    public $type;
+
+    /** @var \OWA\Core\Entity|null the entity counted; null until setEntity() */
+    public $entity;
+
+    /** @var array<string, string>|null metric name => qualified column; null until setColumn() */
+    public $all_columns;
         
-    function __construct($params = array()) {
+    /**
+     * @param array<string, mixed> $params the caller's params, any type
+     */
+    public function __construct($params = array()) {
         
         if (!empty($params)) {
             $this->params = $params;
@@ -141,8 +181,10 @@ class Metric extends \OWA\Core\Base {
     /**
      * Set the labels of the measures
      *
+     * @param  array<string, string> $array name => label
+     * @return void
      */
-    function setLabels($array) {
+    public function setLabels($array) {
     
         $this->labels = $array;
         return;
@@ -151,15 +193,22 @@ class Metric extends \OWA\Core\Base {
     /**
      * Sets an individual label
      * return the key so that it can be nested
+     *
+     * @param  string $key
+     * @param  string $label
      * @return string $key
      */
-    function addLabel($key, $label) {
+    public function addLabel($key, $label) {
         
         $this->labels[$key] = $label;
         return $key;
     }
     
-    function getLabel($key = '') {
+    /**
+     * @param  string $key a measure's name; '' for this metric's own
+     * @return string
+     */
+    public function getLabel($key = '') {
         
         if (!$key) {
             $key = $this->getName();
@@ -170,8 +219,11 @@ class Metric extends \OWA\Core\Base {
     
     /**
      * Sets the label of the metric itself
+     *
+     * @param  string $label
+     * @return void
      */
-    function setLabel($label) {
+    public function setLabel($label) {
         
         $this->labels[$this->getName()] = $label;
         
@@ -180,29 +232,45 @@ class Metric extends \OWA\Core\Base {
     /**
      * Retrieve the labels of the measures
      *
+     * @return array<string, string> name => label
      */
-    function getLabels() {
+    public function getLabels() {
     
         return $this->labels;
     
     }
 
-    function setEntity($name) {
+    /**
+     * @param  string $name module.entity, e.g. base.event
+     * @return void
+     */
+    public function setEntity($name) {
         
         $this->entity = \OWA\Core\CoreAPI::entityFactory($name);
     }
     
-    function getTableName() {
+    /**
+     * @return string
+     */
+    public function getTableName() {
         
         return $this->entity->getTableName();
     }
     
-    function getTableAlias() {
+    /**
+     * @return string|null
+     */
+    public function getTableAlias() {
         
         return $this->entity->getTableAlias();
     }
     
-    function getSelect() {
+    /**
+     * The SELECT expression and its alias.
+     *
+     * @return list<string|null> [expression, null when it cannot be built; the metric's name]
+     */
+    public function getSelect() {
         
         if ( $this->select) {
             // old style metrics populate this explicitly.
@@ -367,7 +435,10 @@ class Metric extends \OWA\Core\Base {
         
     }
     
-    function getSelectWithNoAlias() {
+    /**
+     * @return string|null getSelect()'s expression
+     */
+    public function getSelectWithNoAlias() {
         
         if ( $this->select ) {
             return $this->select[0];
@@ -377,20 +448,31 @@ class Metric extends \OWA\Core\Base {
         }
     }
     
-    function setName($name) {
+    /**
+     * @param  string $name
+     * @return void
+     */
+    public function setName($name) {
         
         $this->name = $name;
     }
     
-    function getName() {
+    /**
+     * @return string|null
+     */
+    public function getName() {
         
         return $this->name;
     }
     
     /**
      * Sets a metric's column
+     *
+     * @param  string $col_name a column of the entity, unqualified
+     * @param  string $name     the metric it is for; '' for this one
+     * @return void
      */
-    function setColumn($col_name, $name = '') {
+    public function setColumn($col_name, $name = '') {
         
         if (!$name) {
             $name = $this->getName();
@@ -402,8 +484,10 @@ class Metric extends \OWA\Core\Base {
     
     /**
      * Gets a metric's column name
+     *
+     * @return string|null qualified; null before setColumn()
      */
-    function getColumn() {
+    public function getColumn() {
         
         return $this->column;
     }
@@ -413,10 +497,16 @@ class Metric extends \OWA\Core\Base {
      *
      * Its own accessor rather than a second meaning for setColumn(), so a
      * metric that does not use it cannot silently acquire one.
+     *
+     * @var string|null qualified; null before setSubtrahendColumn()
      */
-    var $subtrahend_column;
+    public $subtrahend_column;
 
-    function setSubtrahendColumn( $col_name ) {
+    /**
+     * @param  string $col_name a column of the entity, unqualified
+     * @return void
+     */
+    public function setSubtrahendColumn( $col_name ) {
 
         /*
          * Qualified here, exactly as setColumn() qualifies the primary column.
@@ -427,12 +517,18 @@ class Metric extends \OWA\Core\Base {
         $this->subtrahend_column = $this->entity->getTableAlias() . '.' . $col_name;
     }
 
-    function getSubtrahendColumn() {
+    /**
+     * @return string|null
+     */
+    public function getSubtrahendColumn() {
 
         return $this->subtrahend_column;
     }
 
-    function getEntityName() {
+    /**
+     * @return string|null see Entity::$name
+     */
+    public function getEntityName() {
         return $this->entity->getName();
     }
     
@@ -444,24 +540,42 @@ class Metric extends \OWA\Core\Base {
      * such method. Its 'calculated' type has therefore never worked: supported
      * on paper, fatal on first use, and never registered by anything, so nobody
      * found out. Held here so any metric can be calculated.
+     *
+     * @var list<string> metric names
      */
-    var $child_metrics = array();
+    public $child_metrics = array();
 
-    function setChildMetric( $name ) {
+    /**
+     * @param  string $name a metric name
+     * @return void
+     */
+    public function setChildMetric( $name ) {
 
         $this->child_metrics[] = $name;
     }
 
-    function getChildMetrics() {
+    /**
+     * @return list<string> metric names
+     */
+    public function getChildMetrics() {
 
         return $this->child_metrics;
     }
 
-    function isCalculated() {
+    /**
+     * @return bool
+     */
+    public function isCalculated() {
         return $this->is_calculated;
     }
     
-    function setDataType($string) {
+    /**
+     * Ignored unless it is one of $supported_data_types.
+     *
+     * @param  string $string
+     * @return void
+     */
+    public function setDataType($string) {
         
         if (in_array($string, $this->supported_data_types)) {
             $this->data_type = $string;
@@ -469,7 +583,10 @@ class Metric extends \OWA\Core\Base {
         
     }
     
-    function getDataType() {
+    /**
+     * @return string|null
+     */
+    public function getDataType() {
         return $this->data_type;
     }
     
@@ -481,10 +598,10 @@ class Metric extends \OWA\Core\Base {
      * for the same reason -- a metric carrying an expression has to be rewritten
      * by hand if the reporting store ever changes.
      *
-     * @param array $condition ['column' => ..., 'value' => ..., 'operator' => '=']
+     * @param  MetricCondition $condition ['column' => ..., 'value' => ..., 'operator' => '=']
      * @return void
      */
-    function setCondition( array $condition ) {
+    public function setCondition( array $condition ) {
 
         $this->condition = $condition;
     }
@@ -494,9 +611,9 @@ class Metric extends \OWA\Core\Base {
      * null when there is none or it cannot be rendered. For a query whose
      * every metric shares it (ResultSetManager::sharedMetricCondition()).
      *
-     * @return array|null
+     * @return array{0: string, 1: scalar, 2: string}|null
      */
-    function conditionWhere() {
+    public function conditionWhere() {
 
         if ( ! $this->hasCondition() || $this->renderCondition() === '' ) {
 
@@ -513,7 +630,7 @@ class Metric extends \OWA\Core\Base {
     }
 
     /** @return bool */
-    function hasCondition() {
+    public function hasCondition() {
 
         return ! empty( $this->condition['column'] )
             && array_key_exists( 'value', (array) $this->condition );
@@ -648,7 +765,7 @@ class Metric extends \OWA\Core\Base {
      * @param int|null $precision   decimal places
      * @return void
      */
-    function setRatio( $numerator, $denominator, $precision = null ) {
+    public function setRatio( $numerator, $denominator, $precision = null ) {
 
         $this->numerator   = (string) $numerator;
         $this->denominator = (string) $denominator;
@@ -665,25 +782,25 @@ class Metric extends \OWA\Core\Base {
     }
 
     /** @return bool */
-    function isRatio() {
+    public function isRatio() {
 
         return $this->numerator !== '' && $this->denominator !== '';
     }
 
     /** @return string */
-    function getNumerator() {
+    public function getNumerator() {
 
         return $this->numerator;
     }
 
     /** @return string */
-    function getDenominator() {
+    public function getDenominator() {
 
         return $this->denominator;
     }
 
     /** @return int|null */
-    function getPrecision() {
+    public function getPrecision() {
 
         return $this->precision;
     }
@@ -699,7 +816,7 @@ class Metric extends \OWA\Core\Base {
      * @param  int|float|null $denominator
      * @return float|int
      */
-    function computeRatio( $numerator, $denominator ) {
+    public function computeRatio( $numerator, $denominator ) {
 
         if ( ! is_numeric( $denominator ) || (float) $denominator == 0.0 ) {
 
@@ -720,7 +837,7 @@ class Metric extends \OWA\Core\Base {
      * @param string $subtrahend a metric name
      * @return void
      */
-    function setDifference( $minuend, $subtrahend ) {
+    public function setDifference( $minuend, $subtrahend ) {
 
         $this->minuend    = (string) $minuend;
         $this->subtrahend = (string) $subtrahend;
@@ -730,19 +847,19 @@ class Metric extends \OWA\Core\Base {
     }
 
     /** @return bool */
-    function isDifference() {
+    public function isDifference() {
 
         return $this->minuend !== '' && $this->subtrahend !== '';
     }
 
     /** @return string */
-    function getMinuend() {
+    public function getMinuend() {
 
         return $this->minuend;
     }
 
     /** @return string */
-    function getSubtrahend() {
+    public function getSubtrahend() {
 
         return $this->subtrahend;
     }
@@ -753,9 +870,11 @@ class Metric extends \OWA\Core\Base {
      * A side with no value counts as zero -- revenue with no refunds is the
      * revenue -- but with neither side there is nothing to report.
      *
+     * @param  mixed $minuend    a computed value as the result set holds it, any type; not numeric counts as none
+     * @param  mixed $subtrahend the same
      * @return float|int|null
      */
-    function computeDifference( $minuend, $subtrahend ) {
+    public function computeDifference( $minuend, $subtrahend ) {
 
         $a = is_numeric( $minuend ) ? $minuend + 0 : null;
         $b = is_numeric( $subtrahend ) ? $subtrahend + 0 : null;
@@ -768,7 +887,11 @@ class Metric extends \OWA\Core\Base {
         return ( $a === null ? 0 : $a ) - ( $b === null ? 0 : $b );
     }
 
-    function setMetricType( $type ) {
+    /**
+     * @param  string $type see $type
+     * @return void
+     */
+    public function setMetricType( $type ) {
         $this->type = $type;
 
         /*

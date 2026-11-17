@@ -32,7 +32,10 @@ namespace OWA\Core\Validation;
  
  class InArray extends \OWA\Core\Validation\Validation {
 
-     function validate() {
+     /**
+      * @return void
+      */
+     public function validate() {
 
         $value = $this->getValues();
         $possible_values = $this->getConfig('possible_values');
@@ -46,7 +49,7 @@ namespace OWA\Core\Validation;
 
         if ( empty( $error ) ) {
 	        
-            $error = $this->setErrorMessage( sprintf(
+            $this->setErrorMessage( sprintf(
             	
             	\OWA\Core\CoreAPI::t( '"%s" is not an allowed value. Allowed: %s' ),
             	$value,

@@ -53,8 +53,9 @@ namespace OWA\Core;
 final class CliInvocation {
 
     /**
-     * @param string $sapi   php_sapi_name()
-     * @param array  $server $_SERVER
+     * @param  string $sapi   php_sapi_name()
+     * @param  array<mixed> $server $_SERVER
+     * @return bool
      */
     public static function detect( $sapi, array $server ) {
 

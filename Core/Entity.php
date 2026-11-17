@@ -34,12 +34,37 @@ namespace OWA\Core;
 // Entities set their columns as undeclared properties. PHP 8.2 deprecates that
 // except on a class carrying this attribute, which is PHP's supported way to
 // keep it.
+/**
+ * @phpstan-type TableProperties array{
+ *     name?: string,
+ *     alias?: string,
+ *     cacheable?: bool,
+ *     primary_key?: string,
+ *     partition_column?: string,
+ *     composite_indexes?: array<string, list<string>>,
+ *     unique_indexes?: array<string, list<string>>,
+ *     composite_primary_key?: list<string>,
+ *     character_encoding?: string|null,
+ *     table_type?: string
+ * }
+ * @phpstan-type ColumnConstraints array<string, array{value: mixed, operator: string}>
+ *         column => the value it must hold and the comparison
+ */
 #[\AllowDynamicProperties]
 class Entity {
 
-    var $name;
-    var $properties = array();
-    var $_tableProperties = array();
+    /**
+     * The name entityFactory() made it under, e.g. base.site; null before.
+     *
+     * @var string|null
+     */
+    public $name;
+
+    /** @var array<string, \OWA\Module\Base\Classes\DbColumn> column name => column */
+    public $properties = array();
+
+    /** @var TableProperties */
+    public $_tableProperties = array();
 
     /**
      * Whether the table encoding has been handed down to the columns yet.
@@ -47,11 +72,34 @@ class Entity {
      * @var bool
      */
     protected $_character_encoding_applied = false;
-    var $wasPersisted;
-    var $cache;
-    var $dirty = [];
-    
-    function _getProperties() {
+
+    /**
+     * True once the row has been read or hydrated; null before.
+     *
+     * @var bool|null
+     */
+    public $wasPersisted;
+
+    /**
+     * Not read or written here.
+     *
+     * @var mixed nothing in OWA sets it; a subclass may
+     */
+    public $cache;
+
+    /**
+     * Columns changed since the last write, column => the value set.
+     *
+     * @var array<string, mixed>
+     */
+    public $dirty = [];
+
+    /**
+     * Every column's value.
+     *
+     * @return array<string, mixed> column => value as set, any type
+     */
+    public function _getProperties() {
         
         $properties = array();
         
@@ -71,7 +119,7 @@ class Entity {
      * once, next to the column it protects, and every route that serializes the
      * entity inherits it. Subclasses holding secrets override this.
      *
-     * @var array
+     * @var list<string>
      */
     protected $private_properties = [];
 
@@ -80,14 +128,18 @@ class Entity {
      *
      * This is what REST responses are built from -- see View\RestApi::setResponseData().
      *
-     * @return array
+     * @return array<string, mixed> column => value
      */
     public function getPublicProperties() {
 
 	    return $this->getProperties( $this->private_properties );
     }
 
-    function getProperties( $drop_keys = [] ) {
+    /**
+     * @param  list<string> $drop_keys columns to leave out
+     * @return array<string, mixed> column => value
+     */
+    public function getProperties( $drop_keys = [] ) {
 	    
 	    $properties = $this->_getProperties();
 	    
@@ -108,9 +160,10 @@ class Entity {
     /**
      * Return Array or string of column names used for SQL queries - e.g. like " tablename.fieldname as namespace.fieldname"
      *
-     * @param boolean $return_as_string  If false array is returned
-     * @param string $as_namespace  Optional namespace for fields
-     * @param boolean $table_namespace
+     * @param  bool   $return_as_string  If false array is returned
+     * @param  string $as_namespace  Optional namespace for fields
+     * @param  bool   $table_namespace
+     * @return ($return_as_string is true ? string : list<string>)
      */
     public function getColumns($return_as_string = false, $as_namespace = '', $table_namespace = false) {
         
@@ -151,9 +204,11 @@ class Entity {
     /**
      * Sets object attributes
      *
-     * @param mixed $array
+     * @param  array<string, mixed> $array column => value; keys that are not columns are skipped
+     * @param  bool $apply_filters
+     * @return void
      */
-    function setProperties($array, $apply_filters = false) {
+    public function setProperties($array, $apply_filters = false) {
         
         $properties = $this->getColumns();
         
@@ -223,8 +278,14 @@ class Entity {
         return $value;
     }
     
-    
-    function set($name, $value, $filter = true, $mark_dirty = true ) {
+    /**
+     * @param  string $name
+     * @param  mixed  $value any type: a <name>SetFilter() method or the column decides what it keeps
+     * @param  bool   $filter
+     * @param  bool   $mark_dirty
+     * @return void
+     */
+    public function set($name, $value, $filter = true, $mark_dirty = true ) {
 
         // Columns heal values as they arrive, and one of the things they heal
         // depends on the table's encoding -- so they have to know it before the
@@ -275,6 +336,34 @@ class Entity {
     }
     
     /**
+     * Empty a column, deliberately.
+     *
+     * set() discards '' on a string column, on purpose: several handlers rely
+     * on `set('medium', $maybeEmpty)` leaving the existing value alone, and
+     * blanket-storing empties there would wipe data that is currently kept.
+     * The cost is that a caller who genuinely means "this is now blank" -- an
+     * edit form whose textarea the user emptied -- had no way to say so, and
+     * the old value survived with no error shown.
+     *
+     * This is that way. It marks the column dirty so update() writes it, which
+     * is the half set() cannot reach: its falsy guard wraps the markDirty call
+     * as well as the assignment.
+     *
+     * @param  string $name
+     * @return void
+     */
+    public function clear( $name ) {
+
+        if ( ! array_key_exists( $name, $this->properties ) ) {
+
+            return;
+        }
+
+        $this->properties[ $name ]->setValue( '' );
+        $this->markDirty( $name, '' );
+    }
+
+    /**
      * Whether a falsy value is a real value for this column.
      *
      * Reads the type the entity already declares -- DbColumn's second
@@ -302,34 +391,9 @@ class Entity {
      * behaviour rather than guessing.
      *
      * @param string $name
-     * @param mixed  $value
+     * @param mixed  $value any type
      * @return bool
      */
-    /**
-     * Empty a column, deliberately.
-     *
-     * set() discards '' on a string column, on purpose: several handlers rely
-     * on `set('medium', $maybeEmpty)` leaving the existing value alone, and
-     * blanket-storing empties there would wipe data that is currently kept.
-     * The cost is that a caller who genuinely means "this is now blank" -- an
-     * edit form whose textarea the user emptied -- had no way to say so, and
-     * the old value survived with no error shown.
-     *
-     * This is that way. It marks the column dirty so update() writes it, which
-     * is the half set() cannot reach: its falsy guard wraps the markDirty call
-     * as well as the assignment.
-     */
-    public function clear( $name ) {
-
-        if ( ! array_key_exists( $name, $this->properties ) ) {
-
-            return;
-        }
-
-        $this->properties[ $name ]->setValue( '' );
-        $this->markDirty( $name, '' );
-    }
-
     protected function columnAcceptsFalsy( $name, $value ) {
 
         if ( $value === null || $value === '' ) {
@@ -369,7 +433,7 @@ class Entity {
      * correct for any dialect: each entry is whatever that dialect defined the
      * type as. Names a dialect does not define are skipped rather than assumed.
      *
-     * @return array
+     * @return list<string>
      */
     protected function numericColumnTypes() {
 
@@ -399,26 +463,46 @@ class Entity {
         return array_values( array_unique( $numeric ) );
     }
 
-    function markDirty( $name, $value ) {
+    /**
+     * @param  string $name
+     * @param  mixed  $value the value set, any type
+     * @return void
+     */
+    public function markDirty( $name, $value ) {
 	    
 	    $this->dirty[$name] = $value;
     }
     
-    function isDirty() {
+    /**
+     * @return true|null true when a column changed since the last write
+     */
+    public function isDirty() {
 	    
 	    if ( ! empty( $this->dirty ) ) {
 		    
 		    return true;
 	    }
+
+        return null;
     }
     
-    // depricated
-    function setValues($values) {
+    /**
+     * @deprecated setProperties()
+     *
+     * @param  array<string, mixed> $values column => value
+     * @return void
+     */
+    public function setValues($values) {
         
-        return $this->setProperties($values);
+        $this->setProperties($values);
     }
     
-    function get($name, $filter = true) {
+    /**
+     * @param  string $name
+     * @param  bool   $filter
+     * @return mixed the column's value, any type, through <name>GetFilter() when there is one; null for an undeclared column
+     */
+    public function get($name, $filter = true) {
         
         if (array_key_exists($name, $this->properties)) {
             $method = $name.'GetFilter';
@@ -445,9 +529,9 @@ class Entity {
      * connection is already the wider encoding (see MysqlDialect), so the only
      * thing standing in the way was this.
      *
-     * @return array
+     * @return array{table_type: string, character_encoding?: string}
      */
-    function getTableOptions() {
+    public function getTableOptions() {
 
         $options = array( 'table_type' => 'disk' );
 
@@ -473,10 +557,6 @@ class Entity {
         return $options;
     }
     
-    /**
-     * Persist new object
-     *
-     */
     /**
      * The value to WRITE for a column, resolving an unset one by its declared type.
      *
@@ -559,7 +639,7 @@ class Entity {
      * OWA_DTD_VARCHAR is deliberately excluded: its value is a sprintf template
      * ('VARCHAR(%s)'), never a type a column actually carries.
      *
-     * @return array
+     * @return list<string>
      */
     protected function textColumnTypes() {
 
@@ -594,7 +674,12 @@ class Entity {
         return array_values( array_unique( $text ) );
     }
 
-    function create() {
+    /**
+     * Persist new object
+     *
+     * @return bool
+     */
+    public function create() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $all_cols = $this->getColumns();
@@ -626,7 +711,12 @@ class Entity {
         return $status;
     }
     
-    function save() {
+    /**
+     * update() once persisted, create() before.
+     *
+     * @return bool
+     */
+    public function save() {
         
         if ( $this->wasPersisted ) {
             return $this->update();
@@ -636,7 +726,11 @@ class Entity {
         
     }
     
-    function addToCache($col = 'id') {
+    /**
+     * @param  string $col the column the row is cached under
+     * @return void
+     */
+    public function addToCache($col = 'id') {
         
         if($this->isCachable()) {
             $cache = \OWA\Core\CoreAPI::cacheSingleton();
@@ -649,8 +743,10 @@ class Entity {
     /**
      * Update all properties of an Existing object
      *
+     * @param  string $where the column naming the row; '' for id
+     * @return bool
      */
-    function update($where = '') {
+    public function update($where = '') {
 
         $key   = empty( $where ) ? 'id' : $where;
         $value = $this->get( $key );
@@ -708,9 +804,9 @@ class Entity {
      * The rows as stored that a write by $col = $value is about to change, or
      * none when this entity is not cached.
      *
-     * @param string $col
-     * @param mixed  $value
-     * @return array[]
+     * @param  string $col
+     * @param  mixed  $value as given to update() or delete(), any type
+     * @return list<array<string, scalar|null>> column => value
      */
     protected function storedRowsIfCached( $col, $value ) {
 
@@ -739,7 +835,8 @@ class Entity {
      * cache that outlives the request. Every column of each row is dropped,
      * since any of them can have been the one a lookup used.
      *
-     * @param array[] $rows as stored, before the write
+     * @param  list<array<string, scalar|null>> $rows as stored, before the write
+     * @return void
      */
     protected function forgetCached( array $rows ) {
 
@@ -766,8 +863,11 @@ class Entity {
     /**
      * Delete Object
      *
+     * @param  int|string $value the value $col holds; empty for this entity's id
+     * @param  string     $col
+     * @return bool
      */
-    function delete($value = '', $col = 'id') {
+    public function delete($value = '', $col = 'id') {
 
         if (empty($value)) {
             $value = $this->get('id');
@@ -812,10 +912,10 @@ class Entity {
      * again by id is one query per row -- which is how every admin page came to
      * run one query per site to draw the site picker.
      *
-     * @param  array $row column => value
+     * @param  array<string, scalar|null> $row column => value
      * @return $this
      */
-    function hydrate( array $row ) {
+    public function hydrate( array $row ) {
 
         $this->setProperties( $row );
         $this->wasPersisted = true;
@@ -823,15 +923,29 @@ class Entity {
         return $this;
     }
 
-    function load($value, $col = 'id', $constraints = array()) {
+    /**
+     * getByColumn() with the arguments in the order a lookup by id reads.
+     *
+     * @param  int|string        $value
+     * @param  string            $col
+     * @param  ColumnConstraints $constraints
+     * @return void
+     */
+    public function load($value, $col = 'id', $constraints = array()) {
 
-        return $this->getByColumn($col, $value, $constraints);
+        $this->getByColumn($col, $value, $constraints);
         
     }
     
-    function getByPk($col, $value, $constraints = array()) {
+    /**
+     * @param  string            $col
+     * @param  int|string        $value
+     * @param  ColumnConstraints $constraints
+     * @return void
+     */
+    public function getByPk($col, $value, $constraints = array()) {
         
-        return $this->getByColumn($col, $value, $constraints);
+        $this->getByColumn($col, $value, $constraints);
         
     }
     
@@ -851,11 +965,13 @@ class Entity {
      * The cache key deliberately ignores $constraints: the answer is the same
      * row either way, so a bounded and an unbounded lookup share an entry.
      *
-     * @param string $col
-     * @param mixed  $value
-     * @param array  $constraints  name => ['value' => mixed, 'operator' => string]
+     * @param  string            $col
+     * @param  int|string        $value
+     * @param  ColumnConstraints $constraints
+     * @return void
+     * @throws \Exception when $col or $value is empty
      */
-    function getByColumn($col, $value, $constraints = array()) {
+    public function getByColumn($col, $value, $constraints = array()) {
                 
         if ( ! $col ) {
             throw new \Exception("No column name passed.");
@@ -904,10 +1020,10 @@ class Entity {
     /**
      * One row by column value, optionally narrowed. See getByColumn().
      *
-     * @param string $col
-     * @param mixed  $value
-     * @param array  $constraints
-     * @return array
+     * @param  string            $col
+     * @param  int|string        $value
+     * @param  ColumnConstraints $constraints
+     * @return array<string, scalar|null> column => value; empty when no row
      */
     protected function fetchOneRow($col, $value, $constraints = array()) {
 
@@ -924,7 +1040,10 @@ class Entity {
         return (array) $db->getOneRow();
     }
 
-    function getTableName() {
+    /**
+     * @return string the table's name; the class name before setTableName()
+     */
+    public function getTableName() {
         
         if ($this->_tableProperties) {
             return $this->_tableProperties['name'];
@@ -934,14 +1053,23 @@ class Entity {
         
     }
     
-    function getTableAlias() {
+    /**
+     * @return string|null null before setTableName()
+     */
+    public function getTableAlias() {
         
         if ($this->_tableProperties) {
             return $this->_tableProperties['alias'];
         }
+
+        return null;
     }
     
-    function setTableAlias( $alias ) {
+    /**
+     * @param  string $alias
+     * @return void
+     */
+    public function setTableAlias( $alias ) {
     
         $this->_tableProperties['alias'] = $alias;
     }
@@ -954,7 +1082,12 @@ class Entity {
      */
     const TABLE_PREFIX = 'owa_';
 
-    function setTableName($name, $namespace = self::TABLE_PREFIX) {
+    /**
+     * @param  string $name
+     * @param  string $namespace the table name's prefix
+     * @return void
+     */
+    public function setTableName($name, $namespace = self::TABLE_PREFIX) {
 
         $this->_tableProperties['alias'] = $name;
         $this->_tableProperties['name'] = $namespace.$name;
@@ -963,18 +1096,27 @@ class Entity {
     /**
      * Keep rows of this entity for the rest of the request once looked up.
      * See \OWA\Module\Base\Classes\Cache: there is no cache beyond the request.
+     *
+     * @return void
      */
-    function setCachable() {
+    public function setCachable() {
 
         $this->_tableProperties['cacheable'] = true;
     }
 
-    function isCachable() {
+    /**
+     * @return bool
+     */
+    public function isCachable() {
 
         return ! empty( $this->_tableProperties['cacheable'] );
     }
     
-    function setPrimaryKey($col) {
+    /**
+     * @param  string $col
+     * @return void
+     */
+    public function setPrimaryKey($col) {
         //backwards compatability
         $this->properties[$col]->setPrimaryKey();
         $this->_tableProperties['primary_key'] = $col;
@@ -985,8 +1127,10 @@ class Entity {
      * Create Table
      *
      * Handled by DB abstraction layer because the SQL associated with this is way too DB specific
+     *
+     * @return bool
      */
-    function createTable() {
+    public function createTable() {
         
         $db = \OWA\Core\CoreAPI::dbSingleton();
         // Persist table
@@ -1006,8 +1150,10 @@ class Entity {
      * DROP Table
      *
      * Drops a table. will throw error is table does not exist
+     *
+     * @return bool
      */
-    function dropTable() {
+    public function dropTable() {
         
         $db = \OWA\Core\CoreAPI::dbSingleton();
         // Persist table
@@ -1030,8 +1176,11 @@ class Entity {
      * building it into the column definition meant this method had never
      * worked for an indexed column on any install that reached it, which is
      * every upgrade rather than any fresh install.
+     *
+     * @param  string $column_name
+     * @return bool
      */
-    function addColumn($column_name) {
+    public function addColumn($column_name) {
         
         $def = $this->getColumnDefinition($column_name);
         // Persist table
@@ -1051,7 +1200,11 @@ class Entity {
         return true;
     }
     
-    function dropColumn($column_name) {
+    /**
+     * @param  string $column_name
+     * @return bool
+     */
+    public function dropColumn($column_name) {
         
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $status = $db->dropColumn($this->getTableName(), $column_name);
@@ -1064,7 +1217,11 @@ class Entity {
         
     }
     
-    function modifyColumn($column_name) {
+    /**
+     * @param  string $column_name
+     * @return bool
+     */
+    public function modifyColumn($column_name) {
     
         $def = $this->getColumnDefinition($column_name);
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -1079,7 +1236,13 @@ class Entity {
     
     }
     
-    function renameColumn($old_column_name, $column_name, $use_old_column_for_defs = false) {
+    /**
+     * @param  string $old_column_name
+     * @param  string $column_name
+     * @param  bool   $use_old_column_for_defs define it from the column declared under the old name
+     * @return bool
+     */
+    public function renameColumn($old_column_name, $column_name, $use_old_column_for_defs = false) {
     
         if ($use_old_column_for_defs) {
             $def = $this->getColumnDefinition($old_column_name);
@@ -1098,7 +1261,11 @@ class Entity {
         
     }
     
-    function renameTable($new_table_name) {
+    /**
+     * @param  string $new_table_name
+     * @return bool
+     */
+    public function renameTable($new_table_name) {
         
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $status = $db->renameTable($this->getTableName(), $new_table_name);
@@ -1110,7 +1277,12 @@ class Entity {
         endif;
     }
     
-    function getColumnDefinition($column_name, $omit_primary_key = false) {
+    /**
+     * @param  string $column_name
+     * @param  bool   $omit_primary_key
+     * @return string
+     */
+    public function getColumnDefinition($column_name, $omit_primary_key = false) {
     
         return $this->getColumn($column_name)->getDefinition($omit_primary_key);
     }
@@ -1121,8 +1293,11 @@ class Entity {
      * Separate from its definition because an index is a table-level clause:
      * createTable() may write it inline, an ALTER may not. See
      * DbColumn::getDefinition().
+     *
+     * @param  string $column_name
+     * @return bool
      */
-    function isColumnIndexed($column_name) {
+    public function isColumnIndexed($column_name) {
     
         return $this->getColumn($column_name)->isIndexed();
     }
@@ -1150,7 +1325,7 @@ class Entity {
      * @return \OWA\Module\Base\Classes\DbColumn
      * @throws \InvalidArgumentException
      */
-    function getColumn($column_name) {
+    public function getColumn($column_name) {
     
         if (empty($this->properties)) {
             return $this->$column_name;
@@ -1173,7 +1348,7 @@ class Entity {
      *
      * @return string|null
      */
-    function getPrimaryKeyColumn() {
+    public function getPrimaryKeyColumn() {
         
         if (isset($this->_tableProperties['primary_key'])) {
             return $this->_tableProperties['primary_key'];
@@ -1197,9 +1372,10 @@ class Entity {
      * The column has to be part of every unique key, so declaring it also makes
      * the primary key composite -- see Db::createTable().
      *
-     * @param string $column
+     * @param  string $column
+     * @return void
      */
-    function setPartitionColumn($column) {
+    public function setPartitionColumn($column) {
         
         $this->_tableProperties['partition_column'] = $column;
     }
@@ -1218,10 +1394,11 @@ class Entity {
      * generated name would have to be regenerated identically by every update
      * that ever removes one.
      *
-     * @param string $name    index name, unique within the table
-     * @param array  $columns column names, in key order -- order is the index
+     * @param  string       $name    index name, unique within the table
+     * @param  list<string> $columns column names, in key order -- order is the index
+     * @return void
      */
-    function addCompositeIndex( $name, array $columns ) {
+    public function addCompositeIndex( $name, array $columns ) {
         
         $this->_tableProperties['composite_indexes'][ $name ] = $columns;
     }
@@ -1233,10 +1410,11 @@ class Entity {
      * primary key orders the rows on disk, so a random natural key belongs in
      * a secondary index and an ascending surrogate in the primary one.
      *
-     * @param string   $name
-     * @param string[] $columns
+     * @param  string       $name
+     * @param  list<string> $columns
+     * @return void
      */
-    function addUniqueIndex( $name, array $columns ) {
+    public function addUniqueIndex( $name, array $columns ) {
 
         $this->_tableProperties['unique_indexes'][ $name ] = $columns;
     }
@@ -1250,23 +1428,32 @@ class Entity {
      * it at table level; no column may also call DbColumn::setPrimaryKey().
      * Not for a partitioned table, whose key createTable() builds itself.
      *
-     * @param string[] $columns
+     * @param  list<string> $columns
+     * @return void
      */
-    function setCompositePrimaryKey( array $columns ) {
+    public function setCompositePrimaryKey( array $columns ) {
 
         $this->_tableProperties['composite_primary_key'] = array_values( $columns );
     }
 
-    /** @return string[] the columns of a composite primary key, or none */
-    function getCompositePrimaryKey() {
+    /**
+     * The columns of a composite primary key, or none.
+     *
+     * @return list<string>
+     */
+    public function getCompositePrimaryKey() {
 
         return isset( $this->_tableProperties['composite_primary_key'] )
             ? $this->_tableProperties['composite_primary_key']
             : array();
     }
 
-    /** @return array name => columns */
-    function getUniqueIndexes() {
+    /**
+     * The UNIQUE indexes declared on this entity.
+     *
+     * @return array<string, list<string>> name => columns
+     */
+    public function getUniqueIndexes() {
 
         return isset( $this->_tableProperties['unique_indexes'] )
             ? $this->_tableProperties['unique_indexes']
@@ -1274,11 +1461,11 @@ class Entity {
     }
 
     /**
-     * The multi-column indexes declared on this entity, name => columns.
+     * The multi-column indexes declared on this entity.
      *
-     * @return array
+     * @return array<string, list<string>> name => columns
      */
-    function getCompositeIndexes() {
+    public function getCompositeIndexes() {
         
         return isset( $this->_tableProperties['composite_indexes'] )
             ? $this->_tableProperties['composite_indexes']
@@ -1290,7 +1477,7 @@ class Entity {
      *
      * @return string|null
      */
-    function getPartitionColumn() {
+    public function getPartitionColumn() {
         
         return isset($this->_tableProperties['partition_column']) ? $this->_tableProperties['partition_column'] : null;
     }
@@ -1309,7 +1496,7 @@ class Entity {
      *
      * @return int months
      */
-    function getDailyLeadMonths() {
+    public function getDailyLeadMonths() {
 
         return 0;
     }
@@ -1330,7 +1517,7 @@ class Entity {
      * @param string $granularity  what the rest of the lead is cut at
      * @return int  partitions, including the catch-all
      */
-    function partitionsNeeded($granularity = 'monthly') {
+    public function partitionsNeeded($granularity = 'monthly') {
 
         if (!$this->getPartitionColumn()) {
 
@@ -1343,15 +1530,27 @@ class Entity {
         return count(\OWA\Core\Db::makeLeadRanges($daily, $granularity)) + 1;
     }
     
-    function setProperty($obj) {
+    /**
+     * Declare a column.
+     *
+     * @param  \OWA\Module\Base\Classes\DbColumn $obj
+     * @return void
+     */
+    public function setProperty($obj) {
         
         $this->properties[$obj->get('name')] = $obj;
     }
     
-    function getProperty($name) {
+    /**
+     * @param  string $name
+     * @return \OWA\Module\Base\Classes\DbColumn|null null for an undeclared column
+     */
+    public function getProperty($name) {
         if (array_key_exists($name, $this->properties)) {
             return $this->properties[$name];
         }
+
+        return null;
     }
     
     /**
@@ -1360,17 +1559,24 @@ class Entity {
      * @param     string $string
      * @return     int|string|null see Lib::setStringGuid()
      */
-    function generateId($string) {
+    public function generateId($string) {
         return \OWA\Core\Lib::setStringGuid($string);
     }
 
     
-    function getName() {
+    /**
+     * @return string|null see $name
+     */
+    public function getName() {
         
         return $this->name;
     }
     
-    function setCharacterEncoding($encoding) {
+    /**
+     * @param  string|null $encoding null for the installation's default
+     * @return void
+     */
+    public function setCharacterEncoding($encoding) {
 
         $this->_tableProperties['character_encoding'] = $encoding;
 
@@ -1383,7 +1589,7 @@ class Entity {
      *
      * @return string|null
      */
-    function getCharacterEncoding() {
+    public function getCharacterEncoding() {
 
         return isset( $this->_tableProperties['character_encoding'] )
             ? $this->_tableProperties['character_encoding']
@@ -1427,7 +1633,10 @@ class Entity {
         }
     }
     
-    function wasPersisted() {
+    /**
+     * @return bool|null see $wasPersisted
+     */
+    public function wasPersisted() {
         return $this->wasPersisted;
     }
 }

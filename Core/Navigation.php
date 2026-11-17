@@ -25,9 +25,10 @@ final class Navigation {
 
     /**
      * @param  string $filter  the list's filter name
-     * @param  array  $items   the list as the framework builds it
-     * @param  mixed  ...$context passed to every filter after the list
-     * @return array  the entries to render, in order
+     * @param  list<array<string, mixed>> $items the list as the framework builds it:
+     *                                         entries of href, label, capability, ...
+     * @param  mixed  ...$context passed to every filter after the list, any type
+     * @return list<array<string, mixed>> the entries to render, in order
      */
     public static function links( $filter, array $items, ...$context ) {
 

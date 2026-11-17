@@ -41,21 +41,27 @@ class Http {
     /**
      * Configuration
      *
-     * @var array
+     * @var array<string, mixed> a setting's value is any type
      */
-    var $config;
+    public $config;
 
     /**
      * Error handler
      *
      * @var object
      */
-    var $e;
+    public $e;
 
-    var $http;
+    /** @var Client */
+    public $http;
 
-    var $response;
-    function __construct() {
+    /**
+     * The last request's response; '' before one, and after one that failed.
+     *
+     * @var \Psr\Http\Message\ResponseInterface|string
+     */
+    public $response;
+    public function __construct() {
 	    
 	    $this->http = new Client( [
 		    
@@ -64,7 +70,13 @@ class Http {
 	    ] );
 
     }
-   function getRequest($url, $arguments = '') {
+    /**
+     * @param  string $url
+     * @param  string $arguments unused
+     * @return \Psr\Http\Message\StreamInterface|string|null the body; null when
+     *         the request failed
+     */
+   public function getRequest($url, $arguments = '') {
 		
 		$this->response = '';
 		
@@ -110,17 +122,27 @@ class Http {
 	        
 	        return $this->getResponseBody();
         }
+
+        return null;
     }
     
-   function getResponseStatusCode() {
+    /**
+     * @return int|null null before a response
+     */
+   public function getResponseStatusCode() {
 	    
 	    if ( $this->response ) {
 		 
 		    return $this->response->getStatusCode();
 		}
+
+        return null;
     }
     
-   function getResponseBody() {
+    /**
+     * @return \Psr\Http\Message\StreamInterface|string '' before a response
+     */
+   public function getResponseBody() {
 
 	      if ( $this->response ) {
 

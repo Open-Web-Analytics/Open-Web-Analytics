@@ -32,7 +32,10 @@ namespace OWA\Core\Validation;
  
  class SubStringMatch extends \OWA\Core\Validation\Validation {
 
-     function validate() {
+     /**
+      * @return void
+      */
+     public function validate() {
 
          $value = $this->getValues();
          $length = strlen($this->getConfig('match'));
@@ -61,7 +64,7 @@ namespace OWA\Core\Validation;
         $error = $this->getErrorMsg();
 
         if (empty($error)) {
-            $error = $this->setErrorMessage( sprintf( \OWA\Core\CoreAPI::t( 'The value contains "%s" at position %d.' ), $this->getConfig('match'), $this->getConfig('position') ) );
+            $this->setErrorMessage( sprintf( \OWA\Core\CoreAPI::t( 'The value contains "%s" at position %d.' ), $this->getConfig('match'), $this->getConfig('position') ) );
         }
      }
 

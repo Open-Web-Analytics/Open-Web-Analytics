@@ -19,18 +19,27 @@ namespace OWA\Core\View;
 
 class Mail extends \OWA\Core\View {
 
-    // post office
-    var $po;
-    var $postProcessView = true;
+    /**
+     * The post office.
+     *
+     * @var \OWA\Module\Base\Classes\Mailer
+     */
+    public $po;
 
-    function __construct() {
+    /** @var bool */
+    public $postProcessView = true;
+
+    public function __construct() {
 
         // make this a service
         $this->po = new \OWA\Module\Base\Classes\Mailer;
         parent::__construct();
     }
 
-    function postProcess() {
+    /**
+     * @return bool whether the transport accepted the mail
+     */
+    public function postProcess() {
 
         $this->po->setHtmlBody( $this->t->fetch() );
 
@@ -41,7 +50,11 @@ class Mail extends \OWA\Core\View {
         return $this->po->sendMail();
     }
 
-    function setMailSubject($sbj) {
+    /**
+     * @param  string $sbj
+     * @return void
+     */
+    public function setMailSubject($sbj) {
 
         $this->po->setSubject( $sbj );
     }
@@ -51,9 +64,11 @@ class Mail extends \OWA\Core\View {
      * notice_email may hold. An address the mailer refuses is logged and
      * skipped (Mailer::addAddress()).
      *
+     * @param  string $email one address or a comma-separated list
+     * @param  string $name  the recipient's name, used for a single address
      * @return int how many were added
      */
-    function addMailToAddress($email, $name = '') {
+    public function addMailToAddress($email, $name = '') {
 
         $added     = 0;
         $addresses = array_values( array_filter( array_map( 'trim', explode( ',', (string) $email ) ), static fn ( $address ) => $address !== '' ) );

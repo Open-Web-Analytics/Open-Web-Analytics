@@ -15,7 +15,7 @@ final class IntakeMessage {
     /** @var mixed what the queue needs to ack, release or dead-letter it; opaque to a consumer */
     public $receipt;
 
-    /** @var array|null the envelope, or null when the message did not decode to one */
+    /** @var array<string, mixed>|null the envelope, or null when the message did not decode to one */
     public $envelope;
 
     /** @var int how many times it has been received, this time included */
@@ -33,6 +33,15 @@ final class IntakeMessage {
     /** @var int|null in a dead-letter queue: when it arrived */
     public $dead_at;
 
+    /**
+     * @param  mixed       $receipt       opaque to a consumer: each queue's own
+     * @param  mixed       $envelope      the decoded message; kept only when it is an array
+     * @param  int         $receive_count
+     * @param  string      $raw
+     * @param  bool        $replayed
+     * @param  string|null $reason
+     * @param  int|string|null $dead_at   a timestamp; a string as an SQS attribute carries it
+     */
     public function __construct( $receipt, $envelope, $receive_count, $raw = '', $replayed = false, $reason = null, $dead_at = null ) {
 
         $this->receipt       = $receipt;

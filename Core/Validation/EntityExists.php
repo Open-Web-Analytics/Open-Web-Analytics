@@ -32,7 +32,10 @@ namespace OWA\Core\Validation;
  
  class EntityExists extends \OWA\Core\Validation\Validation {
           
-     function validate() {
+     /**
+      * @return void
+      */
+     public function validate() {
          
          $entity = \OWA\Core\CoreAPI::entityFactory($this->getConfig('entity'));
          $entity->getByColumn($this->getConfig('column'), $this->getValues());

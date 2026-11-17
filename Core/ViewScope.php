@@ -67,18 +67,21 @@ namespace OWA\Core;
  * @method mixed makeJson($array)
  * @method mixed makeLink($params = [], $add_state = false, $url = '', $xml = false, $add_nonce = false)
  * @method string makeOverlayApiLink($params, $resourceKey)
- * @method array navRail($nav, $propertyId, $params = [], $accessSiteId = '', $inSettings = false)
+ * @method list<RailSection> navRail($nav, $propertyId, $params = [], $accessSiteId = '', $inSettings = false)
  * @method mixed makePaginationFromResultSet($pagination, $map = [], $add_state = true, $template = '')
  * @method mixed makeParamString($params = [], $add_state = false, $format = 'query', $namespace = true)
  * @method mixed makeWikiLink($page)
  * @method mixed out($output, $sanitize = true, $decode_special_entities = false)
  * @method void outMarkup($text, ...$markup)
- * @method array profileTabs($hierarchyNav, $params = [])
+ * @method list<SettingsItem> profileTabs($hierarchyNav, $params = [])
  * @method mixed safeHref($url, $echo = true)
  * @method string|false scriptJson($value, $flags = 0)
  * @method mixed setTemplate($file)
- * @method array settingsColumn($hierarchyNav, $params = [])
+ * @method list<array{heading: string, items: list<SettingsItem>}> settingsColumn($hierarchyNav, $params = [])
  * @method mixed truncate($str, $length=10, $trailing='...')
+ *
+ * @phpstan-import-type RailSection from Template
+ * @phpstan-import-type SettingsItem from Template
  */
 class ViewScope {
 
@@ -142,6 +145,8 @@ class ViewScope {
      * Template helpers -- out(), makeLink(), makeApiLink(), getValue()
      * and friends -- forwarded to the template. `$this` inside those methods is
      * still the Template, so behavior is unchanged.
+     *
+     * @param list<mixed> $arguments as the template passed them, any type
      */
     public function __call(string $name, array $arguments): mixed {
 

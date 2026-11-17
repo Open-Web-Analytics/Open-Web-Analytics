@@ -19,6 +19,43 @@ parameters:
         - modules/MaxmindGeoip/Classes
         - modules/Domstream/Classes
         - modules/Domstream/Update
+        - Core/Controller
+        - Core/Db
+        - Core/Exception
+        - Core/Validation
+        - Core/View
+        # Core, file by file: Caller, ConfiguredReport, Controller, CoreAPI,
+        # ReportController, Strings and View are not typed yet, and
+        # PropertyScopedAccess is a trait only ReportController uses.
+        - Core/AdminController.php
+        - Core/Auth.php
+        - Core/Base.php
+        - Core/CliInvocation.php
+        - Core/Cron.php
+        - Core/Db.php
+        - Core/Entity.php
+        - Core/Env.php
+        - Core/Http.php
+        - Core/Install.php
+        - Core/IntakeMessage.php
+        - Core/IntakeQueue.php
+        - Core/Lib.php
+        - Core/Location.php
+        - Core/Metric.php
+        - Core/MetricSets.php
+        - Core/Module.php
+        - Core/ModuleActivation.php
+        - Core/Navigation.php
+        - Core/Observer.php
+        - Core/OverlayToken.php
+        - Core/ReportGrid.php
+        - Core/RequestContainer.php
+        - Core/RequestType.php
+        - Core/ServerRole.php
+        - Core/Template.php
+        - Core/TemplateEngine.php
+        - Core/Update.php
+        - Core/ViewScope.php
 
     # OWA_EHS_* (handler return codes) are defined here, outside the paths.
     scanFiles:

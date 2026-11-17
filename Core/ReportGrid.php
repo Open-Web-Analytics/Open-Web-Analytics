@@ -83,7 +83,7 @@ class ReportGrid {
     /**
      * The width a widget of this type gets when it names none.
      *
-     * @param array $widget
+     * @param array<string, mixed> $widget a widget definition: type, colspan, rowspan and its own keys, any type
      * @return int
      */
     public static function defaultColspan( $widget ) {
@@ -103,7 +103,7 @@ class ReportGrid {
      * Absent means whatever the TYPE defaults to -- full width for most, a
      * quarter for a grid-card. See DEFAULT_COLSPANS.
      *
-     * @param array $widget
+     * @param array<string, mixed> $widget a widget definition: type, colspan, rowspan and its own keys, any type
      * @return int between 1 and COLUMNS
      */
     public static function colspan( $widget ) {
@@ -133,7 +133,7 @@ class ReportGrid {
     /**
      * The row span a widget actually gets.
      *
-     * @param array $widget
+     * @param array<string, mixed> $widget a widget definition: type, colspan, rowspan and its own keys, any type
      * @return int between 1 and MAX_ROWSPAN
      */
     public static function rowspan( $widget ) {
@@ -158,7 +158,7 @@ class ReportGrid {
     /**
      * The class attribute for one widget's grid cell.
      *
-     * @param array $widget
+     * @param array<string, mixed> $widget a widget definition: type, colspan, rowspan and its own keys, any type
      * @return string
      */
     public static function classesFor( $widget ) {
