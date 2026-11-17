@@ -52,4 +52,51 @@ final class MaxmindWebServiceLookupTest extends TestCase
         $this->assertSame( $map, $maxmind->getLocationFromWebService( $map ) );
     }
 
+    /** The web service answers with a model object; its record is mapped as the database's is. */
+    public function testAWebServiceAnswerIsMappedOntoTheLocation(): void
+    {
+        $maxmind = new MaxmindWebServiceLookupTestMaxmind;
+
+        $map = $maxmind->getLocationFromWebService( array( 'ip_address' => ' 203.0.113.7 ', 'city' => '(not set)' ) );
+
+        $this->assertSame( '203.0.113.7', MaxmindWebServiceLookupTestClient::$asked );
+        $this->assertSame( 'münchen', $map['city'] );
+        $this->assertSame( 'DE', $map['country_code'] );
+        $this->assertSame( 'germany', $map['country'] );
+        $this->assertSame( 'bavaria', $map['state'] );
+        $this->assertSame( '48.1', $map['latitude'] );
+    }
+}
+
+/** Names the stand-in client below instead of the GeoIp2 one. */
+class MaxmindWebServiceLookupTestMaxmind extends \OWA\Module\MaxmindGeoip\Classes\Maxmind
+{
+    protected $ws_client_class = MaxmindWebServiceLookupTestClient::class;
+}
+
+/** Answers as GeoIp2\WebService\Client does: a model whose jsonSerialize() is the record. */
+class MaxmindWebServiceLookupTestClient
+{
+    /** @var string|null the address the last lookup asked for */
+    public static $asked = null;
+
+    public function __construct( $user_name, $license_key ) {}
+
+    public function city( $ip ) {
+
+        self::$asked = $ip;
+
+        return new class implements \JsonSerializable {
+
+            public function jsonSerialize(): array {
+
+                return array(
+                    'city'         => array( 'names' => array( 'en' => 'München' ) ),
+                    'country'      => array( 'iso_code' => 'DE', 'names' => array( 'en' => 'Germany' ) ),
+                    'subdivisions' => array( array( 'iso_code' => 'BY', 'names' => array( 'en' => 'Bavaria' ) ) ),
+                    'location'     => array( 'latitude' => 48.1, 'longitude' => 11.6 ),
+                );
+            }
+        };
+    }
 }
