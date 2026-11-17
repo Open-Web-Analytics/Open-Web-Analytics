@@ -13,3 +13,5 @@ if (is_file($owa_vendor_autoload)) {
 
     class_exists(\OWA\Core\Db\Mysql::class);
 }
+
+require_once __DIR__ . '/phpstan/EntityFactoryReturnType.php';

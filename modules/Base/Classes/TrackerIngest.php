@@ -207,14 +207,22 @@ class TrackerIngest {
      */
     public static function fits( \OWA\Core\IntakeQueue $queue, array $envelope ) {
 
-        if ( ! method_exists( $queue, 'maxMessageBytes' ) ) {
+        $max = self::maxMessageBytes( $queue );
+
+        if ( $max === null ) {
 
             return true;
         }
 
         $body = json_encode( $envelope, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
 
-        return $body !== false && strlen( $body ) <= (int) $queue->maxMessageBytes();
+        return $body !== false && strlen( $body ) <= $max;
+    }
+
+    /** @return int|null the largest message the queue takes, or null when it declares none */
+    private static function maxMessageBytes( \OWA\Core\IntakeQueue $queue ) {
+
+        return method_exists( $queue, 'maxMessageBytes' ) ? (int) $queue->maxMessageBytes() : null;
     }
 
     // ---------------------------------------------------------------------
@@ -321,7 +329,7 @@ class TrackerIngest {
             if ( ! self::fits( $queue, $envelope ) ) {
 
                 \OWA\Core\CoreAPI::error( sprintf( 'Tracker ingest: %s %s is over the intake\'s message size limit '
-                    . 'of %d bytes; not queued.', (string) ( $envelope['type'] ?? '' ), $what, $queue->maxMessageBytes() ) );
+                    . 'of %d bytes; not queued.', (string) ( $envelope['type'] ?? '' ), $what, self::maxMessageBytes( $queue ) ) );
 
                 return false;
             }

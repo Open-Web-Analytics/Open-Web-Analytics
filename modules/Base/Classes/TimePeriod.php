@@ -808,12 +808,12 @@ class TimePeriod {
         $ReturnArray['MinutesSince'] = $DateDifference/60;
         $ReturnArray['SecondsSince'] = $DateDifference;
 
-        $y1 = date("Y", $StartDate);
-        $m1 = date("m", $StartDate);
-        $d1 = date("d", $StartDate);
-        $y2 = date("Y", $EndDate);
-        $m2 = date("m", $EndDate);
-        $d2 = date("d", $EndDate);
+        $y1 = idate("Y", $StartDate);
+        $m1 = idate("m", $StartDate);
+        $d1 = idate("d", $StartDate);
+        $y2 = idate("Y", $EndDate);
+        $m2 = idate("m", $EndDate);
+        $d2 = idate("d", $EndDate);
         
         $diff = '';
         $diff2 = '';
@@ -829,7 +829,6 @@ class TimePeriod {
             $daysInMonth = date("t",$StartDate);
             if ($d<0) {$m--;$d=$daysInMonth+$d;}
             if ($m<0) {$y--;$m=12+$m;}
-            $daysInMonth = date("t",$m2);
             
             // Nicestring ("1 year, 1 month, and 5 days")
             if ($y>0) $diff .= $y==1 ? "1 year" : "$y years";

@@ -224,6 +224,8 @@ class SiteManager extends \OWA\Core\Base {
 
             return $id;
         }
+
+        return null;
     }
 
     /**
