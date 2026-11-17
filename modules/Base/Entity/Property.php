@@ -93,7 +93,11 @@ class Property extends \OWA\Core\Entity {
     const TYPE_WEB = 'web';
     const TYPE_APP = 'app';
 
-    /** What a person is shown for each kind. */
+    /**
+     * What a person is shown for each kind.
+     *
+     * @return array<string, string> type => label
+     */
     public static function types() {
 
         return array(
@@ -108,6 +112,8 @@ class Property extends \OWA\Core\Entity {
      * Falsy means web. The column is added by a migration and is NULL on rows
      * that predate it, and every one of those is a website -- they were minted
      * from sites that had domains.
+     *
+     * @return string
      */
     public function getPropertyType() {
 
@@ -116,7 +122,11 @@ class Property extends \OWA\Core\Entity {
         return $type !== '' ? $type : self::TYPE_WEB;
     }
 
-    /** Does this Property describe a website? */
+    /**
+     * Does this Property describe a website?
+     *
+     * @return bool
+     */
     public function isWebProperty() {
 
         return $this->getPropertyType() === self::TYPE_WEB;
@@ -128,6 +138,8 @@ class Property extends \OWA\Core\Entity {
      * See Site::isArchived(). Archiving a Property archives its Profiles too,
      * because a Property is how a person says "this website" and removing it
      * means removing the ways it was being watched.
+     *
+     * @return bool
      */
     public function isArchived() {
 

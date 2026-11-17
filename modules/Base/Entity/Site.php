@@ -35,7 +35,7 @@ namespace OWA\Module\Base\Entity;
 
 class Site extends \OWA\Core\Entity {
 
-    /*
+    /**
      * Kept out of GET /v1/sites.
      *
      * The payload is a published contract the WordPress plugin reads, and
@@ -46,9 +46,12 @@ class Site extends \OWA\Core\Entity {
      * Declared rather than left to chance: getPublicProperties() emits every
      * column by default, so any column added to this entity joins a public API
      * unless someone says otherwise.
+     *
+     * @var list<string>
      */
     protected $private_properties = [ 'archived_date', 'stream_type', 'app_id' ];
 
+    /** @var array<int|string, list<User>> site id => its users */
     private static $cachedAssignedUsers = array();
 
     /**
@@ -58,6 +61,8 @@ class Site extends \OWA\Core\Entity {
      * single site because they change a single site. Deleting a USER revokes
      * their access across every site at once, which no per-site eviction can
      * express -- so it clears the lot.
+     *
+     * @return void
      */
     public static function forgetAssignedUsers() {
 
@@ -156,6 +161,8 @@ class Site extends \OWA\Core\Entity {
      *
      * Falsy means web. The column is added by a migration and defaults to
      * NULL on rows that predate it, and every one of those is a website.
+     *
+     * @return string
      */
     public function getStreamType() {
 
@@ -170,6 +177,8 @@ class Site extends \OWA\Core\Entity {
      * Archiving is how a Profile is removed: the row and everything hanging off
      * it -- grants, scoped settings, collected data -- are kept, so a restore is
      * possible. Every listing and the tracking gate ask this.
+     *
+     * @return bool
      */
     public function isArchived() {
 
@@ -186,6 +195,9 @@ class Site extends \OWA\Core\Entity {
      *
      * Deriving identity from the domain is what made two sites for one domain
      * impossible, which is why new sites no longer use this.
+     *
+     * @param  string $domain
+     * @return string
      */
     public function generateSiteId($domain) {
 
@@ -223,12 +235,18 @@ class Site extends \OWA\Core\Entity {
      * Sixteen hex characters of randomness. The collision that actually matters
      * is not on this string but on the numeric key derived from it, so callers
      * mint against a uniqueness check rather than trusting the width alone.
+     *
+     * @return string
      */
     public function mintSiteId() {
 
         return 'OWA-' . bin2hex( random_bytes( 8 ) );
     }
 
+    /**
+     * @param  string|null $value the stored column
+     * @return mixed unserialize()'s result, unchecked; null when nothing is stored
+     */
     public function settingsGetFilter($value) {
         if ($value) {
             // Site settings are an array of scalars -- settingsSetFilter()
@@ -238,18 +256,15 @@ class Site extends \OWA\Core\Entity {
         }
     }
 
+    /**
+     * @param  array<string, scalar> $value
+     * @return string
+     */
     public function settingsSetFilter($value) {
 
         return serialize($value);
     }
 
-    /**
-     * Retrieves a specific setting from the settings
-     * property for this site
-     *
-     * @param string $name the name of the setting
-     * @return mixed
-     */
     /**
      * This Profile's effective value for one setting.
      *
@@ -257,6 +272,9 @@ class Site extends \OWA\Core\Entity {
      * blob is legacy: Update022 copied it into scoped rows and the screens
      * write there, so reading it here would answer with a stale copy and
      * could never inherit from the Property or Organization.
+     *
+     * @param  string $name
+     * @return mixed a setting's value, any type
      */
     public function getSiteSetting($name) {
 
@@ -277,6 +295,8 @@ class Site extends \OWA\Core\Entity {
      * md5( domain ), where http:// and https:// produced two unrelated sites for
      * one website. This method therefore has to cope with both shapes for as
      * long as both exist.
+     *
+     * @return string
      */
     public function getDomainName() {
 
@@ -308,10 +328,10 @@ class Site extends \OWA\Core\Entity {
      *
      * Pure set arithmetic: no database, no entity state.
      *
-     * @param    array    $current    user ids holding a grant now
-     * @param    array    $rendered    user ids the form offered
-     * @param    array    $checked    user ids the operator ticked
-     * @return    array    [ 'grant' => int[], 'revoke' => int[] ]
+     * @param    array<int|string>    $current    user ids holding a grant now
+     * @param    array<int|string>    $rendered    user ids the form offered
+     * @param    array<int|string>    $checked    user ids the operator ticked
+     * @return    array{grant: list<int>, revoke: list<int>}
      */
     public static function computeGrantChanges( array $current, array $rendered, array $checked ) {
 
@@ -341,9 +361,9 @@ class Site extends \OWA\Core\Entity {
      * deletes every grant for the site before reinserting the survivors, so
      * the common edit passes through a state where nobody has access at all.
      *
-     * @param    array    $rendered    user ids the form offered
-     * @param    array    $checked    user ids the operator ticked
-     * @return    array    the changes applied
+     * @param    array<int|string>    $rendered    user ids the form offered
+     * @param    array<int|string>    $checked    user ids the operator ticked
+     * @return    array{grant: list<int>, revoke: list<int>}    the changes applied
      */
     public function applyAssignedUserChanges( array $rendered, array $checked ) {
 
@@ -390,7 +410,8 @@ class Site extends \OWA\Core\Entity {
      * reinserting, so a caller that computes the set wrongly -- or a form that
      * submits nothing -- removes everyone.
      *
-     * @param array $userIds
+     * @param array<int|string> $userIds
+     * @return void
      */
     public function updateAssignedUserIds(array $userIds) {
          if (!$this->get('id')) {

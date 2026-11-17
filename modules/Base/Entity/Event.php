@@ -64,6 +64,7 @@ class Event extends EventRaw {
      */
     const ALIAS = 'event';
 
+    /** @var bool */
     private $bound = false;
 
     public function __construct() {

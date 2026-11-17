@@ -51,7 +51,11 @@ class MigrationProgress extends \OWA\Core\Entity {
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'completed_at', OWA_DTD_BIGINT ) );
     }
 
-    /** @return int the id of one source table's progress on one site */
+    /**
+     * @param  string $source
+     * @param  string $site_id
+     * @return int the id of one source table's progress on one site
+     */
     public static function idFor( $source, $site_id ) {
 
         return \OWA\Core\Lib::wideStringGuid( $source . '|' . $site_id );

@@ -110,6 +110,12 @@ class Setting extends \OWA\Core\Entity {
      * Deterministic so a write is an upsert rather than an insert-or-search:
      * the same setting at the same scope is always the same row, which is what
      * keeps two writers from producing two rows that disagree.
+     *
+     * @param  string     $scope_type
+     * @param  int|string $scope_id
+     * @param  string     $module
+     * @param  string     $name
+     * @return int|string|null see Entity::generateId()
      */
     public function makeId( $scope_type, $scope_id, $module, $name ) {
 

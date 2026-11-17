@@ -60,7 +60,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     /**
      * The comparisons an author can choose, in the order they are offered.
      *
-     * @return array  operator => label
+     * @return array<string, string> operator => label
      */
     public static function operators() {
 
@@ -189,7 +189,11 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     /** The table's name before Update076. See namedBefore076(). */
     const TABLE_BEFORE_076 = 'goal_event';
 
-    /** Whether this entity is on the names before Update076. */
+    /**
+     * Whether this entity is on the names before Update076.
+     *
+     * @var bool
+     */
     private $onNamesBefore076 = false;
 
     public function __construct() {
@@ -316,7 +320,11 @@ class GoalEventDefinition extends \OWA\Core\Entity {
         return $this;
     }
 
-    /** A condition entity on the names this one is on. */
+    /**
+     * A condition entity on the names this one is on.
+     *
+     * @return GoalEventDefinitionCondition
+     */
     protected function conditionEntity() {
 
         $condition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' );
@@ -324,7 +332,11 @@ class GoalEventDefinition extends \OWA\Core\Entity {
         return $this->onNamesBefore076 ? $condition->namedBefore076() : $condition;
     }
 
-    /** The condition column holding this entity's id. */
+    /**
+     * The condition column holding this entity's id.
+     *
+     * @return string
+     */
     protected function conditionColumn() {
 
         return $this->onNamesBefore076
@@ -365,9 +377,10 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      * Pure, so both give the same answer from the same rows; once Update075
      * has run it has nothing to rename.
      *
-     * @param  array $rows  definitions' id, property_id and name, in id order:
-     *                      a Property's alone gives what all of them would
-     * @return array id => the new name, for each one that is renamed
+     * @param  array<array{id: int|string, property_id: int|string|null, name: string}> $rows
+     *         definitions' id, property_id and name, in id order: a Property's
+     *         alone gives what all of them would
+     * @return array<int|string, string> id => the new name, for each one that is renamed
      */
     public static function eventNames( array $rows ) {
 
@@ -501,7 +514,11 @@ class GoalEventDefinition extends \OWA\Core\Entity {
         return '';
     }
 
-    /** Does this definition count right now? */
+    /**
+     * Does this definition count right now?
+     *
+     * @return bool
+     */
     public function isActive() {
 
         return (bool) $this->get( 'is_active' );
@@ -517,6 +534,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      *
      * Memoized: goal marking asks per event.
      *
+     * @param  string|null $site_id
      * @return string|null
      */
     public static function propertyFor( $site_id ) {
@@ -567,13 +585,20 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      *
      * Falsy, or anything but the two constants, reads as once per session:
      * every 1.x goal is one.
+     *
+     * @return string one of the COUNT_ constants
      */
     public function countMode() {
 
         return self::countModeOf( $this->get( 'count_mode' ) );
     }
 
-    /** countMode() of a stored count_mode, for a row read without the entity. */
+    /**
+     * countMode() of a stored count_mode, for a row read without the entity.
+     *
+     * @param  mixed  $stored the column as read, any type
+     * @return string one of the COUNT_ constants
+     */
     public static function countModeOf( $stored ) {
 
         return $stored === self::COUNT_PER_EVENT ? self::COUNT_PER_EVENT : self::COUNT_PER_SESSION;
@@ -582,7 +607,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     /**
      * The count modes an author can choose, in the order they are offered.
      *
-     * @return array  mode => label
+     * @return array<string, string> mode => label
      */
     public static function countModes() {
 
@@ -592,7 +617,11 @@ class GoalEventDefinition extends \OWA\Core\Entity {
         );
     }
 
-    /** 'all' or 'any'; falsy reads as all. */
+    /**
+     * 'all' or 'any'; falsy reads as all.
+     *
+     * @return string MATCH_ALL or MATCH_ANY
+     */
     public function conditionMatch() {
 
         return $this->get( 'condition_match' ) === self::MATCH_ANY
@@ -602,7 +631,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     /**
      * This definition's conditions, in the order they were written.
      *
-     * @return array of \OWA\Module\Base\Entity\GoalEventDefinitionCondition
+     * @return list<GoalEventDefinitionCondition>
      */
     public function loadConditions() {
 
@@ -679,8 +708,8 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      * names -- every role, which is why this is not loadConditions().
      *
      * @param  string $col
-     * @param  mixed  $value
-     * @return array
+     * @param  mixed  $value the value the caller gave delete()
+     * @return list<int|string>
      */
     protected function conditionIdsFor( $col, $value ) {
 
@@ -757,8 +786,8 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      * most of them. The cost is that "medium is not set" is not expressible as
      * a condition, and that is the right way round.
      *
-     * @param  array $row         the assembled raw row
-     * @param  array|null $conditions  the conditions, already loaded, or null to
+     * @param  array<string, mixed> $row the assembled raw row: column => value
+     * @param  list<GoalEventDefinitionCondition>|null $conditions  the conditions, already loaded, or null to
      *                                 load them -- the caller passes them when
      *                                 it is matching many rows against the same
      *                                 definition, which is ingest's shape.
@@ -827,6 +856,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      * Returns null when the value is not a number, so a migration can say so
      * rather than silently storing 0 for something an author typed.
      *
+     * @param  mixed $value a 1.x goal value as stored, any type
      * @return int|null
      */
     public static function decimalToCents( $value ) {
@@ -852,7 +882,12 @@ class GoalEventDefinition extends \OWA\Core\Entity {
         return (int) round( ( (float) $value ) * 100 );
     }
 
-    /** Cents back to the decimal string 1.x reporting expects. */
+    /**
+     * Cents back to the decimal string 1.x reporting expects.
+     *
+     * @param  int|string|null $cents as stored; null reads as 0
+     * @return string
+     */
     public static function centsToDecimal( $cents ) {
 
         return number_format( ( (int) $cents ) / 100, 2, '.', '' );
