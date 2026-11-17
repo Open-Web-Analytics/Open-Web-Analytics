@@ -1204,12 +1204,21 @@ class EventRawHandlers extends \OWA\Core\Observer {
 
         if ( $entity->create() !== true ) {
 
+            $raced = \OWA\Core\CoreAPI::dbSingleton()->lastQueryWasConstraintViolation();
+
             /*
              * A duplicate key here is the benign case -- two events of the same
              * first session racing, which is exactly what insert-if-absent
-             * expects -- and it is indistinguishable from a real failure at this
-             * level. Re-reading settles it: if the row is there now, someone
-             * else wrote it and there is nothing to fix.
+             * expects. Re-reading settles it when the re-read can see the other
+             * row: if it is there, someone else wrote it and there is nothing to
+             * fix.
+             *
+             * It cannot always see it. This runs inside store()'s transaction,
+             * and under REPEATABLE READ a row another worker committed after
+             * this transaction's first read is invisible to its reads while
+             * still blocking its insert. Then the beacon is rolled back and
+             * retried, and the retry's fresh transaction finds the row. That is
+             * the expected race, so a notice; anything else is a fault.
              */
             $check = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' );
             $check->load( $row['visitor_id'], 'visitor_id' );
@@ -1217,6 +1226,14 @@ class EventRawHandlers extends \OWA\Core\Observer {
             if ( $check->wasPersisted() ) {
 
                 return true;
+            }
+
+            if ( $raced ) {
+
+                \OWA\Core\CoreAPI::notice(
+                    'v2 ingest: a concurrent beacon wrote the visitor acquisition row first; this beacon is retried.' );
+
+                return false;
             }
 
             \OWA\Core\CoreAPI::error(

@@ -195,6 +195,9 @@ final class QueryErrorVisibilityTest extends TestCase {
 
         $this->assertFalse( $result, 'a refused insert must still report failure to its caller' );
 
+        $this->assertTrue( $db->lastQueryWasConstraintViolation(),
+            'a caller must be able to tell the race from a fault' );
+
         $this->assertNotContains( 'error', $spy->levels(),
             'a concurrent-insert race is expected, and must not be logged as a fault' );
 
@@ -226,6 +229,9 @@ final class QueryErrorVisibilityTest extends TestCase {
 
         $this->assertContains( 'error', $spy->levels(),
             'a missing table is a fault and must be reported as one' );
+
+        $this->assertFalse( $db->lastQueryWasConstraintViolation(),
+            'a fault is not a constraint violation' );
     }
 
     /**
