@@ -34,7 +34,6 @@ final class TemplateScriptDataTest extends TestCase
         'Base/templates/report_realtime.php'        => 1,
         'Base/templates/report_widgets.php'         => 7,
         'Base/templates/sites_invocation.php'       => 1,
-        'Base/templates/visualization_edit.php'     => 1,
         'Base/templates/visualization_funnel.php'   => 1,
         'Domstream/templates/report_domstreams.php' => 1,
     ];
@@ -159,5 +158,18 @@ final class TemplateScriptDataTest extends TestCase
         $this->assertContains( 'visits', array_column( $config['metrics'], 'name' ) );
         $this->assertGreaterThan( 0, $config['maxWidgets'] );
         $this->assertSame( [], $config['definition'], 'a new report starts empty' );
+    }
+
+    public function testTheFunnelBuilderIsHandedItsPreviewLink(): void
+    {
+        $this->requireDb();
+
+        $html   = $this->screen( '\\OWA\\Module\\Base\\Controller\\VisualizationEdit', [ 'propertyId' => self::$propertyId ] );
+        $config = $this->config( $html, 'funnel-editor:config' );
+
+        $this->assertStringContainsString( 'base.visualizationPreview', $config['previewUrl'] );
+        $this->assertStringContainsString( 'last_thirty_days', $config['previewUrl'] );
+        $this->assertGreaterThan( 0, $config['maxSteps'] );
+        $this->assertIsArray( $config['dimensions'] );
     }
 }
