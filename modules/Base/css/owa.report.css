@@ -385,12 +385,11 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
  * The row of controls a report puts under its title: what is being counted,
  * which goal, which people, and a link to whatever configures it.
  *
- * Shared rather than per-report, and the reason is that the controls are NOT
- * ours. The scope switch borrows the Live View control's markup, the filter
- * is the editors' filter pills, and each of them arrives with its own
- * label class and its own idea of whether it is inline. Styling that in one
- * report means the next report to reuse a control inherits none of it and the
- * bar comes apart -- which is what these rules exist to prevent.
+ * Shared rather than per-report: the filter is the editors' filter pills and
+ * the scope switch is the widget panel's segmented control, and each arrives
+ * with its own label class and its own idea of whether it is inline. Styling
+ * that in one report means the next report to reuse a control inherits none
+ * of it and the bar comes apart.
  *
  * Used by the funnel and by module reports.
  * ------------------------------------------------------------------------- */
@@ -408,12 +407,10 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 }
 
 /* Every control in the bar is labelled the same way and sits on the same line:
-   a label on the left, then the control. The scope switch borrows the Live View
-   markup and brings its own label class -- it is pulled onto the same footing
-   here rather than styled where it came from. */
+   a label on the left, then the control. */
 .owa .owa_reportControl > label,
 .owa .owa_reportControl > .label,
-.owa .owa_reportControls .autoRefreshControl .label {
+.owa .owa_reportControls .owa_scopeSwitch .label {
     display: inline-block;
     font-size: 0.75rem;
     color: #707070;
@@ -445,15 +442,11 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 
-/* The scope switch sits inline in the bar; the Live View control it borrows
-   its markup from floats right in the report header instead. */
-.owa .owa_reportControls .autoRefreshControl {
-    float: none;
+.owa .owa_reportControls .owa_scopeSwitch {
     display: inline-block;
 }
 
-.owa .owa_reportControls .autoRefreshControl .buttons {
-    display: inline-block;
+.owa .owa_reportControls .owa_scopeSwitch .buttons {
     vertical-align: middle;
 }
 
@@ -2025,7 +2018,8 @@ li.constraintRow {
     color: #9a3d0c;
 }
 
-/* Width and Height: a segmented control made of radios. */
+/* A segmented control made of radios: a widget's Width and Height, a funnel's
+   counting scope. */
 .owa .owa_seg {
     display: inline-flex;
     flex-wrap: wrap;
@@ -2043,7 +2037,8 @@ li.constraintRow {
     margin: 0;
 }
 
-.owa .owa_widgetPanel .owa_seg label {
+.owa .owa_widgetPanel .owa_seg label,
+.owa .owa_scopeSwitch .owa_seg label {
     display: inline-flex;
     align-items: center;
     height: 30px;
@@ -2055,7 +2050,8 @@ li.constraintRow {
     cursor: pointer;
 }
 
-.owa .owa_widgetPanel .owa_seg input:checked + label {
+.owa .owa_widgetPanel .owa_seg input:checked + label,
+.owa .owa_scopeSwitch .owa_seg input:checked + label {
     background: #ffffff;
     color: #111827;
     font-weight: 600;
