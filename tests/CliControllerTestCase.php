@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
  * directly, exactly as the REST tests (RestControllerTestCase) do.
  *
  * Auth model: the CLI is role-based, not api-key based. cli.php calls
- * $owa->setCurrentUser('admin', 'cli-user'); we mirror that with
+ * $owa->setCurrentUser('admin'); we mirror that with
  * authenticateAs($role) so capability gates (owa_controller::doAction ->
  * checkCapabilityAndAuthenticateUser) can be exercised for under-privileged
  * roles.
@@ -71,7 +71,7 @@ abstract class CliControllerTestCase extends TestCase
 
         $this->tok = substr(md5(uniqid('owacli', true)), 0, 12);
         // Start every test as an authenticated admin, matching cli.php's
-        // setCurrentUser('admin', ...). Individual tests drop privileges when
+        // setCurrentUser('admin'). Individual tests drop privileges when
         // exercising a capability gate.
         $this->authenticateAs('admin');
 

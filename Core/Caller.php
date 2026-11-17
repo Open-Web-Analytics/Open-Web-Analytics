@@ -227,13 +227,21 @@ class Caller extends \OWA\Core\Base {
     }
         
     /**
+     * Make the current user an authenticated user of $role.
+     *
      * @param  string $role
-     * @param  string $login_name not read
+     * @param  string $login_name the current user's user_id; '' leaves it as it is
      * @return void
      */
     public function setCurrentUser($role, $login_name = '') {
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->setRole($role);
+
+        if ( (string) $login_name !== '' ) {
+
+            $cu->setUserData( 'user_id', (string) $login_name );
+        }
+
         $cu->setAuthStatus(true);
     }
     

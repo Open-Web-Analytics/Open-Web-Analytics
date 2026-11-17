@@ -77,8 +77,9 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     // setting CLI mode to true
     //$owa->setSetting('base', 'cli_mode', true);
     
-    // setting user auth
-    $owa->setCurrentUser('admin', 'cli-user');
+    // An admin with no user_id. A login name here would reach nonces,
+    // named-user logging and anything stored per user.
+    $owa->setCurrentUser('admin');
     // run controller or view and echo page content
     $s = \OWA\Core\CoreAPI::serviceSingleton();
     $s->loadCliCommands();
