@@ -418,16 +418,18 @@ final class PropertyAdminScreensTest extends TestCase
 
                 $dir = \OWA\Core\Env::root() . '/modules/' . \OWA\Core\Lib::moduleDirName( $module ) . '/';
 
+                // The screen's View class, if it has one, or the template its
+                // controller declares (Controller::setSubview()).
                 foreach ( array( $dir . 'View/' . ucfirst( $name ) . '.php',
-                                 $dir . ucfirst( $name ) . 'View.php' ) as $view ) {
+                                 $dir . 'Controller/' . ucfirst( $name ) . '.php' ) as $file ) {
 
-                    if ( ! file_exists( $view ) ) {
+                    if ( ! file_exists( $file ) ) {
                         continue;
                     }
 
-                    if ( preg_match( "#set\(\s*'headline'#", (string) file_get_contents( $view ) ) ) {
+                    if ( preg_match( "#set\(\s*'headline'|'headline'\s*=>#", (string) file_get_contents( $file ) ) ) {
 
-                        $duplicate[] = $action . ' (' . basename( $view ) . ' sets its own headline)';
+                        $duplicate[] = $action . ' (' . basename( dirname( $file ) ) . '/' . basename( $file ) . ' sets its own headline)';
                     }
                 }
             }

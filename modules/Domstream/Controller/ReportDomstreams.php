@@ -69,7 +69,11 @@ class ReportDomstreams extends \OWA\Core\ReportController {
             'total_pages' => (int) ceil( $total / self::PER_PAGE ),
         ) );
 
-        $this->setSubview( 'domstream.reportDomstreams' );
+        $this->setSubview( 'domstream.reportDomstreams', [
+            'template' => 'report_domstreams.php',
+            'vars'     => [ 'domstreams', 'domstreams_pagination', 'domstreams_total',
+                            'domstreams_filter_dimensions', 'domstreams_filter_metrics',
+                            'domstreams_constraints', 'domstreams_segment_error' ] ] );
     }
 
     private function segment() {

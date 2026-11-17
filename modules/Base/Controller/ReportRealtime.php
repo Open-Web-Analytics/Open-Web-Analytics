@@ -28,7 +28,8 @@ class ReportRealtime extends \OWA\Core\ReportController {
         $this->set( 'realtime_property_id', (string) $this->getParam( 'propertyId' ) );
         $this->set( 'realtime_timezone', \OWA\Module\Base\Classes\JobStatus::timezone() );
 
-        $this->setSubview( 'base.reportRealtime' );
+        $this->setSubview( 'base.reportRealtime', [
+            'template' => 'report_realtime.php', 'vars' => [ 'realtime_property_id', 'realtime_timezone' ] ] );
     }
 }
 

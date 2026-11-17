@@ -90,6 +90,10 @@ class MyProfile extends \OWA\Core\AdminController {
         $this->set( 'siteId', $siteId );
 
         $this->settingsChrome( array( 'siteId' => $siteId ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) );
-        $this->setSubview( 'base.myProfile' );
+        $this->setSubview( 'base.myProfile', [
+            'template' => 'my_profile.php',
+            'vars'     => [ 'user_id', 'real_name', 'email_address', 'role', 'may_edit_email',
+                            'my_profile_error', 'my_profile_saved', 'siteId',
+                            'min_password_length' => MyProfileSave::MIN_PASSWORD_LENGTH ] ] );
     }
 }

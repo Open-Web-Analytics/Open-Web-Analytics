@@ -32,7 +32,10 @@ class GoalEventDefinitions extends \OWA\Core\AdminController {
         $this->set( 'goalEventDefinitions', self::listForProperty( $propertyId ) );
 
         $this->settingsChrome( array( 'propertyId' => $propertyId ), '', $propertyId );
-        $this->setSubview( 'base.goalEventDefinitions' );
+        $this->setSubview( 'base.goalEventDefinitions', [
+            'template' => 'goal_event_definitions.php',
+            'vars'     => [ 'headline' => \OWA\Core\CoreAPI::t( 'Goal Event Definitions' ),
+                            'goalEventDefinitions', 'propertyId' ] ] );
     }
 
     /**

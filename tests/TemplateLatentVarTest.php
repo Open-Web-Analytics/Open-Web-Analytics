@@ -135,7 +135,7 @@ final class TemplateLatentVarTest extends TestCase
                 'visualization_edit.php',
                 [
                     /*
-                     * Exactly what View\VisualizationEdit sets. The KIND is no
+                     * Exactly what VisualizationEdit declares. The KIND is no
                      * longer a list to choose from -- it was answered in the
                      * modal on the roster and arrives here settled, so the
                      * screen is handed the one kind and its words rather than
@@ -218,7 +218,7 @@ final class TemplateLatentVarTest extends TestCase
                 'goal_event_definition_edit.php',
                 [
                     /*
-                     * Exactly what View\GoalEventDefinitionEdit sets on the ADD path --
+                     * Exactly what GoalEventDefinitionEdit declares on the ADD path --
                      * goalEventDefinition is an empty array there, not absent, and this
                      * test exists because a template reading a var nobody set
                      * used to render blank rather than fail.
