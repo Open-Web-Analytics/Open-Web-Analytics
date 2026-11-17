@@ -56,8 +56,6 @@ class ProcessEvent extends \OWA\Core\Controller {
 
     /**
      * Main Control Logic
-     *
-     * @return unknown
      */
     function action() {
 

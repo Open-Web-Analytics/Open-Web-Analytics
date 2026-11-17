@@ -304,6 +304,8 @@ class Template extends TemplateEngine {
         //merge in params
         $all_params = array_merge($all_params, $params);
 
+        $string = '';
+
         switch($format) {
 
             case 'query':
@@ -408,6 +410,7 @@ class Template extends TemplateEngine {
 
         // add nonce if called for
         if ($add_nonce) {
+            $action = '';
             if ( array_key_exists('do', $all_params) ) {
                 $action = $all_params['do'];
             } elseif ( array_key_exists('action', $all_params) ) {

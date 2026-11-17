@@ -56,7 +56,7 @@ class Mail extends \OWA\Core\View {
     function addMailToAddress($email, $name = '') {
 
         $added     = 0;
-        $addresses = array_values( array_filter( array_map( 'trim', explode( ',', (string) $email ) ), 'strlen' ) );
+        $addresses = array_values( array_filter( array_map( 'trim', explode( ',', (string) $email ) ), static fn ( $address ) => $address !== '' ) );
 
         foreach ( $addresses as $address ) {
 

@@ -52,9 +52,9 @@ class TemplateEngine {
     var $vars = array();
 
     /**
-     * Template file
+     * Template file, null until one is set
      *
-     * @var string
+     * @var string|null
      */
     var $file;
 
@@ -81,7 +81,7 @@ class TemplateEngine {
      * Set a template variable
      *
      * @param string $name
-     * @param unknown_value $value
+     * @param mixed $value
      * @access public
      */
     function set($name, $value) {

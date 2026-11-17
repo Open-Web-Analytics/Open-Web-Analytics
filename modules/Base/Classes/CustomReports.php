@@ -409,7 +409,7 @@ class CustomReports {
 
         if ( array_key_exists( $type, self::FIXED_DIMENSIONS ) ) {
 
-            return self::FIXED_DIMENSION_EXTRA[ $type ] ?? 0;
+            return self::FIXED_DIMENSION_EXTRA[ $type ];
         }
 
         return in_array( $type, self::SINGLE_FIELD_TYPES, true )
@@ -585,7 +585,7 @@ class CustomReports {
 
             $fixed  = self::FIXED_DIMENSIONS[ $type ];
             $listed = self::asNames( $query['dimensions'] ?? '' );
-            $label  = \OWA\Core\Strings::translate( self::WIDGET_TYPES[ $type ] ?? $type );
+            $label  = \OWA\Core\Strings::translate( self::WIDGET_TYPES[ $type ] );
 
             /*
              * The FIRST one, because it is the x axis. Order is not
@@ -603,7 +603,7 @@ class CustomReports {
 
             $extra = array_slice( $listed, 1 );
 
-            if ( count( $extra ) > ( self::FIXED_DIMENSION_EXTRA[ $type ] ?? 0 ) ) {
+            if ( count( $extra ) > self::FIXED_DIMENSION_EXTRA[ $type ] ) {
 
                 return sprintf(
                     \OWA\Core\CoreAPI::t( '%s is a %s: one metric over %s and at most one more dimension. This one names %d more.' ),
@@ -680,7 +680,7 @@ class CustomReports {
 
                 return sprintf(
                     \OWA\Core\CoreAPI::t( '%s is a %s, which names its own metrics. This one names none.' ),
-                    $where, \OWA\Core\Strings::translate( self::WIDGET_TYPES[ $type ] ?? $type ) );
+                    $where, \OWA\Core\Strings::translate( self::WIDGET_TYPES[ $type ] ) );
             }
 
             if ( ! $has_report_metrics ) {

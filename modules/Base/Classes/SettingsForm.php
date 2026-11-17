@@ -997,18 +997,15 @@ class SettingsForm {
     /**
      * The IANA zones, grouped by country.
      *
-     * require, NOT require_once: these two files exist only to assign their
-     * arrays into this scope, so a second call in the same process would find
-     * them undefined and the picker would come out empty.
+     * require, NOT require_once: a second require_once in the same process
+     * answers true instead of the array.
      *
      * @return array country name => (zone => display name)
      */
     protected static function timezones() {
 
-        /** @var array<string, array<string>> $timezones */
-        /** @var array<string, string> $countryCode2Name */
-        require( \OWA\Core\Env::confDir() . 'country2Timezones.php' );
-        require( \OWA\Core\Env::confDir() . 'countryCodes2Names.php' );
+        $timezones        = require( \OWA\Core\Env::confDir() . 'country2Timezones.php' );
+        $countryCode2Name = require( \OWA\Core\Env::confDir() . 'countryCodes2Names.php' );
 
         ksort( $timezones );
 

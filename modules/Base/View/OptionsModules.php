@@ -31,7 +31,7 @@ namespace OWA\Module\Base\View;
 
 class OptionsModules extends \OWA\Core\View {
 
-    function __construct($params) {
+    function __construct() {
 
         //set privilege level
         $this->_setPriviledgeLevel('admin');

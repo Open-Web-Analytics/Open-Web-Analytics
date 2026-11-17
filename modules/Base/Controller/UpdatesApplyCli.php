@@ -99,11 +99,11 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
                 $this->fail( sprintf(
                     'Updates paused: one needs %s. Do what it says above, then run cmd=update again.', $awaiting ) );
             } elseif ($error === true) {
-                $this->fail($this->getMsg(3307));
+                $this->fail( $this->getMsg( 3307 )['message'] );
             } else {
                 
                 // add data to container
-                \OWA\Core\CoreAPI::notice($this->getMsg(3308));
+                \OWA\Core\CoreAPI::notice( $this->getMsg( 3308 )['message'] );
             }
         } else {
             \OWA\Core\CoreAPI::notice("There are no modules with pending updates to apply.");

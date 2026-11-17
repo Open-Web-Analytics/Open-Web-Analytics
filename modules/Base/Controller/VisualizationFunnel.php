@@ -902,7 +902,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
                 $endDate,
                 // The funnel's own filter AND the reader's: both narrow it.
                 implode( ',', array_filter( array(
-                    $this->savedConstraints, trim( (string) $this->getParam( 'constraints' ) ) ), 'strlen' ) )
+                    $this->savedConstraints, trim( (string) $this->getParam( 'constraints' ) ) ), static fn ( $constraints ) => $constraints !== '' ) )
             );
         }
 

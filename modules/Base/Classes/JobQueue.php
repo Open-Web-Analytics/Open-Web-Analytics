@@ -231,6 +231,7 @@ class JobQueue {
      *
      * @param  int|null $within  only a job whose lease fits in this many seconds; null for any
      * @return array|null the claimed row
+     * @phpstan-impure
      */
     public static function claim( $within = null ) {
 
@@ -276,7 +277,7 @@ class JobQueue {
 
                 $row['status']      = 'running';
                 $row['attempts']    = (int) $row['attempts'] + 1;
-                $row['lease_until'] = $lease;
+                $row['lease_until'] = $now + (int) $row['lease_seconds'];
                 $row['started_at']  = $now;
                 $row['dedupe_key']  = null;
 

@@ -35,6 +35,8 @@ namespace OWA\Core;
  * @method mixed      query( string $sql, array $params = array() )
  * @method array|null get_row( string $sql, array $params = array() )
  * @method array|null get_results( string $sql, array $params = array() )
+ * @method \Generator get_result_iterator( string $sql, array $params = array() )
+ * @method bool       tableExists( string $table_name )
  */
 class Db extends \OWA\Core\Base {
 
@@ -64,9 +66,9 @@ class Db extends \OWA\Core\Base {
     ];
 
     /**
-     * Database Connection
+     * Database Connection, null when there is none
      *
-     * @var object
+     * @var object|null
      */
     var $connection;
 
@@ -86,9 +88,9 @@ class Db extends \OWA\Core\Base {
     var $num_queries = 0;
 
     /**
-     * Raw result object
+     * The driver's raw result: false when a query failed, empty before one ran
      *
-     * @var object
+     * @var object|string|false|null
      */
     var $new_result;
 
@@ -116,7 +118,7 @@ class Db extends \OWA\Core\Base {
     /**
      * Number of rows affected by insert/update/delete statements
      *
-     * @var integer
+     * @var int|null
      */
     var $rows_affected;
 
@@ -1183,6 +1185,8 @@ class Db extends \OWA\Core\Base {
 
     function _query() {
 
+        $ret = null;
+
         switch($this->_sqlParams['query_type']) {
 
             case 'insert':
@@ -1724,8 +1728,8 @@ class Db extends \OWA\Core\Base {
      * installs carry yyyymmdd values of 0 or 1 -- land in the first partition,
      * since RANGE has no lower bound.
      *
-     * @param int    $start_yyyymmdd
-     * @param int    $end_yyyymmdd
+     * @param int|string $start_yyyymmdd
+     * @param int|string $end_yyyymmdd
      * @param string $granularity
      * @return array name => less_than, in range order
      */
@@ -1741,8 +1745,8 @@ class Db extends \OWA\Core\Base {
      * span of the ones they replace -- no gap, no overhang -- so boundaries
      * outside the span are clamped to it.
      *
-     * @param int    $start_yyyymmdd  first day the span holds
-     * @param int    $end_yyyymmdd    first day it does not
+     * @param int|string $start_yyyymmdd  first day the span holds
+     * @param int|string $end_yyyymmdd    first day it does not
      * @param string $granularity
      * @return array name => less_than
      */
@@ -1754,8 +1758,8 @@ class Db extends \OWA\Core\Base {
     /**
      * Walk the months in a range, emitting a partition per cut point.
      *
-     * @param int    $start_yyyymmdd
-     * @param int    $end_yyyymmdd
+     * @param int|string $start_yyyymmdd
+     * @param int|string $end_yyyymmdd
      * @param string $granularity
      * @param bool   $exact  treat the end as exclusive and clamp to it
      * @return array
@@ -3227,11 +3231,6 @@ class Db extends \OWA\Core\Base {
                 }
             }
 
-            if ( ! $ranges ) {
-
-                continue;
-            }
-
             // No change needed where the shape already matches.
             $same = ( count( $block_def['names'] ) === count( $ranges ) );
 
@@ -3568,7 +3567,7 @@ class Db extends \OWA\Core\Base {
      * can say the date was not taken literally.
      *
      * @param string $table_name
-     * @param int    $older_than_yyyymmdd
+     * @param int|string $older_than_yyyymmdd
      * @return array ['drop' => string[], 'effective' => string|null, 'straddling' => array|null]
      */
     function getDroppablePartitions( $table_name, $older_than_yyyymmdd ) {
@@ -3677,7 +3676,7 @@ class Db extends \OWA\Core\Base {
                 }
             }
 
-            $spans = array_values( $fine );
+            $spans = $fine;
 
             if ( ! $spans ) {
 
@@ -3707,7 +3706,7 @@ class Db extends \OWA\Core\Base {
                 $wanted[] = $span;
             }
 
-            $spans = array_values( $wanted );
+            $spans = $wanted;
 
             if ( ! $spans ) {
 
@@ -3731,7 +3730,7 @@ class Db extends \OWA\Core\Base {
                 $kept[] = $span;
             }
 
-            $spans = array_values( $kept );
+            $spans = $kept;
 
             if ( ! $spans ) {
 
@@ -3755,10 +3754,7 @@ class Db extends \OWA\Core\Base {
             $run[] = $span;
         }
 
-        if ( $run ) {
-
-            $runs[] = $run;
-        }
+        $runs[] = $run;
 
         $total    = count( $this->getPartitionSpans( $table_name ) );
         $selected = count( $spans );

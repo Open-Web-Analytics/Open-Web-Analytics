@@ -597,22 +597,9 @@ final class InstallTimezoneTest extends TestCase
 
     public function testUtcIsOfferedByThePicker(): void
     {
-        /*
-         * Loaded into an isolated scope with require, not require_once.
-         *
-         * These files only assign their arrays into the calling scope, so
-         * require_once here made this test depend on nothing else having
-         * included them first -- and once another test in this class started
-         * RENDERING the picker, that stopped being true and the arrays arrived
-         * undefined. Order-dependent by construction; this makes it not.
-         */
-        $load = static function ( string $file ) {
-            require \OWA\Core\Env::root() . '/conf/' . $file;
-            return get_defined_vars();
-        };
-
-        $timezones        = $load('country2Timezones.php')['timezones'];
-        $countryCode2Name = $load('countryCodes2Names.php')['countryCode2Name'];
+        // require, not require_once: a second require_once answers true.
+        $timezones        = require \OWA\Core\Env::root() . '/conf/country2Timezones.php';
+        $countryCode2Name = require \OWA\Core\Env::root() . '/conf/countryCodes2Names.php';
 
         $offered = array();
 

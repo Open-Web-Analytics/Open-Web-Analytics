@@ -44,7 +44,7 @@ class MigrationTally extends \OWA\Core\Entity {
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'max_ts', OWA_DTD_BIGINT ) );
     }
 
-    /** @return string */
+    /** @return int */
     public static function idFor( $source, $site_id, $yyyymmdd, $kind, $name ) {
 
         return \OWA\Core\Lib::wideStringGuid( implode( '|', array( $source, $site_id, (int) $yyyymmdd, $kind, $name ) ) );

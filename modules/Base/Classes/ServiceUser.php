@@ -40,8 +40,6 @@ class ServiceUser extends \OWA\Core\Base {
     var $preferences = array();
     var $is_authenticated = false;
     public $assignedSites = array();
-    private $isInitialized = false;
-    private $isAssignedSitesListLoaded = false;
 
     function __construct() {
         //parent::__construct();
@@ -91,7 +89,6 @@ class ServiceUser extends \OWA\Core\Base {
     private function initInternalProperties() {
         $this->loadRelatedUserData();
         $this->loadAssignedSites();
-        $this->setInitialized();
     }
 
     function loadRelatedUserData() {
@@ -140,7 +137,7 @@ class ServiceUser extends \OWA\Core\Base {
      * Checks if user has a partciular capability
      *
      * @param string     $cap
-     * @param integer     $siteId    only needed if capability requires site access. you need to pass site_id (not id) field
+     * @param string|null $siteId    only needed if capability requires site access. you need to pass site_id (not id) field
      * @return boolean
      */
     function isCapable($cap, $siteId = null) {
@@ -195,7 +192,7 @@ class ServiceUser extends \OWA\Core\Base {
     /**
      * Checks to see if the a site is accessible to a user
      *
-     * @param    string    $siteId    the siteId of the site in question
+     * @param    string|null $siteId  the siteId of the site in question; null throws
      * @return    boolean
      */
     function isSiteAccessible( $siteId ) {
@@ -262,11 +259,6 @@ class ServiceUser extends \OWA\Core\Base {
         $this->setAllowedSitesList($site_ids);
     }
 
-    public function setInitialized() {
-	    
-        $this->isInitialized = true;
-    }
-
     private function setAllowedSitesList($site_ids) {
 
         $list = array();
@@ -294,7 +286,6 @@ class ServiceUser extends \OWA\Core\Base {
         }
 
         $this->assignedSites = self::withSiblingProfiles( $list );
-        $this->isAssignedSitesListLoaded = true;
     }
 
     /**

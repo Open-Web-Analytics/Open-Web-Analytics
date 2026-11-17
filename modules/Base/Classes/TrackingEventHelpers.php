@@ -3153,7 +3153,7 @@ class TrackingEventHelpers {
     /**
      * Filter function Strips a URL of certain defined session or tracking params
      *
-     * @return string
+     * @return string|null
      */
     static function makeUrlCanonical( $url, $event ) {
 	if(is_null($url)){

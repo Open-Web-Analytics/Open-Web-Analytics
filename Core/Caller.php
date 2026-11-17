@@ -174,8 +174,6 @@ class Caller extends \OWA\Core\Base {
 
     /**
      * Handles OWA internal page/action requests
-     *
-     * @return unknown
      */
     function handleRequest($caller_params = null, $action = '') {
         
@@ -184,9 +182,7 @@ class Caller extends \OWA\Core\Base {
     }
     
     /**
-     * Handles OWA internal page/action requests
-     *
-     * @return unknown
+     * Handles OWA REST requests
      */
     function handleRestRequest() {
         

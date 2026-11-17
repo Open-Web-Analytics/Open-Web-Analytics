@@ -78,7 +78,7 @@ class PurchaseMigrator extends FactMigrator {
         $refs['line_items'] = array();
 
         $orders = array_values( array_unique( array_filter(
-            array_map( 'strval', array_column( $rows, 'order_id' ) ), 'strlen' ) ) );
+            array_map( 'strval', array_column( $rows, 'order_id' ) ), static fn ( $id ) => $id !== '' ) ) );
 
         $table = $this->v1Table( self::LINE_ITEMS );
 

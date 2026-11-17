@@ -48,8 +48,8 @@ if (!OWA_CLI)
 
 require_once(__DIR__ . '/owa.php');
 
-// Parse the command line. See owa_lib::parseCliArgs() for the accepted forms.
-$params = \OWA\Core\Lib::parseCliArgs($argv);
+// Parse the command line. See Lib::parseCliArgs() for the accepted forms.
+$params = \OWA\Core\Lib::parseCliArgs($_SERVER['argv'] ?? array());
 
 // Exit codes: 0 done, 1 the command failed, 2 the command line is wrong.
 if (!is_array($params)) {
@@ -109,9 +109,6 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
         $exit_code = \OWA\Core\Controller\Cli::$exit_code;
     }
 
-} else {
-    // unload owa
-    $owa->restInPeace();
 }
 
 if (!empty($exit_code)) {

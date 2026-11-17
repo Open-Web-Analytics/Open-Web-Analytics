@@ -33,9 +33,9 @@ namespace OWA\Module\Hello\View;
 
 class ExampleSettings extends \OWA\Core\View {
 
-    function __construct( $params ) {
+    function __construct() {
 
-        parent::__construct( $params );
+        parent::__construct();
 
         $this->_setPageType( 'Administration Page' );
     }

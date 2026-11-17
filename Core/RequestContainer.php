@@ -111,7 +111,7 @@ class RequestContainer {
 
         } else {
             // just use the normal cookie global
-            if ( $_COOKIE && is_array($_COOKIE) ) {
+            if ( $_COOKIE ) {
 
                 foreach ($_COOKIE as $n => $v) {
                     // hack against other frameworks sanitizing cookie data and blowing away our '>' delimiter
@@ -284,7 +284,7 @@ class RequestContainer {
                 $name = substr( $n, $ns_len );
 
                 // a param named exactly the namespace has no name left
-                if ( $name === '' || $name === false ) {
+                if ( $name === '' ) {
                     continue;
                 }
 
@@ -363,8 +363,8 @@ class RequestContainer {
         $params = array();
         // Apply caller specific params
         foreach ($this->owa_params as $k => $v) {
+            // An array's values are kept as PHP decoded them.
             if (is_array($v)) {
-                array_walk_recursive($v, array($this, 'arrayUrlDecode'));
                 $params[$k] = $v;
             } else {
                 $params[$k] = is_null($v)?$v:rawurldecode($v);
@@ -378,11 +378,6 @@ class RequestContainer {
         \OWA\Core\CoreAPI::debug( 'Decoded OWA params: ' . implode( ', ', array_keys( (array) $this->owa_params ) ) );
         return;
 
-    }
-
-    function arrayUrlDecode(&$val, $index) {
-        
-        rawurldecode($val);
     }
 
     public function getTimestamp() {

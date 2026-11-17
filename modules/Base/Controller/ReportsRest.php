@@ -6,22 +6,24 @@ namespace OWA\Module\Base\Controller;
 /**
  * Report REST Controller.
  *
- * @param propertyId	string		the Property the report is of
- * @param siteId		string		one of its Profiles, to filter to; names the
- *								Property when propertyId is absent
- * @param report_name	string		'clickstream'
- * @param metrics	 	string		'foo,bar'
- * @param dimensions 	string		'dim1,dim2,dim3'
- * @param period	 	string		'today'
- * @param startDate		string		'yyyymmdd'
- * @param endDate		string		'yyyymmdd'
- * @param startTime		timestamp	timestamp
- * @param endTime		timestamp	timestamp
- * @param constraints	string		'con1=foo, con2=bar'
- * @param page => 		int			1
- * @param offset	 	int			0
- * @param limit			int			10
- * @param sort			string		'dim1,dim2'
+ * Request parameters:
+ *
+ *   propertyId   string     the Property the report is of
+ *   siteId       string     one of its Profiles, to filter to; names the
+ *                           Property when propertyId is absent
+ *   report_name  string     'clickstream'
+ *   metrics      string     'foo,bar'
+ *   dimensions   string     'dim1,dim2,dim3'
+ *   period       string     'today'
+ *   startDate    string     'yyyymmdd'
+ *   endDate      string     'yyyymmdd'
+ *   startTime    timestamp
+ *   endTime      timestamp
+ *   constraints  string     'con1=foo, con2=bar'
+ *   page         int        1
+ *   offset       int        0
+ *   limit        int        10
+ *   sort         string     'dim1,dim2'
  */
 class ReportsRest extends \OWA\Core\ReportController {
 
@@ -211,8 +213,6 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 	/**
      * Generates a data result set using metrics and dimension
-     *
-     * @return paginatedResultSet obj
      */
     function getResultSet() {
 
@@ -585,7 +585,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
             $values = array_values( array_unique( array_filter( array_map( function ( $v ) {
                 return is_scalar( $v ) ? (string) $v : '';
-            }, is_array( $values ) ? $values : array() ), 'strlen' ) ) );
+            }, is_array( $values ) ? $values : array() ), static fn ( $value ) => $value !== '' ) ) );
 
             if ( ! $values || count( $values ) > self::ROW_VALUES_LIMIT ) {
 

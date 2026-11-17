@@ -456,8 +456,7 @@ final class SettingsFormTest extends TestCase
      */
     public function testAZoneListedUnderSeveralCountriesSelectsOnce(): void
     {
-        /** @var array<string, array<string>> $timezones */
-        require(\OWA\Core\Env::root() . '/conf/country2Timezones.php');
+        $timezones = require(\OWA\Core\Env::root() . '/conf/country2Timezones.php');
 
         $countries = 0;
 

@@ -787,7 +787,7 @@ class ResultSetManager extends \OWA\Core\Base {
      * against the wrong Property's cube.
      *
      * @param  string $entity_name
-     * @return object
+     * @return \OWA\Core\Entity
      */
     protected function entityFor( $entity_name ) {
 
@@ -1224,6 +1224,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         foreach ($niceness as $entity_name => $summary_level) {
 
             $error = false;
+            // the first dimension found unrelated to this entity
+            $unrelated = null;
 
             // check dimensions in segment for relation to base entity.
             if ( isset( $this->segment['dimensions'] ) ) {
@@ -1238,7 +1240,8 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                     // is the realtionship check fails then move onto the next entity.
                     if (!$check) {
                         $error = true;
-                        \OWA\Core\CoreAPI::debug("Segment dimension $dimension is not related to $entity_name. Moving on to next entity...");
+                        $unrelated = $segment_dim;
+                        \OWA\Core\CoreAPI::debug("Segment dimension $segment_dim is not related to $entity_name. Moving on to next entity...");
                         break;
                     } else {
                         // set related dimensions. this is needed for joins.
@@ -1261,6 +1264,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 // is the realtionship check fails then move onto the next entity.
                 if (!$check) {
                     $error = true;
+                    $unrelated = $unrelated ?? $dimension;
                     \OWA\Core\CoreAPI::debug("$dimension is not related to $entity_name. Moving on to next entity...");
                     break;
                 } else {
@@ -1291,9 +1295,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                  * report that looked merely uneventful.
                  */
                 $this->addRequestError( self::incompatibleMessage(
-                    $dimension,
+                    $unrelated,
                     array_merge( array_keys( (array) $metric_imps ),
-                        array_diff( $dims, array( $dimension ) ) ),
+                        array_diff( $dims, array( $unrelated ) ) ),
                     'dimension' ) );
             } else {
                 $i++;
@@ -1965,7 +1969,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         // this_week and the rest already align, and adding a redundant timestamp
         // bound to them would risk excluding rows whose yyyymmdd and timestamp
         // disagree at a timezone edge.
-        if ( $dimension_name === 'date' && $this->timePeriod ) {
+        if ( $dimension_name === 'date' ) {
 
             $startTs = $this->timePeriod->startDate->getTimestamp();
             $endTs   = $this->timePeriod->endDate->getTimestamp();
@@ -2225,7 +2229,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * since a sum across a reporting period passes a day routinely.
      *
      * @param int|null $value milliseconds
-     * @return string
+     * @return string|null
      */
     function formatMilliseconds($value) {
 
@@ -2287,7 +2291,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     /**
      * Sets an individual label
      * return the key so that it can be nested
-     * @return $key string
+     * @return string $key
      */
     function addLabel($key, $label) {
 
@@ -2519,6 +2523,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         \OWA\Core\CoreAPI::debug($msg);
     }
     
+    /**
+     * @param \OWA\Core\Entity $bm the base entity
+     */
     function computeAggregates( $bm ) {
 
         /*
@@ -2995,7 +3002,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
    	/**
      * Generates a reporting result set using metrics and dimension
      *
-     * @return paginatedResultSet obj
+     * @return \OWA\Module\Base\Classes\PaginatedResultSet
      */
     function getResults() {
 

@@ -174,7 +174,7 @@ class SiteManager extends \OWA\Core\Base {
      * migration's rule too -- the human name describes the website, and the
      * Profile is only one way of watching it.
      *
-     * @return string|null property id
+     * @return int|string|null property id
      */
     public function ensurePropertyFor( $domain, $name = '', $description = '' ) {
 
@@ -224,6 +224,8 @@ class SiteManager extends \OWA\Core\Base {
 
             return $id;
         }
+
+        return null;
     }
 
     /**

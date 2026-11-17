@@ -282,7 +282,6 @@ class DimensionExpression {
      *
      * @param string $column    a timestamp column, in MICROseconds
      * @param string $part
-     * @param string $timezone  an IANA zone name
      * @return string  SQL with %1$s where the table alias belongs
      */
     private static function clockPart( $column, $part ) {

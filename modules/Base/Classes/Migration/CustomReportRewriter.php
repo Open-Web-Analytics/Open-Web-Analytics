@@ -411,7 +411,7 @@ class CustomReportRewriter {
 
         $names = is_array( $value ) ? $value : explode( ',', (string) $value );
 
-        return array_values( array_filter( array_map( 'trim', $names ), 'strlen' ) );
+        return array_values( array_filter( array_map( 'trim', $names ), static fn ( $name ) => $name !== '' ) );
     }
 }
 

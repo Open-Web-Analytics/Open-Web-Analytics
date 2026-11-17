@@ -20,7 +20,7 @@
             <label for="owa_install_db_type"><?php $view->out( \OWA\Core\CoreAPI::t( 'Database Type' ) ); ?></label>
             <span class="owa_installInput">
                 <select name="db_type" id="owa_install_db_type">
-	                <?php foreach ( $view->owaTemplate()->config['db_supported_types'] as $db_type => $db_label ): ?>
+                    <?php foreach ( \OWA\Core\CoreAPI::getSetting( 'base', 'db_supported_types' ) as $db_type => $db_label ): ?>
                     <option value="<?php $view->out( $db_type );?>"><?php $view->out( $db_label );?></option>
                     <?php endforeach;?>
                 </select>

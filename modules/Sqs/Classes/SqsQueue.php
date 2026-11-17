@@ -279,6 +279,7 @@ class SqsQueue implements \OWA\Core\IntakeQueue {
         return $this->ack( $message );
     }
 
+    /** @return self|null */
     public function deadLetterQueue() {
 
         if ( $this->is_dead_letter ) {

@@ -1,30 +1,98 @@
-includes:
-    - phpstan-baseline.neon
+########################################################################
+# PHPStan, level 5, over everything OWA ships: Core, every module and
+# its templates, the REST API and the root entry points. No baseline.
+#
+#   composer phpstan
+#
+# The entity factory extension (tests/phpstan/) loads through Composer's
+# autoload-dev, so plain `phpstan analyse` finds it after `composer install`.
+#
+# CAUTION: PHPStan resolves `paths` RELATIVE TO THIS FILE. A copy placed
+# elsewhere analyses nothing and prints "[OK] No errors".
+########################################################################
 
 parameters:
     parallel:
         maximumNumberOfProcesses: 1
-    level: 3
+    level: 5
     paths:
-        - Core/Lib.php
-        - Core/CoreAPI.php
-        - Core/View.php
-        - Core/Base.php
-        - Core/Controller.php
-        - Core/Module.php
-        - Core/Entity.php
-        - Core/Db.php
-    # Framework uses runtime-defined constants and dynamic class loading; keep
-    # the baseline broad so this catches *new* breakage (undefined symbols from
-    # deletions) rather than pre-existing legacy noise.
-    # ViewScope hands templates their view data through __get, so any view var is a
-    # legitimate property. Declaring it a universal object crate is how PHPStan is
-    # told that (it infers nothing from __get on its own) -- without this, every
-    # $view->someVar read in a template reports an undefined property.
+        - Core
+        - modules
+        - api
+        - owa.php
+        - owa_env.php
+        - log.php
+        - index.php
+        - cli.php
+        - install.php
+        - blank.php
+    excludePaths:
+        - vendor/*
+        - node_modules/*
+        - public/*
+        - tests/*
+        - owa-config*.php
+
+    # Templates receive their data as $view, an OWA\Core\ViewScope whose
+    # __get serves any key the controller set. Declared a universal object
+    # crate so a $view->anything read is not an undefined property.
     universalObjectCratesClasses:
         - OWA\Core\ViewScope
 
+    # Composer's autoloader, and the MySQL dialect's OWA_SQL_* / OWA_DTD_*
+    # constants.
     bootstrapFiles:
         - tests/phpstan-bootstrap.php
+
     treatPhpDocTypesAsCertain: false
-    reportUnmatchedIgnoredErrors: false
+    reportUnmatchedIgnoredErrors: true
+
+    # Set by owa-config.php, so their values are the installation's. Without
+    # this PHPStan takes the value from whichever define() it finds first
+    # (install.php defines OWA_DB_TYPE as 'mysql').
+    dynamicConstantNames:
+        - OWA_SERVER_ROLE
+        - OWA_SQS_QUEUE_URL
+        - OWA_DB_TYPE
+        - OWA_DB_NAME
+        - OWA_DB_HOST
+        - OWA_DB_USER
+        - OWA_DB_PORT
+        - OWA_DB_PASSWORD
+        - OWA_DB_SQL_MODE
+        - OWA_NONCE_KEY
+        - OWA_NONCE_SALT
+        - OWA_AUTH_KEY
+        - OWA_AUTH_SALT
+        - OWA_PUBLIC_URL
+        - OWA_TRACKING_URL
+        - OWA_ASSETS_URL
+        - OWA_DATA_DIR
+        - OWA_MAXMIND_DATA_DIR
+        - OWA_DEBUG
+        - OWA_CONFIGURATION_ID
+        - OWA_QUEUE_TRACKING_EVENTS
+        - OWA_SQS_REGION
+        - OWA_SQS_KEY
+        - OWA_SQS_SECRET
+        - OWA_SQS_TOKEN
+        - OWA_SCHEDULED_JOBS
+        - OWA_TIMEZONE
+        - OWA_LOCALE
+
+    ignoreErrors:
+        # owa-config.php is written by the installer, so a clean checkout has
+        # none. Each include of it is guarded: inside isConfigFilePresent(),
+        # inside file_exists(), and just after the file is written. Not
+        # reported as unmatched, because an installed copy has the file.
+        -
+            message: '#owa\-config\.php" is not a file or it does not exist\.$#'
+            paths:
+                - modules/Base/Classes/Settings.php
+            reportUnmatched: false
+
+services:
+    -
+        class: OWA\PHPStan\EntityFactoryReturnType
+        tags:
+            - phpstan.broker.dynamicStaticMethodReturnTypeExtension

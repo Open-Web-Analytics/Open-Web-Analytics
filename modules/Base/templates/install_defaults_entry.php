@@ -66,18 +66,11 @@
                  * and nothing records which zone a row was derived under. The
                  * shift can be up to 21 hours. Choosing it once, before any data
                  * exists, is the only time the choice is free.
-                 *
-                 * These two conf files exist only to declare their arrays.
                  */
-                /** @var array<string, array<string>> $timezones */
-                /** @var array<string, string> $countryCode2Name */
-                // require, NOT require_once: these files exist only to assign
-                // $timezones and $countryCode2Name into this scope, so a second
-                // render in the same process would find both undefined and the
-                // page would come out with an empty picker. Re-assigning two
-                // arrays is cheap; silently losing 285 options is not.
-                require(\OWA\Core\Env::confDir() . 'country2Timezones.php');
-                require(\OWA\Core\Env::confDir() . 'countryCodes2Names.php');
+                // require, NOT require_once: a second require_once in the same
+                // process answers true instead of the array.
+                $timezones        = require(\OWA\Core\Env::confDir() . 'country2Timezones.php');
+                $countryCode2Name = require(\OWA\Core\Env::confDir() . 'countryCodes2Names.php');
 
                 // Falls back to the CONFIGURED default, not to empty. 'defaults'
                 // is only populated when this form re-renders after a validation

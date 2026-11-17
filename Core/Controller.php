@@ -42,7 +42,7 @@ class Controller extends \OWA\Core\Base {
     /**
      * Controller Type
      *
-     * @var array
+     * @var string
      */
     var $type;
 
@@ -61,9 +61,9 @@ class Controller extends \OWA\Core\Base {
     var $priviledge_level;
 
     /**
-     * data validation control object
+     * data validation control object, created by the first validation added
      *
-     * @var Object
+     * @var \OWA\Module\Base\Classes\Validator|null
      */
     var $v;
 
@@ -393,6 +393,24 @@ class Controller extends \OWA\Core\Base {
     }
 
     /**
+     * The controller's work, run by doAction() once every check has passed.
+     * The default does nothing.
+     */
+    function action() {
+
+    }
+
+    /**
+     * Runs in place of action() when validation fails. A non-empty return is
+     * doAction()'s answer. The default shows the validation messages on the
+     * error page.
+     */
+    function errorAction() {
+
+        $this->setView( 'base.error' );
+    }
+
+    /**
      * Checks if the current controller requires privileges and authenticates the user and checks for capabilities
      * If the user is not allowed the correct error view is also initialized and the calling method should return
      * @uses ->getRequiredCapability and ->getCurrentSiteId
@@ -716,8 +734,7 @@ class Controller extends \OWA\Core\Base {
 			}
 		}
 
-		\OWA\Core\CoreAPI::debug('setredirectAction');
-		\OWA\Core\CoreAPI::debug( $new_data);
+        \OWA\Core\CoreAPI::debug( 'setRedirectAction', $new_data );
 		$this->data = $new_data;		
 
         // need to remove these unsets once they are no longer set in the main doAction method

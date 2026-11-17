@@ -86,7 +86,7 @@ namespace OWA\Module\Base\Classes;
      /**
       * @var bool  guards re-entry.
       *
-      * resolveFromStore() calls dbSingleton(), which reads db_type back out of
+      * resolveAllPending() calls dbSingleton(), which reads db_type back out of
       * here. Without this, that read would be an unresolved key, which would
       * resolve, which would call dbSingleton() again.
       */
@@ -194,25 +194,6 @@ namespace OWA\Module\Base\Classes;
             $this->config_file_loaded = true;
         }
      }
-
-     /**
-      * Settings a config-file constant actually supplied this boot.
-      *
-      * Recorded so load() can keep the database from overwriting them. An
-      * explicit define() in owa-config.php is a deliberate act by whoever runs
-      * the installation, and it used to lose: applyConfigConstants() runs before
-      * load(), and load() array_merges the database blob over the top, so a
-      * constant silently stopped having any effect the first time anyone saved
-      * the options form -- which writes EVERY field on the page, not only the
-      * one that was edited.
-      *
-      * Opt-in by construction, which is what makes it safe to change: an
-      * installation that defines no constants behaves exactly as before. Only a
-      * key someone deliberately declared changes hands, and it changes hands to
-      * what they declared.
-      *
-      * @var array<string, array<string, bool>>
-      */
 
      /**
       * Set a value that came from a config-file constant, and remember that it
@@ -595,7 +576,7 @@ namespace OWA\Module\Base\Classes;
       * Which store is read is decided by legacyBlobIsAuthoritative(), the same
       * way round as save() decides where to write.
       *
-      * @param string id  retained for callers; the install scope has one id
+      * @param int|string $id  retained for callers; the install scope has one id
       */
      function load($id = 1) {
 
@@ -1188,7 +1169,7 @@ namespace OWA\Module\Base\Classes;
       *
       * @param string $module the name of the module
       * @param string $key the configuration key
-      * @param string $value the configuration value
+      * @param mixed $value the configuration value
       * @return boolean
       */
      function set($module, $key, $value) {
@@ -2394,90 +2375,6 @@ namespace OWA\Module\Base\Classes;
                  unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
          }
 
-         /*
-          * No config-file-only strip here, and no constant strip either. Both
-          * are redundant on this path now: only keys that were PENDING are
-          * applied, a config-file-only setting is declared static so is never
-          * pending, and a constant-governed key is made static the moment the
-          * constant is applied.
-          *
-          * The strip stays in load(), which is not redundant -- see there.
-          */
-
-         foreach ( $stored as $module => $values ) {
-
-             foreach ( $values as $key => $value ) {
-
-                 $this->set( $module, $key, $value );
-             }
-         }
-
-         $this->resolving = false;
-     }
-
-     /**
-      * One query for a set of keys, applied over whatever the defaults say.
-      *
-      * Marks every key asked for as resolved, not merely the ones a row came
-      * back for. That is the whole reason this can be called from get()
-      * without turning every miss into a query.
-      *
-      * @param array $wanted "module|key" => array(module, key)
-      * @return void
-      */
-     private function resolveFromStore( array $wanted ) {
-
-         if ( ! $this->store_ready || $this->resolving ) {
-
-             return;
-         }
-
-         $this->resolving = true;
-
-         foreach ( $wanted as $id => $pair ) {
-
-             $this->loaded[ $id ] = true;
-
-             unset( $this->pending[ $id ] );
-         }
-
-         $db = \OWA\Core\CoreAPI::dbSingleton();
-
-         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
-
-         $predicates = array();
-
-         foreach ( $wanted as $pair ) {
-
-             $predicates[] = sprintf( "( module = '%s' AND name = '%s' )",
-                 $db->prepare( (string) $pair[0] ), $db->prepare( (string) $pair[1] ) );
-         }
-
-         $rows = (array) $db->get_results( sprintf(
-             "SELECT module, name, value FROM %s WHERE scope_type = 'install' AND ( %s )",
-             $entity->getTableName(), implode( ' OR ', $predicates ) ) );
-
-         if ( ! $rows ) {
-
-             $this->resolving = false;
-
-             return;
-         }
-
-         $stored = array();
-
-         foreach ( $rows as $row ) {
-
-             $stored[ $row['module'] ][ $row['name'] ] =
-                 unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
-         }
-
-         /*
-          * The same two filters the boot load applies. A stored value is a
-          * stored value whenever it is read: a config-file constant still beats
-          * it, and a config-file-only key must still never come from the
-          * database, which is a security rule rather than a precedence one.
-          */
          /*
           * No config-file-only strip here, and no constant strip either. Both
           * are redundant on this path now: only keys that were PENDING are

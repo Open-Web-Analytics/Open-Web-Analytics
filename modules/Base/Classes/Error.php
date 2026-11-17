@@ -305,7 +305,7 @@ class Error {
                 $this->log($msg['error'], $msg['priority']);
             }
 
-            $this->bmsgs = null;
+            $this->bmsgs = array();
         }
     }
 
@@ -365,13 +365,13 @@ class Error {
     /**
      * Alternative error handler for PHP specific errors.
      *
-     * @param string $errno
+     * @param int    $errno
      * @param string $errmsg
      * @param string $filename
-     * @param string $linenum
-     * @param string $vars
+     * @param int    $linenum
+     * @return true  handled: PHP's own handler does not run
      */
-    function handlePhpError($errno, $errmsg, $filename = '', $linenum = '') {
+    function handlePhpError($errno, $errmsg, $filename = '', $linenum = 0) {
 
         $dt = date("Y-m-d H:i:s (T)");
         
@@ -385,6 +385,8 @@ class Error {
         $err .= "</errorentry>\n\n";
 
         $this->debug( $err );
+
+        return true;
     }
 
     function logException($exception) {

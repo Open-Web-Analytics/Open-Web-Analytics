@@ -135,4 +135,33 @@ final class ErrorActionResultTest extends TestCase
 
         $this->assertNotSame( 'action', $result['ran'] ?? null );
     }
+
+    /**
+     * A controller with no errorAction() of its own gets the error page.
+     *
+     * Controller declared none, so a failed validation in such a controller --
+     * base.usersDelete asked to delete the signed-in user, base.propertyDelete
+     * without a propertyId -- was an "undefined method" Error.
+     */
+    public function testAControllerWithoutAnErrorActionAnswersWithTheErrorPage(): void
+    {
+        $controller = new class( array() ) extends \OWA\Core\Controller {
+
+            public function validate() {
+
+                $this->addValidation( 'required_thing', '', 'required' );
+            }
+
+            function action() {
+
+                $this->set( 'ran', 'action' );
+            }
+        };
+
+        $result = (array) $controller->doAction();
+
+        $this->assertSame( 'base.error', $result['view'] ?? null );
+        $this->assertNotEmpty( $result['validation_errors'] ?? null );
+        $this->assertNotSame( 'action', $result['ran'] ?? null );
+    }
 }

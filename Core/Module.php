@@ -313,8 +313,8 @@ abstract class Module {
     /**
      * Attaches an event handler to the event queue
      *
-     * @param array $event_name
-     * @param string $handler_name
+     * @param string|array $event_name
+     * @param string|object $handler_name
      * @return boolean
      */
     function registerEventHandler($event_name, $handler_name, $method = 'notify', $dir = 'handlers') {
@@ -364,8 +364,12 @@ abstract class Module {
 
         // else try to create the class object
         } else {
-            // create object
-            if ( ! class_exists( $handler_name ) ) {
+            // A class name, or a class of this module named by convention.
+            if ( class_exists( $handler_name ) ) {
+
+                $class = new $handler_name();
+
+            } else {
 
                 $class = \OWA\Core\CoreAPI::moduleGenericFactory($this->name, $dir, $handler_name);
             }
@@ -699,7 +703,7 @@ abstract class Module {
      * Adds a new Subgroup in the navigation
      *
      * @param string $subgroupName
-     * @param string $ref
+     * @param string|array $ref an action name, or link params (reportRef())
      * @param string $anchortext
      * @param integer $order
      * @param string $priviledge
@@ -728,7 +732,7 @@ abstract class Module {
      * Adds a new Link to an existing Subgroup in the navigation
      *
      * @param string $subgroupName
-     * @param string $ref
+     * @param string|array $ref an action name, or link params (reportRef())
      * @param string $anchortext
      * @param integer|null $order lowest first; omitted, after those that give one
      * @param string $priviledge
@@ -1865,9 +1869,9 @@ abstract class Module {
 
     /**
      * Retuns internal struct array used for saving link infos
-     * @param string $ref
+     * @param string|array $ref
      * @param string $anchortext
-     * @param integer $order
+     * @param integer|null $order
      * @param string $priviledge
      * @return array
      */

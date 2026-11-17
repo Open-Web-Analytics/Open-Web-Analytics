@@ -156,7 +156,7 @@ class Report extends \OWA\Core\View {
      * Set report period
      *
      * @access public
-     * @param string $period
+     * @param \OWA\Module\Base\Classes\TimePeriod $period
      */
     function setPeriod( $period ) {
 
@@ -170,12 +170,6 @@ class Report extends \OWA\Core\View {
         $period_label = $period->getLabel();
         $this->body->set('period_label', $period_label);
         $this->subview->body->set('period_label', $period_label);
-        $start_date = $period->get('startDate');
-        $this->body->set( 'startDate', $start_date );
-        $this->subview->body->set('startDate', $start_date );
-        $end_date =  $period->get('endDate');
-        $this->body->set('endDate', $end_date );
-        $this->subview->body->set('endDate', $end_date );
     }
 
 }

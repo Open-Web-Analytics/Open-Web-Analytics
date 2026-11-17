@@ -22,9 +22,6 @@ final class SiteScopedCapabilityTest extends TestCase
         $assigned = new ReflectionProperty($user, 'assignedSites');
         $assigned->setValue($user, array_fill_keys($siteIds, true));
 
-        $loaded = new ReflectionProperty($user, 'isAssignedSitesListLoaded');
-        $loaded->setValue($user, true);
-
         return $user;
     }
 

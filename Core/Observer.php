@@ -44,9 +44,6 @@ class Observer extends \OWA\Core\Base {
     /**
      * Creates a new basic Log_observer instance.
      *
-     * @param integer   $priority   The highest priority at which to receive
-     *                              log event notifications.
-     *
      * @access public
      */
     function __construct() {

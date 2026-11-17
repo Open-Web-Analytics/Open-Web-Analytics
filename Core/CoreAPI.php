@@ -498,7 +498,7 @@ class CoreAPI {
 
         foreach ( $rows as $row ) {
 
-            if ( ! isset( $row['name'] ) || $row['name'] === null ) {
+            if ( ! isset( $row['name'] ) ) {
 
                 // A LEFT JOIN row for a Profile with no settings at all.
                 continue;
@@ -1357,7 +1357,7 @@ class CoreAPI {
      * Convienence method for generating entities
      *
      * @param mixed $entity_name
-     * @return unknown
+     * @return \OWA\Core\Entity
      */
     public static function entityFactory($entity_name) {
 
@@ -2269,7 +2269,7 @@ class CoreAPI {
         $addresses = array_unique( array_filter( array(
             \OWA\Module\Base\Classes\TrackingEventHelpers::requestIp(),
             (string) $event->get( 'ip_address' ),
-        ), 'strlen' ) );
+        ), static fn ( $address ) => $address !== '' ) );
 
         foreach ( $addresses as $ip_address ) {
 
@@ -3097,8 +3097,7 @@ class CoreAPI {
 
         $value = abs(hexdec($value));
 
-        // Some misconfigured 32bit environments (Entropy PHP, for example) truncate integers larger than PHP_INT_MAX to PHP_INT_MAX rather than overflowing them to floats.
-        $max_random_number = 3000000000 === 2147483647 ? (float) "4294967295" : 4294967295; // 4294967295 = 0xffffffff
+        $max_random_number = 4294967295; // 0xffffffff
 
         // Reduce the value to be within the min - max range
         if ( $max != 0 )
@@ -3340,6 +3339,7 @@ class CoreAPI {
     
     static function loadConf( $file_name, $filter_name = '' ) {
 	    
+        $conf = array();
 	    $conf_file = \OWA\Core\Env::confDir() . $file_name;
 	    
 	    if ( file_exists( $conf_file ) ) {

@@ -500,7 +500,7 @@ class Lib {
                 $striped_n = substr($n, $len);
 
                 // a param named exactly the namespace has no name left
-                if ($striped_n === '' || $striped_n === false) {
+                if ($striped_n === '') {
                     continue;
                 }
 
@@ -675,6 +675,8 @@ class Lib {
      *        foreign key as 0, an id no row carries. v1's dimension ids passed
      *        true; nothing in OWA does since they went, and the parameter stays
      *        for modules that derive ids of their own.
+     * @return int|string|null a string of digits; crc32's int on a narrow-id
+     *        install (useNarrowGuid())
      */
     public static function setStringGuid($string, $allow_falsy = false) {
 
@@ -694,6 +696,8 @@ class Lib {
 
     public static function assocFromString($string_state, $inner = '=>', $outer = '|||') {
 
+        $state = array();
+
         if (!empty($string_state)):
 
             if (strpos($string_state, $outer) === false):
@@ -703,8 +707,6 @@ class Lib {
             else:
 
                 $array = explode($outer, $string_state);
-
-                $state = array();
 
                 foreach ($array as $key => $value) {
 
@@ -1051,7 +1053,7 @@ class Lib {
 
             $root = \OWA\Core\Env::root() . '/';
 
-            return ( $root !== '' && strpos( $file, $root ) === 0 ? substr( $file, strlen( $root ) ) : $file )
+            return ( strpos( $file, $root ) === 0 ? substr( $file, strlen( $root ) ) : $file )
                 . ':' . ( $frame['line'] ?? 0 );
         }
 
@@ -1068,7 +1070,7 @@ class Lib {
 
     public static function zeroFill( $number, $char_length ) {
 
-        return str_pad( (int) $number, $char_length, "0", STR_PAD_LEFT );
+        return str_pad( strval( (int) $number ), $char_length, "0", STR_PAD_LEFT );
     }
 
     public static function generateRandomUid($seed='') {
@@ -1078,7 +1080,7 @@ class Lib {
         if ( defined('OWA_SERVER_ID') ) {
             $server = \OWA\Core\Lib::zeroFill( OWA_SERVER_ID, 3 );
         } else {
-            $server = substr( getmypid(), 0, 3);
+            $server = substr( strval( getmypid() ), 0, 3);
         }
 
         return $time.$random.$server;

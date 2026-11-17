@@ -71,9 +71,6 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     // run controller or view and echo page content
     echo $owa->handleRequest($params);
 
-} else {
-    // unload owa
-    $owa->restInPeace();
 }
 
 ?>

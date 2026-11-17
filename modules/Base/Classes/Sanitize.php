@@ -78,7 +78,7 @@ class Sanitize {
     /**
      * Strip Whitespace
      *
-     * @param     string     $str    String to strip
+     * @param     string     $input  String to strip
      * @return    string             whitespace sanitized input
      * @access    public
      */
@@ -195,7 +195,7 @@ class Sanitize {
      * - backslash -
      * - remove_html - Strip HTML with strip_tags. `encode` must be true for this option to work.
      *
-     * @param mixed $data Data to sanitize
+     * @param mixed $input Data to sanitize
      * @param array $options
      * @return mixed Sanitized data
      * @access public
@@ -241,8 +241,10 @@ class Sanitize {
                 $input = \OWA\Core\Lib::utf8Encode($input);
             }
 
+            $output = $input;
+
             if ($options['hidden_spaces']) {
-                $output = \OWA\Module\Base\Classes\Sanitize::removeHiddenSpaces($input);
+                $output = \OWA\Module\Base\Classes\Sanitize::removeHiddenSpaces($output);
             }
 
             if ($options['remove_html']) {

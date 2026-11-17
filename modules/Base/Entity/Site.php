@@ -373,7 +373,7 @@ class Site extends \OWA\Core\Entity {
      * reinserting, so a caller that computes the set wrongly -- or a form that
      * submits nothing -- removes everyone.
      *
-     * @param array $siteIds
+     * @param array $userIds
      */
     public function updateAssignedUserIds(array $userIds) {
          if (!$this->get('id')) {

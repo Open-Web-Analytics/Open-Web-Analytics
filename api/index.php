@@ -48,9 +48,6 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 	
     // run api command and echo page content
     echo $owa->handleRestRequest();
-} else {
-    // unload owa
-    $owa->restInPeace();
 }
 
 ?>

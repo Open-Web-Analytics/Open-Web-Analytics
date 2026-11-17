@@ -72,7 +72,7 @@ class View extends \OWA\Core\Base {
     /**
      * Sub View object
      *
-     * @var object
+     * @var \OWA\Core\View|null
      */
     var $subview;
 
@@ -129,9 +129,9 @@ class View extends \OWA\Core\Base {
      * Constructor
      *
      */
-    function __construct($params = null) {
+    function __construct() {
 
-        parent::__construct($params);
+        parent::__construct();
 
         $this->t = new \OWA\Core\Template();
         $this->body = new \OWA\Core\Template($this->module);
@@ -143,7 +143,7 @@ class View extends \OWA\Core\Base {
      * Assembles the view using passed model objects
      *
      * @param mixed $data
-     * @return unknown
+     * @return mixed
      */
     function assembleView($data) {
 
@@ -375,12 +375,6 @@ class View extends \OWA\Core\Base {
         $this->js = array_merge($this->js, $this->subview->js);
     }
 
-    /**
-     * Assembles the view using passed model objects
-     *
-     * @param mixed $data
-     * @return unknown
-     */
     /**
      * Hand the page the name its settings-nav link carries.
      *
