@@ -3057,21 +3057,56 @@ namespace OWA\Module\Base\Classes;
     }
 
     /**
+     * Put a module's stored settings back to their defaults.
+     *
+     * The module's own stored values are replaced. Its mechanical settings
+     * (Module::mechanicalSettings()) are kept: they are database state, not
+     * configuration -- dropping is_active would deactivate the module, and
+     * dropping schema_version would re-run its updates. Base also keeps its
+     * install flag.
+     *
+     * This used to write $module's schema version into BASE's settings
+     * whatever module it was given, so resetting any other module would have
+     * set base's schema version to that module's. A module with no stored
+     * schema version is not installed, and is refused rather than given a
+     * settings row of its own.
+     *
      * @param  string $module
      * @return bool
      */
     public function reset($module) {
 
-        if ($module) {
+        if ( ! $module ) {
 
-            $defaults = array();
-            $defaults['install_complete'] = true;
-            $defaults['schema_version'] = $this->get($module, 'schema_version');
-            $this->replace('base', $defaults, true);
-            return $this->save();
-        } else {
             return false;
         }
+
+        $schema_version = $this->get( $module, 'schema_version' );
+
+        if ( $schema_version === null || $schema_version === '' || $schema_version === false ) {
+
+            return false;
+        }
+
+        $defaults = array( 'schema_version' => $schema_version );
+
+        if ( $module === 'base' ) {
+
+            $defaults['install_complete'] = true;
+
+        } else {
+
+            $is_active = $this->get( $module, 'is_active' );
+
+            if ( $is_active !== null ) {
+
+                $defaults['is_active'] = $is_active;
+            }
+        }
+
+        $this->replace( $module, $defaults, true );
+
+        return $this->save();
     }
 
     /**
