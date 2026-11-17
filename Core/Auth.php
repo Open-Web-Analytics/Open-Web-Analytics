@@ -605,7 +605,7 @@ class Auth extends \OWA\Core\Base {
      * Removes this browser's `p`. The credential itself stays valid until it
      * expires; User::endSessions() ends it everywhere.
      *
-     * @return boolean
+     * @return null
      */
     public function deleteCredentials() {
 

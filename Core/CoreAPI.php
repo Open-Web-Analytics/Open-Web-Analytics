@@ -29,20 +29,28 @@ namespace OWA\Core;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type Bindings from \OWA\Core\Db
+ * @phpstan-import-type RestRoute from \OWA\Module\Base\Classes\Service
+ * @phpstan-import-type MetricDefinition from \OWA\Module\Base\Classes\Service
+ * @phpstan-import-type DimensionEntry from \OWA\Module\Base\Classes\DimensionRegistry
+ * @phpstan-type Scope array{type: string, id: string}
+ * @phpstan-type SettingRows array{effective: array<string, mixed>, own: array<string, mixed>}
  */
 
 class CoreAPI {
 
-    /** @var array  site id => is it registered. See isSiteRegistered(). */
+    /** @var array<string, bool>  site id => is it registered. See isSiteRegistered(). */
     protected static $registered_sites = array();
 
-    /** @var array  chain key => {effective, own} maps. See settingRowsForChain(). */
+    /** @var array<string, SettingRows>  chain key => {effective, own} maps. See settingRowsForChain(). */
     protected static $setting_row_cache = array();
 
-    /** @var array  "scope:id" => that scope's OWN rows, keyed module|name. */
+    /** @var array<string, array<string, mixed>>  "scope:id" => that scope's OWN rows, keyed module|name. */
     protected static $setting_scope_cache = array();
 
-    /** @var array  "scope:id" => the scope chain to walk. */
+    /** @var array<string, list<Scope>>  "scope:id" => the scope chain to walk. */
     protected static $setting_chain_cache = array();
 
     /**
@@ -54,7 +62,7 @@ class CoreAPI {
      * every insert that never varies. Which scopes may hold a row at all DOES
      * vary per setting, and that is enforced at write, not here.
      *
-     * @var array
+     * @var array<string, int>
      */
     protected static $setting_scope_rank = array(
         'install'      => 1,
@@ -68,6 +76,10 @@ class CoreAPI {
 
     // @depricated
     // @todo remove
+    /**
+     * @param  array<string, mixed> $params
+     * @return \OWA\Core\CoreAPI
+     */
     public static function singleton($params = array()) {
 
         static $api;
@@ -83,17 +95,6 @@ class CoreAPI {
         return $api;
     }
 
-    /**
-     * Load the DB driver class for a given database type.
-     *
-     * THIRD-PARTY DB-DRIVER SEAM
-     * --------------------------
-     * OWA's bundled drivers (e.g. "mysql") live in the OWA\Core\Db namespace
-     * and autoload via Composer. A third party can add support for another
-     * database WITHOUT patching OWA core: a class `owa_db_<type>` extending
-     * \OWA\Core\Db that an autoloader can load (a module's composer.json
-     * `autoload`, merged by `composer install`), then `db_type` set to `<type>`.
-     */
     /**
      * The driver name to actually load for a configured db_type.
      *
@@ -116,7 +117,8 @@ class CoreAPI {
      *
      * A third-party driver's type is passed through untouched.
      *
-     * @param string $type
+     * @param string    $type
+     * @param bool|null $pdo_available whether pdo_mysql is loaded; null asks PHP
      * @return string
      */
     public static function resolveDbDriver($type, $pdo_available = null) {
@@ -158,6 +160,20 @@ class CoreAPI {
         return $type;
     }
 
+    /**
+     * Load the DB driver class for a given database type.
+     *
+     * THIRD-PARTY DB-DRIVER SEAM
+     * --------------------------
+     * OWA's bundled drivers (e.g. "mysql") live in the OWA\Core\Db namespace
+     * and autoload via Composer. A third party can add support for another
+     * database WITHOUT patching OWA core: a class `owa_db_<type>` extending
+     * \OWA\Core\Db that an autoloader can load (a module's composer.json
+     * `autoload`, merged by `composer install`), then `db_type` set to `<type>`.
+     *
+     * @param  string $type a db_type, as resolveDbDriver() takes it
+     * @return bool false when no driver class is loadable
+     */
     public static function setupStorageEngine($type) {
 
         $type = self::resolveDbDriver($type);
@@ -207,6 +223,9 @@ class CoreAPI {
         return $db;
     }
 
+    /**
+     * @return \OWA\Core\Db|void nothing when the storage engine could not be set up
+     */
     public static function dbFactory() {
 
         $db_type = \OWA\Core\CoreAPI::getSetting('base', 'db_type');
@@ -262,6 +281,9 @@ class CoreAPI {
         return $config;
     }
 
+    /**
+     * @return \OWA\Module\Base\Classes\Error
+     */
     public static function errorSingleton() {
 
         static $e;
@@ -365,26 +387,6 @@ class CoreAPI {
     }
 
     /**
-     * Every stored setting for a scope chain, in ONE query.
-     *
-     * Returns both answers the chain can be asked for:
-     *
-     *   effective  module|name        => the winning value
-     *   own        scope|module|name  => the value that scope itself holds
-     *
-     * The winner is decided by the ORDER BY, and the first row seen for a
-     * module|name is it. Written as a CASE rather than MySQL's FIELD() because
-     * FIELD() does not exist in SQLite or Postgres -- see the dialect layer.
-     *
-     * One query for the whole chain, rather than one per key per level: a
-     * report screen reads a dozen settings for the same Profile, and the
-     * previous shape charged an entity load for each of them at each of up to
-     * three levels.
-     *
-     * @param  array $chain from settingScopeChain()
-     * @return array{effective: array, own: array}
-     */
-    /**
      * An entity's table name.
      *
      * One place rather than a factory call at each use. entityFactory() builds
@@ -407,14 +409,35 @@ class CoreAPI {
      * get_results() lives on the driver rather than on Db, so the same applies
      * here: one call site instead of one per query.
      *
-     * @param  string $sql
-     * @return array
+     * @param  string   $sql
+     * @param  Bindings $params
+     * @return array<Row>
      */
     protected static function rowsFor( $sql, array $params = [] ) {
 
         return (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( $sql, $params );
     }
 
+    /**
+     * Every stored setting for a scope chain, in ONE query.
+     *
+     * Returns both answers the chain can be asked for:
+     *
+     *   effective  module|name        => the winning value
+     *   own        scope|module|name  => the value that scope itself holds
+     *
+     * The winner is decided by the ORDER BY, and the first row seen for a
+     * module|name is it. Written as a CASE rather than MySQL's FIELD() because
+     * FIELD() does not exist in SQLite or Postgres -- see the dialect layer.
+     *
+     * One query for the whole chain, rather than one per key per level: a
+     * report screen reads a dozen settings for the same Profile, and the
+     * previous shape charged an entity load for each of them at each of up to
+     * three levels.
+     *
+     * @param  list<Scope> $chain from settingScopeChain()
+     * @return SettingRows
+     */
     public static function settingRowsForChain( $chain ) {
 
         $cache_key = '';
@@ -473,9 +496,9 @@ class CoreAPI {
      * Rows must arrive ordered by scope rank, narrowest first: the first row
      * seen for a module|name is the effective one.
      *
-     * @param  array $chain from settingScopeChain()
-     * @param  array $rows  scope_type, module, name, value
-     * @return array{effective: array, own: array}
+     * @param  list<Scope> $chain from settingScopeChain()
+     * @param  array<Row>  $rows  scope_type, module, name, value
+     * @return SettingRows
      */
     protected static function indexSettingRows( $chain, $rows ) {
 
@@ -554,7 +577,7 @@ class CoreAPI {
      * saw before.
      *
      * @param  string $siteId
-     * @return array{chain: array, rows: array}|null null when the site is unknown
+     * @return array{chain: list<Scope>, rows: SettingRows}|null null when the site is unknown
      */
     protected static function resolveProfileChain( $siteId ) {
 
@@ -647,7 +670,9 @@ class CoreAPI {
      * that assigns no Property -- so the walk has to tolerate gaps rather than
      * assume every Profile has a Property and every Property an Organization.
      *
-     * @return array of array{type: string, id: string}
+     * @param  string $scopeType organization, property or profile
+     * @param  string $scopeId
+     * @return list<Scope>
      */
     public static function settingScopeChain( $scopeType, $scopeId ) {
 
@@ -710,6 +735,12 @@ class CoreAPI {
      * Reads one scope, so it asks for a chain of one. The result is cached and
      * shared with the chain walk, which means a screen that has already
      * resolved a Profile's effective settings answers this from memory.
+     *
+     * @param  string $scopeType
+     * @param  string $scopeId
+     * @param  string $module
+     * @param  string $name
+     * @return mixed
      */
     public static function getScopedSettingRow( $scopeType, $scopeId, $module, $name ) {
 
@@ -740,6 +771,8 @@ class CoreAPI {
      * Called on every scoped write. Blunt on purpose: a write is rare and a
      * stale read is a wrong answer, so the whole map goes rather than trying
      * to reason about which inheriting scopes an edit could have changed.
+     *
+     * @return void
      */
     public static function settingCacheFlush() {
 
@@ -757,6 +790,13 @@ class CoreAPI {
      * wrong and silently so: a Profile set to false, where false is also the
      * code default, would have its row dropped and would then INHERIT whatever
      * its Property says -- so the override would appear to save and not take.
+     *
+     * @param  string $scopeType
+     * @param  string $scopeId
+     * @param  string $module
+     * @param  string $name
+     * @param  mixed  $value
+     * @return bool false when the setting may not be stored at that scope
      */
     public static function setScopedSetting( $scopeType, $scopeId, $module, $name, $value ) {
 
@@ -826,6 +866,12 @@ class CoreAPI {
      * The counterpart to setScopedSetting: without a way to REMOVE a row there
      * is no way back to inheriting once a value has been set here, and the
      * screens could only ever add overrides.
+     *
+     * @param  string $scopeType
+     * @param  string $scopeId
+     * @param  string $module
+     * @param  string $name
+     * @return bool
      */
     public static function clearScopedSetting( $scopeType, $scopeId, $module, $name ) {
 
@@ -836,6 +882,13 @@ class CoreAPI {
         return $setting->delete( $setting->makeId( $scopeType, $scopeId, $module, $name ) );
     }
 
+    /**
+     * @param  string $module
+     * @param  string $name
+     * @param  mixed  $value
+     * @param  bool   $persist store it, not only set it for this request
+     * @return void
+     */
     public static function setSetting($module, $name, $value, $persist = false) {
 
         $s = \OWA\Core\CoreAPI::configSingleton();
@@ -848,13 +901,25 @@ class CoreAPI {
 
     }
 
+    /**
+     * @param  string $module
+     * @param  string $name
+     * @param  mixed  $value
+     * @return null
+     */
     public static function persistSetting($module, $name, $value) {
 
         $s = \OWA\Core\CoreAPI::configSingleton();
         $s->persistSetting($module, $name, $value);
 
+        return null;
     }
 
+    /**
+     * @param  string $site_id
+     * @param  string $name a base setting
+     * @return mixed nothing for no site id or a site that does not exist
+     */
     public static function getSiteSetting($site_id, $name) {
 
         // No site id means there is no row to look up. load() would reach
@@ -1007,7 +1072,11 @@ class CoreAPI {
         return strlen( $id ) > 64 ? $out . '...' : $out;
     }
 
-    /** Whether the database is reachable and runs a query. */
+    /**
+     * Whether the database is reachable and runs a query.
+     *
+     * @return bool
+     */
     private static function databaseAnswers() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -1025,7 +1094,13 @@ class CoreAPI {
         self::$registered_sites = array();
     }
 
-    /** Test seam: answer for a site id without asking the database. */
+    /**
+     * Test seam: answer for a site id without asking the database.
+     *
+     * @param  string $site_id
+     * @param  bool   $registered
+     * @return void
+     */
     public static function rememberSiteRegistration( $site_id, $registered ) {
 
         self::$registered_sites[ (string) $site_id ] = (bool) $registered;
@@ -1038,6 +1113,11 @@ class CoreAPI {
      * cannot ask for values one at a time without the controller keeping a
      * hardcoded list in step with the template. Built bottom-up so a Profile
      * row overwrites its Property's, which overwrites the install's.
+     *
+     * @param  string $scopeType
+     * @param  string $scopeId
+     * @param  string $module
+     * @return array<mixed> key => value
      */
     public static function getEffectiveSettings( $scopeType, $scopeId, $module = 'base' ) {
 
@@ -1067,12 +1147,19 @@ class CoreAPI {
         return $values;
     }
 
+    /**
+     * @return list<int|string>
+     */
     public static function getAllRoles() {
 
         $caps = \OWA\Core\CoreAPI::getSetting('base', 'capabilities');
         return array_keys($caps);
     }
 
+    /**
+     * @param  mixed $role
+     * @return mixed the role's entry in the capabilities setting; array() for a role it does not name
+     */
     public static function getCapabilities($role) {
         $caps = \OWA\Core\CoreAPI::getSetting('base', 'capabilities');
         if (array_key_exists($role, $caps)) {
@@ -1093,6 +1180,8 @@ class CoreAPI {
     /**
      * check to see if the current user has a capability
      * always returns a bool
+     * @param  string      $capability
+     * @param  string|null $site_id
      * @return boolean
      */
     public static function isCurrentUserCapable($capability, $site_id = null) {
@@ -1105,6 +1194,9 @@ class CoreAPI {
         return $ret;
     }
 
+    /**
+     * @return bool
+     */
     public static function isCurrentUserAuthenticated() {
 
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
@@ -1128,6 +1220,9 @@ class CoreAPI {
         return $s;
     }
 
+    /**
+     * @return \OWA\Module\Base\Classes\Cache
+     */
     public static function cacheSingleton() {
 
         static $cache;
@@ -1141,6 +1236,9 @@ class CoreAPI {
     }
     
 
+    /**
+     * @return \OWA\Core\RequestContainer
+     */
     public static function requestContainerSingleton() {
 
         static $request;
@@ -1156,6 +1254,12 @@ class CoreAPI {
 
     }
 
+    /**
+     * @param  string      $modulefile   <module>.<name>
+     * @param  string|null $class_suffix the sub-namespace: Controller, View
+     * @param  mixed       $params       the constructor's argument
+     * @return object
+     */
     public static function moduleFactory($modulefile, $class_suffix = null, $params = '') {
 
         $class = self::moduleClass( $modulefile, $class_suffix );
@@ -1176,6 +1280,9 @@ class CoreAPI {
      * own OWA\Module\<Module>\<Suffix>\<Name>, or for Base one of Core's -- or
      * null when there is none.
      *
+     * @param  string      $modulefile   <module>.<name>
+     * @param  string|null $class_suffix the sub-namespace: Controller, View
+     * @return string|null
      * @throws \OWA\Core\Exception\InvalidAction when either half is not a bare identifier
      */
     public static function moduleClass( $modulefile, $class_suffix ) {
@@ -1245,6 +1352,11 @@ class CoreAPI {
         return null;
     }
 
+    /**
+     * @param  string      $modulefile
+     * @param  string|null $class_suffix
+     * @return \Exception
+     */
     private static function noModuleClass( $modulefile, $class_suffix ) {
 
         list( $module, $file ) = explode( '.', (string) $modulefile );
@@ -1260,7 +1372,7 @@ class CoreAPI {
      * (Controller::setView(), setSubview()) -- a plain View that renders it.
      *
      * @param string $name  <module>.<view>
-     * @param array  $data  the controller's data
+     * @param array<mixed> $data  the controller's data
      * @return \OWA\Core\View
      */
     public static function viewFactory( $name, $data = [] ) {
@@ -1284,6 +1396,14 @@ class CoreAPI {
         return $view;
     }
 
+    /**
+     * @param  string      $module
+     * @param  string      $sub_directory
+     * @param  string      $file
+     * @param  string|null $class_suffix
+     * @param  mixed       $params the constructor's argument
+     * @return object
+     */
     public static function moduleGenericFactory($module, $sub_directory, $file, $class_suffix = null, $params = '') {
 
         /*
@@ -1312,6 +1432,7 @@ class CoreAPI {
      * Produces Module Classes (module.php)
      *
      * @return Object module class object
+     * @param  string $module
      */
     public static function moduleClassFactory($module) {
 
@@ -1334,6 +1455,11 @@ class CoreAPI {
     }
 
 
+    /**
+     * @param  string     $module
+     * @param  string|int $filename an update's class basename (Update017) or its sequence (17)
+     * @return \OWA\Core\Update
+     */
     public static function updateFactory($module, $filename) {
 
         // NAMESPACE-FIRST. Update classes are PSR-4: UpdateNNN.php declares
@@ -1379,6 +1505,11 @@ class CoreAPI {
         return $obj;
     }
 
+    /**
+     * @param  string       $subview <module>.<view>
+     * @param  array<mixed> $data    the controller's data
+     * @return \OWA\Core\View
+     */
     public static function subViewFactory( $subview, $data = [] ) {
 
         $subview = self::viewFactory( $subview, $data );
@@ -1387,6 +1518,13 @@ class CoreAPI {
         return $subview;
     }
 
+    /**
+     * @param  string       $module
+     * @param  string       $class
+     * @param  array<mixed> $params the constructor's argument
+     * @param  string       $class_ns
+     * @return object
+     */
     public static function supportClassFactory($module, $class, $params = array(),$class_ns = 'owa_') {
 
         // Base's support classes that live in Core -- 'template' is
@@ -1541,7 +1679,7 @@ class CoreAPI {
      * Convienence method for generating metrics
      *
      * @param string $metric_name
-     * @param array $params
+     * @param array<mixed> $params
      * @return mixed
      */
     public static function metricFactory($metric_name, $params = array()) {
@@ -1573,11 +1711,6 @@ class CoreAPI {
     }
 
     /**
-     * Returns a consolidated list of admin/options panels from all active modules
-     *
-     * @return array
-     */
-    /**
      * The registered title for a settings screen, or '' if it has none.
      *
      * One lookup for both consumers: the nav renders it as the link, and the
@@ -1607,6 +1740,11 @@ class CoreAPI {
         return '';
     }
 
+    /**
+     * Returns a consolidated list of admin/options panels from all active modules
+     *
+     * @return array<mixed> group => its panels, through the nav_settings filter
+     */
     public static function getAdminPanels() {
 
         $panels = array();
@@ -1629,15 +1767,6 @@ class CoreAPI {
     }
 
     /**
-     * Returns a consolidated list of nav links from all active modules for a particular view
-     * and named navigation element.
-     *
-     * @param string $view
-     * @param string $nav_name the name of the navigation element that you want links for
-     * @param string $sortby the array value to sort the navigation array by
-     * @return array|false
-     */
-    /**
      * The report registry, built on first use.
      *
      * Lazy on purpose, exactly as getNavigation() is: Module::__construct()
@@ -1645,7 +1774,7 @@ class CoreAPI {
      * must not live there. The guard makes it idempotent -- a request that
      * renders two reports registers once.
      *
-     * @return array<string, array> definitions keyed by report id
+     * @return array<mixed> definitions keyed by report id
      */
     public static function getReportRegistry() {
 
@@ -1669,7 +1798,7 @@ class CoreAPI {
      * One report's definition, or false.
      *
      * @param  string $id
-     * @return array|false
+     * @return mixed|false
      */
     public static function getReportDefinition( $id ) {
 
@@ -1682,6 +1811,15 @@ class CoreAPI {
         return $registry[ $id ] ?? false;
     }
 
+    /**
+     * Returns a consolidated list of nav links from all active modules for a particular view
+     * and named navigation element.
+     *
+     * @param string $view
+     * @param string $nav_name the name of the navigation element that you want links for
+     * @param string $sortby the array value to sort the navigation array by
+     * @return array<mixed>|false
+     */
     public static function getNavigation($view, $nav_name, $sortby ='order') {
 
         $links = array();
@@ -1733,6 +1871,11 @@ class CoreAPI {
 
     }
 
+    /**
+     * @param  string $group_name
+     * @param  string $sortby the key to sort entries by
+     * @return mixed the group's entries, sorted, through the nav_reports filter; null when no module registered the group
+     */
     public static function getGroupNavigation($group_name, $sortby ='order') {
 
         $links = array();
@@ -1816,8 +1959,8 @@ class CoreAPI {
      * no order follows the ordered ones, also in registration order, so a
      * module that never said where its entry goes does not jump to the top.
      *
-     * @param  array $entries name => link struct, or a list of link structs
-     * @return array
+     * @param  array<mixed> $entries name => link struct, or a list of link structs
+     * @return array<mixed>
      */
     public static function sortNavigation( array $entries ) {
 
@@ -1860,6 +2003,9 @@ class CoreAPI {
         return $sorted;
     }
 
+    /**
+     * @return list<int|string>
+     */
     public static function getActiveModules() {
 
         $c = \OWA\Core\CoreAPI::configSingleton();
@@ -1931,6 +2077,9 @@ class CoreAPI {
         return $modules;
     }
 
+    /**
+     * @return list<string>
+     */
     public static function getModulesNeedingUpdates() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -1941,8 +2090,9 @@ class CoreAPI {
     /**
      * Invokes controller to perform controller
      *
-     * @param $action string
-     *
+     * @param  mixed        $action <module>.<action>, as the request named it
+     * @param  array<mixed> $params the controller's params
+     * @return mixed what runController() answers; actionNotResolved()'s page when no action is registered under the name
      */
     public static function performAction( $action, $params = array() ) {
 
@@ -2029,6 +2179,10 @@ class CoreAPI {
         );
     }
 
+    /**
+     * @param  mixed $controller
+     * @return mixed the rendered page or the redirect's answer; nothing when there is no view to show
+     */
     public static function runController( $controller ) {
 	    
 	    if ( ! $controller || ! method_exists( $controller, 'doAction' ) ) {
@@ -2068,15 +2222,6 @@ class CoreAPI {
     }
 
     /**
-     * Logs a tracking event to the event queue
-     *
-     * take an owa_event object as a message.
-     *
-     * @param string $event_type
-     * @param object|string $message
-     * @return boolean
-     */
-    /**
      * The event types something has registered to process.
      *
      * READ OFF THE ROUTER, not a list. A module that processes a tracking event
@@ -2088,7 +2233,7 @@ class CoreAPI {
      * names: reusing one would put a site's own counts into a report measuring
      * something else. See isTrackingEventType().
      *
-     * @return array current names, without the tracking. prefix
+     * @return list<string> current names, without the tracking. prefix
      */
     public static function trackingEventTypes() {
 
@@ -2150,7 +2295,11 @@ class CoreAPI {
      */
     const TRACKING_DISPATCH_NAMESPACE = 'tracking';
 
-    /** Every tracking event, for a handler that cannot enumerate them. */
+    /**
+     * Every tracking event, for a handler that cannot enumerate them.
+     *
+     * @return string
+     */
     public static function anyTrackingEvent() {
 
         return self::TRACKING_DISPATCH_NAMESPACE
@@ -2213,6 +2362,15 @@ class CoreAPI {
             $event_type );
     }
 
+    /**
+     * Logs a tracking event to the event queue
+     *
+     * take an owa_event object as a message.
+     *
+     * @param string $event_type
+     * @param \OWA\Module\Base\Classes\Event|array<string, mixed>|string $message an event, or the properties to build one from
+     * @return mixed false when the event is not logged; TrackerIngest's answer when it is queued; performAction()'s otherwise
+     */
     public static function logEvent( $event_type, $message = '') {
 
         \OWA\Core\CoreAPI::debug("Logging new event $event_type");
@@ -2411,7 +2569,7 @@ class CoreAPI {
     /**
      * Displays a View without user authentication. Takes array of data as input
      *
-     * @param array $data
+     * @param array<mixed> $data
      * @param string $viewfile a specific view file to use
      * @return string
      *
@@ -2429,6 +2587,10 @@ class CoreAPI {
 
     }
 
+    /**
+     * @param  string $name
+     * @return mixed as the request holds it; false when absent
+     */
     public static function getRequestParam($name) {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -2437,11 +2599,19 @@ class CoreAPI {
 
     }
 
+    /**
+     * @return \OWA\Core\RequestContainer|null
+     */
     public static function getRequest() {
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         return $service->request;
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $value
+     * @return true
+     */
     public static function setRequestParam($name, $value) {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -2449,6 +2619,11 @@ class CoreAPI {
 
     }
 
+    /**
+     * @param  string               $time_period
+     * @param  array<string, mixed> $params
+     * @return \OWA\Module\Base\Classes\TimePeriod
+     */
     public static function makeTimePeriod($time_period, $params = array()) {
 
         $period = new \OWA\Module\Base\Classes\TimePeriod();
@@ -2464,6 +2639,8 @@ class CoreAPI {
      * Factory method for producing validation objects
      *
      * @return Object
+     * @param  string       $class_file
+     * @param  array<mixed> $conf
      */
     public static function validationFactory($class_file, $conf = array()) {
 
@@ -2482,18 +2659,23 @@ class CoreAPI {
     }
 
     /**
-     * @param string $msg
+     * @param mixed  $msg      a string, or a value Lib::forLog() formats
      * @param mixed  $context  a value to append as one line; only formatted
      *                         when debug logging is on -- never print_r() it
      *                         into $msg, which builds it on every install
+     * @return null
      */
     public static function debug( $msg, $context = null ) {
 
         $e = \OWA\Core\CoreAPI::errorSingleton();
         $e->debug( $msg, $context );
-        return;
+        return null;
     }
 
+    /**
+     * @param  mixed $msg a string, or a value Lib::forLog() formats
+     * @return void
+     */
     public static function error($msg) {
 
         $e = \OWA\Core\CoreAPI::errorSingleton();
@@ -2501,17 +2683,29 @@ class CoreAPI {
         return;
     }
 
+    /**
+     * @param  mixed $msg a string, or a value Lib::forLog() formats
+     * @return null
+     */
     public static function notice($msg) {
 
         $e = \OWA\Core\CoreAPI::errorSingleton();
         $e->notice($msg);
+
+        return null;
     }
 
     /**
+     * @param string $cookie_name
+     * @param mixed  $cookie_value an array is written as a=>b|||c=>d
+     * @param int    $expires
      * @param string $path     The path the cookie is sent for. Default /.
+     * @param string $domain
+     * @param bool   $secure   not read: Lib::isHttps() decides
      * @param bool $httponly Out of reach of the page's scripts. The sign-in
      *                       cookies are; state the reporting UI reads in the
      *                       browser cannot be.
+     * @return void
      */
     public static function createCookie($cookie_name, $cookie_value, $expires = 0, $path = '/', $domain = '', $secure = false, $httponly = false) {
 
@@ -2549,7 +2743,13 @@ class CoreAPI {
     /** The sign-in cookies, by name before the namespace: their values are credentials. */
     const CREDENTIAL_COOKIES = array( 'u', 'p' );
 
-    /** A cookie's value as written to the debug log: [redacted] for a CREDENTIAL_COOKIES one. */
+    /**
+     * A cookie's value as written to the debug log: [redacted] for a CREDENTIAL_COOKIES one.
+     *
+     * @param  string $cookie_name
+     * @param  mixed  $cookie_value
+     * @return string
+     */
     public static function cookieValueForLog( $cookie_name, $cookie_value ) {
 
         return in_array( (string) $cookie_name, self::CREDENTIAL_COOKIES, true ) ? '[redacted]' : (string) $cookie_value;
@@ -2566,7 +2766,7 @@ class CoreAPI {
      * @param string $domain
      * @param bool   $secure
      * @param bool   $httponly
-     * @return array
+     * @return array{expires: int, path: string, samesite: string, domain: string, secure: bool, httponly: bool}
      */
     public static function cookieOptions($expires, $path, $domain, $secure, $httponly) {
 
@@ -2582,23 +2782,53 @@ class CoreAPI {
         ];
     }
 
+    /**
+     * @param  string $cookie_name
+     * @param  string $path
+     * @param  string $domain
+     * @return null
+     */
     public static function deleteCookie($cookie_name, $path = '/', $domain = '') {
 
-        return \OWA\Core\CoreAPI::createCookie($cookie_name, false, time()-3600*25, $path, $domain);
+        \OWA\Core\CoreAPI::createCookie($cookie_name, false, time()-3600*25, $path, $domain);
+
+        return null;
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $expiration
+     * @param  mixed  $length
+     * @param  mixed  $format
+     * @param  mixed  $type
+     * @param  mixed  $cdh_required
+     * @return null
+     */
     public static function registerStateStore($name, $expiration, $length = '', $format = '', $type = 'cookie', $cdh_required = '') {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         return $service->request->state->registerStore( $name, $expiration, $length, $format, $type, $cdh_required );
     }
 
+    /**
+     * @param  string $store
+     * @param  string $name
+     * @param  mixed  $value
+     * @param  string $store_type
+     * @param  bool|string $is_perminent only logged
+     * @return null
+     */
     public static function setState($store, $name, $value, $store_type = '', $is_perminent = '') {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         return $service->request->state->set($store, $name, $value, $store_type, $is_perminent);
     }
 
+    /**
+     * @param  string $store
+     * @param  string $name
+     * @return mixed the value, or the store; false when there is none
+     */
     public static function getState($store, $name = '') {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -2606,28 +2836,44 @@ class CoreAPI {
     }
 
     // depricated
+    /**
+     * @param  string $store
+     * @param  string $name
+     * @return mixed
+     */
     public static function getStateParam($store, $name = '') {
 
         return \OWA\Core\CoreAPI::getState($store, $name);
     }
 
+    /**
+     * @param  string $name
+     * @return mixed as $_SERVER holds it; false when absent
+     */
     public static function getServerParam($name = '') {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         return $service->request->getServerParam($name);
     }
 
+    /**
+     * @param  string $store
+     * @param  string $name
+     * @return null
+     */
     public static function clearState($store, $name = '') {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $service->request->state->clear($store, $name);
 
+        return null;
     }
 
     /**
      * @param object|string $event  an event, preferably; a bare type cannot say
      *                              whether it is a tracking event, so a string
      *                              resolves only by its own name
+     * @return mixed the processor action; nothing when none is registered
      */
     public static function getEventProcessor($event) {
 
@@ -2700,6 +2946,8 @@ class CoreAPI {
     /**
      * Handles OWA internal page/action requests
      *
+     * @param  array<mixed>|null $caller_params params that override the request's
+     * @param  string            $action        the request's action or do when empty
      * @return mixed
      */
     public static function handleRequest($caller_params = null, $action = '') {
@@ -2899,6 +3147,13 @@ class CoreAPI {
         return self::displayView( array( 'error_msg' => $error_msg ), 'base.restApi' );
     }
 
+    /**
+     * @param  string $request_method
+     * @param  string $module
+     * @param  string $version
+     * @param  string $do
+     * @return RestRoute|void nothing when an argument is empty or no route is registered
+     */
     public static function lookupRestRoute( $request_method, $module, $version, $do ) {
 	    
 	    if ( ! empty( $request_method )
@@ -2914,12 +3169,19 @@ class CoreAPI {
 	    }
     }
 
-    /** A module's schema is behind (Service::isSchemaUpdateRequired()). */
+    /**
+     * A module's schema is behind (Service::isSchemaUpdateRequired()).
+     *
+     * @return bool
+     */
     public static function isSchemaUpdateRequired() {
 
         return \OWA\Core\CoreAPI::serviceSingleton()->isSchemaUpdateRequired();
     }
 
+    /**
+     * @return bool
+     */
     public static function isUpdateRequired() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -2927,7 +3189,7 @@ class CoreAPI {
     }
 
     /**
-     * @return array
+     * @return list<Row>
      */
     public static function getSitesList() {
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -2942,6 +3204,9 @@ class CoreAPI {
     }
 	
 	
+    /**
+     * @return \OWA\Module\Base\Classes\EventDispatch
+     */
     public static function getEventDispatch() {
 
 
@@ -2949,6 +3214,10 @@ class CoreAPI {
 
     }
 
+    /**
+     * @param  string $name
+     * @return object
+     */
     public static function getEventQueue( $name ) {
 
         static $queues;
@@ -2985,12 +3254,20 @@ class CoreAPI {
         return $queues[ $name ];
     }
 
+    /**
+     * @param  string $command
+     * @return mixed the class that runs it; false when none does
+     */
     public static function getCliCommandClass($command) {
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         return $s->getCliCommandClass($command);
     }
 
+    /**
+     * @param  string|null $ip_address
+     * @return \OWA\Module\Base\Classes\Geolocation|null
+     */
     public static function getGeolocationFromIpAddress($ip_address) {
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -2998,6 +3275,9 @@ class CoreAPI {
         return $s->geolocation;
     }
 
+    /**
+     * @return float
+     */
     public static function getNonceTimeInterval() {
 
         return  ceil( time() / \OWA\Core\CoreAPI::getSetting( 'base', 'nonce_expiration_period') );
@@ -3009,6 +3289,10 @@ class CoreAPI {
      * $tick defaults to the current window. verifyNonce() also passes the one
      * before it: windows are fixed buckets of the epoch, so a form rendered a
      * second before a boundary would otherwise be refused a second after it.
+     *
+     * @param  string         $action
+     * @param  int|float|null $tick
+     * @return string
      */
     public static function createNonce($action, $tick = null) {
 
@@ -3027,19 +3311,37 @@ class CoreAPI {
      * A nonce for one REST route and one HTTP method: one minted for a GET of
      * a route is not accepted on a POST or DELETE of it.
      *
+     * @param string $version
+     * @param string $module
+     * @param string $do
      * @param string $method GET, POST, DELETE, ...
+     * @return string
      */
     public static function createRestApiNonce( $version, $module, $do, $method = 'GET' ) {
 
         return self::createNonce( self::restApiNonceAction( $version, $module, $do, $method ) );
     }
 
-    /** What a REST nonce is minted for and checked against (Controller::doAction()). */
+    /**
+     * What a REST nonce is minted for and checked against (Controller::doAction()).
+     *
+     * @param  string $version
+     * @param  string $module
+     * @param  string $do
+     * @param  string $method
+     * @return string
+     */
     public static function restApiNonceAction( $version, $module, $do, $method ) {
 
         return strtoupper( (string) $method ) . ' ' . $version . $module . $do;
     }
 
+    /**
+     * @param  string $data
+     * @param  string $scheme    NONCE, SECRET or AUTH, any case
+     * @param  string $hash_type
+     * @return string
+     */
     public static function saltedHash( $data, $scheme, $hash_type = 'md5' ) {
 
         $salt = \OWA\Core\CoreAPI::getSalt( $scheme );
@@ -3048,6 +3350,10 @@ class CoreAPI {
 
 
 
+    /**
+     * @param  string $scheme NONCE, SECRET or AUTH, any case
+     * @return string
+     */
     public static function getSalt( $scheme ) {
 
         static $cached_salts;
@@ -3092,6 +3398,12 @@ class CoreAPI {
         return $key . $salt;
     }
 
+    /**
+     * @param  int  $length
+     * @param  bool $special_chars
+     * @param  bool $more_special_chars
+     * @return string
+     */
     public static function secureRandomString( $length, $special_chars = true, $more_special_chars = true ) {
 
         $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -3108,6 +3420,11 @@ class CoreAPI {
         return $password;
     }
 
+    /**
+     * @param  int $min
+     * @param  int $max
+     * @return int
+     */
     public static function random($min, $max) {
 
         // A string from the start: strlen() of null is deprecated on PHP 8.1+.
@@ -3163,7 +3480,7 @@ class CoreAPI {
      * Queue a CLI command to run once, from the scheduler (PLAN 2.30.5).
      *
      * @param  string      $command  a registered CLI command
-     * @param  array       $params   its arguments
+     * @param  array<mixed> $params  its arguments
      * @param  string|null $key      at most one pending job per key
      * @param  int         $delay    seconds before it may run
      * @return string|false  the job's id
@@ -3173,6 +3490,11 @@ class CoreAPI {
         return \OWA\Module\Base\Classes\JobQueue::enqueue( $command, $params, $key, $delay );
     }
 
+    /**
+     * @param  string       $site_id
+     * @param  array<mixed> $options
+     * @return string
+     */
     public static function getJsTrackerTag( $site_id, $options = array() ) {
 
 
@@ -3207,6 +3529,10 @@ class CoreAPI {
         return $t->fetch();
     }
 
+    /**
+     * @param  string $module_name
+     * @return null
+     */
     public static function activateModule( $module_name ) {
 
         if ( $module_name ) {
@@ -3214,8 +3540,14 @@ class CoreAPI {
             $m = \OWA\Core\CoreAPI::moduleClassFactory($module_name);
             return $m->activate();
         }
+
+        return null;
     }
 
+    /**
+     * @param  string $module_name
+     * @return bool|void nothing for no module name
+     */
     public static function deactivateModule( $module_name ) {
 
         if ( $module_name ) {
@@ -3230,6 +3562,10 @@ class CoreAPI {
         }
     }
 
+    /**
+     * @param  string $module_name
+     * @return bool|void nothing for no module name
+     */
     public static function installModule( $module_name ) {
 
         if ($module_name) {
@@ -3240,6 +3576,9 @@ class CoreAPI {
         }
     }
 
+    /**
+     * @return string
+     */
     public static function generateInstanceSpecificHash() {
 
         if ( defined( 'OWA_SECRET' ) ) {
@@ -3274,14 +3613,18 @@ class CoreAPI {
      * scope decides, so the wrong generation is not filtered out downstream, it
      * is never in the answer.
      *
-     * @param array|null      $entities    entity names to restrict the answer to
+     * @param string[]|null   $entities    entity names to restrict the answer to
      * @param int|string|null $property_id the Property whose custom dimensions to include
+     * @return array<string, DimensionEntry> name => entry
      */
     public static function getAllDimensions( $entities = null, $property_id = null ) {
 
         return \OWA\Module\Base\Classes\DimensionRegistry::forProperty( $property_id )->all( $entities );
     }
 
+    /**
+     * @return array<string, list<MetricDefinition>>
+     */
     public static function getAllMetrics() {
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -3322,6 +3665,9 @@ class CoreAPI {
         return \OWA\Core\Strings::translatePlural( $singular, $plural, $n, $context );
     }
 
+    /**
+     * @return int
+     */
     public static function getRequestTimestamp() {
 
         $r = \OWA\Core\CoreAPI::requestContainerSingleton();
@@ -3340,6 +3686,10 @@ class CoreAPI {
         return $r->getTimestampMicroseconds();
     }
 
+    /**
+     * @param  string $capability
+     * @return bool
+     */
     public static function isEveryoneCapable( $capability ) {
 
         $caps = \OWA\Core\CoreAPI::getCapabilities('everyone');
@@ -3351,6 +3701,9 @@ class CoreAPI {
         }
     }
 
+    /**
+     * @return string|null
+     */
     public static function getCurrentUrl() {
 	    
         $r = \OWA\Core\CoreAPI::requestContainerSingleton();
@@ -3362,6 +3715,10 @@ class CoreAPI {
      * office IP that another Profile still wants to record; omitting it
      * falls back to the install-wide list, which is what every existing
      * caller got before the setting became scopeable.
+     *
+     * @param  string $ip_address
+     * @param  string $siteId
+     * @return true|void nothing when the address is not excluded
      */
     public static function isIpAddressExcluded( $ip_address, $siteId = '' ) {
 
@@ -3390,6 +3747,11 @@ class CoreAPI {
         }
     }
     
+    /**
+     * @param  string $file_name   under conf/, overlaid by the same name under the data directory
+     * @param  string $filter_name 'conf.'.$file_name when empty
+     * @return mixed the conf array, through the filter
+     */
     public static function loadConf( $file_name, $filter_name = '' ) {
 	    
         $conf = array();
@@ -3457,6 +3819,11 @@ class CoreAPI {
         return $ed->filter( $filter_name, $value, ...$context );
     }
     
+    /**
+     * @param  iterable<array<mixed>>|null $items
+     * @param  string                     $entity_name
+     * @return list<\OWA\Core\Entity>
+     */
     public static function loadEntitiesFromArray( $items, $entity_name ) {
 	    
 	    $set = [];
