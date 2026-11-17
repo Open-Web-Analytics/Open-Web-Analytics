@@ -1567,7 +1567,9 @@ namespace OWA\Module\Base\Classes;
       * @param string $module the name of the module
       * @param string $key the configuration key
       * @param mixed  $value the configuration value
-      * @return null
+      * @return bool true when the value is now the setting's: stored, or equal
+      *              to the default and so not stored. False when it is refused;
+      *              a notice says why.
       */
      public function persistSetting($module, $key, $value) {
 
@@ -1613,7 +1615,7 @@ namespace OWA\Module\Base\Classes;
              \OWA\Core\CoreAPI::notice( sprintf(
                  'Refusing to persist %s.%s: %s.', $module, $key, $why ) );
 
-             return null;
+             return false;
          }
 
          $problem = $this->valueProblem( $module, $key, $value );
@@ -1622,7 +1624,7 @@ namespace OWA\Module\Base\Classes;
 
              \OWA\Core\CoreAPI::notice( sprintf( 'Refusing to persist %s.%s: %s', $module, $key, $problem ) );
 
-             return null;
+             return false;
          }
 
          $value = $this->normalizedValue( $module, $key, $value );
@@ -1656,13 +1658,13 @@ namespace OWA\Module\Base\Classes;
                  $this->markDirty();
              }
 
-             return null;
+             return true;
          }
 
          $this->db_settings[$module][$key] = $value;
          $this->markDirty();
 
-         return null;
+         return true;
      }
 
      /**
