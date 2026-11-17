@@ -204,7 +204,7 @@ OWA.kpiBox.prototype = {
         }
 
         var raw = OWA.util.urldecode(
-            new OWA.uri( resultSet.self ).getQueryParam( 'metrics' ) || '' );
+            new URL( resultSet.self, window.location.href ).searchParams.get( 'metrics' ) || '' );
 
         return raw.split( ',' )
             .map( function ( name ) { return name.trim(); } )

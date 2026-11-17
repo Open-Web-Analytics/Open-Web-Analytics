@@ -1185,7 +1185,7 @@ OWA.areaChart.prototype = {
 
         var x    = this.xDimension || 'date';
         var dims = this.plot.dims;
-        var url  = new OWA.uri( this.explorer.resultSet.self );
+        var url  = new URL( this.explorer.resultSet.self, window.location.href );
         var restrict = {};
 
         dims.forEach( function ( d ) { restrict[ d ] = []; } );
@@ -1208,13 +1208,13 @@ OWA.areaChart.prototype = {
          */
         var perPage = parseInt( OWA.getSetting( 'max_results_per_page' ), 10 ) || 1000;
 
-        url.setQueryParam( 'dimensions', [ x ].concat( dims ).join( ',' ) );
-        url.setQueryParam( 'rowValues', JSON.stringify( restrict ) );
-        url.setQueryParam( 'resultsPerPage', perPage );
-        url.setQueryParam( 'sort', [ x ].concat( dims ).join( ',' ) );
-        url.removeQueryParam( 'page' );
+        url.searchParams.set( 'dimensions', [ x ].concat( dims ).join( ',' ) );
+        url.searchParams.set( 'rowValues', JSON.stringify( restrict ) );
+        url.searchParams.set( 'resultsPerPage', perPage );
+        url.searchParams.set( 'sort', [ x ].concat( dims ).join( ',' ) );
+        url.searchParams.delete( 'page' );
 
-        var source = url.getSource();
+        var source = url.href;
 
         if ( this.rowsUrl === source ) {
 
@@ -1228,13 +1228,13 @@ OWA.areaChart.prototype = {
 
         var load = function ( page ) {
 
-            var at = new OWA.uri( source );
+            var at = new URL( source );
 
             if ( page > 1 ) {
-                at.setQueryParam( 'page', page );
+                at.searchParams.set( 'page', page );
             }
 
-            jQuery.getJSON( at.getSource(), '', function ( data ) {
+            jQuery.getJSON( at.href, '', function ( data ) {
 
                 if ( that.rowsUrl !== source ) {
 
@@ -1310,14 +1310,14 @@ OWA.areaChart.prototype = {
             return null;
         }
 
-        var url = new OWA.uri( resultSet.self );
+        var url = new URL( resultSet.self, window.location.href );
 
-        url.setQueryParam( 'dimensions', x_name );
-        url.removeQueryParam( 'page' );
-        url.removeQueryParam( 'sort' );
-        url.removeQueryParam( 'resultsPerPage' );
+        url.searchParams.set( 'dimensions', x_name );
+        url.searchParams.delete( 'page' );
+        url.searchParams.delete( 'sort' );
+        url.searchParams.delete( 'resultsPerPage' );
 
-        var source = url.getSource();
+        var source = url.href;
 
         if ( this.totalsUrl === source && this.totalsResultSet ) {
 
@@ -2028,9 +2028,9 @@ OWA.areaChart.prototype = {
             return;
         }
 
-        var url  = new OWA.uri( this.explorer.resultSet.self );
+        var url  = new URL( this.explorer.resultSet.self, window.location.href );
         var key  = 'dimensions';
-        var dims = OWA.util.urldecode( url.getQueryParam( key ) || '' ).split( ',' );
+        var dims = OWA.util.urldecode( url.searchParams.get( key ) || '' ).split( ',' );
 
         var was = this.xDimension;
 
@@ -2040,12 +2040,12 @@ OWA.areaChart.prototype = {
 
         } ).filter( Boolean );
 
-        url.setQueryParam( key, swapped.join( ',' ) );
-        url.setQueryParam( 'sort', dimension );
+        url.searchParams.set( key, swapped.join( ',' ) );
+        url.searchParams.set( 'sort', dimension );
 
         // A different grain is a different number of points, so the page the
         // reader was on no longer means anything.
-        url.removeQueryParam( 'page' );
+        url.searchParams.delete( 'page' );
 
         this.xDimension = dimension;
 
@@ -2056,7 +2056,7 @@ OWA.areaChart.prototype = {
             this.options.series[0].x = dimension;
         }
 
-        this.explorer.getNewResultSet( url.getSource() );
+        this.explorer.getNewResultSet( url.href );
     },
 
     /**
@@ -2102,10 +2102,10 @@ OWA.areaChart.prototype = {
             return false;
         }
 
-        var url  = new OWA.uri( this.explorer.resultSet.self );
+        var url  = new URL( this.explorer.resultSet.self, window.location.href );
         var key  = 'dimensions';
 
-        var dims = OWA.util.urldecode( url.getQueryParam( key ) || '' )
+        var dims = OWA.util.urldecode( url.searchParams.get( key ) || '' )
             .split( ',' )
             .map( function ( n ) { return n.trim(); } )
             .filter( Boolean );
@@ -2117,11 +2117,11 @@ OWA.areaChart.prototype = {
          */
         var x = this.xDimension || dims[0] || 'date';
 
-        url.setQueryParam( key, dimension ? x + ',' + dimension : x );
+        url.searchParams.set( key, dimension ? x + ',' + dimension : x );
 
         // A different breakdown is a different number of rows, so the page the
         // reader was on no longer means anything.
-        url.removeQueryParam( 'page' );
+        url.searchParams.delete( 'page' );
 
         /*
          * A broken-out trend is one row per (x, value) pair, and the chart sums
@@ -2131,14 +2131,14 @@ OWA.areaChart.prototype = {
          */
         if ( dimension ) {
 
-            url.setQueryParam( 'resultsPerPage', 1000 );
+            url.searchParams.set( 'resultsPerPage', 1000 );
         }
 
         // What generate() reads on the way back in: the refetch arrives as a
         // new_result_set event carrying no spec of its own.
         spec.series = dimension || null;
 
-        this.explorer.getNewResultSet( url.getSource() );
+        this.explorer.getNewResultSet( url.href );
 
         return true;
     },

@@ -46,10 +46,10 @@ test.describe('pages report', () => {
         await openReportNoTabs(page, { reportId: 'pages' });
 
         await page.evaluate(() => {
-            const url = new OWA.uri(window.dim.resultSet.self);
-            url.setQueryParam('dimensions', 'pagePathPlusQuery');
-            url.setQueryParam('sort', 'pageViews-');
-            window.dim.getNewResultSet(url.getSource());
+            const url = new URL(window.dim.resultSet.self, window.location.href);
+            url.searchParams.set('dimensions', 'pagePathPlusQuery');
+            url.searchParams.set('sort', 'pageViews-');
+            window.dim.getNewResultSet(url.href);
         });
 
         await expect(page.locator('.owa_gridTable thead th', { hasText: 'Page Path + Query String' }).first()).toBeVisible();
