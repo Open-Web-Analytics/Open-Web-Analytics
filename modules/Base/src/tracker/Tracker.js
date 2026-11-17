@@ -4666,12 +4666,56 @@ class OWATracker  {
         // position any more than they share a last-request time.
         this.stampEventSequence( event );
 
+        // The session store was just written back; the visitor store is
+        // checked at the same moment. See restoreVisitorCookie().
+        this.restoreVisitorCookie();
+
         // Which beacon format this is. Every event, because a row is what the
         // question gets asked of, not a session.
         event.set( 'beacon_version', OWATracker.BEACON_FORMAT_VERSION );
 
         if (callback && ( typeof( callback ) === "function" ) ) {
             callback( event );
+        }
+    }
+
+    /**
+     * Put the visitor cookie back, from memory, if the browser has lost it
+     * while the page is open.
+     *
+     * The visitor store is written on a page's first event; the session store
+     * on every event, from memory, so a session cookie that disappears is
+     * written back by the next event while a visitor cookie that disappears is
+     * not. Safari has been seen losing both mid-page: the next event restored
+     * the session and the next page minted a new visitor, so one person became
+     * two. Checking on every event and writing only when the cookie is missing
+     * keeps the two stores equally robust without rewriting the visitor cookie
+     * on every request.
+     *
+     * Only a missing cookie is restored (see StateManager restoreIfMissing()).
+     * Not when the page has recorded consent as denied: then a cookie that has
+     * gone may have been removed on purpose, and putting it back would undo
+     * that.
+     *
+     * @internal
+     */
+    restoreVisitorCookie() {
+
+        if ( this.getGlobalEventProperty( 'consent_state' ) === 'denied' ) {
+
+            return;
+        }
+
+        var store = this.storeName( 'v' );
+
+        if ( ! OWA.getState( store, 'vid' ) ) {
+
+            return;
+        }
+
+        if ( OWA.restoreStateIfMissing( store ) ) {
+
+            OWA.debug( 'Visitor cookie was missing; written back from memory.' );
         }
     }
 
