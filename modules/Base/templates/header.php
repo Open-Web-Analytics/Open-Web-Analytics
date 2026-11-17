@@ -94,12 +94,8 @@
     </span>
 <?php
     /*
-     * The badge count is NOT rendered here and is not a call of its own.
-     *
-     * One fetch returns the notifications, and the badge is the length of what
-     * came back -- so the number and the list cannot disagree, which is the
-     * failure mode of a separately-computed count. The count is owned by the
-     * same code that draws the panel.
+     * The badge count is NOT rendered here and is not a call of its own: the
+     * bell's code (owa.header.js) counts the rows its one fetch returns.
      *
      * makeApiLink() builds the endpoint AND mints the nonce, so this does not
      * hard-code where the API lives or how a nonce is derived. The routes are
@@ -116,7 +112,10 @@
     $owa_markReadUrl = $view->makeApiLink( $owa_notificationRoute, false, 'POST' );
     $owa_dismissUrl  = $view->makeApiLink( $owa_notificationRoute, false, 'DELETE' );
 ?>
-    <span class="owa_notificationBell">
+    <span class="owa_notificationBell" data-ui="header:notifications"
+          data-owa-notifications-read="<?php $view->out( $owa_apiUrl ); ?>"
+          data-owa-notifications-mark-read="<?php $view->out( $owa_markReadUrl ); ?>"
+          data-owa-notifications-dismiss="<?php $view->out( $owa_dismissUrl ); ?>">
         <button type="button" id="owa_notificationToggle" class="owa_notificationToggle"
                 aria-expanded="false" aria-controls="owa_notificationPanel"
                 aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Notifications' ) ); ?>">
@@ -130,236 +129,6 @@
             </div>
         </div>
     </span>
-    <script>
-    (function () {
-        var toggle = document.getElementById('owa_notificationToggle');
-        var panel  = document.getElementById('owa_notificationPanel');
-        var badge  = document.getElementById('owa_notificationBadge');
-        var items  = document.getElementById('owa_notificationItems');
-
-        if (!toggle) { return; }
-
-        // Route, nonce and endpoint all come from makeApiLink(): this install
-        // addresses the API as api/index.php?do=...&module=...&version=...,
-        // and assembling path segments here would only work on an install
-        // whose URLs are rewritten.
-        var apiUrl      = <?php echo $view->scriptJson( $owa_apiUrl ); ?>;
-        var markReadUrl = <?php echo $view->scriptJson( $owa_markReadUrl ); ?>;
-        var dismissUrl  = <?php echo $view->scriptJson( $owa_dismissUrl ); ?>;
-
-        // The words this script writes, translated; %s is a number.
-        var TEXT = <?php echo $view->scriptJson( array(
-            'nothingNew' => \OWA\Core\CoreAPI::t( 'Nothing new.' ),
-            'justNow'    => \OWA\Core\CoreAPI::t( 'just now' ),
-            'minutes'    => \OWA\Core\CoreAPI::t( '%sm', 'minutes ago, abbreviated' ),
-            'hours'      => \OWA\Core\CoreAPI::t( '%sh', 'hours ago, abbreviated' ),
-            'days'       => \OWA\Core\CoreAPI::t( '%sd', 'days ago, abbreviated' ),
-            'dismiss'    => \OWA\Core\CoreAPI::t( 'Dismiss notification' ),
-        ) ); ?>;
-
-        // The badge counts the UNREAD rows we hold -- not how many rows there
-        // are, because a read notification stays on screen without counting.
-        // Still derived from the content and nowhere else.
-        function paintBadge() {
-            var unread = items.querySelectorAll('.owa_notification.is-unread').length;
-
-            badge.textContent = unread;
-
-            /*
-             * Nothing unread, nothing to show.
-             *
-             * This used to stay put and go grey, because a badge that comes and
-             * goes moves the bell under the cursor. It no longer can: the badge
-             * overhangs the button and is not part of what spaces the header
-             * controls, so showing or hiding it moves nothing.
-             */
-            badge.hidden = unread === 0;
-        }
-
-        function markRead(id, el) {
-            if (!el.classList.contains('is-unread')) { return; }
-
-            // Unbold immediately; the row stays either way, and a click that
-            // looks like nothing happened invites a second one.
-            el.classList.remove('is-unread');
-            paintBadge();
-
-            fetch(markReadUrl + '&notificationId=' + encodeURIComponent(id),
-                  { method: 'POST', credentials: 'same-origin' })
-                .catch(function () { /* the next load re-reads the truth */ });
-        }
-
-        function dismiss(id, el) {
-            fetch(dismissUrl + '&notificationId=' + encodeURIComponent(id),
-                  { method: 'DELETE', credentials: 'same-origin' })
-                .then(function (r) {
-                    if (!r.ok) { return; }
-                    // Remove locally rather than refetching: the server has
-                    // just been told, and a round trip to learn what we did
-                    // would make the click feel slower than it is.
-                    el.remove();
-                    paintBadge();
-                    if (!items.querySelector('.owa_notification')) { renderEmpty(); }
-                })
-                .catch(function () { /* leave it on screen; the next load re-reads */ });
-        }
-
-        function renderEmpty() {
-            items.innerHTML = '';
-            paintBadge();
-            var p = document.createElement('p');
-            p.className = 'info_text';
-            p.textContent = TEXT.nothingNew;
-            items.appendChild(p);
-        }
-
-        // An icon per TYPE. Unknown types get a neutral bell rather than
-        // nothing, so a row never renders with an empty hole where the icon is.
-        var ICONS = { release: 'fa-box', general: 'fa-bell' };
-
-        // The install's locale (OWA.config.locale, else the one this page was
-        // rendered in); undefined is the browser's own. Read when a time is
-        // written, after config_dom.php has set OWA.config.
-        function locale() {
-            return (window.OWA && OWA.config && OWA.config.locale)
-                || <?php echo $view->scriptJson( \OWA\Core\Strings::locale() === \OWA\Core\Strings::SOURCE_LOCALE ? null : \OWA\Core\Strings::htmlLang() ); ?>
-                || undefined;
-        }
-
-        // "3d ago" rather than a date, the way a notification list reads, in
-        // the locale's own words where the browser has Intl.RelativeTimeFormat.
-        // Falls back to a real date past a week, where "37d" stops being useful.
-        function relativeTime(seconds) {
-            var diff = Math.floor(Date.now() / 1000) - seconds;
-            var unit = diff < 3600 ? ['minute', 60, TEXT.minutes]
-                     : diff < 86400 ? ['hour', 3600, TEXT.hours] : ['day', 86400, TEXT.days];
-
-            if (diff < 60) { return TEXT.justNow; }
-
-            if (diff < 604800) {
-                var n = Math.floor(diff / unit[1]);
-
-                try {
-                    return new Intl.RelativeTimeFormat(locale(), { style: 'narrow', numeric: 'always' }).format(-n, unit[0]);
-                } catch (e) {
-                    return unit[2].replace('%s', n);
-                }
-            }
-
-            try {
-                return new Intl.DateTimeFormat(locale(), { month: 'short', day: 'numeric' }).format(new Date(seconds * 1000));
-            } catch (e) {
-                return new Date(seconds * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-            }
-        }
-
-        function render(list) {
-            items.innerHTML = '';
-
-            if (!list.length) { renderEmpty(); return; }
-
-            list.forEach(function (n) {
-                var row = document.createElement('div');
-                // is-unread is what the styling keys on, and what the badge
-                // counts. One class, one source of truth.
-                row.className = 'owa_notification' + (n.read ? '' : ' is-unread');
-
-                var icon = document.createElement('span');
-                icon.className = 'owa_notificationIcon';
-                var glyph = document.createElement('i');
-                glyph.className = 'fas ' + (ICONS[n.type] || ICONS.general);
-                glyph.setAttribute('aria-hidden', 'true');
-                icon.appendChild(glyph);
-                row.appendChild(icon);
-
-                var main = document.createElement('div');
-                main.className = 'owa_notificationMain';
-
-                var title = document.createElement('div');
-                title.className = 'owa_notificationTitle';
-                if (n.url) {
-                    var a = document.createElement('a');
-                    a.href = n.url;
-                    // A new tab, deliberately: these point at github.com, and
-                    // marking read is a request of our own -- letting the same
-                    // click navigate away races it.
-                    a.target = '_blank';
-                    a.rel = 'noopener noreferrer';
-                    // textContent throughout: these are other people's words
-                    // and none of them are markup here.
-                    a.textContent = n.title;
-                    title.appendChild(a);
-                } else {
-                    title.textContent = n.title;
-                }
-                main.appendChild(title);
-
-                if (n.excerpt) {
-                    var excerpt = document.createElement('div');
-                    excerpt.className = 'owa_notificationExcerpt';
-                    excerpt.textContent = n.excerpt;
-                    main.appendChild(excerpt);
-                }
-
-                if (n.published_at) {
-                    var when = document.createElement('div');
-                    when.className = 'owa_notificationWhen';
-                    when.textContent = relativeTime(n.published_at);
-                    main.appendChild(when);
-                }
-
-                row.appendChild(main);
-
-                // An x, not the word "Dismiss": the row is already busy, and
-                // this is the control people look for in the corner.
-                var x = document.createElement('button');
-                x.type = 'button';
-                x.className = 'owa_notificationDismiss';
-                x.setAttribute('aria-label', TEXT.dismiss);
-                x.textContent = '\u00d7';
-                x.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dismiss(n.id, row);
-                });
-                row.appendChild(x);
-
-                // Anywhere on the row, the way a notification list behaves --
-                // not only the headline.
-                row.addEventListener('click', function () { markRead(n.id, row); });
-
-                items.appendChild(row);
-            });
-        }
-
-        fetch(apiUrl, { credentials: 'same-origin' })
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (data) {
-                // The REST view wraps everything in an envelope --
-                // {requestId, httpResponse, error, data} -- so the payload is
-                // one level down. Reading data.notifications silently yields
-                // undefined and an empty badge, which looks exactly like
-                // "nothing to show".
-                var list = (data && data.data && data.data.notifications) || [];
-                render(list);
-                paintBadge();
-            })
-            .catch(function () { renderEmpty(); });
-
-        toggle.addEventListener('click', function () {
-            var open = !panel.hidden;
-            panel.hidden = open;
-            toggle.setAttribute('aria-expanded', String(!open));
-        });
-
-        document.addEventListener('click', function (e) {
-            if (!panel.hidden && !e.target.closest('.owa_notificationBell')) {
-                panel.hidden = true;
-                toggle.setAttribute('aria-expanded', 'false');
-            }
-        });
-    })();
-    </script>
 <?php endif; ?>
     <?php
         /*
@@ -424,74 +193,6 @@
             <?php endforeach;?>
         </div>
     </span>
-    <script>
-    (function () {
-        /*
-         * Both header menus are wired by one routine.
-         *
-         * They behave identically -- open on the control, close on a click
-         * outside, close on Escape, report state through aria-expanded -- and
-         * two copies of that is how the two come to differ.
-         */
-        var menus = [];
-
-        function wire(toggleId, panelId, wrapperClass) {
-
-            var toggle = document.getElementById(toggleId);
-            var panel  = document.getElementById(panelId);
-
-            if (!toggle || !panel) {
-                return;
-            }
-
-            var menu = {
-                toggle: toggle,
-                panel: panel,
-                wrapper: wrapperClass,
-                close: function () {
-                    panel.hidden = true;
-                    toggle.setAttribute('aria-expanded', 'false');
-                }
-            };
-
-            toggle.addEventListener('click', function () {
-
-                var open = !panel.hidden;
-
-                // One at a time: opening either closes the other, so two
-                // panels cannot overlap each other in the corner of the bar.
-                menus.forEach(function (other) {
-                    if (other !== menu) {
-                        other.close();
-                    }
-                });
-
-                panel.hidden = open;
-                toggle.setAttribute('aria-expanded', String(!open));
-            });
-
-            document.addEventListener('click', function (e) {
-                if (!panel.hidden && !e.target.closest('.' + wrapperClass)) {
-                    menu.close();
-                }
-            });
-
-            // Escape closes it and puts the focus back on the control that
-            // opened it, so a keyboard user is not left adrift in the page.
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && !panel.hidden) {
-                    menu.close();
-                    toggle.focus();
-                }
-            });
-
-            menus.push(menu);
-        }
-
-        wire('owa_userMenuToggle', 'owa_userMenuPanel', 'owa_userMenu');
-        wire('owa_helpMenuToggle', 'owa_helpMenuPanel', 'owa_helpMenu');
-    })();
-    </script>
     <div class="post-nav"></div>
     <?php if (!empty($view->service_msg)): ?>
     <div class="owa_headerServiceMsg"><?php echo $view->service_msg; ?></div>
