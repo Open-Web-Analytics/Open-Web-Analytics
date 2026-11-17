@@ -19,6 +19,10 @@ namespace OWA\Core\View;
 
 class AdminPage extends \OWA\Core\View {
 
+    /**
+     * @param  array<string, mixed> $data the view's data, View::$data: name => value
+     * @return void
+     */
     public function render($data) {
 
         // Set Page title

@@ -9,6 +9,9 @@ namespace OWA\Core\View;
  */
 class Ajax extends \OWA\Core\View {
 
+    /**
+     * @return void
+     */
     public function render() {
 
         $this->t->set_template( 'wrapper_blank.php' );

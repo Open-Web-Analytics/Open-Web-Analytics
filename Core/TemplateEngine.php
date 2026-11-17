@@ -47,7 +47,7 @@ class TemplateEngine {
     /**
      * Template Variables
      *
-     * @var array
+     * @var array<string, mixed> name => the value a template reads as $view->name, any type
      */
     public $vars = array();
 
@@ -70,7 +70,8 @@ class TemplateEngine {
     /**
      * Set the template file
      *
-     * @param string $file
+     * @param  string|null $file
+     * @return void
      */
     public function set_template($file = null) {
         $this->file = $this->template_dir.$file;
@@ -81,7 +82,8 @@ class TemplateEngine {
      * Set a template variable
      *
      * @param string $name
-     * @param mixed $value
+     * @param mixed $value any type; a template engine is fetched and stored as its output
+     * @return void
      * @access public
      */
     public function set($name, $value) {
