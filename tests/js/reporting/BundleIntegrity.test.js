@@ -86,7 +86,7 @@ describe('reporting bundle build integrity', () => {
     });
 
     test('reporting-entry imports the vendor plugins in load-bearing order', () => {
-        // Order matters: jquery-migrate before the plugins; flot core -> time,
+        // Order matters: jQuery UI before the other plugins; flot core -> time,
         // with time.js before the OWA area chart (xaxis.mode:"time");
         // and the OWA namespace modules last. Assert the relative sequence.
         //
@@ -96,7 +96,6 @@ describe('reporting bundle build integrity', () => {
         const entry = fs.readFileSync(entryPath, 'utf8')
             .split('\n').filter((l) => /^\s*import\b/.test(l)).join('\n');
         const orderedTokens = [
-            'jquery-migrate',
             'jquery-ui-dist/jquery-ui.js',
             'chosen-js/chosen.jquery.js',
             'jquery-sparkline',

@@ -12,9 +12,8 @@ reporting safety net for the Phase 3 jQuery migration:
 
 The jsdom layers cannot paint; these Playwright tests drive headless Chromium
 against a live OWA dashboard. As of Phase 3.2 the reporting bundle runs on jQuery
-**3.6.0** (jquery-migrate + a `$.browser`/`$.curCSS` compat shim bridge the
-legacy 1.6/1.8-era plugins, and jqGrid 3.6.5 was replaced by free-jqgrid 4.15.5),
-so the version assertion here (and in the build-integrity test) pins 3.6.0 — a
+**3.6.0** with no compat layer: every plugin it carries runs on jQuery 3 as it
+is. The version assertion here (and in the build-integrity test) pins 3.6.0 — a
 future bump must be a conscious, reviewed change.
 
 ## Why this isn't in CI
