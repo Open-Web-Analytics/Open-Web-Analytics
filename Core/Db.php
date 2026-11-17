@@ -30,13 +30,29 @@ namespace OWA\Core;
  * @since        owa 1.0.0
  *
  * The query methods every driver implements (Db\Mysql, Db\Pdo); declared
- * here so code holding a Db can call them.
+ * here so code holding a Db can call them. A row comes back column => value.
+ * Db\Mysql and Db\Pdo give every value as a string or NULL; another driver
+ * may give other scalars.
  *
- * @method mixed      query( string $sql, array $params = array() )
- * @method array|null get_row( string $sql, array $params = array() )
- * @method array|null get_results( string $sql, array $params = array() )
- * @method \Generator get_result_iterator( string $sql, array $params = array() )
- * @method bool       tableExists( string $table_name )
+ * @phpstan-type Row array<string, scalar|null>
+ * @phpstan-type Bindings array<scalar|null>
+ * @phpstan-type QueryResult \mysqli_result|\PDOStatement|bool
+ * @phpstan-type ConstraintValue scalar|array<scalar|null>|null
+ * @phpstan-type Constraint array{name: string, value: ConstraintValue, operator: string, sql?: bool}
+ * @phpstan-type PartitionRanges array<string, string>
+ * @phpstan-type Partition array{name: string, less_than: string, rows: int}
+ * @phpstan-type Span array{name: string, start: string, less_than: string}
+ * @phpstan-type Reshape array{names: list<string>, ranges: PartitionRanges, start: string, less_than: string}
+ *
+ * Bindings are bound in order; their keys are ignored. PartitionRanges are
+ * partition name => the yyyymmdd it is less than. QueryResult is a result set,
+ * true for a statement with none, false on failure.
+ *
+ * @method QueryResult    query( string $sql, Bindings $params = array() )
+ * @method Row|null       get_row( string $sql, Bindings $params = array() )
+ * @method list<Row>|null get_results( string $sql, Bindings $params = array() )
+ * @method \Generator<int, Row, mixed, void> get_result_iterator( string $sql, Bindings $params = array() )
+ * @method bool           tableExists( string $table_name )
  */
 class Db extends \OWA\Core\Base {
 
@@ -72,6 +88,11 @@ class Db extends \OWA\Core\Base {
      */
     public $connection;
 
+    /**
+     * What the constructor was given, by name.
+     *
+     * @var array{host: string, port: int|string|null, user: string, password: string, name: string, open_new_connection: bool, persistant: bool}
+     */
     public $connectionParams;
 
     /**
@@ -97,14 +118,14 @@ class Db extends \OWA\Core\Base {
     /**
      * Rows
      *
-     * @var array
+     * @var list<Row>
      */
     public $result;
 
     /**
      * Caller Params
      *
-     * @var array
+     * @var array<string, mixed>
      */
     public $params = array();
 
@@ -123,9 +144,10 @@ class Db extends \OWA\Core\Base {
     public $rows_affected;
 
     /**
-     * Storage Array for components of sql queries
+     * Storage Array for components of sql queries: clause => its parts, a
+     * different shape per clause
      *
-     * @var array
+     * @var array<string, mixed>
      */
     public $_sqlParams = array();
 
@@ -155,7 +177,7 @@ class Db extends \OWA\Core\Base {
      * assembles them in a different order, would silently transpose values
      * between columns. DbBindingTest pins the order for exactly this reason.
      *
-     * @var array
+     * @var list<mixed> whatever bindValue() was given
      */
     public $_bindings = array();
 
@@ -230,6 +252,7 @@ class Db extends \OWA\Core\Base {
      *
      * @param string $message  what the database said
      * @param string $sql      the statement it refused
+     * @param bool   $is_constraint_violation  a key or foreign key stopped it
      * @return void
      */
     protected function logQueryError( $message, $sql, $is_constraint_violation = false ) {
@@ -288,6 +311,15 @@ class Db extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param string $db_host
+     * @param int|string|null $db_port  empty for the server's default
+     * @param string $db_name
+     * @param string $db_user
+     * @param string $db_password
+     * @param bool   $open_new_connection
+     * @param bool   $persistant
+     */
     public function __construct($db_host, $db_port, $db_name, $db_user, $db_password, $open_new_connection = true, $persistant = false) {
 
         $this->connectionParams = array('host' => $db_host,
@@ -309,13 +341,22 @@ class Db extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * Open the connection. The base class has no transport.
+     *
+     * @return bool
+     */
     public function connect() {
 
 
         return false;
     }
 
-    /** While true, a failed connect logs nothing: canConnect() is asking. */
+    /**
+     * While true, a failed connect logs nothing: canConnect() is asking.
+     *
+     * @var bool
+     */
     protected $quiet_connect = false;
 
     /**
@@ -350,7 +391,11 @@ class Db extends \OWA\Core\Base {
         }
     }
 
-    /** Log a failed connect, unless canConnect() is asking. */
+    /**
+     * Log a failed connect, unless canConnect() is asking.
+     *
+     * @return void
+     */
     protected function connectFailed() {
 
         if ( ! $this->quiet_connect ) {
@@ -359,16 +404,28 @@ class Db extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * Close the connection. The base class has none to close.
+     *
+     * @return bool|void
+     */
     public function close() {
 
         return false;
     }
 
+    /**
+     * @return bool
+     */
     public function isConnectionEstablished() {
 
         return $this->connection_status;
     }
 
+    /**
+     * @param  string $name a key of $connectionParams
+     * @return int|string|bool|void|null the value; nothing for a name that is not one
+     */
     public function getConnectionParam($name) {
 
         if (array_key_exists($name, $this->connectionParams)) {
@@ -418,12 +475,17 @@ class Db extends \OWA\Core\Base {
      * generateSelectQuerySql() is public and the parity tests use it that way.
      * Without this, bindings from a discarded statement would prepend
      * themselves to the next one.
+     *
+     * @return void
      */
     public function resetBindings() {
 
         $this->_bindings = array();
     }
 
+    /**
+     * @return list<mixed> the values bindValue() was given, in order
+     */
     public function getBindings() {
 
         return $this->_bindings;
@@ -448,6 +510,11 @@ class Db extends \OWA\Core\Base {
         return implode( ', ', array_fill( 0, $count, '?' ) );
     }
 
+    /**
+     * @param  string|array{0: string, 1: string} $name a column or expression, or [it, alias]
+     * @param  string $as
+     * @return void
+     */
     public function selectColumn($name, $as = '') {
 
         if (is_array($name)) {
@@ -460,8 +527,15 @@ class Db extends \OWA\Core\Base {
         return;
     }
 
+    /**
+     * selectColumn(), without the alias: $as is ignored.
+     *
+     * @param  string|array{0: string, 1: string} $name
+     * @param  string $as
+     * @return void
+     */
     public function select($name, $as = '') {
-        return $this->selectColumn($name, $as = '');
+        $this->selectColumn($name, $as = '');
     }
 
     /**
@@ -469,6 +543,12 @@ class Db extends \OWA\Core\Base {
      * apart: a second condition on the same column (ResultSetManager, a
      * dimension filtered twice in one request) passes its own key, and both
      * apply. The clause is built from 'name', never the key.
+     *
+     * @param  string $name
+     * @param  ConstraintValue $value  a list for 'in'; ['start' => .., 'end' => ..] for 'between'
+     * @param  string $operator  one of ALLOWED_OPERATORS
+     * @param  string|null $key
+     * @return void
      */
     public function where($name, $value, $operator = '=', $key = null) {
 
@@ -490,14 +570,23 @@ class Db extends \OWA\Core\Base {
      *
      * @param string $key
      * @param string $sql
-     * @param array  $bindings
+     * @param Bindings $bindings
+     * @return void
      */
     public function whereSql( $key, $sql, array $bindings = array() ) {
 
         $this->_sqlParams['where'][ $key ] = array( 'name' => $sql, 'value' => $bindings, 'operator' => 'sql', 'sql' => true );
     }
 
-    /** As where(), for a metric. */
+    /**
+     * As where(), for a metric.
+     *
+     * @param  string $name
+     * @param  ConstraintValue $value
+     * @param  string $operator
+     * @param  string|null $key
+     * @return void
+     */
     public function having($name, $value, $operator = '=', $key = null) {
 
         if ( ! \OWA\Core\Lib::isEmpty( $value ) ) {
@@ -511,42 +600,75 @@ class Db extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  string $col
+     * @return void
+     */
     public function groupBy($col) {
 
         $this->_sqlParams['groupby'][] = $col;
         return;
     }
 
+    /**
+     * @param  string $col
+     * @param  string $flag ASC or DESC; anything else is the default direction
+     * @return void
+     */
     public function orderBy($col, $flag = '') {
 
         $this->_sqlParams['orderby'][] = array($col, $flag);
         return;
     }
 
+    /**
+     * The direction for an orderBy() that gave none.
+     *
+     * @param  string $flag
+     * @return void
+     */
     public function order($flag) {
 
         $this->_sqlParams['order'] = $flag;
         return;
     }
 
+    /**
+     * @param  int|string $value
+     * @return void
+     */
     public function limit($value) {
 
         $this->_sqlParams['limit'] = $value;
         return;
     }
 
+    /**
+     * @param  int|string $value
+     * @return void
+     */
     public function offset($value) {
 
         $this->_sqlParams['offset'] = $value;
         return;
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $value  bound as given
+     * @return void
+     */
     public function set($name, $value) {
 
         $this->_sqlParams['set_values'][] = array('name' => $name, 'value' => $value);
         return;
     }
 
+    /**
+     * Run the statement built.
+     *
+     * @return list<Row>|QueryResult|null  get_results() for a select, query() otherwise
+     */
     public function executeQuery() {
 
         switch($this->_sqlParams['query_type']) {
@@ -573,11 +695,17 @@ class Db extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @return list<Row>|null  null for no rows
+     */
     public function getAllRows() {
 
          return $this->_selectQuery();
     }
 
+    /**
+     * @return Row|null
+     */
     public function getOneRow() {
 
         $this->limit(1);
@@ -586,10 +714,19 @@ class Db extends \OWA\Core\Base {
         //return is_null($ret)?null:$ret[0];
     }
 
+    /**
+     * @param  string $sql
+     * @return void
+     */
     public function _setSql($sql) {
         $this->_sql_statement = $sql;
     }
 
+    /**
+     * @param  string|array{0: string, 1: string} $name a table, or [it, alias]
+     * @param  string $as
+     * @return void
+     */
     public function selectFrom($name, $as = '') {
 
         if (is_array($name)) {
@@ -601,29 +738,49 @@ class Db extends \OWA\Core\Base {
         $this->_sqlParams['from'][$name] = array('name' => $name, 'as' => $as);
     }
 
+    /**
+     * @param  string|array{0: string, 1: string} $name
+     * @param  string $as
+     * @return void
+     */
     public function from( $name, $as = '' ) {
 
-        return $this->selectFrom( $name, $as );
+        $this->selectFrom( $name, $as );
     }
 
+    /**
+     * @param  string $table
+     * @return void
+     */
     public function insertInto($table) {
 
         $this->_sqlParams['query_type'] = 'insert';
         $this->_sqlParams['table'] = $table;
     }
 
+    /**
+     * @param  string $table
+     * @return void
+     */
     public function deleteFrom($table) {
 
         $this->_sqlParams['query_type'] = 'delete';
         $this->_sqlParams['table'] = $table;
     }
 
+    /**
+     * @param  string $table
+     * @return void
+     */
     public function updateTable($table) {
 
         $this->_sqlParams['query_type'] = 'update';
         $this->_sqlParams['table'] = $table;
     }
 
+    /**
+     * @return list<Row>|QueryResult|null  query()'s result
+     */
     public function _insertQuery() {
 
         $this->resetBindings();
@@ -657,6 +814,9 @@ class Db extends \OWA\Core\Base {
 
     }
 
+    /**
+     * @return string
+     */
     public function generateSelectQuerySql() {
 
         $this->resetBindings();
@@ -701,6 +861,9 @@ class Db extends \OWA\Core\Base {
         return $sql;
     }
 
+    /**
+     * @return list<Row>|QueryResult|null  get_results()'s result
+     */
     public function _selectQuery() {
 
         $this->generateSelectQuerySql();
@@ -709,6 +872,9 @@ class Db extends \OWA\Core\Base {
     }
 
 
+    /**
+     * @return list<Row>|QueryResult|null  query()'s result; false when refused
+     */
     public function _updateQuery() {
 
         if ( $this->refusesUnfiltered( 'UPDATE' ) ) {
@@ -750,6 +916,9 @@ class Db extends \OWA\Core\Base {
         return $this->_query();
     }
 
+    /**
+     * @return list<Row>|QueryResult|null  query()'s result; false when refused
+     */
     public function _deleteQuery() {
 
         if ( $this->refusesUnfiltered( 'DELETE' ) ) {
@@ -793,6 +962,10 @@ class Db extends \OWA\Core\Base {
         return true;
     }
 
+    /**
+     * @param  string $sql_params_name  a clause's key in $_sqlParams
+     * @return mixed  the clause's parts as stored, a different shape per clause; false when empty
+     */
     public function _fetchSqlParams($sql_params_name) {
 
         if (array_key_exists($sql_params_name, $this->_sqlParams)):
@@ -806,6 +979,9 @@ class Db extends \OWA\Core\Base {
         endif;
     }
 
+    /**
+     * @return string|void  nothing with no conditions
+     */
     public function _makeWhereClause() {
 
         $params = $this->_fetchSqlParams('where');
@@ -816,6 +992,9 @@ class Db extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @return string|void  nothing with no conditions
+     */
     public function _makeHavingClause() {
 
         $params = $this->_fetchSqlParams('having');
@@ -840,6 +1019,11 @@ class Db extends \OWA\Core\Base {
      *
      * Returns the expression untouched when tolerance does not apply, so the
      * call sites read the same whether or not the operator negates.
+     *
+     * @param  bool   $apply
+     * @param  string $name
+     * @param  string $expression
+     * @return string
      */
     protected function tolerateNull( $apply, $name, $expression ) {
 
@@ -874,6 +1058,9 @@ class Db extends \OWA\Core\Base {
      * string literals and broke the same way. The escaped backslashes also
      * desynchronised the placeholder count, so the driver's binding guard fired
      * instead of a syntax error, which is what hid it.
+     *
+     * @param  array<string, Constraint>|false $params
+     * @return string|void  nothing with no conditions
      */
     public function _makeConstraintClause( $type, $params ) {
          
@@ -1031,7 +1218,8 @@ class Db extends \OWA\Core\Base {
      * values, which is a defect worth hearing about immediately rather than
      * discovering later.
      *
-     * @param string $string
+     * @param string|null $string
+     * @return string|null
      * @throws \RuntimeException always
      */
     public function prepare ( $string ) {
@@ -1044,6 +1232,9 @@ class Db extends \OWA\Core\Base {
         ) );
     }
 
+    /**
+     * @return string|false  false with no table
+     */
     public function _makeFromClause() {
 
         $from = '';
@@ -1084,6 +1275,9 @@ class Db extends \OWA\Core\Base {
 
     }
 
+    /**
+     * @return string|void
+     */
     public function _makeGroupByClause() {
 
         $params = $this->_fetchSqlParams('groupby');
@@ -1099,6 +1293,9 @@ class Db extends \OWA\Core\Base {
 
     }
 
+    /**
+     * @return string|void
+     */
     public function _makeOrderByClause() {
 
         $sorts = $this->_fetchSqlParams('orderby');
@@ -1138,6 +1335,9 @@ class Db extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @return string|void
+     */
     public function _makeLimitClause() {
 
         $param = $this->_fetchSqlParams('limit');
@@ -1156,6 +1356,9 @@ class Db extends \OWA\Core\Base {
 
     }
 
+    /**
+     * @return string|void
+     */
     public function _makeOffsetClause() {
 
         $param = $this->_fetchSqlParams('offset');
@@ -1169,6 +1372,11 @@ class Db extends \OWA\Core\Base {
     }
 
 
+    /**
+     * @param  list<string>|string $values  a string is returned as it is
+     * @param  string $delimiter
+     * @return string
+     */
     public function _makeDelimitedValueList($values, $delimiter = ', ') {
 
         $items = '';
@@ -1202,6 +1410,11 @@ class Db extends \OWA\Core\Base {
 
     }
 
+    /**
+     * Run the statement built, by its query type, and reset the builder.
+     *
+     * @return list<Row>|QueryResult|null  null when no query type was set
+     */
     public function _query() {
 
         $ret = null;
@@ -1238,6 +1451,8 @@ class Db extends \OWA\Core\Base {
         /**
      * Drops a table
      *
+     * @param  string $table_name
+     * @return QueryResult
      */
     public function dropTable($table_name) {
 
@@ -1248,6 +1463,9 @@ class Db extends \OWA\Core\Base {
     /**
      * Rename a table
      *
+     * @param  string $table_name
+     * @param  string $new_table_name
+     * @return QueryResult
      */
     public function renameTable($table_name, $new_table_name) {
 
@@ -1257,6 +1475,12 @@ class Db extends \OWA\Core\Base {
     /**
      * Renames column
      * idempotent
+     *
+     * @param  string $table_name
+     * @param  string $old
+     * @param  string $new
+     * @param  string $defs  the column's definition
+     * @return QueryResult
      */
     public function renameColumn($table_name, $old, $new, $defs) {
 
@@ -1267,6 +1491,11 @@ class Db extends \OWA\Core\Base {
     /**
      * Adds new column to table
      * idempotent
+     *
+     * @param  string $table_name
+     * @param  string $column_name
+     * @param  string $column_definition
+     * @return QueryResult
      */
     public function addColumn($table_name, $column_name, $column_definition) {
 
@@ -1276,6 +1505,9 @@ class Db extends \OWA\Core\Base {
     /**
      * Drops a column from a table
      *
+     * @param  string $table_name
+     * @param  string $column_name
+     * @return QueryResult
      */
     public function dropColumn($table_name, $column_name) {
 
@@ -1286,6 +1518,10 @@ class Db extends \OWA\Core\Base {
     /**
      * Changes the definition of a column
      *
+     * @param  string $table_name
+     * @param  string $column_name
+     * @param  string $column_definition
+     * @return QueryResult
      */
     public function modifyColumn($table_name, $column_name, $column_definition) {
 
@@ -1299,6 +1535,9 @@ class Db extends \OWA\Core\Base {
      * comparison against information_schema needs the form GROUP_CONCAT
      * produces, so whitespace is removed. Returns an empty array if any part is
      * not a bare identifier, which is the caller's signal to refuse.
+     *
+     * @param  string $column_name
+     * @return list<string>
      */
     protected function normalizeIndexColumns( $column_name ) {
 
@@ -1325,6 +1564,10 @@ class Db extends \OWA\Core\Base {
      * Schema introspection is driver-specific, so the driver answers this. A
      * driver that cannot introspect reports false, which preserves the old
      * add-unconditionally behaviour rather than silently skipping the index.
+     *
+     * @param  string $table_name
+     * @param  string $column_name  one column, or several comma-separated
+     * @return bool
      */
     public function indexExists( $table_name, $column_name ) {
 
@@ -1345,26 +1588,41 @@ class Db extends \OWA\Core\Base {
      * The partitions on a table. Nothing, where partitioning is unsupported.
      *
      * @param string $table_name
-     * @return array
+     * @return list<Partition>
      */
     public function listPartitions( $table_name ) {
 
         return array();
     }
 
-    /** Whether a database exists. Unknown, without introspection. */
+    /**
+     * Whether a database exists. Unknown, without introspection.
+     *
+     * @param  string $name
+     * @return bool|null  null when it cannot be told
+     */
     public function databaseExists( $name ) {
 
         return null;
     }
 
-    /** Create a database. Not supported without a dialect that can. */
+    /**
+     * Create a database. Not supported without a dialect that can.
+     *
+     * @param  string $name
+     * @return bool
+     */
     public function createDatabase( $name ) {
 
         return false;
     }
 
-    /** Drop a database. Not supported without a dialect that can. */
+    /**
+     * Drop a database. Not supported without a dialect that can.
+     *
+     * @param  string $name
+     * @return bool
+     */
     public function dropDatabase( $name ) {
 
         return false;
@@ -1374,7 +1632,7 @@ class Db extends \OWA\Core\Base {
      * A table's size as the server estimates it. Unknown, without introspection.
      *
      * @param string $table_name
-     * @return array|null ['rows' => int, 'bytes' => int]
+     * @return array{rows: int, bytes: int}|null
      */
     public function tableSize( $table_name ) {
 
@@ -1487,7 +1745,7 @@ class Db extends \OWA\Core\Base {
      * The lock row for a job, for reporting. Null when unheld.
      *
      * @param string $job_name
-     * @return array|null
+     * @return Row|null
      */
     public function getJobLock( $job_name ) {
 
@@ -1505,7 +1763,7 @@ class Db extends \OWA\Core\Base {
      * @param string $table_name
      * @param string $partition
      * @param string $column
-     * @return array|null
+     * @return array{rows: int, min: string|null, max: string|null}|null
      */
     public function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
 
@@ -1663,7 +1921,7 @@ class Db extends \OWA\Core\Base {
      *
      * @param int    $daily_months  how many of the leading months are daily
      * @param string $granularity   the rest of the lead; the operator's choice
-     * @return array  name => less_than
+     * @return PartitionRanges
      */
     public static function makeLeadRanges( $daily_months = 0, $granularity = 'monthly' ) {
 
@@ -1738,7 +1996,7 @@ class Db extends \OWA\Core\Base {
      * @param int|string $start_yyyymmdd
      * @param int|string $end_yyyymmdd
      * @param string $granularity
-     * @return array name => less_than, in range order
+     * @return PartitionRanges in range order
      */
     public static function makePartitionRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity = 'monthly' ) {
 
@@ -1755,7 +2013,7 @@ class Db extends \OWA\Core\Base {
      * @param int|string $start_yyyymmdd  first day the span holds
      * @param int|string $end_yyyymmdd    first day it does not
      * @param string $granularity
-     * @return array name => less_than
+     * @return PartitionRanges
      */
     public static function makePartitionRangesForSpan( $start_yyyymmdd, $end_yyyymmdd, $granularity = 'monthly' ) {
 
@@ -1769,7 +2027,7 @@ class Db extends \OWA\Core\Base {
      * @param int|string $end_yyyymmdd
      * @param string $granularity
      * @param bool   $exact  treat the end as exclusive and clamp to it
-     * @return array
+     * @return PartitionRanges
      */
     private static function buildRanges( $start_yyyymmdd, $end_yyyymmdd, $granularity, $exact ) {
 
@@ -1841,7 +2099,7 @@ class Db extends \OWA\Core\Base {
      * Build the clause that partitions a table by range.
      *
      * @param string $column
-     * @param array  $ranges  name => less_than
+     * @param PartitionRanges $ranges
      * @param bool   $with_maxvalue  append the catch-all
      * @return string  empty when the driver cannot partition
      */
@@ -1876,8 +2134,8 @@ class Db extends \OWA\Core\Base {
      *
      * @param string $table_name
      * @param string $column
-     * @param array  $ranges
-     * @return bool
+     * @param PartitionRanges $ranges
+     * @return QueryResult  false when refused
      */
     public function partitionTable( $table_name, $column, $ranges ) {
 
@@ -1968,7 +2226,12 @@ class Db extends \OWA\Core\Base {
         return $this->partition_change_busy;
     }
 
-    /** The variable that caps a statement's time on this server, once asked. */
+    /**
+     * The variable that caps a statement's time on this server, once asked:
+     * '' when it has none.
+     *
+     * @var string|null
+     */
     private $select_time_variable = null;
 
     /**
@@ -2084,8 +2347,8 @@ class Db extends \OWA\Core\Base {
      * done a period at a time rather than rebuilding the whole table.
      *
      * @param string $table_name
-     * @param array  $from   partition names being replaced
-     * @param array  $ranges name => less_than to replace them with
+     * @param list<string> $from   partition names being replaced
+     * @param PartitionRanges $ranges to replace them with
      * @return bool
      */
     public function reorganizePartitions( $table_name, $from, $ranges ) {
@@ -2248,8 +2511,8 @@ class Db extends \OWA\Core\Base {
      * publishing from then on.
      *
      * @param string $table_name
-     * @param array  $add   column name => type definition
-     * @param array  $drop  column names
+     * @param array<string, string> $add   column name => type definition
+     * @param list<string> $drop  column names
      * @return bool
      */
     public function alterColumnsRebuilding( $table_name, array $add = array(), array $drop = array() ) {
@@ -2380,7 +2643,7 @@ class Db extends \OWA\Core\Base {
      * encoded in its name, which is what this class's own naming provides.
      *
      * @param string $table_name
-     * @return array of ['name','start','less_than']
+     * @return list<Span>
      */
     public function getPartitionSpans( $table_name ) {
 
@@ -2449,8 +2712,8 @@ class Db extends \OWA\Core\Base {
      * Returns null where the date is unusable, in which case the caller simply
      * does not constrain -- slower, never wrong.
      *
-     * @param mixed $session_yyyymmdd
-     * @return array|null ['start','end'] as yyyymmdd, or null where unusable
+     * @param mixed $session_yyyymmdd  a stored date, any type
+     * @return array{start: string, end: string}|null yyyymmdd, or null where unusable
      */
     public static function factDateRange( $session_yyyymmdd ) {
 
@@ -2499,8 +2762,8 @@ class Db extends \OWA\Core\Base {
      * Empty where no usable range exists, so a caller can pass it
      * unconditionally and simply get an unconstrained query.
      *
-     * @param mixed $yyyymmdd
-     * @return array
+     * @param mixed $yyyymmdd  a stored date, any type
+     * @return array{}|array{yyyymmdd: array{value: array{start: string, end: string}, operator: string}}
      */
     public static function factDateConstraint( $yyyymmdd ) {
 
@@ -2666,7 +2929,7 @@ class Db extends \OWA\Core\Base {
      * separately, by the caller that wants them.
      *
      * @param string $table_name
-     * @return array
+     * @return array{partitioned: bool, spans: int, total: int, covers: array{start: string, end: string}|null, granularity: string|null, tiers: list<array{period: string, count: int, start: string, end: string}>, catch_all: string|null, through: string|null, ahead: int|null, lead: int}
      */
     public function describePartitionLayout( $table_name ) {
 
@@ -2787,7 +3050,7 @@ class Db extends \OWA\Core\Base {
      * bound has to be the last one's.
      *
      * @param string $table_name
-     * @param array  $names      partition names, in ascending order
+     * @param list<string> $names  partition names, in ascending order
      * @param string $start      yyyymmdd the merged partition begins at (its name)
      * @param string $less_than  yyyymmdd upper bound -- the last partition's
      * @return bool
@@ -2863,7 +3126,8 @@ class Db extends \OWA\Core\Base {
      * @param string $through         upper boundary to reach (exclusive)
      * @param string $granularity     granularity for the detail window
      * @param int    $detail_months   how much recent history stays fine
-     * @return array name => less_than, ascending
+     * @param int|null $limit         the partition ceiling; null for none
+     * @return PartitionRanges ascending
      */
     public static function makeTieredPartitionRanges( $min_yyyymmdd, $through, $granularity, $detail_months, $limit = null ) {
 
@@ -2925,7 +3189,7 @@ class Db extends \OWA\Core\Base {
      * @param int    $first_year
      * @param string $tail_limit  yyyymmdd the last block ends on (exclusive)
      * @param int    $block       years per block
-     * @return array name => less_than
+     * @return PartitionRanges
      */
     public static function yearBlocks( $first_year, $tail_limit, $block ) {
 
@@ -2995,8 +3259,8 @@ class Db extends \OWA\Core\Base {
      * inputs, different result.
      *
      * @param string $table_name
-     * @param array  $names   partitions to replace, ascending and adjacent
-     * @param array  $ranges  name => less_than, ascending, tiling the same span
+     * @param list<string> $names   partitions to replace, ascending and adjacent
+     * @param PartitionRanges $ranges  ascending, tiling the same span
      * @return bool
      */
     public function reshapePartitions( $table_name, $names, $ranges ) {
@@ -3077,7 +3341,7 @@ class Db extends \OWA\Core\Base {
      * @param int         $limit          most partitions this table may have
      * @param int         $detail_months  periods newer than this are left alone
      * @param string|null $cutoff         yyyymmdd: the first day retention keeps; null keeps everything
-     * @return array ['operations','projected','fits','floor','block_years']
+     * @return array{operations: list<Reshape>, merges: list<Reshape>, projected: int, fits: bool, floor: int, block_years: int}
      */
     public function planPartitionCompaction( $table_name, $limit, $detail_months = self::PARTITION_DETAIL_MONTHS, $cutoff = null ) {
 
@@ -3293,9 +3557,10 @@ class Db extends \OWA\Core\Base {
      * is not. Whole years from the next January on are the tail, merged as
      * before.
      *
-     * @param array  $old     the old tier's spans, ascending
+     * @param list<Span> $old  the old tier's spans, ascending
      * @param string $cutoff  yyyymmdd
-     * @return array tail (spans), operations, doomed (spans the drop takes), added (partitions the split adds)
+     * @return array{tail: list<Span>, operations: list<Reshape>, doomed: int, added: int}
+     *         doomed: spans the drop takes; added: partitions the split adds
      */
     public static function splitAtCutoff( array $old, $cutoff ) {
 
@@ -3388,7 +3653,7 @@ class Db extends \OWA\Core\Base {
      * @param string $granularity
      * @param string $through      yyyymmdd the partitions must reach
      * @param bool   $dry_run
-     * @return array ['added','planned','top','covered']
+     * @return array{added: list<string>, planned: int, top: string|null, covered: bool}
      */
     public function extendPartitions( $table_name, $granularity, $through, $dry_run = false ) {
 
@@ -3474,7 +3739,7 @@ class Db extends \OWA\Core\Base {
      * @param int    $detail_months  how much recent history stays monthly
      * @param int    $limit          the partition ceiling
      * @param bool   $dry_run
-     * @return array ['added','start','covered']
+     * @return array{added: list<string>, start: string|null, covered: bool}
      */
     public function extendPartitionsBack( $table_name, $from, $detail_months = self::PARTITION_DETAIL_MONTHS,
             $limit = self::PARTITION_COUNT_LIMIT, $dry_run = false ) {
@@ -3529,7 +3794,7 @@ class Db extends \OWA\Core\Base {
      * @param int    $others     partitions after the first
      * @param int    $detail_months
      * @param int    $limit
-     * @return array name => less_than
+     * @return PartitionRanges
      */
     public static function backRanges( $from, $less_than, $others, $detail_months, $limit ) {
 
@@ -3575,7 +3840,7 @@ class Db extends \OWA\Core\Base {
      *
      * @param string $table_name
      * @param int|string $older_than_yyyymmdd
-     * @return array ['drop' => string[], 'effective' => string|null, 'straddling' => array|null]
+     * @return array{drop: list<string>, effective: string|null, straddling: Span|null, requested: string|null}
      */
     public function getDroppablePartitions( $table_name, $older_than_yyyymmdd ) {
 
@@ -3647,8 +3912,8 @@ class Db extends \OWA\Core\Base {
      * @param bool        $dry_run      report the statements without running them
      * @param string|null $from         first day to convert, yyyymmdd
      * @param string|null $to           first day not to convert, yyyymmdd
-     * @param array|null  $skip         ['start','less_than'] to leave untouched
-     * @return array ['changed' => string[], 'skipped' => int, 'failed' => string[]]
+     * @param array{start: string, less_than: string}|null $skip  to leave untouched
+     * @return array{changed: list<string>, skipped: int, failed: list<string>, planned: int}
      */
     public function repartitionTable( $table_name, $granularity, $dry_run = false, $from = null, $to = null, $skip = null ) {
 
@@ -3808,10 +4073,10 @@ class Db extends \OWA\Core\Base {
      * Reshape one contiguous run of partitions into one target shape.
      *
      * @param string $table_name
-     * @param array  $spans    the run, in order
-     * @param array  $target   name => less_than
+     * @param list<Span> $spans    the run, in order
+     * @param PartitionRanges $target
      * @param bool   $dry_run
-     * @param array  $result   accumulated across runs
+     * @param array{changed: list<string>, skipped: int, failed: list<string>, planned: int} $result  accumulated across runs
      * @return void
      */
     private function repartitionRun( $table_name, array $spans, array $target, $dry_run, array &$result ) {
@@ -3893,6 +4158,11 @@ class Db extends \OWA\Core\Base {
      * addIndex() ran unnamed, so MySQL assigned a name each time and repeated
      * calls -- an update re-run, or two updates covering the same table --
      * silently accumulated duplicate copies rather than failing.
+     *
+     * @param  string $table_name
+     * @param  string $column_name  one column, or several comma-separated
+     * @param  string $index_definition
+     * @return QueryResult  false when refused, true when already there
      */
     public function addIndex($table_name, $column_name, $index_definition = '') {
 
@@ -3920,8 +4190,11 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Adds index to a column
+     * Drops the index named $column_name
      *
+     * @param  string $table_name
+     * @param  string $column_name
+     * @return QueryResult
      */
     public function dropIndex($table_name, $column_name) {
 
@@ -4094,7 +4367,7 @@ class Db extends \OWA\Core\Base {
      * start from an entity: a table that names none of these takes the
      * database's defaults, which on an existing install can be latin1.
      *
-     * @param array $options table_type, character_encoding, collation, row_format; each optional
+     * @param array{table_type?: string, character_encoding?: string, collation?: string, row_format?: string} $options
      * @return string
      */
     public function tableOptions( array $options = array() ) {
@@ -4161,6 +4434,7 @@ class Db extends \OWA\Core\Base {
     /**
      * Begins a SQL transaction statement
      *
+     * @return QueryResult
      */
     public function beginTransaction() {
 
@@ -4170,6 +4444,7 @@ class Db extends \OWA\Core\Base {
     /**
      * Ends a SQL transaction statement
      *
+     * @return QueryResult
      */
     public function endTransaction() {
 
@@ -4185,52 +4460,91 @@ class Db extends \OWA\Core\Base {
      * through several related writes had no way to undo the ones that had
      * already landed. One beacon becoming several rows is the first thing here
      * that needs all of them or none.
+     *
+     * @return QueryResult
      */
     public function rollbackTransaction() {
 
         return $this->query(OWA_SQL_ROLLBACK_TRANSACTION);
     }
 
+    /**
+     * @param  string $column_name
+     * @return string
+     */
     public function count($column_name) {
 
         return sprintf(OWA_SQL_COUNT, $column_name);
     }
 
+    /**
+     * @param  string $column_name
+     * @return string
+     */
     public function sum($column_name) {
 
         return sprintf(OWA_SQL_SUM, $column_name);
     }
 
+    /**
+     * @param  string $column_name
+     * @return string
+     */
     public function distinct($column_name) {
 
         return sprintf(OWA_SQL_DISTINCT, $column_name);
     }
 
+    /**
+     * @param  string $numerator
+     * @param  string $denominator
+     * @return string
+     */
     public function division($numerator, $denominator) {
 
         return sprintf(OWA_SQL_DIVISION, $numerator, $denominator);
     }
 
+    /**
+     * @param  string $value
+     * @return string
+     */
     public function round($value) {
 
         return sprintf(OWA_SQL_ROUND, $value);
     }
 
+    /**
+     * @param  string $value
+     * @return string
+     */
     public function average($value) {
 
         return sprintf(OWA_SQL_AVERAGE, $value);
     }
 
+    /**
+     * Rows the last statement changed. The base class cannot tell.
+     *
+     * @return int|string|false
+     */
     public function getAffectedRows() {
 
         return false;
     }
     
+    /**
+     * @param  string $value
+     * @return bool
+     */
     public function isValidSortDirectionValue( $value ) {
         
         return in_array( strtolower( $value ), [ strtolower( OWA_SQL_DESCENDING ), strtolower( OWA_SQL_ASCENDING) ] ); 
     }
     
+    /**
+     * @return string
+     */
     public function getDefaultSortDirection() {
         
         return OWA_SQL_DESCENDING;

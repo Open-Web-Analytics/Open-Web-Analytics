@@ -46,6 +46,12 @@ namespace OWA\Core\Db;
  * it is the single easiest thing to get wrong here.
  */
 
+/**
+ * A row: column => value, every value a string or NULL.
+ *
+ * @phpstan-type Row array<string, string|null>
+ * @phpstan-import-type Bindings from \OWA\Core\Db
+ */
 abstract class Pdo extends \OWA\Core\Db
 {
 
@@ -59,7 +65,11 @@ abstract class Pdo extends \OWA\Core\Db
      */
     protected $connect_failed = false;
 
-    /** The statement most recently executed, for getAffectedRows(). */
+    /**
+     * The statement most recently executed, for getAffectedRows().
+     *
+     * @var \PDOStatement|null
+     */
     protected $last_statement;
 
     /**
@@ -84,6 +94,9 @@ abstract class Pdo extends \OWA\Core\Db
      */
     abstract protected function sessionSqlMode();
 
+    /**
+     * @return bool
+     */
     public function connect() {
 
         if ( $this->connect_failed ) {
@@ -164,7 +177,8 @@ abstract class Pdo extends \OWA\Core\Db
      * should degrade instead.
      *
      * @param string $sql
-     * @return \PDOStatement|false
+     * @param Bindings $params
+     * @return \PDOStatement|bool  true for a statement with no result set
      */
     public function query( $sql, array $params = array() ) {
 
@@ -287,6 +301,9 @@ abstract class Pdo extends \OWA\Core\Db
         return $this->new_result;
     }
 
+    /**
+     * @return void
+     */
     public function close() {
 
         // PDO closes on refcount drop; there is no explicit close. Clearing the
@@ -307,7 +324,8 @@ abstract class Pdo extends \OWA\Core\Db
      * `=== null` and returning an array would change what they see.
      *
      * @param string $sql
-     * @return array|null
+     * @param Bindings $params
+     * @return list<Row>|null
      */
     public function get_results( $sql, array $params = array() ) {
 
@@ -352,8 +370,8 @@ abstract class Pdo extends \OWA\Core\Db
      * simply does not run.
      *
      * @param  string $sql
-     * @param  array  $params
-     * @return \Generator
+     * @param  Bindings $params
+     * @return \Generator<int, Row, mixed, void>
      */
     public function get_result_iterator( $sql, array $params = array() ) {
 
@@ -378,7 +396,8 @@ abstract class Pdo extends \OWA\Core\Db
      * failed, since a failed query has no row either.
      *
      * @param string $sql
-     * @return array|null
+     * @param Bindings $params
+     * @return Row|null
      */
     public function get_row( $sql, array $params = array() ) {
 
@@ -401,8 +420,8 @@ abstract class Pdo extends \OWA\Core\Db
      * pair PDO::quote() contributes has to come back off. Anything else emits
      * `col = ''value''` and breaks every query in the application.
      *
-     * @param string $string
-     * @return string
+     * @param string|null $string
+     * @return string|null  null for null
      */
     public function prepare( $string ) {
 
@@ -435,19 +454,15 @@ abstract class Pdo extends \OWA\Core\Db
     }
 
     /**
-     * The PDO type for a bound value.
-     *
-     * Booleans go as int, not PARAM_BOOL: OWA stores them in TINYINT(1) columns
-     * and PARAM_BOOL round-trips as '' for false on some drivers, which lands as
-     * 0 under a permissive sql_mode and fails outright under a strict one.
-     */
-    /**
      * How many positional placeholders a statement carries.
      *
      * String literals are skipped so a '?' inside quoted text is not counted.
      * This driver assembles SQL from column names and bindValue() returns, so
      * quoted text is rare -- but a miscount here would refuse a legitimate
      * query, which is worse than the problem being guarded against.
+     *
+     * @param  string $sql
+     * @return int
      */
     public static function countPlaceholders( $sql ) {
 
@@ -494,6 +509,16 @@ abstract class Pdo extends \OWA\Core\Db
         return $count;
     }
 
+    /**
+     * The PDO type for a bound value.
+     *
+     * Booleans go as int, not PARAM_BOOL: OWA stores them in TINYINT(1) columns
+     * and PARAM_BOOL round-trips as '' for false on some drivers, which lands as
+     * 0 under a permissive sql_mode and fails outright under a strict one.
+     *
+     * @param  scalar|null $value
+     * @return int a \PDO::PARAM_ constant
+     */
     private static function paramType( $value ) {
 
         if ( is_null( $value ) ) {
@@ -509,6 +534,9 @@ abstract class Pdo extends \OWA\Core\Db
         return \PDO::PARAM_STR;
     }
 
+    /**
+     * @return int
+     */
     public function getAffectedRows() {
 
         return $this->last_statement instanceof \PDOStatement

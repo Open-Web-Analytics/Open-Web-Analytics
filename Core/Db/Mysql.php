@@ -23,6 +23,12 @@ namespace OWA\Core\Db;
 // MysqlDialect trait, shared with the PDO driver. `use` below is what defines
 // the OWA_DTD_* / OWA_SQL_* constants -- they are dialect, not transport.
 
+/**
+ * A row: column => value, every value a string or NULL.
+ *
+ * @phpstan-type Row array<string, string|null>
+ * @phpstan-import-type Bindings from \OWA\Core\Db
+ */
 class Mysql extends \OWA\Core\Db {
 
     use MysqlDialect;
@@ -40,6 +46,9 @@ class Mysql extends \OWA\Core\Db {
      */
     protected $connect_failed = false;
 
+    /**
+     * @return bool
+     */
     public function connect() {
 
         if ( $this->connect_failed ) {
@@ -164,6 +173,8 @@ class Mysql extends \OWA\Core\Db {
      * Database Query
      *
      * @param     string $sql
+     * @param     Bindings $params
+     * @return    \mysqli_result|bool  true for a statement with no result set
      * @access     public
      *
      */
@@ -241,6 +252,9 @@ class Mysql extends \OWA\Core\Db {
         return $this->new_result;
     }
 
+    /**
+     * @return void
+     */
     public function close() {
 
         // mysqli_close() on a handle that is already closed raises an Error in
@@ -271,8 +285,8 @@ class Mysql extends \OWA\Core\Db {
      * the rest of OWA expects strings.
      *
      * @param  string $sql
-     * @param  array  $params
-     * @return \Generator
+     * @param  Bindings $params
+     * @return \Generator<int, Row, mixed, void>
      */
     public function get_result_iterator( $sql, array $params = array() ) {
 
@@ -301,7 +315,8 @@ class Mysql extends \OWA\Core\Db {
      * an array instead would silently change what `=== null` sees.
      *
      * @param     string $sql
-     * @return     array|null
+     * @param     Bindings $params
+     * @return     list<Row>|null
      * @access  public
      */
     public function get_results( $sql, array $params = array() ) {
@@ -343,7 +358,8 @@ class Mysql extends \OWA\Core\Db {
      * value, because "no row" has always been a normal answer.
      *
      * @param string $sql
-     * @return array|null
+     * @param Bindings $params
+     * @return Row|null
      */
     public function get_row($sql, array $params = array()) {
 
@@ -376,6 +392,9 @@ class Mysql extends \OWA\Core\Db {
      * NULL IS PRESERVED. A blanket (string) cast turns NULL into '', which is a
      * different value -- OWA stores real NULLs and distinguishes them from empty
      * strings.
+     *
+     * @param  array<string, int|float|string|null>|false|null $row  as mysqli fetched it
+     * @return Row|false|null  a non-array as it came
      */
     protected function stringifyRow( $row ) {
 
@@ -409,8 +428,8 @@ class Mysql extends \OWA\Core\Db {
      * Value-content sanitization for untrusted request fields belongs at
      * the request-container / controller layer, not here.
      *
-     * @param string $string
-     * @return string
+     * @param string|null $string
+     * @return string|null  null for null
      */
     public function prepare( $string ) {
         if(is_null($string)){
@@ -435,6 +454,8 @@ class Mysql extends \OWA\Core\Db {
      * a statement with no result set, false on failure. get_results() and
      * get_row() then behave identically whether or not parameters were used.
      *
+     * @param  string $sql
+     * @param  Bindings $params
      * @return \mysqli_result|bool
      */
     protected function executeBound( $sql, array $params ) {
@@ -504,6 +525,9 @@ class Mysql extends \OWA\Core\Db {
         return $result;
     }
 
+    /**
+     * @return int|string  a string past PHP_INT_MAX
+     */
     public function getAffectedRows() {
 
         // A bound statement's affected-row count is captured at execute time

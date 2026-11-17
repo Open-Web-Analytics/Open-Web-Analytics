@@ -398,6 +398,23 @@ if ( ! defined( 'OWA_DTD_TABLE_ROW_FORMAT_DEFAULT' ) ) { define('OWA_DTD_TABLE_R
 trait MysqlDialect
 {
     /**
+     * The encoding to negotiate on the connection.
+     *
+     * Deliberately NOT "whatever the tables are declared with" -- tables may
+     * differ from one another, and the connection has to serve all of them.
+     * It is a ceiling in both directions, so it is set to the widest encoding
+     * and each table decides for itself underneath it.
+     *
+     * @return string
+     */
+    protected function connectionCharacterEncoding() {
+
+        return defined( 'OWA_DTD_CONNECTION_ENCODING' )
+            ? (string) OWA_DTD_CONNECTION_ENCODING
+            : 'utf8mb4';
+    }
+
+    /**
      * The session sql_mode to apply on connect, or null to leave the server's.
      *
      * OWA sent `SET SESSION sql_mode=''` on every connection for years, which
@@ -430,23 +447,6 @@ trait MysqlDialect
      *
      * @return string|null
      */
-    /**
-     * The encoding to negotiate on the connection.
-     *
-     * Deliberately NOT "whatever the tables are declared with" -- tables may
-     * differ from one another, and the connection has to serve all of them.
-     * It is a ceiling in both directions, so it is set to the widest encoding
-     * and each table decides for itself underneath it.
-     *
-     * @return string
-     */
-    protected function connectionCharacterEncoding() {
-
-        return defined( 'OWA_DTD_CONNECTION_ENCODING' )
-            ? (string) OWA_DTD_CONNECTION_ENCODING
-            : 'utf8mb4';
-    }
-
     protected function sessionSqlMode() {
 
         if ( defined( 'OWA_DB_SQL_MODE' ) ) {
@@ -482,7 +482,7 @@ trait MysqlDialect
      * The partitions on a table, in range order.
      *
      * @param string $table_name
-     * @return array of ['name' => string, 'less_than' => string, 'rows' => int]
+     * @return list<array{name: string, less_than: string, rows: int}>
      */
     public function listPartitions( $table_name ) {
 
@@ -577,7 +577,7 @@ trait MysqlDialect
      * default (information_schema_stats_expiry), so they are "about".
      *
      * @param string $table_name
-     * @return array|null ['rows' => int, 'bytes' => int], or null when unknown
+     * @return array{rows: int, bytes: int}|null  null when unknown
      */
     public function tableSize( $table_name ) {
 
@@ -616,7 +616,7 @@ trait MysqlDialect
      * @param string $table_name
      * @param string $partition
      * @param string $column
-     * @return array|null  ['rows','min','max'], or null where it cannot be read
+     * @return array{rows: int, min: string|null, max: string|null}|null  null where it cannot be read
      */
     public function getPartitionContents( $table_name, $partition, $column = 'yyyymmdd' ) {
 
@@ -843,6 +843,11 @@ trait MysqlDialect
         return ( is_array( $row ) && isset( $row['n'] ) && (int) $row['n'] > 0 );
     }
 
+    /**
+     * @param  string $table_name
+     * @param  string $column_name  one column, or several comma-separated
+     * @return bool
+     */
     public function indexExists( $table_name, $column_name ) {
 
         $cols = $this->normalizeIndexColumns( $column_name );
