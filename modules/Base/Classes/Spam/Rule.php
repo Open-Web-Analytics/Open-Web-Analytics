@@ -44,16 +44,19 @@ abstract class Rule {
     /** What meeting it adds to the score: one decimal place, and may be negative. */
     const POINTS = 0.0;
 
+    /** @return string */
     public function name() {
 
         return (string) static::NAME;
     }
 
+    /** @return string */
     public function set() {
 
         return (string) static::SET;
     }
 
+    /** @return float */
     public function points() {
 
         return round( (float) static::POINTS, 1 );
@@ -63,12 +66,17 @@ abstract class Rule {
      * Whether the beacon meets this rule.
      *
      * @param  object $event    the incoming tracking event
-     * @param  array  $headers  header name => value, as Score::headers()
+     * @param  array<string, string> $headers  header name => value, as Score::headers()
      * @return bool
      */
     abstract public function test( $event, array $headers );
 
-    /** What the beacon's user agent claims to be. */
+    /**
+     * What the beacon's user agent claims to be.
+     *
+     * @param  array<string, string> $headers
+     * @return Client
+     */
     protected function client( array $headers ) {
 
         return new Client( (string) ( $headers['user-agent'] ?? '' ) );

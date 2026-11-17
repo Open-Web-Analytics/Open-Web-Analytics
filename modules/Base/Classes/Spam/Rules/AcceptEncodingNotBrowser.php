@@ -37,7 +37,12 @@ class AcceptEncodingNotBrowser extends \OWA\Module\Base\Classes\Spam\Rule {
         return self::notFromABrowser( (string) ( $headers['accept-encoding'] ?? '' ) );
     }
 
-    /** Whether an Accept-Encoding value is one no browser sends. */
+    /**
+     * Whether an Accept-Encoding value is one no browser sends.
+     *
+     * @param  string $value
+     * @return bool
+     */
     public static function notFromABrowser( $value ) {
 
         $value = trim( (string) $value );

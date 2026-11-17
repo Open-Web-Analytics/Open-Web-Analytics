@@ -31,10 +31,14 @@ class Blocks {
     /** @var int statements this process has sent, so a test can tell one per key from one per beacon */
     public static $writes = 0;
 
-    /** @var array|null "yyyymmdd|site|rule" => count while a batch is open, else null */
+    /** @var array<string, int>|null "yyyymmdd|site|rule" => count while a batch is open, else null */
     private static $batch = null;
 
-    /** Total the counts in memory until flush(). */
+    /**
+     * Total the counts in memory until flush().
+     *
+     * @return void
+     */
     public static function begin() {
 
         if ( self::$batch === null ) {
@@ -43,13 +47,21 @@ class Blocks {
         }
     }
 
-    /** Whether a batch is open. */
+    /**
+     * Whether a batch is open.
+     *
+     * @return bool
+     */
     public static function batching() {
 
         return self::$batch !== null;
     }
 
-    /** The counts an open batch holds: "yyyymmdd|site|rule" => count. */
+    /**
+     * The counts an open batch holds: "yyyymmdd|site|rule" => count.
+     *
+     * @return array<string, int>
+     */
     public static function pending() {
 
         return (array) self::$batch;
@@ -82,6 +94,7 @@ class Blocks {
      * @param int      $yyyymmdd
      * @param string   $site_id
      * @param string[] $rules  the rules it met
+     * @return void
      */
     public static function record( $yyyymmdd, $site_id, array $rules ) {
 
@@ -108,7 +121,7 @@ class Blocks {
      * rules by count, highest first.
      *
      * @param  int $since yyyymmdd
-     * @return array
+     * @return array<string, int>
      */
     public static function since( $since ) {
 
@@ -140,6 +153,15 @@ class Blocks {
         return $all ? array( $total => $all ) + $out : $out;
     }
 
+    /**
+     * Add $count to one key's row.
+     *
+     * @param  int    $yyyymmdd
+     * @param  string $site_id
+     * @param  string $rule
+     * @param  int    $count
+     * @return bool false when the write failed
+     */
     private static function write( $yyyymmdd, $site_id, $rule, $count ) {
 
         self::$writes++;
@@ -160,6 +182,7 @@ class Blocks {
         return $ok;
     }
 
+    /** @return string */
     private static function table() {
 
         return self::$table ?: \OWA\Core\CoreAPI::entityFactory( 'base.spam_block' )->getTableName();

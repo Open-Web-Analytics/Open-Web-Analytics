@@ -72,7 +72,11 @@ class RuleSets {
         'strict' => array( 'user_agent', 'request_headers', 'page_origin', 'query_string' ),
     );
 
-    /** The level spam_detection names, or normal when it names none of them. */
+    /**
+     * The level spam_detection names, or normal when it names none of them.
+     *
+     * @return string
+     */
     public static function level() {
 
         $level = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'spam_detection' );
@@ -84,7 +88,7 @@ class RuleSets {
      * The sets a level runs, after the filter: set name => Rule class names.
      *
      * @param  string $level
-     * @return array
+     * @return array<mixed>  set name => Rule class names, as a module's filter left them: rules() checks each
      */
     public static function forLevel( $level ) {
 

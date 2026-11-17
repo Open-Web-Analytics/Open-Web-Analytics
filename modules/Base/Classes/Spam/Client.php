@@ -28,23 +28,29 @@ class Client {
     /** @var object|false|null the parse, false for none */
     private $parsed = null;
 
+    /** @param string $ua */
     public function __construct( $ua ) {
 
         $this->ua = (string) $ua;
     }
 
+    /** @return string */
     public function userAgent() {
 
         return $this->ua;
     }
 
-    /** The parser's browser family, such as Chrome, Mobile Safari or Firefox. '' with no agent. */
+    /**
+     * The parser's browser family, such as Chrome, Mobile Safari or Firefox. '' with no agent.
+     *
+     * @return string
+     */
     public function family() {
 
         return (string) ( $this->part( 'ua' )->family ?? '' );
     }
 
-    /** @return int[] major, minor; 0 for a part the agent does not give */
+    /** @return array{int, int} major, minor; 0 for a part the agent does not give */
     public function version() {
 
         $ua = $this->part( 'ua' );
@@ -52,12 +58,13 @@ class Client {
         return array( (int) ( $ua->major ?? 0 ), (int) ( $ua->minor ?? 0 ) );
     }
 
+    /** @return string */
     public function osFamily() {
 
         return (string) ( $this->part( 'os' )->family ?? '' );
     }
 
-    /** @return int[] major, minor */
+    /** @return array{int, int} major, minor */
     public function osVersion() {
 
         $os = $this->part( 'os' );
@@ -65,13 +72,21 @@ class Client {
         return array( (int) ( $os->major ?? 0 ), (int) ( $os->minor ?? 0 ) );
     }
 
-    /** The parser's device family; Spider for a crawler it recognises. */
+    /**
+     * The parser's device family; Spider for a crawler it recognises.
+     *
+     * @return string
+     */
     public function deviceFamily() {
 
         return (string) ( $this->part( 'device' )->family ?? '' );
     }
 
-    /** Every browser on iOS is WebKit with the system's version of it, whatever it calls itself. */
+    /**
+     * Every browser on iOS is WebKit with the system's version of it, whatever it calls itself.
+     *
+     * @return bool
+     */
     public function isIos() {
 
         return $this->osFamily() === 'iOS';
@@ -81,6 +96,8 @@ class Client {
      * The Chromium major version from the Chrome/NN token, or null without one.
      *
      * Not HeadlessChrome/NN or CriOS/NN: the token has to stand on its own.
+     *
+     * @return int|null
      */
     public function chromiumMajor() {
 
@@ -102,6 +119,8 @@ class Client {
      * Not a declared crawler, even one carrying a browser's tokens as Googlebot
      * does: UA_ROBOT_TOKEN and UA_PARSER_SPIDER score those, and a rule asking
      * "is this browser behaving like one" would only score them twice.
+     *
+     * @return bool
      */
     public function claimsBrowser() {
 
@@ -124,7 +143,11 @@ class Client {
             || ( $this->isIos() && stripos( $this->ua, 'AppleWebKit/' ) !== false );
     }
 
-    /** Whether the agent carries the Mobile token a phone's browser sends. */
+    /**
+     * Whether the agent carries the Mobile token a phone's browser sends.
+     *
+     * @return bool
+     */
     public function hasMobileToken() {
 
         return (bool) preg_match( '/\bMobile\b/', $this->ua );
@@ -136,6 +159,8 @@ class Client {
      *
      * The parser's OS family first; then, for an agent the parser does not
      * recognise -- a bare `android` -- the token it carries.
+     *
+     * @return string
      */
     public function osClass() {
 
@@ -175,7 +200,14 @@ class Client {
         return '';
     }
 
-    /** Whether a [major, minor] version is at least major.minor. */
+    /**
+     * Whether a [major, minor] version is at least major.minor.
+     *
+     * @param  array<int> $version  [major, minor], as version() and osVersion()
+     * @param  int $major
+     * @param  int $minor
+     * @return bool
+     */
     public static function atLeast( array $version, $major, $minor = 0 ) {
 
         list( $has_major, $has_minor ) = array_pad( array_values( $version ), 2, 0 );
@@ -183,7 +215,12 @@ class Client {
         return $has_major > $major || ( $has_major === (int) $major && $has_minor >= $minor );
     }
 
-    /** One part of the parse (ua, os, device) as an object; an empty one when there is none. */
+    /**
+     * One part of the parse (ua, os, device) as an object; an empty one when there is none.
+     *
+     * @param  string $name
+     * @return object
+     */
     private function part( $name ) {
 
         if ( $this->parsed === null ) {

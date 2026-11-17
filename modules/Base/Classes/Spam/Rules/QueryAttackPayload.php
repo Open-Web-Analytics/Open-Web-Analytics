@@ -87,7 +87,7 @@ class QueryAttackPayload extends \OWA\Module\Base\Classes\Spam\Rule {
      * The first pattern a text matches, as array( family, regex ), or null.
      *
      * @param  string $text
-     * @return array|null
+     * @return array{string, string}|null
      */
     public static function match( $text ) {
 

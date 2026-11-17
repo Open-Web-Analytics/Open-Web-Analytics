@@ -45,7 +45,11 @@ class NoFetchMetadata extends \OWA\Module\Base\Classes\Spam\Rule {
         return self::claimsFetchMetadata( $this->client( $headers ) );
     }
 
-    /** Whether the browser the agent names sends Fetch Metadata. */
+    /**
+     * Whether the browser the agent names sends Fetch Metadata.
+     *
+     * @return bool
+     */
     public static function claimsFetchMetadata( \OWA\Module\Base\Classes\Spam\Client $client ) {
 
         if ( $client->userAgent() === '' ) {
