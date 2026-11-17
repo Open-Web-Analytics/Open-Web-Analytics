@@ -52,6 +52,17 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     const KNOWN_KEYS = array( 'title', 'description', 'titleSuffix', 'params', 'metrics', 'widgets', 'settings', 'deprecated', 'metricSets' );
 
     /**
+     * Top-level keys with a type, checked in this order: key => [ type test,
+     * the error when a value set fails it ]. `description` is one sentence
+     * saying what the report shows; the wiki's report list reads it.
+     */
+    const TYPED_KEYS = [
+        'description' => [ 'is_string', '"description" must be a string' ],
+        'settings'    => [ 'is_array', '"settings" must be an object' ],
+        'params'      => [ 'is_array', '"params" must be an object of parameter name => options' ],
+    ];
+
+    /**
      * How many rows a table CARD shows when it names no page size.
      *
      * A card's height is its row count, so this is a layout number as much as a
@@ -142,21 +153,12 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                 implode( ', ', $unknown ), implode( ', ', self::KNOWN_KEYS ) );
         }
 
-        // One sentence saying what the report shows. Not interpolated and not
-        // drawn by the report yet; the wiki's report list reads it.
-        if ( isset( $definition['description'] ) && ! is_string( $definition['description'] ) ) {
+        foreach ( self::TYPED_KEYS as $key => [ $isType, $message ] ) {
 
-            return '"description" must be a string';
-        }
+            if ( isset( $definition[ $key ] ) && ! $isType( $definition[ $key ] ) ) {
 
-        if ( isset( $definition['settings'] ) && ! is_array( $definition['settings'] ) ) {
-
-            return '"settings" must be an object';
-        }
-
-        if ( isset( $definition['params'] ) && ! is_array( $definition['params'] ) ) {
-
-            return '"params" must be an object of parameter name => options';
+                return $message;
+            }
         }
 
         foreach ( (array) ( $definition['widgets'] ?? array() ) as $i => $widget ) {
