@@ -176,16 +176,20 @@ final class TemplateScriptDataTest extends TestCase
         $this->assertIsArray( $config['dimensions'] );
     }
 
+    /** Each URL carries the nonce for the method its call uses: a nonce is minted for one method (RestNonceMethodTest). */
     public function testTheBellIsHandedAUrlPerMethod(): void
     {
         $this->requireDb();
 
         $html = $this->screen( '\\OWA\\Module\\Base\\Controller\\CustomReports', [ 'siteId' => self::$siteId ] );
 
-        foreach ( [ 'read', 'mark-read', 'dismiss' ] as $which ) {
+        foreach ( [ 'read' => 'GET', 'mark-read' => 'POST', 'dismiss' => 'DELETE' ] as $which => $method ) {
 
             $this->assertSame( 1, preg_match( '~data-owa-notifications-' . $which . '="([^"]+)"~', $html, $m ), "no $which URL" );
-            $this->assertStringContainsString( 'notifications', html_entity_decode( $m[1] ) );
+            parse_str( (string) parse_url( html_entity_decode( $m[1] ), PHP_URL_QUERY ), $query );
+            $this->assertSame( 'notifications', $query['do'] ?? null, "$which URL names another route" );
+            $this->assertSame( \OWA\Core\CoreAPI::createRestApiNonce( 'v1', 'base', 'notifications', $method ), $query['nonce'] ?? null,
+                "the $which URL does not carry the nonce minted for $method" );
         }
     }
 
