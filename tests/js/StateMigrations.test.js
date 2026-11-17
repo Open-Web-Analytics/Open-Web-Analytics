@@ -86,20 +86,25 @@ describe('state storage migrations', () => {
 
     /**
      * The property the whole seam exists for: by the time anything reads state,
-     * storage is already in its current shape. Here a migration writes a session
-     * cookie and the pageview that follows picks it up -- without the tracker
-     * knowing a migration was involved.
+     * storage is already in its current shape. Here a migration writes a visitor
+     * and a session cookie and the pageview that follows picks both up --
+     * without the tracker knowing a migration was involved.
+     *
+     * Both, because a session found without its visitor is not continued: the
+     * tracker mints a visitor and starts a new session for it.
      */
     test('a migration lands before anything downstream reads', () => {
         OWA.registerStateMigration('seed-session', (state) => {
-            const store = {
-                sid: 'migrated-session',
-                last_req: Util.getCurrentUnixTimestamp(),
-            };
+            const now = Util.getCurrentUnixTimestamp();
+            const visitor = { vid: 'migrated-visitor', fsts: now - 86400, nps: 2 };
+            const session = { sid: 'migrated-session', last_req: now };
             if (OWA.getSetting('hashCookiesToDomain')) {
-                store.cdh = Util.getCookieDomainHash(OWA.getSetting('cookie_domain'));
+                const cdh = Util.getCookieDomainHash(OWA.getSetting('cookie_domain'));
+                visitor.cdh = cdh;
+                session.cdh = cdh;
             }
-            state.writePersistedStore('s', store, true);
+            state.writePersistedStore('v', visitor, true);
+            state.writePersistedStore('s', session, true);
             state.cookies = Util.readAllCookies();
         });
 
@@ -108,6 +113,7 @@ describe('state storage migrations', () => {
         t.logEvent = (p) => { beacon = { ...p }; };
         t.trackPageView(location.href);
 
+        expect(beacon.visitor_id).toBe('migrated-visitor');
         expect(beacon.session_id).toBe('migrated-session');
         expect(beacon.is_new_session).toBeFalsy();
     });
