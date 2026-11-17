@@ -1,14 +1,6 @@
-// Player does `import * as jQuery from 'jquery'` and calls jQuery(...). Webpack
-// makes that namespace callable; babel-jest's interop does not unless jQuery is
-// marked an ES module, which mirrors production with the genuine jQuery.
-jest.mock('jquery', () => {
-    const jq = jest.requireActual('jquery');
-    jq.__esModule = true;
-    return jq;
-});
-
 import { Player } from '../../modules/Domstream/src/tracker/Player.js';
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
+import { OverlayDom } from '../../modules/Base/src/tracker/OverlayDom.js';
 
 /**
  * Playback of a recording's tuples (see Recorder.js), at the pace recorded.
@@ -26,8 +18,6 @@ beforeAll(() => {
 
 beforeEach(() => {
     document.body.innerHTML = '';
-    const jq = require('jquery');
-    jq.jGrowl = Object.assign(function () {}, { defaults: {} });
     scrolledTo = null;
     window.scroll = (x, y) => { scrolledTo = { x, y }; };
     OWA.setSetting('baseUrl', 'https://owa.example.test/');
@@ -168,4 +158,90 @@ test('the cursor image loads from <baseUrl>public/ without owa_assetsUrl', () =>
 
     expect(document.querySelector('#owa-cursor img').getAttribute('src'))
         .toBe('https://owa.example.test/public/base/i/cursor2.png');
+});
+
+/*
+ * A click is announced in the overlay's own notice: as text, in a status
+ * region, with a dismiss control. The tag, id and name come from the
+ * recording, which whoever sent it chose.
+ */
+test('a click sample shows a notice naming the element, as text', () => {
+    const p = playerWith([[0, 'c', 12, 34, '<img src=x onerror=alert(1)>', '', '']]);
+
+    p.playSample(p.samples[0]);
+
+    const region = document.querySelector('[role="status"][data-ui="overlay:notices"]');
+    const notice = region.querySelector('[data-ui="overlay:notice"]');
+    expect(notice.textContent).toContain('Clicked:');
+    expect(notice.textContent).toContain('<img src=x onerror=alert(1)>');
+    expect(region.querySelector('img')).toBeNull();
+
+    notice.querySelector('[aria-label="Dismiss"]').click();
+    expect(region.querySelector('[data-ui="overlay:notice"]')).toBeNull();
+});
+
+test('a click notice goes on its own', () => {
+    const p = playerWith([[0, 'c', 1, 1, 'a', 'buy', '']]);
+
+    p.playSample(p.samples[0]);
+    jest.advanceTimersByTime(OverlayDom.NOTICE_MSEC);
+
+    expect(document.querySelector('[data-ui="overlay:notice"]')).toBeNull();
+});
+
+function button(name) {
+    return Array.from(document.querySelectorAll('[role="button"]'))
+        .find((el) => (el.getAttribute('aria-label') || el.textContent) === name);
+}
+
+test('Play and Pause work from the keyboard, and the one pressed is marked', () => {
+    const p = playerWith([[100, 's', 1], [100, 's', 2]]);
+
+    button('Play').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(p.playing).toBe(true);
+    expect(button('Play').classList.contains('active')).toBe(true);
+
+    button('Pause').dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(p.playing).toBe(false);
+    expect(button('Play').classList.contains('active')).toBe(false);
+    expect(button('Pause').classList.contains('active')).toBe(true);
+});
+
+test('Hide folds the panel into a tab, and the tab opens it again', () => {
+    playerWith([]);
+    const panel = document.getElementById('owa_overlay');
+
+    expect(button('Show the player').hidden).toBe(true);
+
+    button('Hide').click();
+    expect(panel.hidden).toBe(true);
+    expect(button('Show the player').hidden).toBe(false);
+
+    button('Show the player').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(panel.hidden).toBe(false);
+    expect(button('Show the player').hidden).toBe(true);
+
+    document.getElementById('owa_overlay_logo').click();
+    expect(panel.hidden).toBe(true);
+});
+
+test('leaving the page ends the overlay session', () => {
+    const end = jest.spyOn(OWA, 'endOverlaySession').mockImplementation(() => {});
+    playerWith([]);
+
+    window.dispatchEvent(new Event('pagehide'));
+
+    expect(end).toHaveBeenCalled();
+    end.mockRestore();
+});
+
+test('focus follows the fold: to the tab on Hide, back to the panel on the tab', () => {
+    playerWith([]);
+
+    button('Hide').focus();
+    button('Hide').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(document.activeElement).toBe(button('Show the player'));
+
+    button('Show the player').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(document.activeElement).toBe(button('Play'));
 });

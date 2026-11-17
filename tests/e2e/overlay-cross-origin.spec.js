@@ -40,6 +40,9 @@ const { FIXTURE, login } = require('./fixtures');
 const HELPER = path.join(__dirname, 'overlay_e2e_helper.php');
 const HARNESS_HTML = fs.readFileSync(path.join(__dirname, 'overlay_harness.html'), 'utf8');
 
+/** The recording overlay_e2e_helper.php seeds: two pointer moves, then a click. */
+const RECORDING = [[0, 'm', 10, 20], [500, 'm', 20, 20], [100, 'c', 30, 40, 'a', 'overlay-anchor', '']];
+
 function helper(...args) {
     return JSON.parse(execFileSync('php', [HELPER, ...args], { encoding: 'utf8' }));
 }
@@ -321,10 +324,59 @@ test.describe('overlays fetch cross-origin @selfhost-only', () => {
 
         // A 201 is also what an unknown recording answers, with no samples.
         expect(JSON.parse(call.body).data.samples,
-            'the recording came back without its samples').toEqual([[0, 'm', 10, 20], [500, 'm', 20, 20]]);
+            'the recording came back without its samples').toEqual(RECORDING);
 
         const corsBlocked = consoleErrors.filter((e) => /CORS|Access-Control/i.test(e));
         expect(corsBlocked, 'the browser reported a CORS failure').toEqual([]);
+    });
+
+    /**
+     * Playback on the page: the pointer follows the recording, a click leaves
+     * a marker where it was and a notice naming the element, and Hide folds
+     * the panel into a tab that opens it again. All built with DOM APIs on the
+     * tracked page.
+     */
+    test('the player replays the recording on the page', async ({ page }, testInfo) => {
+        const pageErrors = [];
+        page.on('pageerror', (err) => pageErrors.push(err.message));
+
+        await runOverlay(page, testInfo, {
+            action: 'loadPlayer',
+            apiQuery: 'owa_do=domstreams&owa_module=domstream&owa_version=v1'
+                + '&owa_siteId=' + encodeURIComponent(fx.site_id)
+                + '&owa_recording_id=' + encodeURIComponent(fx.recording_id)
+                + '&owa_overlayToken=' + encodeURIComponent(fx.player_token),
+        });
+
+        const status = page.locator('[data-ui="overlay:status"]');
+        await expect(status).toHaveText('Ready.');
+
+        await page.getByRole('button', { name: 'Play', exact: true }).click();
+
+        // The pointer moves are relative: 10,20 then +20,+20.
+        const cursor = page.locator('[data-ui="overlay:cursor"]');
+        await expect(cursor).toHaveCSS('left', '30px');
+        await expect(cursor).toHaveCSS('top', '40px');
+
+        const notices = page.getByRole('status');
+        await expect(notices).toHaveCSS('position', 'fixed');
+        await expect(notices.locator('[data-ui="overlay:notice"]')).toContainText('#overlay-anchor');
+
+        const marker = page.locator('[data-ui="overlay:click-marker"]');
+        await expect(marker).toHaveCount(1);
+        await expect(marker).toHaveCSS('left', '30px');
+        await expect(marker).toHaveCSS('top', '40px');
+
+        await expect(status).toHaveText('Finished.');
+        await expect(notices.locator('[data-ui="overlay:notice"]')).toHaveCount(0, { timeout: 5000 });
+
+        await page.getByRole('button', { name: 'Hide', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeHidden();
+        await page.getByRole('button', { name: 'Show the player' }).click();
+        await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Show the player' })).toBeHidden();
+
+        expect(pageErrors, 'playback threw:\n' + pageErrors.join('\n')).toEqual([]);
     });
 
     test('an overlay token is refused for a resource it does not name', async ({ page }, testInfo) => {

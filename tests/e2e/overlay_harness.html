@@ -13,8 +13,8 @@
   Tracker.checkForOverlaySession() decodes the anchor and calls
   OWA_instance.startOverlaySession(), which dynamic-imports Heatmap.js and calls
   generate() -> showControlPanel() (builds #owa_overlay + controls) and
-  createCanvas() (appends #owa_heatmap). All of that DOM is built through
-  jQuery 3.x (the tracker path is already on 3.x).
+  createCanvas() (appends #owa_heatmap). All of that DOM is built with DOM
+  APIs alone: the tracker side carries no jQuery.
 
   This file stands in for that tracked page. It is served SAME-ORIGIN with the
   live OWA install (tests/ is under the webroot), so:
@@ -23,11 +23,10 @@
       (from window.owa_baseUrl set below), so the owa.heatmap.js import chunk loads
       from public/, exactly as in production -- independent of the tracker's own URL.
 
-  The test only asserts the deterministic, synchronous part of the render (the
-  jQuery-built control panel + canvas). The subsequent click-data fetch is an
-  async JSONP call whose payload depends on live data, so it is intentionally
-  not part of the assertion -- it cannot fail the "does jQuery 3.x still build
-  the overlay DOM" contract this test exists to protect.
+  overlay-heatmap.spec.js asserts only the deterministic part of the render
+  (the control panel + canvas). The click-data fetch is asserted, cross-origin
+  and against a real API, by overlay-cross-origin.spec.js, which reads what
+  the overlay's fetch() received from window.owaOverlayFetches below.
 
   owa_baseUrl is injected by the test via a query param so this file has no
   hard-coded host.
@@ -98,25 +97,33 @@
             };
 
             // Record fetch outcomes so a test can assert the overlay actually
-            // received data, rather than inferring it from rendered DOM.
+            // received data, rather than inferring it from rendered DOM. The
+            // overlays fetch with fetch(); a request the browser refuses
+            // (CORS) is recorded with status 0.
             window.owaOverlayFetches = [];
-            (function (open) {
-                XMLHttpRequest.prototype.open = function (method, url) {
-                    this.addEventListener('loadend', function () {
-                        window.owaOverlayFetches.push({
-                            url: String(url),
-                            status: this.status,
-                            length: (this.responseText || '').length,
-                            // Wide enough to see the first rows of a result
-                            // set, not just the envelope preamble: a spec
-                            // checking that the overlay got DATA has to be able
-                            // to look past the metadata.
-                            body: (this.responseText || '').slice(0, 4000)
+            (function (realFetch) {
+                window.fetch = function (input) {
+                    var url = String(input && input.url ? input.url : input);
+                    return realFetch.apply(this, arguments).then(function (response) {
+                        return response.clone().text().then(function (text) {
+                            window.owaOverlayFetches.push({
+                                url: url,
+                                status: response.status,
+                                length: text.length,
+                                // Wide enough to see the first rows of a result
+                                // set, not just the envelope preamble: a spec
+                                // checking that the overlay got DATA has to be
+                                // able to look past the metadata.
+                                body: text.slice(0, 4000)
+                            });
+                            return response;
                         });
+                    }, function (error) {
+                        window.owaOverlayFetches.push({ url: url, status: 0, length: 0, body: '' });
+                        throw error;
                     });
-                    return open.apply(this, arguments);
                 };
-            })(XMLHttpRequest.prototype.open);
+            })(window.fetch);
             var encoded = encodeURIComponent(btoa(JSON.stringify(overlayParams)));
             // Set the fragment BEFORE the tracker bundle loads so
             // checkForOverlaySession() (run from the Tracker constructor) sees it.

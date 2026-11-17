@@ -2,12 +2,6 @@
  * @jest-environment jsdom
  * @jest-environment-options {"url": "https://example.com/p"}
  */
-jest.mock('jquery', () => {
-    const jq = jest.requireActual('jquery');
-    jq.__esModule = true;
-    return jq;
-});
-
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 import { Util } from '../../modules/Base/src/common/Util.js';
