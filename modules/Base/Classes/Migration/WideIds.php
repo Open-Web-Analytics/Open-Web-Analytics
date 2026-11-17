@@ -56,7 +56,7 @@ class WideIds {
     /** @var string[] what each table had done to it */
     public $report = array();
 
-    /** @var array entity name => table name, where a test re-keys copies */
+    /** @var array<string, string> entity name => table name, where a test re-keys copies */
     public $tables = array();
 
     /**
@@ -103,13 +103,23 @@ class WideIds {
         return true;
     }
 
+    /**
+     * @param  string $entity_name
+     * @return string its table, or the copy a test named
+     */
     private function tableFor( $entity_name ) {
 
         return $this->tables[ $entity_name ]
             ?? \OWA\Core\CoreAPI::entityFactory( $entity_name )->getTableName();
     }
 
-    /** The id a row's content derives, 64-bit or 32-bit. */
+    /**
+     * The id a row's content derives, 64-bit or 32-bit.
+     *
+     * @param  string $content
+     * @param  bool   $wide
+     * @return string
+     */
     public static function derive( $content, $wide ) {
 
         return $wide
@@ -120,6 +130,10 @@ class WideIds {
     /**
      * Whether $id is the 32-bit id of $content, stored either way round: 1.x
      * wrote crc32 into a signed BIGINT on some paths.
+     *
+     * @param  int|string $id
+     * @param  string     $content
+     * @return bool
      */
     public static function isNarrow( $id, $content ) {
 
@@ -128,6 +142,14 @@ class WideIds {
         return (string) $id === (string) $crc || (string) $id === (string) ( $crc - 4294967296 );
     }
 
+    /**
+     * Re-key one table's derived rows, and the columns that follow its id.
+     *
+     * @param  string $entity_name
+     * @param  array{columns: list<string>, separator: string, followers: array<string, string>} $shape  one of TABLES
+     * @param  bool   $wide  to 64-bit; false to 32-bit
+     * @return bool
+     */
     private function rekey( $entity_name, array $shape, $wide ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
@@ -208,6 +230,13 @@ class WideIds {
         return true;
     }
 
+    /**
+     * Report a row that could not be re-keyed.
+     *
+     * @param  string $table
+     * @param  string $id
+     * @return false
+     */
     private function failed( $table, $id ) {
 
         $this->report[] = sprintf( '%s: re-keying row %s failed.', $table, $id );

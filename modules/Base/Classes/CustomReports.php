@@ -56,6 +56,14 @@ namespace OWA\Module\Base\Classes;
  * than being handed a report that is broken every time it is opened.
  *
  * @since owa 1.8.0
+ *
+ * A definition, and each widget in it, is decoded JSON: key => value of any
+ * type, checked where it is read. A Report is a stored row with its
+ * definition decoded (hydrate()); the roster adds is_favorite.
+ *
+ * @phpstan-type Definition array<string, mixed>
+ * @phpstan-type Report array<string, mixed>
+ * @phpstan-type SaveResult array{ok: bool, id: string, error: string}
  */
 class CustomReports {
 
@@ -349,8 +357,8 @@ class CustomReports {
     /**
      * A VALUE_TABLES constant's values in the locale in use (Strings::VALUE_TABLES).
      *
-     * @param  array $table  e.g. self::WIDGET_TYPES
-     * @return array
+     * @param  array<int|string, string> $table  e.g. self::WIDGET_TYPES
+     * @return array<int|string, string>
      */
     public static function translatedTable( array $table ) {
 
@@ -388,7 +396,12 @@ class CustomReports {
         return $names;
     }
 
-    /** How many metrics a widget of this type may ask for. */
+    /**
+     * How many metrics a widget of this type may ask for.
+     *
+     * @param  string $type
+     * @return int
+     */
     public static function maxMetricsFor( $type ) {
 
         return in_array( (string) $type, self::SINGLE_METRIC_TYPES, true )
@@ -402,6 +415,9 @@ class CustomReports {
      * A fixed-dimension type does not choose its first one, so this answers
      * what it may add beyond it -- a trend chooses the one whose values become
      * its lines, and nothing else.
+     *
+     * @param  string $type
+     * @return int
      */
     public static function maxDimensionsFor( $type ) {
 
@@ -538,7 +554,7 @@ class CustomReports {
     /**
      * The names inside one widget's query.
      *
-     * @param array  $widget
+     * @param Definition $widget
      * @param string $where human-readable position, for the message
      * @param bool   $has_report_metrics whether the REPORT declares a metric
      *               set. Only a report that has one may carry a widget naming
@@ -768,7 +784,7 @@ class CustomReports {
     /**
      * Every comma-separated name under $key must resolve as $kind.
      *
-     * @param array  $bag
+     * @param Definition $bag
      * @param string $key
      * @param string $kind metric|dimension
      * @param string $where
@@ -809,7 +825,7 @@ class CustomReports {
     /**
      * At most $max of one kind of field in one query.
      *
-     * @param string|array $fields
+     * @param string|string[] $fields a comma string or a list
      * @param int    $max
      * @param string $kind   metrics|dimensions, for the message
      * @param string $where
@@ -833,8 +849,9 @@ class CustomReports {
      * A single-field widget has one metric and one dimension. Both, and one of
      * each.
      *
-     * @param array  $query
+     * @param Definition $query
      * @param string $type
+     * @param string $key    metrics or dimensions
      * @param string $where human-readable position, for the message
      * @return string
      */
@@ -875,7 +892,7 @@ class CustomReports {
      * document.json names three constraints and one parameter, which is why
      * the count is of distinct parameters rather than of constraints.
      *
-     * @return array dimension => list of {id, label, param}
+     * @return array<string, list<array{id: string, label: string, param: string}>> dimension => targets
      */
     public static function linkTargetsByDimension() {
 
@@ -957,7 +974,7 @@ class CustomReports {
      * summary widgets' links exactly -- top products to Products, top page
      * types to Page Types, latest visits to Latest Visits.
      *
-     * @return array dimension => list of {id, label}
+     * @return array<string, list<array{id: string, label: string}>> dimension => targets
      */
     public static function moreTargetsByDimension() {
 
@@ -1017,8 +1034,8 @@ class CustomReports {
      *
      * What the report is ABOUT, as far as anything readable can tell.
      *
-     * @param array $definition
-     * @return array
+     * @param Definition $definition
+     * @return list<string>
      */
     private static function definitionDimensions( array $definition ) {
 
@@ -1048,7 +1065,7 @@ class CustomReports {
      * place to re-derive that -- the names still have to resolve through the
      * registry, which validateNames() has already established.
      *
-     * @param array  $widget
+     * @param Definition $widget
      * @param string $where human-readable position, for the message
      * @return string
      */
@@ -1108,7 +1125,7 @@ class CustomReports {
      * need no value -- moreTargetsByDimension() offers only those, and this
      * refuses the rest rather than letting the builder be the only check.
      *
-     * @param array  $widget
+     * @param Definition $widget
      * @param string $where human-readable position, for the message
      * @return string
      */
@@ -1204,7 +1221,7 @@ class CustomReports {
      * constraining pagePath AND pageReferrer from `pagePath` is a link target
      * from a pagePath column.
      *
-     * @param array  $definition
+     * @param Definition $definition
      * @param string $param
      * @return string '' when it cannot be told
      */
@@ -1255,7 +1272,7 @@ class CustomReports {
      * part that is not the name. Falls back to the id, which is at least
      * addressable.
      *
-     * @param array  $definition
+     * @param Definition $definition
      * @param string $id
      * @return string
      */
@@ -1279,7 +1296,7 @@ class CustomReports {
      * definition could address any action with any parameters, and the builder
      * would be the only thing stopping it.
      *
-     * @param array  $widget
+     * @param Definition $widget
      * @param string $where human-readable position, for the message
      * @return string
      */
@@ -1368,7 +1385,12 @@ class CustomReports {
         return '';
     }
 
-    /** A comma string or list, as trimmed non-empty names. */
+    /**
+     * A comma string or list, as trimmed non-empty names.
+     *
+     * @param  string|string[] $value
+     * @return list<string>
+     */
     private static function asNames( $value ) {
 
         $names = is_array( $value ) ? $value : explode( ',', (string) $value );
@@ -1386,7 +1408,7 @@ class CustomReports {
      * written by hand or carried over from an older report may use any operator
      * the engine can run.
      *
-     * @return array
+     * @return list<string> longest first
      */
     private static function constraintOperators() {
 
@@ -1423,7 +1445,7 @@ class CustomReports {
      * parseConstraintsString() finds no operator and contributes no constraint,
      * so the query runs unfiltered and raises nothing.
      *
-     * @param array  $widget
+     * @param Definition $widget
      * @param string $where human-readable position, for the message
      * @param string|null $property_id whose dimensions; see validate()
      * @return string
@@ -1454,7 +1476,7 @@ class CustomReports {
      *
      * @param  string      $constraints
      * @param  string|null $property_id whose dimensions' labels, a custom one's among them
-     * @return array
+     * @return list<string>
      */
     public static function constraintsInWords( $constraints, $property_id = null ) {
 
@@ -1588,12 +1610,22 @@ class CustomReports {
         return '';
     }
 
-    /** Whether the name resolves as either kind -- what a sort may be. */
+    /**
+     * Whether the name resolves as either kind -- what a sort may be.
+     *
+     * @param  string      $name
+     * @param  string|null $property_id
+     * @return bool
+     */
     private static function isKnownName( $name, $property_id ) {
 
         return self::isMetric( $name ) || self::isDimension( $name, $property_id );
     }
 
+    /**
+     * @param  string $name
+     * @return bool
+     */
     public static function isMetric( $name ) {
 
         $metrics = (array) \OWA\Core\CoreAPI::getAllMetrics();
@@ -1622,7 +1654,7 @@ class CustomReports {
      * entity would make each of them remember to decode.
      *
      * @param string $id
-     * @return array|null {id, name, user_id, definition, ...}
+     * @return Report|null {id, name, user_id, definition, ...}
      */
     public static function load( $id ) {
 
@@ -1651,8 +1683,8 @@ class CustomReports {
      * through this, with the Property the request is on.
      *
      * @param  string     $id
-     * @param  string|int $property_id
-     * @return array|null
+     * @param  string|int|null $property_id
+     * @return Report|null
      */
     public static function loadOf( $id, $property_id ) {
 
@@ -1664,7 +1696,7 @@ class CustomReports {
     /**
      * The Property a stored report belongs to, or '' for a row that has none.
      *
-     * @param  array|null $report
+     * @param  Report|null $report
      * @return string
      */
     public static function propertyOf( $report ) {
@@ -1678,8 +1710,8 @@ class CustomReports {
      * Whether a stored report belongs to this Property. A row with no Property
      * belongs to none.
      *
-     * @param  array|null $report
-     * @param  string|int $property_id
+     * @param  Report|null $report
+     * @param  string|int|null $property_id
      * @return bool
      */
     public static function isOfProperty( $report, $property_id ) {
@@ -1761,6 +1793,10 @@ class CustomReports {
      *
      * @param string $user_id
      * @param bool   $all       true for a user who may see everyone's
+     * @param string $sort      a key of ROSTER_SORTS; another reads as the default
+     * @param bool|null $descending null for the sort's own direction
+     * @param int|null  $limit  null for ROSTER_LIMIT
+     * @param string|null $type CustomReport::TYPE_REPORT or TYPE_VISUALIZATION; null for both
      * @param bool   $mine_only true to list only this user's own, whatever
      *                          else they would be shown. A reader's choice,
      *                          not a permission -- it can only narrow.
@@ -1770,7 +1806,7 @@ class CustomReports {
      * @param string|null $property_id the Property whose reports are listed;
      *                          '' lists nothing, and null every Property's,
      *                          which no screen asks for
-     * @return array
+     * @return list<Report>
      */
     public static function roster( $user_id, $all = false, $sort = '', $descending = null, $limit = null, $type = null, $mine_only = false, $favorites_only = false, $property_id = null ) {
 
@@ -1930,7 +1966,12 @@ class CustomReports {
         return array_map( array( __CLASS__, 'hydrate' ), $out );
     }
 
-    /** A stored row, with its definition decoded. */
+    /**
+     * A stored row, with its definition decoded.
+     *
+     * @param  array<string, mixed> $row column => value
+     * @return Report
+     */
     private static function hydrate( $row ) {
 
         $row = (array) $row;
@@ -1959,10 +2000,10 @@ class CustomReports {
      * on it, and an edit is refused unless the report is already of it, as
      * one that does not exist is: a report never moves between Properties.
      *
-     * @param array  $fields {id, name, definition}
+     * @param array<string, mixed> $fields {id, name, definition, is_shared}, as posted
      * @param string $user_id the author, for a new report
      * @param string|null $property_id the Property it is built on, whose dimensions it may name
-     * @return array {ok:bool, id:string, error:string}
+     * @return SaveResult
      */
     public static function save( array $fields, $user_id, $property_id = null ) {
 
@@ -2079,8 +2120,8 @@ class CustomReports {
      * against an older builder, or by hand; the width simply is not the
      * author's to choose, so it is taken off rather than argued about.
      *
-     * @param array $definition
-     * @return array
+     * @param Definition $definition
+     * @return Definition
      */
     public static function normalize( array $definition ) {
 
@@ -2120,7 +2161,7 @@ class CustomReports {
      * @param string $user_id
      * @param bool   $all
      * @param string $property_id the Property the nav is of; '' lists none
-     * @return array
+     * @return list<Report>
      */
     public static function favorites( $user_id, $all = false, $property_id = '' ) {
 
@@ -2164,8 +2205,8 @@ class CustomReports {
      * as a report of another Property is (loadOf()).
      *
      * @param  string     $id
-     * @param  string|int $property_id
-     * @return array|null
+     * @param  string|int|null $property_id
+     * @return Report|null
      */
     public static function viewableOf( $id, $property_id ) {
 
@@ -2184,7 +2225,7 @@ class CustomReports {
      * column, is private), or anyone who may see every report. The roster
      * lists the same set.
      *
-     * @param array|null $report
+     * @param Report|null $report
      * @param string     $user_id
      * @param bool       $all
      * @return bool
@@ -2207,7 +2248,7 @@ class CustomReports {
      * with. Checked against the ROW rather than re-read, so a caller
      * cannot check one report and act on another.
      *
-     * @param array|null $report
+     * @param Report|null $report
      * @param string     $user_id
      * @param bool       $all
      * @return bool
@@ -2228,7 +2269,10 @@ class CustomReports {
             && (string) $user_id !== '';
     }
 
-    /** @return array */
+    /**
+     * @param  string $message
+     * @return SaveResult
+     */
     private static function failure( $message ) {
 
         return array( 'ok' => false, 'id' => '', 'error' => $message );

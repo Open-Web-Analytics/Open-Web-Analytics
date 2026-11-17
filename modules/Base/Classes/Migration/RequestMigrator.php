@@ -54,8 +54,8 @@ class RequestMigrator extends FactMigrator {
      * session began. A request the migration refuses (refusal()) is never the
      * entry, or the session would start on a row that is not written.
      *
-     * @param  array $session_ids as read
-     * @return array session id as text => array( 'id' => request id as text, 'ts' => seconds )
+     * @param  array<mixed> $session_ids as read
+     * @return array<int|string, array{id: string, ts: int}> session id as text => its entry request's id as text and its time in seconds
      */
     protected function entries( array $session_ids ) {
 

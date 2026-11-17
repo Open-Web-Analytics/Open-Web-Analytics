@@ -55,7 +55,7 @@ class SourceStep extends Step {
      * @param string      $join   which join they live on
      * @param string|null $absent SQL test that is true when there is no row
      */
-    function __construct( $column, $tag, $host, $join, $absent = null ) {
+    public function __construct( $column, $tag, $host, $join, $absent = null ) {
 
         parent::__construct( $column );
 
@@ -84,7 +84,12 @@ class SourceStep extends Step {
             $tag, self::hostSource( $host ) );
     }
 
-    /** A referring host as a source: lower case, an app as its site, without a leading www. */
+    /**
+     * A referring host as a source: lower case, an app as its site, without a leading www.
+     *
+     * @param  string $host  SQL for the host
+     * @return string SQL
+     */
     private static function hostSource( $host ) {
 
         $lower = sprintf( 'LOWER(%s)', $host );

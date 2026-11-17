@@ -54,7 +54,8 @@ class DatabaseRequirement {
      * again. What lets a test show each enforcement point refusing without an
      * old server to run against.
      *
-     * @param string|null $version
+     * @param  string|null $version
+     * @return void
      */
     public static function assume( $version ) {
 
@@ -100,7 +101,12 @@ class DatabaseRequirement {
             $number, self::MYSQL_MIN, self::shortVersion( self::MARIADB_MIN ) );
     }
 
-    /** "10.11.0" as "10.11". */
+    /**
+     * "10.11.0" as "10.11".
+     *
+     * @param  string $version
+     * @return string
+     */
     protected static function shortVersion( $version ) {
 
         return preg_replace( '/\.0$/', '', (string) $version );

@@ -23,6 +23,10 @@ class JobQueueLease {
     /** @var int */
     private $lease_seconds;
 
+    /**
+     * @param string     $id             the job's
+     * @param int|string $lease_seconds  as the job's row holds it
+     */
     public function __construct( $id, $lease_seconds ) {
 
         $this->id            = (string) $id;
@@ -47,7 +51,11 @@ class JobQueueLease {
         return (int) $db->getAffectedRows() > 0;
     }
 
-    /** The queue records the outcome; there is nothing to release here. */
+    /**
+     * The queue records the outcome; there is nothing to release here.
+     *
+     * @return bool
+     */
     public function release() {
 
         return true;

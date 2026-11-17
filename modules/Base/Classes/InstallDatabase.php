@@ -22,13 +22,20 @@ final class InstallDatabase {
     /** The name's prefix; the rest is the Organization's id. */
     const PREFIX = 'owa_org_';
 
-    /** A new Organization id: random, unlike the fixed one an existing database's install derives. */
+    /**
+     * A new Organization id: random, unlike the fixed one an existing database's install derives.
+     *
+     * @return string
+     */
     public static function mintOrganizationId() {
 
         return \OWA\Core\Lib::randomId();
     }
 
-    /** @return string */
+    /**
+     * @param  string $organization_id
+     * @return string
+     */
     public static function nameFor( $organization_id ) {
 
         return self::PREFIX . (string) $organization_id;
@@ -51,7 +58,7 @@ final class InstallDatabase {
      * create a database never writes into somebody else's.
      *
      * @param string $name
-     * @return array ok (bool), error (string|null)
+     * @return array{ok: bool, error: string|null}
      */
     public static function create( $name ) {
 
@@ -84,7 +91,12 @@ final class InstallDatabase {
         return array( 'ok' => true, 'error' => null );
     }
 
-    /** Drop a database this install created and could not use. */
+    /**
+     * Drop a database this install created and could not use.
+     *
+     * @param  string $name
+     * @return bool false for a name OWA did not give, or no connection
+     */
     public static function dropCreated( $name ) {
 
         $server = self::organizationIdFrom( $name ) !== null ? self::server() : null;
@@ -92,7 +104,11 @@ final class InstallDatabase {
         return $server ? $server->dropDatabase( $name ) : false;
     }
 
-    /** "MariaDB 10.11.6" or "MySQL 8.4.3": the server install connected to. */
+    /**
+     * "MariaDB 10.11.6" or "MySQL 8.4.3": the server install connected to.
+     *
+     * @return string|null null when the server does not say
+     */
     public static function serverDescription() {
 
         $row     = \OWA\Core\CoreAPI::dbSingleton()->get_row( 'SELECT VERSION() AS v' );

@@ -116,7 +116,12 @@ class GeoEncodingRepair {
         return $out;
     }
 
-    /** Is this value double-encoded? Convenience for callers that only count. */
+    /**
+     * Is this value double-encoded? Convenience for callers that only count.
+     *
+     * @param  string|null $value
+     * @return bool
+     */
     public static function isDoubleEncoded( $value ) {
 
         return self::repair( $value ) !== null;

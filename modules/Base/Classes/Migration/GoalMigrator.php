@@ -36,6 +36,15 @@ namespace OWA\Module\Base\Classes\Migration;
  *
  * Runs in Update062, before Update076 renames the definitions' tables, so it
  * reads them under the names 1.x left (namedBefore076()).
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type Progress from FactMigrator
+ * @phpstan-type Located array{sql: string, params: list<string>, name: string}
+ * @phpstan-type GoalValue array{value: int, currency: string}
+ *
+ * Located is a definition's compiled predicate (EventPredicate's Compiled)
+ * with the name its goal events carry. GoalValue is a completion's worth, in
+ * minor units of the currency.
  */
 class GoalMigrator extends FactMigrator {
 
@@ -46,10 +55,10 @@ class GoalMigrator extends FactMigrator {
 
     const NOT_LOCATED = 'goal_not_located';
 
-    /** @var array definition id => compiled predicate plus 'name', or false */
+    /** @var array<int|string, Located|false> definition id => compiled predicate plus 'name', or false */
     private $compiled = array();
 
-    /** @var array site_id => property id */
+    /** @var array<string, mixed> site_id => property id, as propertyFor() gives it */
     private $properties = array();
 
     protected static function progressKey() {
@@ -134,6 +143,12 @@ class GoalMigrator extends FactMigrator {
         return $marked;
     }
 
+    /**
+     * Count a completion the definition could not find.
+     *
+     * @param  Progress $progress updated in place
+     * @return void
+     */
     private function notLocated( array &$progress ) {
 
         $progress['rows_refused']++;
@@ -153,10 +168,10 @@ class GoalMigrator extends FactMigrator {
      *
      * created_at is now, so the cube rebuilds the day (Cube\Builder::isCurrent()).
      *
-     * @param  array  $trigger  the stored row's id, yyyymmdd, site_id, visitor_id,
+     * @param  Row    $trigger  the stored row's id, yyyymmdd, site_id, visitor_id,
      *                          session_id and ts
      * @param  string $name     the definition's name
-     * @param  array|null $value  array( 'value' => minor units, 'currency' => code ),
+     * @param  GoalValue|null $value  array( 'value' => minor units, 'currency' => code ),
      *                          or null for none. Update075 passes none: it runs
      *                          before Update077 gives raw the column.
      * @return bool   false when the write failed
@@ -224,8 +239,8 @@ class GoalMigrator extends FactMigrator {
      * runs after this.
      *
      * @param  string $site_id
-     * @param  mixed  $v1  owa_session.goal_N_value
-     * @return array|null
+     * @param  mixed  $v1  owa_session.goal_N_value, as v1 stored it
+     * @return GoalValue|null
      */
     private function valueOf( $site_id, $v1 ) {
 
@@ -252,6 +267,7 @@ class GoalMigrator extends FactMigrator {
     /** @var bool|null whether raw has a `value` column, asked once */
     private $raw_has_value = null;
 
+    /** @return bool */
     private function rawHasValue() {
 
         if ( $this->raw_has_value === null ) {
@@ -263,7 +279,12 @@ class GoalMigrator extends FactMigrator {
         return $this->raw_has_value;
     }
 
-    /** The Property a site belongs to. */
+    /**
+     * The Property a site belongs to.
+     *
+     * @param  string $site_id
+     * @return mixed the site's property_id, as the entity holds it: any type
+     */
     public static function propertyFor( $site_id ) {
 
         $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
@@ -279,6 +300,8 @@ class GoalMigrator extends FactMigrator {
      * An installation that ran it while still on 32-bit ids holds a 32-bit id
      * there, and a derivation now is 64-bit: it would find nothing.
      *
+     * @param  mixed $property_id  as propertyFor() gives it
+     * @param  int   $goal_number
      * @return string|null
      */
     public static function goalEventDefinitionFor( $property_id, $goal_number ) {
@@ -292,7 +315,13 @@ class GoalMigrator extends FactMigrator {
         return isset( $row['id'] ) ? (string) $row['id'] : null;
     }
 
-    /** Slot N of a site's goals, as Update025 migrated it, compiled; or null. */
+    /**
+     * Slot N of a site's goals, as Update025 migrated it, compiled; or null.
+     *
+     * @param  string $site_id
+     * @param  int    $n
+     * @return Located|null
+     */
     private function predicate( $site_id, $n ) {
 
         if ( ! array_key_exists( $site_id, $this->properties ) ) {
@@ -323,7 +352,7 @@ class GoalMigrator extends FactMigrator {
         return $this->compiled[ $id ] ?: null;
     }
 
-    /** @var array property id => definition id => its name once Update075 has run */
+    /** @var array<string, array<int|string, mixed>> property id => definition id => its name once Update075 has run, as stored */
     private $renamed = array();
 
     /**
@@ -336,6 +365,8 @@ class GoalMigrator extends FactMigrator {
      * the Goals report would show the migrated goal events and every later one
      * under two names. After Update075 nothing is renamed and this is the
      * name the definition has, so revertSite() finds the same rows either way.
+     *
+     * @return string
      */
     private function eventName( \OWA\Module\Base\Entity\GoalEventDefinition $goal ) {
 

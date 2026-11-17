@@ -66,7 +66,7 @@ class Score {
      *
      * @param  object $event
      * @param  string $level  spam_detection
-     * @return array  score (float), fired (rule => points, highest first), rules (spam_rules)
+     * @return array{score: float, fired: array<string, float>, rules: string}  fired is rule => points, highest first; rules is spam_rules
      */
     public static function of( $event, $level ) {
 
@@ -107,7 +107,8 @@ class Score {
      * The headers of the beacon request, as the edge captured them onto the
      * event: lower-case names, '' for one the request did not carry.
      *
-     * @return array
+     * @param  object $event
+     * @return array<string, string>
      */
     public static function headers( $event ) {
 
@@ -134,7 +135,12 @@ class Score {
         return $out;
     }
 
-    /** Rule => points, highest points first, then by name so the order is stable. */
+    /**
+     * Rule => points, highest points first, then by name so the order is stable.
+     *
+     * @param  array<string, float> $fired
+     * @return array<string, float>
+     */
     public static function ordered( array $fired ) {
 
         uksort( $fired, function ( $a, $b ) use ( $fired ) {
@@ -149,7 +155,7 @@ class Score {
      * spam_rules: `NAME=points` for each, space-separated, in the order given,
      * as SpamAssassin's tests= header. Cut to whole entries at RULES_WIDTH.
      *
-     * @param  array $fired rule => points, already ordered
+     * @param  array<string, float> $fired rule => points, already ordered
      * @return string  '' when none fired
      */
     public static function format( array $fired ) {
@@ -200,13 +206,24 @@ class Score {
         return (float) $value;
     }
 
-    /** Whether a score reaches a threshold. A null threshold blocks nothing. */
+    /**
+     * Whether a score reaches a threshold. A null threshold blocks nothing.
+     *
+     * @param  float      $score
+     * @param  float|null $threshold
+     * @return bool
+     */
     public static function blocks( $score, $threshold ) {
 
         return $threshold !== null && round( (float) $score, 1 ) >= round( (float) $threshold, 1 );
     }
 
-    /** The beacon's day, derived as raw's is. */
+    /**
+     * The beacon's day, derived as raw's is.
+     *
+     * @param  object $event
+     * @return int yyyymmdd
+     */
     private static function day( $event ) {
 
         $yyyymmdd = (int) $event->get( 'yyyymmdd' );

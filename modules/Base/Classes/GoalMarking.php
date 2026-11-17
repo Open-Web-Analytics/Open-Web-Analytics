@@ -40,11 +40,13 @@ namespace OWA\Module\Base\Classes;
  * is rebuilt: here it is N predicates against values already in memory, once per
  * event, ever. What that costs is retroactivity -- a definition made today does
  * not mark yesterday.
+ *
+ * @phpstan-type Goal array{definition: \OWA\Module\Base\Entity\GoalEventDefinition, conditions: list<\OWA\Module\Base\Entity\GoalEventDefinitionCondition>}
  */
 class GoalMarking {
 
     /**
-     * site_id => list of array( 'definition' => GoalEventDefinition, 'conditions' => array )
+     * site_id => the active definitions, each with its conditions
      *
      * Ingest runs this for every row of every beacon, so the definitions and
      * their conditions are read ONCE per site per process. Both halves matter:
@@ -53,14 +55,18 @@ class GoalMarking {
      * makes a tracker endpoint slow. The old docblock claimed this was already
      * the case because the definition ENTITIES were memoised; their conditions
      * were not.
+     *
+     * @var array<string, list<Goal>>
      */
     private static $goals = array();
 
     /**
      * Judge every event in the set, and add a goal event for each definition met.
      *
-     * @param  array $events  the set from Ingest::TRACKING_EVENTS_PRE_SAVE
-     * @return array          the same set, each marked 0, and a goal event marked
+     * @param  mixed $events  the set from Ingest::TRACKING_EVENTS_PRE_SAVE, a list
+     *                        of events; a filter's value, so anything else is
+     *                        handed back as it came
+     * @return mixed          the same set, each marked 0, and a goal event marked
      *                        1 per definition met
      */
     public static function mark( $events ) {
@@ -155,7 +161,7 @@ class GoalMarking {
      *
      * @param  object $trigger     the event that met the definition
      * @param  \OWA\Module\Base\Entity\GoalEventDefinition $definition
-     * @param  array  $row         the row the trigger will become
+     * @param  array<string, mixed> $row  the row the trigger will become
      * @return object
      */
     public static function goalEvent( $trigger, $definition, array $row ) {
@@ -187,8 +193,9 @@ class GoalMarking {
      * currency cannot be shown or summed.
      *
      * @param  \OWA\Module\Base\Entity\GoalEventDefinition $definition
-     * @param  array $row  the row of the event that met it
-     * @return array|null  array( 'value' => int, 'currency' => string )
+     * @param  array<string, mixed> $row  the row of the event that met it
+     * @return array{value: int|null, currency: string}|null  value is null only for a
+     *                     definition value that is not a number
      */
     public static function valueOf( $definition, array $row ) {
 
@@ -245,9 +252,9 @@ class GoalMarking {
      * first row (EventRawHandlers::alreadyIngested()), which is the incoming
      * event's.
      *
-     * @param  array    $triggers  name => the row of the event that met it
-     * @param  string[] $names     the once-per-session names among them
-     * @return string[]
+     * @param  array<string, array<string, mixed>> $triggers  name => the row of the event that met it
+     * @param  list<string> $names  the once-per-session names among them
+     * @return list<string>
      */
     protected static function alreadyInSession( array $triggers, array $names ) {
 
@@ -295,8 +302,8 @@ class GoalMarking {
      * The first and last yyyymmdd a session's rows can be in, as of this row.
      * See alreadyInSession().
      *
-     * @param  array $row
-     * @return int[] array( from, to )
+     * @param  array<string, mixed> $row
+     * @return array{int, int} array( from, to )
      */
     public static function sessionDays( array $row ) {
 
@@ -327,7 +334,7 @@ class GoalMarking {
      * is_active has no opinion about slots.
      *
      * @param  string $site_id
-     * @return array
+     * @return list<Goal>
      */
     protected static function goalsFor( $site_id ) {
 
@@ -399,6 +406,8 @@ class GoalMarking {
      * For tests, which create a definition and then expect the next row to be
      * marked by it. In a request the memo is exactly right: definitions do not
      * change while a beacon is being stored.
+     *
+     * @return void
      */
     public static function forget() {
 

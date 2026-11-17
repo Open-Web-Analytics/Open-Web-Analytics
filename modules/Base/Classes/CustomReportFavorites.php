@@ -81,7 +81,7 @@ class CustomReportFavorites {
      * favourites, not thousands.
      *
      * @param  string $user_id
-     * @return array  report id => true
+     * @return array<int|string, true> report id => true; a numeric id is an int key
      */
     public static function idsFor( $user_id ) {
 
@@ -114,7 +114,8 @@ class CustomReportFavorites {
      * longer exists, and leaving them would put a dead id at the top of
      * somebody's list if the id were ever reused.
      *
-     * @param string $report_id
+     * @param  string $report_id
+     * @return void
      */
     public static function forget( $report_id ) {
 
@@ -132,6 +133,8 @@ class CustomReportFavorites {
     }
 
     /**
+     * @param  string $report_id
+     * @param  string $user_id
      * @return string|null the row id, or null when it is not starred
      */
     private static function rowId( $report_id, $user_id ) {

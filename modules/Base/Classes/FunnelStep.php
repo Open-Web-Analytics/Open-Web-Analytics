@@ -21,6 +21,12 @@ namespace OWA\Module\Base\Classes;
  *
  * The rules a step is saved under live here, so the save (VisualizationSave),
  * the preview (VisualizationPreview) and their tests apply one set of them.
+ *
+ * A submitted row is request data and a stored step decoded JSON, so both are
+ * read as key => anything; what fromRow() and conditionsOf() make is typed.
+ *
+ * @phpstan-type Condition array{property: string, operator: string, value: string}
+ * @phpstan-type Step array{name: string, kind: string, event: string, match: string, conditions: list<Condition>, step_number: int}
  */
 class FunnelStep {
 
@@ -45,9 +51,9 @@ class FunnelStep {
      * A condition with no value is a row left alone and is dropped, as a goal
      * event definition's is.
      *
-     * @param  array $row     { name, kind, event, custom, match, conditions }
-     * @param  int   $number  the step's position, from 1
-     * @return array|null
+     * @param  array<string, mixed> $row     { name, kind, event, custom, match, conditions }
+     * @param  int                  $number  the step's position, from 1
+     * @return Step|null
      */
     public static function fromRow( array $row, $number ) {
 
@@ -80,6 +86,9 @@ class FunnelStep {
     /**
      * A row of a kind no longer saved, with something in it: a path, a goal
      * event definition, or a kind nothing knows.
+     *
+     * @param  array<string, mixed> $row
+     * @return bool
      */
     public static function isOldKind( array $row ) {
 
@@ -94,7 +103,12 @@ class FunnelStep {
         return ! in_array( $kind, array_merge( array( '', self::KIND_EVENT ), self::OLD_KINDS ), true );
     }
 
-    /** A row nobody filled in: see fromRow(). An empty row of an old kind is blank too. */
+    /**
+     * A row nobody filled in: see fromRow(). An empty row of an old kind is blank too.
+     *
+     * @param  array<string, mixed> $row
+     * @return bool
+     */
     public static function isBlank( array $row ) {
 
         if ( self::isOldKind( $row ) ) {
@@ -112,13 +126,23 @@ class FunnelStep {
             && self::eventOf( $row ) === self::DEFAULT_EVENT;
     }
 
-    /** The row's event; a row that names none is on the default one. */
+    /**
+     * The row's event; a row that names none is on the default one.
+     *
+     * @param  array<string, mixed> $row
+     * @return string
+     */
     public static function eventOf( array $row ) {
 
         return trim( (string) ( is_scalar( $row['event'] ?? null ) ? $row['event'] : self::DEFAULT_EVENT ) );
     }
 
-    /** 'any' or 'all'; anything else reads as all. */
+    /**
+     * 'any' or 'all'; anything else reads as all.
+     *
+     * @param  array<string, mixed> $step  a row or a stored step
+     * @return string
+     */
     public static function matchOf( array $step ) {
 
         return ( $step['match'] ?? '' ) === \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_ANY
@@ -134,9 +158,9 @@ class FunnelStep {
      * ($dropEmpty false): Update079 copies a goal event definition's
      * conditions as they are, and one comparing with '' counted as such.
      *
-     * @param  array $step
-     * @param  bool  $dropEmpty
-     * @return array
+     * @param  array<string, mixed> $step  a row or a stored step
+     * @param  bool                 $dropEmpty
+     * @return list<Condition>
      */
     public static function conditionsOf( array $step, $dropEmpty = true ) {
 
@@ -174,11 +198,11 @@ class FunnelStep {
      * The field names say which row, and which condition of it, a message is
      * about (stepEvent3, stepCondition3_2), so the builder shows it there.
      *
-     * @param  array $row            as fromRow() takes it
-     * @param  int   $number         the step's position, from 1
-     * @param  array $customColumns  the Property's applied custom dimensions,
-     *                               column => label (EventPredicate::customColumnsFor())
-     * @return array
+     * @param  array<string, mixed>  $row            as fromRow() takes it
+     * @param  int                   $number         the step's position, from 1
+     * @param  array<string, string> $customColumns  the Property's applied custom dimensions,
+     *                                               column => label (EventPredicate::customColumnsFor())
+     * @return array<string, string>
      */
     public static function problems( array $row, $number, array $customColumns = array() ) {
 
@@ -312,6 +336,10 @@ class FunnelStep {
      * The events a goal event definition may be triggered by, and a site's own
      * events: the same list the event picker offers, so the save refuses only
      * what the builder would not have offered.
+     *
+     * @param  string $event
+     * @param  int    $number  the step's position, from 1
+     * @return string
      */
     private static function eventProblem( $event, $number ) {
 
@@ -335,6 +363,7 @@ class FunnelStep {
      * The page a step matches, when that is all it matches: a page_view whose
      * only conditions are page_path exact, and page_query exact beside it.
      *
+     * @param  array<string, mixed> $step  as stored
      * @return string|null  the path, with ?query when there is one
      */
     public static function pageOf( array $step ) {
@@ -376,7 +405,12 @@ class FunnelStep {
         return $query === null ? $path : $path . '?' . $query;
     }
 
-    /** A step with no name is named for its page, or for its event. */
+    /**
+     * A step with no name is named for its page, or for its event.
+     *
+     * @param  array<string, mixed> $step  as stored
+     * @return string
+     */
     public static function defaultName( array $step ) {
 
         $page = self::pageOf( $step );
@@ -390,8 +424,8 @@ class FunnelStep {
      * A page step reads as its page, as a path step did. Anything else reads
      * as the event, then each condition as label, comparison and value.
      *
-     * @param  array $step           as stored
-     * @param  array $customColumns  column => label, for a custom dimension's label
+     * @param  array<string, mixed>  $step           as stored
+     * @param  array<string, string> $customColumns  column => label, for a custom dimension's label
      * @return string
      */
     public static function summary( array $step, array $customColumns = array() ) {

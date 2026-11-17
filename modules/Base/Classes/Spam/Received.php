@@ -19,19 +19,32 @@ namespace OWA\Module\Base\Classes\Spam;
  */
 class Received {
 
-    /** @return string */
+    /**
+     * @param  object $event  the incoming tracking event
+     * @return string
+     */
     public static function pageLocation( $event ) {
 
         return self::either( $event, 'received_page_location', 'page_location' );
     }
 
-    /** The page's own referrer (p_r), not the beacon request's Referer header. */
+    /**
+     * The page's own referrer (p_r), not the beacon request's Referer header.
+     *
+     * @param  object $event
+     * @return string
+     */
     public static function referrer( $event ) {
 
         return self::either( $event, 'received_referer', 'HTTP_REFERER' );
     }
 
-    /** A URL's query string: after the first `?`, up to a `#`. '' when it has none. */
+    /**
+     * A URL's query string: after the first `?`, up to a `#`. '' when it has none.
+     *
+     * @param  string $url
+     * @return string
+     */
     public static function query( $url ) {
 
         $url = (string) $url;
@@ -48,6 +61,14 @@ class Received {
         return $hash === false ? $query : substr( $query, 0, $hash );
     }
 
+    /**
+     * The first of two properties that holds a non-empty string; '' for neither.
+     *
+     * @param  object $event
+     * @param  string $received
+     * @param  string $property
+     * @return string
+     */
     private static function either( $event, $received, $property ) {
 
         foreach ( array( $received, $property ) as $name ) {

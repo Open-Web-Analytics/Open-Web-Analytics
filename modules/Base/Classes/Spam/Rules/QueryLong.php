@@ -31,7 +31,12 @@ class QueryLong extends \OWA\Module\Base\Classes\Spam\Rule {
         return $length > self::LONGER_THAN && $length <= QueryVeryLong::LONGER_THAN;
     }
 
-    /** The length of the page URL's query string, in characters. */
+    /**
+     * The length of the page URL's query string, in characters.
+     *
+     * @param  object $event
+     * @return int
+     */
     public static function queryLength( $event ) {
 
         $query = \OWA\Module\Base\Classes\Spam\Received::query(

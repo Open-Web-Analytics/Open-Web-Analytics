@@ -35,7 +35,12 @@ class NoPageLocation extends \OWA\Module\Base\Classes\Spam\Rule {
         return self::carriesAPage( (string) $event->getEventType() );
     }
 
-    /** Whether an event of this name is sent from a page with its location. */
+    /**
+     * Whether an event of this name is sent from a page with its location.
+     *
+     * @param  string $event_type
+     * @return bool
+     */
     public static function carriesAPage( $event_type ) {
 
         $helpers = \OWA\Module\Base\Classes\TrackingEventHelpers::class;

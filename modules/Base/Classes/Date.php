@@ -33,31 +33,58 @@ namespace OWA\Module\Base\Classes;
 
 class Date {
 
-    var $yyyymmdd;
-    var $timestamp;
-    var $label;
-    var $label_formal;
-    var $year;
-    var $month;
-    var $day;
-    var $day_of_week;
-    var $day_of_week_label;
-    var $day_of_year;
-    var $week_of_year;
-    var $hour;
-    var $minute;
-    var $second;
-    var $microsecond;
-    var $meridiem;
-    var $num_days_in_month;
-    var $utc_offset;
+    /*
+     * Every property is null until set(). The date() parts are strings.
+     */
 
-    function __construct() {
+    /** @var int|string|null what set() was given in yyyymmdd form, else date('Ymd') */
+    public $yyyymmdd;
+    /** @var int|string|false|null what set() was given as a timestamp, else mktime()'s (false on failure) */
+    public $timestamp;
+    /** @var string|null */
+    public $label;
+    /** @var string|null */
+    public $label_formal;
+    /** @var int|null */
+    public $year;
+    /** @var int|null */
+    public $month;
+    /** @var int|null */
+    public $day;
+    /** @var string|null */
+    public $day_of_week;
+    /** @var string|null */
+    public $day_of_week_label;
+    /** @var string|null */
+    public $day_of_year;
+    /** @var string|null */
+    public $week_of_year;
+    /** @var string|null */
+    public $hour;
+    /** @var string|null */
+    public $minute;
+    /** @var string|null */
+    public $second;
+    /** @var string|null */
+    public $microsecond;
+    /** @var string|null */
+    public $meridiem;
+    /** @var string|null */
+    public $num_days_in_month;
+    /** @var string|null */
+    public $utc_offset;
+
+    public function __construct() {
 
         return;
     }
 
-    function set($date, $format = 'yyyymmdd') {
+    /**
+     * @param  int|string $date   a timestamp, or yyyymmdd, as $format says
+     * @param  string     $format 'yyyymmdd' or 'timestamp'; any other sets only the date() parts
+     * @return void
+     */
+    public function set($date, $format = 'yyyymmdd') {
 
         switch ($format) {
 
@@ -91,16 +118,27 @@ class Date {
         $this->label_formal = date('F jS Y', $this->timestamp);
     }
 
-    function get($name){
+    /**
+     * @param  string $name a property
+     * @return int|string|false|null that property
+     */
+    public function get($name){
 
         return $this->$name;
     }
 
-    function getMonth() {
+    /**
+     * @return int|null
+     */
+    public function getMonth() {
         return $this->month;
     }
 
-    function getLabel($format = '') {
+    /**
+     * @param  string $format '' for label, 'formal' for label_formal
+     * @return string|null
+     */
+    public function getLabel($format = '') {
 
         if (empty($format)) {
 
@@ -114,12 +152,18 @@ class Date {
         return $this->$format;
     }
 
-    function getYyyymmdd() {
+    /**
+     * @return int|string|null
+     */
+    public function getYyyymmdd() {
 
         return $this->yyyymmdd;
     }
 
-    function getTimestamp() {
+    /**
+     * @return int|string|false|null
+     */
+    public function getTimestamp() {
 
         return $this->timestamp;
     }

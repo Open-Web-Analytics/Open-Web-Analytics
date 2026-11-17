@@ -63,7 +63,12 @@ class ChPlatformMismatch extends \OWA\Module\Base\Classes\Spam\Rule {
         return $pair !== array( 'android', 'linux' );
     }
 
-    /** A structured-header string's value: "Windows" is Windows. */
+    /**
+     * A structured-header string's value: "Windows" is Windows.
+     *
+     * @param  string $value
+     * @return string
+     */
     public static function unquote( $value ) {
 
         $value = trim( (string) $value );

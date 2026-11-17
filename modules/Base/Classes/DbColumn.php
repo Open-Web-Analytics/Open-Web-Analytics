@@ -32,11 +32,14 @@ namespace OWA\Module\Base\Classes;
  
 class DbColumn {
 
-     var $name;
+     /** @var string|null */
+     public $name;
 
-     var $value;
+     /** @var mixed whatever the entity was given, fitted to the column */
+     public $value;
 
-     var $data_type;
+     /** @var string|null an OWA_DTD_* type */
+     public $data_type;
 
      /**
       * Whether an over-long value may be trimmed to fit this column.
@@ -57,7 +60,7 @@ class DbColumn {
       *
       * @var bool
       */
-     var $truncatable = true;
+     public $truncatable = true;
 
      /**
       * May this column store NULL, or is an unset value written as ''?
@@ -77,7 +80,7 @@ class DbColumn {
       *
       * @var bool
       */
-     var $nullable = false;
+     public $nullable = false;
 
      /**
       * The encoding of the TABLE this column belongs to, when it differs from
@@ -90,17 +93,22 @@ class DbColumn {
       *
       * @var string|null
       */
-     var $character_encoding = null;
+     public $character_encoding = null;
 
-     var $is_primary_key = false;
+     /** @var bool */
+     public $is_primary_key = false;
 
-     var $auto_increment = false;
+     /** @var bool */
+     public $auto_increment = false;
 
-     var $is_unique = false;
+     /** @var bool */
+     public $is_unique = false;
 
-     var $is_not_null = false;
+     /** @var bool */
+     public $is_not_null = false;
 
-     var $label;
+     /** @var string|null */
+     public $label;
 
      /**
       * What the column holds, in a sentence for an administrator. Documentation
@@ -108,13 +116,19 @@ class DbColumn {
       *
       * @var string
       */
-     var $description = '';
+     public $description = '';
 
-     var $index;
+     /** @var bool|null true once setIndex() asks for one */
+     public $index;
 
-     var $default_value;
+     /** @var int|float|null only a number is written into the definition */
+     public $default_value;
 
-     function __construct($name ='', $data_type = '') {
+     /**
+      * @param string $name
+      * @param string $data_type an OWA_DTD_* type
+      */
+     public function __construct($name ='', $data_type = '') {
 
          if ($name) {
              $this->setName($name);
@@ -126,24 +140,40 @@ class DbColumn {
 
      }
 
-     function get($name) {
+     /**
+      * @param  string $name a property
+      * @return mixed that property, a different type for each
+      */
+     public function get($name) {
 
          return $this->$name;
      }
 
-     function set($name, $value) {
+     /**
+      * @param  string $name  a property
+      * @param  mixed  $value of that property's type
+      * @return void
+      */
+     public function set($name, $value) {
 
          $this->$name = $value;
 
          return;
      }
 
-     function getValue() {
+     /**
+      * @return mixed
+      */
+     public function getValue() {
 
          return $this->value;
      }
 
-     function setValue($value) {
+     /**
+      * @param  mixed $value
+      * @return void
+      */
+     public function setValue($value) {
 
          $this->value = $this->fitToColumn( $value );
 
@@ -278,7 +308,7 @@ class DbColumn {
      * @param string|null $encoding
      * @return void
      */
-    function setCharacterEncoding( $encoding ) {
+    public function setCharacterEncoding( $encoding ) {
 
         $this->character_encoding = $encoding ? (string) $encoding : null;
     }
@@ -289,7 +319,7 @@ class DbColumn {
      * @param bool $truncatable
      * @return void
      */
-    function setTruncatable( $truncatable ) {
+    public function setTruncatable( $truncatable ) {
 
         $this->truncatable = (bool) $truncatable;
     }
@@ -304,7 +334,7 @@ class DbColumn {
      * @param bool $nullable
      * @return void
      */
-    function setNullable( $nullable = true ) {
+    public function setNullable( $nullable = true ) {
 
         $this->nullable = (bool) $nullable;
     }
@@ -370,8 +400,9 @@ class DbColumn {
       *
       * @param bool $omit_primary_key  leave the inline PRIMARY KEY off, for a
       *                                table that declares a composite one
+      * @return string
       */
-     function getDefinition( $omit_primary_key = false ) {
+     public function getDefinition( $omit_primary_key = false ) {
 
          $definition = '';
 
@@ -433,58 +464,95 @@ class DbColumn {
       *
       * The clause itself belongs to whoever is writing the statement, because
       * where it may legally go depends on the statement. See getDefinition().
+      *
+      * @return bool
       */
-     function isIndexed() {
+     public function isIndexed() {
 
          return (bool) $this->get('index');
      }
 
-     function setDataType($type) {
+     /**
+      * @param  string $type an OWA_DTD_* type
+      * @return void
+      */
+     public function setDataType($type) {
 
          $this->data_type = $type;
      }
 
-     function setDefaultValue($value) {
+     /**
+      * @param  int|float $value
+      * @return void
+      */
+     public function setDefaultValue($value) {
 
          $this->default_value = $value;
      }
 
-     function setPrimaryKey() {
+     /**
+      * @return void
+      */
+     public function setPrimaryKey() {
 
          $this->is_primary_key = true;
      }
 
-     function setIndex() {
+     /**
+      * @return void
+      */
+     public function setIndex() {
 
          $this->index = true;
      }
 
-     function setNotNull() {
+     /**
+      * @return void
+      */
+     public function setNotNull() {
 
          $this->is_not_null = true;
      }
 
-     function setLabel($label) {
+     /**
+      * @param  string $label
+      * @return void
+      */
+     public function setLabel($label) {
 
          $this->label = $label;
      }
 
-     function setDescription( $description ) {
+     /**
+      * @param  string $description
+      * @return void
+      */
+     public function setDescription( $description ) {
 
          $this->description = (string) $description;
      }
 
-     function setAutoIncrement() {
+     /**
+      * @return void
+      */
+     public function setAutoIncrement() {
 
          $this->auto_increment = true;
      }
 
-     function setName($name) {
+     /**
+      * @param  string $name
+      * @return void
+      */
+     public function setName($name) {
 
          $this->name = $name;
      }
 
-     function getName() {
+     /**
+      * @return string|null
+      */
+     public function getName() {
 
          return $this->name;
      }

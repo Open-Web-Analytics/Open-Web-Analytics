@@ -50,7 +50,7 @@ class MediumStep extends Step {
      * @param string      $join
      * @param string|null $absent
      */
-    function __construct( $column, $tag, $host, $join, $absent = null ) {
+    public function __construct( $column, $tag, $host, $join, $absent = null ) {
 
         parent::__construct( $column );
 
@@ -84,6 +84,8 @@ class MediumStep extends Step {
      *
      * CampaignStep mirrors it for an untagged visit's campaign, so the two
      * are one expression and cannot disagree.
+     *
+     * @return string SQL
      */
     public function untagged( Context $context ) {
 

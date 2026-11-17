@@ -40,18 +40,21 @@ class Browscap extends \OWA\Core\Base {
     /**
      * Browscap Record for current User agent
      *
-     * @var mixed
+     * @var \UAParser\Result\Client
      */
-    var $browser;
+    public $browser;
 
     /**
      * Current user Agent
      *
      * @var string
      */
-    var $ua;
+    public $ua;
 
-    function __construct( $ua = '' ) {
+    /**
+     * @param string $ua
+     */
+    public function __construct( $ua = '' ) {
 
         parent::__construct();
 
@@ -64,7 +67,13 @@ class Browscap extends \OWA\Core\Base {
 
     }
 
-    function lookup( $user_agent ) {
+    /**
+     * Parse $this->ua; $user_agent is not read.
+     *
+     * @param  string $user_agent
+     * @return \UAParser\Result\Client
+     */
+    public function lookup( $user_agent ) {
 
         /*
          * Parsed every time, not cached.
@@ -127,32 +136,51 @@ class Browscap extends \OWA\Core\Base {
         return null;
     }
 
-    function get( $name ) {
+    /**
+     * @param  string $name a property of the parse: ua, os, device or originalUserAgent
+     * @return mixed that property, a different type for each
+     */
+    public function get( $name ) {
 
         return $this->browser->$name;
     }
 
-    function getUaFamily() {
+    /**
+     * @return string
+     */
+    public function getUaFamily() {
 
         return $this->browser->ua->family;
     }
 
-    function getUaFamilyVersion() {
+    /**
+     * @return string
+     */
+    public function getUaFamilyVersion() {
 
         return $this->browser->ua->toVersion();
     }
 
-    function getUaVersion() {
+    /**
+     * @return string
+     */
+    public function getUaVersion() {
 
         return $this->browser->ua->toVersion();
     }
 
-    function getOsFamily() {
+    /**
+     * @return string
+     */
+    public function getOsFamily() {
 
         return $this->browser->os->family;
     }
 
-    function getOsVersion() {
+    /**
+     * @return string
+     */
+    public function getOsVersion() {
 
         return $this->browser->os->toVersion();
     }
@@ -170,21 +198,29 @@ class Browscap extends \OWA\Core\Base {
      * and storing it is not -- absence is NULL in owa_event_raw.
      */
 
-    function getDeviceFamily() {
+    /**
+     * @return string
+     */
+    public function getDeviceFamily() {
 
-        return isset( $this->browser->device->family )
-            ? (string) $this->browser->device->family
-            : '';
+        // Always set: 'Other' when no rule matched.
+        return $this->browser->device->family;
     }
 
-    function getDeviceBrand() {
+    /**
+     * @return string
+     */
+    public function getDeviceBrand() {
 
         return isset( $this->browser->device->brand )
             ? (string) $this->browser->device->brand
             : '';
     }
 
-    function getDeviceModel() {
+    /**
+     * @return string
+     */
+    public function getDeviceModel() {
 
         return isset( $this->browser->device->model )
             ? (string) $this->browser->device->model

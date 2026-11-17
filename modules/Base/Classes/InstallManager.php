@@ -33,7 +33,12 @@ namespace OWA\Module\Base\Classes;
 
 class InstallManager extends \OWA\Core\Base {
 
-    function installSchema() {
+    /**
+     * Create the schema, on a server OWA can run on.
+     *
+     * @return bool
+     */
+    public function installSchema() {
 
         /*
          * Refused before a table exists, on a server OWA cannot run on. The web
@@ -55,7 +60,16 @@ class InstallManager extends \OWA\Core\Base {
 
     }
 
-    function createAdminUser($user_id, $email_address, $password = '') {
+    /**
+     * Create the first admin, unless there is one.
+     *
+     * @param  string $user_id
+     * @param  string $email_address
+     * @param  string $password
+     * @return string|false|void  the password; false without one; nothing when an
+     *                            admin, or a user with that user_id, exists
+     */
+    public function createAdminUser($user_id, $email_address, $password = '') {
 
         //create user entity
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
@@ -122,8 +136,15 @@ class InstallManager extends \OWA\Core\Base {
      * A caller may still pin an identifier by passing $site_id -- the install
      * wizard does -- and in that case the pinned value is what gets looked up,
      * so pinning stays idempotent on its own terms.
+     *
+     * @param  string $domain
+     * @param  string $name         the domain when empty
+     * @param  string $description
+     * @param  string $site_family
+     * @param  string $site_id      minted when empty
+     * @return string|false the site_id; false when the site was not created
      */
-    function createDefaultSite($domain, $name = '', $description = '', $site_family = '', $site_id = '') {
+    public function createDefaultSite($domain, $name = '', $description = '', $site_family = '', $site_id = '') {
 
         $domain = \OWA\Module\Base\Classes\SiteManager::domainOnly($domain);
 
@@ -186,8 +207,12 @@ class InstallManager extends \OWA\Core\Base {
         return $site->get('site_id');
     }
 
-    /** Whether the install has an admin user. */
-    function hasAdminUser() {
+    /**
+     * Whether the install has an admin user.
+     *
+     * @return bool
+     */
+    public function hasAdminUser() {
 
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->getByColumn('role', \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE);
@@ -208,7 +233,7 @@ class InstallManager extends \OWA\Core\Base {
      * @param callable $writes does the writes; returns the site_id, or false
      * @return string|false the site_id, or false when nothing was saved
      */
-    function finishInstall( callable $writes ) {
+    public function finishInstall( callable $writes ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->beginTransaction();
@@ -242,7 +267,8 @@ class InstallManager extends \OWA\Core\Base {
         }
     }
 
-    function checkDbConnection() {
+    /** @return bool */
+    public function checkDbConnection() {
 
         // Check DB connection status
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -254,7 +280,8 @@ class InstallManager extends \OWA\Core\Base {
         }
     }
     
-    function isInstallComplete() {
+    /** @return bool */
+    public function isInstallComplete() {
         
         // is config file present?
         $c = \OWA\Core\CoreAPI::configSingleton();
@@ -298,7 +325,7 @@ class InstallManager extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function isBaseSchemaInstalled() {
+    public function isBaseSchemaInstalled() {
         
         $base_module_tables = ['user'];
         $tables_missing = [];

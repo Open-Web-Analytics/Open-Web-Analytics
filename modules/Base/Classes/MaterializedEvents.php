@@ -27,23 +27,34 @@ namespace OWA\Module\Base\Classes;
  */
 class MaterializedEvents {
 
-    /** Raise session_start when the incoming event started the session. */
+    /**
+     * Raise session_start when the incoming event started the session.
+     *
+     * @param  mixed $events  the set, a list of events; a filter's value, so
+     *                        anything else is handed back as it came
+     * @return mixed
+     */
     public static function sessionStart( $events ) {
 
         return self::raise( $events, 'is_new_session_start', V2Event::MARKER_SESSION_START );
     }
 
-    /** Raise first_visit when the incoming event minted the visitor. */
+    /**
+     * Raise first_visit when the incoming event minted the visitor.
+     *
+     * @param  mixed $events  as sessionStart() takes it
+     * @return mixed
+     */
     public static function firstVisit( $events ) {
 
         return self::raise( $events, 'is_new_visitor_created', V2Event::MARKER_FIRST_VISIT );
     }
 
     /**
-     * @param  array  $events  incoming event first
+     * @param  mixed  $events  incoming event first; anything but a non-empty array is handed back
      * @param  string $flag    the request-scoped property that raises it
      * @param  string $name    the materialized event name
-     * @return array
+     * @return mixed
      */
     private static function raise( $events, $flag, $name ) {
 

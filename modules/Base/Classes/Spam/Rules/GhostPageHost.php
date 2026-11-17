@@ -43,7 +43,12 @@ class GhostPageHost extends \OWA\Module\Base\Classes\Spam\Rule {
         return $hosts && ! \OWA\Module\Base\Classes\ProfileDomains::isOnDomain( $page, $hosts );
     }
 
-    /** The Profile's hosts. Separate so a test can name them without a Profile. */
+    /**
+     * The Profile's hosts. Separate so a test can name them without a Profile.
+     *
+     * @param  string $site_id
+     * @return string[]
+     */
     protected function profileHosts( $site_id ) {
 
         return \OWA\Module\Base\Classes\Spam\Hosts::forSite( $site_id );

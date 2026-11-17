@@ -33,11 +33,11 @@ namespace OWA\Module\Base\Classes;
 class Event {
 
     /**
-     * Event Properties
+     * Event Properties: name => what the tracker or OWA set, any type
      *
-     * @var array
+     * @var array<string, mixed>
      */
-    var $properties = array();
+    public $properties = array();
 
     /**
      * State
@@ -46,7 +46,7 @@ class Event {
      */
     //var $state;
 
-    var $eventType;
+    public $eventType;
 
     /**
      * The key the listener system routes this event on -- NOT its name.
@@ -72,7 +72,7 @@ class Event {
      *
      * @var string
      */
-    var $dispatchName = '';
+    public $dispatchName = '';
 
     /**
      * Time since last request.
@@ -81,23 +81,24 @@ class Event {
      *
      * @var integer $time_since_lastreq
      */
-    var $time_since_lastreq;
+    public $time_since_lastreq;
 
     /**
      * Event guid
      *
      * @var string
      */
-    var $guid;
+    public $guid;
 
     /**
      * Creation Timestamp in UNIX EPOC UTC
      *
      * @var int
      */
-    var $timestamp;
+    public $timestamp;
 
-    var $status;
+    /** @var string handled, unhandled or failed */
+    public $status;
 
     const handled = 'handled';
     const unhandled = 'unhandled';
@@ -108,7 +109,7 @@ class Event {
      * Constructor
      * @access public
      */
-    function __construct() {
+    public function __construct() {
 
         // Set GUID for event
         $this->guid = $this->set_guid();
@@ -119,27 +120,45 @@ class Event {
         $this->status = self::unhandled;
     }
 
-    function setStatusAsHandled() {
+    /**
+     * @return void
+     */
+    public function setStatusAsHandled() {
 
         $this->status = self::handled;
     }
 
-    function setStatusAsFailed() {
+    /**
+     * @return void
+     */
+    public function setStatusAsFailed() {
 
         $this->status = self::failed;
     }
 
-    function getTimestamp() {
+    /**
+     * @return int
+     */
+    public function getTimestamp() {
 
         return $this->timestamp;
     }
 
-    function set($name, $value) {
+    /**
+     * @param  string $name
+     * @param  mixed  $value any type the property takes
+     * @return void
+     */
+    public function set($name, $value) {
 
         $this->properties[$name] = $value;
     }
 
-    function get($name) {
+    /**
+     * @param  string $name
+     * @return mixed the property, any type; false when it is not set
+     */
+    public function get($name) {
 
         if(array_key_exists($name, $this->properties)) {
             //print_r($this->properties[$name]);
@@ -151,8 +170,11 @@ class Event {
 
     /**
      * removes a property
+     *
+     * @param  string $name
+     * @return void
      */
-    function delete( $name ) {
+    public function delete( $name ) {
 
         if (array_key_exists( $name, $this->properties ) ) {
 
@@ -163,9 +185,10 @@ class Event {
     /**
      * Sets time related event properties
      *
-     * @param integer $timestamp
+     * @param  int|null $timestamp
+     * @return void
      */
-    function setTime($timestamp = null) {
+    public function setTime($timestamp = null) {
 
         if ( $timestamp ) {
             $this->set('timestamp', $timestamp);
@@ -192,7 +215,11 @@ class Event {
 
     }
 
-    function setCookieDomain($domain) {
+    /**
+     * @param  string $domain
+     * @return void
+     */
+    public function setCookieDomain($domain) {
 
         $this->properties['cookie_domain'] = $domain;
     }
@@ -201,9 +228,10 @@ class Event {
      * Applies calling application specific properties to request
      *
      * @access     private
-     * @param     array $properties
+     * @param     array<string, mixed>|null $properties
+     * @return    void
      */
-    function setProperties($properties = null) {
+    public function setProperties($properties = null) {
 
         if(!empty($properties)) {
 
@@ -218,9 +246,9 @@ class Event {
     /**
      * Exports Event Class variables
      *
-     * @return     array
+     * @return     array<string, mixed> member name => its value
      */
-     function export() {
+     public function export() {
 
          return get_object_vars( $this );
      }
@@ -246,9 +274,10 @@ class Event {
     /**
      * Loads Event class variables from an array.
      *
-     * @param  array $vars
+     * @param  array<string, mixed> $vars member name => value
+     * @return void
      */
-     function loadFromArray ( $vars ) {
+     public function loadFromArray ( $vars ) {
 
         if ( ! is_array( $vars ) ) {
             return;
@@ -280,7 +309,11 @@ class Event {
         }
     }
 
-    function replaceProperties($properties) {
+    /**
+     * @param  array<string, mixed> $properties
+     * @return void
+     */
+    public function replaceProperties($properties) {
 
         $this->properties = $properties;
     }
@@ -291,12 +324,15 @@ class Event {
      * @return    string
      * @access     private
      */
-    function set_guid() {
+    public function set_guid() {
 
         return \OWA\Core\Lib::randomId();
     }
 
-    function getProperties() {
+    /**
+     * @return array<string, mixed>
+     */
+    public function getProperties() {
 
         return $this->properties;
     }
@@ -323,17 +359,26 @@ class Event {
      *
      * @return string
      */
-    function getEventType() {
+    public function getEventType() {
 
         return ! empty( $this->eventType ) ? $this->eventType : 'unknown_event_type';
     }
 
-    function setEventType($value) {
+    /**
+     * @param  string $value
+     * @return void
+     */
+    public function setEventType($value) {
         $this->eventType = $value;
     }
 
-    /** Route this event under a dispatch key. Called by logEvent(). */
-    function setDispatchName( $value ) {
+    /**
+     * Route this event under a dispatch key. Called by logEvent().
+     *
+     * @param  string $value
+     * @return void
+     */
+    public function setDispatchName( $value ) {
 
         $this->dispatchName = (string) $value;
     }
@@ -344,25 +389,38 @@ class Event {
      * An event OWA raises internally never had one set and its name has always
      * been its routing key, so the fallback is the existing behaviour rather than
      * a new default.
+     *
+     * @return string
      */
-    function getDispatchName() {
+    public function getDispatchName() {
 
         return $this->dispatchName !== '' ? $this->dispatchName : $this->getEventType();
     }
 
-    /** Did this event arrive from a tracker? True once logEvent() has named it. */
-    function isTrackingEvent() {
+    /**
+     * Did this event arrive from a tracker? True once logEvent() has named it.
+     *
+     * @return bool
+     */
+    public function isTrackingEvent() {
 
         return $this->dispatchName !== '';
     }
 
-    function setSiteId($value) {
+    /**
+     * @param  string $value
+     * @return void
+     */
+    public function setSiteId($value) {
 
         $this->set('siteId', $value);
         $this->set('site_id', $value);
     }
 
-    function getSiteId() {
+    /**
+     * @return mixed siteId, else site_id, as set; false when neither is
+     */
+    public function getSiteId() {
 
         if ( $this->get('siteId') ) {
             return $this->get('siteId');
@@ -373,12 +431,18 @@ class Event {
 
     }
 
-    function getGuid() {
+    /**
+     * @return string
+     */
+    public function getGuid() {
 
         return $this->guid;
     }
 
-    function getStatus() {
+    /**
+     * @return string
+     */
+    public function getStatus() {
 
         return $this->status;
     }

@@ -44,6 +44,11 @@ class NoClientHints extends \OWA\Module\Base\Classes\Spam\Rule {
         return self::claimsClientHints( $this->client( $headers ) );
     }
 
+    /**
+     * Whether the browser the agent names sends Client Hints.
+     *
+     * @return bool
+     */
     public static function claimsClientHints( \OWA\Module\Base\Classes\Spam\Client $client ) {
 
         // EdgiOS is Edge Mobile to the parser, and WebKit like everything on iOS.

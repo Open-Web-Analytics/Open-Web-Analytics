@@ -66,16 +66,25 @@ namespace OWA\Module\Base\Classes;
 class FileEventQueue implements \OWA\Core\IntakeQueue {
 
     /** @var string */
-    var $queue_name = 'tracker-ingest';
+    public $queue_name = 'tracker-ingest';
 
     /** @var string the queue's directory, with a trailing slash */
-    var $queue_dir;
+    public $queue_dir;
 
-    var $event_file;
-    var $unprocessed_path;
-    var $processing_path;
-    var $delayed_path;
-    var $archive_path;
+    /** @var string */
+    public $event_file;
+
+    /** @var string */
+    public $unprocessed_path;
+
+    /** @var string */
+    public $processing_path;
+
+    /** @var string */
+    public $delayed_path;
+
+    /** @var string */
+    public $archive_path;
 
     /** @var int|null receives before a message is moved to the dead-letter queue; null in a dead-letter queue */
     private $max_receives;
@@ -96,7 +105,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     private $batch;
 
     /**
-     * @var array its .state:
+     * @var array{settled: int, in_hand: int|null, stuck: int, clean: bool, pid: int|false, host: string, held_since: int}|null its .state, null while no batch is held:
      *   settled     byte offset of the first line not yet settled
      *   in_hand     settled's offset once that line has been handed out, else null
      *   stuck       how many drains died with that line in hand
@@ -114,7 +123,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /** @var bool the batch has been read to its end */
     private $at_end = false;
 
-    function __construct( $map = array() ) {
+    /**
+     * @param array<string, mixed> $map  the queue's registration: queue_name,
+     *   path (async_log_dir when empty), is_dead_letter, max_receives; values as configured, so cast
+     */
+    public function __construct( $map = array() ) {
 
         if ( isset( $map['queue_name'] ) ) {
 
@@ -136,7 +149,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $this->archive_path     = $this->queue_dir . 'archive/';
     }
 
-    function __destruct() {
+    public function __destruct() {
 
         $this->letGo();
     }
@@ -388,7 +401,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      * @param  int $interval
      * @return int how many files
      */
-    function pruneArchive( $interval ) {
+    public function pruneArchive( $interval ) {
 
         $removed = 0;
 
@@ -413,7 +426,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      *
      * @return int
      */
-    function depth() {
+    public function depth() {
 
         $n = 0;
 
@@ -434,9 +447,9 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      * Asked of the lock itself, not the .state, so a stale .state is not
      * mistaken for a holder.
      *
-     * @return array[] batch, pid, host, held_since, settled
+     * @return list<array{batch: string, pid: int|null, host: string, held_since: int|null, settled: int}>
      */
-    function heldBatches() {
+    public function heldBatches() {
 
         $held = array();
 
@@ -485,7 +498,10 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     // Lines
     // ---------------------------------------------------------------------
 
-    /** @return array r, e (array|null), and p, why, at, raw when present */
+    /**
+     * @param  string $line
+     * @return array<string, mixed> r (int), e (array|null), and p, why, at, raw when present, as decoded
+     */
     private static function decodeRow( $line ) {
 
         $row = json_decode( $line, true );
@@ -502,7 +518,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return $row;
     }
 
-    /** What release() re-queues: the message as it was, its count kept. */
+    /**
+     * What release() re-queues: the message as it was, its count kept.
+     *
+     * @return array<string, mixed>|null r, e or raw, and p, why, at when set; null for a message with neither
+     */
     private function rowOf( \OWA\Core\IntakeMessage $message ) {
 
         if ( $message->envelope !== null ) {
@@ -535,7 +555,13 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return $row;
     }
 
-    /** Append one row; the directory is made on first use, as provision() would. */
+    /**
+     * Append one row; the directory is made on first use, as provision() would.
+     *
+     * @param  string               $path
+     * @param  array<string, mixed> $row  r, e or raw, and p, why, at when set
+     * @return bool
+     */
     private function appendRow( $path, array $row ) {
 
         $line = json_encode( $row, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
@@ -556,6 +582,8 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /**
      * Append one line to $path, safe against a rotation renaming it.
      *
+     * @param  string $path
+     * @param  string $line  without its newline
      * @return bool
      */
     private function append( $path, $line ) {
@@ -595,10 +623,12 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return false;
     }
 
-    /** The delayed file for a due time: one per minute, named for when all of it is due. */
     /**
      * Where a line due in $delay seconds goes: events.txt when it is due now,
      * else the delayed file of the minute it falls due in.
+     *
+     * @param  int $delay seconds
+     * @return string
      */
     private function fileFor( $delay ) {
 
@@ -607,6 +637,12 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return $delay > 0 ? $this->delayedFile( time() + $delay ) : $this->event_file;
     }
 
+    /**
+     * The delayed file for a due time: one per minute, named for when all of it is due.
+     *
+     * @param  int $due  a Unix time
+     * @return string
+     */
     private function delayedFile( $due ) {
 
         return $this->delayed_path . (string) ( (int) ceil( $due / 60 ) * 60 ) . '.txt';
@@ -627,7 +663,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     // Batches
     // ---------------------------------------------------------------------
 
-    /** Move events.txt into unprocessed/, when it holds anything. */
+    /**
+     * Move events.txt into unprocessed/, when it holds anything.
+     *
+     * @return void
+     */
     private function rotate() {
 
         clearstatcache( true, $this->event_file );
@@ -638,7 +678,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         }
     }
 
-    /** Move delayed files that are due into unprocessed/. */
+    /**
+     * Move delayed files that are due into unprocessed/.
+     *
+     * @return void
+     */
     private function promoteDue() {
 
         foreach ( self::files( $this->delayed_path ) as $name ) {
@@ -653,6 +697,10 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /**
      * Rename a written-to file into unprocessed/, then wait out any writer
      * still holding its lock.
+     *
+     * @param  string $path
+     * @param  string $label  in the batch's name: where it came from
+     * @return void
      */
     private function moveIntoBatches( $path, $label ) {
 
@@ -703,7 +751,12 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return false;
     }
 
-    /** Lock a batch in processing/ and resume it where it was last settled. */
+    /**
+     * Lock a batch in processing/ and resume it where it was last settled.
+     *
+     * @param  string $path
+     * @return bool whether this consumer now holds it
+     */
     private function hold( $path ) {
 
         $fh = @fopen( $path, 'r' );
@@ -758,7 +811,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return true;
     }
 
-    /** One message is dealt with; a batch with nothing left is finished. */
+    /**
+     * One message is dealt with; a batch with nothing left is finished.
+     *
+     * @return bool false for a message not outstanding in the batch held
+     */
     private function settle( \OWA\Core\IntakeMessage $message ) {
 
         $r = (array) $message->receipt;
@@ -794,7 +851,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return true;
     }
 
-    /** Every line of the batch is settled: archive or delete it. */
+    /**
+     * Every line of the batch is settled: archive or delete it.
+     *
+     * @return void
+     */
     private function finishBatch() {
 
         $path = $this->batch;
@@ -817,7 +878,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         @unlink( $path . '.state' );
     }
 
-    /** Record where the batch is, and release it to the next consumer. */
+    /**
+     * Record where the batch is, and release it to the next consumer.
+     *
+     * @return void
+     */
     private function letGo() {
 
         if ( ! $this->handle ) {
@@ -834,6 +899,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $this->batch  = null;
     }
 
+    /** @return void */
     private function writeState() {
 
         if ( $this->batch ) {

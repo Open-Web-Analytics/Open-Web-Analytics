@@ -24,15 +24,15 @@ class CustomReportRewriter {
     /** @var string[] */
     private $changes = array();
 
-    /** @var array|null report ids by dimension, read once */
+    /** @var array<string, list<array{id: string, label: string}>>|null report ids by dimension, read once */
     private $more_targets = null;
 
-    /** @var array|null */
+    /** @var array<string, list<array{id: string, label: string, param: string}>>|null report ids by link column, read once */
     private $link_targets = null;
 
     /**
-     * @param  array $definition
-     * @return array [ 'definition' => array, 'changes' => string[] ]
+     * @param  array<string, mixed> $definition  a saved report definition, as stored
+     * @return array{definition: array<string, mixed>, changes: string[]}
      */
     public function rewrite( array $definition ) {
 
@@ -66,7 +66,11 @@ class CustomReportRewriter {
         return array( 'definition' => $definition, 'changes' => $this->changes );
     }
 
-    /** @return array|null null when the widget cannot render any more */
+    /**
+     * @param  array<mixed> $widget  one widget of a definition, as stored
+     * @param  string $where  the widget, for the changes it logs
+     * @return array<mixed>|null null when the widget cannot render any more
+     */
     private function widget( array $widget, $where ) {
 
         $query = (array) ( $widget['query'] ?? array() );
@@ -177,6 +181,10 @@ class CustomReportRewriter {
      * dimensions, and a row link to one that is read by its link column. A
      * renamed dimension -- pagePath to pagePathPlusQuery -- can leave a link
      * pointing at a report that groups by the old name.
+     *
+     * @param  array<mixed> $widget
+     * @param  string $where
+     * @return array<mixed>
      */
     private function refit( array $widget, $where ) {
 
@@ -231,6 +239,9 @@ class CustomReportRewriter {
     /**
      * Names in a comma list or an array, each mapped; dropped ones removed.
      *
+     * @param  mixed  $value  a comma list or an array of names, as stored
+     * @param  string $kind   metric, dimension or either
+     * @param  string $where
      * @return string the list, comma-separated
      */
     private function names( $value, $kind, $where ) {
@@ -250,7 +261,14 @@ class CustomReportRewriter {
         return implode( ',', $out );
     }
 
-    /** One name, mapped and logged; null when v2 has no equivalent. */
+    /**
+     * One name, mapped and logged; null when v2 has no equivalent.
+     *
+     * @param  string $name
+     * @param  string $kind   metric, dimension or either
+     * @param  string $where
+     * @return string|null
+     */
     private function one( $name, $kind, $where ) {
 
         if ( $kind === 'either' ) {
@@ -292,7 +310,13 @@ class CustomReportRewriter {
         return $mapped['to'];
     }
 
-    /** A constraint string, clause by clause. */
+    /**
+     * A constraint string, clause by clause.
+     *
+     * @param  string $constraints
+     * @param  string $where
+     * @return string
+     */
     private function constraints( $constraints, $where ) {
 
         $out = array();
@@ -371,7 +395,13 @@ class CustomReportRewriter {
         return implode( ',', $out );
     }
 
-    /** A link's columns mapped; null when it cannot be kept. */
+    /**
+     * A link's columns mapped; null when it cannot be kept.
+     *
+     * @param  array<mixed> $link
+     * @param  string $where
+     * @return array<mixed>|null
+     */
     private function link( array $link, $where ) {
 
         foreach ( array( 'linkColumn', 'valueColumns' ) as $key ) {
@@ -407,6 +437,10 @@ class CustomReportRewriter {
         return $link;
     }
 
+    /**
+     * @param  mixed $value  a comma list or an array of names, as stored
+     * @return list<string>
+     */
     private static function asNames( $value ) {
 
         $names = is_array( $value ) ? $value : explode( ',', (string) $value );

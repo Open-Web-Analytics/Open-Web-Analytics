@@ -70,7 +70,12 @@ class UaRobotToken extends \OWA\Module\Base\Classes\Spam\Rule {
         return self::matchingToken( (string) ( $headers['user-agent'] ?? '' ) ) !== null;
     }
 
-    /** The first token the agent carries, or null. */
+    /**
+     * The first token the agent carries, or null.
+     *
+     * @param  string $ua
+     * @return string|null
+     */
     public static function matchingToken( $ua ) {
 
         if ( $ua === '' ) {

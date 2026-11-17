@@ -34,6 +34,13 @@ namespace OWA\Module\Base\Classes;
  * The result set also carries `compare`: which comparison, its dates and its
  * aggregates as the comparison's own result set had them.
  *
+ * A row is name => cell, a cell an array (value, formatted_value,
+ * result_type, data_type and more); a value that is not an array is left as
+ * it is.
+ *
+ * @phpstan-type ResultRow array<string, mixed>
+ * @phpstan-type Period array{0: string, 1: string}
+ *
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
  * @category    owa
  * @package     owa
@@ -48,7 +55,12 @@ class CompareMerger {
         'year'      => 'year',
     );
 
-    /** The dimensions a comparison query can restrict to the rows on the page. */
+    /**
+     * The dimensions a comparison query can restrict to the rows on the page.
+     *
+     * @param  string[] $dimensions
+     * @return list<string>
+     */
     public static function restrictable( array $dimensions ) {
 
         return array_values( array_filter( $dimensions, function ( $d ) {
@@ -59,9 +71,9 @@ class CompareMerger {
     /**
      * @param object $rs      the period's result set (paginatedResultSet), changed in place
      * @param object $crs     the comparison period's result set
-     * @param array  $dims    the dimensions both were grouped by
-     * @param array  $main    [ start, end ] yyyymmdd of the period
-     * @param array  $cmp     [ start, end ] yyyymmdd of the comparison
+     * @param string[] $dims  the dimensions both were grouped by
+     * @param Period $main    [ start, end ] yyyymmdd of the period
+     * @param Period $cmp     [ start, end ] yyyymmdd of the comparison
      * @param string $compare the `compare` key it was asked as
      * @return object $rs
      */
@@ -131,9 +143,9 @@ class CompareMerger {
      * ratio too, as in a trend's empty interval. Each has the comparison's
      * number as its compare_value and the change from it.
      *
-     * @param array    $row    a row of the comparison's result set
-     * @param callable $format ( data_type, value ) => formatted value
-     * @return array
+     * @param ResultRow $row   a row of the comparison's result set
+     * @param callable(mixed, int): mixed $format ( data_type, value ) => formatted value
+     * @return ResultRow
      */
     public static function compareOnlyRow( array $row, callable $format ) {
 
@@ -156,7 +168,13 @@ class CompareMerger {
         return $row;
     }
 
-    /** Each metric cell of $cells, given the matching cell of $compare. */
+    /**
+     * Each metric cell of $cells, given the matching cell of $compare.
+     *
+     * @param  ResultRow $cells
+     * @param  ResultRow $compare
+     * @return ResultRow
+     */
     private static function mergeCells( array $cells, array $compare ) {
 
         foreach ( $cells as $name => $cell ) {
@@ -176,7 +194,13 @@ class CompareMerger {
         return $cells;
     }
 
-    /** (value - compare) / compare, or null when there is nothing to divide by. */
+    /**
+     * (value - compare) / compare, or null when there is nothing to divide by.
+     *
+     * @param  mixed $value   a cell's value, numeric or not
+     * @param  mixed $compare a cell's value, numeric or not
+     * @return float|null
+     */
     public static function change( $value, $compare ) {
 
         if ( ! is_numeric( $value ) || ! is_numeric( $compare ) || (float) $compare == 0.0 ) {
@@ -191,6 +215,12 @@ class CompareMerger {
      * A row's identity: its dimension values, with each time-axis value
      * moved from its own period ($from) to the same place in $to. NULL and ''
      * are different values, as they are different groups in SQL.
+     *
+     * @param  ResultRow $row
+     * @param  string[]  $dims
+     * @param  Period    $from
+     * @param  Period    $to
+     * @return string
      */
     private static function key( array $row, array $dims, array $from, array $to ) {
 
@@ -218,6 +248,7 @@ class CompareMerger {
      * @param string $value     yyyymmdd, yyyymmddhh, yyyymm or yyyy
      * @param string $fromStart yyyymmdd
      * @param string $toStart   yyyymmdd
+     * @return string
      */
     public static function shift( $unit, $value, $fromStart, $toStart ) {
 

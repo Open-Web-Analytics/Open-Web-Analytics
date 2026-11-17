@@ -36,6 +36,13 @@ use OWA\Module\Base\Entity\CustomDimension;
  * can be
  * backfilled across the whole of retained history. The only bounds are raw
  * retention and the cost of rebuilding the coarse end of it.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-type Registration array{scope: string, dimension_key: string, column_name: string, data_type: string, max_length: int, label: string}
+ * @phpstan-type RegistryEntry array{family: string, name: string, entity: string, column: string, label: string, description: string, foreign_key_name: string, data_type: string, denormalized: bool}
+ *
+ * A Registration is a checked request, as register() writes it; a row read
+ * back from owa_custom_dimension is a Row with those columns and more.
  */
 class Dimensions {
 
@@ -93,7 +100,7 @@ class Dimensions {
     /** Suffix of the throwaway table capacityFor() measures against. */
     const CAPACITY_SUFFIX = '_capacity';
 
-    /** @var array property id => measured capacity, for this request only */
+    /** @var array<string, int> property id => measured capacity, for this request only */
     private static $capacity = array();
 
     /** The entity a custom dimension is registered against: the cube's. */
@@ -239,7 +246,7 @@ class Dimensions {
      * Every dimension registered against a Property, oldest first.
      *
      * @param int|string $property_id
-     * @return array of rows
+     * @return list<Row> its owa_custom_dimension rows
      */
     public static function forProperty( $property_id ) {
 
@@ -266,8 +273,8 @@ class Dimensions {
      * grid's picker, the editors and their validation -- sees it without
      * knowing custom dimensions exist.
      *
-     * @param array $row a registration
-     * @return array
+     * @param Row $row a registration
+     * @return RegistryEntry
      */
     public static function asDimension( array $row ) {
 
@@ -330,8 +337,8 @@ class Dimensions {
      * added and dropped together, in one ALTER, which the 5% batching margin
      * makes free.
      *
-     * @param array $row a registration
-     * @return array column name => type definition
+     * @param Row|Registration $row a registration
+     * @return array<string, string> column name => type definition
      */
     public static function columnsOf( array $row ) {
 
@@ -398,9 +405,8 @@ class Dimensions {
      * so a batch cannot half-register.
      *
      * @param int|string $property_id
-     * @param array      $requests  each ['key','scope','type','label']
-     * @return array ['ok' => bool, 'error' => string, 'registered' => array,
-     *                'columns' => string[]]
+     * @param array<array<string, mixed>> $requests  each ['key','scope','type','label'], as a form or the CLI gave them
+     * @return array{ok: bool, error: string, registered: list<Registration>, columns: list<string>}
      */
     public static function register( $property_id, array $requests ) {
 
@@ -516,7 +522,7 @@ class Dimensions {
      * registration, or a cube that has since grown.
      *
      * @param int|string $property_id
-     * @param array      $request  as register() takes them
+     * @param array<string, mixed> $request  as register() takes them
      * @return string
      */
     public static function refusalFor( $property_id, array $request ) {
@@ -561,7 +567,7 @@ class Dimensions {
      *
      * @param int|string $property_id
      * @param string     $key
-     * @return array ['ok' => bool, 'error' => string, 'columns' => string[]]
+     * @return array{ok: bool, error: string, columns: list<string>}
      */
     public static function deregister( $property_id, $key ) {
 
@@ -624,7 +630,7 @@ class Dimensions {
      * that lock and it already exists.
      *
      * @param int|string $property_id
-     * @return array ['ok','changed','added','dropped','error','skipped']
+     * @return array{ok: bool, changed: bool, added: list<string>, dropped: list<string>, error: string, skipped: array<string, string>}  skipped is column => why it was not added
      */
     public static function reconcile( $property_id ) {
 
@@ -727,7 +733,7 @@ class Dimensions {
      *
      * @param int|string $property_id
      * @param string[]   $present  cd_ columns on the cube
-     * @param array      $skipped  column => why it could not be added
+     * @param array<string, string> $skipped  column => why it could not be added
      * @return void
      */
     protected static function recordStates( $property_id, array $present, array $skipped ) {
@@ -788,10 +794,11 @@ class Dimensions {
     /**
      * One registration request, checked.
      *
-     * @param array $request
-     * @param array $existing     column => registration already in place
-     * @param array $in_this_call column => definition already queued
-     * @return array the row to write, or ['error' => string]
+     * @param array<string, mixed> $request
+     * @param array<string, Row> $existing     column => registration already in place
+     * @param array<string, string> $in_this_call column => definition already queued
+     * @param int   $capacity     how many this Property may hold
+     * @return Registration|array{error: string} the row to write, or why not
      */
     protected static function validate( array $request, array $existing, array $in_this_call,
                                         $capacity = self::MAX_PER_PROPERTY ) {

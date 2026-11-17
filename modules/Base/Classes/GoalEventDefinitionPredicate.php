@@ -41,10 +41,16 @@ namespace OWA\Module\Base\Classes;
  * survives to be shown to whoever has to fix it.
  *
  * @since owa 1.8.0
+ *
+ * @phpstan-import-type Compiled from EventPredicate
  */
 class GoalEventDefinitionPredicate {
 
-    /** Set when compile() returns null: which property could not be expressed. */
+    /**
+     * Set when compile() returns null: which property could not be expressed.
+     *
+     * @var string
+     */
     private $error = '';
 
     /** @return string  empty when the last compile succeeded */
@@ -58,7 +64,7 @@ class GoalEventDefinitionPredicate {
      *
      * @param  \OWA\Module\Base\Entity\GoalEventDefinition $definition
      * @param  string $alias  the table's alias in the caller's query
-     * @return array|null     array( 'sql' => string, 'params' => array )
+     * @return Compiled|null
      */
     public function compile( $definition, $alias = 'd' ) {
 

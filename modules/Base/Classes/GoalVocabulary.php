@@ -251,7 +251,12 @@ class GoalVocabulary {
         return $out;
     }
 
-    /** Is this a column a condition may name? */
+    /**
+     * Is this a column a condition may name?
+     *
+     * @param  string $column
+     * @return bool
+     */
     public static function has( $column ) {
 
         return in_array( (string) $column, self::columns(), true );
@@ -261,7 +266,7 @@ class GoalVocabulary {
      * The columns a condition on this event type may name, as column => label.
      *
      * @param  string $event_name  a v2 event name
-     * @return array
+     * @return array<string, string>
      */
     public static function columnsForEvent( $event_name ) {
 
@@ -284,7 +289,7 @@ class GoalVocabulary {
         return $out;
     }
 
-    /** @var array|null column => description, from the dimension registry */
+    /** @var array<string, string>|null column => description, from the dimension registry */
     private static $registryDescriptions = null;
 
     /**
@@ -324,7 +329,12 @@ class GoalVocabulary {
         return self::$registryDescriptions[ $column ] ?? self::DESCRIPTIONS[ $column ] ?? '';
     }
 
-    /** A column's label. */
+    /**
+     * A column's label.
+     *
+     * @param  string $column
+     * @return string
+     */
     public static function label( $column ) {
 
         $column = (string) $column;

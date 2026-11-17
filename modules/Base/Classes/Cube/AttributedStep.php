@@ -57,7 +57,7 @@ class AttributedStep extends Step {
      * @param string   $prior_ts   when the prior touch was, microseconds
      * @param string   $session_ts when the session began, microseconds
      */
-    function __construct( $column, Step $own, Step $prior, array $own_evidence, array $prior_evidence,
+    public function __construct( $column, Step $own, Step $prior, array $own_evidence, array $prior_evidence,
                           $prior_ts, $session_ts ) {
 
         parent::__construct( $column );
@@ -86,7 +86,11 @@ class AttributedStep extends Step {
             $this->own->execute( $context ) );
     }
 
-    /** True when the prior touch is no older than the lookback. */
+    /**
+     * True when the prior touch is no older than the lookback.
+     *
+     * @return string SQL
+     */
     private function withinWindow( Context $context ) {
 
         return sprintf( '(%1$s IS NOT NULL AND %1$s <= %2$s AND %1$s >= %2$s - %3$d)',

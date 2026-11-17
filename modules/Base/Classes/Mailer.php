@@ -43,7 +43,8 @@ class Mailer {
      */
     const TIMEOUT = 10;
 
-    var $mailer;
+    /** @var PHPMailer */
+    public $mailer;
 
     /**
      * Constructor
@@ -51,7 +52,7 @@ class Mailer {
      * @return \OWA\Module\Base\Classes\Mailer
      * @throws \PHPMailer\PHPMailer\Exception
      */
-    function __construct() {
+    public function __construct() {
         
         $this->mailer = new PHPMailer( true );
         $this->mailer->Timeout = self::TIMEOUT;
@@ -152,7 +153,7 @@ class Mailer {
      * @param  string $address
      * @return string
      */
-    function repairFromAddress( $address ) {
+    public function repairFromAddress( $address ) {
 
         $at = strrpos( $address, '@' );
 
@@ -180,7 +181,7 @@ class Mailer {
      *
      * @return bool whether the transport accepted it
      */
-    function sendMail() {
+    public function sendMail() {
 
         $error = null;
 
@@ -205,7 +206,12 @@ class Mailer {
         return false;
     }
 
-    function send() {
+    /**
+     * sendMail(), by its older name.
+     *
+     * @return bool
+     */
+    public function send() {
 
         return $this->sendMail();
     }
@@ -213,9 +219,11 @@ class Mailer {
     /**
      * Add a recipient. An address PHPMailer refuses is logged and skipped.
      *
+     * @param  string $address
+     * @param  string $name
      * @return bool whether it was added
      */
-    function addAddress( $address, $name = '' ) {
+    public function addAddress( $address, $name = '' ) {
 
         try {
 
@@ -236,32 +244,58 @@ class Mailer {
         return false;
     }
     
-    function setFrom( $address, $name ) {
+    /**
+     * @param  string $address
+     * @param  string $name
+     * @return void
+     */
+    public function setFrom( $address, $name ) {
         
         $this->mailer->setFrom( $address, $name );
     }
     
-    function setHtmlBody ( $html ) {
+    /**
+     * @param  string $html
+     * @return void
+     */
+    public function setHtmlBody ( $html ) {
         
         $this->mailer->msgHTML( $html );
     }
     
-    function setAltBody ( $text ) {
+    /**
+     * @param  string $text
+     * @return void
+     */
+    public function setAltBody ( $text ) {
         
         $this->mailer->AltBody =  $text;
     }
     
-    function setSubject( $subject ) {
+    /**
+     * @param  string $subject
+     * @return void
+     */
+    public function setSubject( $subject ) {
     
         $this->mailer->Subject = $subject;
     }
     
-    function addReplyTo( $address, $name ) {
+    /**
+     * @param  string $address
+     * @param  string $name
+     * @return void
+     */
+    public function addReplyTo( $address, $name ) {
     
         $this->mailer->addReplyTo( $address, $name );
     }
     
-    function addAttachment( $attachment ) {
+    /**
+     * @param  string $attachment  a file's path
+     * @return void
+     */
+    public function addAttachment( $attachment ) {
     
         $this->mailer->addAttachment( $attachment );
     }

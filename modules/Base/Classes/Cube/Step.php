@@ -41,7 +41,7 @@ abstract class Step {
     /**
      * @param string $column
      */
-    function __construct( $column ) {
+    public function __construct( $column ) {
 
         $this->column = (string) $column;
     }
