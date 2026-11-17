@@ -137,7 +137,7 @@ class ServiceUser extends \OWA\Core\Base {
      * Checks if user has a partciular capability
      *
      * @param string     $cap
-     * @param integer     $siteId    only needed if capability requires site access. you need to pass site_id (not id) field
+     * @param string|null $siteId    only needed if capability requires site access. you need to pass site_id (not id) field
      * @return boolean
      */
     function isCapable($cap, $siteId = null) {
@@ -192,7 +192,7 @@ class ServiceUser extends \OWA\Core\Base {
     /**
      * Checks to see if the a site is accessible to a user
      *
-     * @param    string    $siteId    the siteId of the site in question
+     * @param    string|null $siteId  the siteId of the site in question; null throws
      * @return    boolean
      */
     function isSiteAccessible( $siteId ) {

@@ -2269,7 +2269,7 @@ class CoreAPI {
         $addresses = array_unique( array_filter( array(
             \OWA\Module\Base\Classes\TrackingEventHelpers::requestIp(),
             (string) $event->get( 'ip_address' ),
-        ), 'strlen' ) );
+        ), static fn ( $address ) => $address !== '' ) );
 
         foreach ( $addresses as $ip_address ) {
 

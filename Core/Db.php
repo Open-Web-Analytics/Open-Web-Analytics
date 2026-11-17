@@ -1728,8 +1728,8 @@ class Db extends \OWA\Core\Base {
      * installs carry yyyymmdd values of 0 or 1 -- land in the first partition,
      * since RANGE has no lower bound.
      *
-     * @param int    $start_yyyymmdd
-     * @param int    $end_yyyymmdd
+     * @param int|string $start_yyyymmdd
+     * @param int|string $end_yyyymmdd
      * @param string $granularity
      * @return array name => less_than, in range order
      */
@@ -1745,8 +1745,8 @@ class Db extends \OWA\Core\Base {
      * span of the ones they replace -- no gap, no overhang -- so boundaries
      * outside the span are clamped to it.
      *
-     * @param int    $start_yyyymmdd  first day the span holds
-     * @param int    $end_yyyymmdd    first day it does not
+     * @param int|string $start_yyyymmdd  first day the span holds
+     * @param int|string $end_yyyymmdd    first day it does not
      * @param string $granularity
      * @return array name => less_than
      */
@@ -1758,8 +1758,8 @@ class Db extends \OWA\Core\Base {
     /**
      * Walk the months in a range, emitting a partition per cut point.
      *
-     * @param int    $start_yyyymmdd
-     * @param int    $end_yyyymmdd
+     * @param int|string $start_yyyymmdd
+     * @param int|string $end_yyyymmdd
      * @param string $granularity
      * @param bool   $exact  treat the end as exclusive and clamp to it
      * @return array
@@ -3567,7 +3567,7 @@ class Db extends \OWA\Core\Base {
      * can say the date was not taken literally.
      *
      * @param string $table_name
-     * @param int    $older_than_yyyymmdd
+     * @param int|string $older_than_yyyymmdd
      * @return array ['drop' => string[], 'effective' => string|null, 'straddling' => array|null]
      */
     function getDroppablePartitions( $table_name, $older_than_yyyymmdd ) {
@@ -3676,7 +3676,7 @@ class Db extends \OWA\Core\Base {
                 }
             }
 
-            $spans = array_values( $fine );
+            $spans = $fine;
 
             if ( ! $spans ) {
 
@@ -3706,7 +3706,7 @@ class Db extends \OWA\Core\Base {
                 $wanted[] = $span;
             }
 
-            $spans = array_values( $wanted );
+            $spans = $wanted;
 
             if ( ! $spans ) {
 
@@ -3730,7 +3730,7 @@ class Db extends \OWA\Core\Base {
                 $kept[] = $span;
             }
 
-            $spans = array_values( $kept );
+            $spans = $kept;
 
             if ( ! $spans ) {
 

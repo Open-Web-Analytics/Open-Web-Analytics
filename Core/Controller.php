@@ -734,8 +734,7 @@ class Controller extends \OWA\Core\Base {
 			}
 		}
 
-		\OWA\Core\CoreAPI::debug('setredirectAction');
-		\OWA\Core\CoreAPI::debug( $new_data);
+        \OWA\Core\CoreAPI::debug( 'setRedirectAction', $new_data );
 		$this->data = $new_data;		
 
         // need to remove these unsets once they are no longer set in the main doAction method

@@ -1068,7 +1068,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                  * the template this replaces emitted for one of these three.
                  */
                 $query['constraints'] = implode( ',',
-                    array_filter( array( $reportConstraints, $own ), 'strlen' ) );
+                    array_filter( array( $reportConstraints, $own ), static fn ( $part ) => (string) $part !== '' ) );
 
                 $widget['query'] = $query;
 

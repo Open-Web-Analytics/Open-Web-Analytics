@@ -585,7 +585,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
             $values = array_values( array_unique( array_filter( array_map( function ( $v ) {
                 return is_scalar( $v ) ? (string) $v : '';
-            }, is_array( $values ) ? $values : array() ), 'strlen' ) ) );
+            }, is_array( $values ) ? $values : array() ), static fn ( $value ) => $value !== '' ) ) );
 
             if ( ! $values || count( $values ) > self::ROW_VALUES_LIMIT ) {
 

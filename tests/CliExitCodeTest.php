@@ -228,6 +228,40 @@ PHP;
     }
 
     /**
+     * An update that fails exits 1 with the failure message as text. The
+     * message was handed over as its headline-and-message array.
+     */
+    public function testAFailedUpdateExits1WithItsMessage(): void
+    {
+        $code = <<<'PHP'
+$_SERVER['argc'] = 1;
+require 'owa.php';
+new owa(array('request_type' => 'cli'));
+$s = \OWA\Core\CoreAPI::serviceSingleton();
+$s->modules_needing_updates = array('owatestfail');
+$s->modules['owatestfail'] = new class {
+    public $update_awaiting = '';
+    public function update() { return false; }
+};
+$cli = new \OWA\Module\Base\Controller\UpdatesApplyCli(array());
+ob_start();
+$cli->action();
+ob_end_clean();
+echo 'RESULT ', json_encode(array('exit' => \OWA\Core\Controller\Cli::$exit_code) + $cli->getCliOutcome()), "\n";
+PHP;
+
+        $out = (string) shell_exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && '
+            . escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($code) . ' 2>&1');
+
+        $this->assertSame(1, preg_match('/^RESULT (.*)$/m', $out, $m), $out);
+        $result = json_decode($m[1], true);
+
+        $this->assertSame('failed', $result['outcome']);
+        $this->assertSame(Cli::EXIT_FAILED, $result['exit']);
+        $this->assertSame('The updates failed. See the error log.', $result['message']);
+    }
+
+    /**
      * cmd=install refused for its password -- none, or too short -- is a usage
      * error, and exits 2 before installing anything. In its own process, as
      * InstallCli defines OWA_INSTALLING; its action() is replaced, so nothing

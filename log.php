@@ -36,7 +36,7 @@ ignore_user_abort(true);
 
 // turn off gzip compression
 if ( function_exists( 'apache_setenv' ) ) {
-    apache_setenv( 'no-gzip', 1 );
+    apache_setenv( 'no-gzip', '1' );
 }
 
 ini_set('zlib.output_compression', 0);

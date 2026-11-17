@@ -1169,7 +1169,7 @@ namespace OWA\Module\Base\Classes;
       *
       * @param string $module the name of the module
       * @param string $key the configuration key
-      * @param string $value the configuration value
+      * @param mixed $value the configuration value
       * @return boolean
       */
      function set($module, $key, $value) {

@@ -74,7 +74,7 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
         }
 
         $keys = array_filter( array_map( 'trim',
-            explode( ',', (string) $this->getParam( 'key' ) ) ), 'strlen' );
+            explode( ',', (string) $this->getParam( 'key' ) ) ), static fn ( $key ) => $key !== '' );
 
         if ( ! $keys ) {
 

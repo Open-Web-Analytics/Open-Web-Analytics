@@ -1070,7 +1070,7 @@ class Lib {
 
     public static function zeroFill( $number, $char_length ) {
 
-        return str_pad( (int) $number, $char_length, "0", STR_PAD_LEFT );
+        return str_pad( strval( (int) $number ), $char_length, "0", STR_PAD_LEFT );
     }
 
     public static function generateRandomUid($seed='') {
@@ -1080,7 +1080,7 @@ class Lib {
         if ( defined('OWA_SERVER_ID') ) {
             $server = \OWA\Core\Lib::zeroFill( OWA_SERVER_ID, 3 );
         } else {
-            $server = substr( getmypid(), 0, 3);
+            $server = substr( strval( getmypid() ), 0, 3);
         }
 
         return $time.$random.$server;

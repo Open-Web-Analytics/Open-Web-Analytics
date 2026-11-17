@@ -313,7 +313,7 @@ abstract class Module {
     /**
      * Attaches an event handler to the event queue
      *
-     * @param array $event_name
+     * @param string|array $event_name
      * @param string|object $handler_name
      * @return boolean
      */
@@ -703,7 +703,7 @@ abstract class Module {
      * Adds a new Subgroup in the navigation
      *
      * @param string $subgroupName
-     * @param string $ref
+     * @param string|array $ref an action name, or link params (reportRef())
      * @param string $anchortext
      * @param integer $order
      * @param string $priviledge
@@ -732,7 +732,7 @@ abstract class Module {
      * Adds a new Link to an existing Subgroup in the navigation
      *
      * @param string $subgroupName
-     * @param string $ref
+     * @param string|array $ref an action name, or link params (reportRef())
      * @param string $anchortext
      * @param integer|null $order lowest first; omitted, after those that give one
      * @param string $priviledge
@@ -1869,9 +1869,9 @@ abstract class Module {
 
     /**
      * Retuns internal struct array used for saving link infos
-     * @param string $ref
+     * @param string|array $ref
      * @param string $anchortext
-     * @param integer $order
+     * @param integer|null $order
      * @param string $priviledge
      * @return array
      */

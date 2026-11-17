@@ -420,7 +420,7 @@ class Cli extends \OWA\Core\AdminController {
      *
      * Refusals still go through notice(), because those are events.
      *
-     * @param string[] $lines
+     * @param string|string[] $lines
      * @return void
      */
     protected function write( $lines ) {

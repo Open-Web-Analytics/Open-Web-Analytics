@@ -417,7 +417,7 @@ class V2Event {
         }
 
         $kept   = self::filterQuery( $query, $drop );
-        $before = count( array_filter( explode( '&', (string) $query ), 'strlen' ) );
+        $before = count( array_filter( explode( '&', (string) $query ), static fn ( $pair ) => $pair !== '' ) );
         $after  = $kept === null ? 0 : count( explode( '&', $kept ) );
 
         return $after === $before ? $query : $kept;
