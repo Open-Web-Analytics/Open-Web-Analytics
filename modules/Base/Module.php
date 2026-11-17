@@ -1290,8 +1290,6 @@ class Module extends \OWA\Core\Module {
             new \OWA\Module\Base\Handler\EventRawHandlers()
         );
 
-        // install complete handler
-        $this->registerEventHandler('install_complete', $this, 'installCompleteHandler');
         // Install-level tag settings saved: every Profile's bundle may change.
         $this->registerEventHandler('base.install_settings_saved', $this, 'tagSettingsSavedHandler');
         // User management
@@ -1401,16 +1399,6 @@ class Module extends \OWA\Core\Module {
 
         return OWA_EHS_EVENT_HANDLED;
     }
-
-    /**
-     * @param  \OWA\Module\Base\Classes\Event $event
-     * @return void
-     */
-    public function installCompleteHandler($event) {
-
-        //owa_coreAPI::debug('test handler: '.print_r($event, true));
-    }
-    
 
 }
 

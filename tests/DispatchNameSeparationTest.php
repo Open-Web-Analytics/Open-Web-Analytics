@@ -51,16 +51,19 @@ final class DispatchNameSeparationTest extends TestCase
         }
     }
 
-    /** And its handler is still the one registered for it. */
+    /**
+     * And its handler is still the one registered for it: Base's userHandlers
+     * for base.reset_password. (install_complete has no listener in this tree.)
+     */
     public function testTheInternalHandlerIsStillReached(): void
     {
         $dispatch = \OWA\Core\CoreAPI::getEventDispatch();
 
         $listeners = $dispatch->listenersFor(
-            $this->event( 'install_complete' )->getDispatchName() );
+            $this->event( 'base.reset_password' )->getDispatchName() );
 
         $this->assertNotEmpty( $listeners,
-            'install_complete reaches no listener at all' );
+            'base.reset_password reaches no listener at all' );
 
         $ingest = $dispatch->listenersFor( \OWA\Core\CoreAPI::anyTrackingEvent() );
 
