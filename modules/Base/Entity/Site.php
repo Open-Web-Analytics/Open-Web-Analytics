@@ -355,7 +355,7 @@ class Site extends \OWA\Core\Entity {
         foreach ( $changes['revoke'] as $id ) {
 
             $db = \OWA\Core\CoreAPI::dbSingleton();
-            $db->deleteFrom('owa_site_user');
+            $db->deleteFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
             $db->where( 'site_id', $this->get('id') );
             $db->where( 'user_id', $id );
             $db->executeQuery();
@@ -380,7 +380,7 @@ class Site extends \OWA\Core\Entity {
              throw new \Exception('no site data loaded!');
          }
          $db = \OWA\Core\CoreAPI::dbSingleton();
-         $db->deleteFrom('owa_site_user');
+         $db->deleteFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
          $db->where( 'site_id', $this->get('id') );
          $ret = $db->executeQuery();
 
@@ -406,7 +406,7 @@ class Site extends \OWA\Core\Entity {
         }
         if (!isset(self::$cachedAssignedUsers[$this->get('id')])) {
             $db = \OWA\Core\CoreAPI::dbSingleton();
-            $db->selectFrom( 'owa_site_user' );
+            $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
             $db->selectColumn( '*' );
             $db->where( 'site_id', $this->get('id') );
             $relations = $db->getAllRows();

@@ -42,7 +42,7 @@ class Users extends \OWA\Core\AdminController {
     function action() {
         
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom('owa_user');
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName() );
         $db->selectColumn("*");
         $users = $db->getAllRows();
         

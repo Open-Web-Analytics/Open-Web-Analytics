@@ -2879,7 +2879,7 @@ class CoreAPI {
      */
     public static function getSitesList() {
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom('owa_site');
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName() );
         $db->selectColumn('*');
         $sites = $db->getAllRows();
 

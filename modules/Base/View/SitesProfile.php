@@ -131,7 +131,7 @@ class SitesProfile extends \OWA\Core\View {
      */
     private function getAllUserRows() {
         $db = \OWA\Core\CoreAPI::dbSingleton();
-        $db->selectFrom('owa_user');
+        $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName() );
         $db->selectColumn("*");
         return $db->getAllRows();
     }
