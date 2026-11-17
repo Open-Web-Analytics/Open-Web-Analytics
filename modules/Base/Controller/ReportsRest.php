@@ -204,7 +204,11 @@ class ReportsRest extends \OWA\Core\ReportController {
         $this->restResponse( 422 );
     }
 	
-	/** The Property the request names, or else the one its siteId belongs to; '' for neither. */
+	/**
+	 * The Property the request names, or else the one its siteId belongs to; '' for neither.
+	 *
+	 * @return string
+	 */
 	private function propertyOfRequest() {
 
 		return (string) ( $this->get( 'propertyId' )
@@ -213,6 +217,8 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 	/**
      * Generates a data result set using metrics and dimension
+     *
+     * @return object|false the result set, as withComparison() answers it; false without metrics
      */
     public function getResultSet() {
 
@@ -239,7 +245,11 @@ class ReportsRest extends \OWA\Core\ReportController {
      */
     const MAX_RESULTS_PER_PAGE = 1000;
 
-    /** A request's page number or page size as a whole number from 1 to $max. */
+    /**
+     * A request's page number or page size as a whole number from 1 to $max.
+     *
+     * @param  mixed $value as the request carried it
+     */
     public static function wholeNumber( $value, int $max = PHP_INT_MAX ): int {
 
         return max( 1, min( $max, (int) ( is_numeric( $value ) ? $value : 1 ) ) );
@@ -259,6 +269,8 @@ class ReportsRest extends \OWA\Core\ReportController {
      * compared with the same groups in the comparison (restrictToGroups()).
      * Then come the groups only the comparison has (compareOnlyRows()).
      *
+     * @param \OWA\Module\Base\Classes\ResultSetManager $rsm the period's query
+     * @param mixed $rs its result set
      * @return object the result set, with ->compare when one was asked for
      */
     public function withComparison( $rsm, $rs ) {
@@ -371,6 +383,9 @@ class ReportsRest extends \OWA\Core\ReportController {
      * this request was refused: the period's rows may be missing rather than
      * none.
      *
+     * @param \OWA\Module\Base\Classes\ResultSetManager $rsm the period's query
+     * @param object $rs its result set
+     * @param array<string, mixed> $over the comparison's request parameters, as resultSetManager() takes them
      * @return object $rs
      */
     private function compareOnlyRows( $rsm, $rs, array $over ) {
@@ -420,7 +435,7 @@ class ReportsRest extends \OWA\Core\ReportController {
     /**
      * The query this request asks for, set up and not yet run.
      *
-     * @param array $overrides request parameters to use instead of the
+     * @param array<string, mixed> $overrides request parameters to use instead of the
      *                         request's own: how the comparison's query is
      *                         the same query over other dates
      * @return \OWA\Module\Base\Classes\ResultSetManager|false  false without metrics
@@ -555,6 +570,10 @@ class ReportsRest extends \OWA\Core\ReportController {
      * it is restricted to the same rows.
      *
      * Empty values are dropped: IN never matches NULL.
+     *
+     * @param  \OWA\Module\Base\Classes\ResultSetManager $rsm
+     * @param  mixed $json the request's rowValues
+     * @return void
      */
     private function restrictToRowValues( $rsm, $json ) {
 

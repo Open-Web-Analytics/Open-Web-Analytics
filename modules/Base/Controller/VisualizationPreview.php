@@ -17,6 +17,9 @@ namespace OWA\Module\Base\Controller;
  */
 class VisualizationPreview extends VisualizationFunnel {
 
+    /**
+     * @return array{name: string, definition: array{steps: list<array<string, mixed>>, constraints: string}}
+     */
     protected function visualization() {
 
         $posted = json_decode( (string) $this->getParam( 'steps' ), true );

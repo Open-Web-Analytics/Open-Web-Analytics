@@ -128,7 +128,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
      * The event picker's "another event of yours" names the event in the field
      * beside it, as on the goal event definition form.
      *
-     * @return array  list of { name, kind, path, goal_event_definition_id, event, custom, match, conditions }
+     * @return list<array<string, mixed>> list of { name, kind, path, goal_event_definition_id, event, custom, match, conditions }
      */
     public function rowsFromRequest() {
 
@@ -198,8 +198,8 @@ class VisualizationSave extends \OWA\Core\AdminController {
      * event (FunnelStep::defaultName()): the builder does not ask for a name,
      * and keeps a stored one only while the step it names is unchanged.
      *
-     * @param  array $rows  as rowsFromRequest() makes them
-     * @return array
+     * @param  array<array<mixed>> $rows  as rowsFromRequest() makes them
+     * @return list<array<string, mixed>>
      */
     public static function stepsFromForm( array $rows ) {
 

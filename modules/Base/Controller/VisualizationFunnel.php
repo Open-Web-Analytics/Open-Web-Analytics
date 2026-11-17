@@ -29,6 +29,9 @@ namespace OWA\Module\Base\Controller;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.4.0
+ *
+ * @phpstan-import-type Report from \OWA\Module\Base\Classes\CustomReports as SavedReport
+ * @phpstan-import-type Compiled from \OWA\Module\Base\Classes\EventPredicate
  */
 
 class VisualizationFunnel extends \OWA\Core\ReportController {
@@ -73,16 +76,10 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
     const ALIAS = 'e';
 
     /**
-     * The row this is drawing, from the reportId on the request.
-     *
-     * The dispatcher builds this controller from the REQUEST params, so nothing
-     * it looked up reaches here -- the id is on the URL and is read again.
-     *
-     * @return string
-     */
-    /**
      * The funnel's own filter, from its definition. It applies to every step,
      * under whatever filter the reader adds on the URL.
+     *
+     * @var string
      */
     private $savedConstraints = '';
 
@@ -107,6 +104,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
     /**
      * The visualization being drawn: the stored one this report names, if it
      * is of the Property being reported on and the user may view it.
+     *
+     * @return SavedReport|null
      */
     protected function visualization() {
 
@@ -114,6 +113,14 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             $this->visualizationId(), (string) $this->getParam( 'propertyId' ) );
     }
 
+    /**
+     * The row this is drawing, from the reportId on the request.
+     *
+     * The dispatcher builds this controller from the REQUEST params, so nothing
+     * it looked up reaches here -- the id is on the URL and is read again.
+     *
+     * @return string
+     */
     protected function visualizationId() {
 
         $reportId = (string) $this->getParam( 'reportId' );
@@ -294,10 +301,10 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * set's own URL -- there is no such URL here, because these rows came from
      * one ordered query this report ran itself.
      *
-     * @param array $steps
+     * @param list<array<string, mixed>> $steps
      * @param int $entered the population that entered the funnel
      * @param string $label what the counts count
-     * @return array
+     * @return array<string, mixed> in the shape a PaginatedResultSet takes
      */
     private function stepsAsResultSet( array $steps, $entered, $label ) {
 
@@ -334,7 +341,16 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         );
     }
 
-    /** One result-set cell, in the shape the grid reads. */
+    /**
+     * One result-set cell, in the shape the grid reads.
+     *
+     * @param  string $type     dimension or metric
+     * @param  string $name
+     * @param  string $label
+     * @param  mixed  $value
+     * @param  string $dataType
+     * @return array<string, mixed>
+     */
     private static function cell( $type, $name, $label, $value, $dataType = 'string' ) {
 
         return array(
@@ -375,10 +391,10 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * definition was gone or could match nothing, which it left for this to
      * refuse rather than guess at.
      *
-     * @param  array  $step
+     * @param  array<string, mixed> $step
      * @param  int    $number  its position, from 1, for the message
      * @param  string $alias   the cube's alias in the funnel query
-     * @return array|null      array( 'sql', 'params' ), or null if refused
+     * @return Compiled|null null if refused
      */
     private function stepPredicate( array $step, $number, $alias = self::ALIAS ) {
 
@@ -423,10 +439,14 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         return $compiled;
     }
 
-    /** @var array|null the Property's applied custom dimensions, column => label */
+    /** @var array<string, string>|null the Property's applied custom dimensions, column => label */
     private $customColumns = null;
 
-    /** The custom dimensions a step of this Property's funnel may test. */
+    /**
+     * The custom dimensions a step of this Property's funnel may test.
+     *
+     * @return array<string, string> column => label
+     */
     private function customColumns() {
 
         if ( $this->customColumns === null ) {
@@ -483,9 +503,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * takes the same 262,144-row funnel from 30MB to 4MB and costs nothing in
      * time. The scan was never the problem; the copy of it was.
      *
-     * @param  array  $steps
+     * @param  list<array<string, mixed>> $steps
      * @param  string $scope
-     * @return array|null  a count per step, or null when a step was refused
+     * @return array<int, int>|null  a count per step, or null when a step was refused
      */
     private function countFunnel( array $steps, $scope ) {
 
@@ -716,9 +736,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * TAKES AN ITERABLE, not an array, so the caller can stream. Everything
      * below holds at most one second's worth of one subject's events.
      *
-     * @param  iterable $rows   subject-grouped, time-ordered, with an s{N} flag per step
+     * @param  iterable<array<string, mixed>> $rows   subject-grouped, time-ordered, with an s{N} flag per step
      * @param  int      $count  how many steps
-     * @return array
+     * @return array<int, int> a count per step
      */
     public static function walk( $rows, $count ) {
 
@@ -800,7 +820,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * "does this event advance the stage" test, so the common path costs a
      * single comparison.
      *
-     * @param  array $tied
+     * @param  array<mixed> $tied
      * @param  int   $stage
      * @param  int   $count
      * @return int   the stage after this group
@@ -843,7 +863,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * reports use, and a picker that offered different choices in two places
      * would be lying about one of them.
      *
-     * @return array {dimensions, metrics} in the shape the picker reads
+     * @return array{dimensions: array<mixed>, metrics: array<mixed>} in the shape the picker reads
      */
     private function filterOptions() {
 
@@ -858,7 +878,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * where to say so, and neither should have to know the other.
      *
      * @param string $scope visitor|session
-     * @return array|null  ids, or null for "no segment asked for"
+     * @return list<mixed>|null  ids, or null for "no segment asked for"
      */
     private function segmentSubjects( $scope ) {
 
@@ -874,7 +894,11 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         return $ids;
     }
 
-    /** The segment, built once from the request. */
+    /**
+     * The segment, built once from the request.
+     *
+     * @return \OWA\Module\Base\Classes\ReportSegment
+     */
     private function segment() {
 
         if ( ! $this->segment ) {
@@ -913,7 +937,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      * The reporting period as yyyymmdd bounds. Same resolution the segment
      * uses, so the two halves of the query cannot disagree about the period.
      *
-     * @return array|null
+     * @return array{start: int|string, end: int|string}|null
      */
     private function dateBounds() {
 

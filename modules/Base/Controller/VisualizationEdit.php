@@ -18,6 +18,8 @@ namespace OWA\Module\Base\Controller;
  * Only the funnel exists today, which is why the kind is named at all: a single
  * hardcoded one would not need naming, and the map means the second costs a row
  * in VISUALIZATION_TYPES rather than a dispatcher change.
+ *
+ * @phpstan-import-type DimensionEntry from \OWA\Module\Base\Classes\DimensionRegistry
  */
 class VisualizationEdit extends \OWA\Core\ReportController {
 
@@ -176,8 +178,8 @@ class VisualizationEdit extends \OWA\Core\ReportController {
      * Every event's condition properties, for the builder's pickers, with the
      * Property's custom dimensions added to each list.
      *
-     * @param  array $customDimensions  DimensionRegistry::custom()
-     * @return array  event => list of { name, label, description, carried }
+     * @param  list<DimensionEntry> $customDimensions  DimensionRegistry::custom()
+     * @return array<string, list<array<string, mixed>>> event => list of { name, label, description, carried }
      */
     public static function vocabulary( array $customDimensions ) {
 
@@ -191,7 +193,12 @@ class VisualizationEdit extends \OWA\Core\ReportController {
         return $vocabulary;
     }
 
-    /** The custom dimensions as picker entries. */
+    /**
+     * The custom dimensions as picker entries.
+     *
+     * @param  list<DimensionEntry> $customDimensions
+     * @return list<array{name: string, label: string, description: string, carried: bool}>
+     */
     private static function customProperties( array $customDimensions ) {
 
         $out = array();
@@ -216,9 +223,9 @@ class VisualizationEdit extends \OWA\Core\ReportController {
      * A stored step on a site's own event is picked by name; a refused save
      * carries "another event of yours" as picked, with the name typed beside it.
      *
-     * @param  array $steps             stored, or carried back by a refused save
-     * @param  array $customDimensions  DimensionRegistry::custom()
-     * @return array  list of { name, picked, custom_event, match, conditions, properties }
+     * @param  array<mixed> $steps  stored, or carried back by a refused save
+     * @param  list<DimensionEntry> $customDimensions  DimensionRegistry::custom()
+     * @return list<array<string, mixed>> list of { name, picked, custom_event, match, conditions, properties }
      */
     public static function formSteps( array $steps, array $customDimensions ) {
 
@@ -295,7 +302,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
      * which controller computes the result -- an unknown name is not an error
      * worth a page for, it is simply not a kind, so it falls back to the first.
      *
-     * @param  array|null $report
+     * @param  array<string, mixed>|null $report
      * @return string
      */
     private function resolveType( $report ) {
@@ -322,7 +329,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
     /**
      * The per-field messages from a refused save.
      *
-     * @return array
+     * @return array<mixed>
      */
     private function submittedErrors() {
 
@@ -341,7 +348,7 @@ class VisualizationEdit extends \OWA\Core\ReportController {
     /**
      * The steps as submitted, when arriving here after a refused save.
      *
-     * @return array
+     * @return array<mixed>
      */
     private function submittedSteps() {
 
