@@ -298,13 +298,14 @@ async function openDashboard(page, { period = 'last_thirty_days' } = {}) {
 }
 
 /**
- * Navigate to a dimension report page and wait for the jQuery-UI tabs widget
- * to build.
+ * Navigate to a dimension report page and wait for its metric-set tabs to
+ * build.
  *
  * Reports are addressed by id -- owa_do=base.report&owa_reportId=<id> -- not by
  * a per-report action. Most of them no longer HAVE one: they are configuration
  * under modules/Base/reports/, rendered by Core\ConfiguredReport. Unlike the dashboard, these pages render
- * the tabbed report layout (owa.report.createTabs -> #report-tabs.ui-tabs).
+ * the tabbed report layout (owa.report.createTabs -> OWA.tabs, a tablist named
+ * Metrics).
  * Defaults to Browser Types -- a plain dimension report needing no extra params.
  */
 async function openReport(page, { reportId = 'browsers', period = 'last_thirty_days' } = {}) {
@@ -312,7 +313,7 @@ async function openReport(page, { reportId = 'browsers', period = 'last_thirty_d
         `?owa_do=base.report&owa_reportId=${reportId}&owa_siteId=${FIXTURE.siteId}&owa_period=${period}`,
         { waitUntil: 'networkidle' }
     );
-    await page.waitForSelector('#report-tabs.ui-tabs', { timeout: 20_000 });
+    await page.getByRole('tablist', { name: 'Metrics' }).waitFor({ timeout: 20_000 });
 }
 
 /**
@@ -320,8 +321,8 @@ async function openReport(page, { reportId = 'browsers', period = 'last_thirty_d
  *
  * The control that gets drawn as tabs is the METRIC SET picker, and it only
  * appears on a report that offers more than one way to measure its dimension.
- * A report declaring its own `metrics` is measured one way, so #report-tabs
- * never gains the .ui-tabs class and openReport() above would time out waiting
+ * A report declaring its own `metrics` is measured one way, so it draws no
+ * tab list and openReport() above would time out waiting
  * for a widget that is never built. That family is content-based (Pages,
  * Products, Transactions...) where a session tab would be meaningless.
  *

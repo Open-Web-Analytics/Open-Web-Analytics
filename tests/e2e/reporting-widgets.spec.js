@@ -498,8 +498,8 @@ test.describe('the report grid gives every widget a usable width', () => {
      * The grid has to still BE a grid inside a tab.
      *
      * On a report rendered per metric set the tab PANEL is the grid -- one
-     * panel per set, each holding that set's widgets -- and jQuery-UI's
-     * `.ui-tabs .ui-tabs-panel { display: block }` is two classes to
+     * panel per set, each holding that set's widgets -- and jQuery UI's
+     * `.ui-tabs .ui-tabs-panel { display: block }` was two classes to
      * `.owa_reportGrid`'s one. It won on every tabbed report: the tracks were
      * never created and every widget was a full-width block.
      *
@@ -521,13 +521,9 @@ test.describe('the report grid gives every widget a usable width', () => {
             { waitUntil: 'networkidle' }
         );
 
-        await page.waitForSelector('#report-tabs.ui-tabs', { timeout: 20_000 });
-
-        const panel = page.locator('#report-tabs > div.owa_reportGrid').first();
-        await expect(panel).toBeAttached();
-
         // It is a tab panel...
-        await expect(panel).toHaveClass(/ui-tabs-panel/);
+        const panel = page.getByRole('tabpanel');
+        await expect(panel).toBeVisible({ timeout: 20_000 });
 
         // ...and a grid of twelve tracks, which is the part that was lost.
         const layout = await panel.evaluate(el => ({

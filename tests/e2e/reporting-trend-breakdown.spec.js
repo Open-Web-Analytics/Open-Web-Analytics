@@ -157,7 +157,7 @@ test.describe('a broken-out trend and its companion grid', () => {
             + '&owa_period=last_thirty_days',
             { waitUntil: 'networkidle' });
 
-        await page.waitForSelector('#report-tabs.ui-tabs', { timeout: 20_000 });
+        await page.getByRole('tablist', { name: 'Metrics' }).waitFor({ timeout: 20_000 });
 
         await expect(page.locator('[id$="-breakdown"]')).toHaveCount(0);
     });

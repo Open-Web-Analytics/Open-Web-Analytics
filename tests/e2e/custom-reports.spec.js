@@ -371,7 +371,7 @@ test.describe('custom reports', () => {
             await card.locator('.owa_builderEdit').click();
             await expect(page.locator('#dlgType')).toHaveCount(0);
             await page.click('#dlgChangeType');
-            await expect(page.locator('.owa_typeDialogFrame .ui-dialog-title')).toHaveText('Change the widget type');
+            await expect(page.getByRole('dialog', { name: 'Change the widget type' })).toBeVisible();
             await expect(page.locator('.owa_typeChoice.is-current')).toHaveAttribute('data-type', 'grid');
             await page.locator('.owa_typeChoice[data-type="grid-card"]').click();
             await expect(page.locator('#dlgTypePill')).toHaveText('Table card');
@@ -1398,7 +1398,8 @@ test.describe('custom reports', () => {
             expect(Math.round(box.width)).toBe(440);
 
             await expect(page.locator('.owa_builderBlock').first()).toHaveClass(/is-editing/);
-            await expect(page.locator('.ui-widget-overlay')).toHaveCount(0);
+            // A panel beside the layout, not a modal over it.
+            await expect(page.locator('dialog[open]')).toHaveCount(0);
 
             // Focus goes to the name, and back to the pencil on Cancel.
             await expect(page.locator('#dlgTitle')).toBeFocused();
@@ -1409,22 +1410,50 @@ test.describe('custom reports', () => {
 
         /**
          * The gallery dims the page behind it, so it reads as the only thing
-         * to answer. jQuery UI draws the overlay for modal:true, but the
-         * bundled theme leaves it so faint the page looks live underneath.
+         * to answer: a modal <dialog>, its backdrop dark enough that the page
+         * does not look live underneath.
          */
         test('the gallery dims the page behind it', async ({ page }) => {
             await openBuilder(page);
             await page.click('#addWidget');
 
-            const overlay = page.locator('.ui-widget-overlay');
+            const dialog = page.getByRole('dialog', { name: 'Add a widget' });
 
-            await expect(overlay).toBeVisible();
+            await expect(dialog).toBeVisible();
 
-            const opacity = await overlay.evaluate((el) => parseFloat(getComputedStyle(el).opacity));
+            const backdrop = await dialog.evaluate((el) => ({
+                modal: el.matches(':modal'),
+                alpha: Number((getComputedStyle(el, '::backdrop').backgroundColor.match(/[\d.]+(?=\))/) || ['0'])[0]),
+            }));
 
-            expect(opacity).toBeGreaterThan(0.2);
-            await expect(overlay).toHaveCSS('position', 'fixed');
-            await expect(page.locator('.owa_typeDialogFrame .ui-dialog-title')).toHaveText('Add a widget');
+            expect(backdrop.modal).toBe(true);
+            expect(backdrop.alpha).toBeGreaterThan(0.2);
+        });
+
+        /**
+         * The gallery is a modal: Escape puts it away and focus goes back to
+         * the plus, with nothing added; choosing a type closes it.
+         */
+        test('the gallery closes on Escape and returns focus to the plus', async ({ page }) => {
+            await openBuilder(page);
+
+            const plus = page.locator('#addWidget');
+            const gallery = page.getByRole('dialog', { name: 'Add a widget' });
+
+            await plus.click();
+            await expect(gallery).toBeVisible();
+            await expect(gallery.locator('.owa_typeChoice').first(), 'focus is in the gallery').toBeFocused();
+
+            await page.keyboard.press('Escape');
+            await expect(gallery).toBeHidden();
+            await expect(plus).toBeFocused();
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(0);
+
+            await plus.click();
+            await gallery.locator('.owa_typeChoice[data-type="trend"]').click();
+            await expect(gallery).toBeHidden();
+            await expect(page.locator('#widgetDialog')).toBeVisible();
+            await expect(page.locator('.owa_builderBlock')).toHaveCount(1);
         });
 
         /** The metric picker offers nothing past its cap. */

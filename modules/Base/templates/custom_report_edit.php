@@ -175,7 +175,7 @@ $owa_max        = (int) $view->get('max_widgets');
      * a trend's breakdown cannot be a date -- and Cancel puts the old type back.
      */
 ?>
-<div id="typeDialog" class="owa_typeDialog" data-ui="dialog:widget-type" style="display:none;">
+<div id="typeDialog" class="owa_typeDialog" data-ui="dialog:widget-type" hidden>
     <ul class="owa_typeChoices owa_typeChoicesTwo">
     <?php foreach ( $owa_types as $owa_key => $owa_label ): ?>
         <li>
@@ -1864,16 +1864,22 @@ $owa_max        = (int) $view->get('max_widgets');
     } );
 
     /*
-     * The gallery: a jQuery UI dialog, as New on the list is. Choosing a type
-     * adds the widget and opens its panel.
+     * The gallery: a dialog, as New on the list is. Choosing a type adds the
+     * widget and opens its panel. Closed, it is titled for adding again.
      */
-    jQuery( '#typeDialog' ).dialog( jQuery.extend( {
-        autoOpen: false,
-        modal: true,
+    var typeDialog = OWA.dialog( document.getElementById( 'typeDialog' ), {
         title: TEXT.addWidget,
-        appendTo: '.owa',
-        dialogClass: 'owa_typeDialogFrame'
-    }, OWA.dialogFit( 760 ) ) );
+        width: 760,
+        className: 'owa_typeDialogFrame',
+        closeButton: true,
+        onClose: function () {
+
+            changingType = false;
+
+            typeDialog.setTitle( TEXT.addWidget );
+            jQuery( '#typeDialog .owa_typeChoice' ).removeClass( 'is-current' ).removeAttr( 'aria-current' );
+        }
+    } );
 
     // The panel.
 
@@ -1887,15 +1893,8 @@ $owa_max        = (int) $view->get('max_widgets');
             jQuery( this ).toggleClass( 'is-current', current ).attr( 'aria-current', current ? 'true' : null );
         } );
 
-        jQuery( '#typeDialog' ).dialog( 'option', 'title', TEXT.changeType ).dialog( 'open' );
-    } );
-
-    jQuery( '#typeDialog' ).on( 'dialogclose', function () {
-
-        changingType = false;
-
-        jQuery( '#typeDialog' ).dialog( 'option', 'title', TEXT.addWidget );
-        jQuery( '#typeDialog .owa_typeChoice' ).removeClass( 'is-current' ).removeAttr( 'aria-current' );
+        typeDialog.setTitle( TEXT.changeType );
+        typeDialog.open( this );
     } );
 
     jQuery( '#dlgApply' ).on( 'click', function () {
@@ -1978,7 +1977,7 @@ $owa_max        = (int) $view->get('max_widgets');
                 return;
             }
 
-            jQuery( '#typeDialog' ).dialog( 'open' );
+            typeDialog.open( this );
         } )
 
         // Moving by keyboard: the handle and the arrow keys.
@@ -2050,7 +2049,7 @@ $owa_max        = (int) $view->get('max_widgets');
         if ( changingType ) {
 
             changeType( jQuery( this ).attr( 'data-type' ) );
-            jQuery( '#typeDialog' ).dialog( 'close' );
+            typeDialog.close();
             jQuery( '#dlgChangeType' ).trigger( 'focus' );
 
             return;
@@ -2067,7 +2066,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
         widgets.push( newWidget( widgets.length, jQuery( this ).attr( 'data-type' ) ) );
 
-        jQuery( '#typeDialog' ).dialog( 'close' );
+        typeDialog.close();
 
         pendingNew = widgets.length - 1;
 

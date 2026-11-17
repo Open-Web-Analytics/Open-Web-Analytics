@@ -68,7 +68,7 @@ describe('reporting bundle loads under jsdom', () => {
         if (!jq) return;
         expect(typeof jq).toBe('function');
         // The reporting bundle uses jQuery 3.6.0 (sourced from the npm dep).
-        // Every plugin it carries runs on jQuery 3 as it is (jQuery-UI 1.13.3,
+        // Every plugin it carries runs on jQuery 3 as it is (chosen 1.8.7,
         // Flot 0.8.3), so neither jquery-migrate nor the old $.browser shim is
         // in the bundle.
         expect(jq.fn.jquery).toBe('3.6.0');

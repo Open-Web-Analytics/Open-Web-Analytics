@@ -1,6 +1,6 @@
 import $ from 'jquery';
 import { OWA } from './owa.format.js';
-import { dialogFit } from './owa.dialog.js';
+import { dialog } from './owa.dialog.js';
 
 /**
  * The confirmation an irreversible action gets before it runs.
@@ -47,72 +47,66 @@ function settingsFor( el ) {
         title: $el.data( 'owa-confirm-title' ) || d.title,
         body: $el.data( 'owa-confirm-body' ) || d.body,
         proceed: $el.data( 'owa-confirm-proceed' ) || d.proceed,
-        cancel: $el.data( 'owa-confirm-cancel' ) || d.cancel
+        cancel: $el.data( 'owa-confirm-cancel' ) || d.cancel,
+        opener: el
     };
 }
 
 /**
  * Ask, then run onProceed if they say yes.
  *
- * Built fresh each time and destroyed on close. jQuery UI's .dialog() MOVES the
- * element it is given to the end of <body>, so a single reused node would
- * migrate out of whatever it was declared inside; making one per ask keeps that
- * from mattering.
- *
- * Two options beyond the strings: `paragraphs`, an array shown one paragraph
- * each in place of `body`, and `tone: 'notice'`, for a confirmation that is not
- * a warning -- the proceed button is then an ordinary one rather than red.
+ * Built fresh each time and removed on close. Two options beyond the strings:
+ * `paragraphs`, an array shown one paragraph each in place of `body`, and
+ * `tone: 'notice'`, for a confirmation that is not a warning -- the proceed
+ * button is then an ordinary one rather than red. `opener` is where focus
+ * returns when it closes (the element focused when it opened, if not given).
  * Text is always set as text, never as HTML.
  */
 OWA.confirmAction = function ( options, onProceed ) {
 
     var opts = $.extend( {}, defaults(), options || {} );
 
-    var $dialog = $( '<div>' )
+    var $content = $( '<div>' )
         .addClass( 'owa_confirmDialog' )
         .attr( 'id', 'owa_confirmDialog' )
-        .attr( 'data-ui', 'dialog:confirm' )
-        .attr( 'title', opts.title );
+        .attr( 'data-ui', 'dialog:confirm' );
 
     var paragraphs = $.isArray( opts.paragraphs ) && opts.paragraphs.length ? opts.paragraphs : [ opts.body ];
 
     $.each( paragraphs, function ( i, text ) {
 
-        $( '<p>' ).addClass( 'owa_confirmBody' ).text( text ).appendTo( $dialog );
+        $( '<p>' ).addClass( 'owa_confirmBody' ).text( text ).appendTo( $content );
     } );
 
-    $dialog.appendTo( 'body' ).dialog( $.extend( {
-        modal: true,
-        resizable: false,
-        draggable: false,
-        dialogClass: 'owa_confirmDialogFrame',
-        // Cancel is FIRST in the DOM and focused, so the default answer to a
-        // destructive question -- Enter, Escape, a stray click -- is "no".
+    return dialog( $content, {
+        title: opts.title,
+        width: 440,
+        className: 'owa_confirmDialogFrame',
+        removeOnClose: true,
+        // Cancel is FIRST and focused, so the default answer to a destructive
+        // question -- Enter, Escape, a stray click -- is "no".
         buttons: [
             {
                 text: opts.cancel,
-                class: 'owa-button owa-button-quiet owa_confirmCancel',
-                click: function () {
-                    $( this ).dialog( 'close' );
+                className: 'owa-button owa-button-quiet owa_confirmCancel',
+                click: function ( d ) {
+
+                    d.close();
                 }
             },
             {
                 text: opts.proceed,
-                class: 'owa-button ' + ( opts.tone === 'notice' ? '' : 'owa-button-danger ' ) + 'owa_confirmProceed',
-                click: function () {
+                className: 'owa-button ' + ( opts.tone === 'notice' ? '' : 'owa-button-danger ' ) + 'owa_confirmProceed',
+                click: function ( d ) {
+
                     // Closed BEFORE proceeding: the action navigates, and a
                     // dialog left open flashes over the unloading page.
-                    $( this ).dialog( 'close' );
+                    d.close();
                     onProceed();
                 }
             }
-        ],
-        close: function () {
-            $( this ).dialog( 'destroy' ).remove();
-        }
-    }, dialogFit( 440 ) ) );
-
-    $( '.owa_confirmCancel' ).trigger( 'focus' );
+        ]
+    } ).open( opts.opener );
 };
 
 $( function () {

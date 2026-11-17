@@ -208,7 +208,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
  * JavaScript the modal never opens and New opens the report builder.
  */
 ?>
-<div id="customReportNewDialog" class="owa_typeDialog" data-ui="dialog:new-report" style="display:none;">
+<div id="customReportNewDialog" class="owa_typeDialog" data-ui="dialog:new-report" hidden>
     <ul class="owa_typeChoices owa_typeChoicesTwo">
     <?php foreach ( $owa_kinds as $owa_key => $owa_kind ): ?>
         <li>
@@ -236,21 +236,18 @@ jQuery( function () {
         return;
     }
 
-    dialog.dialog( jQuery.extend( {
-        autoOpen: false,
-        modal: true,
+    dialog = OWA.dialog( dialog, {
         title: <?php echo json_encode( \OWA\Core\CoreAPI::t( 'What do you want to make?' ) ); ?>,
-        // Kept inside .owa: every rule styling what is inside it is scoped
-        // `.owa .owa_...`, and jQuery UI would otherwise lift it to <body>.
-        appendTo: '.owa',
-        dialogClass: 'owa_typeDialogFrame'
-    }, OWA.dialogFit( 640 ) ) );
+        width: 640,
+        className: 'owa_typeDialogFrame',
+        closeButton: true
+    } );
 
     jQuery( document ).on( 'click', '.owa_newCustomReport', function ( e ) {
 
         e.preventDefault();
 
-        dialog.dialog( 'open' );
+        dialog.open( this );
     } );
 } );
 </script>

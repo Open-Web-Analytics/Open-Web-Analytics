@@ -164,6 +164,25 @@ test.describe('visualization: funnel', () => {
         }
     });
 
+    /** The counting scope is a pair of radios; choosing one reloads the funnel counted that way. */
+    test('choosing Visits or Visitors counts the funnel that way', async ({ page }) => {
+        await openFunnelAs(page, 'visitor');
+
+        const scope = page.getByRole('radiogroup', { name: 'Counting:' });
+
+        await expect(scope.getByRole('radio', { name: 'Visitors' })).toBeChecked();
+
+        const visits = await reloadedBy(page, () => scope.getByText('Visits', { exact: true }).click());
+
+        expect(visits.get('owa_funnelScope')).toBe('session');
+        await expect(scope.getByRole('radio', { name: 'Visits' })).toBeChecked();
+
+        const visitors = await reloadedBy(page, () => scope.getByText('Visitors', { exact: true }).click());
+
+        expect(visitors.get('owa_funnelScope')).toBe('visitor');
+        await expect(scope.getByRole('radio', { name: 'Visitors' })).toBeChecked();
+    });
+
     test('the control bar is for LOOKING, and editing is on the title', async ({ page }) => {
         await openFunnel(page);
 
