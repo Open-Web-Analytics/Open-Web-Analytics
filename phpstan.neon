@@ -4,6 +4,8 @@
 #
 #   composer phpstan
 #
+# which then runs phpstan.level6.neon: level 6 over the paths typed for it.
+#
 # The entity factory extension (tests/phpstan/) loads through Composer's
 # autoload-dev, so plain `phpstan analyse` finds it after `composer install`.
 #
