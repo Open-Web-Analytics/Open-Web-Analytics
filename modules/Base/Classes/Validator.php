@@ -42,14 +42,14 @@ namespace OWA\Module\Base\Classes;
      /**
       * Error Msgs produced by Validations
       * 
-      * @var array
+      * @var array<string, string|array<string, string>|null>
       */
      public $errorMsgs;
      
      /**
       * Validations to be performed in next validation run
       * 
-      * @var array
+      * @var list<array{name: string, obj: \OWA\Core\Validation\Validation}>
       */
      public $validations;
           
@@ -59,7 +59,8 @@ namespace OWA\Module\Base\Classes;
       * @param string    $name         the name to be given to the validation and its results
       * @param mixed      $value        the data value that is to be validated
       * @param string     $validation the name of the validation to run
-      * @param array     $conf         configuration array for the object being created
+      * @param array<string, mixed> $conf configuration array for the object being created
+      * @return null
       */
      public function addValidation($name, $value, $validation, $conf) {
                 
@@ -69,18 +70,29 @@ namespace OWA\Module\Base\Classes;
         $obj->setConfigArray($conf);
         
         $this->setValidation( $name, $obj );
+
+        return null;
     }
     
+    /**
+     * @param  string $name
+     * @param  \OWA\Core\Validation\Validation $obj
+     * @return null
+     */
     public function setValidation($name, $obj) {
         
         // add name to validator
         $obj->setName($name);
         $this->validations[] = array('name' => $name, 'obj' => $obj);
+
+        return null;
     }
     
     /**
      * Factory method for producing validation objects
      * 
+     * @param  string $class_file
+     * @param  array<string, mixed> $conf
      * @return Object
      */
     public function validationFactory($class_file, $conf = array()) {
@@ -91,6 +103,7 @@ namespace OWA\Module\Base\Classes;
     /**
      * Performs a validation run
      * 
+     * @return void
      */
     public function doValidations() {
         
@@ -133,7 +146,7 @@ namespace OWA\Module\Base\Classes;
     /**
      * Accessor method for retrieving the error msgs produced by a validation run
      * 
-     * @return array
+     * @return array<string, string|array<string, string>|null>
      */
     public function getErrorMsgs() {
         

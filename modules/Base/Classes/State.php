@@ -28,16 +28,24 @@ namespace OWA\Module\Base\Classes;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-type StoreMeta array{expiration: mixed, length: mixed, format: mixed, type: mixed, cdh_required: mixed}
  */
 
 
 class State {
 
+    /** @var array<mixed> store name => its values (key => value), or a single value */
     public $stores = array();
+    /** @var array<string, StoreMeta> store name => how it is kept, as registerStore() was told */
     public $stores_meta = array();
+    /** @var mixed nothing sets it */
     public $is_dirty;
+    /** @var list<string>|null the stores set, once per set */
     public $dirty_stores;
+    /** @var list<string> the stores that carry a cookie domain hash */
     public $stores_with_cdh = array();
+    /** @var array<list<string>> store name => every value the request's cookies carried for it */
     public $initial_state = array();
 
     public function __construct() {
@@ -48,6 +56,15 @@ class State {
 
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $expiration the cookie's, as createCookie() takes it
+     * @param  mixed  $length
+     * @param  mixed  $format     json, or assoc for the old a=>b|||c=>d format
+     * @param  mixed  $type       cookie for a store persisted as one
+     * @param  mixed  $cdh        truthy when the store carries a cookie domain hash
+     * @return null
+     */
     public function registerStore( $name, $expiration, $length = '', $format = 'json', $type = 'cookie', $cdh = null ) {
 
         $this->stores_meta[$name] = array(
@@ -61,10 +78,17 @@ class State {
         if ( $cdh ) {
             $this->stores_with_cdh[] = $name;
         }
+
+        return null;
     }
 
 
 
+    /**
+     * @param  string $store
+     * @param  string $name  '' for the whole store
+     * @return mixed the value, or the store; false when there is none
+     */
     public function get($store, $name = '') {
 
         \OWA\Core\CoreAPI::debug("Getting state - store: ".$store.' key: '.$name);
@@ -93,6 +117,14 @@ class State {
         }
     }
 
+    /**
+     * @param  string $store
+     * @param  string $name         '' to replace the whole store with $value
+     * @param  mixed  $value
+     * @param  string $store_type   only logged
+     * @param  bool   $is_perminent only logged
+     * @return void
+     */
     public function setState($store, $name, $value, $store_type = '', $is_perminent = false) {
 
         // Not the value: state holds visitor and session identifiers.
@@ -135,6 +167,10 @@ class State {
         //owa_coreAPI::debug(print_r($this->stores, true));
     }
 
+    /**
+     * @param  string $store_name
+     * @return mixed|void the store's cdh_required, as registered; nothing for a store not registered
+     */
     public function isCdhRequired($store_name) {
 
         if ( isset( $this->stores_meta[$store_name] ) ) {
@@ -142,6 +178,14 @@ class State {
         }
     }
 
+    /**
+     * @param  string $store
+     * @param  string $name         '' to replace the whole store with $value
+     * @param  mixed  $value
+     * @param  string $store_type   only logged
+     * @param  bool   $is_perminent only logged
+     * @return null
+     */
     public function set($store, $name, $value, $store_type = '', $is_perminent = false) {
 
         if ( ! isset($this->stores[$store] ) ) {
@@ -155,8 +199,14 @@ class State {
 
             $this->persistState($store);
         }
+
+        return null;
     }
 
+    /**
+     * @param  string $store
+     * @return void
+     */
     public function persistState( $store ) {
 
         //check to see that store exists.
@@ -186,6 +236,12 @@ class State {
         }
     }
 
+    /**
+     * @param  string       $store
+     * @param  list<string> $value      every value the request's cookies carried for it
+     * @param  string       $store_type unused
+     * @return void
+     */
     public function setInitialState($store, $value, $store_type = '') {
 
         if ($value) {
@@ -193,6 +249,13 @@ class State {
         }
     }
 
+    /**
+     * @param  string $store
+     * @param  string $name
+     * @param  mixed  $value      truthy loads nothing
+     * @param  string $store_type
+     * @return void
+     */
     public function loadState($store, $name = '', $value = '', $store_type = 'cookie') {
 
         //get possible values
@@ -230,7 +293,8 @@ class State {
                     // return as the cdh's do not match
                     if ( $cdh_from_state === $runtime_cdh ) {
                         \OWA\Core\CoreAPI::debug("cdh match:  $cdh_from_state and $runtime_cdh");
-                        return $this->setState($store, $name, $value, $store_type);
+                        $this->setState($store, $name, $value, $store_type);
+                        return;
                     } else {
                         // cookie domains do not match so we need to delete the cookie in the offending domain
                         // which is always likely to be a sub.domain.com and thus HTTP_HOST.
@@ -252,12 +316,18 @@ class State {
                 // just set the state with the last value
                 if ( $k === $count - 1 ) {
                     \OWA\Core\CoreAPI::debug("loading last value in initial state container for store: $store");
-                    return $this->setState($store, $name, $value, $store_type);
+                    $this->setState($store, $name, $value, $store_type);
+                    return;
                 }
             }
         }
     }
 
+    /**
+     * @param  string $store
+     * @param  string $name  '' for the whole store
+     * @return mixed|void deleteCookie()'s answer when a cookie store is cleared whole
+     */
     public function clear($store, $name = '') {
 
         if ( ! isset($this->stores[$store] ) ) {
@@ -282,19 +352,28 @@ class State {
 
                     if ($this->stores_meta[$store]['type'] === 'cookie') {
 
-                        return $this->persistState( $store );
+                        $this->persistState( $store );
+                        return;
                     }
                 }
             }
         }
     }
 
+    /**
+     * @param  array<mixed> $array store name => values
+     * @return void
+     */
     public function addStores($array) {
 
         $this->stores = array_merge($this->stores, $array);
         return;
     }
 
+    /**
+     * @param  string $domain '' for the cookie_domain setting
+     * @return string
+     */
     public function getCookieDomainHash($domain = '') {
 
         if ( ! $domain ) {

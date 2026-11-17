@@ -29,31 +29,60 @@ namespace OWA\Module\Base\Classes;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-import-type JobRegistration from \OWA\Core\Module
+ * @phpstan-type MetricDefinition array<string, mixed>
+ * @phpstan-type RestRoute array{class_name: string, conf: array<string, mixed>}
  */
 
 
 class Service extends \OWA\Core\Base {
 
+    /** @var bool */
     public $init = false;
+    /** @var \OWA\Core\RequestContainer|null */
     public $request;
+    /** @var mixed nothing sets it; getState() answers the request's */
     public $state;
+    /** @var \OWA\Module\Base\Classes\ServiceUser|null */
     public $current_user;
+    /** @var mixed nothing sets it */
     public $settings;
+    /** @var array<string, mixed> map name => its values, name => value */
     public $maps = array();
+    /** @var bool */
     public $update_required = false;
+    /** @var bool */
     public $install_required = false;
+    /** @var list<string> */
     public $modules_needing_updates = array();
+    /**
+     * name => module, each a \OWA\Core\Module. Not declared as one: typed so,
+     * CoreAPI::getNavigation() reads view and nav_name off group => subgroup
+     * arrays that never have them, which PHPStan reports.
+     *
+     * @var array<string, mixed>
+     */
     public $modules = array();
+    /** @var array<string, string> entity name => module.entity */
     public $entities = array();
+    /** @var array<string, list<MetricDefinition>> metric name => its implementations */
     public $metrics = array();
+    /** @var array<string, array<string, array<string, mixed>>> name => entity => registration */
     public $denormalizedDimensions = array();
+    /** @var object|null an injected user-agent parser */
     public $browscap;
+    /** @var \OWA\Module\Base\Classes\Geolocation|null */
     public $geolocation;
+    /** @var array<string, array<string, array<string, array<string, RestRoute>>>> module => version => route => request method => route */
     public $restApiRoutes = array();
 
     public function __construct() {
     }
 
+    /**
+     * @return void
+     */
     public function initializeFramework() {
 
         if (!$this->isInit()) {
@@ -85,6 +114,7 @@ class Service extends \OWA\Core\Base {
      * different agent needs.
      *
      * @param object|null $b
+     * @return void
      */
     public function setBrowscap( $b ) {
 
@@ -143,6 +173,9 @@ class Service extends \OWA\Core\Base {
         return $this->browscap_by_ua[ $key ];
     }
 
+    /**
+     * @return void
+     */
     public function _loadModules() {
 
         $present_modules = \OWA\Core\CoreAPI::getPresentModules();
@@ -178,6 +211,9 @@ class Service extends \OWA\Core\Base {
         }
     }
     
+    /**
+     * @return void
+     */
     public function _loadEntities() {
 
         foreach ($this->modules as $k => $module) {
@@ -193,6 +229,9 @@ class Service extends \OWA\Core\Base {
         return;
     }
 
+    /**
+     * @return void
+     */
     public function _loadFilters() {
 
         foreach ($this->modules as $k => $module) {
@@ -201,6 +240,9 @@ class Service extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @return void
+     */
     public function _loadMetrics() {
 
         foreach ($this->modules as $k => $module) {
@@ -212,11 +254,17 @@ class Service extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @return array<string, list<MetricDefinition>> metric name => its implementations
+     */
     public function getAllMetrics() {
 
         return $this->metrics;
     }
 
+    /**
+     * @return void
+     */
     public function loadCliCommands() {
 
         $command_map = array();
@@ -299,8 +347,8 @@ class Service extends \OWA\Core\Base {
      * restate values they did not mean to change is how config drifts away from
      * code.
      *
-     * @param array $jobs  registered jobs, keyed by name
-     * @return array
+     * @param array<string, JobRegistration> $jobs  registered jobs, keyed by name
+     * @return array<string, JobRegistration>
      */
     protected function applyConfiguredJobs( $jobs ) {
 
@@ -406,7 +454,7 @@ class Service extends \OWA\Core\Base {
     }
 
     /**
-     * @return array  every job, keyed by name
+     * @return array<string, JobRegistration>  every job, keyed by name
      */
     public function getJobs() {
 
@@ -415,6 +463,9 @@ class Service extends \OWA\Core\Base {
         return is_array( $jobs ) ? $jobs : array();
     }
 
+    /**
+     * @return void
+     */
     public function _loadDimensions() {
 
         foreach ($this->modules as $k => $module) {
@@ -427,6 +478,9 @@ class Service extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @return void
+     */
     public function _loadEventProcessors() {
 
         $processors = array();
@@ -450,11 +504,24 @@ class Service extends \OWA\Core\Base {
         return $this->current_user;
     }
 
+    /**
+     * @return \OWA\Core\RequestContainer|null
+     */
     public function getRequest() {
 
         return $this->request;
     }
     
+    /**
+     * The route registered, a RestRoute. Not declared as one: typed so,
+     * CoreAPI::lookupRestRoute() passes it to debug(), which takes a string.
+     *
+     * @param  string $module
+     * @param  string $version
+     * @param  string $route_name
+     * @param  string $request_method
+     * @return mixed nothing when no route is registered
+     */
     public function getRestApiRoute( $module, $version, $route_name, $request_method ) {
 	    
 	    if ( array_key_exists( $module, $this->restApiRoutes ) ) {
@@ -472,21 +539,40 @@ class Service extends \OWA\Core\Base {
 		}
     }
     
+    /**
+     * @param  string    $module
+     * @param  string    $version
+     * @param  string    $route_name
+     * @param  string    $request_method
+     * @param  RestRoute $value
+     * @return void
+     */
     public function setRestApiRoute( $module, $version, $route_name, $request_method, $value ) {
 	    
 	    $this->restApiRoutes[$module][$version][ $route_name ][ $request_method ] = $value;
     }
     
+    /**
+     * @return array<string, array<string, array<string, array<string, RestRoute>>>>
+     */
     public function getAllRestApiRoutes() {
 	    
 	    return $this->restApiRoutes;
     }
 
+    /**
+     * @return \OWA\Module\Base\Classes\State
+     */
     public function getState() {
 
         return $this->request->state;
     }
 
+    /**
+     * @param  string $map_name
+     * @param  string $name
+     * @return mixed the value; false when the map or the name is not there
+     */
     public function getMapValue($map_name, $name) {
 
         if (array_key_exists($map_name, $this->maps)) {
@@ -504,6 +590,10 @@ class Service extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  string $name
+     * @return mixed|void the map; nothing when there is none
+     */
     public function getMap($name) {
 
         if (array_key_exists($name, $this->maps)) {
@@ -513,22 +603,39 @@ class Service extends \OWA\Core\Base {
 
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $map  name => value
+     * @return void
+     */
     public function setMap($name, $map) {
 
         $this->maps[$name] = $map;
     }
 
+    /**
+     * @param  string $map_name
+     * @param  string $name
+     * @param  mixed  $value
+     * @return void
+     */
     public function setMapValue($map_name, $name, $value) {
 
         $this->maps[$map_name][$name] = $value;
     }
 
+    /**
+     * @return void
+     */
     public function setUpdateRequired() {
 
         $this->update_required = true;
         return;
     }
 
+    /**
+     * @return bool
+     */
     public function isUpdateRequired() {
 
         return $this->update_required;
@@ -539,6 +646,8 @@ class Service extends \OWA\Core\Base {
      * scheduler asks. An update pending only because a new release has not
      * been applied (Base\Module::isUpToDate()) leaves the schema as the jobs
      * expect it, so they keep running.
+     *
+     * @return bool
      */
     public function isSchemaUpdateRequired() {
 
@@ -553,40 +662,69 @@ class Service extends \OWA\Core\Base {
         return false;
     }
 
+    /**
+     * @param  \OWA\Core\Module $module
+     * @return void
+     */
     public function addModule($module) {
 
         $this->modules[$module->name] = $module;
     }
 
+    /**
+     * @param  string $name
+     * @return void
+     */
     public function markModuleAsNeedingUpdate($name) {
 
         $this->modules_needing_updates[] = $name;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getModulesNeedingUpdates() {
 
         return $this->modules_needing_updates;
     }
 
 
+    /**
+     * @return void
+     */
     public function setInstallRequired() {
         $this->install_required = true;
     }
 
+    /**
+     * @param  string $entity_name
+     * @param  string $class       module.entity
+     * @return void
+     */
     public function addEntity($entity_name, $class) {
 
         $this->entities[$entity_name] = $class;
     }
 
+    /**
+     * @return void
+     */
     public function setInit() {
         $this->init = true;
     }
 
+    /**
+     * @return bool
+     */
     public function isInit() {
 
         return $this->init;
     }
 
+    /**
+     * @param  string $name
+     * @return \OWA\Core\Module|false
+     */
     public function getModule($name) {
 
         if (array_key_exists($name, $this->modules)) {
@@ -597,6 +735,10 @@ class Service extends \OWA\Core\Base {
 
     }
 
+    /**
+     * @param  string $name
+     * @return list<MetricDefinition>|void its implementations; nothing for a name no module registers
+     */
     public function getMetricClasses($name) {
 
         if (array_key_exists($name, $this->metrics)) {
@@ -609,6 +751,10 @@ class Service extends \OWA\Core\Base {
      * A module's denormalized dimension. The modules' registries only: a
      * Property's custom dimensions are never here, and Classes\DimensionRegistry
      * is what a caller asks.
+     *
+     * @param  string $name
+     * @param  string $entity
+     * @return array<string, mixed>|void the registration; nothing when there is none
      */
     public function getDenormalizedDimension($name, $entity) {
 
@@ -620,6 +766,10 @@ class Service extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  string $command
+     * @return mixed the class that runs it; false when none does
+     */
     public function getCliCommandClass($command) {
 
         return $this->getMapValue('cli_commands', $command);
