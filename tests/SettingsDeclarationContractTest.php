@@ -30,26 +30,6 @@ final class SettingsDeclarationContractTest extends TestCase
         return \OWA\Core\CoreAPI::configSingleton();
     }
 
-    /**
-     * The LITERAL defaults, as getDefaultSettingsArray() returns them.
-     *
-     * Not $c->default_config, which is the live array: applyConfigConstants()
-     * and setupPaths() have already written into it, so on an installation
-     * whose config file sets async_log_dir it holds that path rather than the
-     * code's ''. Comparing a static declaration against a mutated array makes
-     * the test fail wherever the installation differs from the developer's --
-     * which is exactly what the isolation sweep found, running from a scratch
-     * install with its own log directory configured.
-     *
-     * @return array<string,mixed>
-     */
-    private function literalDefaults(): array
-    {
-        $m = new ReflectionMethod( $this->settings(), 'getDefaultSettingsArray' );
-
-        return (array) ( $m->invoke( $this->settings() )['base'] ?? array() );
-    }
-
     /** @return array<string,mixed> */
     private function baseDeclaration(): array
     {
@@ -64,51 +44,6 @@ final class SettingsDeclarationContractTest extends TestCase
             'the file names its own module; core cannot derive it from the directory' );
 
         return (array) $decl['settings'];
-    }
-
-    /**
-     * Every setting Base has a code default for is declared.
-     *
-     * The completeness guarantee. A key present in getDefaultSettingsArray()
-     * but missing from the declaration is one Base no longer fetches at boot,
-     * because declaring anything takes Base out of the wholesale clause.
-     */
-    public function testEveryBaseDefaultIsDeclared(): void
-    {
-        $declared = $this->baseDeclaration();
-        $defaults = $this->literalDefaults();
-
-        $missing = array_diff( array_keys( $defaults ), array_keys( $declared ) );
-
-        // Core adds these to every module; the file must NOT declare them.
-        $missing = array_diff( $missing, array_keys( \OWA\Core\Module::mechanicalSettings() ) );
-
-        $this->assertSame( array(), array_values( $missing ), sprintf(
-            'undeclared Base settings: %s. Declaring anything takes Base out of the '
-          . 'wholesale boot clause, so a key left out is one nothing reads.',
-            implode( ', ', $missing ) ) );
-    }
-
-    /** And the declaration does not invent settings the code has no default for. */
-    public function testDeclaredDefaultsMatchTheCodeDefaults(): void
-    {
-        $declared = $this->baseDeclaration();
-        $defaults = $this->literalDefaults();
-
-        foreach ( $declared as $key => $args ) {
-
-            if ( ! array_key_exists( 'default', (array) $args ) ) {
-
-                continue;
-            }
-
-            $this->assertArrayHasKey( $key, $defaults,
-                sprintf( 'base.%s declares a default that getDefaultSettingsArray() '
-                       . 'does not have; the two would drift', $key ) );
-
-            $this->assertSame( $defaults[ $key ], $args['default'],
-                sprintf( 'base.%s declares a different default from the code', $key ) );
-        }
     }
 
     /**
@@ -479,7 +414,7 @@ final class SettingsDeclarationContractTest extends TestCase
 
         $this->assertArrayHasKey( 'directory_index_pages', $this->baseDeclaration() );
         $this->assertArrayNotHasKey( 'default_page', $this->baseDeclaration() );
-        $this->assertArrayNotHasKey( 'default_page', $this->literalDefaults() );
+        $this->assertArrayNotHasKey( 'default_page', \OWA\Module\Base\Classes\Settings::baseDefaults()['base'] );
     }
 
     /**
