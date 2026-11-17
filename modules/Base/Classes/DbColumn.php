@@ -32,10 +32,13 @@ namespace OWA\Module\Base\Classes;
  
 class DbColumn {
 
+     /** @var string|null */
      public $name;
 
+     /** @var mixed whatever the entity was given, fitted to the column */
      public $value;
 
+     /** @var string|null an OWA_DTD_* type */
      public $data_type;
 
      /**
@@ -92,14 +95,19 @@ class DbColumn {
       */
      public $character_encoding = null;
 
+     /** @var bool */
      public $is_primary_key = false;
 
+     /** @var bool */
      public $auto_increment = false;
 
+     /** @var bool */
      public $is_unique = false;
 
+     /** @var bool */
      public $is_not_null = false;
 
+     /** @var string|null */
      public $label;
 
      /**
@@ -110,10 +118,16 @@ class DbColumn {
       */
      public $description = '';
 
+     /** @var bool|null true once setIndex() asks for one */
      public $index;
 
+     /** @var int|float|null only a number is written into the definition */
      public $default_value;
 
+     /**
+      * @param string $name
+      * @param string $data_type an OWA_DTD_* type
+      */
      public function __construct($name ='', $data_type = '') {
 
          if ($name) {
@@ -126,11 +140,20 @@ class DbColumn {
 
      }
 
+     /**
+      * @param  string $name a property
+      * @return mixed that property, a different type for each
+      */
      public function get($name) {
 
          return $this->$name;
      }
 
+     /**
+      * @param  string $name  a property
+      * @param  mixed  $value of that property's type
+      * @return void
+      */
      public function set($name, $value) {
 
          $this->$name = $value;
@@ -138,11 +161,18 @@ class DbColumn {
          return;
      }
 
+     /**
+      * @return mixed
+      */
      public function getValue() {
 
          return $this->value;
      }
 
+     /**
+      * @param  mixed $value
+      * @return void
+      */
      public function setValue($value) {
 
          $this->value = $this->fitToColumn( $value );
@@ -370,6 +400,7 @@ class DbColumn {
       *
       * @param bool $omit_primary_key  leave the inline PRIMARY KEY off, for a
       *                                table that declares a composite one
+      * @return string
       */
      public function getDefinition( $omit_primary_key = false ) {
 
@@ -433,57 +464,94 @@ class DbColumn {
       *
       * The clause itself belongs to whoever is writing the statement, because
       * where it may legally go depends on the statement. See getDefinition().
+      *
+      * @return bool
       */
      public function isIndexed() {
 
          return (bool) $this->get('index');
      }
 
+     /**
+      * @param  string $type an OWA_DTD_* type
+      * @return void
+      */
      public function setDataType($type) {
 
          $this->data_type = $type;
      }
 
+     /**
+      * @param  int|float $value
+      * @return void
+      */
      public function setDefaultValue($value) {
 
          $this->default_value = $value;
      }
 
+     /**
+      * @return void
+      */
      public function setPrimaryKey() {
 
          $this->is_primary_key = true;
      }
 
+     /**
+      * @return void
+      */
      public function setIndex() {
 
          $this->index = true;
      }
 
+     /**
+      * @return void
+      */
      public function setNotNull() {
 
          $this->is_not_null = true;
      }
 
+     /**
+      * @param  string $label
+      * @return void
+      */
      public function setLabel($label) {
 
          $this->label = $label;
      }
 
+     /**
+      * @param  string $description
+      * @return void
+      */
      public function setDescription( $description ) {
 
          $this->description = (string) $description;
      }
 
+     /**
+      * @return void
+      */
      public function setAutoIncrement() {
 
          $this->auto_increment = true;
      }
 
+     /**
+      * @param  string $name
+      * @return void
+      */
      public function setName($name) {
 
          $this->name = $name;
      }
 
+     /**
+      * @return string|null
+      */
      public function getName() {
 
          return $this->name;

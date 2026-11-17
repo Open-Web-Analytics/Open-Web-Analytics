@@ -28,6 +28,8 @@ namespace OWA\Module\Base\Classes;
  * do about it. The remedy travels with the check rather than being looked up by
  * the caller: a check that cannot say how to fix itself is a check that gets
  * reported as "failed" and no more.
+ *
+ * @phpstan-type Check array{name: string, value: string, passed: bool, msg: string, requires: string}
  */
 class EnvironmentCheck {
 
@@ -51,15 +53,13 @@ class EnvironmentCheck {
     );
 
     /**
-     * Every environment check, in report order.
-     *
-     * @param string $config_file  path to owa-config.php
-     * @return array[] each ['name','value','passed','msg']
-     */
-    /**
      * A path as a check shows it: in full for cmd=instance-info and System
      * Health, relative to OWA's directory for the web installer, which anyone
      * can open before OWA is installed.
+     *
+     * @param  string $path
+     * @param  bool   $relative
+     * @return string
      */
     private static function shown( $path, $relative ) {
 
@@ -76,8 +76,11 @@ class EnvironmentCheck {
     }
 
     /**
-     * @param string $config_file
+     * Every environment check, in report order.
+     *
+     * @param string $config_file  path to owa-config.php
      * @param bool   $relative    paths relative to OWA's directory (the web installer)
+     * @return list<Check>
      */
     public static function all( $config_file, $relative = false ) {
 
@@ -188,7 +191,7 @@ class EnvironmentCheck {
      * (Core\Lib::wideStringGuid), which a 32-bit build truncates.
      *
      * @param int $int_size  PHP_INT_SIZE
-     * @return array
+     * @return Check
      */
     public static function integerSize( $int_size ) {
 
@@ -212,7 +215,7 @@ class EnvironmentCheck {
      * @param bool   $mysqli     mysqli is loaded
      * @param bool   $mysqlnd    mysqli_stmt_get_result() exists
      * @param string $db_type    OWA_DB_TYPE, or 'mysql' before there is a config file
-     * @return array
+     * @return Check
      */
     public static function databaseDriver( $pdo_mysql, $mysqli, $mysqlnd, $db_type = 'mysql' ) {
 
@@ -266,9 +269,13 @@ class EnvironmentCheck {
     /**
      * One check, in the shape both callers render.
      *
+     * @param string $name
+     * @param string $value     what this server has
+     * @param bool   $passed
+     * @param string $msg       what to do about it, shown when it fails
      * @param string $requires  what passes, in a sentence, whatever this server
      *                          has: the wiki's requirements table reads it
-     * @return array
+     * @return Check
      */
     public static function check( $name, $value, $passed, $msg, $requires = '' ) {
 

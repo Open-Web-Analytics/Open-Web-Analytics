@@ -38,6 +38,12 @@ namespace OWA\Module\Base\Classes;
  * registrations per Property. Cube\Dimensions forgets a Property when one of
  * its registrations changes state or is removed, so a dimension applied earlier
  * in the same process is not missed.
+ *
+ * An entry is a registration as config/dimensions.php declares it (name,
+ * entity, column, label, data_type, family and more); the keys vary by
+ * module, so it is name => value of any type.
+ *
+ * @phpstan-type DimensionEntry array<string, mixed>
  */
 class DimensionRegistry {
 
@@ -47,9 +53,13 @@ class DimensionRegistry {
     /** @var string the Property, or '' */
     private $propertyId;
 
-    /** @var array name => entry, the Property's applied custom dimensions, oldest first */
+    /** @var array<string, DimensionEntry> name => entry, the Property's applied custom dimensions, oldest first */
     private $custom;
 
+    /**
+     * @param string                         $property_id
+     * @param array<string, DimensionEntry>  $custom
+     */
     private function __construct( $property_id, array $custom ) {
 
         $this->propertyId = (string) $property_id;
@@ -99,7 +109,7 @@ class DimensionRegistry {
      * does not have yet.
      *
      * @param  string $property_id
-     * @return array name => entry
+     * @return array<string, DimensionEntry> name => entry
      */
     private static function customOf( $property_id ) {
 
@@ -146,8 +156,8 @@ class DimensionRegistry {
      * Pass $entities to scope the answer: a dimension is offered only if it is
      * defined on one of them, and a name defined on none is absent.
      *
-     * @param  array|null $entities entity names to restrict the answer to
-     * @return array name => entry
+     * @param  string[]|null $entities entity names to restrict the answer to
+     * @return array<string, DimensionEntry> name => entry
      */
     public function all( $entities = null ) {
 
@@ -180,7 +190,12 @@ class DimensionRegistry {
         return $dims;
     }
 
-    /** Whether a name is a dimension here, on any entity. */
+    /**
+     * Whether a name is a dimension here, on any entity.
+     *
+     * @param  string $name
+     * @return bool
+     */
     public function has( $name ) {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -195,7 +210,7 @@ class DimensionRegistry {
      *
      * @param  string $name
      * @param  string $entity an entity name
-     * @return array|null
+     * @return DimensionEntry|null
      */
     public function denormalized( $name, $entity ) {
 
@@ -215,7 +230,7 @@ class DimensionRegistry {
      * Every denormalized dimension of one entity, modules' first.
      *
      * @param  string $entity an entity name
-     * @return array name => entry
+     * @return array<string, DimensionEntry> name => entry
      */
     public function onEntity( $entity ) {
 
@@ -244,7 +259,7 @@ class DimensionRegistry {
      * The Property's applied custom dimensions, as registry entries
      * (Cube\Dimensions::asDimension()), oldest first.
      *
-     * @return array
+     * @return list<DimensionEntry>
      */
     public function custom() {
 

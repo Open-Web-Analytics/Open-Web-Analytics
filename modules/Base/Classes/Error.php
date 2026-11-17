@@ -53,17 +53,18 @@ class Error {
      * Where messages go once the handler is set: file paths and, under the
      * CLI, the STDOUT stream. Opened on the first message that is written.
      *
-     * @var array|null  null until opened
+     * @var list<array{path: string|null, stream: resource|false|null}>|null  null until opened; a stream fopen() failed to open is false
      */
     private $sinks = null;
 
     /**
      * Messages logged before the configuration was loaded.
      *
-     * @var array
+     * @var list<array{error: mixed, priority: string}>|null  null until the first
      */
     public $bmsgs;
 
+    /** @var bool whether setHandler() has run */
     public $init = false;
 
     /**
@@ -73,6 +74,7 @@ class Error {
      * Under OWA_DEBUG, PHP's own errors are routed to the log too.
      *
      * @param mixed $type ignored; once 'development' or 'production', now OWA_DEBUG decides
+     * @return void
      */
     public function setHandler( $type = null ) {
 
@@ -90,7 +92,7 @@ class Error {
     /**
      * Open the file (and STDOUT under the CLI), once.
      *
-     * @return array the open sinks: each array( 'path' => string|null, 'stream' => resource|null )
+     * @return list<array{path: string|null, stream: resource|false|null}> the open sinks
      */
     private function sinks() {
 
@@ -130,6 +132,8 @@ class Error {
      * path embeds the instance hash, so a new file -- and a new race over who
      * creates it -- appears on every credential rotation.
      *
+     * @param  string $path
+     * @param  string $line
      * @return bool
      */
     private static function appendToFile( $path, $line ) {
@@ -196,12 +200,16 @@ class Error {
     /**
      * Nothing is formatted unless debug logging is on, which Lib::inDebug()
      * alone decides (see getLogLevel()). $context is appended as one line.
+     *
+     * @param  mixed $message a string, or a value Lib::forLog() formats
+     * @param  mixed $context any value
+     * @return true|null true when buffered, null otherwise
      */
     public function debug( $message, $context = null ) {
 
         if ( ! \OWA\Core\Lib::inDebug() ) {
 
-            return;
+            return null;
         }
 
         if ( $context !== null ) {
@@ -212,42 +220,73 @@ class Error {
         return $this->log( $message, 'debug' );
     }
 
+    /**
+     * @param  mixed $message a string, or a value Lib::forLog() formats
+     * @return true|null true when buffered, null otherwise
+     */
     public function info($message) {
 
         return $this->log($message, 'info');
     }
 
+    /**
+     * @param  mixed $message a string, or a value Lib::forLog() formats
+     * @return true|null true when buffered, null otherwise
+     */
     public function notice($message) {
 
         return $this->log($message, 'notice');
     }
 
+    /**
+     * @param  mixed $message a string, or a value Lib::forLog() formats
+     * @return true|null true when buffered, null otherwise
+     */
     public function warning($message) {
 
         return $this->log($message, 'warning');
     }
 
+    /**
+     * @param  mixed $message a string, or a value Lib::forLog() formats
+     * @return true|null true when buffered, null otherwise
+     */
     public function err($message) {
 
         return $this->log($message, 'error');
     }
 
+    /**
+     * @param  mixed $message a string, or a value Lib::forLog() formats
+     * @return true|null true when buffered, null otherwise
+     */
     public function crit($message) {
 
         return $this->log($message, 'critical');
     }
 
+    /**
+     * @param  mixed $message a string, or a value Lib::forLog() formats
+     * @return true|null true when buffered, null otherwise
+     */
     public function alert($message) {
 
         return $this->log($message, 'alert');
     }
 
+    /**
+     * @param  mixed  $err      a string, or a value Lib::forLog() formats
+     * @param  string $priority a key of LEVELS
+     * @return true|null true when buffered, null once written
+     */
     public function log( $err, $priority = 'notice' ) {
 
 
         if ( $this->init) {
             // log to normal loggers
-            return $this->logMsg($err, $priority);
+            $this->logMsg($err, $priority);
+
+            return null;
 
         } else {
             // buffer msgs untill the global config object has been loaded
@@ -256,6 +295,11 @@ class Error {
         }
     }
     
+    /**
+     * @param  mixed  $msg      a string, or a value Lib::forLog() formats
+     * @param  string $priority a key of LEVELS
+     * @return void
+     */
     public function logMsg( $msg, $priority ) {
 
         if ( ! isset( self::LEVELS[ $priority ] ) || self::LEVELS[ $priority ] < self::LEVELS[ $this->getLogLevel() ] ) {
@@ -290,12 +334,20 @@ class Error {
         }
     }
 
+    /**
+     * @param  mixed  $err      a string, or a value Lib::forLog() formats
+     * @param  string $priority a key of LEVELS
+     * @return true
+     */
     public function bufferMsg($err, $priority) {
 
         $this->bmsgs[] = array('error' => $err, 'priority' => $priority);
         return true;
     }
 
+    /**
+     * @return void
+     */
     public function logBufferedMsgs() {
 
         if (!empty($this->bmsgs)) {
@@ -309,12 +361,19 @@ class Error {
         }
     }
 
-    /** The lowest priority written: debug under OWA_DEBUG, notice otherwise. */
+    /**
+     * The lowest priority written: debug under OWA_DEBUG, notice otherwise.
+     *
+     * @return string
+     */
     public function getLogLevel() {
 
         return \OWA\Core\Lib::inDebug() ? 'debug' : 'notice';
     }
 
+    /**
+     * @return string a date() format
+     */
     public function getDateTimestamp() {
 
         return "H:i:s Y-m-d";
@@ -328,6 +387,9 @@ class Error {
      *
      * A plain absolute or relative filesystem path is allowed; anything with
      * a `scheme://` prefix is rejected.
+     *
+     * @param  mixed $path the error_log_file setting, any type
+     * @return bool
      */
     public static function isSafeLogPath( $path ) {
 
@@ -343,12 +405,18 @@ class Error {
         return true;
     }
 
+    /**
+     * @return void
+     */
     public function logPhpErrors() {
 
         self::phpErrorSettings();
         set_error_handler( [ $this, "handlePhpError" ] );
     }
     
+    /**
+     * @return void
+     */
     public static function phpErrorSettings() {
 
 	    error_reporting( -1 );
@@ -389,6 +457,10 @@ class Error {
         return true;
     }
 
+    /**
+     * @param  \Throwable $exception
+     * @return void
+     */
     public function logException($exception) {
 
         $msg = $exception->getMessage() . ' // '.$exception->getTraceAsString();

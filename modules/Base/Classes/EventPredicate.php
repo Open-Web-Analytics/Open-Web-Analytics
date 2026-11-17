@@ -58,27 +58,38 @@ namespace OWA\Module\Base\Classes;
  * the canonical row as it is (GoalEventDefinition::matchesRow()), and their
  * predicate has to agree with ingest, so GoalEventDefinitionPredicate passes no
  * index pages.
+ *
+ * @phpstan-import-type Condition from FunnelStep
+ * @phpstan-type Compiled array{sql: string, params: list<string>}
  */
 class EventPredicate {
 
-    /** Set when compile() returns null: which property could not be expressed. */
+    /**
+     * Set when compile() returns null: which property could not be expressed.
+     *
+     * @var string
+     */
     private $error = '';
 
-    /** Set with $error when it was a regex condition's pattern that was refused: why. */
+    /**
+     * Set with $error when it was a regex condition's pattern that was refused: why.
+     *
+     * @var string
+     */
     private $problem = '';
 
-    /** @var array|null  directory index file names, or null to compare paths as written */
+    /** @var list<string>|null  directory index file names, or null to compare paths as written */
     private $indexPages;
 
-    /** @var array  custom dimension column => label, applied to the Property */
+    /** @var array<string, string>  custom dimension column => label, applied to the Property */
     private $customColumns;
 
     /**
-     * @param array|string|null $indexPages  canonicalise page_path conditions with
+     * @param string[]|string|null $indexPages  canonicalise page_path conditions with
      *                                       these directory index file names
      *                                       (V2Event::indexPageNames()); null leaves
      *                                       them as written
-     * @param array             $customColumns the Property's applied custom dimensions,
+     * @param array<string, string> $customColumns the Property's applied custom dimensions,
      *                                       column => label (customColumnsFor())
      */
     public function __construct( $indexPages = null, array $customColumns = array() ) {
@@ -107,14 +118,19 @@ class EventPredicate {
      * another Property's, and not a pending registration.
      *
      * @param  string $propertyId
-     * @return array
+     * @return array<string, string> column => label
      */
     public static function customColumnsFor( $propertyId ) {
 
         return array_column( DimensionRegistry::forProperty( $propertyId )->custom(), 'label', 'column' );
     }
 
-    /** May a condition name this property? */
+    /**
+     * May a condition name this property?
+     *
+     * @param  string $property
+     * @return bool
+     */
     public function allows( $property ) {
 
         $property = (string) $property;
@@ -133,9 +149,9 @@ class EventPredicate {
      *
      * @param  string $event       the event name; '' matches nothing
      * @param  string $match       'all' or 'any'; anything else reads as all
-     * @param  array  $conditions  list of array( property, operator, value )
+     * @param  list<Condition> $conditions
      * @param  string $alias       the cube's alias in the caller's query
-     * @return array|null          array( 'sql' => string, 'params' => array )
+     * @return Compiled|null
      */
     public function compile( $event, $match, array $conditions, $alias = 'e' ) {
 
@@ -207,7 +223,14 @@ class EventPredicate {
         );
     }
 
-    /** A page_path value as the row stores it, when this compiler canonicalises. */
+    /**
+     * A page_path value as the row stores it, when this compiler canonicalises.
+     *
+     * @param  string $property
+     * @param  string $operator
+     * @param  string $value
+     * @return string
+     */
     private function canonical( $property, $operator, $value ) {
 
         $E = \OWA\Module\Base\Entity\GoalEventDefinition::class;
@@ -235,6 +258,8 @@ class EventPredicate {
      * and the driver is what pulls it in. Falling back to MySQL's when there is
      * no configuration to ask, which is the same assumption the test bootstrap
      * makes about OWA_DB_TYPE.
+     *
+     * @return void
      */
     private static function ensureSqlVocabulary() {
 
@@ -268,7 +293,7 @@ class EventPredicate {
      * @param  string $column
      * @param  string $operator
      * @param  string $value
-     * @return array  array( 'sql' => string, 'params' => array )
+     * @return Compiled
      */
     private function comparison( $column, $operator, $value ) {
 

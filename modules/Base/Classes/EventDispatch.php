@@ -39,21 +39,25 @@ class EventDispatch {
     /**
      * Stores listeners
      *
+     * @var array<int, callable> observer id => listener
      */
     public $listeners = array();
 
     /**
      * Stores listener IDs by event type
      *
+     * @var array<string, list<int>> dispatch name => observer ids
      */
     public $listenersByEventType = array();
 
     /**
-     * Stores listener IDs by event type
+     * Stores listener IDs by filter type
      *
+     * @var array<string, array<int, list<int>>> filter name => priority => observer ids
      */
     public $listenersByFilterType = array();
 
+    /** @var array{} nothing reads or writes it */
     public $queues    = array();
 
 
@@ -84,17 +88,6 @@ class EventDispatch {
     }
 
     /**
-     * Attach
-     *
-     * Attaches observers by event type.
-     * Takes a valid user defined callback function for use by PHP's call_user_func_array
-     *
-     * @param     $event_name    string
-     * @param    $observer    mixed can be a function name or function array
-     * @return bool
-     */
-
-    /**
      * The next observer id.
      *
      * A COUNTER, not a random value. These ids key $this->listeners, which
@@ -123,15 +116,23 @@ class EventDispatch {
      *
      * A counter is unique by construction, which is all an id has ever needed
      * to be here -- these never leave the process.
+     *
+     * @var int
      */
     private $next_observer_id = 0;
 
     /**
-     * @param string|array $event_name
-     * @param mixed        $observer
+     * Attach
+     *
+     * Attaches observers by event type.
+     * Takes a valid user defined callback function for use by PHP's call_user_func_array
+     *
+     * @param string|string[] $event_name
+     * @param callable     $observer a function name, or [object or class name, method]
      * @param string|null  $key  names a registration that is made once: a
      *                           second attach() with the same key and event
      *                           is skipped. See Core\Module::registerEventHandler().
+     * @return true
      */
     public function attach($event_name, $observer, $key = null) {
 
@@ -178,8 +179,9 @@ class EventDispatch {
      * Attaches observers by filter type.
      * Takes a valid user defined callback function for use by PHP's call_user_func_array
      *
-     * @param     $filter_name    string
-     * @param    $observer    mixed can be a function name or function array
+     * @param string   $filter_name
+     * @param callable $observer a function name, or [object or class name, method]
+     * @param int      $priority lower runs first
      * @return void
      */
 
@@ -212,16 +214,6 @@ class EventDispatch {
         $this->listeners[$id] = $observer;
 
     }
-
-    /**
-     * Notify
-     *
-     * Notifies all handlers of events in order that they were registered
-     *
-     * @param     $event_type    string
-     * @param    $event    array
-     * @return bool
-     */
 
     /**
      * NAMESPACE SUBSCRIPTION. A listener may register for `foo.*` and hear every
@@ -281,7 +273,7 @@ class EventDispatch {
      * registered both by name and by namespace runs once.
      *
      * @param  string $dispatch_name
-     * @return array  observer ids, in registration order
+     * @return list<int>  observer ids, in registration order
      */
     public function listenersFor( $dispatch_name ) {
 
@@ -309,6 +301,14 @@ class EventDispatch {
         return array_values( array_unique( $ids ) );
     }
 
+    /**
+     * Notify
+     *
+     * Notifies all handlers of events in order that they were registered
+     *
+     * @param  Event $event
+     * @return int OWA_EHS_EVENT_FAILED when a handler answered it, else OWA_EHS_EVENT_HANDLED
+     */
     public function notify($event) {
 
         $responses = array();
@@ -429,8 +429,9 @@ class EventDispatch {
      * Notifies handlers of tracking events
      * Provides switch for async notification
      *
-     * @param    $event_params    array
-     * @param     $event_type    string
+     * @param  Event|array<string, mixed>|null $event_params an event, or the properties of one
+     * @param  string $event_type used with properties
+     * @return void
      * @depricated
      */
     public function log($event_params, $event_type = '') {
@@ -448,11 +449,18 @@ class EventDispatch {
 
     }
 
+    /**
+     * @return Event
+     */
     public function eventFactory() {
 
         return new \OWA\Module\Base\Classes\Event();
     }
 
+    /**
+     * @param  string $type
+     * @return Event
+     */
     public function makeEvent($type = '') {
 
         $event = $this->eventFactory();
