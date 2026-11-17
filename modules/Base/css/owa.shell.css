@@ -269,7 +269,11 @@
         height: var(--owa-below-header);
     }
 
+    /* Positioned, so it is the containing block of whatever is absolutely
+       positioned inside it, such as a grid's screen-reader status line: that
+       scrolls and clips with the content instead of extending the window. */
     .owa_contentScroll {
+        position: relative;
         height: var(--owa-below-header);
         overflow-y: auto;
         box-sizing: border-box;
