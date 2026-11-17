@@ -44,6 +44,9 @@ class Maxmind extends \OWA\Core\Location {
     /** @var bool */
     public $db_file_present = false;
 
+    /** @var string the web service client; a subclass may name another (tests) */
+    protected $ws_client_class = '\GeoIp2\WebService\Client';
+
     /**
      * The GeoLite2 editions this module can read, and what each costs.
      *
@@ -173,7 +176,7 @@ class Maxmind extends \OWA\Core\Location {
             return $location_map;
         }
 
-        $client_class = '\GeoIp2\WebService\Client';
+        $client_class = $this->ws_client_class;
 
         if ( ! class_exists( $client_class ) ) {
 
@@ -205,6 +208,15 @@ class Maxmind extends \OWA\Core\Location {
                 'Maxmind web service lookup failed: %s', $e->getMessage() ) );
 
             return $location_map;
+        }
+
+        /*
+         * The client answers with a GeoIp2 model, not the array the database
+         * reader returns. A model's jsonSerialize() is that same record shape.
+         */
+        if ( $record instanceof \JsonSerializable ) {
+
+            $record = $record->jsonSerialize();
         }
 
         if ( $record ) {
