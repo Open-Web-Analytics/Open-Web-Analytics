@@ -148,14 +148,13 @@ describe( 'a sparkline', () => {
 
     test( 'is an image named by its lowest and highest value', () => {
         document.body.innerHTML = '<div id="s"></div>';
-        $.fn.sparkline = jest.fn();
 
         const sl = new OWA.sparkline();
         sl.generate( { getSeries: () => [ 4, 1200, 7 ] }, 's', { metric: 'visits' } );
 
-        const $line = $( '#s > .sparkline' );
+        const images = document.querySelectorAll( '#s [role="img"]' );
 
-        expect( $line.attr( 'role' ) ).toBe( 'img' );
-        expect( $line.attr( 'aria-label' ) ).toBe( 'Trend: lowest 4, highest 1,200' );
+        expect( images ).toHaveLength( 1 );
+        expect( images[0].getAttribute( 'aria-label' ) ).toBe( 'Trend: lowest 4, highest 1,200' );
     } );
 } );

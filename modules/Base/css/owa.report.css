@@ -304,6 +304,11 @@ p.owa_metricInfoboxCompare .is-up { color: #137a3e; font-weight: 600; }
 p.owa_metricInfoboxCompare .is-down { color: #b42318; font-weight: 600; }
 p.owa_metricInfoboxCompare .is-flat { font-weight: 600; }
 
+/* The sparkline under a metric box's number (owa.sparkline.js), drawn at the size its <svg> says. */
+.owa_sparkline svg { display: inline-block; vertical-align: top; }
+.owa_sparklineLine { fill: none; stroke: var(--owa-sparkline-line); stroke-linecap: round; stroke-linejoin: round; }
+.owa_sparklineFill { fill: var(--owa-sparkline-fill); stroke: none; }
+
 p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
     color:#111827;
     font-size:2.125rem;
@@ -3238,6 +3243,10 @@ dialog.owa_typeDialogFrame {
 
     /* The keyboard focus ring: 4.7:1 on white. */
     --owa-focus: #1874CD;
+
+    /* A metric box's sparkline (owa.sparkline.js): the line and the area under it. */
+    --owa-sparkline-line: #00f;
+    --owa-sparkline-fill: #cdf;
 }
 
 /* ---------------------------------------------------------------------------

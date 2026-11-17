@@ -5,7 +5,7 @@
  * edited, and several read a FREE `jQuery`/`$` at module-eval time rather than
  * require()-ing it:
  *   - chosen-js:      `$ = jQuery` (chosen.jquery.js ~610)
- *   - jquery-sparkline, jquery.flot (core/time): `(function($){...})(jQuery)`
+ *   - jquery.flot (core/time): `(function($){...})(jQuery)`
  *
  * webpack.ProvidePlugin used to rewrite those free identifiers to require('jquery').
  * This module replaces it: it imports jQuery and assigns it to window BEFORE the
