@@ -27,16 +27,14 @@ namespace OWA\Module\Base\Classes\Cube;
  *
  * @phpstan-import-type Row from \OWA\Core\Db
  * @phpstan-import-type Span from \OWA\Core\Db
- * @phpstan-import-type JobRegistration from \OWA\Core\Module
- * @phpstan-type JobState array{job: JobRegistration|null, row: Row|null, next: int|null, running: bool, reason: string|null}
+ * @phpstan-import-type JobState from \OWA\Module\Base\Classes\JobStatus
  * @phpstan-type Check array{key: string, label: string, level: string, detail: string}
  * @phpstan-type Summary array{property_id: string, name: string, table: string, exists: bool, checks: list<Check>, behind_from: int|null, scheduler: JobState, level: string}
  * @phpstan-type DayRow array{day: int, raw: int, cube: int, partition: string, built_at: int|null, settled: bool}
  * @phpstan-type PartitionFacts array{count: int, first: int|null, lead_end: int|null, daily_through: int|null, today_daily: bool, catch_all: string, catch_all_rows: int}
  * @phpstan-type Readiness array{state: string, headline: string, message: string, cron: string, property_id: string}
  *
- * JobState is JobStatus::forJob()'s answer. A Check's level is GREEN, YELLOW
- * or RED.
+ * A Check's level is GREEN, YELLOW or RED.
  */
 class Status {
 

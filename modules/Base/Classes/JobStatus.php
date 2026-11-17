@@ -19,6 +19,7 @@ namespace OWA\Module\Base\Classes;
  * @phpstan-import-type Row from \OWA\Core\Db
  * @phpstan-import-type JobRegistration from \OWA\Core\Module
  * @phpstan-import-type CronFields from \OWA\Core\Cron
+ * @phpstan-type JobState array{job: JobRegistration|null, row: Row|null, next: int|null, running: bool, reason: string|null}
  */
 class JobStatus {
 
@@ -39,7 +40,7 @@ class JobStatus {
      *
      * @param string   $name
      * @param int|null $now
-     * @return array{job: JobRegistration|null, row: Row|null, next: int|null, running: bool, reason: string|null}
+     * @return JobState
      */
     public static function forJob( $name, $now = null ) {
 
