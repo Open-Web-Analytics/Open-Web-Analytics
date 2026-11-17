@@ -154,7 +154,7 @@ class ProcessEvent extends \OWA\Core\Controller {
             //filter event
             $this->event = $this->eq->filter( 'post_processed_tracking_event', $this->event );
 
-            \OWA\Core\CoreAPI::debug( 'Dispatching ' . $this->event->getEventType() . ' event with properties: ' . print_r($this->event->getProperties(), true ) );
+            \OWA\Core\CoreAPI::debug( 'Dispatching ' . $this->event->getEventType() . ' event with properties: ' . implode( ', ', array_keys( (array) $this->event->getProperties() ) ) );
             $this->eq->notify( $this->event );
 
         } else {
