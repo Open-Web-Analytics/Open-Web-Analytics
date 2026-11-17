@@ -1073,17 +1073,27 @@ class Lib {
         return str_pad( strval( (int) $number ), $char_length, "0", STR_PAD_LEFT );
     }
 
-    public static function generateRandomUid($seed='') {
+    /**
+     * A new random id: a positive integer, as a string of digits.
+     *
+     * 63 bits, so it fits a signed BIGINT. $narrow gives 32 bits, the width of
+     * the crc32 ids an install still on narrow ids derives (useNarrowGuid()).
+     *
+     * @param bool $narrow
+     * @return string
+     */
+    public static function randomId( $narrow = false ) {
 
-        $time = (string) time();
-        $random = \OWA\Core\Lib::zeroFill( mt_rand( 0, 999999 ), 6 );
-        if ( defined('OWA_SERVER_ID') ) {
-            $server = \OWA\Core\Lib::zeroFill( OWA_SERVER_ID, 3 );
-        } else {
-            $server = substr( strval( getmypid() ), 0, 3);
-        }
+        return (string) random_int( 1, $narrow ? 0xFFFFFFFF : PHP_INT_MAX );
+    }
 
-        return $time.$random.$server;
+    /**
+     * @deprecated use randomId()
+     * @return string
+     */
+    public static function generateRandomUid( $seed = '' ) {
+
+        return self::randomId();
     }
 
     public static function unparseUrl($parsed_url, $ommit = array() ) {

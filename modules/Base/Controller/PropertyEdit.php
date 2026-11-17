@@ -131,7 +131,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
              */
             $sm = new \OWA\Module\Base\Classes\SiteManager();
 
-            $propertyId = $property->generateId( 'property:' . $name . ':' . uniqid( '', true ) );
+            $propertyId = \OWA\Core\Lib::randomId( \OWA\Core\Lib::useNarrowGuid() );
 
             $property->set( 'id', $propertyId );
             $property->set( 'organization_id', $sm->ensureOrganization() );

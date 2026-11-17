@@ -2043,7 +2043,7 @@ class CustomReports {
 
         if ( $id === '' ) {
 
-            $id = (string) \OWA\Core\Lib::generateRandomUid();
+            $id = \OWA\Core\Lib::randomId();
 
             $entity->set( 'id', $id );
             $entity->set( 'user_id', (string) $user_id );

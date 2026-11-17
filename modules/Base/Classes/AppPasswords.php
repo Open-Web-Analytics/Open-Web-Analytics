@@ -98,7 +98,7 @@ class AppPasswords {
             $inserted = self::db()->query( sprintf(
                 'INSERT INTO %s (id, lookup_id, user_id, name, secret_hash, scope, created_at)'
               . ' VALUES (?, ?, ?, ?, ?, ?, ?)', self::table() ),
-                array( (string) random_int( 1, PHP_INT_MAX ), $lookup, $user_id, $name,
+                array( \OWA\Core\Lib::randomId(), $lookup, $user_id, $name,
                        self::hash( $token ), $scope, $now ) );
 
             if ( $inserted !== false ) {

@@ -222,8 +222,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
         } else {
 
-            $definition->set( 'id', $definition->generateId(
-                'goal_event:' . $propertyId . ':' . uniqid( '', true ) ) );
+            $definition->set( 'id', \OWA\Core\Lib::randomId( \OWA\Core\Lib::useNarrowGuid() ) );
             $definition->set( 'creation_date', \OWA\Core\CoreAPI::getRequestTimestamp() );
             $definition->create();
         }
