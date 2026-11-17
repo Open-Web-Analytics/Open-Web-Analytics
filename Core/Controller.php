@@ -1131,8 +1131,7 @@ class Controller extends \OWA\Core\Base {
 
         if ( ! $propertyId && $siteId ) {
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->getByColumn( 'site_id', $siteId );
+            $site = \OWA\Module\Base\Entity\Site::forSiteId( $siteId );
             $propertyId = $site->get( 'property_id' );
         }
 

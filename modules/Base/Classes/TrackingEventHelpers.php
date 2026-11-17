@@ -3170,8 +3170,7 @@ class TrackingEventHelpers {
         $url = \OWA\Core\Lib::unparseUrl( parse_url( $url ), array( 'port', 'user', 'pass', 'fragment' ) );
 
         \OWA\Core\CoreAPI::debug('makeUrlCanonical using site_id: '.$site_id);
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->load( $site->generateId( $site_id ) );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
         // The install's filters, then the site's, then OWA's own params.
         $ns      = \OWA\Core\CoreAPI::getSetting( 'base', 'ns' );

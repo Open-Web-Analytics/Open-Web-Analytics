@@ -43,8 +43,7 @@ class SitesInvocation extends \OWA\Core\AdminController {
     function action() {
         $site_id = $this->getParam('siteId');
         $this->set('site_id', $site_id);
-        $s = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $s->getByColumn('site_id', $site_id);
+        $s = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
         $this->set('site', $s);
         $this->setSubview('base.sitesInvocation');
         /*

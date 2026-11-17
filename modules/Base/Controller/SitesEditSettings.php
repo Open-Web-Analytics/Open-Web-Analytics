@@ -124,8 +124,7 @@ class SitesEditSettings extends \OWA\Core\AdminController {
          * appeared the moment that branch changed.
          */
         $this->set('error_code', 3002);
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $owa_site_id ) );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $owa_site_id );
         $this->set('site', $site->_getProperties());
 
         /*

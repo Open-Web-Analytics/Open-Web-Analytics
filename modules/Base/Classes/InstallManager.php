@@ -133,11 +133,10 @@ class InstallManager extends \OWA\Core\Base {
 
         $this->e->notice('Checking for existence of default site.');
 
-        $existing = \OWA\Core\CoreAPI::entityFactory('base.site');
-
         if ($site_id) {
-            $existing->load($site_id, 'site_id');
+            $existing = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
         } else {
+            $existing = \OWA\Core\CoreAPI::entityFactory('base.site');
             $existing->load($domain, 'domain');
         }
 

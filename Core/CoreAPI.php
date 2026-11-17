@@ -669,8 +669,7 @@ class CoreAPI {
 
         if ( $scopeType === 'profile' ) {
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->getByColumn( 'site_id', $scopeId );
+            $site = \OWA\Module\Base\Entity\Site::forSiteId( $scopeId );
 
             $scopeId   = $site->get( 'property_id' );
             $scopeType = 'property';
@@ -867,8 +866,7 @@ class CoreAPI {
             return;
         }
 
-        $site = \OWA\Core\CoreAPI::entityFactory('base.site');
-        $site->load( $site->generateId( $site_id ) );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
         /*
          * A site id that names no site still answers "no setting", not the
@@ -953,8 +951,7 @@ class CoreAPI {
 
         if ( ! array_key_exists( $site_id, self::$registered_sites ) ) {
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->load( $site->generateId( $site_id ) );
+            $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
             if ( ! $site->wasPersisted() && ! self::databaseAnswers() ) {
 

@@ -136,8 +136,7 @@ class Hosts {
             return array();
         }
 
-        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->load( $site->generateId( $site_id ) );
+        $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
         if ( ! $site->wasPersisted() ) {
 

@@ -58,8 +58,7 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
     function action() {
 
         $site_id = $this->getParam( 'siteId' );
-        $s = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $s->load( $site_id, 'site_id' );
+        $s = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
         $user_id = $this->getParam( 'user_id' );
         $u = \OWA\Core\CoreAPI::entityFactory( 'base.user' );

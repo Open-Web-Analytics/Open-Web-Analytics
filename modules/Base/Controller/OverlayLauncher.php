@@ -237,8 +237,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         foreach ( $site_ids as $site_id ) {
 
-            $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-            $site->getByColumn( 'site_id', $site_id );
+            $site = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
 
             $domain = trim( (string) $site->get( 'domain' ) );
             $parts  = parse_url( strpos( $domain, '//' ) === false ? 'https://' . $domain : $domain );
