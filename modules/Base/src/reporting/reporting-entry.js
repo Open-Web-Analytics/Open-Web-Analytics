@@ -66,7 +66,7 @@ import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis
 // OWA reporting namespace: owa.format.js defines it (exports OWA + publishes window.OWA), the
 // other six import { OWA } and augment it. Import order is load-bearing -- owa.format.js first.
 import './owa.format.js';
-// Width, height and position for every jQuery UI dialog (OWA.dialogFit).
+// Modal dialogs on the browser's <dialog> (OWA.dialog).
 import './owa.dialog.js';
 import './owa.report.js';
 import './owa.resultSetExplorer.js';

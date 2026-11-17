@@ -38,7 +38,8 @@ final class TouchTargetTest extends TestCase
         '.owa_grid .owa_gridSortArrow'                              => array( 'min-height' ),
         '.owa_grid .owa_gridSortArrow::before'                      => array( 'width' ),
         '.owa .ui-tabs .ui-tabs-nav .ui-tabs-anchor'                => array( 'min-height' ),
-        '.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button' => array( 'min-height' ),
+        '.owa_dialogButtons button.owa-button'                      => array( 'min-height' ),
+        '.owa_dialogClose'                                          => array( 'width', 'height' ),
         '.owa .owa-override, .owa-override'                         => array( 'min-height' ),
         '.owa_periodDay'                                            => array( 'height' ),
     );
