@@ -328,7 +328,7 @@ export function applyPanel( rules, config, widget, panel ) {
 
     var query = {};
 
-    widget.title = panel.title || ( 'Widget ' + ( panel.index + 1 ) );
+    widget.title = panel.title || say( OWA.l( 'Widget %s' ), panel.index + 1 );
 
     if ( rules.isFullWidth( widget.type ) ) {
 
@@ -937,7 +937,7 @@ export function start( config ) {
         var widget = widgets[ index ];
         var query  = widget.query || {};
 
-        jQuery( '#dlgTitle' ).val( widget.title || ( 'Widget ' + ( index + 1 ) ) );
+        jQuery( '#dlgTitle' ).val( widget.title || say( OWA.l( 'Widget %s' ), index + 1 ) );
 
         dialogOriginalType = widget.type;
         renderTypePill( widget.type );

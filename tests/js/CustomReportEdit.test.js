@@ -202,8 +202,12 @@ describe('the widget the panel writes', () => {
             .toEqual({ reportId: 'browsers', label: 'All' });
     });
 
-    test('a nameless widget is named by its place', () => {
+    test('a nameless widget is named by its place, in the install\'s words', () => {
         expect(applyPanel(rules, CONFIG, { type: 'grid' }, panel({ title: '', index: 3 })).title).toBe('Widget 4');
+
+        OWA.config.strings = { 'Widget %s': 'Baustein %s' };
+
+        expect(applyPanel(rules, CONFIG, { type: 'grid' }, panel({ title: '', index: 3 })).title).toBe('Baustein 4');
     });
 });
 
