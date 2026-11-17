@@ -55,7 +55,7 @@ class SourceStep extends Step {
      * @param string      $join   which join they live on
      * @param string|null $absent SQL test that is true when there is no row
      */
-    function __construct( $column, $tag, $host, $join, $absent = null ) {
+    public function __construct( $column, $tag, $host, $join, $absent = null ) {
 
         parent::__construct( $column );
 

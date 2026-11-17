@@ -39,7 +39,7 @@ class ChannelStep extends Step {
      * @param string $medium   the row's medium column
      * @param string $campaign the row's campaign column
      */
-    function __construct( $column, $source, $medium, $campaign ) {
+    public function __construct( $column, $source, $medium, $campaign ) {
 
         parent::__construct( $column );
 

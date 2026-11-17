@@ -40,21 +40,21 @@ class EventDispatch {
      * Stores listeners
      *
      */
-    var $listeners = array();
+    public $listeners = array();
 
     /**
      * Stores listener IDs by event type
      *
      */
-    var $listenersByEventType = array();
+    public $listenersByEventType = array();
 
     /**
      * Stores listener IDs by event type
      *
      */
-    var $listenersByFilterType = array();
+    public $listenersByFilterType = array();
 
-    var $queues    = array();
+    public $queues    = array();
 
 
     /**
@@ -79,7 +79,7 @@ class EventDispatch {
      * Constructor
      *
      */
-    function __construct() {
+    public function __construct() {
 
     }
 
@@ -133,7 +133,7 @@ class EventDispatch {
      *                           second attach() with the same key and event
      *                           is skipped. See Core\Module::registerEventHandler().
      */
-    function attach($event_name, $observer, $key = null) {
+    public function attach($event_name, $observer, $key = null) {
 
         $names = array();
 
@@ -183,7 +183,7 @@ class EventDispatch {
      * @return void
      */
 
-    function attachFilter($filter_name, $observer, $priority = 10) {
+    public function attachFilter($filter_name, $observer, $priority = 10) {
 
         // Do not attach the same observer to a filter twice. filter() chains
         // each listener's output into the next listener's input, so a duplicate
@@ -283,7 +283,7 @@ class EventDispatch {
      * @param  string $dispatch_name
      * @return array  observer ids, in registration order
      */
-    function listenersFor( $dispatch_name ) {
+    public function listenersFor( $dispatch_name ) {
 
         $dispatch_name = (string) $dispatch_name;
 
@@ -309,7 +309,7 @@ class EventDispatch {
         return array_values( array_unique( $ids ) );
     }
 
-    function notify($event) {
+    public function notify($event) {
 
         $responses = array();
         \OWA\Core\CoreAPI::debug("Notifying listeners of ".$event->getEventType());
@@ -381,7 +381,7 @@ class EventDispatch {
      * @param mixed  $value
      * @return mixed $new_value
      */
-    function filter($filter_name, $value = '') {
+    public function filter($filter_name, $value = '') {
 
         if (array_key_exists($filter_name, $this->listenersByFilterType)) {
             // sort the filter list by priority
@@ -433,7 +433,7 @@ class EventDispatch {
      * @param     $event_type    string
      * @depricated
      */
-    function log($event_params, $event_type = '') {
+    public function log($event_params, $event_type = '') {
         //owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
 
         if (!is_a($event_params, \OWA\Module\Base\Classes\Event::class)) {
@@ -448,12 +448,12 @@ class EventDispatch {
 
     }
 
-    function eventFactory() {
+    public function eventFactory() {
 
         return new \OWA\Module\Base\Classes\Event();
     }
 
-    function makeEvent($type = '') {
+    public function makeEvent($type = '') {
 
         $event = $this->eventFactory();
 

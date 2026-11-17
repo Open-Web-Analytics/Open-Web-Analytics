@@ -90,7 +90,7 @@ class Columns {
     /**
      * @param array|null $definitions defaults to the shipped config
      */
-    function __construct( $definitions = null ) {
+    public function __construct( $definitions = null ) {
 
         $this->definitions = $definitions === null
             ? (array) \OWA\Core\CoreAPI::loadConf( 'cube_columns.php', 'cube.columns' )

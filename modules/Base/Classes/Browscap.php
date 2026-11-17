@@ -42,16 +42,16 @@ class Browscap extends \OWA\Core\Base {
      *
      * @var mixed
      */
-    var $browser;
+    public $browser;
 
     /**
      * Current user Agent
      *
      * @var string
      */
-    var $ua;
+    public $ua;
 
-    function __construct( $ua = '' ) {
+    public function __construct( $ua = '' ) {
 
         parent::__construct();
 
@@ -64,7 +64,7 @@ class Browscap extends \OWA\Core\Base {
 
     }
 
-    function lookup( $user_agent ) {
+    public function lookup( $user_agent ) {
 
         /*
          * Parsed every time, not cached.
@@ -127,32 +127,32 @@ class Browscap extends \OWA\Core\Base {
         return null;
     }
 
-    function get( $name ) {
+    public function get( $name ) {
 
         return $this->browser->$name;
     }
 
-    function getUaFamily() {
+    public function getUaFamily() {
 
         return $this->browser->ua->family;
     }
 
-    function getUaFamilyVersion() {
+    public function getUaFamilyVersion() {
 
         return $this->browser->ua->toVersion();
     }
 
-    function getUaVersion() {
+    public function getUaVersion() {
 
         return $this->browser->ua->toVersion();
     }
 
-    function getOsFamily() {
+    public function getOsFamily() {
 
         return $this->browser->os->family;
     }
 
-    function getOsVersion() {
+    public function getOsVersion() {
 
         return $this->browser->os->toVersion();
     }
@@ -170,21 +170,21 @@ class Browscap extends \OWA\Core\Base {
      * and storing it is not -- absence is NULL in owa_event_raw.
      */
 
-    function getDeviceFamily() {
+    public function getDeviceFamily() {
 
         return isset( $this->browser->device->family )
             ? (string) $this->browser->device->family
             : '';
     }
 
-    function getDeviceBrand() {
+    public function getDeviceBrand() {
 
         return isset( $this->browser->device->brand )
             ? (string) $this->browser->device->brand
             : '';
     }
 
-    function getDeviceModel() {
+    public function getDeviceModel() {
 
         return isset( $this->browser->device->model )
             ? (string) $this->browser->device->model

@@ -43,7 +43,7 @@ class Mailer {
      */
     const TIMEOUT = 10;
 
-    var $mailer;
+    public $mailer;
 
     /**
      * Constructor
@@ -51,7 +51,7 @@ class Mailer {
      * @return \OWA\Module\Base\Classes\Mailer
      * @throws \PHPMailer\PHPMailer\Exception
      */
-    function __construct() {
+    public function __construct() {
         
         $this->mailer = new PHPMailer( true );
         $this->mailer->Timeout = self::TIMEOUT;
@@ -152,7 +152,7 @@ class Mailer {
      * @param  string $address
      * @return string
      */
-    function repairFromAddress( $address ) {
+    public function repairFromAddress( $address ) {
 
         $at = strrpos( $address, '@' );
 
@@ -180,7 +180,7 @@ class Mailer {
      *
      * @return bool whether the transport accepted it
      */
-    function sendMail() {
+    public function sendMail() {
 
         $error = null;
 
@@ -205,7 +205,7 @@ class Mailer {
         return false;
     }
 
-    function send() {
+    public function send() {
 
         return $this->sendMail();
     }
@@ -215,7 +215,7 @@ class Mailer {
      *
      * @return bool whether it was added
      */
-    function addAddress( $address, $name = '' ) {
+    public function addAddress( $address, $name = '' ) {
 
         try {
 
@@ -236,32 +236,32 @@ class Mailer {
         return false;
     }
     
-    function setFrom( $address, $name ) {
+    public function setFrom( $address, $name ) {
         
         $this->mailer->setFrom( $address, $name );
     }
     
-    function setHtmlBody ( $html ) {
+    public function setHtmlBody ( $html ) {
         
         $this->mailer->msgHTML( $html );
     }
     
-    function setAltBody ( $text ) {
+    public function setAltBody ( $text ) {
         
         $this->mailer->AltBody =  $text;
     }
     
-    function setSubject( $subject ) {
+    public function setSubject( $subject ) {
     
         $this->mailer->Subject = $subject;
     }
     
-    function addReplyTo( $address, $name ) {
+    public function addReplyTo( $address, $name ) {
     
         $this->mailer->addReplyTo( $address, $name );
     }
     
-    function addAttachment( $attachment ) {
+    public function addAttachment( $attachment ) {
     
         $this->mailer->addAttachment( $attachment );
     }

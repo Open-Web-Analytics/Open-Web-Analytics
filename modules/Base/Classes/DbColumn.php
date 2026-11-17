@@ -32,11 +32,11 @@ namespace OWA\Module\Base\Classes;
  
 class DbColumn {
 
-     var $name;
+     public $name;
 
-     var $value;
+     public $value;
 
-     var $data_type;
+     public $data_type;
 
      /**
       * Whether an over-long value may be trimmed to fit this column.
@@ -57,7 +57,7 @@ class DbColumn {
       *
       * @var bool
       */
-     var $truncatable = true;
+     public $truncatable = true;
 
      /**
       * May this column store NULL, or is an unset value written as ''?
@@ -77,7 +77,7 @@ class DbColumn {
       *
       * @var bool
       */
-     var $nullable = false;
+     public $nullable = false;
 
      /**
       * The encoding of the TABLE this column belongs to, when it differs from
@@ -90,17 +90,17 @@ class DbColumn {
       *
       * @var string|null
       */
-     var $character_encoding = null;
+     public $character_encoding = null;
 
-     var $is_primary_key = false;
+     public $is_primary_key = false;
 
-     var $auto_increment = false;
+     public $auto_increment = false;
 
-     var $is_unique = false;
+     public $is_unique = false;
 
-     var $is_not_null = false;
+     public $is_not_null = false;
 
-     var $label;
+     public $label;
 
      /**
       * What the column holds, in a sentence for an administrator. Documentation
@@ -108,13 +108,13 @@ class DbColumn {
       *
       * @var string
       */
-     var $description = '';
+     public $description = '';
 
-     var $index;
+     public $index;
 
-     var $default_value;
+     public $default_value;
 
-     function __construct($name ='', $data_type = '') {
+     public function __construct($name ='', $data_type = '') {
 
          if ($name) {
              $this->setName($name);
@@ -126,24 +126,24 @@ class DbColumn {
 
      }
 
-     function get($name) {
+     public function get($name) {
 
          return $this->$name;
      }
 
-     function set($name, $value) {
+     public function set($name, $value) {
 
          $this->$name = $value;
 
          return;
      }
 
-     function getValue() {
+     public function getValue() {
 
          return $this->value;
      }
 
-     function setValue($value) {
+     public function setValue($value) {
 
          $this->value = $this->fitToColumn( $value );
 
@@ -278,7 +278,7 @@ class DbColumn {
      * @param string|null $encoding
      * @return void
      */
-    function setCharacterEncoding( $encoding ) {
+    public function setCharacterEncoding( $encoding ) {
 
         $this->character_encoding = $encoding ? (string) $encoding : null;
     }
@@ -289,7 +289,7 @@ class DbColumn {
      * @param bool $truncatable
      * @return void
      */
-    function setTruncatable( $truncatable ) {
+    public function setTruncatable( $truncatable ) {
 
         $this->truncatable = (bool) $truncatable;
     }
@@ -304,7 +304,7 @@ class DbColumn {
      * @param bool $nullable
      * @return void
      */
-    function setNullable( $nullable = true ) {
+    public function setNullable( $nullable = true ) {
 
         $this->nullable = (bool) $nullable;
     }
@@ -371,7 +371,7 @@ class DbColumn {
       * @param bool $omit_primary_key  leave the inline PRIMARY KEY off, for a
       *                                table that declares a composite one
       */
-     function getDefinition( $omit_primary_key = false ) {
+     public function getDefinition( $omit_primary_key = false ) {
 
          $definition = '';
 
@@ -434,57 +434,57 @@ class DbColumn {
       * The clause itself belongs to whoever is writing the statement, because
       * where it may legally go depends on the statement. See getDefinition().
       */
-     function isIndexed() {
+     public function isIndexed() {
 
          return (bool) $this->get('index');
      }
 
-     function setDataType($type) {
+     public function setDataType($type) {
 
          $this->data_type = $type;
      }
 
-     function setDefaultValue($value) {
+     public function setDefaultValue($value) {
 
          $this->default_value = $value;
      }
 
-     function setPrimaryKey() {
+     public function setPrimaryKey() {
 
          $this->is_primary_key = true;
      }
 
-     function setIndex() {
+     public function setIndex() {
 
          $this->index = true;
      }
 
-     function setNotNull() {
+     public function setNotNull() {
 
          $this->is_not_null = true;
      }
 
-     function setLabel($label) {
+     public function setLabel($label) {
 
          $this->label = $label;
      }
 
-     function setDescription( $description ) {
+     public function setDescription( $description ) {
 
          $this->description = (string) $description;
      }
 
-     function setAutoIncrement() {
+     public function setAutoIncrement() {
 
          $this->auto_increment = true;
      }
 
-     function setName($name) {
+     public function setName($name) {
 
          $this->name = $name;
      }
 
-     function getName() {
+     public function getName() {
 
          return $this->name;
      }

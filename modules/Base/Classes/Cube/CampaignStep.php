@@ -57,7 +57,7 @@ class CampaignStep extends Step {
      * @param string      $join
      * @param string|null $absent
      */
-    function __construct( $column, $campaign, array $tags, MediumStep $medium, $join, $absent = null ) {
+    public function __construct( $column, $campaign, array $tags, MediumStep $medium, $join, $absent = null ) {
 
         parent::__construct( $column );
 

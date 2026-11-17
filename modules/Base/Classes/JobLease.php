@@ -33,7 +33,7 @@ class JobLease {
     /**
      * @param string $job_name
      */
-    function __construct( $job_name ) {
+    public function __construct( $job_name ) {
 
         $this->job_name = (string) $job_name;
 

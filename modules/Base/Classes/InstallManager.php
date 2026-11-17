@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Classes;
 
 class InstallManager extends \OWA\Core\Base {
 
-    function installSchema() {
+    public function installSchema() {
 
         /*
          * Refused before a table exists, on a server OWA cannot run on. The web
@@ -55,7 +55,7 @@ class InstallManager extends \OWA\Core\Base {
 
     }
 
-    function createAdminUser($user_id, $email_address, $password = '') {
+    public function createAdminUser($user_id, $email_address, $password = '') {
 
         //create user entity
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
@@ -123,7 +123,7 @@ class InstallManager extends \OWA\Core\Base {
      * wizard does -- and in that case the pinned value is what gets looked up,
      * so pinning stays idempotent on its own terms.
      */
-    function createDefaultSite($domain, $name = '', $description = '', $site_family = '', $site_id = '') {
+    public function createDefaultSite($domain, $name = '', $description = '', $site_family = '', $site_id = '') {
 
         $domain = \OWA\Module\Base\Classes\SiteManager::domainOnly($domain);
 
@@ -187,7 +187,7 @@ class InstallManager extends \OWA\Core\Base {
     }
 
     /** Whether the install has an admin user. */
-    function hasAdminUser() {
+    public function hasAdminUser() {
 
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
         $u->getByColumn('role', \OWA\Module\Base\Entity\User::ADMIN_USER_ROLE);
@@ -208,7 +208,7 @@ class InstallManager extends \OWA\Core\Base {
      * @param callable $writes does the writes; returns the site_id, or false
      * @return string|false the site_id, or false when nothing was saved
      */
-    function finishInstall( callable $writes ) {
+    public function finishInstall( callable $writes ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->beginTransaction();
@@ -242,7 +242,7 @@ class InstallManager extends \OWA\Core\Base {
         }
     }
 
-    function checkDbConnection() {
+    public function checkDbConnection() {
 
         // Check DB connection status
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -254,7 +254,7 @@ class InstallManager extends \OWA\Core\Base {
         }
     }
     
-    function isInstallComplete() {
+    public function isInstallComplete() {
         
         // is config file present?
         $c = \OWA\Core\CoreAPI::configSingleton();
@@ -298,7 +298,7 @@ class InstallManager extends \OWA\Core\Base {
      *
      * @return boolean
      */
-    function isBaseSchemaInstalled() {
+    public function isBaseSchemaInstalled() {
         
         $base_module_tables = ['user'];
         $tables_missing = [];

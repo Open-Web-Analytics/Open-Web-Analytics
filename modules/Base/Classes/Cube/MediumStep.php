@@ -50,7 +50,7 @@ class MediumStep extends Step {
      * @param string      $join
      * @param string|null $absent
      */
-    function __construct( $column, $tag, $host, $join, $absent = null ) {
+    public function __construct( $column, $tag, $host, $join, $absent = null ) {
 
         parent::__construct( $column );
 

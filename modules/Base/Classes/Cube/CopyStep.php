@@ -38,7 +38,7 @@ class CopyStep extends Step {
      * @param bool        $text   collapse empty to NULL
      * @param string|null $absent SQL test that is true when there is no row
      */
-    function __construct( $column, $source, $join, $text = false, $absent = null ) {
+    public function __construct( $column, $source, $join, $text = false, $absent = null ) {
 
         parent::__construct( $column );
 

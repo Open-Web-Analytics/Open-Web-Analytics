@@ -23,7 +23,7 @@ class LiteralStep extends Step {
      * @param string   $column
      * @param callable $value  given the Context, returns the literal
      */
-    function __construct( $column, $value ) {
+    public function __construct( $column, $value ) {
 
         parent::__construct( $column );
 

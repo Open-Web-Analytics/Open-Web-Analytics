@@ -27,17 +27,17 @@ class Cache {
     /** @var array<string, array<string, mixed>> values by collection, then key */
     private $items = [];
 
-    function set( $collection, $key, $value ) {
+    public function set( $collection, $key, $value ) {
 
         $this->items[ $collection ][ $key ] = $value;
     }
 
-    function get( $collection, $key ) {
+    public function get( $collection, $key ) {
 
         return $this->items[ $collection ][ $key ] ?? null;
     }
 
-    function remove( $collection, $key ) {
+    public function remove( $collection, $key ) {
 
         if ( ! isset( $this->items[ $collection ] ) || ! array_key_exists( $key, $this->items[ $collection ] ) ) {
 
@@ -49,7 +49,7 @@ class Cache {
         return true;
     }
 
-    function flush() {
+    public function flush() {
 
         $this->items = [];
 

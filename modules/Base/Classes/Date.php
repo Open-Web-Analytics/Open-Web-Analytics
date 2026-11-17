@@ -33,31 +33,31 @@ namespace OWA\Module\Base\Classes;
 
 class Date {
 
-    var $yyyymmdd;
-    var $timestamp;
-    var $label;
-    var $label_formal;
-    var $year;
-    var $month;
-    var $day;
-    var $day_of_week;
-    var $day_of_week_label;
-    var $day_of_year;
-    var $week_of_year;
-    var $hour;
-    var $minute;
-    var $second;
-    var $microsecond;
-    var $meridiem;
-    var $num_days_in_month;
-    var $utc_offset;
+    public $yyyymmdd;
+    public $timestamp;
+    public $label;
+    public $label_formal;
+    public $year;
+    public $month;
+    public $day;
+    public $day_of_week;
+    public $day_of_week_label;
+    public $day_of_year;
+    public $week_of_year;
+    public $hour;
+    public $minute;
+    public $second;
+    public $microsecond;
+    public $meridiem;
+    public $num_days_in_month;
+    public $utc_offset;
 
-    function __construct() {
+    public function __construct() {
 
         return;
     }
 
-    function set($date, $format = 'yyyymmdd') {
+    public function set($date, $format = 'yyyymmdd') {
 
         switch ($format) {
 
@@ -91,16 +91,16 @@ class Date {
         $this->label_formal = date('F jS Y', $this->timestamp);
     }
 
-    function get($name){
+    public function get($name){
 
         return $this->$name;
     }
 
-    function getMonth() {
+    public function getMonth() {
         return $this->month;
     }
 
-    function getLabel($format = '') {
+    public function getLabel($format = '') {
 
         if (empty($format)) {
 
@@ -114,12 +114,12 @@ class Date {
         return $this->$format;
     }
 
-    function getYyyymmdd() {
+    public function getYyyymmdd() {
 
         return $this->yyyymmdd;
     }
 
-    function getTimestamp() {
+    public function getTimestamp() {
 
         return $this->timestamp;
     }

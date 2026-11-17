@@ -62,9 +62,9 @@ class Error {
      *
      * @var array
      */
-    var $bmsgs;
+    public $bmsgs;
 
-    var $init = false;
+    public $init = false;
 
     /**
      * Call once the configuration is loaded: it decides where the log is and
@@ -173,7 +173,7 @@ class Error {
      * @param \Throwable $exception
      * @return void
      */
-    function handleUncaughtException( $exception ) {
+    public function handleUncaughtException( $exception ) {
 
         $this->logException( $exception );
 
@@ -197,7 +197,7 @@ class Error {
      * Nothing is formatted unless debug logging is on, which Lib::inDebug()
      * alone decides (see getLogLevel()). $context is appended as one line.
      */
-    function debug( $message, $context = null ) {
+    public function debug( $message, $context = null ) {
 
         if ( ! \OWA\Core\Lib::inDebug() ) {
 
@@ -212,37 +212,37 @@ class Error {
         return $this->log( $message, 'debug' );
     }
 
-    function info($message) {
+    public function info($message) {
 
         return $this->log($message, 'info');
     }
 
-    function notice($message) {
+    public function notice($message) {
 
         return $this->log($message, 'notice');
     }
 
-    function warning($message) {
+    public function warning($message) {
 
         return $this->log($message, 'warning');
     }
 
-    function err($message) {
+    public function err($message) {
 
         return $this->log($message, 'error');
     }
 
-    function crit($message) {
+    public function crit($message) {
 
         return $this->log($message, 'critical');
     }
 
-    function alert($message) {
+    public function alert($message) {
 
         return $this->log($message, 'alert');
     }
 
-    function log( $err, $priority = 'notice' ) {
+    public function log( $err, $priority = 'notice' ) {
 
 
         if ( $this->init) {
@@ -256,7 +256,7 @@ class Error {
         }
     }
     
-    function logMsg( $msg, $priority ) {
+    public function logMsg( $msg, $priority ) {
 
         if ( ! isset( self::LEVELS[ $priority ] ) || self::LEVELS[ $priority ] < self::LEVELS[ $this->getLogLevel() ] ) {
 
@@ -290,13 +290,13 @@ class Error {
         }
     }
 
-    function bufferMsg($err, $priority) {
+    public function bufferMsg($err, $priority) {
 
         $this->bmsgs[] = array('error' => $err, 'priority' => $priority);
         return true;
     }
 
-    function logBufferedMsgs() {
+    public function logBufferedMsgs() {
 
         if (!empty($this->bmsgs)) {
 
@@ -310,12 +310,12 @@ class Error {
     }
 
     /** The lowest priority written: debug under OWA_DEBUG, notice otherwise. */
-    function getLogLevel() {
+    public function getLogLevel() {
 
         return \OWA\Core\Lib::inDebug() ? 'debug' : 'notice';
     }
 
-    function getDateTimestamp() {
+    public function getDateTimestamp() {
 
         return "H:i:s Y-m-d";
     }
@@ -343,13 +343,13 @@ class Error {
         return true;
     }
 
-    function logPhpErrors() {
+    public function logPhpErrors() {
 
         self::phpErrorSettings();
         set_error_handler( [ $this, "handlePhpError" ] );
     }
     
-    static function phpErrorSettings() {
+    public static function phpErrorSettings() {
 
 	    error_reporting( -1 );
         ini_set('display_errors', 'On');
@@ -371,7 +371,7 @@ class Error {
      * @param int    $linenum
      * @return true  handled: PHP's own handler does not run
      */
-    function handlePhpError($errno, $errmsg, $filename = '', $linenum = 0) {
+    public function handlePhpError($errno, $errmsg, $filename = '', $linenum = 0) {
 
         $dt = date("Y-m-d H:i:s (T)");
         
@@ -389,7 +389,7 @@ class Error {
         return true;
     }
 
-    function logException($exception) {
+    public function logException($exception) {
 
         $msg = $exception->getMessage() . ' // '.$exception->getTraceAsString();
 

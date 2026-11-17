@@ -33,22 +33,22 @@ namespace OWA\Module\Base\Classes;
 
 class Geolocation {
 
-    var $properties = array();
+    public $properties = array();
     
     public static function getInstance() {
         
         return new \OWA\Module\Base\Classes\Geolocation();
     }
 
-    function __construct() {
+    public function __construct() {
     
     }
     
-    function __destruct() {
+    public function __destruct() {
     
     }
     
-    function getGeolocationFromIp($ip_address, $refresh = false) {
+    public function getGeolocationFromIp($ip_address, $refresh = false) {
         
         if (empty($this->properties) || $refresh === true) {
             
@@ -84,38 +84,38 @@ class Geolocation {
         }
     }
     
-    function getProperty($name) {
+    public function getProperty($name) {
         
         if (array_key_exists($name, $this->properties)) {
             return $this->properties[$name];
         }
     }
     
-    function setProperty($name, $value) {
+    public function setProperty($name, $value) {
         
         $this->properties[$name] = $value;
     }
     
-    function getCity() {
+    public function getCity() {
         
         if (array_key_exists('city', $this->properties)) {
             return $this->properties['city'];
         }
     }
     
-    function getState() {
+    public function getState() {
         if (array_key_exists('state', $this->properties)) {
             return $this->properties['state'];
         }
     }
     
-    function getCountry() {
+    public function getCountry() {
         if (array_key_exists('country', $this->properties)) {
             return $this->properties['country'];
         }
     }
     
-    function getCountryCode() {
+    public function getCountryCode() {
         if (array_key_exists('country_code', $this->properties)) {
             return $this->properties['country_code'];
         }

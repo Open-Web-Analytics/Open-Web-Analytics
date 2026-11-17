@@ -79,7 +79,7 @@ abstract class FactMigrator {
      * @param int    $batch  v1 rows per transaction
      * @param int|null $since the oldest day to migrate, as yyyymmdd; null for all
      */
-    function __construct( $prefix = 'owa_', $batch = self::BATCH, $since = null ) {
+    public function __construct( $prefix = 'owa_', $batch = self::BATCH, $since = null ) {
 
         $this->prefix = $prefix;
         $this->batch  = max( 1, (int) $batch );

@@ -66,16 +66,16 @@ namespace OWA\Module\Base\Classes;
 class FileEventQueue implements \OWA\Core\IntakeQueue {
 
     /** @var string */
-    var $queue_name = 'tracker-ingest';
+    public $queue_name = 'tracker-ingest';
 
     /** @var string the queue's directory, with a trailing slash */
-    var $queue_dir;
+    public $queue_dir;
 
-    var $event_file;
-    var $unprocessed_path;
-    var $processing_path;
-    var $delayed_path;
-    var $archive_path;
+    public $event_file;
+    public $unprocessed_path;
+    public $processing_path;
+    public $delayed_path;
+    public $archive_path;
 
     /** @var int|null receives before a message is moved to the dead-letter queue; null in a dead-letter queue */
     private $max_receives;
@@ -114,7 +114,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     /** @var bool the batch has been read to its end */
     private $at_end = false;
 
-    function __construct( $map = array() ) {
+    public function __construct( $map = array() ) {
 
         if ( isset( $map['queue_name'] ) ) {
 
@@ -136,7 +136,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         $this->archive_path     = $this->queue_dir . 'archive/';
     }
 
-    function __destruct() {
+    public function __destruct() {
 
         $this->letGo();
     }
@@ -388,7 +388,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      * @param  int $interval
      * @return int how many files
      */
-    function pruneArchive( $interval ) {
+    public function pruneArchive( $interval ) {
 
         $removed = 0;
 
@@ -413,7 +413,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      *
      * @return int
      */
-    function depth() {
+    public function depth() {
 
         $n = 0;
 
@@ -436,7 +436,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      *
      * @return array[] batch, pid, host, held_since, settled
      */
-    function heldBatches() {
+    public function heldBatches() {
 
         $held = array();
 

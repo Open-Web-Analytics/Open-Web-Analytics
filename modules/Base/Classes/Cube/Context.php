@@ -87,7 +87,7 @@ class Context {
      * @param int   $closed_before
      * @param int   $lookback_days
      */
-    function __construct( array $span, $built_at, $closed_before, $lookback_days = self::DEFAULT_LOOKBACK_DAYS ) {
+    public function __construct( array $span, $built_at, $closed_before, $lookback_days = self::DEFAULT_LOOKBACK_DAYS ) {
 
         $this->span          = $span;
         $this->built_at      = (int) $built_at;

@@ -124,7 +124,7 @@ class Builder {
     /**
      * @param int|string $property_id  whose cube this builds
      */
-    function __construct( $property_id ) {
+    public function __construct( $property_id ) {
 
         $this->db          = \OWA\Core\CoreAPI::dbSingleton();
         $this->property_id = (string) $property_id;

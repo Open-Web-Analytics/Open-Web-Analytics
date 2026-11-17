@@ -57,7 +57,7 @@ class AttributedStep extends Step {
      * @param string   $prior_ts   when the prior touch was, microseconds
      * @param string   $session_ts when the session began, microseconds
      */
-    function __construct( $column, Step $own, Step $prior, array $own_evidence, array $prior_evidence,
+    public function __construct( $column, Step $own, Step $prior, array $own_evidence, array $prior_evidence,
                           $prior_ts, $session_ts ) {
 
         parent::__construct( $column );

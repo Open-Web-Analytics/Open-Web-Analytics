@@ -55,7 +55,7 @@ class JsonStep extends Step {
      * @param int    $max_length characters, when it is a string
      * @param string $join       Context alias to require, or '' for none
      */
-    function __construct( $column, $document, $path, $type, $max_length = 0, $join = '' ) {
+    public function __construct( $column, $document, $path, $type, $max_length = 0, $join = '' ) {
 
         parent::__construct( $column );
 

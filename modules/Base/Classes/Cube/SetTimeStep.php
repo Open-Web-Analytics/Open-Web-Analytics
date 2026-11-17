@@ -36,7 +36,7 @@ class SetTimeStep extends Step {
      * @param string $document qualified JSON column
      * @param string $path     JSON path to the timestamp
      */
-    function __construct( $column, $document, $path ) {
+    public function __construct( $column, $document, $path ) {
 
         parent::__construct( $column );
 
