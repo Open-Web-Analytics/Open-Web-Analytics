@@ -100,7 +100,7 @@ class PartitionStatusCli extends PartitionsCli {
         if ( ! $layout['partitioned'] ) {
 
             return array( sprintf(
-                '%s: not partitioned. Run cmd=partition-init to convert it.', $table
+                '%s: not partitioned.', $table
             ) );
         }
 
@@ -352,9 +352,8 @@ class PartitionStatusCli extends PartitionsCli {
         if ( $unpartitioned ) {
 
             $lines[] = sprintf(
-                'Not partitioned: %s. cmd=partition-init converts %s.',
-                implode( ', ', $unpartitioned ),
-                count( $unpartitioned ) === 1 ? 'it' : 'them'
+                'Not partitioned: %s.',
+                implode( ', ', $unpartitioned )
             );
         }
 

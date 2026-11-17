@@ -145,7 +145,6 @@ final class CliExitCodeTest extends CliControllerTestCase
         yield 'cube-rebuild, bad range'     => array($C . 'CubeRebuildCli', array('from' => 'garbage'));
         yield 'partition-drop, no cutoff'   => array($C . 'PartitionDropCli', array());
         yield 'partition-drop, bad table'   => array($C . 'PartitionDropCli', array('older-than' => '20years', 'table' => 'owa_no_such_table'));
-        yield 'partition-init, weekly'      => array($C . 'PartitionInitCli', array('granularity' => 'weekly'));
         yield 'partition-reorganize, none'  => array($C . 'PartitionReorganizeCli', array());
         yield 'partition-reorganize, 31 Feb'=> array($C . 'PartitionReorganizeCli', array('granularity' => 'monthly', 'from' => '20260231'));
         yield 'prune interval 7days'        => array($C . 'PruneEventQueueArchivesCli', array('interval' => '7days', 'queues' => 'owa-no-such-queue'));

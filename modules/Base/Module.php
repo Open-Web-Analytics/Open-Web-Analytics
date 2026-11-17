@@ -509,7 +509,6 @@ class Module extends \OWA\Core\Module {
         $this->registerAction( 'base.scheduleStatusCli',             'OWA\\Module\\Base\\Controller\\ScheduleStatusCli' );
         $this->registerAction( 'base.instanceInfoCli',              'OWA\\Module\\Base\\Controller\\InstanceInfoCli' );
         $this->registerAction( 'base.serverCheckCli',               'OWA\\Module\\Base\\Controller\\ServerCheckCli' );
-        $this->registerAction( 'base.partitionInitCli',              'OWA\\Module\\Base\\Controller\\PartitionInitCli' );
         $this->registerAction( 'base.partitionDropCli',              'OWA\\Module\\Base\\Controller\\PartitionDropCli' );
         $this->registerAction( 'base.partitionReorganizeCli',        'OWA\\Module\\Base\\Controller\\PartitionReorganizeCli' );
         $this->registerAction( 'base.partitionRotateCli',            'OWA\\Module\\Base\\Controller\\PartitionRotateCli' );
@@ -595,7 +594,6 @@ class Module extends \OWA\Core\Module {
         $this->registerCliCommand('add-site', 'base.sitesAddCli');
         $this->registerCliCommand('prune-event-queue-archives', 'base.pruneEventQueueArchivesCli');
         $this->registerCliCommand('partition-status', 'base.partitionStatusCli');
-        $this->registerCliCommand('partition-init', 'base.partitionInitCli');
         $this->registerCliCommand('partition-drop', 'base.partitionDropCli');
         $this->registerCliCommand('partition-reorganize', 'base.partitionReorganizeCli');
         $this->registerCliCommand('partition-rotate', 'base.partitionRotateCli');

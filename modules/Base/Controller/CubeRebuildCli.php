@@ -490,8 +490,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         if ( ! $db->isPartitioned( $table ) ) {
 
             \OWA\Core\CoreAPI::error( sprintf(
-                '%s is not partitioned, and a build publishes by swapping a partition. '
-              . 'Run cmd=partition-init table=%s first.', $table, $table ) );
+                '%s is not partitioned, and a build publishes by swapping a partition.', $table ) );
 
             return $bad;
         }

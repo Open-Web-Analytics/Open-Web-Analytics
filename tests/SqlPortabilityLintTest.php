@@ -73,7 +73,6 @@ final class SqlPortabilityLintTest extends TestCase {
         // The partition commands: MySQL table partitioning has no equivalent
         // elsewhere, and these say so in their own docblocks.
         'modules/Base/Controller/PartitionDropCli.php',
-        'modules/Base/Controller/PartitionInitCli.php',
         'modules/Base/Controller/PartitionReorganizeCli.php',
         'modules/Base/Controller/PartitionRotateCli.php',
         'modules/Base/Controller/PartitionStatusCli.php',
