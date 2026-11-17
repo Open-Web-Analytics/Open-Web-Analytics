@@ -746,6 +746,9 @@ abstract class Module {
      * (CoreAPI::sortNavigation). Omitted, it follows every item that gave one,
      * in registration order.
      *
+     * Links already added to the subgroup (addNavigationLinkInSubGroup()) stay
+     * in it.
+     *
      * @param string $subgroupName
      * @param string|array<string, string> $ref an action name, or link params (reportRef())
      * @param string $anchortext
@@ -756,7 +759,15 @@ abstract class Module {
      * @return void
      */
     public function addNavigationSubGroup($subgroupName, $ref, $anchortext, $order = null, $priviledge = 'view_reports', $groupName = 'Reports', $icon_class = self::DEFAULT_NAV_ICON) {
-        $this->nav_links[$groupName][$subgroupName] = $this->getLinkStruct($ref, $anchortext, $order,$priviledge, $icon_class);
+
+        $item = $this->getLinkStruct($ref, $anchortext, $order,$priviledge, $icon_class);
+
+        if ( isset( $this->nav_links[$groupName][$subgroupName]['subgroup'] ) ) {
+
+            $item['subgroup'] = $this->nav_links[$groupName][$subgroupName]['subgroup'];
+        }
+
+        $this->nav_links[$groupName][$subgroupName] = $item;
     }
 
     /**
