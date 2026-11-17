@@ -32,7 +32,11 @@ namespace OWA\Module\Base\View;
 
 class SitesInvocation extends \OWA\Core\View {
 
-    function render($data) {
+    /**
+     * @param  array<string, mixed> $data the view's data, View::$data: name => value
+     * @return void
+     */
+    public function render($data) {
 
         $site = $this->get('site');
 

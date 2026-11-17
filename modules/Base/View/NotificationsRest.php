@@ -4,7 +4,7 @@ namespace OWA\Module\Base\View;
 
 class NotificationsRest extends \OWA\Core\View\RestApi {
 
-    function render() {
+    public function render() {
 
         $notifications = (array) $this->get('notifications');
 

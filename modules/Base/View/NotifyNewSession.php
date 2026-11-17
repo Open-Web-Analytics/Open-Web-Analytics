@@ -31,7 +31,10 @@ namespace OWA\Module\Base\View;
 
 class NotifyNewSession extends \OWA\Core\View\Mail {
         
-    function render() {
+    /**
+     * @return void
+     */
+    public function render() {
         
         $this->t->set_template( 'wrapper_email.php' );
         $this->body->set_template( 'new_session_email.php' );

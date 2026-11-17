@@ -27,11 +27,16 @@ namespace OWA\Module\Base\View;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
  */
 
 class SitesProfile extends \OWA\Core\View {
 
-    function render() {
+    /**
+     * @return void
+     */
+    public function render() {
 
 
         $site = $this->get('site');
@@ -81,7 +86,7 @@ class SitesProfile extends \OWA\Core\View {
      * Properties that can still be observed, ordered as the site control orders
      * them so the two read the same way.
      *
-     * @return array
+     * @return list<Row>
      */
     private function getLivePropertyRows() {
 
@@ -110,6 +115,7 @@ class SitesProfile extends \OWA\Core\View {
      * The name of the Property a Profile belongs to, for the read-only line on
      * the edit form.
      *
+     * @param  string $propertyId the Profile's property_id; '' for none
      * @return string
      */
     private function resolvePropertyName( $propertyId ) {
@@ -126,7 +132,7 @@ class SitesProfile extends \OWA\Core\View {
     }
 
     /**
-     * @return array
+     * @return list<Row>|null null for no rows
      */
     private function getAllUserRows() {
         $db = \OWA\Core\CoreAPI::dbSingleton();

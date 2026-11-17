@@ -31,7 +31,11 @@ namespace OWA\Module\Base\View;
 
 class UsersProfile extends \OWA\Core\View {
 
-    function render($data) {
+    /**
+     * @param  array<string, mixed> $data the view's data, View::$data: name => value
+     * @return void
+     */
+    public function render($data) {
         $user = $this->get('profile');
         $this->body->set('isAdmin', false);
 

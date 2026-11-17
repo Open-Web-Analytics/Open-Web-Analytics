@@ -36,7 +36,11 @@ namespace OWA\Module\Base\View;
 class Error extends \OWA\Core\View {
 
 
-    function render($data) {
+    /**
+     * @param  array<string, mixed> $data the view's data, View::$data: name => value
+     * @return void
+     */
+    public function render($data) {
 
         // Set Page title
         $this->t->set('page_title', \OWA\Core\CoreAPI::t( 'Error' ));
@@ -88,7 +92,7 @@ class Error extends \OWA\Core\View {
      * An error message in the banner's shape.
      *
      * @param  mixed $msg getMsg()'s array, an array with 'msg', a string, or nothing
-     * @return array headline, message, and for an array its detail line
+     * @return array{headline: string, message: string, detail?: string} headline, message, and for an array its detail line
      */
     public static function bannerMessage( $msg ) {
 

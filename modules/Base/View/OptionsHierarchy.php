@@ -9,10 +9,16 @@ namespace OWA\Module\Base\View;
  * site control, not the admin settings panels. These screens are reached from
  * that control and describe a tier of the hierarchy; the settings menu belongs
  * to install-wide configuration and is reached from the top nav.
+ *
+ * @phpstan-import-type SettingsEntry from \OWA\Core\Template
  */
 class OptionsHierarchy extends \OWA\Core\View {
 
-    function render( $data ) {
+    /**
+     * @param  array<string, mixed> $data the view's data, View::$data: name => value
+     * @return void
+     */
+    public function render( $data ) {
 
         $this->t->set( 'page_title', \OWA\Core\CoreAPI::t( 'OWA Options' ) );
         $this->body->set_template( 'options_hierarchy.php' );
@@ -108,8 +114,8 @@ class OptionsHierarchy extends \OWA\Core\View {
      * The Property a settings screen is in: the one its params name, or the
      * one the hierarchy nav's Property pages are of.
      *
-     * @param array $hierarchyNav
-     * @param array $params
+     * @param array<string, list<SettingsEntry>> $hierarchyNav as Controller::getHierarchyNav() returns it
+     * @param array<string, mixed> $params
      * @return string
      */
     public static function propertyInContext( array $hierarchyNav, array $params ) {
@@ -135,7 +141,7 @@ class OptionsHierarchy extends \OWA\Core\View {
      * are checked against: site access is held per Profile. The screen's own
      * Profile when it has one.
      *
-     * @param array  $siteHierarchy as Controller::getSiteHierarchy() returns it
+     * @param array<string, mixed> $siteHierarchy as Controller::getSiteHierarchy() returns it
      * @param string $propertyId
      * @param string $siteId
      * @return string

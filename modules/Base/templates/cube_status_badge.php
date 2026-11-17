@@ -6,6 +6,10 @@
  */
 if ( ! function_exists( 'owa_cube_status_badge' ) ) {
 
+    /**
+     * @param  string $level 'red', 'yellow', or anything else for OK
+     * @return string the badge's markup
+     */
     function owa_cube_status_badge( $level ) {
 
         switch ( $level ) {

@@ -31,7 +31,7 @@ namespace OWA\Module\Base\View;
 
 class LoginForm extends \OWA\Core\View {
 
-    function construct($data) {
+    public function construct($data) {
 
         $this->setTitle( \OWA\Core\CoreAPI::t( 'Login' ) );
         $this->t->set_template('wrapper_public.php');
