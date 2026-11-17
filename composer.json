@@ -41,9 +41,7 @@
     },
     "scripts": {
         "lint": "find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -print0 | xargs -0 -n1 php -l",
-        "phpstan": "phpstan analyse --memory-limit=1G",
-        "phpstan:migration": "phpstan analyse -c phpstan-migration.neon --memory-limit=1G",
-        "phpstan:templates": "phpstan analyse -c phpstan-templates.neon --memory-limit=1G",
+        "phpstan": "phpstan analyse -c phpstan.neon --autoload-file=tests/phpstan/EntityFactoryReturnType.php --memory-limit=1G",
         "test": "phpunit",
         "test:isolation": "bash tests/tools/isolation_sweep.sh",
         "test:scratch": "bash tests/tools/scratch_db_run.sh",
