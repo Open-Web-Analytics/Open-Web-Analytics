@@ -330,96 +330,53 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
     padding-bottom: 10px;
 }
 
-.owa .ui-widget {
-    font-size: 0.75rem;
-}
-
-.owa .ui-tabs-nav {
-    font-size:0.875rem;
-}
-
 /* ---------------------------------------------------------------------------
- * Metric-set tabs
+ * Tabs (OWA.tabs, owa.tabs.js)
  *
  * The tabs are how a site's metric sets make themselves visible -- Site Usage
  * and e-commerce, two literals in MetricSets with different casing.
  * Title-casing them HERE is what makes the row read as one control, and it is
  * a presentation rule, so it does not go and rewrite the labels.
+ *
+ * A row of words over a rule, the selected one underlined in the trend's blue
+ * (OWA.areaChart's totalColor) -- no box round the row or the panel under it.
  * ------------------------------------------------------------------------- */
 
-.owa .ui-tabs-nav .ui-tabs-anchor {
-    text-transform: capitalize;
-}
-
-/*
- * Tabs as a row of words over a rule, the selected one underlined in the
- * trend's blue (OWA.areaChart's totalColor) -- no box round the bar or the
- * panel under it.
- */
-.owa .ui-tabs.ui-widget-content,
-.owa .ui-tabs {
-    border: 0;
-    background: transparent;
-    padding: 0;
-}
-
-.owa .ui-tabs .ui-tabs-nav {
+.owa .owa_tabs {
     display: flex;
     gap: 24px;
     margin: 0 0 32px;
     padding: 0;
-    border: 0;
     border-bottom: 1px solid #eef0f3;
-    border-radius: 0;
-    background: transparent;
+    font-size: 0.875rem;
 }
 
-.owa .ui-tabs .ui-tabs-nav li,
-.owa .ui-tabs .ui-tabs-nav li.ui-state-default {
-    float: none;
+.owa .owa_tab {
     margin: 0 0 -1px;
-    padding: 0;
+    padding: 0 0 12px;
     border: 0;
     border-bottom: 2px solid transparent;
     border-radius: 0;
     background: transparent;
-}
-
-.owa .ui-tabs .ui-tabs-nav .ui-tabs-anchor {
-    padding: 0 0 12px;
     color: #4b5563;
+    font: inherit;
+    text-transform: capitalize;
+    cursor: pointer;
 }
 
-.owa .ui-tabs .ui-tabs-nav li:hover .ui-tabs-anchor {
+.owa .owa_tab:hover {
     color: #111827;
 }
 
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active,
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active.ui-state-active {
+.owa .owa_tab[aria-selected="true"] {
     border-bottom-color: #1874CD;
-    background: transparent;
-}
-
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor,
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:link,
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:visited {
     color: #1874CD;
     font-weight: 600;
 }
 
-.owa .ui-tabs .ui-tabs-panel {
-    padding: 0;
-}
-
-/* The Live View switch is the same kind of thing -- a two-segment control
-   whose ON state is the one being looked at -- and it sits on the same reports.
-   Its segments are checkboxradio labels, not tabs, so they need saying
-   separately. */
-.owa .autoRefreshControl .buttons .ui-button.ui-state-active,
-.owa .autoRefreshControl .buttons .ui-button.ui-state-active:hover {
-    border-color: #1874CD;
-    background: #1874CD;
-    color: #ffffff;
+.owa .owa_tab:focus-visible {
+    outline: 2px solid #1874CD;
+    outline-offset: 2px;
 }
 
 /* ---------------------------------------------------------------------------
@@ -788,19 +745,9 @@ li.constraintRow {
     align-items: stretch;
 }
 
-/* ...and it stays a grid inside a tab.
- *
- * On a report rendered per metric set, the tab PANEL is the grid -- one panel
- * per set, each holding that set's widgets. jQuery-UI's `.ui-tabs
- * .ui-tabs-panel { display: block }` is two classes to this rule's one, so it
- * won every tabbed report: the tracks were never created, every widget was a
- * full-width block, and a half-width card sat alone on its own row.
- *
- * Invisible until now, which is why it lasted: every widget on every tabbed
- * report was full width anyway, so a grid of one column per row looked exactly
- * like the grid doing its job. */
-.owa .ui-tabs .ui-tabs-panel.owa_reportGrid {
-    display: grid;
+/* A metric set's panel not being looked at: the rule above would show it. */
+.owa .owa_reportGrid[hidden] {
+    display: none;
 }
 
 .owa_reportGridItem {
@@ -4768,7 +4715,7 @@ dialog.owa_typeDialogFrame {
 
     .owa .owa_chartGranularity { height: 44px; font-size: max(16px, 0.8125rem); }
 
-    .owa .ui-tabs .ui-tabs-nav .ui-tabs-anchor { display: inline-flex; align-items: center; min-height: 44px; padding-bottom: 0; }
+    .owa .owa_tab { display: inline-flex; align-items: center; min-height: 44px; padding-bottom: 0; }
 
     .owa .owa_reportSectionHeader .owa_moreLinks a { display: inline-flex; align-items: center; min-height: 44px; }
 

@@ -51,10 +51,9 @@ test.describe('e-commerce reporting', () => {
     test('the e-commerce tab appears on a session-based report when the site has it enabled', async ({ page }) => {
         await openReport(page, { reportId: 'browsers' });
 
-        // Tabs render as <div id="tab_<key>"> -- the label itself is written
-        // into the JS block below them, so the div id is the stable hook.
-        const tabIds = await page.locator('#report-tabs > div[id^="tab_"]').evaluateAll(
-            els => els.map(e => e.id.replace(/^tab_/, ''))
+        // Each tab names its panel, <div id="tab_<key>">: the set's key.
+        const tabIds = await page.getByRole('tab').evaluateAll(
+            els => els.map(e => e.getAttribute('aria-controls').replace(/^tab_/, ''))
         );
 
         expect(tabIds).toContain('site_usage');
@@ -66,7 +65,7 @@ test.describe('e-commerce reporting', () => {
      * case. A row of tabs reading "Site Usage | e-commerce"
      * shows its seams.
      *
-     * Title-casing is a PRESENTATION rule (text-transform on the anchor), which
+     * Title-casing is a PRESENTATION rule (text-transform on the tab), which
      * is why this reads innerText: innerText is the rendered text and reflects
      * text-transform, textContent is the source string and does not. Asserting
      * on textContent here would pass whether the rule existed or not.
@@ -74,7 +73,7 @@ test.describe('e-commerce reporting', () => {
     test('tab labels are title-cased however the label was written', async ({ page }) => {
         await openReport(page, { reportId: 'browsers' });
 
-        const labels = await page.locator('#report-tabs > .report-tabs-nav-list li a')
+        const labels = await page.getByRole('tab')
             .evaluateAll(els => els.map(e => e.innerText.trim()));
 
         expect(labels).toContain('Site Usage');
@@ -86,8 +85,8 @@ test.describe('e-commerce reporting', () => {
 
     /**
      * The selected tab is underlined in the same blue the trend beside it draws
-     * its total in. jQuery-UI's base theme paints an active widget #007fff, and
-     * two blues a few pixels apart read as an accident rather than a choice.
+     * its total in. Two blues a few pixels apart read as an accident rather
+     * than a choice.
      *
      * #1874CD is OWA.areaChart's totalColor -- read off the chart rather than
      * written down here, so the two cannot drift apart without this failing.
@@ -102,16 +101,14 @@ test.describe('e-commerce reporting', () => {
         );
         expect(trendBlue.toLowerCase()).toBe('#1874cd');
 
-        const active = page.locator('#report-tabs > .report-tabs-nav-list li.ui-tabs-active');
+        const active = page.getByRole('tab', { selected: true });
         await expect(active).toHaveCount(1);
 
-        // Underlined in that blue, and its label in it too -- .ui-state-active
-        // sets a colour on the LI and the anchor inside it carries its own, so
-        // both have to be said.
+        // Underlined in that blue, and its label in it too.
         const rule = await active.evaluate(el => getComputedStyle(el).borderBottomColor);
         expect(rule).toBe('rgb(24, 116, 205)');
 
-        const fg = await active.locator('a').evaluate(el => getComputedStyle(el).color);
+        const fg = await active.evaluate(el => getComputedStyle(el).color);
         expect(fg).toBe('rgb(24, 116, 205)');
     });
 
@@ -121,8 +118,8 @@ test.describe('e-commerce reporting', () => {
         await expect(page.locator('#report-tabs > div[id^="tab_"]').first()).toBeAttached();
 
         // Content-based -> deliberately no tabs (pages.json names its own metrics).
-        // Uses the no-tabs helper: openReport() waits for #report-tabs.ui-tabs,
-        // a widget these pages never build.
+        // Uses the no-tabs helper: openReport() waits for the tab list, which
+        // these pages never draw.
         await openReportNoTabs(page, { reportId: 'pages' });
         await expect(page.locator('#report-tabs > div[id^="tab_"]')).toHaveCount(0);
     });

@@ -68,6 +68,8 @@ import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis
 import './owa.format.js';
 // Modal dialogs on the browser's <dialog> (OWA.dialog).
 import './owa.dialog.js';
+// Tabs (OWA.tabs): a report's metric sets.
+import './owa.tabs.js';
 import './owa.report.js';
 import './owa.resultSetExplorer.js';
 import './owa.sparkline.js';

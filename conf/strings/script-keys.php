@@ -84,6 +84,7 @@ return array(
     'Loading',
     'Lowest %1$s, highest %2$s.',
     'Medium',
+    'Metrics',
     'Name not found.',
     'Next month',
     'Next page',

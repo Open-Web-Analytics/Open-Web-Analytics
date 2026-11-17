@@ -3,6 +3,7 @@
 import * as jQuery from 'jquery';
 import { OWA } from './owa.format.js';
 import { PeriodPicker } from './owa.periodpicker.js';
+import { tabs } from './owa.tabs.js';
 
 OWA.report = function(dom_id, options) {
     
@@ -179,43 +180,28 @@ OWA.report.prototype = {
         }
     },
     
+    // The metric sets as tabs over #report-tabs (OWA.tabs). Each set loads
+    // the first time it is selected.
     createTabs : function() {
-        
-        var that = this;
-        
-        jQuery("#report-tabs").prepend('<ul class="report-tabs-nav-list"></ul>');
-        for (var tab in this.tabs) {
-    
-            if ( this.tabs.hasOwnProperty(tab) ) {    
-                jQuery("#report-tabs > .report-tabs-nav-list").append(OWA.util.sprintf( '<li><a href="#%s">%s</a></li>', tab, that.tabs[tab].label ) );
-                
+
+        var that  = this;
+        var items = [];
+
+        for ( var id in this.tabs ) {
+
+            if ( this.tabs.hasOwnProperty( id ) ) {
+
+                items.push( { id: id, label: this.tabs[ id ].label } );
             }
         }
-        
-        jQuery("#report-tabs").tabs({
-            // jQuery-UI 1.9+ renamed the `show` option to the `activate` event.
-            // The ui payload also changed: the newly-shown panel is ui.newPanel
-            // (a jQuery object), not ui.panel. selectTab() below reads the id off
-            // whatever panel it is handed.
-            activate: function(event, ui) {
-                that.selectTab( ui.newPanel.attr('id') );
-            }
-        });
 
-        // 1.8's `show` fired for the initially-selected tab AT CREATION; the 1.9+
-        // `activate` event does NOT fire on init. Load the active tab explicitly so
-        // its grid still builds on first render. tabs("option","active") is the
-        // active index; map it back to the panel id.
-        var activeIdx = jQuery("#report-tabs").tabs("option", "active");
-        var activePanelId = jQuery("#report-tabs > div").eq(activeIdx).attr('id');
-        if ( activePanelId ) {
-            this.selectTab( activePanelId );
-        }
+        tabs( document.getElementById( 'report-tabs' ), items, function ( panelId ) {
 
+            that.selectTab( panelId );
+        }, { label: OWA.l( 'Metrics' ) } );
     },
 
-    // Load a tab by its panel id. Shared by createTabs' initial load and its
-    // activate handler.
+    // Load a tab by its panel id.
     selectTab : function( panelId ) {
 
         OWA.debug('tab selected is: %s', panelId);
