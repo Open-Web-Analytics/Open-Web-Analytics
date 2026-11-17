@@ -44,7 +44,11 @@ namespace OWA\Module\Base\Classes;
  */
 class GoalEventDefinitionPredicate {
 
-    /** Set when compile() returns null: which property could not be expressed. */
+    /**
+     * Set when compile() returns null: which property could not be expressed.
+     *
+     * @var string
+     */
     private $error = '';
 
     /** @return string  empty when the last compile succeeded */
@@ -58,7 +62,7 @@ class GoalEventDefinitionPredicate {
      *
      * @param  \OWA\Module\Base\Entity\GoalEventDefinition $definition
      * @param  string $alias  the table's alias in the caller's query
-     * @return array|null     array( 'sql' => string, 'params' => array )
+     * @return array{sql: string, params: list<string>}|null
      */
     public function compile( $definition, $alias = 'd' ) {
 
