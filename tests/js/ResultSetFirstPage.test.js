@@ -28,7 +28,7 @@ describe('the page a requery asks for', () => {
         OWA.setSetting('baseUrl', 'https://owa.test/');
         explorer = new OWA.resultSetExplorer('grid');
         explorer.resultSet = { self: self };
-        jest.spyOn(explorer, 'getNewResultSet').mockImplementation((u) => { requested = new OWA.uri(u); });
+        jest.spyOn(explorer, 'getNewResultSet').mockImplementation((u) => { requested = new URL(u).searchParams; });
     });
 
     afterEach(() => {
@@ -37,26 +37,26 @@ describe('the page a requery asks for', () => {
 
     test('a new filter drops the page', () => {
         explorer.changeConstraints('pagePath=~blog');
-        expect(requested.getQueryParam('constraints')).toBe('pagePath=~blog');
-        expect(requested.getQueryParam('page')).toBeUndefined();
-        expect(requested.getQueryParam('resultsPerPage')).toBe('25');
+        expect(requested.get('constraints')).toBe('pagePath=~blog');
+        expect(requested.has('page')).toBe(false);
+        expect(requested.get('resultsPerPage')).toBe('25');
     });
 
     test('a new dimension list drops the page', () => {
         explorer.setDimensionList(['pagePath', 'browserType']);
-        expect(requested.getQueryParam('dimensions')).toBe('pagePath,browserType');
-        expect(requested.getQueryParam('page')).toBeUndefined();
+        expect(requested.get('dimensions')).toBe('pagePath,browserType');
+        expect(requested.has('page')).toBe(false);
     });
 
     test('a swapped dimension drops the page', () => {
         explorer.changeDimension('', 'browserType');
-        expect(requested.getQueryParam('dimensions')).toBe('pagePath,browserType');
-        expect(requested.getQueryParam('page')).toBeUndefined();
+        expect(requested.get('dimensions')).toBe('pagePath,browserType');
+        expect(requested.has('page')).toBe(false);
     });
 
     test('a page change keeps the filter and sets the page', () => {
         explorer.changePage(4);
-        expect(requested.getQueryParam('page')).toBe('4');
-        expect(requested.getQueryParam('dimensions')).toBe('pagePath');
+        expect(requested.get('page')).toBe('4');
+        expect(requested.get('dimensions')).toBe('pagePath');
     });
 });

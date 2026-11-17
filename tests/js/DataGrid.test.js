@@ -1007,8 +1007,8 @@ describe('a card\'s explorer', () => {
 
         jest.spyOn($, 'getJSON').mockImplementation((u, d, done) => {
             asked.push(u);
-            const q = new OWA.uri(u);
-            const per = parseInt(q.getQueryParam('resultsPerPage'), 10);
+            const q = new URL(u).searchParams;
+            const per = parseInt(q.get('resultsPerPage'), 10);
             const total = 23;
             const shown = Math.min(per, total);
             done({
@@ -1035,13 +1035,13 @@ describe('a card\'s explorer', () => {
 
         $('#card [data-ui="grid-show-more"]').trigger('click');
 
-        const q = new OWA.uri(asked[1]);
+        const q = new URL(asked[1]).searchParams;
 
-        expect(q.getQueryParam('page')).toBe('1');
-        expect(q.getQueryParam('resultsPerPage')).toBe('20');
-        expect(decodeURIComponent(q.getQueryParam('sort'))).toBe('sessions-');
-        expect(decodeURIComponent(q.getQueryParam('constraints'))).toBe('medium==referral');
-        expect(q.getQueryParam('period')).toBe('last_seven_days');
+        expect(q.get('page')).toBe('1');
+        expect(q.get('resultsPerPage')).toBe('20');
+        expect(q.get('sort')).toBe('sessions-');
+        expect(q.get('constraints')).toBe('medium==referral');
+        expect(q.get('period')).toBe('last_seven_days');
         expect($('#card tr.owa_gridRow').length).toBe(20);
         expect($('#card [data-ui="grid-show-more"]').attr('aria-label')).toBe('Show 3 more rows');
     });
