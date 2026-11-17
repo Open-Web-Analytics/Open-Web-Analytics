@@ -1,5 +1,5 @@
 <?php /** @var \OWA\Core\ViewScope $view */ ?>
-<div id="owa_header">
+<div id="owa_header" data-ui="shell:header">
 
     <?php
     /*

@@ -461,6 +461,51 @@ export function parseDateInput( text ) {
     return d && ! isNaN( d ) ? validYmd( d.getFullYear(), d.getMonth() + 1, d.getDate() ) : '';
 }
 
+/** Pixels between the open panel and the window's edge, and between the panel and its button. */
+const EDGE = 8;
+const GAP  = 6;
+
+/**
+ * Where the open panel goes, in window pixels, for its button at `t` (a
+ * DOMRect) and a panel `width` by `height` in a window `vw` by `vh`.
+ *
+ * Under the button with the right edges level, or the left edges level when
+ * that runs off the window's left, then moved in from any edge it still
+ * crosses. Above the button when it does not fit under it, and over the
+ * button, against the window's foot, when it fits neither. A panel taller
+ * than the window is given the window's height (maxHeight) and scrolls.
+ *
+ * @return {{left: number, top: number, maxHeight: (number|null)}}
+ */
+export function placePanel( t, width, height, vw, vh ) {
+
+    const w    = Math.min( width, vw - 2 * EDGE );
+    const room = vh - 2 * EDGE;
+    const h    = Math.min( height, room );
+
+    let left = t.right - w;
+
+    if ( left < EDGE ) {
+
+        left = t.left;
+    }
+
+    left = Math.max( EDGE, Math.min( left, vw - EDGE - w ) );
+
+    let top = vh - EDGE - h;
+
+    if ( t.bottom + GAP + h <= vh - EDGE ) {
+
+        top = t.bottom + GAP;
+
+    } else if ( t.top - GAP - h >= EDGE ) {
+
+        top = t.top - GAP - h;
+    }
+
+    return { left: Math.round( left ), top: Math.round( top ), maxHeight: height > room ? room : null };
+}
+
 /**
  * @param {Element} el         where the button goes
  * @param {object}  config     ReportController::periodPickerConfig()
@@ -492,6 +537,18 @@ export function PeriodPicker( el, config, onApply ) {
 
             this.close();
         }
+    };
+
+    // The window resized, or the page under the panel scrolled; not the
+    // panel's own calendar.
+    this._onMove = ( e ) => {
+
+        if ( e && e.target && e.target.nodeType === 1 && this.el.contains( e.target ) ) {
+
+            return;
+        }
+
+        this.place();
     };
 
     el.addEventListener( 'click', ( e ) => this.onClick( e ) );
@@ -545,6 +602,8 @@ PeriodPicker.prototype = {
         this.active   = '';
 
         document.addEventListener( 'mousedown', this._onDoc );
+        document.addEventListener( 'scroll', this._onMove, { capture: true, passive: true } );
+        window.addEventListener( 'resize', this._onMove );
         document.body.classList.add( 'owa_periodOpen' );
 
         this.render( true );
@@ -557,6 +616,8 @@ PeriodPicker.prototype = {
         this.badInput = '';
 
         document.removeEventListener( 'mousedown', this._onDoc );
+        document.removeEventListener( 'scroll', this._onMove, { capture: true } );
+        window.removeEventListener( 'resize', this._onMove );
         document.body.classList.remove( 'owa_periodOpen' );
 
         this.render();
@@ -986,6 +1047,8 @@ PeriodPicker.prototype = {
             return;
         }
 
+        this.place();
+
         const nm = this.el.querySelector( '.owa_periodCalMonths' );
 
         if ( nm ) {
@@ -1019,6 +1082,43 @@ PeriodPicker.prototype = {
         } );
 
         if ( had ) this.restoreFocus( had );
+    },
+
+    /**
+     * Put the open panel in the window (placePanel). The phone's sheet, which
+     * the stylesheet fixes to the whole screen, is left where it is.
+     */
+    place() {
+
+        const panel   = this.el.querySelector( '.owa_periodPanel' );
+        const trigger = this.el.querySelector( '.owa_periodTrigger' );
+
+        if ( ! panel || ! trigger ) {
+
+            return;
+        }
+
+        panel.classList.remove( 'is-placed' );
+        panel.style.left = panel.style.top = panel.style.maxHeight = '';
+
+        const root = document.documentElement;
+
+        if ( getComputedStyle( panel ).position === 'fixed' || ! root.clientWidth ) {
+
+            return;
+        }
+
+        const p = placePanel( trigger.getBoundingClientRect(), panel.offsetWidth, panel.offsetHeight,
+            root.clientWidth, root.clientHeight );
+
+        panel.classList.add( 'is-placed' );
+        panel.style.left = p.left + 'px';
+        panel.style.top  = p.top + 'px';
+
+        if ( p.maxHeight !== null ) {
+
+            panel.style.maxHeight = p.maxHeight + 'px';
+        }
     },
 
     /**
