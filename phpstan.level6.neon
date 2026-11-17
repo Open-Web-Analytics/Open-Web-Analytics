@@ -56,6 +56,46 @@ parameters:
         - Core/TemplateEngine.php
         - Core/Update.php
         - Core/ViewScope.php
+        - modules/Base/Classes/Beacon
+        - modules/Base/Classes/Cube
+        - modules/Base/Classes/Migration
+        - modules/Base/Classes/Spam
+        # Base Classes, file by file: A to N typed so far; O to Z, and
+        # Settings (open PR #1445), not yet.
+        - modules/Base/Classes/AppPasswords.php
+        - modules/Base/Classes/Browscap.php
+        - modules/Base/Classes/Cache.php
+        - modules/Base/Classes/CompareMerger.php
+        - modules/Base/Classes/Currency.php
+        - modules/Base/Classes/CustomReportFavorites.php
+        - modules/Base/Classes/CustomReports.php
+        - modules/Base/Classes/DatabaseRequirement.php
+        - modules/Base/Classes/Date.php
+        - modules/Base/Classes/DbColumn.php
+        - modules/Base/Classes/DimensionExpression.php
+        - modules/Base/Classes/DimensionRegistry.php
+        - modules/Base/Classes/EnvironmentCheck.php
+        - modules/Base/Classes/Error.php
+        - modules/Base/Classes/Event.php
+        - modules/Base/Classes/EventDispatch.php
+        - modules/Base/Classes/EventPredicate.php
+        - modules/Base/Classes/FileEventQueue.php
+        - modules/Base/Classes/FunnelStep.php
+        - modules/Base/Classes/GeoEncodingRepair.php
+        - modules/Base/Classes/Geolocation.php
+        - modules/Base/Classes/GoalEventDefinitionPredicate.php
+        - modules/Base/Classes/GoalMarking.php
+        - modules/Base/Classes/GoalVocabulary.php
+        - modules/Base/Classes/Ingest.php
+        - modules/Base/Classes/InstallDatabase.php
+        - modules/Base/Classes/InstallManager.php
+        - modules/Base/Classes/JobLease.php
+        - modules/Base/Classes/JobQueue.php
+        - modules/Base/Classes/JobQueueLease.php
+        - modules/Base/Classes/JobStatus.php
+        - modules/Base/Classes/Mailer.php
+        - modules/Base/Classes/MaterializedEvents.php
+        - modules/Base/Classes/NotificationManager.php
 
     # OWA_EHS_* (handler return codes) are defined here, outside the paths.
     scanFiles:
