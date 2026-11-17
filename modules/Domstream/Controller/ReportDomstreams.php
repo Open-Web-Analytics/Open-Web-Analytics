@@ -67,7 +67,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         $recordings = $this->listRecordings( $page_path, $subjects, $page );
         $total      = $this->countRecordings( $page_path, $subjects );
 
-        $this->set( 'domstreams', $this->asResultSet( $recordings ) );
+        $this->set( 'domstreams', $this->asResultSet( $recordings, $total ) );
         $this->set( 'domstreams_total', $total );
         $this->set( 'domstreams_pagination', (object) array(
             'page'        => $page,
@@ -215,10 +215,15 @@ class ReportDomstreams extends \OWA\Core\ReportController {
     /**
      * The recordings in a result set's shape, for the grid.
      *
-     * @param  list<Row> $recordings as listRecordings() answers them
+     * resultsTotal is every recording the report lists, on all its pages: the
+     * count domstreams_total holds. The set carries no page or resultsPerPage,
+     * so OWA.dataGrid.range() adds no offset to it.
+     *
+     * @param  list<Row> $recordings this page of them, as listRecordings() answers it
+     * @param  int       $total      every recording listed, as countRecordings() answers it
      * @return array{resultsRows: list<ResultRow>, resultsReturned: int, resultsTotal: int, guid: string}
      */
-    private function asResultSet( array $recordings ) {
+    private function asResultSet( array $recordings, $total ) {
 
         $rows = array();
 
@@ -252,7 +257,7 @@ class ReportDomstreams extends \OWA\Core\ReportController {
         return array(
             'resultsRows'     => $rows,
             'resultsReturned' => count( $rows ),
-            'resultsTotal'    => count( $rows ),
+            'resultsTotal'    => $total,
             'guid'            => md5( json_encode( $rows ) ),
         );
     }
