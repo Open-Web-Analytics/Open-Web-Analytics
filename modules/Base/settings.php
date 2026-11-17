@@ -59,7 +59,7 @@ return array(
     'settings' => array(
 
         'action_url' => array( 'default' => '' ),
-        'additionalCss' => array( 'default' => array(), 'description' => 'Stylesheets added to every report page after OWA\'s own, as paths under public/ such as base/css/my-theme.css. Empty by default.' ),
+        'additionalCss' => array( 'description' => 'Stylesheets added to every report page after OWA\'s own, as paths under public/ such as base/css/my-theme.css. None by default.' ),
         'announce_visitors' => array(
             'default'  => false,
             'storable' => true,
