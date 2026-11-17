@@ -8,8 +8,7 @@
  * IMPORT ORDER IS LOAD-BEARING. The jQuery plugin ecosystem registers onto $.fn
  * as a side effect at module-eval time, so the sequence below reproduces the exact
  * order the concat used:
- *   - jquery + jquery-migrate first (migrate bridges the 1.x->3.x API removals the
- *     legacy plugins still rely on).
+ *   - jquery first.
  *   - flot core -> time: 0.8 EXTRACTED the time axis out of core
  *     into jquery.flot.time.js, and owa.areachart.js uses xaxis.mode:"time", so
  *     time.js MUST load before the OWA area chart or its date axis breaks.
@@ -34,9 +33,6 @@
 // at eval time (jquery-ui, chosen, sparkline, flot) and for the report
 // templates' inline <script> blocks. Must precede every vendor import below.
 import './vendor-jquery-global.js';
-
-// jQuery 1.x->3.x compat bridge (requires jquery itself via its own require('jquery')).
-import 'jquery-migrate';
 
 // jQuery plugin ecosystem (order preserved from the retired concat).
 import 'jquery-ui-dist/jquery-ui.js';

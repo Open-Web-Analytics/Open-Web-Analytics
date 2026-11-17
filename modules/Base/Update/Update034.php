@@ -23,9 +23,7 @@ namespace OWA\Module\Base\Update;
  * owa_event_raw is created ALREADY PARTITIONED, on the current month plus a
  * year's lead, because Db::createTable() reads the entity's partition column.
  * That is the one thing worth doing here rather than later: partitioning a
- * table after it holds rows rewrites every one of them, and partition-init is
- * explicitly a conversion command for installations that predate partitioning.
- * A table created inside the lead never needs converting.
+ * table after it holds rows rewrites every one of them.
  *
  * FIRST, 32-BIT IDS ARE RE-KEYED (Classes\Migration\WideIds). This is the
  * first update a 1.14 installation runs, and every later one derives ids --

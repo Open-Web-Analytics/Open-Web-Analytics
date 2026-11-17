@@ -2876,7 +2876,7 @@ class Db extends \OWA\Core\Base {
         // month the detail window opens rather than on a January.
         //
         // That boundary has to be the one planPartitionCompaction() uses, or the
-        // two disagree about which periods are old: init would leave the months
+        // two disagree about which periods are old: this would leave the months
         // between January and the detail window as separate partitions, and the
         // next rotate would immediately merge them. The table would be rewritten
         // on every scheduled run, for no change in shape.
@@ -2891,7 +2891,7 @@ class Db extends \OWA\Core\Base {
         // Widen the tail blocks until the whole layout fits, exactly as
         // planPartitionCompaction() does. Building 1-year blocks regardless and
         // leaving the next rotation to coarsen them would mean the first
-        // scheduled run rewrote everything init had just created.
+        // scheduled run rewrote everything laid out here.
         $years = max( 1, $last_year - $first_year + ( $boundary > $last_year . '0101' ? 1 : 0 ) );
         $block = 1;
 
@@ -4026,9 +4026,9 @@ class Db extends \OWA\Core\Base {
 
             /*
              * Cover the current month and a year ahead, so that the catch-all
-             * stays empty until the lead runs down. partition-init tops this up
-             * and is meant to run periodically; a table created and never
-             * topped up still has a year before anything reaches the catch-all.
+             * stays empty until the lead runs down. The daily rotate-partitions
+             * job tops it up; a table created and never topped up still has a
+             * year before anything reaches the catch-all.
              *
              * AN ENTITY MAY ASK FOR A DIFFERENT SHAPE, and the reporting cube
              * does: the front of its lead has to be daily or every rebuild

@@ -386,8 +386,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             $partitioned ? self::OK : self::WARN,
             'Partitioned tables',
             sprintf( '%d of %d', $partitioned, $total ),
-            "Not an error. Run 'php cli.php cmd=partition-init' to partition them, or "
-          . 'ignore this if the instance is small.' );
+            'An install or upgrade creates these tables partitioned.' );
 
         foreach ( $counts as $table => $n ) {
 

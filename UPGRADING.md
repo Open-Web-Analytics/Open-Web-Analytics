@@ -454,8 +454,9 @@ recorded as failed and not run.
 
 These 1.x commands are not in 2.0: `processEventQueue`,
 `flush-processed-events`, `flush-cache`, `clear-field-values`,
-`rederive-dimension-ids`, `backfill-visitor-acquisition`, `repair-geo-encoding`
-and `update-document`.
+`rederive-dimension-ids`, `backfill-visitor-acquisition`, `repair-geo-encoding`,
+`update-document` and `partition-init`. The upgrade creates the event table and
+each reporting cube already partitioned.
 
 ### Server roles: `OWA_SERVER_ROLE`
 

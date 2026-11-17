@@ -252,9 +252,6 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     /**
      * Bring one table's lead up to a date, reporting what it did.
      *
-     * Shared by partition-init and partition-rotate so that extending is
-     * described the same way whichever command asked for it.
-     *
      * @param string $table
      * @param string $granularity
      * @param string $through

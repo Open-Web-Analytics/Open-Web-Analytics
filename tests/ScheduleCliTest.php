@@ -1281,13 +1281,9 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * A scheduled rotate on an installation that never ran partition-init must
-     * report a REFUSAL, not success.
-     *
-     * This is the silent failure the scheduler exists to remove, relocated one
-     * level up: left as 'ok', a monthly rotate would show a clean history and a
-     * rising run count forever while skipping every table, and the operator
-     * would have no signal that partition-init is the missing step.
+     * A scheduled rotate over unpartitioned tables must report a REFUSAL, not
+     * success: left as 'ok', it would show a clean history and a rising run
+     * count while skipping every table.
      *
      * 'refused' rather than 'failed' so the occurrence is still consumed and it
      * is not retried every minute for a condition that will not change on its
@@ -1318,13 +1314,12 @@ final class ScheduleCliTest extends CliControllerTestCase
             $out = $ctrl->getCliOutcome();
 
             $this->assertSame('refused', $out['outcome'], 'skipping every table is not success');
-            $this->assertStringContainsString('partition-init', $out['message'], 'name the missing step');
+            $this->assertStringStartsWith('Nothing to rotate: ', $out['message']);
 
-            // The message is what an operator reads every month on an install
-            // that never ran partition-init, so it has to read as a sentence.
-            // The first version rendered "no fact table is not partitioned" --
-            // the plural branch supplied "no fact table is" into a template
-            // that already said "not partitioned".
+            // The message has to read as a sentence. The first version
+            // rendered "no fact table is not partitioned" -- the plural branch
+            // supplied "no fact table is" into a template that already said
+            // "not partitioned".
             $this->assertStringContainsString('that table is not partitioned', $out['message'],
                 'the single-table branch names the table it skipped');
             $this->assertDoesNotMatchRegularExpression(

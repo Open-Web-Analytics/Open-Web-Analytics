@@ -104,7 +104,7 @@ class PartitionReorganizeCli extends PartitionsCli {
             if ( ! $db->isPartitioned( $table ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s is not partitioned; run partition-init first. Skipping.', $table
+                    '%s is not partitioned. Skipping.', $table
                 ) );
 
                 continue;
@@ -234,7 +234,7 @@ class PartitionReorganizeCli extends PartitionsCli {
         // can be scheduled -- must be able to tell the difference.
         if ( ! $touched ) {
 
-            $this->refuse( 'Nothing to reorganize: no fact table is partitioned. Run cmd=partition-init first.' );
+            $this->refuse( 'Nothing to reorganize: no fact table is partitioned.' );
         }
     }
 }

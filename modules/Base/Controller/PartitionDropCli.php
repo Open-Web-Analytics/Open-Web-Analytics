@@ -104,7 +104,7 @@ class PartitionDropCli extends PartitionsCli {
         // Skipping everything is not success -- see partition-rotate.
         if ( ! $touched ) {
 
-            $this->refuse( 'Nothing to drop: no fact table is partitioned. Run cmd=partition-init first.' );
+            $this->refuse( 'Nothing to drop: no fact table is partitioned.' );
         }
     }
 
