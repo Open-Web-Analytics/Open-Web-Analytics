@@ -17,7 +17,7 @@ use OWA\Module\Base\Classes\NotificationManager;
  */
 class NotificationMarkReadRest extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         parent::__construct($params);
 
@@ -26,25 +26,25 @@ class NotificationMarkReadRest extends \OWA\Core\AdminController {
         $this->setNonceRequired();
     }
 
-    function validate() {
+    public function validate() {
 
         $this->addValidation( 'notificationId', $this->getParam('notificationId'), 'required',
             array( 'stopOnError' => true ) );
     }
 
-    function action() {
+    public function action() {
 
         NotificationManager::markRead(
             $this->getParam('notificationId'),
             \OWA\Core\CoreAPI::getCurrentUser()->getUserData('user_id') );
     }
 
-    function success() {
+    public function success() {
 
         $this->restResponse( 202 );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->restResponse( 422 );
     }

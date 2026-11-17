@@ -51,7 +51,7 @@ class PasswordResetRequest extends \OWA\Core\Controller {
          */
     }
 
-    function action() {
+    public function action() {
 
         // Log password reset request to event queue
         $ed = \OWA\Core\CoreAPI::getEventDispatch();
@@ -67,7 +67,7 @@ class PasswordResetRequest extends \OWA\Core\Controller {
         $this->set('status_msg', $msg);
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->setView( 'base.passwordResetForm', PasswordResetForm::page() );
         $email_address = trim((string) $this->getParam('email_address'));

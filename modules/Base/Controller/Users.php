@@ -33,13 +33,13 @@ namespace OWA\Module\Base\Controller;
  */
 class Users extends \OWA\Core\AdminController {
         
-    function __construct($params) {
+    public function __construct($params) {
         
         $this->setRequiredCapability('edit_users');
         parent::__construct($params);
     }
     
-    function action() {
+    public function action() {
         
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName() );
@@ -53,7 +53,7 @@ class Users extends \OWA\Core\AdminController {
         $this->set('users_objs', $user_objs );
     }
     
-    function success() {
+    public function success() {
 	    
 	    /*
 	     * The settings chrome: user accounts live in the Organization, so this

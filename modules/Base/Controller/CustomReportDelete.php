@@ -28,7 +28,7 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomReportDelete extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -54,7 +54,7 @@ class CustomReportDelete extends \OWA\Core\AdminController {
         $this->addValidation( 'customReportId', $this->getParam( 'customReportId' ), 'required' );
     }
 
-    function action() {
+    public function action() {
 
         $id = (string) $this->getParam( 'customReportId' );
 
@@ -101,7 +101,7 @@ class CustomReportDelete extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.customReports' );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->setRedirectAction( 'base.customReports' );
     }

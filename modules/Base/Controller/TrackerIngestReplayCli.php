@@ -34,14 +34,14 @@ class TrackerIngestReplayCli extends \OWA\Core\Controller\Cli {
     /** A run's budget, in seconds. */
     const BUDGET = 120;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $I = '\OWA\Module\Base\Classes\TrackerIngest';
 

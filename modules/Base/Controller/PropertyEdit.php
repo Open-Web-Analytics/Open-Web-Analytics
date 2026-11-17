@@ -12,13 +12,15 @@ namespace OWA\Module\Base\Controller;
  * It deliberately does NOT touch the Profiles beneath it. A Profile's name is a
  * published API field (/v1/sites emits it, and the WordPress plugin labels its
  * picker with it), so renaming a Property must not cascade into one.
+ *
+ * @phpstan-import-type FieldSet from \OWA\Module\Base\Classes\Settings
  */
 class PropertyEdit extends \OWA\Core\AdminController {
 
     // edit_sites on the Property acted on, not on the request's siteId.
     use \OWA\Core\PropertyScopedAccess;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -83,7 +85,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
         }
     }
 
-    function action() {
+    public function action() {
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
 
@@ -172,7 +174,11 @@ class PropertyEdit extends \OWA\Core\AdminController {
         }
     }
 
-    /** The fieldsets the Property screen shows below its own fields. */
+    /**
+     * The fieldsets the Property screen shows below its own fields.
+     *
+     * @return array<FieldSet>
+     */
     private static function scopedFieldSets() {
 
         return array_merge(
@@ -234,7 +240,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
      * the screen reloaded what was stored: correcting one field meant entering
      * every other change again. Rendered here, as SitesEditSettings does.
      */
-    function errorAction() {
+    public function errorAction() {
 
         $propertyId = $this->getParam( 'propertyId' );
         $property   = \OWA\Core\CoreAPI::entityFactory( 'base.property' );

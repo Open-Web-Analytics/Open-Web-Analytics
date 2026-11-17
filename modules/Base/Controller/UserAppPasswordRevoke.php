@@ -16,7 +16,7 @@ namespace OWA\Module\Base\Controller;
  */
 class UserAppPasswordRevoke extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_users' );
         $this->setNonceRequired();
@@ -24,7 +24,7 @@ class UserAppPasswordRevoke extends \OWA\Core\AdminController {
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $user_id = (string) $this->getParam( 'user_id' );
 

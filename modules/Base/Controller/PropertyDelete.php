@@ -33,7 +33,7 @@ class PropertyDelete extends \OWA\Core\AdminController {
     // edit_sites on the Property acted on, not on the request's siteId.
     use \OWA\Core\PropertyScopedAccess;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'edit_sites' );
@@ -52,7 +52,7 @@ class PropertyDelete extends \OWA\Core\AdminController {
             ) );
     }
 
-    function action() {
+    public function action() {
 
         $propertyId = $this->getParam( 'propertyId' );
         $archivedAt = \OWA\Core\CoreAPI::getRequestTimestamp();

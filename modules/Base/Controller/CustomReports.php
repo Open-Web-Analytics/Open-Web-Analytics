@@ -44,13 +44,13 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomReports extends \OWA\Core\ReportController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'view_site_list' );
     }
 
-    function action() {
+    public function action() {
 
         $user    = \OWA\Core\CoreAPI::getCurrentUser();
         $user_id = (string) $user->getUserData( 'user_id' );
@@ -156,7 +156,7 @@ class CustomReports extends \OWA\Core\ReportController {
      * What the Type column calls a row: 'report', or the visualization's own
      * kind ('funnel').
      *
-     * @param array $report a roster row
+     * @param array<string, mixed> $report a roster row
      * @return string
      */
     public static function kindOf( array $report ) {
@@ -173,7 +173,7 @@ class CustomReports extends \OWA\Core\ReportController {
             : (string) array_key_first( \OWA\Module\Base\Classes\CustomReports::VISUALIZATION_TYPES );
     }
 
-    function success() {
+    public function success() {
 
         $this->setSubview( 'base.customReports', [
             'template' => 'custom_reports.php',
@@ -236,7 +236,7 @@ class CustomReports extends \OWA\Core\ReportController {
     /**
      * What + New offers, in order: a report, then each visualization.
      *
-     * @return array[] key => label, hint, icon, params (the builder's link)
+     * @return array<string, array{label: string, hint: string, icon: string, params: array<string, string>}> key => the builder's link
      */
     public static function newKinds() {
 

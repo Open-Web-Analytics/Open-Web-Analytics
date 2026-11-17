@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class SitesDelete extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
         parent::__construct($params);
         $this->setRequiredCapability('edit_sites');
         $this->setNonceRequired();
@@ -51,7 +51,7 @@ class SitesDelete extends \OWA\Core\AdminController {
      * or collected for. Everything it owns stays exactly where it is, which is
      * what makes a restore possible.
      */
-    function action() {
+    public function action() {
 
         $site = \OWA\Module\Base\Entity\Site::forSiteId( $this->getParam( 'siteId' ) );
 

@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class OptionsReset extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_settings');
         // It replaces every setting with its default: never from a link alone.
@@ -41,7 +41,7 @@ class OptionsReset extends \OWA\Core\AdminController {
         parent::__construct($params);
     }
 
-    function action() {
+    public function action() {
 
         $config = \OWA\Core\CoreAPI::configSingleton();
 

@@ -17,7 +17,7 @@ namespace OWA\Module\Base\Controller;
  */
 class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_sites');
 
@@ -32,7 +32,7 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
         parent::__construct($params);
     }
 
-	function validate() {
+	public function validate() {
 
 		// both identifiers must be present
 		$this->addValidation('siteId', $this->getParam('siteId'), 'required', array('stopOnError'	=> true));
@@ -55,7 +55,7 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
 		]);
 	}
 
-    function action() {
+    public function action() {
 
         $site_id = $this->getParam( 'siteId' );
         $s = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
@@ -91,12 +91,12 @@ class SiteAddAllowedUserRest extends \OWA\Core\AdminController {
 
     }
     
-    function success() {
+    public function success() {
 
         $this->restResponse( 201, 'response' );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->restResponse( 422, 'response' );
     }

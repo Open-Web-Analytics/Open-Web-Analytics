@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class ModuleDeactivate extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_modules');
         $this->setNonceRequired();
@@ -42,7 +42,7 @@ class ModuleDeactivate extends \OWA\Core\AdminController {
 
     }
 
-    function action() {
+    public function action() {
 
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $m = $s->getModule($this->getParam('module'));

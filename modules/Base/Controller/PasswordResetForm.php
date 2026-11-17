@@ -33,12 +33,16 @@ namespace OWA\Module\Base\Controller;
 
 class PasswordResetForm extends \OWA\Core\Controller {
 
-    function action() {
+    public function action() {
 
         $this->setView( 'base.passwordResetForm', self::page() );
     }
 
-    /** The form, which PasswordResetRequest draws again with its outcome. */
+    /**
+     * The form, which PasswordResetRequest draws again with its outcome.
+     *
+     * @return array<string, mixed> as setSubview() takes it
+     */
     public static function page() {
 
         return [

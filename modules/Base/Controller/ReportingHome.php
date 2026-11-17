@@ -30,7 +30,7 @@ class ReportingHome extends \OWA\Core\AdminController {
      */
     const LAST_PROPERTY_COOKIE = 'lpr';
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -43,7 +43,7 @@ class ReportingHome extends \OWA\Core\AdminController {
         $this->setRequiredCapability( 'view_site_list' );
     }
 
-    function action() {
+    public function action() {
 
         $allowed = array();
 

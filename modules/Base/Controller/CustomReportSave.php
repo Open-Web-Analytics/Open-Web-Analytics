@@ -32,7 +32,7 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomReportSave extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -58,7 +58,7 @@ class CustomReportSave extends \OWA\Core\AdminController {
         $this->addValidation( 'customReportDefinition', $this->getParam( 'customReportDefinition' ), 'required' );
     }
 
-    function action() {
+    public function action() {
 
         $user    = \OWA\Core\CoreAPI::getCurrentUser();
         $user_id = (string) $user->getUserData( 'user_id' );
@@ -176,6 +176,8 @@ class CustomReportSave extends \OWA\Core\AdminController {
      * raised by validate() rather than by action() was a blank page. That is
      * fixed in Core/Controller.php; this assigned to $this->data as well to
      * work around it, and no longer needs to.
+     * @param  string $message why, already translated
+     * @return mixed the builder's answer
      */
     private function refuse( $message ) {
 
@@ -189,7 +191,7 @@ class CustomReportSave extends \OWA\Core\AdminController {
         return $target->doAction();
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         return $this->refuse( \OWA\Core\CoreAPI::t( 'A custom report needs a name and at least one widget.' ) );
     }

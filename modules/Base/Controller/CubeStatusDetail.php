@@ -13,20 +13,20 @@ namespace OWA\Module\Base\Controller;
  */
 class CubeStatusDetail extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 
         parent::__construct( $params );
     }
 
-    function validate() {
+    public function validate() {
 
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required',
             array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Choose a Property.' ) ) );
     }
 
-    function action() {
+    public function action() {
 
         $property_id = (string) $this->getParam( 'propertyId' );
 
@@ -40,7 +40,7 @@ class CubeStatusDetail extends \OWA\Core\AdminController {
             'template' => 'cube_status_detail.php', 'vars' => [ 'cube' ] ] );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->setRedirectAction( 'base.cubeStatus' );
     }

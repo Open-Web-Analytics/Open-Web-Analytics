@@ -13,7 +13,7 @@ namespace OWA\Module\Base\Controller;
  */
 class OptionsRetention extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -21,7 +21,7 @@ class OptionsRetention extends \OWA\Core\AdminController {
         $this->setRequiredCapability( 'edit_settings' );
     }
 
-    function action() {
+    public function action() {
 
         $owa_site_id = $this->resolveCurrentSiteId();
 

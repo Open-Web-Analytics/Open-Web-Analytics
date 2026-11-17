@@ -10,10 +10,13 @@ namespace OWA\Module\Base\Controller;
  *
  * The partitioned tables come from the module's entity registry rather than a
  * list here, so the set stays correct as entities are added.
+ *
+ * @phpstan-import-type Span from \OWA\Core\Db
+ * @phpstan-type Budget array{limit: int, reason: string}
  */
 abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 
@@ -168,7 +171,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * design. That is what the partitioning is for.
      *
      * @param int $table_count  unused; kept so callers read unchanged
-     * @return array  limit, and how it was arrived at
+     * @return Budget limit, and how it was arrived at
      */
     protected function partitionLimit( $table_count = 0 ) {
 
@@ -201,7 +204,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * A ceiling cannot vary that way, which is one of the things that makes it
      * a better answer than a budget.
      *
-     * @return array  from partitionLimit()
+     * @return Budget from partitionLimit()
      */
     protected function factTableBudget() {
 
@@ -227,7 +230,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      *
      * @param string $table
      * @param int    $planned
-     * @param array  $budget   from partitionLimit()
+     * @param Budget $budget   from partitionLimit()
      * @return bool  true when it is safe to proceed
      */
     protected function withinPartitionBudget( $table, $planned, $budget ) {
@@ -255,7 +258,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * @param string $table
      * @param string $granularity
      * @param string $through
-     * @param array  $budget  from partitionLimit()
+     * @param Budget $budget  from partitionLimit()
      * @param bool   $dry_run
      * @return bool  false only where it wanted to act and could not
      */
@@ -422,7 +425,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * resource limit into a data-loss decision.
      *
      * @param string      $table
-     * @param array       $budget  from partitionLimit()
+     * @param Budget      $budget  from partitionLimit()
      * @param bool        $dry_run
      * @param string|null $cutoff  yyyymmdd the table's retention keeps from: no merge crosses it
      * @return int merges performed, or that would be
@@ -600,7 +603,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     /**
      * How many of these spans are already daily.
      *
-     * @param array $spans
+     * @param list<Span> $spans
      * @return int
      */
     protected function dailyCount( array $spans ) {
@@ -689,9 +692,9 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * partial period would merge into a span overlapping the days still
      * separate, which the server refuses.
      *
-     * @param array  $spans
+     * @param list<Span> $spans
      * @param string $granularity
-     * @return array  period start => ['names','start','less_than','period_end']
+     * @return array<string, array<string, mixed>> period start => ['names','start','less_than','period_end']
      */
     protected function mergeablePeriods( array $spans, $granularity = 'monthly' ) {
 
@@ -728,7 +731,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * holding rows is reported and left alone. force=1 overrides that.
      *
      * @param string $table
-     * @param array  $budget   from partitionLimit()
+     * @param Budget $budget   from partitionLimit()
      * @param bool   $dry_run
      * @return bool whether anything was carved
      */
@@ -856,8 +859,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * inference flips to `daily` -- at which point partition-rotate would
      * extend twelve months of lead AT DAILY, ~365 partitions, with no warning.
      *
-     * @param array $spans
-     * @return array
+     * @param list<Span> $spans
+     * @return list<Span>
      */
     protected function carveCandidates( array $spans ) {
 
@@ -917,8 +920,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * granularity begins. Nothing is part-carved and no remainder is left
      * behind for a later run to find.
      *
-     * @param array $spans
-     * @return array  each span plus 'ranges' (name => less_than) and 'days'
+     * @param list<Span> $spans
+     * @return list<array<string, mixed>> each span plus 'ranges' (name => less_than) and 'days'
      */
     protected function carvePlan( array $spans ) {
 
@@ -972,8 +975,8 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     /**
      * How far the daily part of the lead currently runs.
      *
-     * @param array $spans
-     * @return array|null  ['start','end'], or null when nothing is daily
+     * @param list<Span> $spans
+     * @return array{start: string, end: string}|null  null when nothing is daily
      */
     protected function dailyCoverage( array $spans ) {
 
@@ -1004,9 +1007,9 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     /**
      * The daily partitions, grouped by the calendar month they belong to.
      *
-     * @param array  $spans
+     * @param list<Span> $spans
      * @param string $granularity  the one the table is otherwise on
-     * @return array  period start (yyyymmdd) => ['names','start','less_than']
+     * @return array<string, array<string, mixed>> period start (yyyymmdd) => ['names','start','less_than']
      */
     protected function dailyByPeriod( array $spans, $granularity = 'monthly' ) {
 
@@ -1051,7 +1054,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      *
      * @param string $date  yyyymmdd
      * @param string $granularity
-     * @return array|null  ['start','less_than'], or null for an unknown granularity
+     * @return array{start: string, less_than: string}|null  null for an unknown granularity
      */
     protected function periodFor( $date, $granularity ) {
 
@@ -1080,7 +1083,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      * the first daily one of the same month are both called p2026MM01, so the
      * name cannot tell them apart.
      *
-     * @param array $span
+     * @param Span $span
      * @return int
      */
     protected function spanDays( array $span ) {
@@ -1096,7 +1099,11 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         return (int) round( ( $end - $start ) / 86400 );
     }
 
-    /** Is the driver able to partition at all? Report once, clearly. */
+    /**
+     * Is the driver able to partition at all? Report once, clearly.
+     *
+     * @return bool
+     */
     protected function assertPartitioningSupported() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();

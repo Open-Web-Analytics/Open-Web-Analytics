@@ -33,13 +33,13 @@ namespace OWA\Module\Base\Controller;
 
 class SitesProfile extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_sites');
         parent::__construct($params);
     }
 
-    function action() {
+    public function action() {
 
         // needed as this controller is
         $site_id = $this->getParam('siteId');
@@ -76,7 +76,7 @@ class SitesProfile extends \OWA\Core\AdminController {
      * gives nothing, and the form falls back to creating a new one.
      *
      * @param  string $propertyId
-     * @return array
+     * @return array<string, string> the new Profile's property_id, stream_type and domain; nothing for no Property
      */
     private function defaultsForProperty( $propertyId ) {
 

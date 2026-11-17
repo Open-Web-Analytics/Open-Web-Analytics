@@ -33,7 +33,7 @@ namespace OWA\Module\Base\Controller;
 
 class UsersResetPassword extends \OWA\Core\Controller {
         
-    function action() {
+    public function action() {
     
         $event = $this->getParam('event');
         

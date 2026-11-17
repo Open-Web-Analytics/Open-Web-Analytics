@@ -32,14 +32,14 @@ class JobsCli extends \OWA\Core\Controller\Cli {
     /** Which of the four this command is; the thin subclasses set it. */
     const MODE = 'list';
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $Q = '\OWA\Module\Base\Classes\JobQueue';
 

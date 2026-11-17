@@ -21,6 +21,11 @@ namespace OWA\Module\Base\Controller;
  *
  * Nothing here alerts; a human has to run it. Real alerting is the ping-hook and
  * mail-on-failure route, deliberately out of scope for now.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type JobRegistration from \OWA\Core\Module
+ * @phpstan-import-type CronFields from \OWA\Core\Cron
+ * @phpstan-import-type Section from \OWA\Module\Base\Classes\SystemHealth
  */
 class ScheduleStatusCli extends SchedulerCli {
 
@@ -44,7 +49,7 @@ class ScheduleStatusCli extends SchedulerCli {
     /** See JobStatus::MIN_GRACE. */
     const MIN_GRACE = \OWA\Module\Base\Classes\JobStatus::MIN_GRACE;
 
-    function action() {
+    public function action() {
 
         if ( $this->getParam( 'format' ) === 'markdown' ) {
 
@@ -142,7 +147,7 @@ class ScheduleStatusCli extends SchedulerCli {
      * Jobs as a Markdown table: name, the command line it runs, the schedule
      * in words as $schedule gives it, and the description.
      *
-     * @param array    $jobs      keyed by name
+     * @param array<string, JobRegistration> $jobs keyed by name
      * @param callable $schedule  job => the schedule in words
      * @return string[]
      */
@@ -199,7 +204,12 @@ class ScheduleStatusCli extends SchedulerCli {
         return $lines ? array_merge( array( '', 'Tracker ingest' ), $lines ) : array();
     }
 
-    /** A section's findings that are not green, as status lines. */
+    /**
+     * A section's findings that are not green, as status lines.
+     *
+     * @param  Section $section
+     * @return list<string>
+     */
     private static function problemLines( array $section ) {
 
         $lines = array();
@@ -225,6 +235,13 @@ class ScheduleStatusCli extends SchedulerCli {
     /**
      * One job's block.
      *
+     * @param string          $name
+     * @param JobRegistration $job
+     * @param Row|null        $row  its state row
+     * @param int             $now
+     * @param bool            $pending  a schema update is pending
+     * @param bool            $ever  any job has a state row
+     * @param int             $last_activity  the latest last_run_at of any job
      * @return string[]
      */
     protected function describeJob( $name, $job, $row, $now, $pending, $ever, $last_activity ) {
@@ -306,6 +323,15 @@ class ScheduleStatusCli extends SchedulerCli {
      * Why is this job not running? See JobStatus::diagnose(), which the Reporting
      * Cube screen asks too, so the two cannot tell different stories.
      *
+     * @param string          $name
+     * @param JobRegistration $job
+     * @param Row|null        $row  its state row
+     * @param Row|null        $lock  its lock row
+     * @param CronFields|null $parsed  its schedule
+     * @param int             $now
+     * @param bool            $pending  a schema update is pending
+     * @param bool            $ever  any job has a state row
+     * @param int             $last_activity  the latest last_run_at of any job
      * @return string|null
      */
     protected function diagnose( $name, $job, $row, $lock, $parsed, $now, $pending, $ever, $last_activity ) {
@@ -329,6 +355,8 @@ class ScheduleStatusCli extends SchedulerCli {
      * Kept rather than deleted, so a job that vanished through a config typo is
      * visible instead of silently gone.
      *
+     * @param array<string, JobRegistration> $jobs
+     * @param array<int|string, Row> $state
      * @return string[]
      */
     protected function describeOrphans( $jobs, $state ) {
@@ -355,6 +383,11 @@ class ScheduleStatusCli extends SchedulerCli {
     }
 
     /**
+     * @param array<string, JobRegistration> $jobs
+     * @param array<int|string, Row> $state
+     * @param bool $ever  any job has a state row
+     * @param int  $last_activity  the latest last_run_at of any job
+     * @param int  $now
      * @return string[]
      */
     protected function summarise( $jobs, $state, $ever, $last_activity, $now ) {

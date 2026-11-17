@@ -56,7 +56,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
      */
     const APPLY_LEASE = 900;
 
-    function action() {
+    public function action() {
 
         $only = trim( (string) $this->getParam( 'property' ) );
 
@@ -132,7 +132,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
     /**
      * @param string $property_id
      * @param string $table
-     * @return array ['changed' => int, 'failed' => int]
+     * @return array{changed: int, failed: int}
      */
     protected function applyTo( $property_id, $table ) {
 

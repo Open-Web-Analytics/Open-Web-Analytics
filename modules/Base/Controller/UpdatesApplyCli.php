@@ -48,12 +48,12 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         );
     }
     
-    function __construct($params) {
+    public function __construct($params) {
         define('OWA_UPDATING', true);
         parent::__construct($params);
     }
 
-    function action() {
+    public function action() {
         
         // fetch list of modules that require updates
         $s = \OWA\Core\CoreAPI::serviceSingleton();
@@ -112,7 +112,10 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
     
     }
     
-    function listPendingUpdates() {
+    /**
+     * @return null action() returns it
+     */
+    public function listPendingUpdates() {
         
         $s = \OWA\Core\CoreAPI::serviceSingleton();
         $modules = $s->getModulesNeedingUpdates();
@@ -121,13 +124,15 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         } else {
             \OWA\Core\CoreAPI::notice("No updates are pending.");
         }
+
+        return null;
     }
     
     /**
      * <module>.<sequence> as array( module, sequence ), or null.
      *
      * @param mixed $update
-     * @return array|null
+     * @return array{string, string}|null
      */
     public static function parseUpdateName( $update ) {
 
@@ -162,13 +167,17 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         }
     }
 
-    function apply($update) {
+    /**
+     * @param  mixed $update <module>.<sequence>, as the request named it
+     * @return null action() returns it
+     */
+    public function apply($update) {
 
         $u = $this->namedUpdate( $update, 'apply' );
 
         if ( ! $u ) {
 
-            return;
+            return null;
         }
         
         // check for force command param
@@ -192,15 +201,21 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         } else {
             $this->fail("The update did NOT apply. See the messages above for why.");
         }
+
+        return null;
     }
     
-    function rollback($update) {
+    /**
+     * @param  mixed $update <module>.<sequence>, as the request named it
+     * @return null action() returns it
+     */
+    public function rollback($update) {
 
         $u = $this->namedUpdate( $update, 'rollback' );
 
         if ( ! $u ) {
 
-            return;
+            return null;
         }
 
         // rollback() returns false when it refuses an out-of-sequence rollback
@@ -213,6 +228,8 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         } else {
             $this->fail("Rollback did NOT complete. See the messages above for whether it was refused or failed part way.");
         }
+
+        return null;
     }
     
 }

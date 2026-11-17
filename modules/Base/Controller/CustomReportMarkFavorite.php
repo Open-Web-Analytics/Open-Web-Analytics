@@ -26,7 +26,7 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
     // view_reports on the Property the report is starred on, as a report is checked.
     use \OWA\Core\PropertyScopedAccess;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -52,7 +52,7 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
         $this->addValidation( 'customReportId', $this->getParam( 'customReportId' ), 'required' );
     }
 
-    function action() {
+    public function action() {
 
         $id     = (string) $this->getParam( 'customReportId' );
         /*
@@ -100,7 +100,7 @@ class CustomReportMarkFavorite extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.report' );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->setRedirectAction( 'base.customReports' );
     }

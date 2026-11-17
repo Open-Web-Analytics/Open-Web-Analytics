@@ -12,7 +12,7 @@ namespace OWA\Module\Base\Controller;
  */
 class SitesEditTagSettings extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -42,7 +42,7 @@ class SitesEditTagSettings extends \OWA\Core\AdminController {
         }
     }
 
-    function action() {
+    public function action() {
 
         $site_id = (string) $this->getParam( 'siteId' );
         $saved   = true;
@@ -66,7 +66,7 @@ class SitesEditTagSettings extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.sitesInvocation' );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->set( 'siteId', (string) $this->getParam( 'siteId' ) );
         $this->setRedirectAction( 'base.sitesInvocation' );

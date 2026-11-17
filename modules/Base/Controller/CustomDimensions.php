@@ -22,7 +22,7 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomDimensions extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -36,7 +36,7 @@ class CustomDimensions extends \OWA\Core\AdminController {
         $this->setRequiredCapability( 'edit_settings' );
     }
 
-    function action() {
+    public function action() {
 
         $property_id = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
@@ -66,7 +66,7 @@ class CustomDimensions extends \OWA\Core\AdminController {
      * says so rather than offering a form that cannot work.
      *
      * @param string $property_id
-     * @return array
+     * @return array{table: string, exists: bool, capacity: int, cap: int}
      */
     public static function cubeState( $property_id ) {
 

@@ -21,7 +21,7 @@ namespace OWA\Module\Base\Controller;
 
 class Login extends \OWA\Core\Controller {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -35,7 +35,7 @@ class Login extends \OWA\Core\Controller {
         $this->addValidation('user_id', $this->getParam('user_id'), 'userName', ['stopOnError' => true]);
     }
 
-    function action() {
+    public function action() {
 
         $auth = \OWA\Core\Auth::get_instance();
         $status = $auth->authenticateUser( $this->acceptedAuthMethods() );
@@ -70,7 +70,7 @@ class Login extends \OWA\Core\Controller {
         }
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         // return login form with error msg
         $this->setView('base.loginForm');

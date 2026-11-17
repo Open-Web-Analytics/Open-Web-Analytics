@@ -10,14 +10,14 @@ namespace OWA\Module\Base\Controller;
  */
 class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->type = 'options';
         $this->setRequiredCapability( 'edit_settings' );
     }
 
-    function action() {
+    public function action() {
 
         $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
@@ -75,7 +75,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
      * The template reads every one of these: a var never set is a blank screen.
      *
      * @param string $definitionId empty for a definition not yet saved
-     * @return array as setSubview() takes it
+     * @return array<string, mixed> as setSubview() takes it
      */
     public static function screen( $definitionId ) {
 
@@ -97,7 +97,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
      * it changes (owa.goalbuilder.js). Both screens that render the form set it
      * -- this one and GoalEventDefinitionSave's refused-form path -- from here.
      *
-     * @return array  event => list of { name, label, description, carried }
+     * @return array<string, list<array<string, mixed>>> event => list of { name, label, description, carried }
      */
     public static function vocabulary() {
 
@@ -189,8 +189,8 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
      * that cannot match.
      *
      * @param  string $event_name  the trigger event
-     * @param  array  $conditions  this definition's stored conditions
-     * @return array  list of { name, label, description, carried }
+     * @param  array<mixed> $conditions  this definition's stored conditions
+     * @return list<array<string, mixed>> list of { name, label, description, carried }
      */
     public static function conditionProperties( $event_name, array $conditions = array() ) {
 

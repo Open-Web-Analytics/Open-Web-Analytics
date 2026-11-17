@@ -17,14 +17,14 @@ namespace OWA\Module\Base\Controller;
  */
 class GoalEventDefinitions extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->type = 'options';
         $this->setRequiredCapability( 'edit_settings' );
     }
 
-    function action() {
+    public function action() {
 
         $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
@@ -45,7 +45,7 @@ class GoalEventDefinitions extends \OWA\Core\AdminController {
      * nothing -- no Property would list every definition on the installation.
      *
      * @param  string $propertyId
-     * @return array
+     * @return array<int, array<string, mixed>> the definitions' rows, each with its step count
      */
     public static function listForProperty( $propertyId ) {
 

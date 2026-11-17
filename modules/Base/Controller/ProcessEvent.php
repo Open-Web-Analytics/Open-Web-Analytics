@@ -34,10 +34,12 @@ namespace OWA\Module\Base\Controller;
 
 class ProcessEvent extends \OWA\Core\Controller {
 
-    var $event;
-    var $eq;
+    /** @var \OWA\Module\Base\Classes\Event */
+    public $event;
+    /** @var \OWA\Module\Base\Classes\EventDispatch */
+    public $eq;
 
-    function __construct($params) {
+    public function __construct($params) {
 
         if (array_key_exists('event', $params) && !empty($params['event'])) {
 
@@ -57,7 +59,7 @@ class ProcessEvent extends \OWA\Core\Controller {
     /**
      * Main Control Logic
      */
-    function action() {
+    public function action() {
 
         return;
 
@@ -66,7 +68,7 @@ class ProcessEvent extends \OWA\Core\Controller {
     /**
      * Must be called before all other event property setting functions
      */
-    function pre() {
+    public function pre() {
 
         // TODO: move this all into the coreAPI::logEvent method. We really don't need the overhead of a controller for this.
 
@@ -150,17 +152,20 @@ class ProcessEvent extends \OWA\Core\Controller {
         $this->event = \OWA\Module\Base\Classes\Ingest::at( \OWA\Module\Base\Classes\Ingest::PROPERTY_POST, $this->event );
     }
 
-    function post() {
+    public function post() {
         
         return $this->addToEventQueue();
     }
 
-    function addToEventQueue() {
+    /**
+     * @return null post() returns it
+     */
+    public function addToEventQueue() {
         
         if ( ! $this->isTrackingEvent() ) {
             
             \OWA\Core\CoreAPI::debug("Not dispatching event. This is not a valid tracking event type.");
-            return;
+            return null;
         }
         
         if ( ! $this->event->get( 'do_not_log' ) ) {
@@ -185,6 +190,8 @@ class ProcessEvent extends \OWA\Core\Controller {
 
             \OWA\Core\CoreAPI::debug("Not dispatching event due to 'do not log' flag being set.");
         }
+
+        return null;
     }
     
     /**
@@ -196,8 +203,10 @@ class ProcessEvent extends \OWA\Core\Controller {
      * "is this a tracking event" with three copies of the answer; they now share
      * CoreAPI::isTrackingEventType(), which admits a first-class name or a legal
      * custom one.
+     *
+     * @return bool
      */
-    function isTrackingEvent() {
+    public function isTrackingEvent() {
 
         return \OWA\Core\CoreAPI::isTrackingEventType( $this->event->getEventType() );
     }

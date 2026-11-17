@@ -15,14 +15,14 @@ class PropertyProfile extends \OWA\Core\AdminController {
     // edit_sites on the Property acted on, not on the request's siteId.
     use \OWA\Core\PropertyScopedAccess;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_sites' );
 
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
 
@@ -64,7 +64,7 @@ class PropertyProfile extends \OWA\Core\AdminController {
      * A Property not yet saved has no id.
      *
      * @param string $propertyId
-     * @return array as setSubview() takes it
+     * @return array<string, mixed> as setSubview() takes it
      */
     public static function screen( $propertyId ) {
 
@@ -81,6 +81,9 @@ class PropertyProfile extends \OWA\Core\AdminController {
 
     /**
      * Profiles this Property still has, archived ones excluded.
+     *
+     * @param  string $propertyId
+     * @return int
      */
     public static function countLiveProfiles( $propertyId ) {
 

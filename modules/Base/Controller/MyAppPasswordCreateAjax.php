@@ -19,7 +19,7 @@ namespace OWA\Module\Base\Controller;
  */
 class MyAppPasswordCreateAjax extends \OWA\Core\Controller\Ajax {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         // Every signed-in role makes its own; see base.myProfile.
         $this->setRequiredCapability( 'view_site_list' );
@@ -27,13 +27,13 @@ class MyAppPasswordCreateAjax extends \OWA\Core\Controller\Ajax {
         parent::__construct( $params );
     }
 
-    function validate() {
+    public function validate() {
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
             array( 'stopOnError' => true, 'errorMsg' => $this->getMsg( 3215 )['message'] ) );
     }
 
-    function action() {
+    public function action() {
 
         $user_id = (string) \OWA\Core\CoreAPI::getCurrentUser()->getUserData( 'user_id' );
 

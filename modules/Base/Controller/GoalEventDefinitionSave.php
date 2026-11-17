@@ -6,7 +6,7 @@ namespace OWA\Module\Base\Controller;
  */
 class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
         $this->setRequiredCapability( 'edit_settings' );
@@ -171,7 +171,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
     }
 
-    function action() {
+    public function action() {
 
         $propertyId = (string) $this->getParam( 'propertyId' );
         $id         = $this->getParam( 'goalEventDefinitionId' );
@@ -288,7 +288,12 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         return trim( (string) $this->getParam( 'name' ) );
     }
 
-    /** Whether another definition of this Property has the name. */
+    /**
+     * Whether another definition of this Property has the name.
+     *
+     * @param  string $name
+     * @return bool
+     */
     private function nameTaken( $name ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
@@ -302,6 +307,10 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         return ! empty( $row['id'] );
     }
 
+    /**
+     * @param  string $definitionId
+     * @return void
+     */
     private function saveConditions( $definitionId ) {
 
         if ( ! $definitionId ) {
@@ -366,7 +375,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
             $condition->create();
         }
     }
-    function errorAction() {
+    public function errorAction() {
 
         $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 

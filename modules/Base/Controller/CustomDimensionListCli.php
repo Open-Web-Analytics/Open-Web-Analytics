@@ -29,7 +29,7 @@ class CustomDimensionListCli extends CustomDimensionsCli {
         );
     }
 
-    function action() {
+    public function action() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
         $only  = trim( (string) $this->getParam( 'property' ) );

@@ -23,6 +23,8 @@ namespace OWA\Module\Base\Controller;
  *
  * The report is built as lines and then emitted, rather than emitted as it is
  * decided, so that what it says about a given layout can be asserted directly.
+ *
+ * @phpstan-import-type Budget from PartitionsCli
  */
 class PartitionStatusCli extends PartitionsCli {
 
@@ -37,7 +39,7 @@ class PartitionStatusCli extends PartitionsCli {
         );
     }
 
-    function action() {
+    public function action() {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -91,8 +93,8 @@ class PartitionStatusCli extends PartitionsCli {
      * One table's block of the report.
      *
      * @param string $table
-     * @param array  $layout  from describePartitionLayout(), plus 'contents'
-     * @param array  $budget  from partitionLimit()
+     * @param array<string, mixed> $layout  from describePartitionLayout(), plus 'contents'
+     * @param Budget $budget  from partitionLimit()
      * @return string[]
      */
     protected function describeTable( $table, $layout, $budget ) {
@@ -149,7 +151,7 @@ class PartitionStatusCli extends PartitionsCli {
      * length of time is reported with the span it covers.
      *
      * @param string $table
-     * @param array  $layout
+     * @param array<string, mixed> $layout
      * @return string[]
      */
     protected function describeTiers( $table, $layout ) {
@@ -209,7 +211,7 @@ class PartitionStatusCli extends PartitionsCli {
      * bound, so queries cannot prune past it and retention cannot drop it. The
      * next rotate reorganises them into dated partitions.
      *
-     * @param array $layout
+     * @param array<string, mixed> $layout
      * @return string[]
      */
     protected function describeCatchAll( $layout ) {
@@ -257,7 +259,7 @@ class PartitionStatusCli extends PartitionsCli {
     /**
      * How much lead is left, and therefore when a rotate is due.
      *
-     * @param array $layout
+     * @param array<string, mixed> $layout
      * @return string[]
      */
     protected function describeLead( $layout ) {
@@ -291,8 +293,8 @@ class PartitionStatusCli extends PartitionsCli {
     /**
      * The lines an operator acts on.
      *
-     * @param array $layouts  keyed by table
-     * @param array $budget
+     * @param array<string, array<string, mixed>> $layouts  keyed by table
+     * @param Budget $budget
      * @return string[]
      */
     protected function summarise( $layouts, $budget ) {

@@ -11,7 +11,7 @@ namespace OWA\Module\Base\Controller;
  */
 class ProfileSettings extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_sites' );
 
@@ -21,7 +21,7 @@ class ProfileSettings extends \OWA\Core\AdminController {
     /** The screen, which SitesEditSettings draws again for a refused save. */
     const SCREEN = [ 'template' => 'profile_settings.php', 'vars' => [ 'site', 'posted', 'siteId' ] ];
 
-    function action() {
+    public function action() {
 
         /*
          * Resolved, not taken raw.

@@ -13,6 +13,8 @@ namespace OWA\Module\Base\Controller;
  * first: the URL scheme, the nav links and the inter-report links can all move
  * to report ids before a single report becomes JSON, and each conversion after
  * that changes one registry entry rather than every link pointing at it.
+ *
+ * @phpstan-import-type Report from \OWA\Module\Base\Classes\CustomReports as SavedReport
  */
 class Report extends \OWA\Core\AdminController {
 
@@ -25,7 +27,7 @@ class Report extends \OWA\Core\AdminController {
      */
     const CUSTOM_PREFIX = 'custom-';
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -50,7 +52,7 @@ class Report extends \OWA\Core\AdminController {
      * action() would run this controller's checks and then the target's body,
      * which is a different and much worse thing.
      */
-    function doAction() {
+    public function doAction() {
 
         $id = $this->getParam( 'reportId' );
 
@@ -107,6 +109,10 @@ class Report extends \OWA\Core\AdminController {
      * decoding at registration would put a json_decode() per report on every
      * request, tracker beacons included. Registration stores the path; exactly
      * one file is read, for the report actually asked for.
+     *
+     * @param  string $id
+     * @param  string $path the definition file
+     * @return mixed the report controller's answer; reportNotResolved()'s when it cannot be drawn
      */
     private function renderConfigured( $id, $path ) {
 
@@ -170,23 +176,14 @@ class Report extends \OWA\Core\AdminController {
     }
 
     /**
-     * Render a user-authored report.
-     *
-     * Opened by its creator, by anyone once it is shared, and by anyone who may
-     * see every report (CustomReports::mayView()); to anyone else it is not
-     * found, as a report of another Property is.
-     *
-     * The definition is re-validated on the way OUT, not trusted because it was
-     * validated on the way in. Two reasons, and neither is hypothetical: the
-     * registry changes -- a module deactivated since the report was saved takes
-     * its metrics with it -- and a row can be edited by something that is not
-     * the builder.
-     */
-    /**
      * Hand a visualization to the controller its type names.
      *
      * The type resolves through a map rather than a switch, so the second
      * visualization needs no change here.
+     *
+     * @param  string      $id
+     * @param  SavedReport $report
+     * @return array<mixed>|string|null the target's data, with the report's controls; a refusal's page
      */
     private function renderVisualization( $id, $report ) {
 
@@ -223,6 +220,22 @@ class Report extends \OWA\Core\AdminController {
         return $this->withSharedTag( $this->withFavoriteAction( $this->withEditAction( $data, $report ), $report ), $report );
     }
 
+    /**
+     * Render a user-authored report.
+     *
+     * Opened by its creator, by anyone once it is shared, and by anyone who may
+     * see every report (CustomReports::mayView()); to anyone else it is not
+     * found, as a report of another Property is.
+     *
+     * The definition is re-validated on the way OUT, not trusted because it was
+     * validated on the way in. Two reasons, and neither is hypothetical: the
+     * registry changes -- a module deactivated since the report was saved takes
+     * its metrics with it -- and a row can be edited by something that is not
+     * the builder.
+     *
+     * @param  string $id CUSTOM_PREFIX and the row's id
+     * @return mixed the target's data, with the report's controls; a refusal's page
+     */
     private function renderCustom( $id ) {
 
         /*
@@ -370,9 +383,9 @@ class Report extends \OWA\Core\AdminController {
      * always answers a bool, and it debug-logs the role and the authentication
      * state.
      *
-     * @param  array $data    what the target controller returned
-     * @param  array $report  the row being rendered
-     * @return array
+     * @param  array<mixed> $data    what the target controller returned
+     * @param  SavedReport  $report  the row being rendered
+     * @return array<mixed>
      */
     private function withEditAction( array $data, array $report ) {
 
@@ -441,9 +454,9 @@ class Report extends \OWA\Core\AdminController {
      * follows it. The star is about the row a reader is looking at; the pencil
      * is about changing it, which fewer of them can do.
      *
-     * @param  array $data    what the target controller returned
-     * @param  array $report  the row being rendered
-     * @return array
+     * @param  array<mixed> $data    what the target controller returned
+     * @param  SavedReport  $report  the row being rendered
+     * @return array<mixed>
      */
     private function withFavoriteAction( array $data, array $report ) {
 
@@ -499,9 +512,9 @@ class Report extends \OWA\Core\AdminController {
      * "Shared" beside the title of a report everyone with access to its
      * Property can open, the tag the custom reports list gives it.
      *
-     * @param  array $data    what the target controller returned
-     * @param  array $report  the row being rendered
-     * @return array
+     * @param  array<mixed> $data    what the target controller returned
+     * @param  SavedReport  $report  the row being rendered
+     * @return array<mixed>
      */
     private function withSharedTag( array $data, array $report ) {
 
@@ -521,6 +534,9 @@ class Report extends \OWA\Core\AdminController {
      * The same lookup CoreAPI::performAction() does, reused rather than
      * reimplemented: a report that resolves to an action must behave exactly as
      * it did when that action was reached directly.
+     *
+     * @param  string $action <module>.<action>
+     * @return mixed the target's doAction() answer; reportNotResolved()'s when nothing answers to the name
      */
     private function delegateTo( $action ) {
 
@@ -546,12 +562,9 @@ class Report extends \OWA\Core\AdminController {
     }
 
     /**
-     * Answer the way the rest of the dispatcher answers.
-     *
-     * CoreAPI::actionNotResolved() already notices, sets the status code and
-     * renders base.error. Reusing it means an unresolvable report id is
-     * indistinguishable from an unresolvable action, which is what it is --
-     * and keeps this controller from inventing a second error convention.
+     * @param  string $id
+     * @param  string $error why the definition does not validate
+     * @return string the error page
      */
     private function reportCannotBeDrawn( $id, $error ) {
 
@@ -574,10 +587,10 @@ class Report extends \OWA\Core\AdminController {
      * Asked after the target's doAction(). A refusal the target answered
      * itself is left as it is.
      *
-     * @param  string $id
-     * @param  array  $data   what the target controller returned
-     * @param  array  $report the row
-     * @return array|null
+     * @param  string       $id
+     * @param  array<mixed> $data   what the target controller returned
+     * @param  SavedReport  $report the row
+     * @return string|null reportNotResolved()'s page
      */
     private function notViewable( $id, array $data, array $report ) {
 
@@ -604,7 +617,7 @@ class Report extends \OWA\Core\AdminController {
      * view_reports on the Property, and the report is theirs, shared, or they
      * may see every report (CustomReports::mayView()).
      *
-     * @param  array  $report
+     * @param  SavedReport $report
      * @param  string $property_id
      * @return bool
      */
@@ -617,6 +630,19 @@ class Report extends \OWA\Core\AdminController {
                 (bool) \OWA\Core\CoreAPI::isCurrentUserCapable( 'edit_users' ) );
     }
 
+    /**
+     * Answer the way the rest of the dispatcher answers.
+     *
+     * CoreAPI::actionNotResolved() already notices, sets the status code and
+     * renders base.error. Reusing it means an unresolvable report id is
+     * indistinguishable from an unresolvable action, which is what it is --
+     * and keeps this controller from inventing a second error convention.
+     *
+     * @param  string $id
+     * @param  string $message what is wrong, for the log
+     * @param  int    $status  the HTTP status
+     * @return string|null the error page; null under the CLI
+     */
     private function reportNotResolved( $id, $message, $status ) {
 
         return \OWA\Core\CoreAPI::actionNotResolved(

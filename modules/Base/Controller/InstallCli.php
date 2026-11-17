@@ -48,7 +48,7 @@ class InstallCli extends \OWA\Core\Controller\Cli {
         );
     }
 
-    function __construct($params) {
+    public function __construct($params) {
         define('OWA_INSTALLING', true);
         parent::__construct($params);
     }
@@ -70,12 +70,12 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     }
 
     /** A refused install prints why, and has done nothing. */
-    function errorAction() {
+    public function errorAction() {
 
         \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
     }
 
-    function action() {
+    public function action() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
         $im = new \OWA\Module\Base\Classes\InstallManager();

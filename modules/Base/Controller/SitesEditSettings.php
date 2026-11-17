@@ -29,11 +29,13 @@ namespace OWA\Module\Base\Controller;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-import-type FieldSet from \OWA\Module\Base\Classes\Settings
  */
 
 class SitesEditSettings extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         parent::__construct($params);
         $this->setRequiredCapability('edit_sites');
@@ -66,13 +68,17 @@ class SitesEditSettings extends \OWA\Core\AdminController {
         }
     }
 
-    /** The fieldsets the Observation Settings screen shows (templates/profile_settings.php). */
+    /**
+     * The fieldsets the Observation Settings screen shows (templates/profile_settings.php).
+     *
+     * @return list<FieldSet>
+     */
     private static function scopedFieldSets() {
 
         return \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'profile_observation' );
     }
 
-    function action() {
+    public function action() {
 
         $site_id = $this->getParam( 'siteId' );
 
@@ -100,7 +106,7 @@ class SitesEditSettings extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.profileSettings' );
     }
 
-    function errorAction() {
+    public function errorAction() {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->settingsChrome( array( 'siteId' => $owa_site_id ), $owa_site_id );
         /*

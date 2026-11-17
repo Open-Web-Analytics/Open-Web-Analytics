@@ -20,7 +20,7 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomDimensionEdit extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -30,7 +30,7 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
         $this->setRequiredCapability( 'edit_settings' );
     }
 
-    function action() {
+    public function action() {
 
         self::prepare( $this, $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) ) );
     }
@@ -41,7 +41,8 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
      *
      * @param \OWA\Core\AdminController $controller
      * @param string $property_id
-     * @param array  $submitted  what was typed, when a refused form comes back
+     * @param array<string, mixed> $submitted what was typed, when a refused form comes back
+     * @return void
      */
     public static function prepare( $controller, $property_id, array $submitted = array() ) {
 

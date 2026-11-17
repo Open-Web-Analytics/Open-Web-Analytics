@@ -16,7 +16,7 @@ namespace OWA\Module\Base\Controller;
  */
 class OptionsRetentionUpdate extends OptionsUpdate {
 
-    function action() {
+    public function action() {
 
         parent::action();
 

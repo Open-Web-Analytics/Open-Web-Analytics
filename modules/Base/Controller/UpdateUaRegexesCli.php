@@ -58,7 +58,7 @@ class UpdateUaRegexesCli extends \OWA\Core\Controller\Cli {
         );
     }
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         // Same capability as the other maintenance commands: this rewrites a
         // file the whole installation parses every request with, which is
@@ -68,7 +68,7 @@ class UpdateUaRegexesCli extends \OWA\Core\Controller\Cli {
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $dry_run = (bool) $this->getParam( 'dry-run' );
 

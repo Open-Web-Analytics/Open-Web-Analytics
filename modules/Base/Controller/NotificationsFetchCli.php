@@ -25,7 +25,7 @@ class NotificationsFetchCli extends \OWA\Core\Controller\Cli {
         );
     }
 
-    function action() {
+    public function action() {
 
         $url = \OWA\Core\CoreAPI::getSetting( 'base', 'owa_news_url' );
 

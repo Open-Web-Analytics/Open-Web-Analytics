@@ -33,14 +33,14 @@ namespace OWA\Module\Base\Controller;
 
 class ModuleActivate extends \OWA\Core\AdminController {
 
-    function __construct($params) {
+    public function __construct($params) {
 
         $this->setRequiredCapability('edit_modules');
         $this->setNonceRequired();
         parent::__construct($params);
     }
 
-    function action() {
+    public function action() {
 
         $module = $this->getParam('module');
 

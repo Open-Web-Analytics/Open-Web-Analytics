@@ -34,7 +34,7 @@ class Updates extends \OWA\Core\Controller {
     // It only lists which modules have pending updates. base.updatesApply, the
     // action that actually mutates the schema, is gated instead.
 
-    function action() {
+    public function action() {
 
         $modules = \OWA\Core\CoreAPI::getModulesNeedingUpdates();
 

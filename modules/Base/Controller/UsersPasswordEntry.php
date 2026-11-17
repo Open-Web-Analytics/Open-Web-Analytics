@@ -40,6 +40,7 @@ class UsersPasswordEntry extends \OWA\Core\Controller {
      * refused. Signed out: the person on it has no password yet.
      *
      * @param \OWA\Core\Base $owa reads the headline from the message catalogue
+     * @return array<string, mixed> as setSubview() takes it
      */
     public static function page( \OWA\Core\Base $owa ) {
 
@@ -55,6 +56,9 @@ class UsersPasswordEntry extends \OWA\Core\Controller {
      * Why a link's key cannot set a password: 2012 when it has expired, 2011
      * when it is not a key at all; null when it is current. Whether an account
      * holds it is checked when the form is posted (UsersChangePassword).
+     *
+     * @param  string $key
+     * @return int|null
      */
     public static function keyProblem( $key ) {
 
@@ -70,7 +74,7 @@ class UsersPasswordEntry extends \OWA\Core\Controller {
      * The form, for a link that can still set a password. One that cannot is
      * told so on the login form before anyone types a password into it.
      */
-    function action() {
+    public function action() {
 
         $problem = self::keyProblem( $this->getParam('k') );
 

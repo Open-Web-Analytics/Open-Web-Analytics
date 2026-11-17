@@ -30,7 +30,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
     /** Shortest new password accepted (User::MIN_PASSWORD_LENGTH). */
     const MIN_PASSWORD_LENGTH = \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'view_site_list' );
         $this->setNonceRequired();
@@ -79,7 +79,11 @@ class MyProfileSave extends \OWA\Core\AdminController {
             ) );
     }
 
-    /** Whether this submission is trying to set a password at all. */
+    /**
+     * Whether this submission is trying to set a password at all.
+     *
+     * @return bool
+     */
     private function changingPassword() {
 
         foreach ( array( 'current_password', 'new_password', 'new_password2' ) as $field ) {
@@ -93,7 +97,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
         return false;
     }
 
-    function action() {
+    public function action() {
 
         $user = \OWA\Core\CoreAPI::getCurrentUser();
 
@@ -243,6 +247,9 @@ class MyProfileSave extends \OWA\Core\AdminController {
      * The name and address ride along under submitted_ names so the form
      * redraws them; the password fields deliberately do not, because carrying a
      * secret back would put it in the page source of the refusal.
+     *
+     * @param  string $message why, already translated
+     * @return null
      */
     private function refuse( $message ) {
 
@@ -251,9 +258,11 @@ class MyProfileSave extends \OWA\Core\AdminController {
         $this->set( 'submitted_email_address', (string) $this->getParam( 'email_address' ) );
 
         $this->setRedirectAction( 'base.myProfile' );
+
+        return null;
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $messages = (array) $this->getValidationErrorMsgs();
 

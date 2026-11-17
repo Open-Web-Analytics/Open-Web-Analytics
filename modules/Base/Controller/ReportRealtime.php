@@ -20,7 +20,7 @@ namespace OWA\Module\Base\Controller;
  */
 class ReportRealtime extends \OWA\Core\ReportController {
 
-    function action() {
+    public function action() {
 
         $this->setTitle( \OWA\Core\CoreAPI::t( 'Realtime' ) );
         $this->hideTimeControls();

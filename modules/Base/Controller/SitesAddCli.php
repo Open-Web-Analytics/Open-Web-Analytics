@@ -33,13 +33,21 @@ namespace OWA\Module\Base\Controller;
 
 class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
 
-    /** See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer. */
+    /**
+     * See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer.
+     *
+     * @return string[]
+     */
     public static function serverRoles() {
 
         return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE );
     }
 
-    /** See \OWA\Core\Controller\Cli::usage(). */
+    /**
+     * See \OWA\Core\Controller\Cli::usage().
+     *
+     * @return array{description: string, arguments: array<string,string>}
+     */
     public static function usage() {
 
         return array(
@@ -56,7 +64,7 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
         );
     }
     
-    function errorAction() {
+    public function errorAction() {
 
         \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
     }
@@ -67,7 +75,7 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
      *
      * @return mixed
      */
-    function doAction() {
+    public function doAction() {
 
         $data = parent::doAction();
         $view = is_array( $data ) && isset( $data['view'] ) ? $data['view'] : null;
@@ -90,7 +98,7 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
         return $data;
     }
     
-    function success() {
+    public function success() {
 
         $site = (array) ( $this->data['site'] ?? array() );
 

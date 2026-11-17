@@ -17,7 +17,7 @@ class PropertyAccessUpdate extends \OWA\Core\AdminController {
     // edit_sites on the Property acted on, not on the request's siteId.
     use \OWA\Core\PropertyScopedAccess;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         parent::__construct( $params );
 
@@ -36,7 +36,7 @@ class PropertyAccessUpdate extends \OWA\Core\AdminController {
         ) );
     }
 
-    function action() {
+    public function action() {
 
         $rendered = $this->getParam( 'rendered_users' );
         $checked  = $this->getParam( 'allowed_users' );
@@ -51,7 +51,7 @@ class PropertyAccessUpdate extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.propertyAccess' );
     }
 
-    function errorAction() {
+    public function errorAction() {
 
         $this->setRedirectAction( 'base.propertyAccess' );
         $this->set( 'error_code', 3218 );

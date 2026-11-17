@@ -34,12 +34,12 @@ namespace OWA\Module\Base\Controller;
 
 class ProcessRequest extends \OWA\Module\Base\Controller\ProcessEvent {
 
-    function action() {
+    public function action() {
 
         // Control logic
     }
 
-    function post() {
+    public function post() {
 
         \OWA\Core\CoreAPI::debug('Logging '.$this->event->getEventType().' to event queue...');
 

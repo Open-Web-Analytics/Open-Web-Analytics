@@ -43,7 +43,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      */
     const HEATMAP_DIMENSIONS = 'elementAnchor,anchorX,anchorY,clickX,clickY,viewportWidth';
 
-    function action() {
+    public function action() {
 
         $url = '';
 
@@ -106,6 +106,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      *
      * @param string $value  pagePathPlusQuery, or pagePath when $byPath
      * @param bool   $byPath every query string of the path
+     * @return void
      */
     private function openPage( $value, $byPath = false ) {
 
@@ -163,7 +164,11 @@ class OverlayLauncher extends \OWA\Core\Controller {
         $this->set( 'url', $url );
     }
 
-    /** The report's period as the request carries it: a named period or a range. */
+    /**
+     * The report's period as the request carries it: a named period or a range.
+     *
+     * @return array<string, string> period, or startDate and endDate
+     */
     private function periodParams() {
 
         if ( $this->get('startDate') && $this->get('endDate') ) {
@@ -187,7 +192,10 @@ class OverlayLauncher extends \OWA\Core\Controller {
      * and the page may be served on a subdomain of it. With no such click,
      * the domain itself, over https.
      *
+     * @param string      $propertyId
+     * @param string      $path
      * @param string|null $query null for every query string of the path
+     * @param array<string, string> $period periodParams()'s
      * @return string '' when no Profile has a domain
      */
     private function baseUrlFor( $propertyId, $path, $query, array $period ) {

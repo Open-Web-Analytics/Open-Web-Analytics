@@ -37,17 +37,17 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
     /** The schema at which the migration is complete. */
     const MIGRATED_SCHEMA = 62;
 
-    /** The table prefix v1 is read under; a test names a fixture's. */
+    /** @var string|null The table prefix v1 is read under; a test names a fixture's. */
     public $prefix = null;
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         $this->setRequiredCapability( 'edit_modules' );
 
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $schema = (int) \OWA\Core\CoreAPI::getSetting( 'base', 'schema_version' );
 
@@ -110,7 +110,7 @@ class V1DropCli extends \OWA\Core\Controller\Cli {
         $this->write( sprintf( 'Dropped %d v1 table%s.', count( $tables ), \OWA\Core\Lib::plural( count( $tables ), '', 's' ) ) );
     }
 
-    /** @return array v1 table => rows the migration read from it, over every site */
+    /** @return array<string, int> v1 table => rows the migration read from it, over every site */
     private function rowsReadBySource() {
 
         $progress = \OWA\Core\CoreAPI::entityFactory( 'base.migration_progress' );

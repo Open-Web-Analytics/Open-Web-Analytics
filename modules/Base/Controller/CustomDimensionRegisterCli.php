@@ -64,7 +64,7 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
         );
     }
 
-    function action() {
+    public function action() {
 
         $property_id = $this->property();
 
@@ -164,7 +164,7 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
      * What it would do, without the rebuild.
      *
      * @param string $property_id
-     * @param array  $requests
+     * @param list<array<string, mixed>> $requests
      * @return void
      */
     protected function reportPlan( $property_id, array $requests ) {

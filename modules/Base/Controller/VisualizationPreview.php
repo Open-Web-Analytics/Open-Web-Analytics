@@ -17,6 +17,9 @@ namespace OWA\Module\Base\Controller;
  */
 class VisualizationPreview extends VisualizationFunnel {
 
+    /**
+     * @return array{name: string, definition: array{steps: list<array<string, mixed>>, constraints: string}}
+     */
     protected function visualization() {
 
         $posted = json_decode( (string) $this->getParam( 'steps' ), true );
@@ -31,7 +34,7 @@ class VisualizationPreview extends VisualizationFunnel {
         );
     }
 
-    function action() {
+    public function action() {
 
         $problem = \OWA\Module\Base\Classes\CustomReports::constraintsProblem(
             (string) $this->getParam( 'funnelFilter' ), \OWA\Core\CoreAPI::t( 'The funnel' ),
@@ -62,7 +65,7 @@ class VisualizationPreview extends VisualizationFunnel {
         ) );
     }
 
-    function post() {
+    public function post() {
 
         parent::post();
 

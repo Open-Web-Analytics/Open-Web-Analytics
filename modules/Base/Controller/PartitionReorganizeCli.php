@@ -58,7 +58,7 @@ class PartitionReorganizeCli extends PartitionsCli {
             && checkdate( (int) substr( $value, 4, 2 ), (int) substr( $value, 6, 2 ), (int) substr( $value, 0, 4 ) );
     }
 
-    function action() {
+    public function action() {
 
         if ( ! $this->assertPartitioningSupported() ) {
 

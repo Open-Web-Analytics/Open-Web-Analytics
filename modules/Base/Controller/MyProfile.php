@@ -30,7 +30,7 @@ namespace OWA\Module\Base\Controller;
  */
 class MyProfile extends \OWA\Core\AdminController {
 
-    function __construct( $params ) {
+    public function __construct( $params ) {
 
         /*
          * view_site_list is what every signed-in role carries -- admin,
@@ -44,7 +44,7 @@ class MyProfile extends \OWA\Core\AdminController {
         parent::__construct( $params );
     }
 
-    function action() {
+    public function action() {
 
         $user = \OWA\Core\CoreAPI::getCurrentUser();
 
