@@ -41,6 +41,7 @@ class CubeStatus extends \OWA\Core\AdminController {
      * The settings chrome both cube screens sit in, at tier 0: install-wide.
      *
      * @param \OWA\Core\AdminController $controller
+     * @return void
      */
     public static function hierarchy( $controller ) {
 

@@ -352,7 +352,7 @@ class PartitionRotateCli extends PartitionsCli {
      * are accepted only with --dry-run.
      *
      * @param bool $dry_run
-     * @return array|false raw => months, cube => months, property => id
+     * @return array<string, int|string>|false raw => months, cube => months, property => id
      */
     protected function whatIf( $dry_run ) {
 
@@ -425,7 +425,7 @@ class PartitionRotateCli extends PartitionsCli {
      * what-if's.
      *
      * @param string $table
-     * @param array  $whatif from whatIf()
+     * @param array<string, int|string> $whatif from whatIf()
      * @param int    $raw_months the raw window in force for this run
      * @return int|null yyyymmdd
      */
@@ -449,7 +449,7 @@ class PartitionRotateCli extends PartitionsCli {
     /**
      * Queue the rebuild each cube is owed by a window longer than it holds.
      *
-     * @param array $whatif
+     * @param array<string, int|string> $whatif
      * @param bool  $dry_run
      * @return void
      */

@@ -12,6 +12,10 @@ namespace OWA\Module\Base\Controller;
  * OWA_SCHEDULED_JOBS, and the state rows come from owa_scheduled_job. Both
  * commands need to resolve the same jobs the same way, so that lives here
  * rather than being written twice and drifting.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type JobRegistration from \OWA\Core\Module
+ * @phpstan-import-type CronFields from \OWA\Core\Cron
  */
 abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
 
@@ -25,7 +29,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
     /**
      * Every registered job, keyed by name.
      *
-     * @return array
+     * @return array<string, JobRegistration>
      */
     protected function jobs() {
 
@@ -48,8 +52,8 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
     /**
      * A job's parsed schedule, or null when it is off or unreadable.
      *
-     * @param array $job
-     * @return array|null
+     * @param JobRegistration $job
+     * @return CronFields|null
      */
     protected function parsedSchedule( $job ) {
 
@@ -59,7 +63,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
     /**
      * Is this job switched off rather than merely unreadable?
      *
-     * @param array $job
+     * @param JobRegistration|null $job
      * @return bool
      */
     protected function isDisabled( $job ) {
@@ -91,7 +95,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
     /**
      * Every state row, keyed by job name.
      *
-     * @return array
+     * @return array<int|string, Row>
      */
     protected function allState() {
 
@@ -116,7 +120,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
      * '-' rather than '' when there are none, because Entity::set() drops falsy
      * values and an empty string would silently fail to write.
      *
-     * @param array $params
+     * @param array<mixed> $params
      * @return string
      */
     protected function encodeParams( $params ) {

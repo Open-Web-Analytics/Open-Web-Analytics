@@ -31,6 +31,9 @@ namespace OWA\Module\Base\Controller;
  * It exits 0 whether or not it finds problems, because it is an INFO command
  * and its name says so. Pass `strict=1` to exit non-zero when anything is in a
  * FAIL state, which is what makes it usable from monitoring.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type JobRegistration from \OWA\Core\Module
  */
 class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
@@ -124,6 +127,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * Who this instance is. No status marks: these are facts, not judgements.
+     *
+     * @return list<string> report lines
      */
     private function heading() {
 
@@ -148,6 +153,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * The same questions the installer asks, from the same definition.
+     *
+     * @return list<string> report lines
      */
     private function environment() {
 
@@ -189,6 +196,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      * often than any setting is: it is on disk, it looks installed, and it is
      * simply switched off. Being active is not a pass or a fail, so these carry
      * no status mark -- they are inventory.
+     *
+     * @return list<string> report lines
      */
     private function modules() {
 
@@ -234,6 +243,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      * different answer type: which modules exist is inventory, whether their
      * tables match the code is a health check that stops the scheduler dead
      * when it fails.
+     *
+     * @return list<string> report lines
      */
     private function schema() {
 
@@ -312,6 +323,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * Nothing periodic happens without the cron entry, and nothing says so.
+     *
+     * @return list<string> report lines
      */
     private function scheduler() {
 
@@ -367,6 +380,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * Partitioning, and whether anything ever deletes.
+     *
+     * @return list<string> report lines
      */
     private function factTables() {
 
@@ -414,6 +429,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * The two datasets that rot without erroring.
+     *
+     * @return list<string> report lines
      */
     private function freshness() {
 
@@ -455,6 +472,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      * The tracker-ingest intake (PLAN 2.30.3): a queue that stops draining
      * accumulates in silence, and a dead letter is a beacon not yet in a
      * report.
+     *
+     * @return list<string> report lines
      */
     private function queue() {
 
@@ -521,6 +540,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      * The counts above them are the other half: what boot costs. Eager keys are
      * the ones fetched on every request, and a module that has not declared has
      * ALL of its rows fetched, because nothing says which ones it needs.
+     *
+     * @return list<string> report lines
      */
     private function settings() {
 
@@ -588,6 +609,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * What the instance actually holds.
+     *
+     * @return list<string> report lines
      */
     private function contents() {
 
@@ -666,6 +689,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * The GeoIP database, when the module that uses it is active.
+     *
+     * @return string|null a report line; null when the module is not active
      */
     private function geoipStatus() {
 
@@ -699,7 +724,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      * by a module as well as declared in owa-config.php, and reading the setting
      * alone reports zero jobs on an instance that is running several.
      *
-     * @return array<string,array>
+     * @return array<string, JobRegistration>
      */
     private function registeredJobs() {
 
@@ -720,7 +745,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
     /**
      * Scheduler state rows, keyed by job name.
      *
-     * @return array<string,array>
+     * @return array<string, Row> job name => its owa_scheduled_job row
      */
     private function jobState() {
 
@@ -751,6 +776,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      * Db::query() swallows errors and returns falsy, so "0" and "the table is
      * not there" are the same value unless they are told apart here.
      *
+     * @param  string $sql
      * @return int|null
      */
     private function countOf( $sql ) {
@@ -773,6 +799,9 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         return (int) $row['n'];
     }
 
+    /**
+     * @return string
+     */
     private function databaseName() {
 
         $name = \OWA\Core\CoreAPI::getSetting( 'base', 'db_name' );
@@ -781,6 +810,9 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         return $name ? $name . ( $host ? ' @ ' . $host : '' ) : '(not configured)';
     }
 
+    /**
+     * @return string
+     */
     private function timezone() {
 
         return \OWA\Core\CoreAPI::getSetting( 'base', 'timezone' ) ?: date_default_timezone_get();
@@ -790,6 +822,12 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * A row with a status mark, counted towards the summary.
+     *
+     * @param  string $status OK, WARN or FAIL
+     * @param  string $label
+     * @param  string $value
+     * @param  string $remedy
+     * @return string
      */
     private function row( $status, $label, $value, $remedy = '' ) {
 
@@ -811,12 +849,21 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * A row with no judgement attached -- a number or a name.
+     *
+     * @param  string     $label
+     * @param  string|int $value
+     * @return string
      */
     private function fact( $label, $value ) {
 
         return sprintf( '     %s%s', $this->pad( $label ), $value );
     }
 
+    /**
+     * @param  string       $title
+     * @param  list<string> $rows
+     * @return list<string> nothing for a section with no rows
+     */
     private function section( $title, $rows ) {
 
         if ( ! $rows ) {
@@ -827,6 +874,9 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         return array_merge( array( '', $this->bold( strtoupper( $title ) ) ), $rows );
     }
 
+    /**
+     * @return list<string> report lines
+     */
     private function summary() {
 
         $bad  = $this->tally[ self::FAIL ];
@@ -854,6 +904,10 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         );
     }
 
+    /**
+     * @param  string $label
+     * @return string
+     */
     private function pad( $label ) {
 
         $width = self::LABEL_WIDTH;
@@ -863,6 +917,10 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
     /**
      * Wrap a remedy so a long one does not run off the terminal.
+     *
+     * @param  string $text
+     * @param  int    $indent
+     * @return string
      */
     private function wrap( $text, $indent ) {
 
@@ -870,6 +928,10 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             wordwrap( $text, 72 - $indent, "\n", false ) );
     }
 
+    /**
+     * @param  string $status OK, WARN or FAIL
+     * @return string
+     */
     private function mark( $status ) {
 
         $glyphs = array( self::OK => '+', self::WARN => '!', self::FAIL => 'x' );
@@ -882,6 +944,8 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      *
      * Piped or redirected output gets none: escape codes in a log file or a
      * monitoring check are noise that the reader cannot turn off.
+     *
+     * @return bool
      */
     private function useColour() {
 
@@ -898,6 +962,11 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         return function_exists( 'stream_isatty' ) ? @stream_isatty( STDOUT ) : false;
     }
 
+    /**
+     * @param  string $text
+     * @param  string $status OK, WARN or FAIL
+     * @return string
+     */
     private function paint( $text, $status ) {
 
         if ( ! $this->colour ) {
@@ -910,11 +979,19 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         return "\033[" . $codes[ $status ] . 'm' . $text . "\033[0m";
     }
 
+    /**
+     * @param  string $text
+     * @return string
+     */
     private function bold( $text ) {
 
         return $this->colour ? "\033[1m" . $text . "\033[0m" : $text;
     }
 
+    /**
+     * @param  string $text
+     * @return string
+     */
     private function dim( $text ) {
 
         return $this->colour ? "\033[2m" . $text . "\033[0m" : $text;

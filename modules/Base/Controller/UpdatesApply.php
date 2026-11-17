@@ -93,6 +93,9 @@ class UpdatesApply extends \OWA\Core\Controller {
         }
     }
 
+    /**
+     * @return void
+     */
     protected function applyUpdates() {
 
         // fetch list of modules that require updates

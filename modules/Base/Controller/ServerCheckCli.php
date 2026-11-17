@@ -132,7 +132,10 @@ class ServerCheckCli extends \OWA\Core\Controller\Cli {
             $status ? 'HTTP ' . (int) $status : 'nothing', $type ? ' (' . $type . ')' : '' ) );
     }
 
-    /** @return array{0: int, 1: string} the status and content type of a GET, 0 and '' when it failed */
+    /**
+     * @param  string $url
+     * @return array{0: int, 1: string} the status and content type of a GET, 0 and '' when it failed
+     */
     private static function fetch( $url ) {
 
         $context = stream_context_create( array( 'http' => array(

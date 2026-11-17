@@ -26,6 +26,9 @@ namespace OWA\Module\Base\Controller;
  *
  * A no-op tick is SILENT -- debug(), never notice(). At a tick a minute, a
  * notice per tick would bury the one that matters within a week.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-import-type JobRegistration from \OWA\Core\Module
  */
 class ScheduleRunCli extends SchedulerCli {
 
@@ -171,7 +174,7 @@ class ScheduleRunCli extends SchedulerCli {
      * Decide whether one job runs, and run it.
      *
      * @param string $name
-     * @param array  $job
+     * @param JobRegistration $job
      * @param bool   $force
      * @param bool   $dry_run
      * @return void
@@ -329,7 +332,7 @@ class ScheduleRunCli extends SchedulerCli {
      * Take the lock, run the command, record what happened.
      *
      * @param string $name
-     * @param array  $job
+     * @param JobRegistration $job
      * @param object $state
      * @param int|null $slot
      * @return void
@@ -449,7 +452,7 @@ class ScheduleRunCli extends SchedulerCli {
      * every job's --dry-run. And not through performAction() either, because the
      * object is needed afterwards to read its outcome.
      *
-     * @param array $job
+     * @param array{command: string, params: array<mixed>} $job a JobRegistration, or a queued job's command and params
      * @return object|null
      */
     protected function makeController( $job ) {
@@ -482,7 +485,7 @@ class ScheduleRunCli extends SchedulerCli {
      *
      * @param object $controller
      * @param mixed  $data
-     * @return array
+     * @return array{outcome: string, message: string}
      */
     protected function readOutcome( $controller, $data ) {
 
@@ -550,7 +553,7 @@ class ScheduleRunCli extends SchedulerCli {
      * consecutive-failures counter to reset.
      *
      * @param object   $state
-     * @param array    $job
+     * @param JobRegistration $job
      * @param string   $outcome
      * @param string   $message
      * @param int      $began
@@ -608,7 +611,7 @@ class ScheduleRunCli extends SchedulerCli {
      * temporary too, and losing last_run_slot makes the job read as never-run
      * when it comes back.
      *
-     * @param array $jobs
+     * @param array<string, JobRegistration> $jobs
      * @return void
      */
     protected function pruneOrphans( $jobs ) {

@@ -78,6 +78,11 @@ namespace OWA\Module\Base\Controller;
  * Keying it on the cube makes it per Property, so two Properties still build at
  * the same time -- and a Property whose cube is locked is skipped rather than
  * failing the run, since the build in progress produces what this one would.
+ *
+ * @phpstan-import-type Span from \OWA\Core\Db
+ * @phpstan-import-type Policy from \OWA\Module\Base\Classes\JobQueue
+ * @phpstan-type DayRange array{from: int, to: int}
+ * @phpstan-type Outcome array<string, int|string>
  */
 class CubeRebuildCli extends \OWA\Core\Controller\Cli {
 
@@ -120,7 +125,11 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
         return self::JOB_LEASE;
     }
 
-    /** See \OWA\Module\Base\Classes\JobQueue::policyFor(). */
+    /**
+     * See \OWA\Module\Base\Classes\JobQueue::policyFor().
+     *
+     * @return array{lease_seconds: int} merged over the default Policy
+     */
     public static function jobQueuePolicy() {
 
         return array( 'lease_seconds' => self::JOB_LEASE );
@@ -253,7 +262,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      * partition keeps rows that raw no longer has. A build is convergent, so a
      * cube with nothing to say costs one empty partition and 235ms.
      *
-     * @param array $range from resolveRange()
+     * @param DayRange $range from resolveRange()
      * @return string[]|null  property ids, or null having already refused
      */
     protected function resolveProperties( array $range ) {
@@ -319,10 +328,11 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
     /**
      * Build one Property's cube over the range.
      *
-     * @param string $property_id
-     * @param array  $range
-     * @param bool   $dry_run
-     * @return array ['built' => int, 'failed' => int]
+     * @param string   $property_id
+     * @param DayRange $range
+     * @param bool     $dry_run
+     * @param bool     $routine  no dates were named: catch up if the cube is behind
+     * @return Outcome built, failed, locked, skipped, stopped
      */
     protected function rebuildProperty( $property_id, array $range, $dry_run, $routine = false ) {
 
@@ -379,11 +389,11 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      *
      * @param string   $property_id
      * @param string   $table
-     * @param array    $range
+     * @param DayRange $range
      * @param bool     $dry_run
      * @param \OWA\Module\Base\Classes\JobLease $lock
      * @param bool     $routine  no dates were named: catch up if the cube is behind
-     * @return array ['built','failed','locked','skipped','stopped']
+     * @return Outcome built, failed, locked, skipped, stopped
      */
     protected function buildUnderLock( $property_id, $table, array $range, $dry_run, $lock, $routine = false ) {
 
@@ -705,7 +715,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      * Whether a cube partition holds any day before $day.
      *
      * @param string $table
-     * @param array  $span
+     * @param Span   $span
      * @param int    $day yyyymmdd
      * @return bool
      */
@@ -726,7 +736,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      *
      * @param string $table
      * @param int    $day yyyymmdd
-     * @return array extendPartitionsBack()'s result: covered, added, ...
+     * @return array{added: list<string>, start: string|null, covered: bool} extendPartitionsBack()'s result
      */
     protected function ensurePartitionsFrom( $table, $day ) {
 
@@ -749,8 +759,8 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      *
      * @param string $table
      * @param int    $earliest yyyymmdd
-     * @param array  $range    ['from','to']
-     * @return array the range to build
+     * @param DayRange $range
+     * @return DayRange the range to build
      */
     protected function reachBackForFirstBuild( $table, $earliest, array $range ) {
 
@@ -840,7 +850,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      * which is the whole point of it: a rebuild re-applies a correction or
      * picks up late arrivals, and both reach forward from a point in the past.
      *
-     * @return array|null ['from','to'] as yyyymmdd
+     * @return DayRange|null from and to as yyyymmdd
      */
     protected function resolveRange() {
 
