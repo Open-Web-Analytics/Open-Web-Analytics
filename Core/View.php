@@ -100,7 +100,7 @@ class View extends \OWA\Core\Base {
     /**
      * Request Params
      *
-     * @var array
+     * @var array<mixed>
      */
     public $params;
 
@@ -120,16 +120,22 @@ class View extends \OWA\Core\Base {
      */
     public $name = '';
 
+    /** @var array<mixed> the controller's data */
     public $data;
 
+    /** @var string|null the <module>.<view> loaded when the controller names no subview */
     public $default_subview;
 
+    /** @var bool|null true for a view CoreAPI::subViewFactory() made */
     public $is_subview;
 
+    /** @var array<string, array<string, mixed>> id => url, path, deps, version, ie_only */
     public $js = array();
 
+    /** @var array<string, array<string, mixed>> path => url, path, deps, version, ie_only */
     public $css = array();
 
+    /** @var bool assembleView() answers postProcess() rather than the page */
     public $postProcessView = false;
 
     /**
@@ -291,6 +297,7 @@ class View extends \OWA\Core\Base {
 	/**
      * Abstract pre render hook
      *
+     * @return mixed not read
      */
 	public function pre() {
 		
@@ -300,6 +307,7 @@ class View extends \OWA\Core\Base {
     /**
      * Abstract Alternative rendering method reuires the setting of $this->postProcessView to fire
      *
+     * @return mixed what assembleView() answers
      */
     public function postProcess() {
 
@@ -309,6 +317,8 @@ class View extends \OWA\Core\Base {
     /**
      * Post method fired right before view is rendered and returned
      * as output
+     *
+     * @return mixed not read
      */
     public function post() {
 
@@ -319,6 +329,7 @@ class View extends \OWA\Core\Base {
     /**
      * Sets the theme to be used by a view
      *
+     * @return void
      */
     public function setTheme() {
 
@@ -339,7 +350,8 @@ class View extends \OWA\Core\Base {
     /**
      * Abstract method for assembling a view
      * @depricated
-     * @param array $data
+     * @param array<mixed> $data
+     * @return void
      */
     public function construct($data) {
 
@@ -350,7 +362,8 @@ class View extends \OWA\Core\Base {
     /**
      * Assembles subview
      *
-     * @param string $subview
+     * @param string|null $subview <module>.<view>; default_subview when empty
+     * @return true|null|void Error::debug()'s answer when there is no subview to load
      */
     public function loadSubView($subview) {
 
@@ -370,7 +383,8 @@ class View extends \OWA\Core\Base {
     /**
      * Assembles subview
      *
-     * @param array $data
+     * @param array<mixed> $data
+     * @return void
      */
     public function renderSubView($data) {
 
@@ -397,6 +411,8 @@ class View extends \OWA\Core\Base {
      *
      * Empty for anything that is not a registered settings page -- reports, the
      * install wizard -- whose templates do not read it.
+     *
+     * @return void
      */
     protected function setSettingsPageTitle() {
 
@@ -421,6 +437,8 @@ class View extends \OWA\Core\Base {
      *
      * Before render(), so a View class of the module's own still has the last
      * word. Called from both assembly paths.
+     *
+     * @return void
      */
     protected function renderDeclaredTemplate() {
 
@@ -461,6 +479,10 @@ class View extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  array<mixed> $data the controller's data
+     * @return string
+     */
     public function assembleSubView($data) {
 
         // Before render(), so a subview that wants to override its own title
@@ -494,6 +516,9 @@ class View extends \OWA\Core\Base {
      * Env::VERSION is 'master' in a source checkout, the same string for every
      * build, so a browser kept the stylesheet and scripts it already had across
      * a deploy. The built file's modification time changes with each build.
+     *
+     * @param  string $path under the public asset tree
+     * @return string
      */
     public static function assetVersion( $path ) {
 
@@ -503,6 +528,13 @@ class View extends \OWA\Core\Base {
         return $mtime ? \OWA\Core\Env::version() . '.' . $mtime : \OWA\Core\Env::version();
     }
 
+    /**
+     * @param  string       $path    under the public asset tree
+     * @param  string|null  $version assetVersion()'s when empty
+     * @param  array<mixed> $deps
+     * @param  bool         $ie_only
+     * @return void
+     */
     public function setCss($path, $version = null, $deps = array(), $ie_only = false) {
 
         if ( ! $version ) {
@@ -523,6 +555,14 @@ class View extends \OWA\Core\Base {
         $this->css[$uid]['ie_only'] = $ie_only;
     }
 
+    /**
+     * @param  string       $name
+     * @param  string       $path    under the public asset tree
+     * @param  string       $version assetVersion()'s when empty
+     * @param  array<mixed> $deps
+     * @param  bool         $ie_only
+     * @return void
+     */
     public function setJs($name, $path, $version ='', $deps = array(), $ie_only = false) {
 
         if (empty($version)) {
@@ -549,6 +589,7 @@ class View extends \OWA\Core\Base {
      * Sets the Priviledge Level required to access this view
      *
      * @param string $level
+     * @return void
      */
     public function _setPriviledgeLevel( $level ) {
 
@@ -561,6 +602,7 @@ class View extends \OWA\Core\Base {
      * Sets the page type of this view. Used for tracking.
      *
      * @param string $page_type
+     * @return void
      */
     public function _setPageType( $page_type ) {
 
@@ -574,6 +616,8 @@ class View extends \OWA\Core\Base {
      * Sets properties that are needed to maintain state in links to
      * reports. This is used by many template functions.
      *
+     * @param array<mixed> $p the request's params; the view's params when empty
+     * @return void
      */
     public function _setLinkState( $p = array() ) {
 
@@ -620,6 +664,7 @@ class View extends \OWA\Core\Base {
      * links, its tabs and its forms' actions alike.
      *
      * @param string[] $keys
+     * @return void
      */
     public function keepStateInLinks( $keys ) {
 
@@ -631,6 +676,10 @@ class View extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  string $name
+     * @return mixed false when the controller set no such value
+     */
     public function get( $name ) {
 
         if ( array_key_exists( $name, $this->data ) ) {
@@ -643,21 +692,39 @@ class View extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $value
+     * @return void
+     */
     public function set($name, $value) {
 
         $this->data[$name] = $value;
     }
 
+    /**
+     * @param  array<mixed> $data the controller's data
+     * @return void
+     */
     public function setData($data) {
         $this->data = $data;
     }
 
+    /**
+     * @param  string $title
+     * @param  string $suffix
+     * @return void
+     */
     public function setTitle($title, $suffix = '') {
 
         $this->t->set('page_title', $title);
         $this->t->set('titleSuffix', $suffix);
     }
 
+    /**
+     * @param  string $type
+     * @return void
+     */
     public function setContentTypeHeader($type = 'html') {
 
         \OWA\Core\Lib::setContentTypeHeader($type);

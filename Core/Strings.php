@@ -39,6 +39,10 @@ namespace OWA\Core;
  *
  * No dependencies: settings.php and conf/messages.php call t() while OWA is
  * still booting.
+ *
+ * @phpstan-type Catalogue array<string, mixed>
+ * @phpstan-type Token array{0: string, 1: string, 2: int|null}
+ * @phpstan-type Call array{line: int|null, function: string, text: string|null, plural: string|null, context: string|null}
  */
 class Strings {
 
@@ -119,7 +123,7 @@ class Strings {
     /** The rule of a locale PLURAL_RULES does not name: one, and everything else. */
     const DEFAULT_PLURAL_RULE = 'english';
 
-    /** @var array|null English (or context + English) => translation, for the locale in use */
+    /** @var Catalogue|null English (or context + English) => translation, for the locale in use */
     private static $translations = null;
 
     /** @var string|null the locale $translations were loaded for; null when useTranslations() set them */
@@ -146,6 +150,10 @@ class Strings {
     /**
      * t() under a name the extractor does not read, for code that forwards a
      * string it was given (CoreAPI::t()) rather than writing one.
+     *
+     * @param  string $text
+     * @param  string $context
+     * @return string
      */
     public static function translate( $text, $context = '' ) {
 
@@ -171,7 +179,15 @@ class Strings {
         return self::translatePlural( $singular, $plural, $n, $context );
     }
 
-    /** tn() under a name the extractor does not read; see translate(). */
+    /**
+     * tn() under a name the extractor does not read; see translate().
+     *
+     * @param  string    $singular
+     * @param  string    $plural
+     * @param  int|float $n
+     * @param  string    $context
+     * @return string
+     */
     public static function translatePlural( $singular, $plural, $n, $context = '' ) {
 
         $forms = self::translations()[ self::key( $singular, $context ) ] ?? null;
@@ -258,7 +274,7 @@ class Strings {
      * is translated: OWA.l() then answers the English.
      *
      * @param  string[]|null $keys  the keys the JavaScript uses; null reads conf/strings/script-keys.php
-     * @return array|null    { strings: key => translation, plural: rule }
+     * @return array{strings: Catalogue, plural: string}|null
      */
     public static function forScript( $keys = null ) {
 
@@ -286,6 +302,8 @@ class Strings {
      * A t() call made before the config file defines OWA_LOCALE answers the
      * English, and the next one after it loads the locale's catalogue: Base's
      * settings declaration is read before the config file runs.
+     *
+     * @return Catalogue
      */
     private static function translations() {
 
@@ -299,7 +317,13 @@ class Strings {
         return self::$translations;
     }
 
-    /** The catalogue key for a string and its context. */
+    /**
+     * The catalogue key for a string and its context.
+     *
+     * @param  string      $text
+     * @param  string|null $context
+     * @return string
+     */
     public static function key( $text, $context = '' ) {
 
         return $context === '' || $context === null
@@ -341,6 +365,10 @@ class Strings {
     /**
      * Use these translations, and optionally this plural rule, instead of the
      * locale's (tests). Null reloads both.
+     *
+     * @param  Catalogue|null $translations
+     * @param  string|null    $plural_rule
+     * @return void
      */
     public static function useTranslations( $translations, $plural_rule = null ) {
 
@@ -352,6 +380,9 @@ class Strings {
     /**
      * Use this locale instead of OWA_LOCALE (tests). Null goes back to it.
      * Translations set by useTranslations() stay; otherwise the locale's load.
+     *
+     * @param  string|null $locale
+     * @return void
      */
     public static function useLocale( $locale ) {
 
@@ -455,19 +486,33 @@ class Strings {
         return is_string( $out ) ? $out : number_format( (float) $fraction * 100, (int) $decimals ) . '%';
     }
 
-    /** Whether a locale is the source's own: English as the code writes it. */
+    /**
+     * Whether a locale is the source's own: English as the code writes it.
+     *
+     * @param  string $locale
+     * @return bool
+     */
     private static function isSourceLocale( $locale ) {
 
         return $locale === self::SOURCE_LOCALE || ! preg_match( '/^[A-Za-z]{2,3}([_-][A-Za-z0-9]{2,8})*$/', (string) $locale );
     }
 
-    /** Where a locale's catalogue lives. */
+    /**
+     * Where a locale's catalogue lives.
+     *
+     * @param  string $locale
+     * @return string
+     */
     public static function path( $locale ) {
 
         return \OWA\Core\Env::confDir() . 'strings/' . $locale . '.php';
     }
 
-    /** Where the list of keys the reporting JavaScript uses lives. Not a locale's name. */
+    /**
+     * Where the list of keys the reporting JavaScript uses lives. Not a locale's name.
+     *
+     * @return string
+     */
     public static function scriptKeysPath() {
 
         return \OWA\Core\Env::confDir() . 'strings/script-keys.php';
@@ -478,7 +523,7 @@ class Strings {
      * its catalogue lists the strings and maps each to itself.
      *
      * @param  string $locale
-     * @return array
+     * @return Catalogue
      */
     private static function load( $locale ) {
 
@@ -520,10 +565,10 @@ class Strings {
      * the REPORT_KEYS of the report definitions, which the server translates.
      *
      * @param  string[] $roots       directories or files
-     * @param  array    $problems    file:line => why, filled in
-     * @param  array    $script_keys the keys the JavaScript uses, sorted, filled in
+     * @param  array<string, string> $problems    file:line => why, filled in
+     * @param  list<string>          $script_keys the keys the JavaScript uses, sorted, filled in
      * @param-out list<string> $script_keys
-     * @return array    key => English, sorted
+     * @return array<string, string|array{string, string}> key => English, sorted
      */
     public static function extract( array $roots, &$problems = array(), &$script_keys = array() ) {
 
@@ -596,7 +641,8 @@ class Strings {
     /**
      * The t() and tn() calls in one PHP file's source.
      *
-     * @return array list of { line, function, text|null, plural|null, context|null }
+     * @param  string $source
+     * @return list<Call>
      */
     public static function callsIn( $source ) {
 
@@ -618,7 +664,7 @@ class Strings {
      *
      * @param  string        $source
      * @param  string[]|null $tables  LABEL_TABLES when null
-     * @return array list of { line, function: 'label table', text, plural: null, context: '' }
+     * @return list<Call> each function 'label table', plural null, context ''
      */
     public static function tableLabelsIn( $source, $tables = null ) {
 
@@ -675,7 +721,7 @@ class Strings {
      *
      * @param  string        $source
      * @param  string[]|null $tables  LABEL_TABLES when null
-     * @return array as tableLabelsIn()'s
+     * @return list<Call> as tableLabelsIn()'s
      */
     public static function scriptTableLabelsIn( $source, $tables = null ) {
 
@@ -737,7 +783,7 @@ class Strings {
      *
      * @param  string        $source
      * @param  string[]|null $tables  VALUE_TABLES when null
-     * @return array list of { line, function: 'value table', text, plural: null, context: '' }
+     * @return list<Call> each function 'value table', plural null, context ''
      */
     public static function valueTablesIn( $source, $tables = null ) {
 
@@ -791,7 +837,12 @@ class Strings {
         return $out;
     }
 
-    /** A table's label as a call, for extract(). */
+    /**
+     * A table's label as a call, for extract().
+     *
+     * @param  Token $token
+     * @return Call
+     */
     private static function tableLabel( array $token ) {
 
         return array( 'line' => $token[2], 'function' => 'label table', 'text' => $token[1], 'plural' => null, 'context' => '' );
@@ -805,7 +856,8 @@ class Strings {
      * translated: the value of each VOCABULARY_KEYS key that is a string
      * literal, or literals joined with `.`. A value that is not is reported.
      *
-     * @return array list of { line, function: 'vocabulary', text|null, plural: null, context: '' }
+     * @param  string $source
+     * @return list<Call> each function 'vocabulary <key>', plural null, context ''
      */
     public static function vocabularyLabelsIn( $source ) {
 
@@ -838,7 +890,8 @@ class Strings {
      * REPORT_KEYS of the report and REPORT_WIDGET_KEYS of each widget. A
      * definition that is not JSON gives none.
      *
-     * @return array list of { line, function: 'report definition', text, plural: null, context: '' }
+     * @param  string $source
+     * @return list<Call> each function 'report definition', plural null, context ''
      */
     public static function reportLabelsIn( $source ) {
 
@@ -886,7 +939,13 @@ class Strings {
         return $out;
     }
 
-    /** The index of the bracket that closes the one at $open; the last token when none does. */
+    /**
+     * The index of the bracket that closes the one at $open; the last token when none does.
+     *
+     * @param  list<Token> $tokens
+     * @param  int         $open
+     * @return int
+     */
     private static function closing( array $tokens, $open ) {
 
         $depth = 0;
@@ -916,7 +975,8 @@ class Strings {
      * A PHP source as tokens for calls(): [ 's', value, line ] for a string
      * literal, [ 'x', text, line ] for anything else; no whitespace or comments.
      *
-     * @return array
+     * @param  string $source
+     * @return list<Token>
      */
     private static function phpTokens( $source ) {
 
@@ -952,7 +1012,8 @@ class Strings {
     /**
      * The OWA.l() and OWA.ln() calls in one JavaScript file's source.
      *
-     * @return array as callsIn()'s
+     * @param  string $source
+     * @return list<Call> as callsIn()'s
      */
     public static function scriptCallsIn( $source ) {
 
@@ -977,10 +1038,12 @@ class Strings {
      * The calls of $single( and $counted( in a token list, each token
      * [ 's' (a string literal, its value) | 'x' (anything else, its text), text, line ].
      *
-     * @param  array    $tokens
+     * @param  list<Token> $tokens
      * @param  string   $join     the operator that joins two literals
-     * @param  callable $isCallee ( tokens, i ): is the name at i one of ours, by what precedes it?
-     * @return array    list of { line, function, text|null, plural|null, context|null }
+     * @param  callable(list<Token>, int): bool $isCallee ( tokens, i ): is the name at i one of ours, by what precedes it?
+     * @param  string   $single   the function that takes one string
+     * @param  string   $counted  the function that takes a singular and a plural
+     * @return list<Call>
      */
     private static function calls( array $tokens, $join, callable $isCallee, $single, $counted ) {
 
@@ -1047,7 +1110,10 @@ class Strings {
     /**
      * A string literal, or literals joined with $join, starting at token $j.
      *
-     * @return array [ string|null, index after it ]
+     * @param  list<Token> $tokens
+     * @param  int         $j
+     * @param  string      $join
+     * @return array{string|null, int} the literal, and the index after it
      */
     private static function literal( array $tokens, $j, $join ) {
 
@@ -1072,6 +1138,10 @@ class Strings {
     /**
      * The index of the , or ) that ends an argument starting at $j; null for
      * an empty argument or none.
+     *
+     * @param  list<Token> $tokens
+     * @param  int         $j
+     * @return int|null
      */
     private static function argumentEnd( array $tokens, $j ) {
 
@@ -1105,7 +1175,12 @@ class Strings {
         return null;
     }
 
-    /** A PHP string literal's value. */
+    /**
+     * A PHP string literal's value.
+     *
+     * @param  string $literal
+     * @return string
+     */
     private static function unquote( $literal ) {
 
         $body = substr( $literal, 1, -1 );
@@ -1129,7 +1204,8 @@ class Strings {
      * no substitution is a string literal; one with a substitution is not,
      * and the code in its substitutions is read like any other.
      *
-     * @return array
+     * @param  string $source
+     * @return list<Token>
      */
     public static function scriptTokens( $source ) {
 
@@ -1310,7 +1386,12 @@ class Strings {
         return $tokens;
     }
 
-    /** Does a / after this token start a regular expression? */
+    /**
+     * Does a / after this token start a regular expression?
+     *
+     * @param  Token|null $previous
+     * @return bool
+     */
     private static function scriptRegexMayStart( $previous ) {
 
         if ( $previous === null ) {
@@ -1331,7 +1412,12 @@ class Strings {
         return true;
     }
 
-    /** A JavaScript string literal's body, unescaped. */
+    /**
+     * A JavaScript string literal's body, unescaped.
+     *
+     * @param  string $body
+     * @return string|null
+     */
     private static function scriptUnquote( $body ) {
 
         return preg_replace_callback( '/\\\\(u\{[0-9A-Fa-f]+\}|u[0-9A-Fa-f]{4}|x[0-9A-Fa-f]{2}|\r\n|[\s\S])/', function ( $m ) {
@@ -1350,7 +1436,10 @@ class Strings {
         }, $body );
     }
 
-    /** @return string[] the .php files under $roots, the .js files under a module's src/ and its report definitions */
+    /**
+     * @param  string[] $roots directories or files
+     * @return string[] the .php files under $roots, the .js files under a module's src/ and its report definitions
+     */
     private static function sourceFiles( array $roots ) {
 
         $files = array();
@@ -1392,7 +1481,11 @@ class Strings {
         return $files;
     }
 
-    /** Where the code that calls t() and OWA.l() lives. */
+    /**
+     * Where the code that calls t() and OWA.l() lives.
+     *
+     * @return list<string>
+     */
     public static function sourceRoots() {
 
         return array( \OWA\Core\Env::root() . '/Core', \OWA\Core\Env::root() . '/modules', \OWA\Core\Env::confDir() . 'messages.php' );
@@ -1401,7 +1494,7 @@ class Strings {
     /**
      * The English catalogue's file contents, for a map from extract().
      *
-     * @param  array $map  key => English, or key => [ singular, plural ]
+     * @param  array<string, string|array<string>> $map  key => English, or key => [ singular, plural ]
      * @return string
      */
     public static function catalogueSource( array $map ) {
@@ -1464,7 +1557,12 @@ class Strings {
         return implode( "\n", $lines ) . "\n";
     }
 
-    /** A string as a PHP expression; a context key as 'context' . "\x04" . 'text'. */
+    /**
+     * A string as a PHP expression; a context key as 'context' . "\x04" . 'text'.
+     *
+     * @param  string $value
+     * @return string
+     */
     private static function export( $value ) {
 
         $at = strpos( $value, self::CONTEXT_SEPARATOR );

@@ -39,25 +39,30 @@ class Caller extends \OWA\Core\Base {
     /**
      * Request Params from get or post
      *
-     * @var array
+     * @var array<mixed>
      */
     public $params;
-        
+
+    /** @var float */
     public $start_time;
-    
+
+    /** @var float|null set as the caller is destroyed */
     public $end_time;
-    
+
+    /** @var mixed nothing sets it */
     public $update_required;
-    
+
+    /** @var \OWA\Module\Base\Classes\Service */
     public $service;
-    
+
+    /** @var string|null */
     public $site_id;
             
     /**
      * Constructor
      *
-     * @param array $config
-     * @return \OWA\Core\Caller
+     * @param array<mixed>|null $config module => overrides, or base's overrides alone
+     * @return void
      */
     public function __construct( $config = [] ) {
       
@@ -155,7 +160,7 @@ class Caller extends \OWA\Core\Base {
      * The request type a caller names in its configuration (request_type, at
      * the top or under 'base'); one that names none keeps the current one.
      *
-     * @param array|null $config
+     * @param array<mixed>|null $config
      * @return string
      */
     private static function requestTypeFrom( $config ) {
@@ -168,6 +173,10 @@ class Caller extends \OWA\Core\Base {
 
     /**
      * Handles OWA internal page/action requests
+     *
+     * @param  array<mixed>|null $caller_params
+     * @param  string            $action
+     * @return mixed
      */
     public function handleRequest($caller_params = null, $action = '') {
         
@@ -177,12 +186,17 @@ class Caller extends \OWA\Core\Base {
     
     /**
      * Handles OWA REST requests
+     *
+     * @return mixed
      */
     public function handleRestRequest() {
         
         return \OWA\Core\CoreAPI::handleRestRequest();
     }
     
+    /**
+     * @return void
+     */
     public function __destruct() {
         
         $this->end_time = microtime(true);
@@ -191,22 +205,42 @@ class Caller extends \OWA\Core\Base {
         \OWA\Core\CoreAPI::debug("Goodbye from OWA");
     }
         
+    /**
+     * @param  string $module
+     * @param  string $name
+     * @param  mixed  $value
+     * @return void
+     */
     public function setSetting($module, $name, $value) {
         
-        return \OWA\Core\CoreAPI::setSetting($module, $name, $value);
+        \OWA\Core\CoreAPI::setSetting($module, $name, $value);
     }
     
+    /**
+     * @param  string $module
+     * @param  string $name
+     * @return mixed
+     */
     public function getSetting($module, $name) {
         
         return \OWA\Core\CoreAPI::getSetting($module, $name);
     }
         
+    /**
+     * @param  string $role
+     * @param  string $login_name not read
+     * @return void
+     */
     public function setCurrentUser($role, $login_name = '') {
         $cu = \OWA\Core\CoreAPI::getCurrentUser();
         $cu->setRole($role);
         $cu->setAuthStatus(true);
     }
     
+    /**
+     * @param  string $type
+     * @return \OWA\Module\Base\Classes\Event
+     */
     public function makeEvent($type = '') {
     
         $event = new \OWA\Module\Base\Classes\Event();
@@ -218,16 +252,26 @@ class Caller extends \OWA\Core\Base {
         return $event;
     }
     
+    /**
+     * @param  string $site_id
+     * @return void
+     */
     public function setSiteId($site_id) {
         
         $this->site_id = $site_id;
     }
     
+    /**
+     * @return string|null
+     */
     public function getSiteId() {
         
         return $this->site_id;
     }
     
+    /**
+     * @return bool
+     */
     public function isOwaInstalled() {
         
         $version = \OWA\Core\CoreAPI::getSetting('base', 'schema_version');
@@ -239,6 +283,10 @@ class Caller extends \OWA\Core\Base {
         }
     }
     
+    /**
+     * @param  string $file_name
+     * @return true|void nothing when the endpoint is disabled
+     */
     public function isEndpointEnabled($file_name) {
         
         if ( ! $this->getSetting('base', 'disableAllEndpoints') ) {
@@ -254,6 +302,8 @@ class Caller extends \OWA\Core\Base {
     /**
 	 * Used by owa_caller to override default config with values based to the caller.
 	 *
+	 * @param  array<mixed>|null $config module => overrides, or base's overrides alone
+	 * @return void
 	 */
     private function overloadConfig( $config ) {
 	    
@@ -276,6 +326,9 @@ class Caller extends \OWA\Core\Base {
     }
 
     
+    /**
+     * @return false
+     */
     public function restInPeace() {
     
         return false;
