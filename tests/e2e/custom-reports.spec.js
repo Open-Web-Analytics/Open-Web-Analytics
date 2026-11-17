@@ -61,7 +61,7 @@ async function openRoster(page) {
  * pass with the visible control broken. Same reasoning as chooseInChosen().
  *
  * @param dimension the dimension's machine name
- * @param operator  the condition's words, e.g. 'contains' or 'is set'
+ * @param operator  the condition's words, e.g. 'contains' or 'has a value'
  */
 async function fillFilter(page, { dimension, operator, value }) {
     if (!(await page.locator('#dlgFilterForm').isVisible())) {
@@ -668,25 +668,25 @@ test.describe('custom reports', () => {
         });
 
         /**
-         * "is set" takes no value and stores the `(not set)` form.
+         * "has a value" takes no value and stores the `(not set)` form.
          *
          * The value field hides, the filter is complete without one, and the
          * clause written is `!=(not set)` -- which the server reads as "has a
          * value", not as a comparison with the label.
          */
-        test('an "is set" filter needs no value and stores the empty test', async ({ page }) => {
+        test('a "has a value" filter needs no value and stores the empty test', async ({ page }) => {
             await openBuilder(page);
             await page.fill('#customReportName', reportName('IsSet'));
 
             await startWidget(page, 'grid');
             await chooseInChosen(page, 'dlgMetrics', 'pageViews');
 
-            await fillFilter(page, { dimension: 'sessionCampaign', operator: 'is set' });
+            await fillFilter(page, { dimension: 'sessionCampaign', operator: 'has a value' });
 
             await expect(page.locator('#dlgFilterValue')).toBeHidden();
             await page.click('#dlgFilterAdd');
 
-            await expect(page.locator('#dlgFilters .owa_filterPill')).toContainText('is set');
+            await expect(page.locator('#dlgFilters .owa_filterPill')).toContainText('has a value');
             await expect(dialogSave(page)).toBeEnabled();
             await dialogSave(page).click();
             await expect(page.locator('#widgetDialog')).toBeHidden();

@@ -16,16 +16,20 @@
  */
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login } = require('./fixtures');
+const {
+    filterForm, pillButton, openFilterForm, fillFilter, offeredDimensions, reloadedBy,
+} = require('./filter-pills');
 
 const DS = FIXTURE.domstreams;
 
-/** The report, optionally with a segment applied. */
-async function openDomstreams(page, constraints) {
+/** The report, optionally with a segment applied and more on the URL. */
+async function openDomstreams(page, constraints, extra = '') {
     await page.goto(
         `?owa_do=base.report&owa_reportId=domstreams`
         + `&owa_siteId=${FIXTURE.siteId}`
         + `&owa_period=last_thirty_days`
-        + (constraints ? `&owa_constraints=${encodeURIComponent(constraints)}` : ''),
+        + (constraints ? `&owa_constraints=${encodeURIComponent(constraints)}` : '')
+        + extra,
         { waitUntil: 'networkidle' }
     );
 }
@@ -163,33 +167,68 @@ test.describe('reporting: domstreams', () => {
         });
 
         /**
-         * The picker offers what the reporting stack offers, MINUS time: a
-         * date in the segment picks everyone active that day and then lists
-         * their recordings across the whole period. The Profile is offered,
-         * because the list is of the Property.
+         * The pills offer what the reporting stack offers, MINUS time: a date
+         * in the segment picks everyone active that day and then lists their
+         * recordings across the whole period. The Profile is offered, because
+         * the list is of the Property.
          */
         test('offers the Profile but no time dimensions', async ({ page }) => {
             await openDomstreams(page);
-            await page.waitForSelector('#domstreamFilter', { timeout: 20_000 });
 
-            /*
-             * The options live in the filter DIALOG, not in #domstreamFilter:
-             * the builder is a jQuery-UI dialog now, and jQuery UI lifts it to
-             * `.owa`. It keeps an id naming the element it filters -- see
-             * builder_id in owa.resultSetExplorer.js -- which is how one filter
-             * is told from another now that they are all siblings.
-             */
-            const names = await page.locator('#owa_filterBuilder-domstreamFilter option')
-                .evaluateAll((opts) => opts.map((o) => o.getAttribute('value')));
+            const { names, groups } = await offeredDimensions(page);
 
             for (const excluded of ['date', 'day', 'month', 'year']) {
                 expect(names).not.toContain(excluded);
             }
 
+            expect(groups).not.toContain('time');
             expect(names).toContain('siteId');
 
-            // ...and it is not passing because the picker is empty.
+            // ...and it is not passing because the list is empty.
             expect(names).toContain('sessionMedium');
+        });
+
+        /**
+         * A filter added in the pills reloads the list with it as the segment,
+         * from its first page; its X takes it off again.
+         */
+        test('a filter added with the pills narrows the list, and its X removes it', async ({ page }) => {
+            // A page past the last: the new filter starts the list again.
+            await openDomstreams(page, '', '&page=2');
+            await expect(rows(page)).toHaveCount(0);
+
+            await openFilterForm(page);
+            await fillFilter(page, { dimension: 'sessionMedium', condition: 'is', value: DS.a.medium });
+
+            const added = await reloadedBy(page,
+                () => filterForm(page).getByRole('button', { name: 'Add filter' }).click());
+
+            expect(added.get('owa_constraints')).toBe(`sessionMedium==${DS.a.medium}`);
+            expect(added.has('page')).toBe(false);
+
+            await expect(rows(page)).toHaveCount(1);
+            await expect(rowFor(page, DS.a.page)).toHaveCount(1);
+
+            const removed = await reloadedBy(page,
+                () => pillButton(page, 'Remove', `Medium is ${DS.a.medium}`).click());
+
+            expect(removed.get('owa_constraints')).toBe('');
+            await expect(rows(page)).toHaveCount(DS.recordings);
+        });
+
+        /** A pill from the URL is changed in place, and the list follows it. */
+        test('a pill changed in place selects the other recording', async ({ page }) => {
+            await openDomstreams(page, `sessionMedium==${DS.a.medium}`);
+
+            await pillButton(page, 'Change', `Medium is ${DS.a.medium}`).click();
+            await fillFilter(page, { condition: 'is not' });
+
+            const changed = await reloadedBy(page,
+                () => filterForm(page).getByRole('button', { name: 'Update filter' }).click());
+
+            expect(changed.get('owa_constraints')).toBe(`sessionMedium!=${DS.a.medium}`);
+            await expect(rowFor(page, DS.a.page)).toHaveCount(0);
+            await expect(rowFor(page, DS.b.page)).toHaveCount(1);
         });
     });
 

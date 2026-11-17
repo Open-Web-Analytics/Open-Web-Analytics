@@ -140,7 +140,7 @@ final class FunnelBuilderTest extends TestCase
             'Page Path is not /x',
         ), $words );
 
-        $this->assertStringEndsWith( ' is set', $words[1] );
+        $this->assertStringEndsWith( ' has a value', $words[1] );
         $this->assertSame( array(), \OWA\Module\Base\Classes\CustomReports::constraintsInWords( '' ) );
     }
 }

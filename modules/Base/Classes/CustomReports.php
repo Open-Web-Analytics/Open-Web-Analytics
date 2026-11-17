@@ -1434,15 +1434,18 @@ class CustomReports {
             isset( $widget['constraints'] ) ? $widget['constraints'] : '', $where, $property_id );
     }
 
-    /** How a filter's condition reads, by its operator. See owa.filterpills.js. */
+    /**
+     * How a filter's condition reads, by its operator: as its pill words it
+     * (OWA.dataGrid.EMPTY_TESTS and OPERATOR_PHRASES in owa.resultSetExplorer.js).
+     */
     const CONSTRAINT_WORDS = array(
-        '!=(not set)' => 'is set',
+        '!=(not set)' => 'has a value',
         '==(not set)' => 'is not set',
         '=='          => 'is',
         '!='          => 'is not',
         '=@'          => 'contains',
-        '>'           => 'is greater than',
-        '<'           => 'is less than',
+        '>'           => 'greater than',
+        '<'           => 'less than',
     );
 
     /**

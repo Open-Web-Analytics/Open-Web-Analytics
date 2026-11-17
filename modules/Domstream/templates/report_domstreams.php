@@ -21,18 +21,23 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
 
     <?php
         /*
-         * The segment: WHICH visits the recordings are listed for.
-         *
-         * The same constraint builder the report grids use, so this report
-         * accepts exactly the constraints every other one does -- and offers
-         * exactly the same choices, because the options come from the reporting
-         * stack rather than a list written here. It keeps itself behind its own
-         * toggle, which is why this is a bare container.
+         * The segment: WHICH visits the recordings are listed for, as filter
+         * pills. The choices come from the reporting stack
+         * (ReportSegment::options()), so this report offers exactly the
+         * constraints every other one accepts.
          */
     ?>
-    <span class="owa_reportControl">
-        <span class="label"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filter:' ) ); ?></span>
-        <span id="domstreamFilter" class="constraintPicker"></span>
+    <span class="owa_reportControl owa_reportFilters">
+        <span class="owa_srOnly" id="domstreamFiltersLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filters' ) ); ?></span>
+        <?php
+            $owa_fp = [
+                'pills' => 'domstreamFilters', 'add' => 'domstreamAddFilter', 'form' => 'domstreamFilterForm',
+                'dimension' => 'domstreamFilterDimension', 'operator' => 'domstreamFilterOperator',
+                'value' => 'domstreamFilterValue', 'addFilter' => 'domstreamFilterAdd',
+                'cancel' => 'domstreamFilterCancel', 'label' => 'domstreamFiltersLabel',
+            ];
+            include( $view->getTemplatePath( 'base', 'filter_pills.php' ) );
+        ?>
     </span>
 
     <span class="owa_reportControl owa_reportControlRight">
@@ -75,9 +80,9 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
 <script>
 (function () {
 
-    // Applying a filter reloads the report, because the segment is resolved
-    // server-side -- it selects the visits, and the recordings made during them
-    // are then listed.
+    // A filter added, changed or removed reloads the report, because the
+    // segment is resolved server-side -- it selects the visits, and the
+    // recordings made during them are then listed.
     function goTo( params ) {
 
         var url = new URL( window.location.href );
@@ -116,17 +121,23 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
         constraints: <?php echo json_encode( (string) $view->get('domstreams_constraints') ); ?>
     };
 
-    if ( filter.dimensions ) {
+    var applied = '';
 
-        OWA.items.domstreamConstraints = new OWA.constraintBuilder( '#domstreamFilter', {} );
-        OWA.items.domstreamConstraints.setRelatedDimensions( filter.dimensions, [] );
-        OWA.items.domstreamConstraints.setRelatedMetrics( filter.metrics, [] );
-        OWA.items.domstreamConstraints.display( filter.constraints || '' );
+    OWA.items.domstreamConstraints = new OWA.filterPills( {
+        pills: 'domstreamFilters', add: 'domstreamAddFilter', form: 'domstreamFilterForm',
+        dimension: 'domstreamFilterDimension', operator: 'domstreamFilterOperator',
+        value: 'domstreamFilterValue', addFilter: 'domstreamFilterAdd', cancel: 'domstreamFilterCancel'
+    }, OWA.filterPills.choices( filter.dimensions, filter.metrics ), function () {
 
-        jQuery( '#domstreamFilter' ).on( 'constraint_change', function ( event, constraints ) {
+        var constraints = OWA.items.domstreamConstraints.get();
+
+        if ( constraints !== applied ) {
             goTo( { 'owa_constraints': constraints } );
-        } );
-    }
+        }
+    } );
+
+    OWA.items.domstreamConstraints.set( filter.constraints );
+    applied = OWA.items.domstreamConstraints.get();
 
     /*
      * The player opens in a window sized to the viewport the recording was made
