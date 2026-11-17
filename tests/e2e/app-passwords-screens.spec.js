@@ -104,6 +104,7 @@ test.describe('application password screens @selfhost-only', () => {
 
         await page.click('.owa_appPasswordDone');
         await expect(dialog).toBeHidden();
+        await expect(page.locator('.owa_appPasswordAdd'), 'focus is back on Add').toBeFocused();
         await expect(row).toHaveCount(1);
         expect(await page.content()).not.toContain(token.slice(12));
 
@@ -129,6 +130,21 @@ test.describe('application password screens @selfhost-only', () => {
         const dialog = page.locator('#owa_appPasswordDialog');
 
         await page.click('.owa_appPasswordAdd');
+
+        // A modal named by its heading, the name field ready to type in.
+        const modal = page.getByRole('dialog', { name: 'Add an application password' });
+        await expect(modal).toBeVisible();
+        await expect(modal.getByRole('textbox', { name: 'Name' })).toBeFocused();
+
+        // Cancel makes nothing, and the next Add starts again.
+        await modal.getByRole('textbox', { name: 'Name' }).fill('e2e cancelled');
+        await modal.getByRole('button', { name: 'Cancel' }).click();
+        await expect(modal).toBeHidden();
+        await expect(page.locator('.owa_appPasswordAdd')).toBeFocused();
+        await expect(page.locator('tr[data-lookup-id]', { hasText: 'e2e cancelled' })).toHaveCount(0);
+
+        await page.click('.owa_appPasswordAdd');
+        await expect(modal.getByRole('textbox', { name: 'Name' })).toHaveValue('');
         await page.click('.owa_appPasswordCreate');
         await expect(dialog.locator('.owa_appPasswordError')).toHaveText('Give the application password a name.');
         await expect(dialog.locator('.owa_appPasswordToken')).toBeHidden();
@@ -140,6 +156,8 @@ test.describe('application password screens @selfhost-only', () => {
 
         await page.keyboard.press('Escape');
         await expect(dialog).toBeHidden();
+        await expect(page.locator('.owa_appPasswordAdd'), 'focus is back on Add').toBeFocused();
+        expect(await page.content(), 'the token left with the dialog').not.toContain(token.slice(12));
 
         const row = page.locator(`tr[data-lookup-id="${token.slice(0, 12)}"]`);
         await expect(row).toContainText('e2e escape');

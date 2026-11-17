@@ -34,22 +34,21 @@ foreach ( $owa_steps as $owa_s ) {
 
     <?php
         /*
-         * Counting scope, styled as the same two-segment switch the Live View
-         * control uses, and carried on the URL rather than stored. A scope is a
-         * way of LOOKING at the report, not a property of the site: persisting
-         * it would make one link mean different things to two people.
+         * Counting scope: two radios drawn as a segmented control, and carried
+         * on the URL rather than stored. A scope is a way of LOOKING at the
+         * report, not a property of the site: persisting it would make one
+         * link mean different things to two people.
          */
     ?>
     <span class="owa_reportControl">
-        <div class="autoRefreshControl" id="funnelScopeSwitch">
-            <span class="label"><?php $view->out( \OWA\Core\CoreAPI::t( 'Counting:' ) ); ?></span>
-            <span class="buttons">
+        <div class="owa_scopeSwitch" id="funnelScopeSwitch" role="radiogroup" aria-labelledby="funnelScopeLabel">
+            <span class="label" id="funnelScopeLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Counting:' ) ); ?></span>
+            <span class="buttons owa_seg">
                 <input type="radio" name="funnelscope" id="funnel-scope-visitor"<?php if ($owa_scope !== 'session'): ?> checked="checked"<?php endif; ?> />
                 <label for="funnel-scope-visitor"><?php $view->out( \OWA\Core\CoreAPI::t( 'Visitors' ) ); ?></label>
                 <input type="radio" name="funnelscope" id="funnel-scope-session"<?php if ($owa_scope === 'session'): ?> checked="checked"<?php endif; ?> />
                 <label for="funnel-scope-session"><?php $view->out( \OWA\Core\CoreAPI::t( 'Visits' ) ); ?></label>
             </span>
-            <div style="clear:both;"></div>
         </div>
     </span>
 
@@ -237,15 +236,6 @@ foreach ( $owa_steps as $owa_s ) {
         OWA.items.funnelConstraints.set( funnelFilter.constraints || '' );
         applied = OWA.items.funnelConstraints.get();
     }
-
-    /*
-     * Same two-segment switch the Live View control draws. checkboxradio with
-     * icon:false BEFORE controlgroup(), or jQuery-UI 1.13 prepends a radio dot
-     * to each label and it stops looking like a switch -- the same ordering
-     * owa.report.js documents for the Live View toggle.
-     */
-    jQuery( '#funnelScopeSwitch > .buttons > input[type=radio]' ).checkboxradio( { icon: false } );
-    jQuery( '#funnelScopeSwitch > .buttons' ).controlgroup();
 
     jQuery( '#funnel-scope-visitor' ).change( function () {
         goTo( { 'owa_funnelScope': 'visitor' } );

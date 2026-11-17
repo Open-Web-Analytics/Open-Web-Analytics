@@ -22,7 +22,6 @@
             "type": "css",
             "outputDir": "../../public/base/css",
             "files": [
-                "css/jquery-ui.css",
                 "css/chosen.css",
                 "css/owa.css",
                 "css/owa.admin.css",

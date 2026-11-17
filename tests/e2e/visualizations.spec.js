@@ -114,10 +114,24 @@ test.describe('visualizations', () => {
         // Behind the button: it is not on the page until asked for.
         await expect(dialog).toBeHidden();
 
-        await page.locator('.owa_titleActions .owa_newCustomReport').click();
+        const newButton = page.locator('.owa_titleActions .owa_newCustomReport');
+        const modal = page.getByRole('dialog', { name: 'What do you want to make?' });
+
+        // Escape and the X both put it away, focus back on New.
+        await newButton.click();
+        await expect(modal).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(modal).toBeHidden();
+        await expect(newButton).toBeFocused();
+
+        await newButton.click();
+        await modal.getByRole('button', { name: 'Close' }).click();
+        await expect(modal).toBeHidden();
+        await expect(newButton).toBeFocused();
+
+        await newButton.click();
         await expect(dialog).toBeVisible();
-        await expect(page.locator('.owa_typeDialogFrame .ui-dialog-title'))
-            .toHaveText('What do you want to make?');
+        await expect(modal).toBeVisible();
 
         const tiles = dialog.locator('.owa_typeChoice');
         await expect(tiles).toHaveCount(2);

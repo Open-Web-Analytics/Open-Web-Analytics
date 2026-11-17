@@ -92,7 +92,7 @@ function jsOutput(moduleDir, pkg) {
 // name (the tracker splits node_modules into a sibling vendors chunk).
 //
 // NOTE (Phase 4): there is no longer a ProvidePlugin. The reporting bundle used to
-// need one to feed its legacy vendor plugins (chosen, flot, jquery-ui, ...) a bundled
+// need one to feed its legacy vendor plugins (chosen, flot, ...) a bundled
 // jQuery via the free `jQuery`/`$` globals they read at eval time; that scoped the
 // two products into separate configs. Now the reporting entry publishes jQuery on
 // window itself (its first import, vendor-jquery-global.js) before the plugins run,
@@ -268,8 +268,8 @@ function jsConfig(moduleName, moduleDir, pkg, contributed = [], lazy = []) {
 // (`[name]`) into the package output dir (now public/base/css). css-loader runs with
 // url:false so every url() is left EXACTLY as authored; the CopyPlugin below then
 // mirrors the url()-referenced assets into the SAME relative layout under the public
-// output (css sprites/theme-images beside the stylesheet, ../i/ as a sibling), so the
-// verbatim relative paths (images/ui-icons_*, chosen-sprite.png, ../i/*) keep
+// output (css sprites and fonts beside the stylesheet, ../i/ as a sibling), so the
+// verbatim relative paths (chosen-sprite.png, font-awesome/*, ../i/*) keep
 // resolving without rewriting a single url() -- the public-tree analogue of the old
 // same-dir strategy. The `files` order is the cascade order (later files
 // intentionally override earlier). A CSS-only entry still emits a stub .js chunk,

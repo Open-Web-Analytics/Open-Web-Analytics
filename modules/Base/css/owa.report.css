@@ -330,96 +330,53 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
     padding-bottom: 10px;
 }
 
-.owa .ui-widget {
-    font-size: 0.75rem;
-}
-
-.owa .ui-tabs-nav {
-    font-size:0.875rem;
-}
-
 /* ---------------------------------------------------------------------------
- * Metric-set tabs
+ * Tabs (OWA.tabs, owa.tabs.js)
  *
  * The tabs are how a site's metric sets make themselves visible -- Site Usage
  * and e-commerce, two literals in MetricSets with different casing.
  * Title-casing them HERE is what makes the row read as one control, and it is
  * a presentation rule, so it does not go and rewrite the labels.
+ *
+ * A row of words over a rule, the selected one underlined in the trend's blue
+ * (OWA.areaChart's totalColor) -- no box round the row or the panel under it.
  * ------------------------------------------------------------------------- */
 
-.owa .ui-tabs-nav .ui-tabs-anchor {
-    text-transform: capitalize;
-}
-
-/*
- * Tabs as a row of words over a rule, the selected one underlined in the
- * trend's blue (OWA.areaChart's totalColor) -- no box round the bar or the
- * panel under it.
- */
-.owa .ui-tabs.ui-widget-content,
-.owa .ui-tabs {
-    border: 0;
-    background: transparent;
-    padding: 0;
-}
-
-.owa .ui-tabs .ui-tabs-nav {
+.owa .owa_tabs {
     display: flex;
     gap: 24px;
     margin: 0 0 32px;
     padding: 0;
-    border: 0;
     border-bottom: 1px solid #eef0f3;
-    border-radius: 0;
-    background: transparent;
+    font-size: 0.875rem;
 }
 
-.owa .ui-tabs .ui-tabs-nav li,
-.owa .ui-tabs .ui-tabs-nav li.ui-state-default {
-    float: none;
+.owa .owa_tab {
     margin: 0 0 -1px;
-    padding: 0;
+    padding: 0 0 12px;
     border: 0;
     border-bottom: 2px solid transparent;
     border-radius: 0;
     background: transparent;
-}
-
-.owa .ui-tabs .ui-tabs-nav .ui-tabs-anchor {
-    padding: 0 0 12px;
     color: #4b5563;
+    font: inherit;
+    text-transform: capitalize;
+    cursor: pointer;
 }
 
-.owa .ui-tabs .ui-tabs-nav li:hover .ui-tabs-anchor {
+.owa .owa_tab:hover {
     color: #111827;
 }
 
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active,
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active.ui-state-active {
+.owa .owa_tab[aria-selected="true"] {
     border-bottom-color: #1874CD;
-    background: transparent;
-}
-
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active .ui-tabs-anchor,
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:link,
-.owa .ui-tabs .ui-tabs-nav li.ui-tabs-active a:visited {
     color: #1874CD;
     font-weight: 600;
 }
 
-.owa .ui-tabs .ui-tabs-panel {
-    padding: 0;
-}
-
-/* The Live View switch is the same kind of thing -- a two-segment control
-   whose ON state is the one being looked at -- and it sits on the same reports.
-   Its segments are checkboxradio labels, not tabs, so they need saying
-   separately. */
-.owa .autoRefreshControl .buttons .ui-button.ui-state-active,
-.owa .autoRefreshControl .buttons .ui-button.ui-state-active:hover {
-    border-color: #1874CD;
-    background: #1874CD;
-    color: #ffffff;
+.owa .owa_tab:focus-visible {
+    outline: 2px solid #1874CD;
+    outline-offset: 2px;
 }
 
 /* ---------------------------------------------------------------------------
@@ -428,12 +385,11 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
  * The row of controls a report puts under its title: what is being counted,
  * which goal, which people, and a link to whatever configures it.
  *
- * Shared rather than per-report, and the reason is that the controls are NOT
- * ours. The scope switch borrows the Live View control's markup, the filter
- * is the editors' filter pills, and each of them arrives with its own
- * label class and its own idea of whether it is inline. Styling that in one
- * report means the next report to reuse a control inherits none of it and the
- * bar comes apart -- which is what these rules exist to prevent.
+ * Shared rather than per-report: the filter is the editors' filter pills and
+ * the scope switch is the widget panel's segmented control, and each arrives
+ * with its own label class and its own idea of whether it is inline. Styling
+ * that in one report means the next report to reuse a control inherits none
+ * of it and the bar comes apart.
  *
  * Used by the funnel and by module reports.
  * ------------------------------------------------------------------------- */
@@ -451,12 +407,10 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 }
 
 /* Every control in the bar is labelled the same way and sits on the same line:
-   a label on the left, then the control. The scope switch borrows the Live View
-   markup and brings its own label class -- it is pulled onto the same footing
-   here rather than styled where it came from. */
+   a label on the left, then the control. */
 .owa .owa_reportControl > label,
 .owa .owa_reportControl > .label,
-.owa .owa_reportControls .autoRefreshControl .label {
+.owa .owa_reportControls .owa_scopeSwitch .label {
     display: inline-block;
     font-size: 0.75rem;
     color: #707070;
@@ -488,15 +442,11 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
 }
 
-/* The scope switch sits inline in the bar; the Live View control it borrows
-   its markup from floats right in the report header instead. */
-.owa .owa_reportControls .autoRefreshControl {
-    float: none;
+.owa .owa_reportControls .owa_scopeSwitch {
     display: inline-block;
 }
 
-.owa .owa_reportControls .autoRefreshControl .buttons {
-    display: inline-block;
+.owa .owa_reportControls .owa_scopeSwitch .buttons {
     vertical-align: middle;
 }
 
@@ -661,13 +611,6 @@ li.constraintRow {
 }
 
 /*
- * The remove control is an X, not a button.
- *
- * It was a jQuery-UI button, which put a third kind of chrome on the row for
- * the smallest thing in it. Marked up as a control for the keyboard, drawn as
- * a glyph.
- */
-/*
  * The plus and the X are a matched pair, sitting at the end of the row they
  * act on. Drawn as glyphs, not as buttons, though some are <button>s: they
  * are the smallest things in the row, and a third and fourth kind of chrome
@@ -788,19 +731,9 @@ li.constraintRow {
     align-items: stretch;
 }
 
-/* ...and it stays a grid inside a tab.
- *
- * On a report rendered per metric set, the tab PANEL is the grid -- one panel
- * per set, each holding that set's widgets. jQuery-UI's `.ui-tabs
- * .ui-tabs-panel { display: block }` is two classes to this rule's one, so it
- * won every tabbed report: the tracks were never created, every widget was a
- * full-width block, and a half-width card sat alone on its own row.
- *
- * Invisible until now, which is why it lasted: every widget on every tabbed
- * report was full width anyway, so a grid of one column per row looked exactly
- * like the grid doing its job. */
-.owa .ui-tabs .ui-tabs-panel.owa_reportGrid {
-    display: grid;
+/* A metric set's panel not being looked at: the rule above would show it. */
+.owa .owa_reportGrid[hidden] {
+    display: none;
 }
 
 .owa_reportGridItem {
@@ -2078,7 +2011,8 @@ li.constraintRow {
     color: #9a3d0c;
 }
 
-/* Width and Height: a segmented control made of radios. */
+/* A segmented control made of radios: a widget's Width and Height, a funnel's
+   counting scope. */
 .owa .owa_seg {
     display: inline-flex;
     flex-wrap: wrap;
@@ -2096,7 +2030,8 @@ li.constraintRow {
     margin: 0;
 }
 
-.owa .owa_widgetPanel .owa_seg label {
+.owa .owa_widgetPanel .owa_seg label,
+.owa .owa_scopeSwitch .owa_seg label {
     display: inline-flex;
     align-items: center;
     height: 30px;
@@ -2108,7 +2043,8 @@ li.constraintRow {
     cursor: pointer;
 }
 
-.owa .owa_widgetPanel .owa_seg input:checked + label {
+.owa .owa_widgetPanel .owa_seg input:checked + label,
+.owa .owa_scopeSwitch .owa_seg input:checked + label {
     background: #ffffff;
     color: #111827;
     font-weight: 600;
@@ -2578,73 +2514,136 @@ li.constraintRow {
 }
 
 /* ---------------------------------------------------------------------------
- * The "What do you want to make?" and "Add a widget" dialogs
+ * Dialogs (OWA.dialog, owa.dialog.js): the browser's <dialog>, modal
  *
- * jQuery UI's frame, restyled: its default is a rounded grey chrome that does
- * not match anything else in the reporting UI.
+ * At most --owa-dialog-width wide (each dialog sets its own), with a 16px
+ * gutter each side; at most the window's height less 8px above and below,
+ * the content scrolling inside. On a short window -- a phone held sideways --
+ * it sits 8px from the top rather than centred.
+ *
+ * Quiet frame and ordinary body copy; the only strong colour is on a proceed
+ * button, which sits second, because the default answer to a destructive
+ * question should be no.
  * ------------------------------------------------------------------------- */
 
-.owa_typeDialogFrame.ui-dialog {
+dialog.owa_dialog {
+    box-sizing: border-box;
+    width: min(var(--owa-dialog-width, 440px), calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
     padding: 0;
-    border: 0;
-    border-radius: 12px;
-    box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
+    overflow: hidden;
+    border: 1px solid #d5d5d5;
+    border-radius: 5px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.18);
     background: #ffffff;
+    color: #333333;
 }
 
-.owa_typeDialogFrame .ui-dialog-titlebar {
-    border: 0;
-    border-radius: 12px 12px 0 0;
-    background: #ffffff;
-    padding: 24px 24px 8px;
-    font-size: 1.125rem;
+dialog.owa_dialog[open] {
+    display: flex;
+    flex-direction: column;
 }
 
-.owa_typeDialogFrame .ui-dialog-title {
-    font-weight: 600;
-    color: #111827;
+/* The page behind, dimmed, so the dialog reads as the only thing to answer. */
+dialog.owa_dialog::backdrop {
+    background: rgba(26, 26, 26, 0.45);
 }
 
-.owa_typeDialogFrame .ui-dialog-content {
-    padding: 12px 24px 24px;
+@media (max-height: 500px) {
+
+    dialog.owa_dialog { margin-top: 8px; }
 }
 
-/* Close: a round icon button, not the theme's bordered square. */
-.owa_typeDialogFrame .ui-dialog-titlebar-close {
-    top: 28px;
-    right: 16px;
+.owa_dialog button {
+    font-family: inherit;
+}
+
+.owa_dialogHead {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #ececec;
+}
+
+.owa_dialogTitle {
+    flex: 1 1 auto;
+    margin: 0;
+    font-size: var(--owa-text-lg);
+    font-weight: bold;
+    color: #333333;
+}
+
+.owa_dialogBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 18px 20px 4px 20px;
+}
+
+/* A row of buttons at the right, wrapping under each other rather than past
+   the dialog's edge. */
+.owa_dialogButtons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 6px 20px 18px 20px;
+}
+
+.owa_dialogButtons[hidden] {
+    display: none;
+}
+
+/* .owa-button's 25px top margin and 18px type are for the foot of a form. */
+.owa_dialogButtons button.owa-button {
+    margin: 0;
+    font-size: var(--owa-text-md);
+    font-weight: normal;
+    padding: 8px 16px;
+}
+
+/* Close: a round icon button. */
+.owa_dialogClose {
+    flex: 0 0 auto;
     width: 36px;
     height: 36px;
-    margin: -18px 0 0;
+    margin: -8px -8px -8px 0;
     padding: 0;
     border: 0;
     border-radius: 18px;
     background: transparent;
+    color: #4b5563;
+    cursor: pointer;
 }
 
-.owa_typeDialogFrame .ui-dialog-titlebar-close:hover,
-.owa_typeDialogFrame .ui-dialog-titlebar-close:focus {
+.owa_dialogClose:hover,
+.owa_dialogClose:focus-visible {
     background: #f3f5f8;
 }
 
-/* The page behind a modal, dimmed.
- *
- * jQuery UI draws .ui-widget-overlay for modal:true, and the bundled theme
- * leaves it so faint that the dialog reads as floating over a live page --
- * which invites clicking the page underneath and wondering why nothing
- * responds. Dimming says plainly that the dialog is the only thing to answer.
- *
- * Not inside .owa: the overlay is appended to <body>, outside that scope. */
-.ui-widget-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #1a1a1a;
-    opacity: 0.45;
-    filter: none;
-    z-index: 1000;
+/* The "What do you want to make?" and "Add a widget" galleries. */
+dialog.owa_typeDialogFrame {
+    border: 0;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16), 0 2px 6px rgba(17, 24, 39, 0.08);
+}
+
+.owa_typeDialogFrame .owa_dialogHead {
+    padding: 24px 24px 8px;
+    border-bottom: 0;
+}
+
+.owa_typeDialogFrame .owa_dialogTitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.owa_typeDialogFrame .owa_dialogBody {
+    padding: 12px 24px 24px;
 }
 
 /* ---------------------------------------------------------------------------
@@ -3209,8 +3208,8 @@ li.constraintRow {
  * Type scale for the admin and settings screens.
  *
  * Five sizes, named by role rather than by pixel, so a screen says what a piece
- * of text IS and the scale decides how big that is. On :root because jQuery
- * UI moves a dialog to the end of <body>, outside every OWA wrapper. In rem,
+ * of text IS and the scale decides how big that is. On :root because the
+ * confirmation dialog is added to the end of <body>, outside every OWA wrapper. In rem,
  * so they follow the root (owa.css): 18, 15, 13, 12 and 11px at a 16px root.
  *
  *   xl  page headline
@@ -3904,55 +3903,7 @@ li.constraintRow {
     -webkit-box-shadow: none;
 }
 
-/* The confirmation an irreversible action gets.
- *
- * jQuery UI supplies the overlay and the frame; this is the part that has to
- * read like the rest of the admin rather than like a jQuery UI demo. Quiet
- * frame, ordinary body copy, and the only strong colour on the proceed button
- * -- which sits second, because the default answer to a destructive question
- * should be no. */
-.owa_confirmDialogFrame.ui-dialog {
-    /*
-     * Above its own modal overlay.
-     *
-     * jQuery UI gives BOTH the dialog and the overlay .ui-front, which is
-     * z-index:100 -- so which one wins comes down to DOM order, and the overlay
-     * was landing on top. The buttons rendered, looked clickable, and swallowed
-     * every click. 101 puts the dialog one step up; the overlay keeps 100 and
-     * still covers the page behind it.
-     */
-    z-index: 101;
-    border: 1px solid #d5d5d5;
-    border-radius: 5px;
-    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.18);
-    background: #ffffff;
-    padding: 0;
-}
-
-.owa_confirmDialogFrame .ui-dialog-titlebar {
-    background: none;
-    border: 0;
-    border-bottom: 1px solid #ececec;
-    border-radius: 5px 5px 0 0;
-    padding: 16px 20px;
-}
-
-.owa_confirmDialogFrame .ui-dialog-title {
-    font-size: var(--owa-text-lg);
-    font-weight: bold;
-    color: #333333;
-    float: none;
-}
-
-.owa_confirmDialogFrame .ui-dialog-titlebar-close {
-    display: none;
-}
-
-.owa_confirmDialogFrame .ui-dialog-content {
-    padding: 18px 20px 4px 20px;
-}
-
-/* The Add dialog on the Application Passwords screen, in the confirm frame. */
+/* The Add dialog on the Application Passwords screen. */
 .owa_appPasswordDialog .setting {
     margin: 0 0 14px 0;
 }
@@ -4032,37 +3983,15 @@ li.constraintRow {
     line-height: 1.6;
 }
 
-.owa_confirmDialogFrame .ui-dialog-buttonpane {
-    border: 0;
-    background: none;
-    margin: 0;
-    padding: 6px 20px 18px 20px;
-}
-
-.owa_confirmDialogFrame .ui-dialog-buttonset {
-    float: right;
-}
-
-/* Overriding .owa-button's 25px top margin and 18px type: these sit in a
-   button pane, not at the foot of a form. */
-.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button {
-    margin: 0 0 0 8px;
-    font-size: var(--owa-text-md);
-    font-weight: normal;
-    padding: 8px 16px;
-}
-
 /* The cancel button. Deliberately the plainest thing on the dialog -- it is
    the safe answer, so it needs to be easy to hit, not easy to notice. */
-.owa-button.owa-button-quiet,
-.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button-quiet {
+.owa-button.owa-button-quiet {
     background-color: #ffffff;
     color: #555555;
     border: 1px solid #cccccc;
 }
 
-.owa-button.owa-button-quiet:hover,
-.owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button-quiet:hover {
+.owa-button.owa-button-quiet:hover {
     background-color: #f4f4f4;
     color: #333333;
     border-color: #b5b5b5;
@@ -4775,21 +4704,13 @@ li.constraintRow {
 
     .owa .owa_chartGranularity { height: 44px; font-size: max(16px, 0.8125rem); }
 
-    .owa .ui-tabs .ui-tabs-nav .ui-tabs-anchor { display: inline-flex; align-items: center; min-height: 44px; padding-bottom: 0; }
+    .owa .owa_tab { display: inline-flex; align-items: center; min-height: 44px; padding-bottom: 0; }
 
     .owa .owa_reportSectionHeader .owa_moreLinks a { display: inline-flex; align-items: center; min-height: 44px; }
 
-    .owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button { min-height: 44px; }
+    .owa_dialogButtons button.owa-button { min-height: 44px; }
 
-    .owa_typeDialogFrame .ui-dialog-titlebar-close { width: 44px; height: 44px; margin-top: -22px; border-radius: 22px; }
-}
-
-/* A dialog's buttons wrap under each other rather than past its edge. */
-@media (max-width: 600px) {
-
-    .owa_confirmDialogFrame .ui-dialog-buttonset { float: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-
-    .owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button { margin: 0; }
+    .owa_dialogClose { width: 44px; height: 44px; margin: -10px -10px -10px 0; border-radius: 22px; }
 }
 
 @media (max-width: 600px) {

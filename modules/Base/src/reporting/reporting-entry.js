@@ -30,12 +30,11 @@
  */
 
 // FIRST: publish jQuery on window for the vendor plugins that read a free `jQuery`/`$`
-// at eval time (jquery-ui, chosen, sparkline, flot) and for the report
+// at eval time (chosen, sparkline, flot) and for the report
 // templates' inline <script> blocks. Must precede every vendor import below.
 import './vendor-jquery-global.js';
 
 // jQuery plugin ecosystem (order preserved from the retired concat).
-import 'jquery-ui-dist/jquery-ui.js';
 import 'chosen-js/chosen.jquery.js';
 import 'jquery-sparkline';
 import 'jquery.flot';                       // core
@@ -66,8 +65,10 @@ import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis
 // OWA reporting namespace: owa.format.js defines it (exports OWA + publishes window.OWA), the
 // other six import { OWA } and augment it. Import order is load-bearing -- owa.format.js first.
 import './owa.format.js';
-// Width, height and position for every jQuery UI dialog (OWA.dialogFit).
+// Modal dialogs on the browser's <dialog> (OWA.dialog).
 import './owa.dialog.js';
+// Tabs (OWA.tabs): a report's metric sets.
+import './owa.tabs.js';
 import './owa.report.js';
 import './owa.resultSetExplorer.js';
 import './owa.sparkline.js';
