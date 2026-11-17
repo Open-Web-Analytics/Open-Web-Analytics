@@ -200,9 +200,34 @@ final class DomstreamReportListTest extends TestCase
             array_map('strval', array_keys($this->recordings())));
     }
 
+    /**
+     * The grid's result set totals every recording listed, as the count above
+     * the grid does, not the rows of the page it holds.
+     */
+    public function testTheResultSetTotalsEveryRecordingNotThePage(): void
+    {
+        $set = $this->call('asResultSet', [], array_slice(array_values($this->recordings()), 0, 2), 3);
+
+        $this->assertSame(2, $set['resultsReturned']);
+        $this->assertSame(3, $set['resultsTotal']);
+    }
+
+    /** As the report renders it: a page past the last row holds none, of three. */
+    public function testTheReportsResultSetTotalIsItsCount(): void
+    {
+        $controller = $this->controller(['page' => 2]);
+        $controller->action();
+
+        $set = (array) $controller->data['domstreams'];
+
+        $this->assertSame(3, $controller->data['domstreams_total']);
+        $this->assertSame(0, $set['resultsReturned']);
+        $this->assertSame(3, $set['resultsTotal']);
+    }
+
     public function testTheGridRowCarriesFormattedValuesAndPlayerData(): void
     {
-        $set = $this->call('asResultSet', [], array_values($this->recordings()));
+        $set = $this->call('asResultSet', [], array_values($this->recordings()), 3);
 
         $row = null;
         foreach ($set['resultsRows'] as $candidate) {
@@ -250,7 +275,7 @@ final class DomstreamReportListTest extends TestCase
             $this->assertSame(self::SITE, (string) $rows[self::REC_A]['site_id']);
 
             // The player asks by the recording's own Profile.
-            $set = $this->call('asResultSet', [], [$rows[self::REC_SIBLING]]);
+            $set = $this->call('asResultSet', [], [$rows[self::REC_SIBLING]], 4);
             $overlay = base64_decode($set['resultsRows'][0]['play']['value']['overlay']);
 
             $this->assertStringContainsString(self::SIBLING, $overlay,
