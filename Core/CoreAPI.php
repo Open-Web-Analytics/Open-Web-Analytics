@@ -2701,7 +2701,9 @@ class CoreAPI {
      * @param int    $expires
      * @param string $path     The path the cookie is sent for. Default /.
      * @param string $domain
-     * @param bool   $secure   not read: Lib::isHttps() decides
+     * @param bool   $secure   true marks the cookie Secure. False leaves it
+     *                         to the request: Secure on HTTPS (Lib::isHttps()),
+     *                         as every cookie OWA sets has been.
      * @param bool $httponly Out of reach of the page's scripts. The sign-in
      *                       cookies are; state the reporting UI reads in the
      *                       browser cannot be.
@@ -2737,7 +2739,23 @@ class CoreAPI {
         }
 		
         setcookie($cookie_name, $cookie_value,
-            self::cookieOptions($expires, $path, $domain, \OWA\Core\Lib::isHttps(), $httponly));
+            self::cookieOptions($expires, $path, $domain, self::cookieIsSecure($secure), $httponly));
+    }
+
+    /**
+     * Whether createCookie() marks a cookie Secure: when asked to, and on any
+     * HTTPS request whatever it was asked.
+     *
+     * $secure can add Secure and never removes it. Callers pass false
+     * positionally to reach $httponly, so false cannot mean "not Secure"
+     * without taking Secure off cookies on HTTPS installs.
+     *
+     * @param  bool $secure
+     * @return bool
+     */
+    public static function cookieIsSecure($secure) {
+
+        return (bool) $secure || (bool) \OWA\Core\Lib::isHttps();
     }
 
     /** The sign-in cookies, by name before the namespace: their values are credentials. */
