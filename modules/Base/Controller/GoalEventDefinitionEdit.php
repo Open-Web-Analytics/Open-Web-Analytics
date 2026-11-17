@@ -63,8 +63,33 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
         $this->set( 'conditionVocabulary', self::vocabulary() );
         $this->set( 'savedProperties', array_column( $conditions, 'condition_property' ) );
 
+        // Typed on the form when the trigger is a custom event; nothing to show here.
+        $this->set( 'customTriggerEvent', '' );
+
         $this->settingsChrome( array( 'propertyId' => $propertyId ), '', $propertyId );
-        $this->setSubview( 'base.goalEventDefinitionEdit' );
+        $this->setSubview( 'base.goalEventDefinitionEdit', self::screen( $definition->get( 'id' ) ) );
+    }
+
+    /**
+     * The form, which GoalEventDefinitionSave draws again for a refused save.
+     * The template reads every one of these: a var never set is a blank screen.
+     *
+     * @param string $definitionId empty for a definition not yet saved
+     * @return array as setSubview() takes it
+     */
+    public static function screen( $definitionId ) {
+
+        return [
+            'template' => 'goal_event_definition_edit.php',
+            'vars'     => [
+                'headline' => $definitionId ? \OWA\Core\CoreAPI::t( 'Goal Event Definition' ) : \OWA\Core\CoreAPI::t( 'New Goal Event Definition' ),
+                'goalEventDefinition', 'goalEventDefinitionId', 'propertyId', 'conditions',
+                // The trigger, the events it can be, and every trigger's properties,
+                // so the picker follows the event (owa.goalbuilder.js).
+                'triggerEvent', 'triggerEvents', 'customTriggerEvents', 'customTriggerEvent',
+                'conditionProperties', 'conditionVocabulary', 'savedProperties',
+            ],
+        ];
     }
 
     /**

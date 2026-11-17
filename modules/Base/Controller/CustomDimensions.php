@@ -47,7 +47,8 @@ class CustomDimensions extends \OWA\Core\AdminController {
         $this->set( 'cube', self::cubeState( $property_id ) );
 
         $this->settingsChrome( array( 'propertyId' => $property_id ), '', $property_id );
-        $this->setSubview( 'base.customDimensions' );
+        $this->setSubview( 'base.customDimensions', [
+            'template' => 'custom_dimensions.php', 'vars' => [ 'propertyId', 'dimensions', 'cube' ] ] );
     }
 
     /**

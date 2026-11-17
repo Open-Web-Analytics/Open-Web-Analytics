@@ -36,6 +36,22 @@ namespace OWA\Module\Base\Controller;
 class UsersPasswordEntry extends \OWA\Core\Controller {
 
     /**
+     * The form, which UsersChangePassword draws again when a submission is
+     * refused. Signed out: the person on it has no password yet.
+     *
+     * @param \OWA\Core\Base $owa reads the headline from the message catalogue
+     */
+    public static function page( \OWA\Core\Base $owa ) {
+
+        return [
+            'template' => 'users_change_password.php',
+            'wrapper'  => 'wrapper_public.php',
+            'title'    => \OWA\Core\CoreAPI::t( 'OWA Password Entry' ),
+            'vars'     => [ 'headline' => $owa->getMsg( 3005 ), 'key' ],
+        ];
+    }
+
+    /**
      * Why a link's key cannot set a password: 2012 when it has expired, 2011
      * when it is not a key at all; null when it is current. Whether an account
      * holds it is checked when the form is posted (UsersChangePassword).
@@ -67,7 +83,7 @@ class UsersPasswordEntry extends \OWA\Core\Controller {
         }
 
         $this->set('key', $this->getParam('k'));
-        $this->setView('base.usersPasswordEntry');
+        $this->setView( 'base.usersPasswordEntry', self::page( $this ) );
     }
 
 

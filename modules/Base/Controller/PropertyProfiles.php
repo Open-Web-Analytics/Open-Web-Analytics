@@ -35,7 +35,8 @@ class PropertyProfiles extends \OWA\Core\AdminController {
         $this->set( 'propertyId', $property_id );
         $this->set( 'profiles', $property_id !== '' ? self::rowsFor( $property_id ) : array() );
         $this->settingsChrome( array(), '', $property_id );
-        $this->setSubview( 'base.propertyProfiles' );
+        $this->setSubview( 'base.propertyProfiles', [
+            'template' => 'property_profiles.php', 'vars' => [ 'property', 'propertyId', 'profiles' ] ] );
     }
 
     /**

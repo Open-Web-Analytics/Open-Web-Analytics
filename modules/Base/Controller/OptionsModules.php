@@ -82,7 +82,7 @@ class OptionsModules extends \OWA\Core\AdminController {
         // add data to container
         $owa_site_id = $this->resolveCurrentSiteId();
         $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
-        $this->setSubview('base.optionsModules');
+        $this->setSubview( 'base.optionsModules', [ 'template' => 'options_modules.php', 'vars' => [ 'modules' ] ] );
         $this->set('modules', $dirs);
 
         return;

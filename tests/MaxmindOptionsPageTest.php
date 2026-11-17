@@ -192,33 +192,32 @@ final class MaxmindOptionsPageTest extends TestCase {
     }
 
     /**
-     * The View must resolve the module's own template, which is a different
+     * The screen must resolve the module's own template, which is a different
      * assertion from the template rendering.
      *
      * This is the mistake that was actually made. Template's constructor only
      * honours the module it is handed when caller_params carries one, and
-     * Core\View constructs it without any -- so set_template() searches Base's
-     * directory, finds nothing, and the page renders empty with no error.
+     * Core\View constructs it without any -- so set_template() searched Base's
+     * directory, found nothing, and the page rendered empty with no error.
      * Every test above would still have passed, because they render the
-     * template directly and never go through the View.
+     * template directly and never go through the view.
      */
-    public function testTheViewResolvesTheModulesOwnTemplate(): void {
+    public function testTheScreenResolvesTheModulesOwnTemplate(): void {
 
-        $view = new \OWA\Module\MaxmindGeoip\View\OptionsGeoip();
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'the settings chrome loads the site list' );
+        }
 
-        $view->render( array(
-            'db_file'       => '/tmp/GeoLite2-City.mmdb',
-            'db_present'    => false,
-            'db_updated'    => 0,
-            'has_key'       => false,
-        ) );
+        $data = (array) ( new \OWA\Module\MaxmindGeoip\Controller\OptionsGeoip( [] ) )->action();
 
-        $file = (string) $view->body->file;
+        $view = \OWA\Core\CoreAPI::subViewFactory( $data['subview'], $data );
+        $view->setData( $data );
+        $html = (string) $view->assembleSubView( $data );
 
-        $this->assertNotSame( '', $file,
+        $this->assertStringContainsString( 'modules/MaxmindGeoip/templates/options_geoip.php', (string) $view->body->file,
+            'the view must point at this module\'s template, not at Base\'s directory' );
+
+        $this->assertStringContainsString( 'cmd=update-geoip-db', $html,
             'an unresolved template renders as nothing at all, silently' );
-
-        $this->assertStringContainsString( 'modules/MaxmindGeoip/templates/options_geoip.php', $file,
-            'the View must point at this module\'s template, not at Base\'s directory' );
     }
 }

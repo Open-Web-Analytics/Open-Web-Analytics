@@ -57,7 +57,13 @@ class Logout extends \OWA\Core\Controller {
 
         if ( ! $this->verifyNonce( $this->getParam('nonce'), 'base.logout' ) ) {
 
-            $this->setView('base.logoutConfirm');
+            $this->setView( 'base.logoutConfirm', [
+                'template' => 'logout_confirm.php',
+                'wrapper'  => 'wrapper_public.php',
+                'title'    => \OWA\Core\CoreAPI::t( 'Log out' ),
+                'vars'     => [ 'back_url' ],
+            ] );
+            // The referring page, when it is one of this install's.
             $this->set('back_url', (string) $this->getReferringPage());
 
             return;

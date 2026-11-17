@@ -206,12 +206,10 @@ final class ProfileSettingsScreenTest extends TestCase
         }
     }
 
-    /** The view hands the refused post to the template, which passes it to each fieldset. */
+    /** The screen hands the refused post to the template, which passes it to each fieldset. */
     public function testTheScreenPassesThePostToItsFields(): void
     {
-        $view = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/View/ProfileSettings.php' );
-
-        $this->assertMatchesRegularExpression( '#body->set\(\s*\'posted\',\s*\$this->get\(\s*\'posted\'\s*\)\s*\)#', $view );
+        $this->assertContains( 'posted', \OWA\Module\Base\Controller\ProfileSettings::SCREEN['vars'] );
         $this->assertStringContainsString( '$view->posted',
             (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/profile_settings.php' ) );
     }

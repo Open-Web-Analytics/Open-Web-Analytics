@@ -18,6 +18,9 @@ class ProfileSettings extends \OWA\Core\AdminController {
         parent::__construct( $params );
     }
 
+    /** The screen, which SitesEditSettings draws again for a refused save. */
+    const SCREEN = [ 'template' => 'profile_settings.php', 'vars' => [ 'site', 'posted', 'siteId' ] ];
+
     function action() {
 
         /*
@@ -51,7 +54,7 @@ class ProfileSettings extends \OWA\Core\AdminController {
         $this->set( 'site', $site_properties );
         $this->set( 'siteId', $site_id );
         $this->settingsChrome( array(), $site_id );
-        $this->setSubview( 'base.profileSettings' );
+        $this->setSubview( 'base.profileSettings', self::SCREEN );
     }
 }
 
