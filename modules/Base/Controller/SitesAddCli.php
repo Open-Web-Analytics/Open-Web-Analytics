@@ -56,9 +56,9 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
         );
     }
     
-	function errorAction() {
-	
-        $this->setView('base.cli');
+    function errorAction() {
+
+        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
     }
 
     /**
@@ -91,8 +91,14 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
     }
     
     function success() {
-	   
-	    $this->setView('base.sitesAddCli');
+
+        $site = (array) ( $this->data['site'] ?? array() );
+
+        if ( $site ) {
+
+            \OWA\Core\CoreAPI::notice( 'Site added successfully.' );
+            \OWA\Core\CoreAPI::notice( "\n" . json_encode( $site, JSON_PRETTY_PRINT ) );
+        }
     }
 }
 

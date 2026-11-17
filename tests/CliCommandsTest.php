@@ -80,8 +80,8 @@ final class CliCommandsTest extends CliControllerTestCase
             ['domain' => 'https://' . $domain, 'name' => 'CLI add ' . $this->tok]
         );
 
-        $this->assertSame('base.sitesAddCli', $result['view'],
-            'A valid add-site should route to the sitesAddCli success view.');
+        $this->assertNull($result['view'], 'add-site prints through notice(), not a view.');
+        $this->assertNotEmpty($result['data']['site']['site_id'] ?? null, 'add-site should report the new Profile.');
 
         // Verify the row landed, stored without the scheme it was typed with,
         // then schedule it for cleanup.
@@ -119,9 +119,8 @@ final class CliCommandsTest extends CliControllerTestCase
             ['name' => 'no domain ' . $this->tok]
         );
 
-        // sitesAddCli overrides errorAction() to the base.cli view.
-        $this->assertSame('base.cli', $result['view'],
-            'add-site without a domain should fail validation and route to the cli error view.');
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code,
+            'add-site without a domain should fail validation.');
         $this->assertArrayHasKey('validation_errors', $result['data']);
     }
 
@@ -134,7 +133,7 @@ final class CliCommandsTest extends CliControllerTestCase
             ['domain' => 'owatest-cli-noproto-' . $this->tok . '.example.com']
         );
 
-        $this->assertSame('base.cli', $result['view'],
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code,
             'add-site should reject a domain missing the http(s):// protocol.');
     }
 
@@ -194,7 +193,7 @@ final class CliCommandsTest extends CliControllerTestCase
             ['password' => 'newpass' . $this->tok]
         );
 
-        $this->assertSame('base.changeUserPasswordCli', $result['view'],
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code,
             'change-password without a user should fail validation.');
     }
 
@@ -215,7 +214,7 @@ final class CliCommandsTest extends CliControllerTestCase
             ['user' => $user['user_id'], 'password' => 'short']
         );
 
-        $this->assertSame('base.changeUserPasswordCli', $result['view'],
+        $this->assertSame(\OWA\Core\Controller\Cli::EXIT_USAGE, \OWA\Core\Controller\Cli::$exit_code,
             'A password shorter than 6 characters should fail validation.');
 
         $after = \OWA\Core\CoreAPI::entityFactory('base.user');

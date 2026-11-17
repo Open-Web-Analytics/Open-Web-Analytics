@@ -72,7 +72,7 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     /** A refused install prints why, and has done nothing. */
     function errorAction() {
 
-        $this->setView('base.cli');
+        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
     }
 
     function action() {
