@@ -68,7 +68,24 @@ final class ObjectCacheTest extends TestCase
         $cache->set('owa_site', 'id1', ['name' => 'x']);
         $this->assertSame(['name' => 'x'], $cache->get('owa_site', 'id1'));
 
-        $cache->remove('owa_site', 'id1');
+        $this->assertTrue($cache->remove('owa_site', 'id1'));
         $this->assertNull($cache->get('owa_site', 'id1'));
+        $this->assertFalse($cache->remove('owa_site', 'id1'), 'nothing was left to remove');
+    }
+
+    public function testCollectionsAreSeparateAndFlushEmptiesThemAll(): void
+    {
+        $cache = new \OWA\Module\Base\Classes\Cache();
+
+        $cache->set('owa_site', 'id1', ['name' => 'site']);
+        $cache->set('owa_user', 'id1', ['name' => 'user']);
+        $this->assertSame(['name' => 'site'], $cache->get('owa_site', 'id1'));
+        $this->assertSame(['name' => 'user'], $cache->get('owa_user', 'id1'));
+
+        $cache->remove('owa_site', 'id1');
+        $this->assertSame(['name' => 'user'], $cache->get('owa_user', 'id1'));
+
+        $this->assertTrue($cache->flush());
+        $this->assertNull($cache->get('owa_user', 'id1'));
     }
 }
