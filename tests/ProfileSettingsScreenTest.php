@@ -399,7 +399,7 @@ final class ProfileSettingsScreenTest extends TestCase
             $this->assertStringNotContainsString( '[base.' . $key . ']', $html, "base.$key is offered on the Profile" );
         }
 
-        foreach ( array( 'Pages and domains', 'Campaign parameters', 'Privacy and exclusions', 'Visitor announcements' ) as $legend ) {
+        foreach ( array( 'Page URLs', 'Campaign parameters', 'Privacy and exclusions', 'Visitor announcements' ) as $legend ) {
             $this->assertStringContainsString( '<legend>' . $legend . '</legend>', $html );
         }
     }
