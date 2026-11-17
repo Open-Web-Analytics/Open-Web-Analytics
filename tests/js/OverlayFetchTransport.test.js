@@ -1,13 +1,3 @@
-// Heatmap and Player call jQuery(...) and jQuery.ajax(...). Same interop fix as
-// DomStreamPlayback.test.js: babel-jest's wildcard namespace is not callable, so
-// mark the real jQuery as an ES module.
-jest.mock('jquery', () => {
-    const jq = jest.requireActual('jquery');
-    jq.__esModule = true;
-    return jq;
-});
-
-import * as jQuery from 'jquery';
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 
 /**
@@ -26,20 +16,20 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  * every cross-origin signed request. With both fixed and covered end to end,
  * the reason for JSONP is gone.
  *
- * These tests pin the transport rather than the plumbing, so they keep meaning
- * something if the fetch is ever rewritten off jQuery: whatever issues the
- * request must not ask for a JSONP response, and must not smuggle a callback
- * name into the URL.
+ * The overlays fetch with fetch(): whatever comes back is read as JSON, never
+ * run, and no <script> is added to the page.
  */
 describe('the overlay fetches over CORS, not JSONP', () => {
 
     let calls;
+    let answer;
 
     beforeEach(() => {
         calls = [];
-        jest.spyOn(jQuery, 'ajax').mockImplementation((opts) => {
-            calls.push(opts);
-            return { done: () => {}, fail: () => {} };
+        answer = { ok: true, json: () => Promise.resolve({ data: { resultsRows: [], more: false } }) };
+        global.fetch = jest.fn((url, init) => {
+            calls.push({ url, init });
+            return Promise.resolve(answer);
         });
 
         // The heatmap fetches only from this OWA server.
@@ -53,64 +43,93 @@ describe('the overlay fetches over CORS, not JSONP', () => {
     });
 
     afterEach(() => {
-        jest.restoreAllMocks();
+        delete global.fetch;
         OWA.overlayParams = null;
+        document.body.innerHTML = '';
     });
 
-    async function heatmapFetch() {
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    async function heatmap() {
         const { Heatmap } = await import('../../modules/Base/src/tracker/Heatmap.js');
-        const h = new Heatmap();
-        h.fetchData(1);
-        return calls[0];
+        return Object.assign(Object.create(Heatmap.prototype), { clicks: '', nextPage: 1, more: true, rows: [] });
     }
 
-    async function playerFetch() {
+    async function player() {
         const { Player } = await import('../../modules/Domstream/src/tracker/Player.js');
-        const p = new Player();
-        p.fetchData();
-        return calls[0];
+        return new Player();
     }
 
-    test('the heatmap does not request a JSONP response', async () => {
-        const opts = await heatmapFetch();
+    test('the heatmap GETs the URL the admin interface supplied, without cookies', async () => {
+        const h = await heatmap();
+        h.fetchData(1);
+        await settle();
 
-        expect(opts).toBeDefined();
-        // JSONP would make the response an executable script.
-        expect(opts.dataType).not.toBe('jsonp');
-        // and refuses one outright: jQuery turns a JSON request whose URL
-        // contains "=?" into a <script> it runs, unless jsonp is false.
-        expect(opts.jsonp).toBe(false);
-    });
-
-    test('the player does not request a JSONP response', async () => {
-        const opts = await playerFetch();
-
-        expect(opts).toBeDefined();
-        expect(opts.dataType).not.toBe('jsonp');
-        expect(opts.jsonp).toBe(false);
-    });
-
-    test('the request goes to the URL the admin interface supplied', async () => {
-        const opts = await heatmapFetch();
-
+        expect(calls).toHaveLength(1);
         // Not derived client-side: the tracker's base URL is where it *logs*,
         // which need not be where reporting lives.
-        expect(opts.url).toBe(OWA.overlayParams.api_url);
+        expect(calls[0].url).toBe(OWA.overlayParams.api_url);
+        expect(calls[0].init.method).toBe('GET');
+        // The credential is in the query string; no cookie rides along.
+        expect(calls[0].init.credentials).toBe('omit');
     });
 
-    test('no callback name is smuggled into the URL', async () => {
-        const opts = await heatmapFetch();
+    test('the heatmap draws what the JSON answer holds', async () => {
+        const h = await heatmap();
+        h.plotClickData = jest.fn();
 
-        expect(String(opts.url)).not.toMatch(/jsonpCallback/i);
-        expect(String(opts.url)).not.toMatch(/callback=/i);
+        h.fetchData(1);
+        await settle();
+
+        expect(h.plotClickData).toHaveBeenCalledWith({ data: { resultsRows: [], more: false } });
+    });
+
+    test('the player loads the recording the JSON answer holds', async () => {
+        OWA.overlayParams = { action: 'loadPlayer', api_url: OWA.overlayParams.api_url };
+        answer = { ok: true, json: () => Promise.resolve({ data: { samples: [[0, 'm', 1, 2]] } }) };
+        const p = await player();
+
+        p.fetchData();
+        await settle();
+
+        expect(calls[0].url).toBe(OWA.overlayParams.api_url);
+        expect(calls[0].init.credentials).toBe('omit');
+        expect(p.samples).toEqual([[0, 'm', 1, 2]]);
+    });
+
+    test('an answer that is not 2xx, or not JSON, is dropped', async () => {
+        const h = await heatmap();
+        h.plotClickData = jest.fn();
+
+        answer = { ok: false, json: () => Promise.resolve({ data: {} }) };
+        h.fetchData(1);
+        await settle();
+
+        answer = { ok: true, json: () => Promise.reject(new SyntaxError('Unexpected token')) };
+        h.fetchData(1);
+        await settle();
+
+        expect(calls).toHaveLength(2);
+        expect(h.plotClickData).not.toHaveBeenCalled();
+    });
+
+    test('nothing is added to the page as a script', async () => {
+        const h = await heatmap();
+        const scripts = document.getElementsByTagName('script').length;
+
+        h.fetchData(1);
+        await settle();
+
+        expect(document.getElementsByTagName('script')).toHaveLength(scripts);
+        expect(String(calls[0].url)).not.toMatch(/callback=/i);
     });
 
     test('a next page on another host is not fetched', async () => {
-        const { Heatmap } = await import('../../modules/Base/src/tracker/Heatmap.js');
-        const hm = new Heatmap();
-        hm.clicks = { next: 'https://evil.example/x.js?cb=?' };
+        const h = await heatmap();
+        h.clicks = { next: 'https://evil.example/x.js?cb=?' };
 
-        hm.fetchData(2);
+        h.fetchData(2);
+        await settle();
 
         expect(calls).toHaveLength(0);
     });

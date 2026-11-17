@@ -403,7 +403,7 @@ class OWA {
      * The params for the overlay session running on this page, or null.
      *
      * The overlays' fetchData() read api_url from here. If
-     * this is missing they get undefined, jQuery.ajax is called with an
+     * this is missing they get undefined, the fetch goes to an
      * undefined URL, and the overlay silently never draws -- so it is covered
      * by tests/js/OverlayParamsInMemory.test.js rather than trusted.
      */

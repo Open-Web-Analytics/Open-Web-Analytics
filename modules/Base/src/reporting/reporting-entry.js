@@ -30,13 +30,12 @@
  */
 
 // FIRST: publish jQuery on window for the vendor plugins that read a free `jQuery`/`$`
-// at eval time (chosen, sparkline, flot) and for the report
+// at eval time (chosen, flot) and for the report
 // templates' inline <script> blocks. Must precede every vendor import below.
 import './vendor-jquery-global.js';
 
 // jQuery plugin ecosystem (order preserved from the retired concat).
 import 'chosen-js/chosen.jquery.js';
-import 'jquery-sparkline';
 import 'jquery.flot';                       // core
 import 'jquery.flot/jquery.flot.time.js';   // must precede owa.areachart (xaxis.mode:"time")
 /*
@@ -99,6 +98,12 @@ import './owa.profileform.js';
 // the goal event definition form's condition builder (owa.goalbuilder.js).
 import './owa.funnelbuilder.js';
 import './owa.goalbuilder.js';
+// The custom report editor (custom_report_edit.php), started from the data the template hands over.
+import './owa.customReportEdit.js';
+// The funnel builder screen (visualization_edit.php).
+import './owa.visualizationEdit.js';
+// The header's notification bell and its account and help menus (header.php).
+import './owa.header.js';
 
 // window.jQuery / window.$ are published by vendor-jquery-global.js (first import);
 // window.OWA (the ~166 template references) is published by owa.format.js itself.

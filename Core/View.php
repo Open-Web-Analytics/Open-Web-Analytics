@@ -113,6 +113,13 @@ class View extends \OWA\Core\Base {
 
     var $module; // set by factory.
 
+    /**
+     * The <module>.<view> this view was made for, set by CoreAPI::viewFactory().
+     *
+     * @var string
+     */
+    var $name = '';
+
     var $data;
 
     var $default_subview;
@@ -160,6 +167,7 @@ class View extends \OWA\Core\Base {
         endif;
 
         $this->setSettingsPageTitle();
+        $this->renderDeclaredTemplate();
 
         if (array_key_exists('subview', $this->data)):
             $this->body->caller_params['subview'] = $this->data['subview'];
@@ -224,8 +232,8 @@ class View extends \OWA\Core\Base {
             // set view name in template. used for navigation.
             $this->subview->body->caller_params['view'] = $this->data['subview'];
 
-            // Set validation errors
-            $this->subview->body->set('validation_errors', $this->get('validation_errors'));
+            // Set validation errors: an empty array when there are none, as on a page.
+            $this->subview->body->set('validation_errors', $this->data['validation_errors'] ?? []);
 
             if (array_key_exists('params', $this->data)) {
                 $this->subview->body->set('params', $this->data['params']);
@@ -355,8 +363,7 @@ class View extends \OWA\Core\Base {
             endif;
         endif;
 
-        $this->subview = \OWA\Core\CoreAPI::subViewFactory($subview);
-        //print_r($subview.'///');
+        $this->subview = \OWA\Core\CoreAPI::subViewFactory($subview, $this->data);
         $this->subview->setData($this->data);
     }
 
@@ -404,11 +411,62 @@ class View extends \OWA\Core\Base {
             \OWA\Core\CoreAPI::settingsPageTitle( $do ) );
     }
 
+    /**
+     * The template the controller declared for this view's name
+     * (Controller::setView(), setSubview()): the body is that file from the
+     * view's module, and reads each declared var: a name is the controller's
+     * value of that name, false when it set none; name => value is the value.
+     * On a page, not a subview, the declaration also names the wrapper and the
+     * page title.
+     *
+     * Before render(), so a View class of the module's own still has the last
+     * word. Called from both assembly paths.
+     */
+    protected function renderDeclaredTemplate() {
+
+        $declared = $this->data['templates'][ $this->name ] ?? null;
+
+        if ( ! $declared ) {
+
+            return;
+        }
+
+        $this->body->setTemplateFile( $this->module, $declared['template'] );
+
+        foreach ( (array) ( $declared['vars'] ?? [] ) as $key => $var ) {
+
+            if ( is_int( $key ) ) {
+
+                $this->body->set( $var, $this->get( $var ) );
+
+            } else {
+
+                $this->body->set( $key, $var );
+            }
+        }
+
+        if ( $this->is_subview ) {
+
+            return;
+        }
+
+        if ( ! empty( $declared['wrapper'] ) ) {
+
+            $this->t->set_template( $declared['wrapper'] );
+        }
+
+        if ( isset( $declared['title'] ) ) {
+
+            $this->setTitle( $declared['title'] );
+        }
+    }
+
     function assembleSubView($data) {
 
         // Before render(), so a subview that wants to override its own title
         // still can -- and so it is set whichever branch below runs.
         $this->setSettingsPageTitle();
+        $this->renderDeclaredTemplate();
 
         // construct main view.  This might set some properties of the subview.
         if (method_exists($this, 'render')) {

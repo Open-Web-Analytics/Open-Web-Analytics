@@ -8,8 +8,8 @@
  */
  
 import { OWA_instance } from '../common/owa.js'; 
-import * as jQuery from 'jquery';
 import { ElementAnchor } from './ElementAnchor.js';
+import { OverlayDom } from './OverlayDom.js';
 
 class Heatmap {
 	
@@ -109,25 +109,29 @@ class Heatmap {
      * and closed nothing; the reader closes the window.
      */
     showControlPanel() {
-        var that = this;
-        jQuery('body').append('<div id="owa_overlay"></div>');
-        jQuery('#owa_overlay').append('<div id="owa_overlay_logo"></div>');
+
+        var panel = OverlayDom.element( 'div', { id: 'owa_overlay' }, [
+            OverlayDom.element( 'div', { id: 'owa_overlay_logo' } )
+        ] );
 
         // Stats: how many clicks there are, how many are drawn, and why the
         // rest are not.
-        jQuery('#owa_overlay').append('<div class="owa_overlay_control" id="owa_overlay_stats_toggle" '
-            + 'role="button" tabindex="0" aria-expanded="false" aria-controls="owa_overlay_stats">Stats</div>');
-        jQuery('#owa_overlay').append('<div id="owa_overlay_stats" hidden></div>');
-        jQuery('#owa_overlay_stats_toggle').on('click keydown', function(e) {
-            if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
-            e.preventDefault();
-            that.toggleStats();
-        });
+        var toggle = OverlayDom.control( 'owa_overlay_stats_toggle', 'Stats', {
+            'aria-expanded': 'false',
+            'aria-controls': 'owa_overlay_stats'
+        } );
+
+        panel.appendChild( toggle );
+        panel.appendChild( OverlayDom.element( 'div', { id: 'owa_overlay_stats', hidden: true } ) );
+        document.body.appendChild( panel );
+
+        OverlayDom.onActivate( toggle, () => this.toggleStats() );
         this.renderStats();
 
-        //eliminate session cookie when window closes.
-        //jQuery(window).unload(function() {OWA_instance.endOverlaySession()});
-        jQuery(window).on('unload', function() {OWA_instance.endOverlaySession()});
+        // The session ends with the page. pagehide, not unload: it fires
+        // wherever unload did, and a page that has it can still enter the
+        // back/forward cache.
+        window.addEventListener( 'pagehide', function () { OWA_instance.endOverlaySession(); } );
     }
 
     /**
@@ -260,32 +264,15 @@ class Heatmap {
             return;
         }
 
-        //closure
-        var that = this;
-        
-        jQuery.ajax({
-            url: url,
-
-            // Never JSONP, whatever the URL: jQuery turns a JSON request whose
-            // URL contains "=?" into a <script> it runs.
-            jsonp: false,
-           
-            // A plain cross-origin GET, not JSONP.
-            //
-            // JSONP returns the body as a <script> the browser executes, which
-            // makes the endpoint readable by any page on the internet. It was
-            // used here only because these run on the tracked site and call
-            // back to the OWA origin, and CORS did not work -- addCorsHeaders()
-            // never emitted a header, and isHttps() let a client's Origin flip
-            // the server's scheme and break the request signature. Both fixed.
-            //
-            // Credentials travel in the query string, so this stays a CORS
-            // "simple request" and costs no preflight round trip.
-            dataType: 'json',
-            success: function(data) {
-                that.plotClickData(data);
-            }
-        });    
+        // A plain cross-origin GET for JSON, not JSONP.
+        //
+        // JSONP returns the body as a <script> the browser executes, which
+        // makes the endpoint readable by any page on the internet. It was
+        // used here only because these run on the tracked site and call
+        // back to the OWA origin, and CORS did not work -- addCorsHeaders()
+        // never emitted a header, and isHttps() let a client's Origin flip
+        // the server's scheme and break the request signature. Both fixed.
+        OverlayDom.getJson( url, ( data ) => this.plotClickData( data ) );
     }
 
     plotClickData(data) {
@@ -440,11 +427,13 @@ class Heatmap {
 
     toggleStats() {
 
-        var panel = jQuery('#owa_overlay_stats');
-        var open = panel.prop('hidden');
+        var panel  = document.getElementById( 'owa_overlay_stats' );
+        var toggle = document.getElementById( 'owa_overlay_stats_toggle' );
+        var open   = panel.hidden;
 
-        panel.prop('hidden', ! open);
-        jQuery('#owa_overlay_stats_toggle').toggleClass('active', open).attr('aria-expanded', open ? 'true' : 'false');
+        panel.hidden = ! open;
+        toggle.classList.toggle( 'active', open );
+        toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
     }
 
     /** The Stats panel's lines. A reason nothing fell under is left out. */
@@ -475,16 +464,26 @@ class Heatmap {
 
     renderStats() {
 
-        var lines = this.statsLines();
-        var table = jQuery('<table></table>');
+        var panel = document.getElementById( 'owa_overlay_stats' );
 
-        for ( var i = 0; i < lines.length; i++ ) {
-            table.append( jQuery('<tr></tr>')
-                .append( jQuery('<th scope="row"></th>').text( lines[i][0] ) )
-                .append( jQuery('<td></td>').text( lines[i][1].toLocaleString() ) ) );
+        if ( ! panel ) {
+
+            return;
         }
 
-        jQuery('#owa_overlay_stats').empty().append( table );
+        var lines = this.statsLines();
+        var table = OverlayDom.element( 'table' );
+
+        for ( var i = 0; i < lines.length; i++ ) {
+
+            table.appendChild( OverlayDom.element( 'tr', {}, [
+                OverlayDom.element( 'th', { scope: 'row' }, [ lines[i][0] ] ),
+                OverlayDom.element( 'td', {}, [ lines[i][1].toLocaleString() ] )
+            ] ) );
+        }
+
+        panel.textContent = '';
+        panel.appendChild( table );
     }
 
 
@@ -646,10 +645,15 @@ class Heatmap {
     
     createCanvas(w, h) {
 
-        var that = this;
-        jQuery("body").append('<canvas id="owa_heatmap" width="'+w+'px" height="'+h+'px" style="position:absolute; top:0px; left:0px; z-index:999999;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);"></canvas>');
+        var canvas = OverlayDom.element( 'canvas', { id: 'owa_heatmap' } );
+
+        // Through the CSSOM, which a page's Content-Security-Policy leaves
+        // alone, where a style attribute may be refused.
+        canvas.style.cssText = 'position:absolute; top:0px; left:0px; z-index:999999;padding:0; margin:0;background: rgba(127, 127, 127, 0.5);';
+        canvas.width  = w;
+        canvas.height = h;
+        document.body.appendChild( canvas );
     }
-    
 
 }
 

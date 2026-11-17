@@ -26,12 +26,7 @@ class OptionsGeoip extends \OWA\Core\AdminController {
 
     function action() {
 
-        $this->set( 'configuration', $this->c->fetch( 'maxmind_geoip' ) );
-
         $edition = \OWA\Module\MaxmindGeoip\Classes\Maxmind::edition();
-
-        $this->set( 'editions', \OWA\Module\MaxmindGeoip\Classes\Maxmind::EDITIONS );
-        $this->set( 'edition', $edition );
 
         // What the page is really for: saying whether this installation can
         // actually resolve a location right now. A key that was never set and a
@@ -49,7 +44,17 @@ class OptionsGeoip extends \OWA\Core\AdminController {
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
         $this->set( 'hierarchy_tier', 0 );
         $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
-        $this->setSubview( 'maxmind_geoip.optionsGeoip' );
+        /*
+         * Only what the Status block reads: the settings' controls and their
+         * values come from the page's registration. 'has_key' is a STATUS, not
+         * a control -- the answer to "why are locations blank" -- reported
+         * above the field rather than inside it.
+         */
+        $this->setSubview( 'maxmind_geoip.optionsGeoip', [
+            'template' => 'options_geoip.php',
+            'vars'     => [ 'db_file', 'db_present', 'db_updated', 'has_key',
+                            'settings_fieldsets' => \OWA\Module\Base\Classes\SettingsForm::pageFieldSets( 'maxmind_geoip.optionsGeoip' ) ],
+        ] );
 
         return $this->data;
     }

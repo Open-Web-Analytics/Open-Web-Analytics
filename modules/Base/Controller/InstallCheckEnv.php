@@ -98,7 +98,9 @@ class InstallCheckEnv extends \OWA\Core\Controller\Install {
         $this->set( 'checks', $checks );
         $this->set( 'errors', $failed );
         $this->setView( 'base.install' );
-        $this->setSubview( 'base.installCheckEnv' );
+        // Both, not just the failures: the template lists every check so that
+        // "looked at and fine" is distinguishable from "never looked at".
+        $this->setSubview( 'base.installCheckEnv', [ 'template' => 'install_check_env.php', 'vars' => [ 'checks', 'errors' ] ] );
     }
 
 }

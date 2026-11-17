@@ -18,28 +18,57 @@
 
 #owa_overlay_logo {background-image:url('../i/owa_logo_72w.jpg'); width:62px;height:35px; float:left; padding-right:10px; margin-right:5px;}
 .owa_overlay_control {vertical-align:middle; height:auto; float:left; padding:0 10px 0 10px; border-left:1px solid #9f9f9f; font-weight: bold; color: #9f9f9f; font-family: sans-serif;}
-.active {color: var(--owa-accent, #f47a17);}
-div.owa_overlay_control:hover {
+#owa_overlay .owa_overlay_control.active {color: var(--owa-accent, #f47a17);}
+#owa_overlay div.owa_overlay_control:hover,
+#owa_overlay div.owa_overlay_control:focus-visible {
     color:var(--owa-accent, #f47a17);
 }
+#owa_overlay div.owa_overlay_control {cursor:pointer;}
 
-div.jGrowl div.jGrowl-notification {
+/* Folded by the player's Hide: by id, so a page rule on [hidden] cannot show it. */
+#owa_overlay[hidden], #owa_overlay_hidden[hidden] {display:none;}
+#owa_overlay, #owa_overlay_hidden {animation: owa_overlay_in 0.2s ease-out;}
+@keyframes owa_overlay_in {from {opacity:0;} to {opacity:1;}}
+@media (prefers-reduced-motion: reduce) {
+    #owa_overlay, #owa_overlay_hidden {animation:none;}
+}
+
+/* The player's notices: one at a time, top centre, over the page. */
+#owa_overlay_notices {
+    position: fixed;
+    top: 0px;
+    left: 25%;
+    width: 50%;
+    margin: 0;
+    padding: 0;
+    z-index: 999999;
+    font-family: sans-serif;
+    pointer-events: none;
+}
+#owa_overlay_notices .owa_overlay_notice {
+    position: relative;
+    margin: 10px 0 0;
+    padding: 10px 40px 10px 12px;
+    background-color: rgba(48, 48, 48, 0.85);
+    color: #ffffff;
+    border-radius: 5px;
     font-size: 24px;
+    line-height: 1.3;
+    text-align: left;
+    pointer-events: auto;
 }
-div.jGrowl div.jGrowl-notification, div.jGrowl div.jGrowl-notification div.close {
-    background-color:#303030;
-    opacity: 0.7;
+#owa_overlay_notices .owa_overlay_notice_header {display:block; font-size:16px;}
+#owa_overlay_notices .owa_overlay_notice_close {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    padding: 0 6px;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1.2;
 }
-
-div.jGrowl div.jGrowl-notification div.header {
-    font-size: 16px;
-}
-
-body > div.jGrowl.center {
-    top:                 0px;
-    width:                 50%;
-    left:                 25%;
-}
+#owa_overlay_notices .owa_overlay_notice_close:hover,
+#owa_overlay_notices .owa_overlay_notice_close:focus-visible {color: var(--owa-accent, #f47a17);}
 
 #owa-latest-click {
     background-color: red;
@@ -88,6 +117,7 @@ body > div.jGrowl.center {
     background-image:url('../i/owa_logo_72w.jpg'); width:70px;height:35px;
     border: 2px solid var(--owa-accent, #f47a17);
     border-right:0px;
+    cursor:pointer;
 }
 
 /* The heatmap's Stats panel, opened from the control beside the logo. */

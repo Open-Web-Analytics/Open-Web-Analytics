@@ -1,12 +1,3 @@
-// startOverlaySession() dispatches into Heatmap.js/Player.js, which call
-// jQuery(...). Same interop fix as DomStreamPlayback.test.js: babel-jest's
-// wildcard namespace is not callable, so mark the real jQuery as an ES module.
-jest.mock('jquery', () => {
-    const jq = jest.requireActual('jquery');
-    jq.__esModule = true;
-    return jq;
-});
-
 import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 
 /**
@@ -25,7 +16,7 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  *
  * These tests exist because the failure mode of getting this wrong is silent.
  * If getOverlayParams() returned nothing, `var url = params.api_url` would be
- * undefined, jQuery.ajax would be called with an undefined URL, and the overlay
+ * undefined, the fetch would go to an undefined URL, and the overlay
  * would simply never draw -- no error, no exception, nothing for a suite that
  * only asserts DOM construction to catch. The existing overlay e2e explicitly
  * does not assert the fetch ("it simply never calls back in this harness"), so

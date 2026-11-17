@@ -57,6 +57,7 @@ const EXCLUDED = [
  * shows it. An entry nothing matches fails the scan.
  */
 const ALLOWED = [
+    { file: 'owa.customReportEdit.js', text: 'grid', why: 'the widget type a new widget defaults to, a stored name' },
 ];
 
 /** The ALLOWED entries a scan matched. */

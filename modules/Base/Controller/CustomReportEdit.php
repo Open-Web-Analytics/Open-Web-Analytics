@@ -54,6 +54,18 @@ namespace OWA\Module\Base\Controller;
  */
 class CustomReportEdit extends \OWA\Core\ReportController {
 
+    /**
+     * What the builder's template reads, each by name: a value set here and not
+     * listed reaches it as false (CustomReportsTest holds the two together).
+     */
+    const SCREEN_VARS = [
+        'propertyId', 'custom_report_id', 'custom_report_name', 'custom_report_definition',
+        'custom_report_error', 'custom_report_is_shared', 'metric_choices', 'dimension_choices',
+        'widget_types', 'max_widgets', 'max_metrics', 'max_dimensions', 'full_width_types',
+        'single_field_types', 'single_metric_types', 'chart_types', 'fixed_dimensions',
+        'fixed_dimension_extra', 'default_colspans', 'grid_columns', 'link_targets', 'more_targets',
+    ];
+
     function __construct( $params ) {
 
         parent::__construct( $params );
@@ -300,7 +312,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
 
     function success() {
 
-        $this->setSubview( 'base.customReportEdit' );
+        $this->setSubview( 'base.customReportEdit', [ 'template' => 'custom_report_edit.php', 'vars' => self::SCREEN_VARS ] );
         $this->setView( 'base.report' );
         // $this->data, not $this->get() -- get() reads the request, and this
         // was set by action().

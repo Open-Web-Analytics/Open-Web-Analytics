@@ -13,8 +13,7 @@
  */
 
 import { OWA_instance } from '../../../Base/src/common/owa.js';
-import * as jQuery from 'jquery';
-import * as jGrowl from 'jgrowl';
+import { OverlayDom } from '../../../Base/src/tracker/OverlayDom.js';
 
 /** Longest pause replayed as-is; anything longer is shortened to this. */
 const MAX_PAUSE_MSEC = 2000;
@@ -29,6 +28,7 @@ class Player {
         this.x       = 0;
         this.y       = 0;
         this.playing = false;
+        this.notice  = null;
     }
 
     init() {
@@ -56,7 +56,6 @@ class Player {
     fetchData() {
 
         var params = OWA_instance.getOverlayParams() || {};
-        var that   = this;
 
         if ( ! OWA_instance.isOwaServerUrl( params.api_url ) ) {
 
@@ -65,18 +64,9 @@ class Player {
             return;
         }
 
-        jQuery.ajax( {
-            url: params.api_url,
-            // A plain cross-origin GET: the credentials ride the query string,
-            // so this stays a CORS simple request.
-            dataType: 'json',
-            // Never JSONP, whatever the URL: jQuery turns a JSON request whose
-            // URL contains "=?" into a <script> it runs.
-            jsonp: false,
-            success: function ( data ) {
-                that.load( data );
-            },
-        } );
+        // A plain cross-origin GET for JSON: the credentials ride the query
+        // string, so this stays a CORS simple request.
+        OverlayDom.getJson( params.api_url, ( data ) => this.load( data ) );
     }
 
     play() {
@@ -108,7 +98,13 @@ class Player {
             this.timer = null;
         }
 
-        jQuery( '#owa_player_start' ).removeClass( 'active' );
+        var start = document.getElementById( 'owa_player_start' );
+
+        if ( start ) {
+
+            start.classList.remove( 'active' );
+        }
+
         this.setStatus( 'Ready.' );
     }
 
@@ -162,7 +158,14 @@ class Player {
 
     moveCursor( x, y ) {
 
-        jQuery( '#owa-cursor' ).css( { top: y + 'px', left: x + 'px' } );
+        var cursor = document.getElementById( 'owa-cursor' );
+
+        if ( cursor ) {
+
+            cursor.style.top  = y + 'px';
+            cursor.style.left = x + 'px';
+        }
+
         this.setStatus( 'Pointer at ' + x + ', ' + y );
     }
 
@@ -190,11 +193,13 @@ class Player {
 
     click( x, y, tag, id, name ) {
 
-        var marker = jQuery( '<div class="owa-click-marker"></div>' ).css( {
-            position: 'absolute', left: x + 'px', top: y + 'px', 'z-index': 89,
-        } );
+        var marker = OverlayDom.element( 'div', { 'class': 'owa-click-marker', 'data-ui': 'overlay:click-marker' } );
 
-        jQuery( 'body' ).append( marker );
+        marker.style.position = 'absolute';
+        marker.style.left     = x + 'px';
+        marker.style.top      = y + 'px';
+        marker.style.zIndex   = '89';
+        document.body.appendChild( marker );
 
         var label = Player.selector( tag, id, name ) || tag || 'the page';
 
@@ -205,79 +210,118 @@ class Player {
     keyPressed( tag, id, name ) {
 
         var selector = Player.selector( tag, id, name );
-        var node     = selector ? jQuery( selector ).first() : jQuery();
+        var node     = selector ? document.querySelector( selector ) : null;
 
-        if ( node.length ) {
+        if ( node ) {
 
-            node.addClass( 'owa-key-pressed' );
-            setTimeout( () => node.removeClass( 'owa-key-pressed' ), 300 );
+            node.classList.add( 'owa-key-pressed' );
+            setTimeout( () => node.classList.remove( 'owa-key-pressed' ), 300 );
         }
 
         this.setStatus( 'Key pressed in ' + ( selector || tag || 'the page' ) );
     }
 
+    /**
+     * The panel: the logo, Play, Pause and Hide, and a status line. Hide (or
+     * the logo) folds the panel into a tab at the same corner; the tab opens
+     * it again.
+     */
     showPlayerControls() {
 
-        jQuery( 'body' ).append( '<div id="owa_overlay"></div>' );
-        jQuery( '#owa_overlay' )
-            .append( '<div id="owa_overlay_logo"></div>' )
-            .append( '<div class="owa_overlay_control" id="owa_player_start">Play</div>' )
-            .append( '<div class="owa_overlay_control" id="owa_player_stop">Pause</div>' )
-            .append( '<div class="owa_overlay_control" id="owa_player_close">Hide</div>' )
-            .append( '<div id="owa-overlay-status">...</div>' );
+        var panel = OverlayDom.element( 'div', { id: 'owa_overlay' }, [
+            OverlayDom.element( 'div', { id: 'owa_overlay_logo' } ),
+            OverlayDom.control( 'owa_player_start', 'Play' ),
+            OverlayDom.control( 'owa_player_stop', 'Pause' ),
+            OverlayDom.control( 'owa_player_close', 'Hide' ),
+            OverlayDom.element( 'div', { id: 'owa-overlay-status', 'data-ui': 'overlay:status' }, [ '...' ] )
+        ] );
 
-        jQuery( 'body' ).append( '<div id="owa_overlay_hidden"></div>' );
-        jQuery( '#owa_overlay_hidden' ).hide();
-
-        jQuery( 'body' ).append( '<div id="owa-cursor"><img src="'
-            + OWA_instance.getAssetsUrl() + 'base/i/cursor2.png"></div>' );
-
-        jQuery( '.owa_overlay_control' ).click( function () {
-            jQuery( '.owa_overlay_control' ).removeClass( 'active' );
-            jQuery( this ).addClass( 'active' );
+        var tab = OverlayDom.element( 'div', {
+            id: 'owa_overlay_hidden',
+            role: 'button',
+            tabindex: '0',
+            'aria-label': 'Show the player',
+            hidden: true
         } );
 
-        jQuery( '#owa_overlay_logo' ).click( function () {
-            jQuery( '#owa_overlay' ).slideToggle( 'fast' );
-            jQuery( '#owa_overlay_hidden' ).fadeIn( 'slow' );
+        var cursor = OverlayDom.element( 'div', { id: 'owa-cursor', 'data-ui': 'overlay:cursor' }, [
+            OverlayDom.element( 'img', { src: OWA_instance.getAssetsUrl() + 'base/i/cursor2.png', alt: '' } )
+        ] );
+
+        document.body.appendChild( panel );
+        document.body.appendChild( tab );
+        document.body.appendChild( cursor );
+
+        this.notice = new OverlayDom.OverlayNotice();
+
+        var controls = panel.querySelectorAll( '.owa_overlay_control' );
+
+        Array.prototype.forEach.call( controls, function ( el ) {
+
+            OverlayDom.onActivate( el, function () {
+
+                Array.prototype.forEach.call( controls, function ( c ) { c.classList.remove( 'active' ); } );
+                el.classList.add( 'active' );
+            } );
         } );
 
-        jQuery( '#owa_overlay_hidden' ).click( function () {
-            jQuery( '#owa_overlay' ).slideToggle( 'fast' );
-            jQuery( '#owa_overlay_hidden' ).fadeOut();
-        } );
+        // Focus follows the fold, so a keyboard reader is never left on a
+        // control that has gone.
+        var fold = function () {
 
-        var that = this;
+            var hadFocus = panel.contains( document.activeElement );
 
-        jQuery( '#owa_player_start' ).on( 'click', function () { that.play(); } );
-        jQuery( '#owa_player_stop' ).on( 'click', function () { that.stop(); } );
-        jQuery( '#owa_player_close' ).click( function () {
-            jQuery( '#owa_overlay' ).slideToggle( 'fast' );
-            jQuery( '#owa_overlay_hidden' ).fadeIn( 'slow' );
-        } );
+            panel.hidden = true;
+            tab.hidden   = false;
 
-        jQuery( window ).on( 'pagehide', function () { OWA_instance.endOverlaySession(); } );
+            if ( hadFocus ) {
+
+                tab.focus();
+            }
+        };
+
+        var unfold = function () {
+
+            var hadFocus = document.activeElement === tab;
+
+            panel.hidden = false;
+            tab.hidden   = true;
+
+            if ( hadFocus ) {
+
+                controls[ 0 ].focus();
+            }
+        };
+
+        panel.querySelector( '#owa_overlay_logo' ).addEventListener( 'click', fold );
+        OverlayDom.onActivate( tab, unfold );
+        OverlayDom.onActivate( panel.querySelector( '#owa_player_start' ), () => this.play() );
+        OverlayDom.onActivate( panel.querySelector( '#owa_player_stop' ), () => this.stop() );
+        OverlayDom.onActivate( panel.querySelector( '#owa_player_close' ), fold );
+
+        window.addEventListener( 'pagehide', function () { OWA_instance.endOverlaySession(); } );
     }
 
     setStatus( msg ) {
 
-        jQuery( '#owa-overlay-status' ).text( msg );
+        var status = document.getElementById( 'owa-overlay-status' );
+
+        if ( status ) {
+
+            status.textContent = msg;
+        }
     }
 
     /**
-     * jGrowl inserts both as HTML, and the message names an element from the
-     * recording -- its tag, id or name -- which whoever sent it chose.
+     * The message names an element from the recording -- its tag, id or name
+     * -- which whoever sent it chose, so it is shown as text.
      */
     showNotification( msg, header ) {
 
-        jQuery.jGrowl( Player.escapeHtml( msg ), { life: 250, speed: 25, position: 'center', closer: false, pool: 1, header: Player.escapeHtml( header ) } );
-    }
+        if ( this.notice ) {
 
-    static escapeHtml( s ) {
-
-        return String( s === undefined || s === null ? '' : s ).replace( /[&<>"']/g, ( c ) => (
-            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ c ]
-        ) );
+            this.notice.show( header, msg );
+        }
     }
 }
 

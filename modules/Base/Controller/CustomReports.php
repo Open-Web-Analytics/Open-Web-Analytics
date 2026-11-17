@@ -175,7 +175,14 @@ class CustomReports extends \OWA\Core\ReportController {
 
     function success() {
 
-        $this->setSubview( 'base.customReports' );
+        $this->setSubview( 'base.customReports', [
+            'template' => 'custom_reports.php',
+            'vars'     => [ 'custom_reports', 'roster_count',
+                            // Empty for a reader who may not author, which is what stops the
+                            // "what do you want to make" modal rendering for them.
+                            'new_kinds',
+                            'sees_all', 'may_author', 'current_user_id', 'roster_sort', 'roster_desc',
+                            'roster_mine', 'roster_favorites' ] ] );
         $this->setView( 'base.report' );
         $this->set( 'title', \OWA\Core\CoreAPI::t( 'Custom reports' ) );
 

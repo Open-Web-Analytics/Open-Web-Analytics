@@ -8,7 +8,7 @@ reporting safety net for the Phase 3 jQuery migration:
 | Build integrity | `tests/js/reporting/BundleIntegrity.test.js` | yes (Jest) | the reporting bundle is built from the expected inputs, in the right order |
 | jsdom load | `tests/js/reporting/BundleLoad.test.js` | yes (Jest) | the bundle executes and the OWA objects construct outside a browser |
 | **Real render (this dir)** | `tests/e2e/reporting-dashboard.spec.js` | **no — manual/local** | Flot charts, jqGrid tables, and chosen select menus actually paint on a live logged-in dashboard |
-| **Overlay render (this dir)** | `tests/e2e/overlay-heatmap.spec.js` | **no — manual/local** | the heatmap overlay's control panel + canvas build via jQuery **3.x** on the tracker path (the overlay's biggest untested jQuery surface) |
+| **Overlay render (this dir)** | `tests/e2e/overlay-heatmap.spec.js` | **no — manual/local** | the heatmap overlay's control panel + canvas build on the tracker path, with DOM APIs alone (the tracker side carries no jQuery) |
 
 The jsdom layers cannot paint; these Playwright tests drive headless Chromium
 against a live OWA dashboard. As of Phase 3.2 the reporting bundle runs on jQuery
@@ -68,8 +68,7 @@ schema** — never a production account. The identifiers are constants shared wi
 The heatmap/player overlay does **not** render on an OWA page — in production
 the report page links to `base.overlayLauncher`, which redirects the browser to
 the *tracked* page with a `#owa_overlay.<params>` anchor. On that page the
-tracker bundle (already on jQuery **3.x**) decodes the anchor and builds the
-overlay DOM. `overlay_harness.html` stands in for that tracked page: it loads
+tracker bundle decodes the anchor and builds the overlay DOM. `overlay_harness.html` stands in for that tracked page: it loads
 the real `dist/owa.tracker.js` **same-origin** with this install and carries the
 anchor, so the tracker's `checkForOverlaySession()` → `startOverlaySession()` →
 dynamic-import of `Heatmap.js` runs exactly as in production.

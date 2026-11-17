@@ -43,12 +43,14 @@ class OptionsGeneral extends \OWA\Core\AdminController {
 
     function action() {
 
-        $this->set( 'configuration',  $this->c->fetch('base') );
-
         // add data to container
         $owa_site_id = $this->resolveCurrentSiteId();
         $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
-        $this->setSubview( 'base.optionsGeneral' );
+        // What the page renders, from the page's own registration. The template
+        // loops over these; it does not know which settings it is showing.
+        $this->setSubview( 'base.optionsGeneral', [
+            'template' => 'options_general.php',
+            'vars'     => [ 'settings_fieldsets' => \OWA\Module\Base\Classes\SettingsForm::pageFieldSets( 'base.optionsGeneral' ) ] ] );
 
         return $this->data;
 

@@ -71,6 +71,11 @@ class Error extends \OWA\Core\View {
             $this->body->set( 'nav_property_id', $navProperty );
             $this->body->set( 'nav_access_site', (string) ( $data['nav_access_site'] ?? '' ) );
             $this->body->set( 'report_nav', \OWA\Core\ReportController::reportNavigation( $navProperty ) );
+        }
+
+        // The page's header controls -- the menus and the bell -- are in the bundle (owa.header.js).
+        if ( $this->is_subview !== true ) {
+
             $this->setJs( 'owa.reporting', 'base/dist/owa.reporting-combined-min.js' );
         }
 

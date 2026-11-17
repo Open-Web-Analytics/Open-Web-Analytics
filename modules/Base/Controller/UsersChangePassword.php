@@ -74,7 +74,7 @@ class UsersChangePassword extends \OWA\Core\Controller {
 
     function errorAction() {
 
-        $this->setView('base.usersPasswordEntry');
+        $this->setView( 'base.usersPasswordEntry', UsersPasswordEntry::page( $this ) );
 
         /*
          * 'key', not 'k'.

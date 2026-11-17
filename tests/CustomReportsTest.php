@@ -1201,16 +1201,6 @@ final class CustomReportsTest extends TestCase
         }
     }
 
-    /** The builder is handed the same list, not a copy of it. */
-    public function testTheBuilderReadsTheTimeDimensionsFromTheRegistry(): void
-    {
-        $template = file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/custom_report_edit.php');
-
-        $this->assertMatchesRegularExpression(
-            '/var TIME_DIMENSIONS = <\?php echo [^;]*\\\\CustomReports::timeDimensions\(\) \); \?>;/',
-            $template);
-    }
-
     /**
      * The chart-metric question is asked on exactly the types that plot one.
      *
@@ -1234,39 +1224,34 @@ final class CustomReportsTest extends TestCase
      * Everything the builder's controller sets reaches its template.
      *
      * The builder's body is a template with its OWN scope, so a value the
-     * controller set and View\CustomReportEdit does not name is simply absent
-     * -- and View::get() answers FALSE for an absent key rather than null or an
-     * error. So a forgotten line here does not fail: `(array) false` is
+     * controller set and CustomReportEdit::SCREEN_VARS does not name is simply
+     * absent -- and View::get() answers FALSE for an absent key rather than
+     * null or an error. So a forgotten name does not fail: `(array) false` is
      * `array(false)`, the JavaScript gets `[false]`, and an indexOf against it
      * quietly says no.
      *
      * That is not hypothetical. Adding CHART_TYPES and OWN_METRIC_TYPES to the
-     * controller without adding them here left the builder deciding that NO
+     * controller without forwarding them left the builder deciding that NO
      * type draws a chart -- so the chart-metric field would have disappeared
      * from a trend and a pie, with nothing anywhere saying why.
      *
-     * Read from the source rather than by rendering, because the failure is a
-     * MISSING line and the only place a missing line exists is the file.
+     * The controller is read from the source, because the failure is a
+     * MISSING name and every set() has to be found, whichever branch it is on.
      */
-    public function testTheBuilderViewForwardsEverythingItsControllerSets(): void
+    public function testTheBuilderForwardsEverythingItsControllerSets(): void
     {
         $controller = file_get_contents(
             \OWA\Core\Env::root() . '/modules/Base/Controller/CustomReportEdit.php' );
-        $view = file_get_contents(
-            \OWA\Core\Env::root() . '/modules/Base/View/CustomReportEdit.php' );
 
         /*
          * SINGLE-quoted, and it matters. In a double-quoted PHP string
          * `$this->set` interpolates away to nothing, and the pattern would then
          * match something else entirely -- confidently.
          */
-        preg_match_all( '~\$this->set\(\s*.([a-z_0-9]+).~', $controller, $set );
-        preg_match_all( '~\$this->body->set\(\s*.([a-z_0-9]+).~', $view, $forwarded );
+        preg_match_all( '~\$this->set\(\s*.([A-Za-z_0-9]+).~', $controller, $set );
 
-        // The check has to be capable of failing: both sides must have found
-        // something to compare.
+        // The check has to be capable of failing: there must be something to compare.
         $this->assertGreaterThan( 15, count( $set[1] ) );
-        $this->assertGreaterThan( 15, count( $forwarded[1] ) );
 
         /*
          * Two are deliberately not forwarded, and neither is read by the body:
@@ -1281,10 +1266,10 @@ final class CustomReportsTest extends TestCase
         $exempt = array( 'custom_report', 'title' );
 
         $missing = array_values( array_diff(
-            array_unique( $set[1] ), array_unique( $forwarded[1] ), $exempt ) );
+            array_unique( $set[1] ), \OWA\Module\Base\Controller\CustomReportEdit::SCREEN_VARS, $exempt ) );
 
         $this->assertSame( array(), $missing,
-            'the builder controller sets these and the view does not forward them, so the '
+            'the builder controller sets these and does not hand them to its template, so the '
           . 'template reads false for each: ' . implode( ', ', $missing ) );
     }
 

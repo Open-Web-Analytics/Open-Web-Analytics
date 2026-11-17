@@ -10,7 +10,7 @@
  * Cube page answers "why is it not built?", and only someone who can act on the
  * second is offered it.
  */
-$owa_r = (array) $view->readiness;
+$owa_r = (array) $view->reporting_readiness;
 ?>
 <div class="owa_reportNotReady">
 

@@ -707,7 +707,18 @@ class ConfiguredReport extends \OWA\Core\ReportController {
          * the controller it replaced. That is done, and restating a default is
          * just a way for the two to disagree later.
          */
-        $this->setSubview( self::SUBVIEW );
+        $this->setSubview( self::SUBVIEW, [
+            'template' => 'report_widgets.php',
+            /*
+             * Passed through, not interpreted: the template knows what a trend
+             * and a grid are. The constraint and the metrics are report-wide,
+             * so every widget looks at the same rows and measures them the
+             * same way; metricSets are the sets the widgets are drawn once
+             * each for (Core\MetricSets). custom_report_id is set only for a
+             * user-authored report, deprecated on almost none.
+             */
+            'vars'     => [ 'widgets', 'deprecated', 'constraints', 'metrics', 'metricSets', 'custom_report_id' ],
+        ] );
 
         /*
          * Metric sets, if this report chooses its own.

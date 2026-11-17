@@ -303,7 +303,7 @@ final class ReportingReadinessTest extends TestCase
     public function testTheNoticeOffersTheNextStep(): void
     {
         $down = $this->render('report_not_ready.php', [
-            'readiness'            => Status::readinessFor('7', true, null),
+            'reporting_readiness'  => Status::readinessFor('7', true, null),
             'can_view_cube_status' => false,
         ]);
 
@@ -316,7 +316,7 @@ final class ReportingReadinessTest extends TestCase
             'the status page is offered only to someone who can open it');
 
         $admin = $this->render('report_not_ready.php', [
-            'readiness'            => Status::readinessFor('7', false, null),
+            'reporting_readiness'  => Status::readinessFor('7', false, null),
             'can_view_cube_status' => true,
         ]);
 
@@ -324,7 +324,7 @@ final class ReportingReadinessTest extends TestCase
         $this->assertStringNotContainsString('cmd=schedule-run', $admin);
 
         $orphan = $this->render('report_not_ready.php', [
-            'readiness'            => Status::readinessFor('', false, null),
+            'reporting_readiness'  => Status::readinessFor('', false, null),
             'can_view_cube_status' => true,
         ]);
 

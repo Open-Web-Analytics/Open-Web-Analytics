@@ -35,15 +35,6 @@
  * different width lands somewhere else on the page.
  */
 
-// Heatmap does `import * as jQuery from 'jquery'` and calls jQuery(...). Webpack
-// makes that namespace callable; babel-jest's interop does not unless jQuery is
-// marked an ES module (as DomstreamPlayer.test.js does).
-jest.mock('jquery', () => {
-    const jq = jest.requireActual('jquery');
-    jq.__esModule = true;
-    return jq;
-});
-
 // jsdom gives us no canvas, and none is needed: these tests are about which
 // coordinates and weights reach the drawing calls, so the 2d context is a
 // recorder. A real canvas would test the browser, not this code.
@@ -425,5 +416,76 @@ describe('the stats', () => {
         toggle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
         expect(panel.hidden).toBe(true);
         expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    });
+});
+
+describe('the overlay on the page', () => {
+
+    test('the canvas covers the page at the size given, over everything', () => {
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+
+        hm.createCanvas(1234, 5678);
+
+        const canvas = document.querySelector('canvas#owa_heatmap');
+        expect(canvas.width).toBe(1234);
+        expect(canvas.height).toBe(5678);
+        expect(canvas.style.position).toBe('absolute');
+        expect(canvas.style.top).toBe('0px');
+        expect(canvas.style.left).toBe('0px');
+        expect(canvas.style.zIndex).toBe('999999');
+        expect(canvas.parentNode).toBe(document.body);
+    });
+
+    test('the panel is appended after the page, so the page\'s element anchors stay the same', () => {
+        document.body.innerHTML = '<main><a id="x">x</a></main>';
+        const before = ElementAnchor.index(document);
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+
+        hm.createCanvas(10, 10);
+        hm.showControlPanel();
+
+        const after = ElementAnchor.index(document);
+        for (const [anchor, el] of before) {
+            expect(after.get(anchor)).toBe(el);
+        }
+        expect(document.body.lastElementChild.id).toBe('owa_overlay');
+    });
+
+    test('the Stats toggle is a button by role, Space opens it, other keys do nothing', () => {
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+        hm.showControlPanel();
+
+        const toggle = document.querySelector('[role="button"][aria-controls="owa_overlay_stats"]');
+        const panel = document.getElementById('owa_overlay_stats');
+
+        toggle.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+        expect(panel.hidden).toBe(true);
+
+        toggle.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+        expect(panel.hidden).toBe(false);
+        expect(toggle.classList.contains('active')).toBe(true);
+    });
+
+    test('the stats are text: a line is never read as markup', () => {
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+        hm.statsLines = () => [['<img src=x onerror=alert(1)>', 1]];
+        hm.showControlPanel();
+
+        const panel = document.getElementById('owa_overlay_stats');
+        expect(panel.querySelector('img')).toBeNull();
+        expect(panel.querySelector('th').textContent).toBe('<img src=x onerror=alert(1)>');
+    });
+
+    test('leaving the page ends the overlay session', () => {
+        const end = jest.fn();
+        const { OWA_instance } = require('../../modules/Base/src/common/owa.js');
+        const spy = jest.spyOn(OWA_instance, 'endOverlaySession').mockImplementation(end);
+        const hm = makeHeatmap(Heatmap, freshRecorder());
+
+        hm.showControlPanel();
+        window.dispatchEvent(new Event('pagehide'));
+
+        expect(end).toHaveBeenCalled();
+        spy.mockRestore();
     });
 });

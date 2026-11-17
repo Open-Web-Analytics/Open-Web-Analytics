@@ -24,7 +24,11 @@
  * USAGE
  *   php static_config_boot_probe.php            -> default boot (loads DB config)
  *   php static_config_boot_probe.php static     -> OWA_USE_STATIC_CONFIG_ONLY=true
- * Prints one JSON object: { "connected": bool, "static": bool }.
+ * Prints one JSON object: { "connected": bool, "static": bool,
+ * "active_modules": [...], "base": { key: value }, "constants": [ key, ... ] },
+ * where constants are the Base keys a config-file constant governs and base is
+ * Base's other settings after boot. Governed values (credentials among them)
+ * are not printed.
  *
  * Excluded from the release tarball with the rest of tests/.
  */
@@ -55,7 +59,13 @@ new owa(['tracking_mode' => true, 'request_type' => 'tracking']);
 
 $db = \OWA\Core\CoreAPI::dbSingleton();
 
+$c         = \OWA\Core\CoreAPI::configSingleton();
+$constants = array_keys($c->configConstants()['base'] ?? []);
+
 echo json_encode([
-    'connected' => (bool) $db->isConnectionEstablished(),
-    'static'    => $static,
-]) . "\n";
+    'connected'      => (bool) $db->isConnectionEstablished(),
+    'static'         => $static,
+    'active_modules' => \OWA\Core\CoreAPI::getActiveModules(),
+    'base'           => array_diff_key((array) $c->fetch('base'), array_flip($constants)),
+    'constants'      => $constants,
+], JSON_PRESERVE_ZERO_FRACTION) . "\n";

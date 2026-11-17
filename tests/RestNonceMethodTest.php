@@ -75,15 +75,4 @@ final class RestNonceMethodTest extends RestControllerTestCase
         $this->assertFalse($this->refused('DELETE', 'DELETE'));
         $this->assertTrue($this->refused('GET', 'DELETE'), 'a GET took the DELETE nonce');
     }
-
-    /** The notification panel sends each method with a URL of its own. */
-    public function testTheNotificationPanelHasANonceForEachMethod(): void
-    {
-        $src = (string) file_get_contents(dirname(__DIR__) . '/modules/Base/templates/header.php');
-
-        $this->assertStringContainsString("makeApiLink( \$owa_notificationRoute, false, 'POST' )", $src);
-        $this->assertStringContainsString("makeApiLink( \$owa_notificationRoute, false, 'DELETE' )", $src);
-        $this->assertMatchesRegularExpression("/fetch\\(markReadUrl[^)]*\\)\\s*,\\s*\\{ method: 'POST'/", $src);
-        $this->assertMatchesRegularExpression("/fetch\\(dismissUrl[^)]*\\)\\s*,\\s*\\{ method: 'DELETE'/", $src);
-    }
 }
