@@ -3897,7 +3897,32 @@ class OWATracker  {
         var previous_request = OWA.getState( this.storeName('s'), 'last_req' )
             || OWA.getPersistedState( this.storeName('s'), 'last_req' );
 
-        var is_new_session = this.isNewSession( event.get( 'timestamp' ), previous_request );
+        /*
+         * A VISITOR MINTED ON THIS PAGE STARTS A NEW SESSION, whatever the
+         * session store says.
+         *
+         * The visitor store is written once, on a page's first event; the
+         * session store on every event, the unload beacon included. So when a
+         * browser removes both cookies while a page is open, the next event
+         * writes the session back and nothing writes the visitor, and the next
+         * page finds a live session with no visitor. Continuing that session
+         * under the new visitor id put one session across two visitors: a
+         * second first_visit part way through it, and no nps on the new
+         * visitor's beacons, because nps is set only at a session boundary --
+         * so the server could not tell new from returning.
+         *
+         * A session belongs to one visitor. The orphaned store is discarded as
+         * an expired one would be, and its start time is not carried as psts:
+         * it was another visitor's session.
+         *
+         * pendingVisitorCreated is read here, in the same chain that set it:
+         * setVisitorId() runs just before this, and the flag is consumed only
+         * when the event is collected, after manageState() has finished.
+         */
+        var minted_visitor = this.pendingVisitorCreated === true;
+
+        var is_new_session = minted_visitor
+            || this.isNewSession( event.get( 'timestamp' ), previous_request );
 
         if ( is_new_session ) {
 
@@ -3942,7 +3967,7 @@ class OWATracker  {
              */
             var prior_session_start = OWA.getPersistedState( this.storeName('s'), 'sts' );
 
-            if ( prior_session_start ) {
+            if ( prior_session_start && ! minted_visitor ) {
 
                 OWA.setState( this.storeName('s'), 'psts', prior_session_start );
             }

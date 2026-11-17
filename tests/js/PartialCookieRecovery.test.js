@@ -11,14 +11,19 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  *
  * Visitor state ('v', ~1yr) and session state ('s') are separate cookies with
  * very different lifetimes, and a browser, an extension or a person can remove
- * either one without touching the other. Neither is evidence about the other:
+ * either one without touching the other:
  *
  *   - a visitor whose session cookie is gone is NOT a new visitor. They are a
  *     known visitor starting a new session, and counting them as new would
  *     inflate unique visitors by one for every expired or cleared session.
- *   - a session whose visitor cookie is gone is still a running session. The
- *     visitor cannot be identified any more, but that is no reason to also
- *     tear down a session the server already knows about.
+ *   - a session whose visitor cookie is gone ENDS. The visitor cannot be
+ *     identified, so the tracker mints one, and a session belongs to one
+ *     visitor. Continuing it put a single session across two visitors: a
+ *     second first_visit part way through, and no nps on the new visitor's
+ *     beacons, so the server could not tell new from returning. Observed in
+ *     Safari, where the visitor cookie (written once per page) was lost while
+ *     the session cookie (rewritten by every event, the unload beacon
+ *     included) came back.
  *
  * This matters more since the session store stopped hydrating on first touch:
  * the session decision now depends on reading the persisted 's' store at a
@@ -74,7 +79,7 @@ function seed({ visitor = false, session = false } = {}) {
         Util.setCookie(ns + 'v', JSON.stringify(v), 364, '/', domain);
     }
     if (session) {
-        const s = { sid: SESSION_SID, last_req: now, cv1: 'plan=pro' };
+        const s = { sid: SESSION_SID, sts: now - 600, last_req: now, cv1: 'plan=pro' };
         if (cdh) { s.cdh = cdh; }
         Util.setCookie(ns + 's_partial-cookie-site', JSON.stringify(s), 1, '/', domain);
     }
@@ -115,7 +120,7 @@ describe('one OWA cookie cleared but not the other', () => {
         expect(beacon.session_id).not.toBe(SESSION_SID);
     });
 
-    test('the visitor cookie is gone: the running session is not torn down', () => {
+    test('the visitor cookie is gone: the new visitor starts a new session', () => {
         seed({ visitor: false, session: true });
 
         const beacon = pageView(newTracker());
@@ -124,9 +129,35 @@ describe('one OWA cookie cleared but not the other', () => {
         // is nothing to recover them from, and this is the honest answer.
         expect(beacon.is_new_visitor_created).toBe(true);
         expect(beacon.visitor_id).toBeTruthy();
-        // But the session the server already knows about survives intact.
-        expect(beacon.session_id).toBe(SESSION_SID);
-        expect(beacon.is_new_session_start).toBeFalsy();
+        // The orphaned session is not continued under the new visitor.
+        expect(beacon.is_new_session_start).toBe(true);
+        expect(beacon.session_id).toBeTruthy();
+        expect(beacon.session_id).not.toBe(SESSION_SID);
+        // Its first session: nps is on the beacon, and it is 0.
+        expect(beacon.nps).toBe(0);
+        // The orphan's start was another visitor's session, not a prior one.
+        expect(beacon.psts).toBeUndefined();
+    });
+
+    test('the visitor cookie is gone: later events stay in the new session, and it is the one persisted', () => {
+        seed({ visitor: false, session: true });
+
+        const t = newTracker();
+        const first = pageView(t);
+        // logEvent is stubbed, so announce the delivery a real send would.
+        t.sendAccepted();
+        const second = pageView(t);
+
+        expect(second.session_id).toBe(first.session_id);
+        expect(second.visitor_id).toBe(first.visitor_id);
+        expect(second.is_new_session_start).toBeFalsy();
+
+        // The cookie as the browser now holds it, read from the jar itself.
+        const raw = document.cookie.split(';').map((c) => c.trim())
+            .find((c) => c.startsWith(OWA.getSetting('ns') + 's_partial-cookie-site='));
+        const stored = JSON.parse(unescape(raw.split('=').slice(1).join('=')));
+        expect(stored.sid).toBe(first.session_id);
+        expect(stored.sid).not.toBe(SESSION_SID);
     });
 
     /*
