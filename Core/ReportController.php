@@ -64,7 +64,7 @@ class ReportController extends \OWA\Core\AdminController {
     /**
      * Constructor
      *
-     * @param array $params
+     * @param array<mixed> $params
      */
     public function __construct($params) {
         $this->setControllerType('report');
@@ -83,26 +83,6 @@ class ReportController extends \OWA\Core\AdminController {
         $this->setParam( 'siteId', $this->getCurrentSiteId() );
     }
 
-    /**
-     * An invalid period is refused rather than quietly replaced.
-     *
-     * It used to fall back to the default reporting period and say so only in a
-     * debug line, which is off unless debugging is on. That silence is not
-     * hypothetical harm: the visitor roster linked to `period=all_time` for
-     * years, all_time was never an accepted value, and every one of those links
-     * served seven days while claiming to show a visitor's whole history.
-     * Nobody could see it.
-     *
-     * The picker constrains the choice, so an invalid period means the URL was
-     * edited by hand -- exactly the case where an answer is better than a
-     * guess. This is also what the REST API already does, against the same
-     * list, so the two paths now agree on what a period may be AND on what
-     * happens when it is not one.
-     *
-     * setFromMap() keeps its fallback. It is the backstop for callers that do
-     * not come through a controller, and defence in depth is worth more than
-     * the tidiness of removing it.
-     */
     // Access to a report is access to its Property, the one the request names else its siteId's.
     use \OWA\Core\PropertyScopedAccess;
 
@@ -111,8 +91,8 @@ class ReportController extends \OWA\Core\AdminController {
      * each, the period being shown, and the comparison if there is one.
      *
      * @param \OWA\Module\Base\Classes\TimePeriod $period
-     * @param array $params request parameters
-     * @return array
+     * @param array<string, mixed> $params request parameters
+     * @return array<string, mixed>
      */
     public static function periodPickerConfig( $period, $params ) {
 
@@ -148,6 +128,28 @@ class ReportController extends \OWA\Core\AdminController {
         );
     }
 
+    /**
+     * An invalid period is refused rather than quietly replaced.
+     *
+     * It used to fall back to the default reporting period and say so only in a
+     * debug line, which is off unless debugging is on. That silence is not
+     * hypothetical harm: the visitor roster linked to `period=all_time` for
+     * years, all_time was never an accepted value, and every one of those links
+     * served seven days while claiming to show a visitor's whole history.
+     * Nobody could see it.
+     *
+     * The picker constrains the choice, so an invalid period means the URL was
+     * edited by hand -- exactly the case where an answer is better than a
+     * guess. This is also what the REST API already does, against the same
+     * list, so the two paths now agree on what a period may be AND on what
+     * happens when it is not one.
+     *
+     * setFromMap() keeps its fallback. It is the backstop for callers that do
+     * not come through a controller, and defence in depth is worth more than
+     * the tidiness of removing it.
+     *
+     * @return void
+     */
     public function validate() {
 
         /*
@@ -215,6 +217,8 @@ class ReportController extends \OWA\Core\AdminController {
      * when validations fail, so a controller that validates without defining
      * one fatals instead of refusing. Defining it here is part of adding the
      * validation above, not an extra.
+     *
+     * @return mixed this controller's data
      */
     public function errorAction() {
 
@@ -234,6 +238,7 @@ class ReportController extends \OWA\Core\AdminController {
      * Pre Action
      * Current user is fully authenticated and loaded by this point
      *
+     * @return void
      */
     public function pre() {
 
@@ -391,7 +396,7 @@ class ReportController extends \OWA\Core\AdminController {
      * and are not reports.
      *
      * @param string $propertyId
-     * @return array
+     * @return array<mixed> section => nav entry
      */
     public static function reportNavigation( $propertyId ) {
 
@@ -424,6 +429,9 @@ class ReportController extends \OWA\Core\AdminController {
             && (int) $period_end >= (int) date( 'Ymd', strtotime( '-1 day' ) );
     }
 
+    /**
+     * @return void
+     */
     public function post() {
 
         /*
@@ -441,6 +449,11 @@ class ReportController extends \OWA\Core\AdminController {
         }
     }
     
+    /**
+     * @param  string $title
+     * @param  string $suffix
+     * @return void
+     */
     public function setTitle($title, $suffix = '') {
 
         $this->set('title', $title);
@@ -461,7 +474,7 @@ class ReportController extends \OWA\Core\AdminController {
      * administrator may open a Property with no Profiles -- which has no site
      * in $sites to be found through.
      *
-     * @param  array  $sites site_id => site entity, the ones the reader may see
+     * @param  array<\OWA\Module\Base\Entity\Site> $sites site_id => site entity, the ones the reader may see
      * @return string        '' only when the reader may see nothing
      */
     protected function resolvePropertyId( $sites ) {
@@ -520,9 +533,9 @@ class ReportController extends \OWA\Core\AdminController {
      * All reports is where one gets built, and it is current on any custom
      * report and on both builders, favorite or not.
      *
-     * @param array  $nav
+     * @param array<mixed> $nav section => nav entry
      * @param string $propertyId
-     * @return array
+     * @return array<mixed>
      */
     private static function withCustomReports( array $nav, $propertyId ) {
 
@@ -579,6 +592,9 @@ class ReportController extends \OWA\Core\AdminController {
         return $nav;
     }
 
+    /**
+     * @return void
+     */
     protected function hideReportingNavigation() {
 
         $this->set('hideReportingNavigation', true);
@@ -591,18 +607,27 @@ class ReportController extends \OWA\Core\AdminController {
      * time range -- the custom report roster lists reports, and neither a date
      * range nor a refresh timer means anything to a list of them. Offering
      * controls that change nothing is worse than offering none.
+     *
+     * @return void
      */
     protected function hideTimeControls() {
 
         $this->set('hideTimeControls', true);
     }
 
-    /** No title row: for a screen whose own header is its title (the report editor). */
+    /**
+     * No title row: for a screen whose own header is its title (the report editor).
+     *
+     * @return void
+     */
     protected function hideReportHead() {
 
         $this->set('hideReportHead', true);
     }
 
+    /**
+     * @return void
+     */
     protected function hideSitesFilter() {
 
         $this->set('hideSitesFilter', true);

@@ -28,6 +28,8 @@ namespace OWA\Core;
  * @package     owa
  * @version        $Revision$
  * @since        owa 1.0.0
+ *
+ * @phpstan-import-type SettingsEntry from \OWA\Core\Template
  */
 
 class Controller extends \OWA\Core\Base {
@@ -35,7 +37,7 @@ class Controller extends \OWA\Core\Base {
     /**
      * Request Parameters passed in from caller
      *
-     * @var array
+     * @var array<mixed>
      */
     public $params = array();
 
@@ -70,7 +72,7 @@ class Controller extends \OWA\Core\Base {
     /**
      * Data container
      *
-     * @var Array
+     * @var array<mixed>
      */
     public $data = array();
 
@@ -95,6 +97,7 @@ class Controller extends \OWA\Core\Base {
      */
     public $dom_id;
 
+    /** @var mixed nothing sets it */
     public $state;
 
     /**
@@ -115,7 +118,7 @@ class Controller extends \OWA\Core\Base {
     /**
      * Constructor
      *
-     * @param array $params
+     * @param array<mixed> $params
      */
     public function __construct($params) {
 
@@ -139,6 +142,7 @@ class Controller extends \OWA\Core\Base {
 	 * Abstract method for setting any controller configuration.
 	 * Fires after constructor but before doAction.
 	 *
+	 * @return mixed not read
 	 */
     public function init() {
 	    
@@ -149,11 +153,18 @@ class Controller extends \OWA\Core\Base {
     /**
 	 * Method used to set param validators by concrete class
 	 *
+	 * @return void
 	 */
     public function validate() {
 	    
     }
 	
+	/**
+	 * The answer while updates are pending: an error for the CLI and the REST
+	 * API, a redirect to the updates screen for the web app.
+	 *
+	 * @return mixed this controller's data
+	 */
 	public function updateAction() {
 		
 		$error_msg = \OWA\Core\CoreAPI::t( 'Cannot perform action. OWA Updates required.' );
@@ -192,6 +203,8 @@ class Controller extends \OWA\Core\Base {
     /**
      * Handles request from caller
      *
+     * @return mixed this controller's data, or the non-empty answer of the
+     *               action, its error action or a refusal
      */
     public function doAction() {
 
@@ -367,6 +380,7 @@ class Controller extends \OWA\Core\Base {
     /**
      * Checks for the action result, calls the post method and returns correct result
      * Usage return $this->finishActionCall($this->action()))
+     * @param mixed $actionResult what action() returned
      * @return mixed
      */
     protected function finishActionCall($actionResult) {
@@ -387,6 +401,8 @@ class Controller extends \OWA\Core\Base {
     /**
 	 * set output realted params like view, etc.
 	 * called after action because older style controllers might set these details within action()
+	 *
+	 * @return mixed not read
 	 */
     public function success() {
 	    
@@ -395,6 +411,8 @@ class Controller extends \OWA\Core\Base {
     /**
      * The controller's work, run by doAction() once every check has passed.
      * The default does nothing.
+     *
+     * @return mixed a non-empty answer is doAction()'s
      */
     public function action() {
 
@@ -404,6 +422,8 @@ class Controller extends \OWA\Core\Base {
      * Runs in place of action() when validation fails. A non-empty return is
      * doAction()'s answer. The default shows the validation messages on the
      * error page.
+     *
+     * @return mixed a non-empty answer is doAction()'s
      */
     public function errorAction() {
 
@@ -490,17 +510,32 @@ class Controller extends \OWA\Core\Base {
         return (bool) $currentUser->isCapable( $this->getRequiredCapability(), $this->getCurrentSiteId() );
     }
 
-    // needed?
+    /**
+     * needed?
+     *
+     * @param  string $capability
+     * @return bool
+     */
     protected function isEveryoneCapable($capability) {
 
         return \OWA\Core\CoreAPI::isEveryoneCapable( $capability );
     }
 
+    /**
+     * @return void
+     */
     public function createValidator() {
 
         $this->v = new \OWA\Module\Base\Classes\Validator();
     }
 
+    /**
+     * @param  string               $name
+     * @param  mixed                $value
+     * @param  string               $validation a validator, as CoreAPI::validationFactory() takes it
+     * @param  array<string, mixed> $conf
+     * @return null
+     */
     public function addValidation($name, $value, $validation, $conf = array()) {
 
         if ( empty( $this->v ) ) {
@@ -515,12 +550,21 @@ class Controller extends \OWA\Core\Base {
     /**
      * Fails validation of this field with this message: a required check of
      * an empty value, which always fails.
+     *
+     * @param  string $name
+     * @param  string $msg
+     * @return null
      */
     public function addValidationError( $name, $msg ) {
 
         return $this->addValidation( $name, '', 'required', array( 'errorMsg' => $msg ) );
     }
 
+    /**
+     * @param  string                    $name
+     * @param  \OWA\Core\Validation\Validation $obj
+     * @return null
+     */
     public function setValidation($name, $obj) {
 
         if (empty($this->v)) {
@@ -530,6 +574,9 @@ class Controller extends \OWA\Core\Base {
         return $this->v->setValidation($name, $obj);
     }
 
+    /**
+     * @return array<mixed>
+     */
     public function getValidationErrorMsgs() {
 
         return $this->v->getErrorMsgs();
@@ -567,6 +614,9 @@ class Controller extends \OWA\Core\Base {
         return (bool) \OWA\Core\CoreAPI::isSchemaUpdateRequired();
     }
 
+    /**
+     * @return true|void nothing when the controller is not an admin one
+     */
     public function isAdmin() {
 
         if ($this->is_admin == true) {
@@ -574,16 +624,27 @@ class Controller extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  string $capability
+     * @return void
+     */
     public function setRequiredCapability($capability) {
 
         $this->capability = $capability;
     }
 
+    /**
+     * @return string
+     */
     public function getRequiredCapability() {
 
         return $this->capability;
     }
 
+    /**
+     * @param  string $name
+     * @return mixed nothing when the request has no such param
+     */
     public function getParam($name) {
 
         if (array_key_exists($name, $this->params)) {
@@ -591,11 +652,20 @@ class Controller extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $value
+     * @return void
+     */
     public function setParam($name, $value) {
 
         $this->params[$name] = $value;
     }
 
+    /**
+     * @param  string $name
+     * @return true|void nothing when the request has no such param
+     */
     public function isParam($name) {
 
         if (array_key_exists($name, $this->params)) {
@@ -603,25 +673,45 @@ class Controller extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  string $name
+     * @return mixed getParam()'s
+     */
     public function get($name) {
 
         return $this->getParam($name);
     }
 
+    /**
+     * Runs before action(), once every check has passed.
+     *
+     * @return mixed not read
+     */
     public function pre() {
 
         return false;
     }
 
+    /**
+     * Runs after action(), and after success() when action() answered nothing.
+     *
+     * @return mixed not read
+     */
     public function post() {
         return false;
     }
 
+    /**
+     * @return Object|null null until setPeriod()
+     */
     public function getPeriod() {
 
         return $this->period;
     }
 
+    /**
+     * @return void
+     */
     public function setPeriod() {
         // set period
 
@@ -632,6 +722,11 @@ class Controller extends \OWA\Core\Base {
         $this->data['params'] = array_merge($this->data['params'], $period->getPeriodProperties());
     }
 
+    /**
+     * @param  string               $time_period
+     * @param  array<string, mixed> $params
+     * @return \OWA\Module\Base\Classes\TimePeriod
+     */
     public function makeTimePeriod($time_period, $params = array()) {
 
         return \OWA\Core\CoreAPI::makeTimePeriod($time_period, $params);
@@ -651,7 +746,8 @@ class Controller extends \OWA\Core\Base {
      *   title     the page's <title>
      *
      * @param string $view     <module>.<view>
-     * @param array  $declared as above, or nothing for a View class
+     * @param array<string, mixed> $declared as above, or nothing for a View class
+     * @return void
      */
     public function setView($view, array $declared = []) {
 
@@ -663,6 +759,10 @@ class Controller extends \OWA\Core\Base {
      * Answers a REST request with the base.restApi view and this status code.
      * The response's data is what this controller set under $key, read when
      * the view renders (false when nothing was); with no key it has none.
+     *
+     * @param  int    $status
+     * @param  string $key
+     * @return void
      */
     protected function restResponse( $status, $key = '' ) {
 
@@ -681,7 +781,8 @@ class Controller extends \OWA\Core\Base {
      * page's are the outer view's.
      *
      * @param string $subview  <module>.<view>
-     * @param array  $declared template and vars, or nothing for a View class
+     * @param array<string, mixed> $declared template and vars, or nothing for a View class
+     * @return void
      */
     public function setSubview($subview, array $declared = []) {
 
@@ -689,6 +790,11 @@ class Controller extends \OWA\Core\Base {
         $this->declareTemplate( $subview, $declared );
     }
 
+    /**
+     * @param  string               $view     <module>.<view>
+     * @param  array<string, mixed> $declared
+     * @return void
+     */
     private function declareTemplate( $view, array $declared ) {
 
         if ( $declared ) {
@@ -697,6 +803,10 @@ class Controller extends \OWA\Core\Base {
         }
     }
 
+    /**
+     * @param  string $method delegate, or redirect
+     * @return void
+     */
     public function setViewMethod($method = 'delegate') {
 
         $this->data['view_method'] = $method;
@@ -717,6 +827,10 @@ class Controller extends \OWA\Core\Base {
         return array_values( array_diff( \OWA\Core\View::LINK_STATE_KEYS, array( 'siteId' ) ) );
     }
 
+    /**
+     * @param  string $do the action to redirect to
+     * @return void
+     */
     public function setRedirectAction($do) {
 
         $this->set('view_method', 'redirect');
@@ -776,6 +890,11 @@ class Controller extends \OWA\Core\Base {
 
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $value
+     * @return void
+     */
     public function set($name, $value) {
 
         $this->data[$name] = $value;
@@ -785,6 +904,8 @@ class Controller extends \OWA\Core\Base {
 	 * Sets the type of controler
 	 * @depricated
 	 * @todo remove this
+	 * @param  string $string
+	 * @return void
 	 */
     public function setControllerType($string) {
 
@@ -792,18 +913,30 @@ class Controller extends \OWA\Core\Base {
 
     }
     
-    /** This request's type (Core\RequestType). */
+    /**
+     * This request's type (Core\RequestType).
+     *
+     * @return string
+     */
     public function getMode() {
 	    
 	    return \OWA\Core\RequestType::current();
     }
 
-    /** @param string[] $also_hosts see Lib::resolveRedirectUrl() */
+    /**
+     * @param  string   $url
+     * @param  string[] $also_hosts see Lib::resolveRedirectUrl()
+     * @return null
+     */
     public function redirectBrowserToUrl($url, array $also_hosts = array()) {
 
         return \OWA\Core\Lib::redirectBrowser($url, $also_hosts);
     }
 
+    /**
+     * @param  int|string $code a message code, as getMsg() takes it
+     * @return void
+     */
     public function setStatusCode($code) {
 
         $this->data['status_code'] = $code;
@@ -815,6 +948,9 @@ class Controller extends \OWA\Core\Base {
      * What was refused goes in the banner's detail line, under the message.
      * In the web UI the page keeps the menu, its report links of the first
      * Profile the user may see, so there is a way on from it.
+     *
+     * @param  string $additionalMessage the detail line; what was refused when empty
+     * @return mixed nothing here; a subclass may answer doAction()'s refusal
      */
     public function authenticatedButNotCapableAction($additionalMessage = '') {
         if ( empty($additionalMessage) ) {
@@ -906,6 +1042,9 @@ class Controller extends \OWA\Core\Base {
      * The action is deliberately not retried once a fresh nonce could be minted.
      * The nonce exists so that a state-changing request is one the user just
      * confirmed, and completing it on their behalf would defeat that.
+     *
+     * @return mixed notAuthenticatedAction()'s answer for a visitor not signed
+     *               in; nothing otherwise. A non-empty answer is doAction()'s
      */
     public function nonceFailedAction() {
 
@@ -937,12 +1076,22 @@ class Controller extends \OWA\Core\Base {
 		}
     }
 
-    /** Why a legacy API key or request signature was refused, and what replaces it. */
+    /**
+     * Why a legacy API key or request signature was refused, and what replaces it.
+     *
+     * @return string
+     */
     public static function legacyApiKeyMessage() {
 
         return \OWA\Core\CoreAPI::t( 'API keys and request signatures are no longer accepted. Send an application password in the Authorization header instead.' );
     }
 
+    /**
+     * The answer for a request without the credentials this controller needs:
+     * a 401 for the REST API, a redirect to the login form otherwise.
+     *
+     * @return mixed nothing here; a non-empty answer is doAction()'s
+     */
     public function notAuthenticatedAction() {
 		
 		if (\OWA\Core\RequestType::is( \OWA\Core\RequestType::REST )) {
@@ -991,6 +1140,11 @@ class Controller extends \OWA\Core\Base {
 		}
     }
 
+    /**
+     * @param  mixed  $nonce  as the request carried it
+     * @param  string $action the request's action or do when empty
+     * @return bool
+     */
     public function verifyNonce($nonce, $action = '') {
             
         // `action` before `do`, as the dispatcher reads them
@@ -1022,6 +1176,8 @@ class Controller extends \OWA\Core\Base {
 
     /**
      * Sets nonce flag for the controller.
+     *
+     * @return void
      */
     public function setNonceRequired() {
 
@@ -1033,6 +1189,7 @@ class Controller extends \OWA\Core\Base {
      * not try the others, so their credentials are never read.
      *
      * @param string[] $methods login_form, overlay_token, app_password, cookies
+     * @return void
      */
     public function setAuthMethods( array $methods ) {
 
@@ -1052,10 +1209,6 @@ class Controller extends \OWA\Core\Base {
 
 
     /**
-     * Returns array of owa_site entities where the current user has access to, taken the current controller cap into account
-     * @return array
-     */
-    /**
      * The Profile the hierarchy screens show as current.
      *
      * The tile names all three tiers, so a screen reached without a siteId --
@@ -1072,6 +1225,10 @@ class Controller extends \OWA\Core\Base {
      * report controller uses when a request names no site: something has to be
      * current, and the first allowed one is the only defensible choice without
      * asking.
+     *
+     * @param  int|string $siteId
+     * @param  int|string $propertyId
+     * @return mixed $siteId when given, else a site_id; '' when the user may see no Profile
      */
     protected function resolveCurrentSiteId( $siteId = '', $propertyId = '' ) {
 
@@ -1157,7 +1314,7 @@ class Controller extends \OWA\Core\Base {
      *                           is what adds the Observation Profile group
      * @param string $propertyId the Property in context; derived from the
      *                           Profile when not given
-     * @return array group label => array of items
+     * @return array<string, list<SettingsEntry>> group label => array of items
      */
     protected function getHierarchyNav( $siteId = '', $propertyId = '' ) {
 
@@ -1400,7 +1557,7 @@ class Controller extends \OWA\Core\Base {
      * registrations write, and breaking them to rename a key would be a poor
      * trade.
      *
-     * @return array section => list of nav items
+     * @return array<string, list<SettingsEntry>> section => list of nav items
      */
     protected function registeredSettingsNav() {
 
@@ -1412,8 +1569,8 @@ class Controller extends \OWA\Core\Base {
      * Bucket and order registered pages. Pure, so the rules above can be
      * asserted without standing up the module layer to produce panels.
      *
-     * @param  array $panels as getAdminPanels() returns them
-     * @return array section => ordered list of nav items
+     * @param  array<mixed> $panels as getAdminPanels() returns them
+     * @return array<string, list<SettingsEntry>> section => ordered list of nav items
      */
     public static function settingsNavSections( array $panels ) {
 
@@ -1483,8 +1640,8 @@ class Controller extends \OWA\Core\Base {
      * Two queries regardless of size, not one per Property. This runs on every
      * report render.
      *
-     * @param array $sites site_id => base.site entity
-     * @return array
+     * @param array<\OWA\Module\Base\Entity\Site> $sites site_id => base.site entity
+     * @return array{organization: array<string, mixed>, properties: list<array<string, mixed>>}
      */
     protected function getSiteHierarchy( $sites ) {
 
@@ -1596,6 +1753,10 @@ class Controller extends \OWA\Core\Base {
         );
     }
 
+    /**
+     * Returns array of owa_site entities where the current user has access to, taken the current controller cap into account
+     * @return array<\OWA\Module\Base\Entity\Site> site_id => the Profile
+     */
     protected function getSitesAllowedForCurrentUser() {
    
         $currentUser = \OWA\Core\CoreAPI::getCurrentUser();
