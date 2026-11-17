@@ -40,7 +40,7 @@ class SitesAdd extends \OWA\Core\AdminController {
 		
 		$this->setRequiredCapability('edit_sites');
 		
-		return parent::__construct( $params );
+		parent::__construct( $params );
 	}
 	
     function init() {
@@ -53,7 +53,7 @@ class SitesAdd extends \OWA\Core\AdminController {
 
         $this->set('domain', $this->getParam('protocol').$this->getParam('domain') );
 
-        $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+        $sm = new \OWA\Module\Base\Classes\SiteManager();
 
         /*
          * createSite(), not createNewSite().
@@ -181,7 +181,7 @@ class SitesAdd extends \OWA\Core\AdminController {
 
             $this->set( 'siteId', $site['site_id'] );
             $this->setRedirectAction( 'base.sitesInvocation' );
-            $this->set( 'status_code', 3202 );
+            $this->setStatusCode( 3202 );
 
         } else {
 
@@ -191,17 +191,8 @@ class SitesAdd extends \OWA\Core\AdminController {
     }
 
     function errorAction() {
-
-        /*
-         * The hierarchy wrapper. There is one settings nav now -- the old
-         * base.options menu is gone -- so every settings screen carries the tile
-         * and the tier groups, module screens included.
-         */
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
-        $this->setView('base.optionsHierarchy');
+        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.sitesProfile');
         /*
          * 3002 -- "the form had errors" -- not 3311.

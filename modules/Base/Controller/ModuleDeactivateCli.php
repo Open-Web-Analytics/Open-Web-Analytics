@@ -53,7 +53,7 @@ class ModuleDeactivateCli extends \OWA\Core\Controller\Cli {
     function __construct($params) {
     
         $this->setRequiredCapability('edit_modules');
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
     function action() {

@@ -64,7 +64,7 @@ class UsersChangePassword extends \OWA\Core\Controller {
             $ed->log($new_password, 'base.set_password');
             $auth->deleteCredentials();
             $this->setRedirectAction('base.loginForm');
-            $this->set('status_code', 3006);
+            $this->setStatusCode( 3006 );
         } else {
             $this->setRedirectAction('base.loginForm');
             // Expired (2012), or not a key any account holds (2011).

@@ -51,9 +51,7 @@ class ProfileSettings extends \OWA\Core\AdminController {
 
         $this->set( 'site', $site_properties );
         $this->set( 'siteId', $site_id );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $site_id ) );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array(), $site_id );
         $this->setSubview( 'base.profileSettings' );
     }
 }

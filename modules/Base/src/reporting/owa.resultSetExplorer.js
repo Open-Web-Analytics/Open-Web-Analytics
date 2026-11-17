@@ -396,42 +396,42 @@ OWA.resultSetExplorer.prototype = {
         var that = this;
 
         // subscribe to grid page events
-        jQuery( "#" + dom_id ).bind( 'page_forward', function(event) {
+        jQuery( "#" + dom_id ).on( 'page_forward', function(event) {
             that.getNewResultSet(that.resultSet.next);
         });
 
-        jQuery( "#" + dom_id ).bind( 'page_back', function(event) {
+        jQuery( "#" + dom_id ).on( 'page_back', function(event) {
             that.getNewResultSet(that.resultSet.previous);
         });
 
         // subscribe to grid secondary dimension change event
-        jQuery( "#" + dom_id ).bind( 'secondary_dimension_change', function(event, oldname, newname) {
+        jQuery( "#" + dom_id ).on( 'secondary_dimension_change', function(event, oldname, newname) {
             that.changeDimension(oldname, newname);
         });
 
         // The pills speak in whole lists; the event above stays for anything
         // outside this file still firing the one-at-a-time version.
-        jQuery( "#" + dom_id ).bind( 'dimension_list_change', function(event, dims) {
+        jQuery( "#" + dom_id ).on( 'dimension_list_change', function(event, dims) {
             that.setDimensionList(dims);
         });
 
         // subscribe to grid sort column change event
-        jQuery( "#" + dom_id ).bind( 'sort_column_change', function(event, column, direction) {
+        jQuery( "#" + dom_id ).on( 'sort_column_change', function(event, column, direction) {
             that.changeSort(column, direction);
         });
 
         // subscribe to constraint_change event
-        jQuery( "#" + dom_id ).bind( 'constraint_change', function(event, constraints) {
+        jQuery( "#" + dom_id ).on( 'constraint_change', function(event, constraints) {
             that.changeConstraints(constraints);
         });
 
         // Rows per page and Go to.
-        jQuery( "#" + dom_id ).bind( 'page_change', function(event, page, resultsPerPage) {
+        jQuery( "#" + dom_id ).on( 'page_change', function(event, page, resultsPerPage) {
             that.changePage(page, resultsPerPage);
         });
 
         // A card's Show more: the same rows from the first, more of them.
-        jQuery( "#" + dom_id ).bind( 'show_more', function(event, resultsPerPage) {
+        jQuery( "#" + dom_id ).on( 'show_more', function(event, resultsPerPage) {
             that.changePage(1, resultsPerPage);
         });
     },
@@ -1605,12 +1605,7 @@ OWA.dataGrid.formatters = {
             return OWA.util.escapeHtml( OWA.l( '(none)' ) );
         }
 
-        var esc = function( v ) {
-            return String( v )
-                .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
-                .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
-                .replace( /'/g, '&#39;' );
-        };
+        var esc = OWA.util.escapeHtml;
 
         var fields = [
             [ 'md', OWA.l( 'Medium' ) ], [ 'sr', OWA.l( 'Source' ) ], [ 'cn', OWA.l( 'Campaign' ) ],
@@ -1656,12 +1651,7 @@ OWA.dataGrid.formatters = {
             return '';
         }
 
-        var esc = function( v ) {
-            return String( v )
-                .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' )
-                .replace( />/g, '&gt;' ).replace( /"/g, '&quot;' )
-                .replace( /'/g, '&#39;' );
-        };
+        var esc = OWA.util.escapeHtml;
 
         return '<a class="owa_overlayLink" href="' + esc( data.url ) + '#owa_overlay.' + esc( data.overlay )
              + '" data-width="' + esc( parseInt( data.width, 10 ) || 0 )
@@ -1710,12 +1700,12 @@ OWA.dataGrid.prototype = {
 
         var that = this;
 
-        jQuery( '#' + that.dom_id ).bind( 'new_result_set', function( event, resultSet ) {
+        jQuery( '#' + that.dom_id ).on( 'new_result_set', function( event, resultSet ) {
             that.generate( resultSet );
         } );
 
         // A requery that failed leaves these rows; Show more can be pressed again.
-        jQuery( '#' + that.dom_id ).bind( 'result_set_error', function () {
+        jQuery( '#' + that.dom_id ).on( 'result_set_error', function () {
             that.moreDone();
         } );
     },
@@ -2019,7 +2009,7 @@ OWA.dataGrid.prototype = {
             };
 
             $goto.on( 'change', go ).on( 'keydown', function ( e ) {
-                if ( e.which === 13 ) { e.preventDefault(); go(); }
+                if ( e.key === 'Enter' ) { e.preventDefault(); go(); }
             } );
 
             $paging.append( OWA.dataGrid.labelled( OWA.l( 'Go to %s', 'grid label: %s is the page number field' ), $goto )
@@ -2730,7 +2720,7 @@ OWA.dataGrid.prototype = {
 
         var keys = function ( e ) {
 
-            if ( e.key === 'Escape' || e.which === 27 ) {
+            if ( e.key === 'Escape' ) {
                 e.preventDefault();
                 that.closePopover( true );
             }
@@ -2879,7 +2869,7 @@ OWA.dataGrid.prototype = {
 
         } ).on( 'keydown', function ( e ) {
 
-            if ( e.which === 13 ) {
+            if ( e.key === 'Enter' ) {
                 e.preventDefault();
                 $list.find( '.owa_gridPopOption:visible:enabled' ).first().trigger( 'click' );
             }
@@ -3284,7 +3274,7 @@ OWA.constraintBuilder.prototype = {
             .click( toggle )
             .keydown( function ( e ) {
 
-                if ( e.which === 13 || e.which === 32 ) {
+                if ( e.key === 'Enter' || e.key === ' ' ) {
 
                     e.preventDefault();
                     toggle();
@@ -3499,7 +3489,7 @@ OWA.constraintBuilder.prototype = {
             .on( 'click', addAfter )
             .on( 'keydown', function ( e ) {
 
-                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); addAfter(); }
+                if ( e.key === 'Enter' || e.key === ' ' ) { e.preventDefault(); addAfter(); }
             } );
 
         var remove = function () {
@@ -3518,7 +3508,7 @@ OWA.constraintBuilder.prototype = {
             .on( 'click', remove )
             .on( 'keydown', function ( e ) {
 
-                if ( e.which === 13 || e.which === 32 ) { e.preventDefault(); remove(); }
+                if ( e.key === 'Enter' || e.key === ' ' ) { e.preventDefault(); remove(); }
             } );
 
 
@@ -3630,7 +3620,7 @@ OWA.linkTrendToBreakdownGrid = function ( trend, grid ) {
 
     var selector = '#' + grid.dom_id;
 
-    jQuery( selector ).bind( 'dimension_list_change', function ( event, dims ) {
+    jQuery( selector ).on( 'dimension_list_change', function ( event, dims ) {
 
         /*
          * The chart is built by the trend's FIRST load, so it does not exist
@@ -3648,7 +3638,7 @@ OWA.linkTrendToBreakdownGrid = function ( trend, grid ) {
         trend.areaChart.changeBreakdown( ( dims && dims[0] ) || '' );
     } );
 
-    jQuery( selector ).bind( 'constraint_change', function ( event, constraints ) {
+    jQuery( selector ).on( 'constraint_change', function ( event, constraints ) {
 
         trend.changeConstraints( constraints );
     } );

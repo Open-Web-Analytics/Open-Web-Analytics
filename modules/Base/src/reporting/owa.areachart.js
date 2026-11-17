@@ -3013,8 +3013,8 @@ OWA.areaChart.prototype = {
         jQuery(that.domSelector).css('height', h);
         
         // The tooltip and the active point follow the pointer; see onHover.
-        jQuery(that.domSelector).bind( 'mouseleave', function () { that.endHover(); } );
-        jQuery(that.domSelector).bind( 'plothover', function ( event, pos, item ) { that.onHover( pos, item ); } );
-        jQuery(that.domSelector).bind( 'plotclick', function ( event, pos, item ) { that.onPointClick( item ); } );
+        jQuery(that.domSelector).on( 'mouseleave', function () { that.endHover(); } );
+        jQuery(that.domSelector).on( 'plothover', function ( event, pos, item ) { that.onHover( pos, item ); } );
+        jQuery(that.domSelector).on( 'plotclick', function ( event, pos, item ) { that.onPointClick( item ); } );
     }
 }

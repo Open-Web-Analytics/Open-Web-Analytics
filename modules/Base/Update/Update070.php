@@ -38,9 +38,9 @@ namespace OWA\Module\Base\Update;
  */
 class Update070 extends \OWA\Core\Update {
 
-    var $schema_version = 70;
+    use SettingRows;
 
-    var $is_cli_mode_required = false;
+    var $schema_version = 70;
 
     const NAME = 'enableEcommerceReporting';
 
@@ -52,18 +52,10 @@ class Update070 extends \OWA\Core\Update {
     /** Settings::INSTALL_SCOPE_ID, spelled out as Update043 does. */
     const INSTALL_SCOPE_ID = '1';
 
-    /** @var string|null the settings table to use instead of the install's. TESTS ONLY. */
-    public $table = null;
-
-    private function table() {
-
-        return $this->table ?: \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName();
-    }
-
     function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->table();
+        $table = $this->settingTable();
 
         $held = array();
         $rows = array();
@@ -107,7 +99,7 @@ class Update070 extends \OWA\Core\Update {
 
             if ( ! array_key_exists( (string) $property, $record['properties'] ) ) {
 
-                $record['properties'][ (string) $property ] = $this->row( 'property', (string) $property );
+                $record['properties'][ (string) $property ] = $this->scopedRow( 'property', (string) $property );
             }
         }
 
@@ -185,7 +177,7 @@ class Update070 extends \OWA\Core\Update {
         foreach ( (array) ( $record['properties'] ?? array() ) as $property => $row ) {
 
             $restored = $row === null
-                ? $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->table() ),
+                ? $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->settingTable() ),
                     array( $this->settingId( 'property', (string) $property, self::NAME ) ) ) !== false
                 : $this->restoreRow( (array) $row );
 
@@ -197,8 +189,7 @@ class Update070 extends \OWA\Core\Update {
             }
         }
 
-        if ( $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->table() ),
-                array( $this->settingId( 'install', self::INSTALL_SCOPE_ID, self::BEFORE ) ) ) === false ) {
+        if ( ! $this->deleteRecord() ) {
 
             $this->e->notice( sprintf( 'Removing %s failed.', self::BEFORE ) );
 
@@ -215,7 +206,7 @@ class Update070 extends \OWA\Core\Update {
     private function approximately() {
 
         $db      = \OWA\Core\CoreAPI::dbSingleton();
-        $table   = $this->table();
+        $table   = $this->settingTable();
         $setting = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
         $rows = (array) $db->get_results( sprintf(
@@ -243,25 +234,10 @@ class Update070 extends \OWA\Core\Update {
         return true;
     }
 
-    /** What up() kept, or an empty array. */
-    private function record() {
-
-        $row = $this->row( 'install', self::INSTALL_SCOPE_ID, self::BEFORE );
-
-        if ( ! $row ) {
-
-            return array();
-        }
-
-        $record = @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
-
-        return is_array( $record ) ? $record : array();
-    }
-
     /** A row of base.<name> at this scope, every column, or null. */
-    private function row( $scope_type, $scope_id, $name = self::NAME ) {
+    private function scopedRow( $scope_type, $scope_id, $name = self::NAME ) {
 
-        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT * FROM %s WHERE id = ?', $this->table() ),
+        $row = \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf( 'SELECT * FROM %s WHERE id = ?', $this->settingTable() ),
             array( $this->settingId( $scope_type, $scope_id, $name ) ) );
 
         return $row ? (array) $row : null;
@@ -270,41 +246,6 @@ class Update070 extends \OWA\Core\Update {
     private function settingId( $scope_type, $scope_id, $name ) {
 
         return (string) \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->makeId( $scope_type, (string) $scope_id, 'base', $name );
-    }
-
-    /** Upsert the install row of the record. */
-    private function writeRecord( $value ) {
-
-        return \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
-            'INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)'
-          . " VALUES (?, 'install', ?, 'base', ?, ?, 0, ?) ON DUPLICATE KEY UPDATE value = ?", $this->table() ),
-            array( $this->settingId( 'install', self::INSTALL_SCOPE_ID, self::BEFORE ), self::INSTALL_SCOPE_ID, self::BEFORE,
-                $value, time(), $value ) ) !== false;
-    }
-
-    /** A row put back exactly as SELECT * read it. */
-    private function restoreRow( array $row ) {
-
-        $columns = array_keys( $row );
-
-        foreach ( $columns as $column ) {
-
-            // Names the table gave, but they are interpolated, so only plain ones.
-            if ( ! preg_match( '/^[a-z_]+$/', (string) $column ) ) {
-
-                return false;
-            }
-        }
-
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
-        if ( $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $this->table() ), array( (string) $row['id'] ) ) === false ) {
-
-            return false;
-        }
-
-        return $db->query( sprintf( 'INSERT INTO %s (%s) VALUES (%s)', $this->table(), implode( ', ', $columns ),
-            implode( ', ', array_fill( 0, count( $columns ), '?' ) ) ), array_values( $row ) ) !== false;
     }
 }
 

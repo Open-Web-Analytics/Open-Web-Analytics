@@ -85,15 +85,11 @@ class MyProfile extends \OWA\Core\AdminController {
             $this->set( 'my_profile_saved', true );
         }
 
-        // The settings chrome, the same way every other screen in that nav gets it.
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
 
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
         $this->set( 'siteId', $siteId );
 
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array( 'siteId' => $siteId ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) );
         $this->setSubview( 'base.myProfile' );
     }
 }

@@ -52,12 +52,7 @@ namespace OWA\Module\Base\Classes;
       * @var array
       */
      var $validations;
-     
-     function __construct() {
-     
-         return parent::__construct();
-     }
-     
+          
      /**
       * Adds a validation to be performed in next run
       * 

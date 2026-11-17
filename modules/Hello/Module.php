@@ -63,8 +63,7 @@ class Module extends \OWA\Core\Module {
 
         $this->registerAction(
             'hello.exampleSettings',
-            'OWA\\Module\\Hello\\Controller\\ExampleSettingsController',
-            '' );
+            'OWA\\Module\\Hello\\Controller\\ExampleSettingsController' );
     }
 
     /**

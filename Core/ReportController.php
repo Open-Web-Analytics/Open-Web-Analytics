@@ -192,7 +192,7 @@ class ReportController extends \OWA\Core\AdminController {
 
         if ( $period ) {
 
-            $timePeriod = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+            $timePeriod = new \OWA\Module\Base\Classes\TimePeriod();
 
             $this->addValidation(
                 'period',

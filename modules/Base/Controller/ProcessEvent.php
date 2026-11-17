@@ -45,12 +45,12 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         } else {
             \OWA\Core\CoreAPI::debug("No event object was passed to controller.");
-            $this->event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
+            $this->event = new \OWA\Module\Base\Classes\Event();
         }
 
         $this->eq = \OWA\Core\CoreAPI::getEventDispatch();
 
-        return parent::__construct($params);
+        parent::__construct($params);
 
     }
 

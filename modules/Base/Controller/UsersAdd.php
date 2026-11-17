@@ -74,7 +74,7 @@ class UsersAdd extends \OWA\Core\AdminController {
 
     function action() {
 
-        $userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
+        $userManager = new \OWA\Module\Base\Classes\UserManager();
 
 
         $user_params = array( 'user_id'         => trim($this->params['user_id']),
@@ -116,20 +116,12 @@ class UsersAdd extends \OWA\Core\AdminController {
 		unset($this->data['user']);
 		$this->setRedirectAction('base.users');
         // 3013: added, and the administrator must pass the invitation on another way.
-        $this->set('status_code', $this->get( 'invitation_sent' ) ? 3000 : 3013);
+        $this->setStatusCode( $this->get( 'invitation_sent' ) ? 3000 : 3013 );
     }
 
     function errorAction() {
-        /*
-         * The hierarchy wrapper. There is one settings nav now -- the old
-         * base.options menu is gone -- so every settings screen carries the tile
-         * and the tier groups, module screens included.
-         */
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
-        $this->setView('base.optionsHierarchy');
+        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.usersProfile');
         $this->set('error_code', 3009);
         //assign original form data so the user does not have to re-enter the data

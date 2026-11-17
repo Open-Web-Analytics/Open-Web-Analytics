@@ -94,7 +94,7 @@ class ConfigurableMetric extends \OWA\Core\Metric {
             }
         }
         
-        return parent::__construct();
+        parent::__construct();
     }
 }
 

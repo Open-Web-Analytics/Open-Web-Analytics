@@ -125,7 +125,7 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     // The page URL and referrer before the second decode, which can cut them (TrackingEventHelpers::arrivedUrlIfCut()).
     $arrived = \OWA\Module\Base\Classes\TrackingEventHelpers::arrivedUrls( $service->request->getAllOwaParams() );
     $service->request->decodeRequestParams();
-    $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
+    $event = new \OWA\Module\Base\Classes\Event();
     // e_t from the current tracker, event_type from an older one.
     $event_type = \OWA\Core\CoreAPI::getRequestParam('e_t');
     $event->setEventType( $event_type !== false && $event_type !== ''

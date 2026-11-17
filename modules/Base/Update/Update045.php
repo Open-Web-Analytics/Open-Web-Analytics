@@ -39,8 +39,6 @@ class Update045 extends \OWA\Core\Update {
 
     var $schema_version = 45;
 
-    var $is_cli_mode_required = false;
-
     function up( $force = false ) {
 
         return $this->addRawColumn( 'event_seq' );

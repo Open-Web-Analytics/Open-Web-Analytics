@@ -27,20 +27,10 @@ class Update088 extends \OWA\Core\Update {
 
     var $schema_version = 88;
 
-    var $is_cli_mode_required = false;
-
     var $down_does_not_restore = 'the scheme 1.x stored on each Profile and Property domain.';
 
     /** The entities whose domain column this rewrites, by key. */
     const ENTITIES = array( 'site' => 'base.site', 'property' => 'base.property' );
-
-    /** @var array<string,string> key => table, instead of the install's. TESTS ONLY. */
-    public $tables = array();
-
-    private function table( $key ) {
-
-        return $this->tables[ $key ] ?? \OWA\Core\CoreAPI::entityFactory( self::ENTITIES[ $key ] )->getTableName();
-    }
 
     function up( $force = false ) {
 
@@ -50,7 +40,7 @@ class Update088 extends \OWA\Core\Update {
         foreach ( array_keys( self::ENTITIES ) as $key ) {
 
             $rows = (array) $db->get_results( sprintf(
-                "SELECT id, domain FROM %s WHERE domain IS NOT NULL AND domain != ''", $this->table( $key ) ) );
+                "SELECT id, domain FROM %s WHERE domain IS NOT NULL AND domain != ''", $this->tableFor( self::ENTITIES[ $key ] ) ) );
 
             foreach ( $rows as $row ) {
 
@@ -63,7 +53,7 @@ class Update088 extends \OWA\Core\Update {
                     continue;
                 }
 
-                if ( $db->query( sprintf( 'UPDATE %s SET domain = ? WHERE id = ?', $this->table( $key ) ),
+                if ( $db->query( sprintf( 'UPDATE %s SET domain = ? WHERE id = ?', $this->tableFor( self::ENTITIES[ $key ] ) ),
                         array( $to, (string) $row['id'] ) ) === false ) {
 
                     $this->e->notice( sprintf( 'Rewriting the domain of %s %s failed.', $key, $row['id'] ) );

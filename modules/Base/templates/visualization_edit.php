@@ -565,7 +565,7 @@ jQuery( function () {
         // Moving a step: its handle and the arrow keys...
         .on( 'keydown', '.owa_builderMove', function ( e ) {
 
-            var step = { 37: -1, 38: -1, 39: 1, 40: 1 }[ e.which ];
+            var step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[ e.key ];
 
             if ( ! step ) {
                 return;

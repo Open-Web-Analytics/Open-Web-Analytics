@@ -465,7 +465,7 @@ class ScheduleRunCli extends SchedulerCli {
 
         try {
 
-            return \OWA\Core\Lib::simpleFactory( $map['class_name'], $map['file'], (array) $job['params'] );
+            return \OWA\Core\Lib::simpleFactory( $map['class_name'], '', (array) $job['params'] );
 
         } catch ( \Throwable $t ) {
 

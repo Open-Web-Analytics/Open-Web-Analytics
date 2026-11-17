@@ -91,10 +91,6 @@ class Module extends \OWA\Core\Module {
         return $properties;
     }
 
-    /**
-     * Registered by class name with no path: the class is PSR-4, so it is
-     * autoloaded and the path registerAction() would prefix is never read.
-     */
     function registerActions() {
 
         // Its tag settings, beside Base's on every Tracking Tag screen (PLAN 2.24.4).
@@ -107,11 +103,11 @@ class Module extends \OWA\Core\Module {
         ) );
 
         $this->registerAction( 'domstream.processEvent',
-            'OWA\\Module\\Domstream\\Controller\\ProcessEvent', '' );
+            'OWA\\Module\\Domstream\\Controller\\ProcessEvent' );
         $this->registerAction( 'domstream.reportDomstreams',
-            'OWA\\Module\\Domstream\\Controller\\ReportDomstreams', '' );
+            'OWA\\Module\\Domstream\\Controller\\ReportDomstreams' );
         $this->registerAction( 'domstream.domstreamsRest',
-            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController', '' );
+            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController' );
     }
 
     function _registerEntities() {
@@ -208,7 +204,7 @@ class Module extends \OWA\Core\Module {
     function registerApiMethods() {
 
         $this->registerRestApiRoute( 'v1', 'domstreams', 'GET',
-            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController', '' );
+            'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController' );
     }
 }
 

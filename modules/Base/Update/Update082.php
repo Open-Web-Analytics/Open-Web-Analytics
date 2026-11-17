@@ -27,8 +27,6 @@ class Update082 extends \OWA\Core\Update {
 
     var $schema_version = 82;
 
-    var $is_cli_mode_required = false;
-
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
     const COLUMNS = array( 'spam_score', 'spam_rules' );
 

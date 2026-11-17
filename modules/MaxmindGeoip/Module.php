@@ -70,7 +70,7 @@ class Module extends \OWA\Core\Module {
         \OWA\Core\CoreAPI::setSetting('base', 'geolocation_service', 'maxmind');
 
 
-        return parent::__construct();
+        parent::__construct();
     }
 
     /**
@@ -119,21 +119,15 @@ class Module extends \OWA\Core\Module {
 
         $this->registerAction(
             'maxmind_geoip.updateGeoipDbCli',
-            'OWA\\Module\\MaxmindGeoip\\Controller\\UpdateGeoipDbCli',
-            'Controller/UpdateGeoipDbCli.php'
-        );
+            'OWA\\Module\\MaxmindGeoip\\Controller\\UpdateGeoipDbCli' );
 
         $this->registerAction(
             'maxmind_geoip.optionsGeoip',
-            'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoip',
-            'Controller/OptionsGeoip.php'
-        );
+            'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoip' );
 
         $this->registerAction(
             'maxmind_geoip.optionsGeoipUpdate',
-            'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoipUpdate',
-            'Controller/OptionsGeoipUpdate.php'
-        );
+            'OWA\\Module\\MaxmindGeoip\\Controller\\OptionsGeoipUpdate' );
     }
 
     /**

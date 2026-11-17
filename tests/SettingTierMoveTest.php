@@ -53,7 +53,7 @@ final class SettingTierMoveTest extends TestCase
             return;
         }
 
-        foreach ( array( $this->key, 'anonymize_ips' ) as $name ) {
+        foreach ( array( $this->key, 'anonymize_ips', 'log_named_users' ) as $name ) {
 
             \OWA\Core\CoreAPI::clearScopedSetting( 'profile', $this->siteId, 'base', $name );
             \OWA\Core\CoreAPI::clearScopedSetting( 'property', $this->propertyId, 'base', $name );
@@ -354,17 +354,24 @@ final class SettingTierMoveTest extends TestCase
      */
     public function testTheNamedUserCheckRunsAfterTheEventExists(): void
     {
-        $src = $this->source( 'Core/CoreAPI.php' );
+        $this->skipUnlessParented();
 
-        $check = strpos( $src, "'log_named_users'" );
-        $built = strpos( $src, "supportClassFactory( 'base', 'event' )" );
+        \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', 'log_named_users', false );
 
-        $this->assertIsInt( $check );
-        $this->assertIsInt( $built );
+        $this->assertTrue( \OWA\Core\CoreAPI::isTrackingEventType( 'page_view' ) );
 
-        $this->assertGreaterThan( $built, $check,
-            'The per-Profile named-user check sits above the line that builds $event, '
-            . 'so it dereferences an undefined variable on every tracked event.' );
+        $cu  = \OWA\Core\CoreAPI::getCurrentUser();
+        $was = $cu->getUserData( 'user_id' );
+        $cu->setUserData( 'user_id', 'tier_probe_user' );
+
+        try {
+            // A raw array, as a beacon arrives: the check reads the site_id of the event built from it.
+            $this->assertFalse(
+                \OWA\Core\CoreAPI::logEvent( 'page_view', array( 'site_id' => $this->siteId ) ),
+                'A signed-in user was logged on a Profile that does not log named users.' );
+        } finally {
+            $cu->setUserData( 'user_id', $was );
+        }
     }
 
     /** Excluding an IP is a per-Profile judgement about one office, not a box-wide one. */

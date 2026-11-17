@@ -49,7 +49,7 @@ class Module extends \OWA\Core\Module {
         $this->required_schema_version = 1;
 
         $this->registerImplementation( 'event_queue_types', 'sqs',
-            \OWA\Module\Sqs\Classes\SqsQueue::class, 'Classes/SqsQueue.php' );
+            \OWA\Module\Sqs\Classes\SqsQueue::class );
 
         parent::__construct();
     }
@@ -69,8 +69,8 @@ class Module extends \OWA\Core\Module {
 
     function registerActions() {
 
-        $this->registerAction( 'sqs.optionsSqs', 'OWA\\Module\\Sqs\\Controller\\OptionsSqs', '' );
-        $this->registerAction( 'sqs.optionsSqsUpdate', 'OWA\\Module\\Sqs\\Controller\\OptionsSqsUpdate', '' );
+        $this->registerAction( 'sqs.optionsSqs', 'OWA\\Module\\Sqs\\Controller\\OptionsSqs' );
+        $this->registerAction( 'sqs.optionsSqsUpdate', 'OWA\\Module\\Sqs\\Controller\\OptionsSqsUpdate' );
     }
 
     /**

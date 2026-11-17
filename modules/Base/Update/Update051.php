@@ -21,8 +21,6 @@ class Update051 extends \OWA\Core\Update {
 
     var $schema_version = 51;
 
-    var $is_cli_mode_required = false;
-
     function up( $force = false ) {
 
         return true;

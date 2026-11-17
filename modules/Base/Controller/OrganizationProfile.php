@@ -21,18 +21,12 @@ class OrganizationProfile extends \OWA\Core\AdminController {
 
     function action() {
 
-        $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+        $sm = new \OWA\Module\Base\Classes\SiteManager();
 
         $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
         $organization->load( $sm->ensureOrganization() );
 
         $this->set( 'organization', $organization->_getProperties() );
-        /*
-         * The hierarchy wrapper, not base.options: the left column is the site
-         * control, because that is what these screens are reached from and what
-         * they describe. The settings nav belongs to install-wide options.
-         */
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
         /*
          * A current Profile even here, so the tile shows all three tiers rather
          * than the Organization over two blank lines -- and so the nav can
@@ -40,10 +34,8 @@ class OrganizationProfile extends \OWA\Core\AdminController {
          */
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
 
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '',
-            $this->getParam( 'propertyId' ) ?: \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) ) );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array( 'siteId' => $siteId ), '',
+            $this->getParam( 'propertyId' ) ?: \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) );
         $this->setSubview( 'base.organizationProfile' );
     }
 }

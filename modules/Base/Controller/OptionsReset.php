@@ -38,7 +38,7 @@ class OptionsReset extends \OWA\Core\AdminController {
         $this->setRequiredCapability('edit_settings');
         // It replaces every setting with its default: never from a link alone.
         $this->setNonceRequired();
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
     function action() {

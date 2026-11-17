@@ -57,11 +57,7 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
             'dimensionKey' => '', 'scope' => '', 'dataType' => '', 'label' => '',
         ), $submitted ) );
 
-        $controller->set( 'params', array_merge( (array) $controller->params, array( 'propertyId' => $property_id ) ) );
-        $controller->set( 'site_hierarchy',
-            $controller->getSiteHierarchy( $controller->getSitesAllowedForCurrentUser() ) );
-        $controller->set( 'hierarchy_nav', $controller->getHierarchyNav( '', $property_id ) );
-        $controller->setView( 'base.optionsHierarchy' );
+        $controller->settingsChrome( array( 'propertyId' => $property_id ), '', $property_id );
         $controller->setSubview( 'base.customDimensionEdit' );
     }
 }

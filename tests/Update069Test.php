@@ -23,7 +23,7 @@ final class Update069Test extends TestCase
         }
 
         $this->update = new \OWA\Module\Base\Update\Update069();
-        $this->update->table = self::SCRATCH;
+        $this->update->tables = ['app_password' => self::SCRATCH];
         $this->dropScratch();
     }
 

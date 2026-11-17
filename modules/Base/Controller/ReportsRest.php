@@ -90,7 +90,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 				 * required; a caller sending two dates and nothing else is
 				 * still doing the normal thing.
 				 */
-				$period = \OWA\Core\CoreAPI::supportClassFactory('base', 'timePeriod');
+				$period = new \OWA\Module\Base\Classes\TimePeriod();
 				$this->addValidation('period', $this->getParam('period'), 'inArray', array('possible_values' => $period->getValidPeriods(), 'stopOnError' => true) );
 			}
 		} else {
@@ -118,7 +118,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 				if ( ! in_array( $this->getParam( $key ), array( null, '' ), true ) ) {
 
-					$response = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'paginatedResultSet' );
+					$response = new \OWA\Module\Base\Classes\PaginatedResultSet();
 					$response->request_errors = array(
 						sprintf( \OWA\Core\CoreAPI::t( 'An overlay link cannot ask for %s.' ), $key ) );
 
@@ -142,7 +142,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
 		if ( $readiness ) {
 
-			$response = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'paginatedResultSet' );
+			$response = new \OWA\Module\Base\Classes\PaginatedResultSet();
 			$response->notReady = $readiness;
 
 			$this->set( 'response', $response );
@@ -178,9 +178,11 @@ class ReportsRest extends \OWA\Core\ReportController {
 		 */
 		$response = $this->data['response'] ?? null;
 
+		$status = 201;
+
 		if ( is_object( $response ) && ! empty( $response->request_errors ) ) {
 
-			http_response_code(422);
+			$status = 422;
 
 		} elseif ( is_object( $response ) && ! empty( $response->notReady ) ) {
 
@@ -189,23 +191,16 @@ class ReportsRest extends \OWA\Core\ReportController {
 			 * it asks about is not in a state to answer yet. Not 201 with no
 			 * rows, which is how a real zero looks.
 			 */
-			http_response_code(409);
-
-		} else {
-
-			http_response_code(201);
+			$status = 409;
 		}
 
-		$this->setView( 'base.reportsRest' );
+		$this->restResponse( $status, 'response' );
 	}
 	
-	function errorAction() {
-		
-		http_response_code(422);
-		
-		$this->setView( 'base.restApi' );
+    function errorAction() {
 
-	}
+        $this->restResponse( 422 );
+    }
 	
 	/** The Property the request names, or else the one its siteId belongs to; '' for neither. */
 	private function propertyOfRequest() {

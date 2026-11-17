@@ -37,7 +37,7 @@ class UsersDelete extends \OWA\Core\AdminController {
 
         $this->setRequiredCapability('edit_users');
         $this->setNonceRequired();
-        return parent::__construct($params);
+        parent::__construct($params);
     }
     
     function validate() {
@@ -48,7 +48,7 @@ class UsersDelete extends \OWA\Core\AdminController {
 
     function action() {
 
-        $userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
+        $userManager = new \OWA\Module\Base\Classes\UserManager();
 
         // add check here to ensure that this is not the default user....
         $userManager->deleteUser($this->getParam('user_id'));
@@ -57,7 +57,7 @@ class UsersDelete extends \OWA\Core\AdminController {
     function success() {
 	    
 	    $this->setRedirectAction('base.users');
-        $this->set('status_code', 3004);
+        $this->setStatusCode( 3004 );
     }
 }
 

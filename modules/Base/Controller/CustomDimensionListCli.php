@@ -75,7 +75,7 @@ class CustomDimensionListCli extends CustomDimensionsCli {
         }
 
         \OWA\Core\CoreAPI::notice( sprintf( '%d dimension%s across %d cube%s.',
-            $total, $total === 1 ? '' : 's', count( $cubes ), count( $cubes ) === 1 ? '' : 's' ) );
+            $total, $total === 1 ? '' : 's', count( $cubes ), \OWA\Core\Lib::plural( count( $cubes ), '', 's' ) ) );
     }
 
     /**

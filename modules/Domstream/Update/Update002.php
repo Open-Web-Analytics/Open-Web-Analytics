@@ -24,8 +24,6 @@ class Update002 extends \OWA\Core\Update {
 
     var $schema_version = 2;
 
-    var $is_cli_mode_required = false;
-
     const ENTITIES = array( 'domstream.domstream_chunk', 'domstream.domstream_payload' );
 
     function up( $force = false ) {

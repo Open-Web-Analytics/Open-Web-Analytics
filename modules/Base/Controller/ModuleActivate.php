@@ -37,7 +37,7 @@ class ModuleActivate extends \OWA\Core\AdminController {
 
         $this->setRequiredCapability('edit_modules');
         $this->setNonceRequired();
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
     function action() {

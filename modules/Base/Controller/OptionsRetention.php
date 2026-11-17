@@ -25,12 +25,8 @@ class OptionsRetention extends \OWA\Core\AdminController {
 
         $owa_site_id = $this->resolveCurrentSiteId();
 
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
-        $this->setView( 'base.optionsHierarchy' );
-        $this->data['subview'] = 'base.optionsRetention';
-        $this->data['view_method'] = 'delegate';
+        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
+        $this->setSubview( 'base.optionsRetention' );
 
         return $this->data;
     }

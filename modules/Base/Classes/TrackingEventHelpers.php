@@ -1929,34 +1929,32 @@ class TrackingEventHelpers {
      * exists. If supplying geo is wanted back it needs client_settable set,
      * which is a decision about trust, not this branch restored.
      */
+    /** The location of the event's IP address. */
+    private static function location( $event ) {
+
+        return \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
+    }
+
     static function resolveCountry ( $country, $event ) {
 
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress($event->get('ip_address'));
-
-        return $location->getCountry();
+        return self::location( $event )->getCountry();
     }
 
     static function resolveCity ( $city, $event ) {
 
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getCity();
+        return self::location( $event )->getCity();
     }
 
 
 
     static function resolveCountryCode ( $country_code, $event ) {
 
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getCountryCode();
+        return self::location( $event )->getCountryCode();
     }
 
     static function resolveState ( $state, $event ) {
 
-        $location = \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
-
-        return $location->getState();
+        return self::location( $event )->getState();
     }
 
     static function lowercaseString ( $string, $event ) {

@@ -43,7 +43,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
             if ( $problem !== '' ) {
 
-                $this->addValidation( 'name', '', 'required', array( 'errorMsg' => $problem ) );
+                $this->addValidationError( 'name', $problem );
             }
         }
 
@@ -70,8 +70,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
         if ( ! $values && ! \OWA\Module\Base\Entity\GoalEventDefinition::isCustomTrigger( $this->trigger() ) ) {
 
-            $this->addValidation( 'conditionValue', '', 'required', array(
-                'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a value to compare against.' ) ) );
+            $this->addValidationError( 'conditionValue', \OWA\Core\CoreAPI::t( 'Enter a value to compare against.' ) );
         }
 
         /*
@@ -93,7 +92,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
         if ( $problem !== '' ) {
 
-            $this->addValidation( 'triggerEvent', '', 'required', array( 'errorMsg' => $problem ) );
+            $this->addValidationError( 'triggerEvent', $problem );
 
             $trigger = '';
         }
@@ -105,8 +104,8 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
          */
         if ( $trigger !== '' && $name !== '' && strcasecmp( $trigger, $name ) === 0 ) {
 
-            $this->addValidation( 'name', '', 'required', array( 'errorMsg' => sprintf(
-                \OWA\Core\CoreAPI::t( 'A goal event definition cannot have the name of the event that triggers it, %s.' ), $trigger ) ) );
+            $this->addValidationError( 'name', sprintf(
+                \OWA\Core\CoreAPI::t( 'A goal event definition cannot have the name of the event that triggers it, %s.' ), $trigger ) );
         }
 
         if ( $trigger !== '' ) {
@@ -129,9 +128,8 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
                     continue;
                 }
 
-                $this->addValidation( 'conditionValue', '', 'required', array(
-                    'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'A %s event does not carry %s.' ),
-                        $trigger, $property ) ) );
+                $this->addValidationError( 'conditionValue', sprintf( \OWA\Core\CoreAPI::t( 'A %s event does not carry %s.' ),
+                        $trigger, $property ) );
             }
         }
 
@@ -153,9 +151,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
             if ( $pattern !== '' && @preg_match( \OWA\Module\Base\Entity\GoalEventDefinition::regexPattern( $pattern ), '' ) === false ) {
 
-                $this->addValidation( 'conditionValue', '', 'required', array(
-                    'errorMsg' => \OWA\Core\CoreAPI::t( 'The regular expression is not valid.' ),
-                ) );
+                $this->addValidationError( 'conditionValue', \OWA\Core\CoreAPI::t( 'The regular expression is not valid.' ) );
 
                 continue;
             }
@@ -169,9 +165,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
             if ( $refused !== null ) {
 
-                $this->addValidation( 'conditionValue', '', 'required', array(
-                    'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The regular expression was refused: %s' ), $refused ),
-                ) );
+                $this->addValidationError( 'conditionValue', sprintf( \OWA\Core\CoreAPI::t( 'The regular expression was refused: %s' ), $refused ) );
             }
         }
 
@@ -238,7 +232,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
         $this->set( 'propertyId', $propertyId );
         $this->setRedirectAction( 'base.goalEventDefinitions' );
-        $this->set( 'status_code', 3219 );
+        $this->setStatusCode( 3219 );
     }
     /**
      * The count mode to store for what was submitted: one of the two constants,
@@ -458,11 +452,8 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         }
 
         $this->set( 'savedProperties', $saved );
-        $this->set( 'params', array_merge( (array) $this->params, array( 'propertyId' => $propertyId ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->set( 'error_code', 3002 );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array( 'propertyId' => $propertyId ), '', $propertyId );
         $this->setSubview( 'base.goalEventDefinitionEdit' );
     }
 }

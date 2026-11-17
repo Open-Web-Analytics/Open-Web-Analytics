@@ -64,7 +64,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
                           $set, 'property', (string) $this->getParam( 'propertyId' ),
                           $this->getParam( 'config' ), $this->getParam( 'override' ) ) as $name => $problem ) {
 
-                $this->addValidation( $name, '', 'required', array( 'errorMsg' => $problem ) );
+                $this->addValidationError( $name, $problem );
             }
         }
 
@@ -129,7 +129,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
              * ensureOrganization() creates it on first need, so this works on
              * an install that has somehow never had one.
              */
-            $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+            $sm = new \OWA\Module\Base\Classes\SiteManager();
 
             $propertyId = $property->generateId( 'property:' . $name . ':' . uniqid( '', true ) );
 
@@ -163,12 +163,12 @@ class PropertyEdit extends \OWA\Core\AdminController {
         if ( $this->getParam( 'propertyId' ) ) {
 
             $this->setRedirectAction( 'base.propertyProfile' );
-            $this->set( 'status_code', 3201 );
+            $this->setStatusCode( 3201 );
 
         } else {
 
             $this->setRedirectAction( 'base.sitesProfile' );
-            $this->set( 'status_code', 3212 );
+            $this->setStatusCode( 3212 );
         }
     }
 
@@ -271,11 +271,8 @@ class PropertyEdit extends \OWA\Core\AdminController {
 
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ), $propertyId );
 
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $siteId ) ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $propertyId ) );
         $this->set( 'error_code', 3002 );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array( 'siteId' => $siteId ), '', $propertyId );
         $this->setSubview( 'base.propertyProfile' );
     }
 }

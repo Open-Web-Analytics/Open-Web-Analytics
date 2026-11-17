@@ -7,7 +7,7 @@ require_once(__DIR__ . '/RestControllerTestCase.php');
  *
  *   GET /owa/api/base/v1/realtime  -> RealtimeRest (view_reports)
  *
- * success() -> 200 (base.realtimeRest); a missing siteId -> 422 (base.restApi).
+ * success() -> 200 with the cards; a missing siteId -> 422.
  */
 final class RealtimeRestControllerTest extends RestControllerTestCase
 {
@@ -42,8 +42,7 @@ final class RealtimeRestControllerTest extends RestControllerTestCase
         $resp = $this->callEndpoint(\OWA\Module\Base\Controller\RealtimeRest::class,
             'RealtimeRest.php', ['siteId' => $site['site_id']]);
 
-        $this->assertSame(200, $resp['status']);
-        $this->assertSame('base.realtimeRest', $resp['view']);
+        $this->assertEnvelope($resp, 200);
 
         foreach (['window', 'activeUsers', 'perMinute', 'pages', 'events', 'goals', 'sources',
                   'countries', 'located', 'devices', 'recent', 'queued'] as $card) {

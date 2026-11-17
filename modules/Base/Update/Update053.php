@@ -48,8 +48,6 @@ class Update053 extends \OWA\Core\Update {
 
     var $down_does_not_restore = 'the element_path values: the column comes back empty.';
 
-    var $is_cli_mode_required = false;
-
     function up( $force = false ) {
 
         if ( $this->dropCubeColumn( 'element_path' ) === false ) {

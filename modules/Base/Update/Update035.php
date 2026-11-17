@@ -37,8 +37,6 @@ class Update035 extends \OWA\Core\Update {
 
     var $schema_version = 35;
 
-    var $is_cli_mode_required = false;
-
     function up( $force = false ) {
 
         $entity = \OWA\Module\Base\Classes\Cube\Cubes::preSplitEntity();

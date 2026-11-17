@@ -14,8 +14,6 @@ class Update059 extends \OWA\Core\Update {
 
     var $schema_version = 59;
 
-    var $is_cli_mode_required = false;
-
     const ENTITIES = array( 'base.migration_progress', 'base.migration_tally', 'base.migration_day_visitor' );
 
     function up( $force = false ) {

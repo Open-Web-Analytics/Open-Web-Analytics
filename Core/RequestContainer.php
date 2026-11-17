@@ -143,7 +143,7 @@ class RequestContainer {
         /* STATE CONTAINER */
 
         // state
-        $this->state = \OWA\Core\CoreAPI::supportClassFactory('base', 'state');
+        $this->state = new \OWA\Module\Base\Classes\State();
         // merges session
         if (!empty($this->session)) {
             $this->state->addStores(\OWA\Core\Lib::stripParams($this->session, \OWA\Core\CoreAPI::getSetting('base', 'ns')));

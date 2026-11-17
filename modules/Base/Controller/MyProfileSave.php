@@ -174,7 +174,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
             $auth = \OWA\Core\Auth::get_instance();
             $auth->deleteCredentials();
 
-            $this->set( 'status_code', 3006 );
+            $this->setStatusCode( 3006 );
             $this->setRedirectAction( 'base.loginForm' );
 
             return;
@@ -222,7 +222,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
          * updateUserPassword() hashes it and mints a new temp_passkey, which
          * also invalidates any reset link that was outstanding.
          */
-        $manager = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'userManager' );
+        $manager = new \OWA\Module\Base\Classes\UserManager();
 
         $updated = $manager->updateUserPassword( array(
             'user_id'  => $user_id,

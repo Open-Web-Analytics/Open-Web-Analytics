@@ -39,23 +39,19 @@ class RealtimeRest extends \OWA\Core\ReportController {
         $realtime = new \OWA\Module\Base\Classes\Realtime( (string) $this->getParam( 'propertyId' ) );
         $visitor  = trim( (string) $this->getParam( 'visitorId' ) );
 
-        $this->set( 'realtime', $visitor !== ''
+        $this->set( 'realtime', (array) ( $visitor !== ''
             ? array( 'visitor' => $visitor, 'events' => $realtime->visitor( $visitor ) )
-            : $realtime->summary() );
+            : $realtime->summary() ) );
     }
 
     function success() {
 
-        http_response_code( 200 );
-
-        $this->setView( 'base.realtimeRest' );
+        $this->restResponse( 200, 'realtime' );
     }
 
     function errorAction() {
 
-        http_response_code( 422 );
-
-        $this->setView( 'base.restApi' );
+        $this->restResponse( 422 );
     }
 }
 

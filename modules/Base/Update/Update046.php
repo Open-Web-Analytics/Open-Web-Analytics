@@ -40,8 +40,6 @@ class Update046 extends \OWA\Core\Update {
 
     var $schema_version = 46;
 
-    var $is_cli_mode_required = false;
-
     /** The anchors this adds. @return string[] */
     private function added() {
 

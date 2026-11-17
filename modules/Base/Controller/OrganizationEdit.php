@@ -32,7 +32,7 @@ class OrganizationEdit extends \OWA\Core\AdminController {
 
     function action() {
 
-        $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
+        $sm = new \OWA\Module\Base\Classes\SiteManager();
 
         $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
         $organization->load( $sm->ensureOrganization() );
@@ -41,7 +41,7 @@ class OrganizationEdit extends \OWA\Core\AdminController {
         $organization->update();
 
         $this->setRedirectAction( 'base.organizationProfile' );
-        $this->set( 'status_code', 3201 );
+        $this->setStatusCode( 3201 );
     }
 
     function errorAction() {

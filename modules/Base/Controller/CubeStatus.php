@@ -45,11 +45,7 @@ class CubeStatus extends \OWA\Core\AdminController {
 
         $site_id = $controller->resolveCurrentSiteId();
 
-        $controller->set( 'params', array_merge( (array) $controller->params, array( 'siteId' => $site_id ) ) );
-        $controller->set( 'site_hierarchy',
-            $controller->getSiteHierarchy( $controller->getSitesAllowedForCurrentUser() ) );
-        $controller->set( 'hierarchy_nav', $controller->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id ) ) );
-        $controller->setView( 'base.optionsHierarchy' );
+        $controller->settingsChrome( array( 'siteId' => $site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id ) );
     }
 }
 

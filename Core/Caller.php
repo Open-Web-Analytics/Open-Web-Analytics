@@ -219,7 +219,7 @@ class Caller extends \OWA\Core\Base {
     
     function makeEvent($type = '') {
     
-        $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
+        $event = new \OWA\Module\Base\Classes\Event();
         
         if ($type) {
             $event->setEventType($type);

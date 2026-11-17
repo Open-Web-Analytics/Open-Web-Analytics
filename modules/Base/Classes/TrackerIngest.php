@@ -147,7 +147,7 @@ class TrackerIngest {
         }
 
         $map['queue_type'] = $type;
-        $queue = \OWA\Core\Lib::simpleFactory( $implementation[0], $implementation[1], $map );
+        $queue = \OWA\Core\Lib::simpleFactory( $implementation[0], '', $map );
 
         if ( ! $queue instanceof \OWA\Core\IntakeQueue ) {
 
@@ -254,7 +254,7 @@ class TrackerIngest {
             return null;
         }
 
-        $event      = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
+        $event      = new \OWA\Module\Base\Classes\Event();
         $properties = $envelope['properties'];
 
         $event->setEventType( $envelope['type'] );

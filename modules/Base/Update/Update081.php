@@ -46,8 +46,6 @@ class Update081 extends \OWA\Core\Update {
 
     var $schema_version = 81;
 
-    var $is_cli_mode_required = false;
-
     /** The column this adds. */
     const COLUMN = 'property_id';
 
@@ -63,7 +61,7 @@ class Update081 extends \OWA\Core\Update {
         }
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->table( 'custom_report' );
+        $table = $this->tableFor( 'custom_report' );
 
         $rows = (array) $db->get_results( sprintf(
             'SELECT id, name, user_id FROM %s WHERE property_id IS NULL OR property_id = 0 ORDER BY id', $table ) );
@@ -176,7 +174,7 @@ class Update081 extends \OWA\Core\Update {
         $rows = (array) $db->get_results( sprintf(
             "SELECT g.scope_id, g.value, s.property_id FROM %s g JOIN %s s ON s.site_id = g.scope_id"
             . " WHERE g.name = 'goals' AND g.scope_type = 'profile'",
-            $this->table( 'setting' ), $this->table( 'site' ) ) );
+            $this->tableFor( 'setting' ), $this->tableFor( 'site' ) ) );
 
         foreach ( $rows as $row ) {
 
@@ -216,7 +214,7 @@ class Update081 extends \OWA\Core\Update {
     private function liveProperties() {
 
         $rows = (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
-            'SELECT id FROM %s WHERE archived_date IS NULL OR archived_date = 0 ORDER BY id', $this->table( 'property' ) ) );
+            'SELECT id FROM %s WHERE archived_date IS NULL OR archived_date = 0 ORDER BY id', $this->tableFor( 'property' ) ) );
 
         return array_map( static function ( $row ) {
 
@@ -232,7 +230,7 @@ class Update081 extends \OWA\Core\Update {
         foreach ( array( 'WHERE archived_date IS NULL OR archived_date = 0', '' ) as $where ) {
 
             $row = (array) $db->get_row( sprintf( 'SELECT id FROM %s %s ORDER BY COALESCE(creation_date, 0), id LIMIT 1',
-                $this->table( 'property' ), $where ) );
+                $this->tableFor( 'property' ), $where ) );
 
             if ( ! empty( $row['id'] ) ) {
 
@@ -256,7 +254,7 @@ class Update081 extends \OWA\Core\Update {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $user = (array) $db->get_row( sprintf( 'SELECT id, role FROM %s WHERE user_id = ?', $this->table( 'user' ) ),
+        $user = (array) $db->get_row( sprintf( 'SELECT id, role FROM %s WHERE user_id = ?', $this->tableFor( 'user' ) ),
             array( (string) $user_id ) );
 
         if ( empty( $user['id'] ) ) {
@@ -272,7 +270,7 @@ class Update081 extends \OWA\Core\Update {
         $rows = (array) $db->get_results( sprintf(
             'SELECT DISTINCT s.property_id FROM %s su JOIN %s s ON s.id = su.site_id'
             . ' WHERE su.user_id = ? AND ( s.archived_date IS NULL OR s.archived_date = 0 )',
-            $this->table( 'site_user' ), $this->table( 'site' ) ), array( $user['id'] ) );
+            $this->tableFor( 'site_user' ), $this->tableFor( 'site' ) ), array( $user['id'] ) );
 
         $out = array();
 
@@ -287,12 +285,6 @@ class Update081 extends \OWA\Core\Update {
         }
 
         return $out;
-    }
-
-    /** A table's name under the install's prefix. */
-    private function table( $name ) {
-
-        return \OWA\Core\Entity::TABLE_PREFIX . $name;
     }
 }
 

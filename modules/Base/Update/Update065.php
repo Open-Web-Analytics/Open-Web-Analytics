@@ -33,8 +33,6 @@ class Update065 extends \OWA\Core\Update {
 
     var $schema_version = 65;
 
-    var $is_cli_mode_required = false;
-
     const COLUMNS = array( 'channel', 'acq_channel' );
 
     function up( $force = false ) {

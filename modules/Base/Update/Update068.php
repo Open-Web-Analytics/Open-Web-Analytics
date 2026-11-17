@@ -28,8 +28,6 @@ class Update068 extends \OWA\Core\Update {
 
     var $down_does_not_restore = 'the queue items in the dropped table: it comes back empty.';
 
-    var $is_cli_mode_required = false;
-
     const DDL = <<<'SQL'
 CREATE TABLE %s (
   `id` bigint NOT NULL,
@@ -51,18 +49,10 @@ CREATE TABLE %s (
 ) %s
 SQL;
 
-    /** @var string|null a table to use instead of the install's. TESTS ONLY. */
-    public $table = null;
-
-    private function table() {
-
-        return $this->table ?: \OWA\Core\Entity::TABLE_PREFIX . 'queue_item';
-    }
-
     function up( $force = false ) {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->table();
+        $table = $this->tableFor( 'queue_item' );
 
         if ( ! $db->tableExists( $table ) ) {
 
@@ -82,7 +72,7 @@ SQL;
     function down() {
 
         $db    = \OWA\Core\CoreAPI::dbSingleton();
-        $table = $this->table();
+        $table = $this->tableFor( 'queue_item' );
 
         if ( $db->tableExists( $table ) ) {
 

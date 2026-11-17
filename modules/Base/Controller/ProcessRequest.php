@@ -34,11 +34,6 @@ namespace OWA\Module\Base\Controller;
 
 class ProcessRequest extends \OWA\Module\Base\Controller\ProcessEvent {
 
-    function __construct($params) {
-
-        return parent::__construct($params);
-    }
-
     function action() {
 
         // Control logic

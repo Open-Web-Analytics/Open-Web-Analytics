@@ -238,7 +238,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
              * from that partition.
              */
             return $this->fail( sprintf( '%s. %d cube%s stopped; the next run resumes there.',
-                implode( '; ', $stopped ), count( $stopped ), count( $stopped ) === 1 ? '' : 's' ) );
+                implode( '; ', $stopped ), count( $stopped ), \OWA\Core\Lib::plural( count( $stopped ), '', 's' ) ) );
         }
     }
 
@@ -295,7 +295,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
             \OWA\Core\CoreAPI::notice( sprintf(
                 '%s raw row%s in that range belong%s to a site id no Property claims, '
               . 'so %s in no cube.', number_format( $collecting['orphan_rows'] ),
-                (int) $collecting['orphan_rows'] === 1 ? '' : 's', (int) $collecting['orphan_rows'] === 1 ? 's' : '',
+                \OWA\Core\Lib::plural( (int) $collecting['orphan_rows'], '', 's' ), (int) $collecting['orphan_rows'] === 1 ? 's' : '',
                 (int) $collecting['orphan_rows'] === 1 ? 'it is' : 'they are' ) );
         }
 
@@ -564,7 +564,7 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
          * and reporting the requested day back would hide that entirely.
          */
         \OWA\Core\CoreAPI::notice( sprintf( '%s: %d to %d covers %d partition%s.%s',
-            $table, $range['from'], $range['to'], count( $partitions ), count( $partitions ) === 1 ? '' : 's',
+            $table, $range['from'], $range['to'], count( $partitions ), \OWA\Core\Lib::plural( count( $partitions ), '', 's' ),
             $dry_run ? ' Dry run.' : '' ) );
 
         $outcome = $none;

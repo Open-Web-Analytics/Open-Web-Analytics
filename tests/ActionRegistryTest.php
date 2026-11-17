@@ -5,8 +5,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * Every core controller must be registered against an action name.
  *
- * CoreAPI::performAction() has two branches. The registered one hands a class
- * name and path from the action map to Lib::simpleFactory(). The unregistered
+ * CoreAPI::performAction() has two branches. The registered one hands the class
+ * name from the action map to Lib::simpleFactory(). The unregistered
  * one falls through to moduleFactory(), which reconstructs a class name AND a
  * filesystem path by concatenating the request's own 'do' param.
  *
@@ -140,16 +140,12 @@ final class ActionRegistryTest extends TestCase
     /**
      * REST routes are a SECOND registration map, and nothing checked it.
      *
-     * registerRestApiRoute() stores its own class name and include path in
+     * registerRestApiRoute() stores its own class name in
      * $restApiRoutes -- not in the action map -- so
      * testRegisteredClassesActuallyExist() above does not see it. A controller
      * registered in both places (every REST controller here) can be renamed in
      * one and left stale in the other, and the action-map test still passes.
      * The break then surfaces only when a client actually calls that endpoint.
-     *
-     * The file is checked as well as the class: simpleFactory() includes the
-     * registered path, so a path typo fatals even when the class autoloads
-     * fine under PSR-4.
      */
     public function testRegisteredRestRouteClassesActuallyExist(): void
     {
@@ -172,11 +168,6 @@ final class ActionRegistryTest extends TestCase
 
                         if (! $class || ! class_exists($class)) {
                             $broken[] = $where . ' -> class ' . ($meta['class_name'] ?? '(none)');
-                            continue;
-                        }
-
-                        if (! empty($meta['file']) && ! file_exists($meta['file'])) {
-                            $broken[] = $where . ' -> file ' . $meta['file'];
                         }
                     }
                 }
@@ -186,31 +177,62 @@ final class ActionRegistryTest extends TestCase
         $this->assertGreaterThan(1, $seen, 'only one REST route seen -- the map did not load');
 
         $this->assertSame([], $broken,
-            'REST routes point at a class or file that does not exist: ' . implode(', ', $broken));
+            'REST routes point at a class that does not exist: ' . implode(', ', $broken));
     }
 
     /**
-     * registerAction()'s file is relative to the registering module's own
-     * directory, as registerImplementation()'s is, and empty when none is given.
+     * A registered action is dispatched to its class: simpleFactory() builds
+     * the controller the map names, and a file path a module still passes is
+     * not part of that.
      */
-    public function testARegisteredActionsFileIsInItsOwnModule(): void
+    public function testARegisteredActionBuildsItsController(): void
     {
-        $missing = [];
-
-        foreach ($this->actionMap() as $name => $meta) {
-
-            $file = (string) ($meta['file'] ?? '');
-
-            if ($file !== '' && ! file_exists($file)) {
-                $missing[] = $name . ' -> ' . $file;
-            }
-        }
-
-        $this->assertSame([], $missing);
-
         $base = $this->actionMap()['base.addSiteRest'] ?? null;
         $this->assertNotNull($base);
-        $this->assertSame(\OWA\Core\Env::modulesDir() . 'Base/Controller/AddSiteRest.php', $base['file']);
+        $this->assertSame(\OWA\Module\Base\Controller\AddSiteRest::class, $base['class_name']);
+
+        $this->assertInstanceOf(\OWA\Module\Base\Controller\AddSiteRest::class,
+            \OWA\Core\Lib::simpleFactory($base['class_name'], '', []));
+
+        $this->assertInstanceOf(\OWA\Module\Base\Controller\AddSiteRest::class,
+            \OWA\Core\Lib::simpleFactory($base['class_name'], 'Controller/NoSuchFile.php', []),
+            'a path passed by an older caller is ignored');
+    }
+
+    /** A module written before PSR-4 still passes a class file path; it is accepted and ignored. */
+    public function testAFilePathPassedByAnOlderModuleIsIgnored(): void
+    {
+        $module = new class extends \OWA\Core\Module {
+            public function __construct() {
+                $this->name = 'zz_legacy_paths';
+            }
+            public function register() {
+                $this->registerAction('zz_legacy_paths.thing', \OWA\Module\Base\Controller\AddSiteRest::class, 'Controller/AddSiteRest.php');
+                $this->registerRestApiRoute('v1', 'zzThings', 'GET', \OWA\Module\Base\Controller\AddSiteRest::class,
+                    'Controller/AddSiteRest.php', ['params_order' => ['thing_id']]);
+                $this->registerImplementation('zz_legacy_types', 'thing', \OWA\Module\Base\Classes\FileEventQueue::class,
+                    'Classes/FileEventQueue.php', ['x' => 1]);
+            }
+        };
+
+        $s       = \OWA\Core\CoreAPI::serviceSingleton();
+        $actions = $s->getMap('actions');
+        $routes  = $s->restApiRoutes;
+
+        try {
+            $module->register();
+
+            $this->assertSame(['class_name' => \OWA\Module\Base\Controller\AddSiteRest::class],
+                $s->getMapValue('actions', 'zz_legacy_paths.thing'));
+            $this->assertSame(['class_name' => \OWA\Module\Base\Controller\AddSiteRest::class, 'conf' => ['params_order' => ['thing_id']]],
+                $s->getRestApiRoute('zz_legacy_paths', 'v1', 'zzThings', 'GET'));
+            $this->assertSame([\OWA\Module\Base\Classes\FileEventQueue::class, '', ['x' => 1]],
+                $s->getMapValue('zz_legacy_types', 'thing'));
+        } finally {
+            $s->setMap('actions', $actions);
+            $s->setMap('zz_legacy_types', []);
+            $s->restApiRoutes = $routes;
+        }
     }
 
     public function testARegisteredActionResolvesWithoutTheLegacyPath(): void

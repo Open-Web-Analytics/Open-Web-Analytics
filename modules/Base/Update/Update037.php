@@ -30,8 +30,6 @@ class Update037 extends \OWA\Core\Update {
 
     var $schema_version = 37;
 
-    var $is_cli_mode_required = false;
-
     function up( $force = false ) {
 
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );

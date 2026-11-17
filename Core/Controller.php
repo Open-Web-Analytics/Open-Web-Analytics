@@ -284,7 +284,7 @@ class Controller extends \OWA\Core\Base {
         if (array_key_exists('status_code', $this->params)
             && \OWA\Core\CoreAPI::serviceSingleton()->request->getRequestType() !== 'POST') {
 
-            $this->set('status_code', $this->getParam('status_code'));
+            $this->setStatusCode( $this->getParam('status_code') );
         }
 
         // get error msg from error code passed on the query string from a redirect.
@@ -480,7 +480,7 @@ class Controller extends \OWA\Core\Base {
 
     function createValidator() {
 
-        $this->v = \OWA\Core\CoreAPI::supportClassFactory('base', 'validator');
+        $this->v = new \OWA\Module\Base\Classes\Validator();
     }
 
     function addValidation($name, $value, $validation, $conf = array()) {
@@ -492,6 +492,15 @@ class Controller extends \OWA\Core\Base {
 
         return $this->v->addValidation($name, $value, $validation, $conf);
 
+    }
+
+    /**
+     * Fails validation of this field with this message: a required check of
+     * an empty value, which always fails.
+     */
+    function addValidationError( $name, $msg ) {
+
+        return $this->addValidation( $name, '', 'required', array( 'errorMsg' => $msg ) );
     }
 
     function setValidation($name, $obj) {
@@ -614,6 +623,22 @@ class Controller extends \OWA\Core\Base {
     function setView($view) {
 
         $this->data['view'] = $view;
+    }
+
+    /**
+     * Answers a REST request with the base.restApi view and this status code.
+     * The response's data is what this controller set under $key, read when
+     * the view renders (false when nothing was); with no key it has none.
+     */
+    protected function restResponse( $status, $key = '' ) {
+
+        http_response_code( $status );
+        $this->setView( 'base.restApi' );
+
+        if ( $key !== '' ) {
+
+            $this->set( 'response_key', $key );
+        }
     }
 
     function setSubview($subview) {
@@ -1332,7 +1357,7 @@ class Controller extends \OWA\Core\Base {
     protected function registeredSettingsNav() {
 
         return self::settingsNavSections(
-            (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels() );
+            (array) \OWA\Core\CoreAPI::getAdminPanels() );
     }
 
     /**

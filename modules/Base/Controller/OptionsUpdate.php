@@ -37,7 +37,7 @@ class OptionsUpdate extends \OWA\Core\AdminController {
 
         $this->setRequiredCapability('edit_settings');
         $this->setNonceRequired();
-        return parent::__construct($params);
+        parent::__construct($params);
 
     }
 
@@ -62,7 +62,7 @@ class OptionsUpdate extends \OWA\Core\AdminController {
 
             if ( $problem !== null ) {
 
-                $this->addValidation( (string) $k, '', 'required', array( 'errorMsg' => $problem ) );
+                $this->addValidationError( (string) $k, $problem );
             }
         }
     }

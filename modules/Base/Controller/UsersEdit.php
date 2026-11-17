@@ -72,22 +72,13 @@ class UsersEdit extends \OWA\Core\AdminController {
 
 
         $u->update();
-        $this->set('status_code', 3003);
+        $this->setStatusCode( 3003 );
         $this->setRedirectAction('base.users');
     }
 
     function errorAction() {
-
-        /*
-         * The hierarchy wrapper. There is one settings nav now -- the old
-         * base.options menu is gone -- so every settings screen carries the tile
-         * and the tier groups, module screens included.
-         */
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) ) );
-        $this->setView('base.optionsHierarchy');
+        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         $this->setSubview('base.usersProfile');
         /*
          * 3002 -- "the form had errors" -- not 3311.

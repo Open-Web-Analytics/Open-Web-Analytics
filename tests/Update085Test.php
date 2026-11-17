@@ -31,7 +31,7 @@ final class Update085Test extends TestCase
         $db->query(sprintf('CREATE TABLE %s LIKE %s', self::TABLE,
             \OWA\Core\CoreAPI::entityFactory('base.setting')->getTableName()));
 
-        $this->update->table = self::TABLE;
+        $this->update->tables = ['base.setting' => self::TABLE];
     }
 
     protected function tearDown(): void

@@ -31,8 +31,6 @@ class Update063 extends \OWA\Core\Update {
 
     var $schema_version = 63;
 
-    var $is_cli_mode_required = false;
-
     const COLUMN = 'created_at';
 
     /*

@@ -31,11 +31,6 @@ namespace OWA\Module\Base\View;
 
 class PasswordResetForm extends \OWA\Core\View {
 
-    function __construct() {
-
-        return parent::__construct();
-    }
-
     function render($data) {
 
         $this->setTitle( \OWA\Core\CoreAPI::t( 'Password Reset' ) );

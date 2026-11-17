@@ -118,7 +118,7 @@ class CustomDimensionRegisterCli extends CustomDimensionsCli {
         $table = \OWA\Module\Base\Classes\Cube\Cubes::tableFor( $property_id );
 
         \OWA\Core\CoreAPI::notice( sprintf( 'Recorded %d dimension%s for %s.',
-            count( $result['registered'] ), count( $result['registered'] ) === 1 ? '' : 's', $table ) );
+            count( $result['registered'] ), \OWA\Core\Lib::plural( count( $result['registered'] ), '', 's' ), $table ) );
 
         if ( $this->getParam( 'defer' ) ) {
 

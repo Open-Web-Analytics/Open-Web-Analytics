@@ -51,7 +51,7 @@ class Cli extends \OWA\Core\AdminController {
 
         if ( \OWA\Core\RequestType::is( \OWA\Core\RequestType::CLI ) ) {
 
-            return parent::__construct($params);
+            parent::__construct($params);
 
         } else {
 
@@ -396,6 +396,14 @@ class Cli extends \OWA\Core\AdminController {
     public function setJobLease( $lease ) {
 
         $this->job_lease = $lease;
+    }
+
+    /** A byte count as KB, or as MB above one megabyte. */
+    protected static function readableSize( $bytes ) {
+
+        return $bytes > 1048576
+            ? sprintf( '%.1f MB', $bytes / 1048576 )
+            : sprintf( '%.0f KB', $bytes / 1024 );
     }
 
     /**

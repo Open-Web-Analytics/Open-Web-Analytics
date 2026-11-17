@@ -37,7 +37,7 @@ class SitesInvocation extends \OWA\Core\AdminController {
     function __construct($params) {
 
         $this->setRequiredCapability('edit_sites');
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
     function action() {
@@ -48,15 +48,12 @@ class SitesInvocation extends \OWA\Core\AdminController {
         $this->set('site', $s);
         $this->setSubview('base.sitesInvocation');
         /*
-         * The hierarchy wrapper: this is a Profile screen, reached from the site
+         * The settings chrome: this is a Profile screen, reached from the site
          * control's nav. The install settings nav beside it would offer a way
          * out that has nothing to do with where you are.
          */
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->set( 'params', array_merge( (array) $this->params, array( 'siteId' => $owa_site_id ) ) );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $owa_site_id ) );
-        $this->setView('base.optionsHierarchy');
+        $this->settingsChrome( array( 'siteId' => $owa_site_id ), $owa_site_id );
 
         /*
          * Is the tag set up? Answered here, where the tag is, rather than on

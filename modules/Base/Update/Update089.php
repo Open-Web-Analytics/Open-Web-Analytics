@@ -22,8 +22,6 @@ class Update089 extends \OWA\Core\Update {
 
     var $schema_version = 89;
 
-    var $is_cli_mode_required = false;
-
     var $down_does_not_restore = 'the users\' API keys: the api_key column comes back empty.';
 
     const COLUMN = 'api_key';
@@ -31,20 +29,12 @@ class Update089 extends \OWA\Core\Update {
     /** The column 1.x placed it after. */
     const AFTER = 'last_update_date';
 
-    /** @var string|null the user table to use instead of the install's. TESTS ONLY. */
-    public $table = null;
-
-    private function table() {
-
-        return $this->table ?: \OWA\Core\CoreAPI::entityFactory( 'base.user' )->getTableName();
-    }
-
     /** The user table's columns, in order. @return string[] */
     private function columns() {
 
         $names = array();
 
-        foreach ( (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf( 'SHOW COLUMNS FROM %s', $this->table() ) ) as $row ) {
+        foreach ( (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf( 'SHOW COLUMNS FROM %s', $this->tableFor( 'base.user' ) ) ) as $row ) {
 
             $names[] = (string) ( (array) $row )['Field'];
         }
@@ -59,9 +49,9 @@ class Update089 extends \OWA\Core\Update {
             return true;
         }
 
-        if ( \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'ALTER TABLE %s DROP COLUMN %s', $this->table(), self::COLUMN ) ) === false ) {
+        if ( \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'ALTER TABLE %s DROP COLUMN %s', $this->tableFor( 'base.user' ), self::COLUMN ) ) === false ) {
 
-            $this->e->notice( sprintf( 'Removing %s from %s failed.', self::COLUMN, $this->table() ) );
+            $this->e->notice( sprintf( 'Removing %s from %s failed.', self::COLUMN, $this->tableFor( 'base.user' ) ) );
 
             return false;
         }
@@ -79,10 +69,10 @@ class Update089 extends \OWA\Core\Update {
         }
 
         if ( \OWA\Core\CoreAPI::dbSingleton()->query( sprintf( 'ALTER TABLE %s ADD COLUMN %s %s DEFAULT NULL%s',
-                $this->table(), self::COLUMN, OWA_DTD_VARCHAR255,
+                $this->tableFor( 'base.user' ), self::COLUMN, OWA_DTD_VARCHAR255,
                 in_array( self::AFTER, $columns, true ) ? ' AFTER ' . self::AFTER : '' ) ) === false ) {
 
-            $this->e->notice( sprintf( 'Adding %s to %s failed.', self::COLUMN, $this->table() ) );
+            $this->e->notice( sprintf( 'Adding %s to %s failed.', self::COLUMN, $this->tableFor( 'base.user' ) ) );
 
             return false;
         }

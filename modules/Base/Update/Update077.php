@@ -27,8 +27,6 @@ class Update077 extends \OWA\Core\Update {
 
     var $schema_version = 77;
 
-    var $is_cli_mode_required = false;
-
     const COLUMNS = array( 'value' );
 
     function up( $force = false ) {

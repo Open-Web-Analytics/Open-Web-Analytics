@@ -31,7 +31,7 @@ class RetentionPreviewRest extends \OWA\Core\AdminController {
 
     function action() {
 
-        $this->set( 'preview', \OWA\Module\Base\Classes\Retention::preview( self::proposed( (array) $this->params ) ) );
+        $this->set( 'response', array( 'preview' => (array) \OWA\Module\Base\Classes\Retention::preview( self::proposed( (array) $this->params ) ) ) );
     }
 
     /**
@@ -83,8 +83,7 @@ class RetentionPreviewRest extends \OWA\Core\AdminController {
 
     function success() {
 
-        http_response_code( 200 );
-        $this->setView( 'base.retentionPreviewRest' );
+        $this->restResponse( 200, 'response' );
     }
 }
 

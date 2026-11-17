@@ -24,8 +24,6 @@ class Update060 extends \OWA\Core\Update {
 
     var $schema_version = 60;
 
-    var $is_cli_mode_required = false;
-
     function up( $force = false ) {
 
         $table = $this->table();
@@ -64,7 +62,7 @@ class Update060 extends \OWA\Core\Update {
     /** @return string|null the table, or null where it does not exist */
     private function table() {
 
-        $table = \OWA\Core\CoreAPI::entityFactory( 'base.visitor_acquisition' )->getTableName();
+        $table = $this->tableFor( 'base.visitor_acquisition' );
 
         return \OWA\Core\CoreAPI::dbSingleton()->tableExists( $table ) ? $table : null;
     }

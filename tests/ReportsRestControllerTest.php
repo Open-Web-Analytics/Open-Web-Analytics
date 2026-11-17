@@ -95,7 +95,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
 
         $this->assertSame(201, $resp['status'],
             'A valid metrics query should return 201.');
-        $this->assertSame('base.reportsRest', $resp['view']);
+        $this->assertEnvelope($resp, 201);
         $this->assertIsArray($resp['data'],
             'A resultSet response payload should be an array (the serialized result set).');
     }
@@ -163,8 +163,7 @@ final class ReportsRestControllerTest extends RestControllerTestCase
             ['metrics' => 'pageViews', 'period' => 'today', 'siteId' => $this->profile(false)]
         );
 
-        $this->assertSame(409, $resp['status']);
-        $this->assertSame('base.reportsRest', $resp['view']);
+        $this->assertEnvelope($resp, 409);
         $this->assertNotEmpty($resp['data']['notReady'] ?? null,
             'the response says why there is nothing to answer');
     }

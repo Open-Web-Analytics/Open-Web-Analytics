@@ -98,14 +98,12 @@ class DomstreamsRestController extends \OWA\Core\AdminController {
 
     function success() {
 
-        http_response_code( 201 );
-        $this->setView( 'domstream.domstreamsRest' );
+        $this->restResponse( 201, 'response' );
     }
 
     function errorAction() {
 
-        http_response_code( 422 );
-        $this->setView( 'domstream.domstreamsRest' );
+        $this->restResponse( 422, 'response' );
     }
 }
 

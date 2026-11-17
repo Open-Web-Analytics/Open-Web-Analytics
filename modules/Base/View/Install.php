@@ -36,7 +36,7 @@ class Install extends \OWA\Core\View {
     function __construct() {
 
         $this->default_subview = 'base.installStart';
-        return parent::__construct();
+        parent::__construct();
     }
 
     function render($data) {

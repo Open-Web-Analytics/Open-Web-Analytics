@@ -53,7 +53,7 @@ OWA.filterPills = function ( ids, dimensions, onChange ) {
             that.onChange();
         } )
         .on( 'keydown', function ( e ) {
-            if ( e.which === 13 ) {
+            if ( e.key === 'Enter' ) {
                 e.preventDefault();
                 that.$( 'addFilter' ).trigger( 'click' );
             }
@@ -89,7 +89,7 @@ OWA.filterPills = function ( ids, dimensions, onChange ) {
 
     this.$( 'form' ).on( 'keydown', function ( e ) {
 
-        if ( e.which !== 27 || jQuery( e.target ).closest( '.chosen-container' ).length ) {
+        if ( e.key !== 'Escape' || jQuery( e.target ).closest( '.chosen-container' ).length ) {
             return;
         }
 

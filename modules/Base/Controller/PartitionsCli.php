@@ -317,7 +317,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         \OWA\Core\CoreAPI::notice( sprintf(
             '%s: added %d %s partition%s, now covered through %s.',
-            $table, count( $done['added'] ), $granularity, count( $done['added'] ) === 1 ? '' : 's', $through
+            $table, count( $done['added'] ), $granularity, \OWA\Core\Lib::plural( count( $done['added'] ), '', 's' ), $through
         ) );
 
         return true;
@@ -368,7 +368,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
                 '%s: %s would drop all %d historical partition%s, leaving only what is being '
               . 'collected now. Everything before %s would be gone. If that is intended, '
               . 're-run with --force.',
-                $table, $cutoff, count( $plan['drop'] ), count( $plan['drop'] ) === 1 ? '' : 's', $plan['effective']
+                $table, $cutoff, count( $plan['drop'] ), \OWA\Core\Lib::plural( count( $plan['drop'] ), '', 's' ), $plan['effective']
             ) );
 
             return 0;
@@ -461,7 +461,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             '%s: %s %d group%s of old periods covering %s to %s into blocks of %d year%s, '
           . 'leaving %d partitions. No data is deleted.',
             $table, $dry_run ? 'would reshape' : 'reshaping', count( $plan['operations'] ),
-            count( $plan['operations'] ) === 1 ? '' : 's', $first['start'], $last['less_than'],
+            \OWA\Core\Lib::plural( count( $plan['operations'] ), '', 's' ), $first['start'], $last['less_than'],
             $plan['block_years'], $plan['block_years'] === 1 ? '' : 's', $plan['projected']
         ) );
 

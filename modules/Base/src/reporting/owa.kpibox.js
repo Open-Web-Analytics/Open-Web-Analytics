@@ -98,7 +98,7 @@ OWA.kpiBox.prototype = {
         this.domSelector = '#' + this.dom_id + ' > .owa_metricCarousel';
         // listen for data change events
         var that = this;
-        jQuery( '#' + that.dom_id ).bind( 'new_result_set', function( event, resultSet ) {
+        jQuery( '#' + that.dom_id ).on( 'new_result_set', function( event, resultSet ) {
             jQuery( that.domSelector ).remove();
             that.generate( resultSet );
         });

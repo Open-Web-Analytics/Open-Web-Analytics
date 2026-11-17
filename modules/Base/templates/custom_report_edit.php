@@ -1992,7 +1992,7 @@ $owa_max        = (int) $view->get('max_widgets');
 
     jQuery( '#widgetDialog' ).on( 'keydown', function ( e ) {
 
-        if ( e.which !== 27 || jQuery( e.target ).closest( '.chosen-container' ).length ) {
+        if ( e.key !== 'Escape' || jQuery( e.target ).closest( '.chosen-container' ).length ) {
             return;
         }
 
@@ -2065,7 +2065,7 @@ $owa_max        = (int) $view->get('max_widgets');
         // Moving by keyboard: the handle and the arrow keys.
         .on( 'keydown', '.owa_builderMove', function ( e ) {
 
-            var step = { 37: -1, 38: -1, 39: 1, 40: 1 }[ e.which ];
+            var step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[ e.key ];
 
             if ( ! step ) {
                 return;

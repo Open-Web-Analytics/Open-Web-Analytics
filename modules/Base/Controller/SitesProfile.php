@@ -36,7 +36,7 @@ class SitesProfile extends \OWA\Core\AdminController {
     function __construct($params) {
 
         $this->setRequiredCapability('edit_sites');
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
     function action() {
@@ -62,12 +62,9 @@ class SitesProfile extends \OWA\Core\AdminController {
 
         $this->set('site', $site_data);
         $this->set('siteId', $site_id);
-        // The hierarchy wrapper: a Profile is a tier of the tree, not a
+        // The settings chrome: a Profile is a tier of the tree, not a
         // settings page. See OptionsHierarchy.
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( $site_id,
-            $site_id ? '' : (string) $this->getParam( 'propertyId' ) ) );
-        $this->setView('base.optionsHierarchy');
+        $this->settingsChrome( array(), $site_id, $site_id ? '' : (string) $this->getParam( 'propertyId' ) );
         $this->setSubview('base.sitesProfile');
     }
 

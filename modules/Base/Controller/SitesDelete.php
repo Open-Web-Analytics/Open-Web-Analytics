@@ -76,7 +76,7 @@ class SitesDelete extends \OWA\Core\AdminController {
             $this->setRedirectAction('base.reportingHome');
         }
 
-        $this->set('status_code', 3204);
+        $this->setStatusCode( 3204 );
     }
 }
 

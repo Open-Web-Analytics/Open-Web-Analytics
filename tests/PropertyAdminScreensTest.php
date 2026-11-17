@@ -22,6 +22,15 @@ final class PropertyAdminScreensTest extends TestCase
         return (array) $property->getValue( $controller );
     }
 
+    /** The view a settings screen names once its action() has run. */
+    private function viewAfterAction( string $class, array $params = array() ): string
+    {
+        $controller = new $class( $params );
+        $controller->action();
+
+        return (string) ( $this->data( $controller )['view'] ?? '' );
+    }
+
     public function testBothActionsAreRegisteredWhereTheAdminPanelPointsThem(): void
     {
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -547,13 +556,19 @@ final class PropertyAdminScreensTest extends TestCase
             'view->panels', $wrapper,
             'The hierarchy wrapper renders the settings panels.' );
 
+    }
+
+    /** Each hierarchy screen ends on the hierarchy wrapper, not the settings nav. */
+    public function testTheHierarchyScreensRenderInTheHierarchyWrapper(): void
+    {
+        if ( ! owa_test_db_available() ) {
+            $this->markTestSkipped( 'The screens load the Organization from the database.' );
+        }
+
         foreach ( array( 'OrganizationProfile', 'PropertyProfile', 'SitesProfile' ) as $screen ) {
 
-            $src = (string) file_get_contents(
-                \OWA\Core\Env::root() . "/modules/Base/Controller/{$screen}.php" );
-
-            $this->assertStringContainsString(
-                "base.optionsHierarchy", $src,
+            $this->assertSame( 'base.optionsHierarchy',
+                $this->viewAfterAction( "\\OWA\\Module\\Base\\Controller\\{$screen}" ),
                 "$screen still renders inside the install settings nav." );
         }
     }
@@ -1268,10 +1283,8 @@ final class PropertyAdminScreensTest extends TestCase
            vanish the moment you used it. */
         foreach ( array( 'OptionsGeneral', 'OptionsModules' ) as $screen ) {
 
-            $src = (string) file_get_contents(
-                \OWA\Core\Env::root() . "/modules/Base/Controller/{$screen}.php" );
-
-            $this->assertStringContainsString( 'base.optionsHierarchy', $src );
+            $this->assertSame( 'base.optionsHierarchy',
+                $this->viewAfterAction( "\\OWA\\Module\\Base\\Controller\\{$screen}" ), $screen );
         }
     }
 
@@ -1288,13 +1301,14 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertFileDoesNotExist( \OWA\Core\Env::root() . '/modules/Base/templates/options.php' );
 
         /* Including the module screens -- they are settings like any other. */
-        foreach ( array( 'modules/MaxmindGeoip/Controller/OptionsGeoip.php',
-                         'modules/Hello/Controller/ExampleSettingsController.php' ) as $module ) {
+        // The screen reads its module's settings, which a module that is not active has not loaded.
+        $c = \OWA\Core\CoreAPI::configSingleton();
+        $c->set( 'maxmind_geoip', 'db_edition', $c->get( 'maxmind_geoip', 'db_edition' ) );
 
-            $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $module );
+        foreach ( array( \OWA\Module\MaxmindGeoip\Controller\OptionsGeoip::class,
+                         \OWA\Module\Hello\Controller\ExampleSettingsController::class ) as $module ) {
 
-            $this->assertStringContainsString(
-                'base.optionsHierarchy', $src,
+            $this->assertSame( 'base.optionsHierarchy', $this->viewAfterAction( $module ),
                 "$module still renders in the retired settings menu." );
         }
     }

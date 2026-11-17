@@ -33,11 +33,6 @@ namespace OWA\Module\Base\Controller;
 
 class UsersSetPassword extends \OWA\Core\Controller {
 
-    function __construct($params) {
-
-        return parent::__construct($params);
-    }
-
     function action() {
 
         $event = $this->getParam('event');
@@ -45,7 +40,7 @@ class UsersSetPassword extends \OWA\Core\Controller {
         /**
          * @var \OWA\Module\Base\Classes\UserManager $userManager
          */
-        $userManager = \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager');
+        $userManager = new \OWA\Module\Base\Classes\UserManager();
         $u = $userManager->updateUserPassword([
             'temp_passkey' => $event->get('key'),
             'password' => $event->get('password'),

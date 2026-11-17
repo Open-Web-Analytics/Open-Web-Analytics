@@ -194,7 +194,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
 
         $site_ids = \OWA\Module\Base\Classes\Cube\Cubes::siteIds( $propertyId );
 
-        $tp = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'timePeriod' );
+        $tp = new \OWA\Module\Base\Classes\TimePeriod();
         $tp->set( isset( $period['period'] ) ? $period['period'] : 'date_range',
             isset( $period['period'] ) ? array() : $period );
 

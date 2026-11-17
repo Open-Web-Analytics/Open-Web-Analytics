@@ -21,8 +21,6 @@ class Update064 extends \OWA\Core\Update {
 
     var $schema_version = 64;
 
-    var $is_cli_mode_required = false;
-
     const INDEX = 'site_ts';
 
     function up( $force = false ) {
@@ -33,7 +31,7 @@ class Update064 extends \OWA\Core\Update {
         }
 
         return \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
-            'ALTER TABLE %s ADD INDEX %s (site_id, ts)', $this->table(), self::INDEX ) ) !== false;
+            'ALTER TABLE %s ADD INDEX %s (site_id, ts)', $this->tableFor( 'base.event_raw' ), self::INDEX ) ) !== false;
     }
 
     /** The exact inverse: the index this added, by its name. */
@@ -45,12 +43,7 @@ class Update064 extends \OWA\Core\Update {
         }
 
         return \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
-            'DROP INDEX %s ON %s', self::INDEX, $this->table() ) ) !== false;
-    }
-
-    private function table() {
-
-        return \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
+            'DROP INDEX %s ON %s', self::INDEX, $this->tableFor( 'base.event_raw' ) ) ) !== false;
     }
 
     private function hasIndex() {
@@ -58,7 +51,7 @@ class Update064 extends \OWA\Core\Update {
         return (bool) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
             "SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()"
           . " AND TABLE_NAME = '%s' AND INDEX_NAME = '%s' LIMIT 1",
-            $this->table(), self::INDEX ) );
+            $this->tableFor( 'base.event_raw' ), self::INDEX ) );
     }
 }
 

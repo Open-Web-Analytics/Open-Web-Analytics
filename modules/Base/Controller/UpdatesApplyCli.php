@@ -50,7 +50,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
     
     function __construct($params) {
         define('OWA_UPDATING', true);
-        return parent::__construct($params);
+        parent::__construct($params);
     }
 
     function action() {

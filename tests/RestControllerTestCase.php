@@ -287,6 +287,18 @@ abstract class RestControllerTestCase extends TestCase
     }
 
     /**
+     * Assert the REST envelope: its four members in order, this status code,
+     * no errors, and the payload under data.
+     */
+    protected function assertEnvelope(array $resp, int $status): void
+    {
+        $this->assertSame(['requestId', 'httpResponse', 'error', 'data'], array_keys($resp['json']));
+        $this->assertSame(['status_code' => $status], $resp['json']['httpResponse']);
+        $this->assertSame([], $resp['json']['error']);
+        $this->assertSame($status, $resp['status']);
+    }
+
+    /**
      * Assert a substring (case-insensitive) does NOT appear anywhere in the raw
      * JSON body -- used to prove a secret column value is not disclosed.
      */

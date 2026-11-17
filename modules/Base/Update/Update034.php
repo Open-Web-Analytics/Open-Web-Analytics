@@ -38,8 +38,6 @@ class Update034 extends \OWA\Core\Update {
 
     var $schema_version = 34;
 
-    var $is_cli_mode_required = false;
-
     /**
      * The entities this update creates, in creation order.
      *

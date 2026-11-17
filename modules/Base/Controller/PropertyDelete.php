@@ -94,6 +94,6 @@ class PropertyDelete extends \OWA\Core\AdminController {
         // Not to the Property just deleted: setRedirectAction() would carry it.
         $this->set( 'propertyId', '' );
         $this->setRedirectAction( 'base.reportingHome' );
-        $this->set( 'status_code', 3205 );
+        $this->setStatusCode( 3205 );
     }
 }

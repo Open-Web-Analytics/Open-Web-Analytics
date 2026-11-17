@@ -34,9 +34,7 @@ class PropertyProfiles extends \OWA\Core\AdminController {
         $this->set( 'property', $property->_getProperties() );
         $this->set( 'propertyId', $property_id );
         $this->set( 'profiles', $property_id !== '' ? self::rowsFor( $property_id ) : array() );
-        $this->set( 'site_hierarchy', $this->getSiteHierarchy( $this->getSitesAllowedForCurrentUser() ) );
-        $this->set( 'hierarchy_nav', $this->getHierarchyNav( '', $property_id ) );
-        $this->setView( 'base.optionsHierarchy' );
+        $this->settingsChrome( array(), '', $property_id );
         $this->setSubview( 'base.propertyProfiles' );
     }
 
