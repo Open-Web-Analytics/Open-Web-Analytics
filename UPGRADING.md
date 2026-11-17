@@ -197,8 +197,11 @@ For module and template authors:
 - free-jqgrid and `ui.jqgrid.css` are no longer bundled. The table is
   `.owa_gridTable`, a data row is `tr.owa_gridRow`, and a cell carries its column
   name as `data-column`.
-- `OWA.dimensionSelectors` is removed. `OWA.constraintBuilder` remains, for
-  screens that build their own filter control.
+- `OWA.dimensionSelectors`, `OWA.constraintBuilder` and `OWA.dimensionPicker`
+  are removed. A screen that builds its own filter control uses the filter
+  pills: `OWA.filterPills` over the markup in `filter_pills.php`, with
+  `OWA.filterPills.choices()` to list a result set's `relatedDimensions` and
+  `relatedMetrics` by group. `OWA.util.strpos` is removed.
 - The formatters a report names in `formatters` are `OWA.dataGrid.formatters`
   rather than jqGrid's `fmatter`; they take the same arguments.
 - Grid options: `showRowNumbers` is on by default; `compact` is new (no row

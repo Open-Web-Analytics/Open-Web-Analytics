@@ -430,7 +430,7 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
  *
  * Shared rather than per-report, and the reason is that the controls are NOT
  * ours. The scope switch borrows the Live View control's markup, the filter
- * borrows the grid's constraint builder, and each of them arrives with its own
+ * is the editors' filter pills, and each of them arrives with its own
  * label class and its own idea of whether it is inline. Styling that in one
  * report means the next report to reuse a control inherits none of it and the
  * bar comes apart -- which is what these rules exist to prevent.
@@ -452,9 +452,8 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
 
 /* Every control in the bar is labelled the same way and sits on the same line:
    a label on the left, then the control. The scope switch borrows the Live View
-   markup and the filter borrows the grid's constraint builder, so both bring
-   their own label classes -- they are pulled onto the same footing here rather
-   than each being styled where it came from. */
+   markup and brings its own label class -- it is pulled onto the same footing
+   here rather than styled where it came from. */
 .owa .owa_reportControl > label,
 .owa .owa_reportControl > .label,
 .owa .owa_reportControls .autoRefreshControl .label {
@@ -466,21 +465,28 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
     vertical-align: middle;
 }
 
-/* The builder's own container is a block by default, which would drop the
-   toggle onto its own line and break the row. */
-.owa .owa_reportControl .constraintPicker,
-.owa .owa_reportControl .constraintPickerContainer {
-    display: inline-block;
-    vertical-align: middle;
+/*
+ * The segment filter's pills sit in the bar; the form that writes one hangs
+ * below the Filter button, over the report, so opening it moves nothing.
+ */
+.owa .owa_reportControl.owa_reportFilters {
     position: relative;
+    height: auto;
+    min-height: 30px;
 }
 
-/*
- * NOT positioned any more: the builder is a dialog, and jQuery UI places it.
- * This rule used to hang the panel below the report-level bar; left in place it
- * would fight the dialog's own absolute positioning and drag it back under the
- * control that opened it.
- */
+.owa .owa_reportFilters .owa_filterForm {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 20;
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    box-sizing: border-box;
+    border: 1px solid #e0e0e0;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
 
 /* The scope switch sits inline in the bar; the Live View control it borrows
    its markup from floats right in the report header instead. */
@@ -598,79 +604,6 @@ p.owa_metricInfoboxLargeNumber, span.owa_metricInfoboxLargeNumber {
     color: var(--owa-text-muted, #6b7280);
 }
 
-.dimensionPicker {
-
-    width:175px;
-    font-size: 0.625rem;
-
-}
-
-.dimensionPicker .dim-list {
-
-}
-
-.dimensionPicker .dim-list ul {
-
-    padding-left: 7px;
-}
-
-.dimensionPicker h4 {
-    font-size:  0.875rem;
-    font-weight: bold;
-    margin-bottom: 5px;
-    margin-top: 10px;
-}
-
-.dimensionPicker li, .dimensionPicker ul {
-
-    float:none;
-}
-
-/*
- * THE FILTER BUILDER, in the same clothes as the bar it drops out of.
- *
- * It used to be a white box with a mid-grey border holding rows that were
- * themselves 700px-wide bordered boxes with 20px of padding -- a card inside a
- * card inside a card, wider than the widget it belonged to, so on anything less
- * than a full-width grid it simply ran off the right-hand edge. The controls
- * inside were a chosen pill, a jQuery-UI selectmenu and a bare <input>: three
- * shapes for three parts of one sentence.
- *
- * Now: one panel, rows that are flex lines, and every control the same pill the
- * dimension pickers on the bar already are.
- */
-/*
- * On a GRID's bar the panel hangs below rather than growing the bar.
- *
- * The report-level control already did this (see .owa_reportControl above);
- * the grid's did not, so opening a filter pushed the whole table down and the
- * panel drew inside the card, clipped at its right edge. Same treatment, and
- * the width is capped by the card rather than a fixed number.
- */
-/*
- * The builder is a DIALOG BODY, so it draws no frame of its own -- the dialog
- * around it has the border, the shadow and the title bar. It kept its own here
- * while it was a panel hanging off the bar; leaving them would be a box inside
- * a box.
- */
-.builder {
-
-    margin: 0;
-    padding: 0;
-    background-color: transparent;
-    border: 0;
-}
-
-/*
- * No list indent. A <ul>'s 40px of default padding-left pushed every filter
- * row in from the dialog's edge while the buttons under it started at 0.
- */
-.owa .builder ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
 /*
  * A row is a LINE, and it wraps rather than overflowing.
  *
@@ -773,44 +706,6 @@ li.constraintRow {
 .owa .constraintRow .constraintAddButton:focus {
     opacity: 1;
     color: #1874CD;
-}
-
-/*
- * APPLY IS NOT A PILL.
- *
- * It was the same shape and height as the three select pills on the row above
- * it, which made the one control that COMMITS look like another thing to pick
- * from. A submit button is taller, squarer and heavier than the fields it acts
- * on, and that difference is the whole point.
- *
- * The trend blue, which is the colour this reporting UI already uses for the
- * thing that is active -- the selected tab, the Live View segment, the charted
- * metric's marker. White on #1874CD is about 4.6:1, so the label is legible at
- * button size.
- *
- * There is only ONE of these now. Adding a row moved into the row itself (the
- * plus beside each X), so the foot of the dialog holds the single action that
- * finishes the job.
- */
-.owa .builder .apply-button.ui-button,
-.owa .builder .apply-button {
-    display: inline-block;
-    margin: 10px 0 0 0;
-    padding: 8px 20px;
-    border: 1px solid #1462ac;
-    border-radius: 3px;
-    background: #1874CD;
-    font-family: inherit;
-    font-size: 0.75rem;
-    font-weight: bold;
-    line-height: 1rem;
-    color: #ffffff;
-    cursor: pointer;
-}
-
-.owa .builder .apply-button:hover,
-.owa .builder .apply-button:focus {
-    filter: brightness( 0.95 );
 }
 
 .owa img.loading { 
@@ -2290,7 +2185,8 @@ li.constraintRow {
     gap: 8px;
 }
 
-.owa .owa_widgetPanel .owa_filterAdd {
+.owa .owa_widgetPanel .owa_filterAdd,
+.owa .owa_reportFilters .owa_filterAdd {
     height: 32px;
     padding: 0 12px;
 }
@@ -2317,6 +2213,32 @@ li.constraintRow {
     overflow: hidden;
     text-overflow: ellipsis;
     font-weight: 600;
+}
+
+/* A pill's words are a button: pressing them opens the form on that filter. */
+.owa .owa_filterPillEdit {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.owa .owa_filterPillEdit:hover,
+.owa .owa_filterPillEdit[aria-expanded="true"] {
+    text-decoration: underline;
+}
+
+.owa .owa_filterPillEdit:focus-visible {
+    outline: 2px solid var(--owa-focus, #1874CD);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 .owa .owa_filterPillRemove {
@@ -2438,7 +2360,9 @@ li.constraintRow {
 .owa .owa_funnelStep select,
 .owa .owa_funnelStep input[type=text],
 .owa .owa_funnelEditor .owa_filterForm select,
-.owa .owa_funnelEditor .owa_filterForm input[type=text] {
+.owa .owa_funnelEditor .owa_filterForm input[type=text],
+.owa .owa_reportFilters .owa_filterForm select,
+.owa .owa_reportFilters .owa_filterForm input[type=text] {
     box-sizing: border-box;
     height: 40px;
     padding: 0 12px;
@@ -2532,7 +2456,8 @@ li.constraintRow {
     padding: 0 12px;
 }
 
-.owa .owa_funnelEditor .owa_filterForm .chosen-container-single .chosen-single {
+.owa .owa_funnelEditor .owa_filterForm .chosen-container-single .chosen-single,
+.owa .owa_reportFilters .owa_filterForm .chosen-container-single .chosen-single {
     height: 40px;
     padding: 0 12px;
     border: 1px solid #d1d5db;
@@ -3242,62 +3167,7 @@ li.constraintRow {
     clear: both;
 }
 
-/* ---------------------------------------------------------------------------
- * The filter toggle
- *
- * An icon, sized and dimmed like the left-hand navigation's icons so the two
- * read as the same vocabulary. It was a jQuery-UI button labelled "Filter"
- * with a dropdown triangle, which made it the widest thing on a bar that is
- * often half a report wide -- and put a second control-looking box next to the
- * dimension pickers, which ARE the controls.
- *
- * Full opacity on hover and while the builder is open: the dimming says
- * "available", and a control you are currently using is not merely available.
- * ------------------------------------------------------------------------- */
-
-.owa .owa_filterToggle {
-    display: inline-block;
-    /* 16px, which is what every other icon on the page is. */
-    font-size: 1rem;
-    line-height: 1;
-    padding: 2px;
-    color: #303030;
-    opacity: 0.60;
-    cursor: pointer;
-    vertical-align: middle;
-}
-
-.owa .owa_filterToggle:hover,
-.owa .owa_filterToggle:focus,
-.owa .owa_filterToggle[aria-expanded="true"] {
-    opacity: 1;
-}
-
-/* How many filters are on, beside the Filter toggle.
- *
- * Red because it changes what the numbers beside it MEAN: a filtered grid and
- * an unfiltered one look identical, and a reader draws conclusions from the
- * rows in front of them. Hidden at zero -- an always-present badge is furniture
- * and stops being read. */
-.owa .constraintPickerContainer .constraintCount {
-    display: inline-block;
-    min-width: 18px;
-    margin-left: 5px;
-    padding: 1px 6px;
-    border-radius: 9px;
-    background-color: #c0392b;
-    color: #ffffff;
-    font-size: 0.6875rem;
-    font-weight: bold;
-    line-height: 1rem;
-    text-align: center;
-    vertical-align: middle;
-}
-
-/*
- * The filter builder's pickers (OWA.constraintBuilder, for a screen that builds
- * its own filter control): a pill per chosen select.
- */
+/* A condition row's pickers (goal event definitions, funnel steps): a pill per chosen select. */
 .owa .constraintRow .chosen-container {
     font-size: 0.6875rem;
     max-width: 100%;
@@ -3333,27 +3203,6 @@ li.constraintRow {
 .owa .constraintRow .chosen-container .chosen-drop {
     min-width: 240px;
     width: auto;
-}
-
-/*
- * THE FILTER DIALOG.
- *
- * The builder was a panel that hung off the control bar, and a filter row is
- * wider than a quarter-row widget -- so wherever it was anchored, it overflowed
- * the widget on one side or the other. A dialog has no parent to overflow.
- */
-.owa .owa_filterDialogFrame {
-    border-radius: 6px;
-}
-
-.owa .owa_filterDialogFrame .ui-dialog-content {
-    padding: 14px;
-}
-
-/* Room for the dimension menu to drop INTO the dialog rather than be clipped
-   by it -- chosen's drop is absolutely positioned inside the row. */
-.owa .owa_filterDialogFrame .ui-dialog-content {
-    overflow: visible;
 }
 
 /* ---------------------------------------------------------------------------
@@ -4224,10 +4073,10 @@ li.constraintRow {
  * Goal event definitions
  * ------------------------------------------------------------------
  *
- * The condition rows reuse .constraintRow wholesale -- same markup, same class
- * names as the report builder -- so nothing here restyles them. Naming a
- * condition is the same act in both places and it should look the same.
- * These rules cover only what the report builder has no equivalent of.
+ * The condition rows are .constraintRow, the funnel steps' condition rows, so
+ * nothing here restyles them. Naming a condition is the same act in both places
+ * and it should look the same. These rules cover only what a funnel step has no
+ * equivalent of.
  */
 
 /* A Profile that counts nothing yet. Said, rather than shown as an empty grid
@@ -4303,9 +4152,8 @@ li.constraintRow {
 
 /* The condition row.
  *
- * .constraintRow was written for the report builder's dialog, which is narrow
- * and dark-on-light. In a settings pane it needs its own measure or the value
- * field takes whatever is left and the row reads as three unrelated controls. */
+ * In a settings pane .constraintRow needs its own measure or the value field
+ * takes whatever is left and the row reads as three unrelated controls. */
 .owa_hierarchyContent #panel .constraintList {
     list-style: none;
     margin: 0;
@@ -4332,9 +4180,7 @@ li.constraintRow {
 
 /* The add and remove controls.
  *
- * The report builder styles these inside its own dialog; in the settings pane
- * they inherited nothing and rendered as two bare characters floating at the
- * end of a wide row. Given a target worth clicking, and pushed to the end of
+ * Given a target worth clicking in the settings pane, and pushed to the end of
  * the flex row rather than left wherever the text ran out. */
 .owa_hierarchyContent #panel .constraintRow .constraintAddButton,
 .owa_hierarchyContent #panel .constraintRow .constraintRemoveButton {
@@ -4944,13 +4790,6 @@ li.constraintRow {
     .owa_confirmDialogFrame .ui-dialog-buttonset { float: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
     .owa_confirmDialogFrame .ui-dialog-buttonpane button.owa-button { margin: 0; }
-}
-
-/* A short window: the filter dialog's content scrolls inside it rather than
-   running past its foot. */
-@media (max-height: 500px) {
-
-    .owa .owa_filterDialogFrame .ui-dialog-content { overflow: auto; }
 }
 
 @media (max-width: 600px) {

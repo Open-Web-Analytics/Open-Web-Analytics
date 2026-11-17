@@ -22,6 +22,9 @@
  */
 const { test, expect } = require('@playwright/test');
 const { FIXTURE, login } = require('./fixtures');
+const {
+    filterPills, filterForm, pillButton, openFilterForm, fillFilter, offeredDimensions, reloadedBy,
+} = require('./filter-pills');
 
 const VIZ = FIXTURE.funnelVisualization;
 
@@ -78,6 +81,11 @@ async function openFunnel(page, extra = '') {
         { waitUntil: 'networkidle' }
     );
     await page.waitForSelector('.owa_funnelChart', { timeout: 20_000 });
+}
+
+/** Each stage's count, in step order. */
+async function stepCounts(page) {
+    return (await page.locator('.funnelStepCount').allTextContents()).map((c) => parseInt(c.trim(), 10));
 }
 
 /** The funnel drawn with a given counting scope. */
@@ -161,7 +169,7 @@ test.describe('visualization: funnel', () => {
 
         // What the bar offers: how you are looking at it.
         await expect(page.locator('#funnelScopeSwitch')).toBeVisible();
-        await expect(page.locator('#funnelFilter')).toBeVisible();
+        await expect(page.getByRole('group', { name: 'Filters' })).toBeVisible();
 
         /*
          * And what it does NOT offer. Changing what the funnel IS is a
@@ -199,286 +207,37 @@ test.describe('visualization: funnel', () => {
     });
 
     /**
-     * The segment filter: which people the funnel is drawn for.
-     *
+     * The segment filter: which people the funnel is drawn for. Filter pills,
+     * behind a Filter button; the form starts shut.
+     */
+    test('the control bar offers a filter, behind its own button', async ({ page }) => {
+        await openFunnel(page);
+
+        const button = filterPills(page).getByRole('button', { name: 'Filter', exact: true });
+
+        await expect(button).toHaveAttribute('aria-expanded', 'false');
+        await expect(filterForm(page)).toBeHidden();
+
+        await button.click();
+
+        await expect(filterForm(page)).toBeVisible();
+        await expect(button).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    /**
      * It offers what the reporting stack offers, so a name it lists is a name
      * the segment will actually accept -- a hand-written list would offer names
-     * the query then refuses.
+     * the query then refuses. Metrics too: a metric condition picks the people
+     * by their totals.
      */
-    test('the control bar offers a filter, behind its own toggle', async ({ page }) => {
+    test('the filter offers dimensions and metrics the segment accepts', async ({ page }) => {
         await openFunnel(page);
 
-        await expect(page.locator('#funnelFilter .constraintPickerContainer')).toBeVisible();
+        const { names } = await offeredDimensions(page);
 
-        /*
-         * The builder is a DIALOG, so it is no longer inside #funnelFilter --
-         * jQuery UI lifts it to `.owa`. It is addressed by the id it takes from
-         * the element it filters; see the builder_id comment in
-         * owa.resultSetExplorer.js.
-         */
-        const builder = page.locator('#owa_filterBuilder-funnelFilter');
-
-        // Behind a toggle: it starts closed.
-        await expect(builder).toBeHidden();
-
-        await page.locator('#funnelFilter .toggle-button').click();
-        await expect(builder).toBeVisible();
-    });
-
-    test('the filter offers dimensions the segment accepts', async ({ page }) => {
-        await openFunnel(page);
-
-        await page.locator('#funnelFilter .toggle-button').click();
-
-        // Opening the builder already offers one empty constraint row, so this
-        // does not add another -- clicking "add" would give two pickers and
-        // every assertion below would count double.
-        const options = page.locator(
-            '#owa_filterBuilder-funnelFilter .constraintDimensionPicker option');
-
-        // A real list, not an empty picker.
-        expect(await options.count()).toBeGreaterThan(10);
-
-        // sessionMedium is what the segment is most obviously useful for, and it is one
-        // the funnel's outer query can resolve.
-        expect(await page.locator(
-            '#owa_filterBuilder-funnelFilter .constraintDimensionPicker option[value="sessionMedium"]').count())
-            .toBeGreaterThan(0);
-    });
-
-    /**
-     * The controls sit on one line.
-     *
-     * Measured, not asserted from the markup: the scope switch borrows the Live
-     * View control's markup and the filter borrows the grid's constraint
-     * builder, so each arrives with its own styling and its own idea of whether
-     * it is inline. Checking the classes are present would pass while they sat
-     * on three different lines.
-     */
-    test('the control bar keeps its controls on one line', async ({ page }) => {
-        await openFunnel(page);
-
-        const boxes = {};
-
-        for (const [name, selector] of Object.entries({
-            scope:  '#funnelScopeSwitch .buttons',
-            filter: '#funnelFilter .toggle-button',
-        })) {
-            const box = await page.locator(selector).first().boundingBox();
-            expect(box, `${name} control has no box`).not.toBeNull();
-            boxes[name] = box.y + box.height / 2;
-        }
-
-        const centres = Object.values(boxes);
-        const spread = Math.max(...centres) - Math.min(...centres);
-
-        // One line, allowing for controls of slightly different heights.
-        expect(spread, `controls are on different lines: ${JSON.stringify(boxes)}`)
-            .toBeLessThan(20);
-    });
-
-    /**
-     * Opening the filter must not move the controls beside it.
-     *
-     * It was a panel that hung below the bar; it is a dialog now, which cannot
-     * move the bar at all. The assertion is kept rather than deleted because
-     * what it protects is unchanged -- opening a filter must not reflow the
-     * report behind it -- and a dialog is one way of being right about that,
-     * not a reason to stop checking.
-     */
-    test('opening the filter does not move the rest of the bar', async ({ page }) => {
-        await openFunnel(page);
-
-        const before = await page.locator('#funnelScopeSwitch .buttons').boundingBox();
-
-        await page.locator('#funnelFilter .toggle-button').click();
-        await expect(page.locator('#owa_filterBuilder-funnelFilter')).toBeVisible();
-
-        const after = await page.locator('#funnelScopeSwitch .buttons').boundingBox();
-
-        expect(Math.abs(after.y - before.y)).toBeLessThan(3);
-    });
-
-    test('the filter builder opens as a modal with pill controls', async ({ page }) => {
-        /*
-         * The builder is a DIALOG now, not a panel inside the bar.
-         *
-         * A filter row is wider than a quarter-row widget, so every in-flow
-         * position for it was a choice about which edge of the card to
-         * overflow. A dialog has no parent to overflow. That move is also why
-         * this test can no longer look for `.constraintPickerContainer >
-         * .builder`: jQuery UI lifts the element out of that container.
-         *
-         * The operator picker is chosen, not jQuery-UI selectmenu. It was the
-         * odd one out -- a square selectmenu between a rounded chosen pill and
-         * a bare input, three shapes for three parts of one sentence.
-         */
-        await openFunnel(page);
-
-        const toggle = page.locator('#funnelFilter .toggle-button');
-        await expect(toggle).toBeVisible();
-
-        // The toggle is an ICON, not a jQuery-UI button -- it carries no label
-        // and no dropdown triangle.
-        await expect(toggle).toHaveClass(/owa_filterToggle/);
-        await expect(toggle).not.toHaveClass(/ui-button/);
-        await expect(toggle.locator('i.fa-filter')).toHaveCount(1);
-        await expect(toggle).toHaveText('');
-
-        // ...at the size every other icon on the page is.
-        await expect(toggle).toHaveCSS('font-size', '16px');
-
-        await toggle.click();
-
-        const dialog = page.locator('.owa_filterDialogFrame:visible').first();
-        await expect(dialog).toBeVisible();
-
-        /*
-         * INSIDE .owa, which is load-bearing rather than cosmetic. jQuery UI
-         * appends a dialog to <body> by default, and every rule styling what is
-         * in here is written `.owa .owa_...` -- a lifted dialog matches none of
-         * them, which is exactly how both report-builder modals once shipped
-         * with browser defaults.
-         */
-        await expect(dialog.locator('xpath=ancestor::*[contains(@class,"owa")][1]'))
-            .toHaveCount(1);
-
-        /*
-         * ONE action button at the foot, and a plus per row.
-         *
-         * There used to be "+ Add Filter" beside Apply, which read as a choice
-         * between two ways of finishing when only one of them finishes
-         * anything. Growing the filter is part of writing it, so the plus sits
-         * in the row it grows from.
-         */
-        await expect(dialog.locator('.add-button')).toHaveCount(0);
-        await expect(dialog.locator('.apply-button')).toBeVisible();
-        await expect(dialog.locator('li.constraintRow .constraintAddButton')).toHaveCount(1);
-
-        /*
-         * ...and Apply does not look like the pills it sits under. It was the
-         * same shape and height as the three selects above it, which made the
-         * one control that commits look like a fourth thing to pick from.
-         */
-        const applyBox = await dialog.locator('.apply-button')
-            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
-        const pillBox = await dialog.locator('.constraintOperatorPicker .chosen-single')
-            .evaluate((el) => Math.round(el.getBoundingClientRect().height));
-
-        expect(applyBox).toBeGreaterThan(pillBox + 6);
-
-        // The plus grows the list, directly below the row it was pressed on.
-        await dialog.locator('li.constraintRow').first().locator('.constraintAddButton').click();
-        await expect(dialog.locator('li.constraintRow')).toHaveCount(2);
-
-        /*
-         * Both select controls are chosen, and there is no selectmenu left.
-         * A row has two: the dimension and the operator.
-         */
-        await expect(dialog.locator('.constraintRow').first().locator('.chosen-container'))
-            .toHaveCount(2);
-        await expect(dialog.locator('span.ui-selectmenu-button')).toHaveCount(0);
-
-        // The native <select> is hidden once chosen takes over -- and it stays
-        // in the DOM, which is what the apply handler reads.
-        const selectDisplay = await dialog.evaluate((d) => {
-            const sel = d.querySelector('select.operator-list');
-            return sel ? getComputedStyle(sel).display : null;
-        });
-        expect(selectDisplay).toBe('none');
-    });
-
-    test("the filter builder's dimension picker opens at full width with a dimension list", async ({ page }) => {
-        // Regression guard (chosen 0.9.6 -> 1.8.7): the filter/constraint builder's
-        // dimension picker (OWA.dimensionPicker -> <select.dim-list> enhanced by
-        // chosen, INSIDE each constraint row) rendered as a ~2px-wide sliver -- the
-        // dimension list was there but unusable. Root cause: the builder creates its
-        // rows while its .builder is display:none, and chosen-js 1.x sizes its
-        // container from the <select>'s offsetWidth AT ENHANCEMENT TIME (0 when
-        // hidden). chosen 0.9.x read the CSS width, so this only broke on the upgrade.
-        // Fix: pass an explicit width:'150px' to .chosen(). Assert it opens at a
-        // real, usable width.
-        await openFunnel(page);
-        await page.locator('#funnelFilter .toggle-button').click();
-
-        // The builder is a dialog, so it is addressed as one -- see the modal
-        // test above.
-        const builder = page.locator('.owa_filterDialogFrame:visible').first();
-        await expect(builder).toBeVisible();
-
-        const dimChosen = builder.locator('.constraintDimensionPicker .chosen-container').first();
-        await expect(dimChosen).toBeVisible();
-        /*
-         * The enhanced container must be a real width, not the collapsed sliver.
-         *
-         * Not 150 any more: the pill is CONTENT-sized now (the filter rows share
-         * the bar's pill styling, which is `width: auto`), so it is as wide as
-         * "Select..." rather than as wide as the explicit width chosen was given.
-         * That does not bring the sliver back -- the width comes from CSS laying
-         * out the text, not from chosen measuring a hidden <select> -- but it does
-         * mean the number to assert is "wider than a caret", not a fixed size.
-         */
-        const contWidth = await dimChosen.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-        expect(contWidth).toBeGreaterThanOrEqual(50);
-
-        // Open the dropdown and assert the dimension list is present, grouped, and
-        // painted at the same usable width (chosen sizes .chosen-drop off the container).
-        await dimChosen.locator('.chosen-single').click();
-        const drop = dimChosen.locator('.chosen-drop');
-        await expect(drop).toBeVisible();
-        const dropWidth = await drop.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-        expect(dropWidth).toBeGreaterThanOrEqual(100);
-        expect(await drop.locator('.chosen-results li.active-result').count()).toBeGreaterThanOrEqual(2);
-        expect(await drop.locator('.chosen-results li.group-result').count()).toBeGreaterThanOrEqual(1);
-    });
-
-    test('chosen keeps the native select in sync with the selected operator', async ({ page }) => {
-        // Runtime guard (not just render): the constraint-apply path reads the
-        // chosen operator (owa.resultSetExplorer.js ~1638). Neither the old Nagel
-        // selectmenu fork nor chosen offers a "read the widget" method -- both keep
-        // the native <select> in sync, which is what the code reads with .val().
-        // The widget changed from selectmenu to chosen; this contract did not.
-        // Pin that contract: the select carries a non-empty value.
-        await openFunnel(page);
-        await page.locator('#funnelFilter .toggle-button').click();
-        const value = await page.evaluate(() => {
-            const sel = jQuery('select.operator-list').first();
-            return sel.length ? sel.val() : null;
-        });
-        // Default selection is the first operator ("==" Exactly Matching).
-        expect(value).not.toBeNull();
-        expect(typeof value).toBe('string');
-        expect(value.length).toBeGreaterThan(0);
-    });
-
-    test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {
-        // Regression guard for a build-artifact clobber that shipped a WORKING but
-        // completely UNSTYLED control. chosen-js 1.8.7's JS emits .chosen-* markup,
-        // but the SOURCE chosen.css was left as the 0.9.6 .chzn-* stylesheet when the
-        // JS was swapped (commit 36fb9d0b hand-edited only the built CSS artifact).
-        // The next `cli.php cmd=build` regenerated the artifact from the stale source,
-        // so the served CSS had ZERO .chosen-* rules -- the widget rendered as a bare
-        // unstyled text list with no dropdown arrow. Existence/visibility (the test
-        // above) still PASSED because the markup was correct; only the applied CSS was
-        // wrong. So assert the stylesheet actually takes effect: the sprite-driven
-        // dropdown arrow paints a background image (the single clearest "the .chosen-*
-        // CSS is present and its sprite resolves" signal). On the funnel, whose
-        // filter is the one place left that is built with chosen.
-        await openFunnel(page);
-
-        const arrowBg = await page.evaluate(() => {
-            const b = document.querySelector('.chosen-container .chosen-single div b');
-            return b ? getComputedStyle(b).backgroundImage : null;
-        });
-        expect(arrowBg).not.toBeNull();
-        expect(arrowBg).toContain('chosen-sprite');
-    });
-
-    test('the filter dialog\'s Apply is a jQuery-UI button', async ({ page }) => {
-        await openFunnel(page);
-        await page.locator('#funnelFilter .toggle-button').click();
-
-        await expect(page.locator('#owa_filterBuilder-funnelFilter .apply-button')).toHaveClass(/ui-button/);
+        expect(names.length).toBeGreaterThan(10);
+        expect(names).toContain('sessionMedium');
+        expect(names).toContain('pageViews');
     });
 
     /**
@@ -493,21 +252,201 @@ test.describe('visualization: funnel', () => {
     test('the filter offers the Profile but not time dimensions', async ({ page }) => {
         await openFunnel(page);
 
-        await page.locator('#funnelFilter .toggle-button').click();
+        const { names, groups } = await offeredDimensions(page);
 
-        const picker = '#owa_filterBuilder-funnelFilter .constraintDimensionPicker';
-
-        await expect(page.locator(`${picker} optgroup[label="time"]`)).toHaveCount(0);
+        expect(groups).not.toContain('time');
+        expect(groups.length).toBeGreaterThan(1);
 
         for (const name of ['date', 'day', 'month', 'year']) {
-            await expect(page.locator(`${picker} option[value="${name}"]`)).toHaveCount(0);
+            expect(names).not.toContain(name);
         }
 
-        await expect(page.locator(`${picker} option[value="siteId"]`)).toHaveCount(1);
+        expect(names).toContain('siteId');
+        expect(names).toContain('sessionMedium');
+    });
 
-        // The groups that remain are still there -- this must not empty the picker.
-        expect(await page.locator(`${picker} option[value="sessionMedium"]`).count()).toBeGreaterThan(0);
-        expect(await page.locator(`${picker} option`).count()).toBeGreaterThan(10);
+    /**
+     * A filter added in the pills reloads the funnel with it as the segment,
+     * keeping the counting scope, and its X takes it off again.
+     */
+    test('a filter added with the pills segments the funnel, and its X removes it', async ({ page }) => {
+        await openFunnelAs(page, 'session');
+
+        const all = await stepCounts(page);
+
+        expect(all[0]).toBeGreaterThan(1);
+
+        await openFilterForm(page);
+        await fillFilter(page, { dimension: 'sessionMedium', condition: 'is', value: 'organic' });
+
+        const added = await reloadedBy(page,
+            () => filterForm(page).getByRole('button', { name: 'Add filter' }).click());
+
+        expect(added.get('owa_constraints')).toBe('sessionMedium==organic');
+        expect(added.get('owa_funnelScope')).toBe('session');
+
+        const organic = await stepCounts(page);
+
+        expect(organic[0]).toBeGreaterThan(0);
+        expect(organic[0]).toBeLessThan(all[0]);
+
+        const removed = await reloadedBy(page, () => pillButton(page, 'Remove', 'Medium is organic').click());
+
+        expect(removed.get('owa_constraints')).toBe('');
+        expect(await stepCounts(page)).toEqual(all);
+        await expect(pillButton(page, 'Remove', '')).toHaveCount(0);
+    });
+
+    /**
+     * A filter from the URL comes back as a pill, which can be changed in
+     * place; a second condition adds to the first. A metric condition picks
+     * sessions by their totals.
+     */
+    test('a pill is changed in place, and a second condition narrows it further', async ({ page }) => {
+        await openFunnel(page, '&owa_funnelScope=session&owa_constraints='
+            + encodeURIComponent('sessionMedium==organic'));
+
+        await pillButton(page, 'Change', 'Medium is organic').click();
+
+        const form = filterForm(page);
+
+        await expect(form.getByLabel('Dimension', { exact: true })).toHaveValue('sessionMedium');
+        await expect(form.getByLabel('Condition', { exact: true })).toHaveValue('==');
+        await expect(form.getByLabel('Value', { exact: true })).toHaveValue('organic');
+
+        await fillFilter(page, { condition: 'is not' });
+
+        const changed = await reloadedBy(page, () => form.getByRole('button', { name: 'Update filter' }).click());
+
+        expect(changed.get('owa_constraints')).toBe('sessionMedium!=organic');
+
+        const notOrganic = await stepCounts(page);
+
+        expect(notOrganic[0]).toBeGreaterThan(0);
+
+        await openFilterForm(page);
+        await fillFilter(page, { dimension: 'pageViews', condition: 'greater than', value: '2' });
+
+        const both = await reloadedBy(page, () => form.getByRole('button', { name: 'Add filter' }).click());
+
+        expect(both.get('owa_constraints')).toBe('sessionMedium!=organic,pageViews>2');
+
+        // The fixture's direct visit that walks the whole funnel has three page views.
+        const longer = await stepCounts(page);
+
+        expect(longer[0]).toBeGreaterThan(0);
+        expect(longer[0]).toBeLessThanOrEqual(notOrganic[0]);
+        await expect(pillButton(page, 'Remove', '')).toHaveCount(2);
+    });
+
+    /**
+     * The two empty tests take no value, and split the sessions between them:
+     * every session either has a medium or has none.
+     */
+    test('the empty tests need no value and split the sessions', async ({ page }) => {
+        await openFunnelAs(page, 'session');
+
+        const all = await stepCounts(page);
+        const counts = {};
+
+        for (const [condition, constraint] of [['has a value', 'sessionMedium!=(not set)'],
+                                               ['is not set', 'sessionMedium==(not set)']]) {
+            await openFunnelAs(page, 'session');
+            await openFilterForm(page);
+            await fillFilter(page, { dimension: 'sessionMedium', condition });
+
+            await expect(filterForm(page).getByLabel('Value', { exact: true })).toBeHidden();
+
+            const params = await reloadedBy(page,
+                () => filterForm(page).getByRole('button', { name: 'Add filter' }).click());
+
+            expect(params.get('owa_constraints')).toBe(constraint);
+            counts[condition] = (await stepCounts(page))[0];
+        }
+
+        expect(counts['has a value'] + counts['is not set']).toBe(all[0]);
+    });
+
+    /**
+     * The controls sit on one line.
+     *
+     * Measured, not asserted from the markup: the scope switch borrows the Live
+     * View control's markup and the filter is the editors' pills, so each
+     * arrives with its own styling and its own idea of whether it is inline.
+     */
+    test('the control bar keeps its controls on one line', async ({ page }) => {
+        await openFunnel(page);
+
+        const boxes = {};
+
+        for (const [name, control] of Object.entries({
+            scope:  page.locator('#funnelScopeSwitch .buttons'),
+            filter: filterPills(page).getByRole('button', { name: 'Filter', exact: true }),
+        })) {
+            const box = await control.first().boundingBox();
+            expect(box, `${name} control has no box`).not.toBeNull();
+            boxes[name] = box.y + box.height / 2;
+        }
+
+        const centres = Object.values(boxes);
+        const spread = Math.max(...centres) - Math.min(...centres);
+
+        // One line, allowing for controls of slightly different heights.
+        expect(spread, `controls are on different lines: ${JSON.stringify(boxes)}`)
+            .toBeLessThan(20);
+    });
+
+    /** Opening the filter's form must not move the controls beside it. */
+    test('opening the filter does not move the rest of the bar', async ({ page }) => {
+        await openFunnel(page);
+
+        const before = await page.locator('#funnelScopeSwitch .buttons').boundingBox();
+
+        await openFilterForm(page);
+
+        const after = await page.locator('#funnelScopeSwitch .buttons').boundingBox();
+
+        expect(Math.abs(after.y - before.y)).toBeLessThan(3);
+        expect(Math.abs(after.x - before.x)).toBeLessThan(3);
+    });
+
+    /*
+     * Regression guard (chosen 0.9.6 -> 1.8.7): chosen-js 1.x sizes its
+     * container from the <select>'s width when it is enhanced, which is 0 inside
+     * a hidden form, and the dimension list collapsed to a sliver. The pills
+     * give it an explicit width.
+     */
+    test("the filter's dimension list opens at a usable width", async ({ page }) => {
+        await openFunnel(page);
+        await openFilterForm(page);
+
+        const box = filterForm(page).locator('[data-ui="filter:dimension"]');
+        const width = (await box.boundingBox())?.width ?? 0;
+
+        expect(width).toBeGreaterThanOrEqual(150);
+
+        await box.click();
+        await expect(box.getByRole('textbox')).toBeVisible();
+    });
+
+    test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {
+        // Regression guard for a build-artifact clobber that shipped a WORKING but
+        // completely UNSTYLED control. chosen-js 1.8.7's JS emits .chosen-* markup,
+        // but the SOURCE chosen.css was left as the 0.9.6 .chzn-* stylesheet when the
+        // JS was swapped (commit 36fb9d0b hand-edited only the built CSS artifact).
+        // The next `cli.php cmd=build` regenerated the artifact from the stale source,
+        // so the served CSS had ZERO .chosen-* rules -- the widget rendered as a bare
+        // unstyled text list with no dropdown arrow. So assert the stylesheet actually
+        // takes effect: the sprite-driven dropdown arrow paints a background image.
+        // On the funnel, whose filter's dimension list is a chosen widget.
+        await openFunnel(page);
+
+        const arrowBg = await page.evaluate(() => {
+            const b = document.querySelector('.chosen-container .chosen-single div b');
+            return b ? getComputedStyle(b).backgroundImage : null;
+        });
+        expect(arrowBg).not.toBeNull();
+        expect(arrowBg).toContain('chosen-sprite');
     });
 
     /**
@@ -555,6 +494,6 @@ test.describe('visualization: funnel', () => {
 
         // Computed rows, so the grid must not offer controls that would
         // re-query a result set URL that does not exist.
-        await expect(page.locator('#funnel-steps-grid .constraintPicker')).toHaveCount(0);
+        await expect(page.locator('#funnel-steps-grid').getByRole('button', { name: /filter/i })).toHaveCount(0);
     });
 });

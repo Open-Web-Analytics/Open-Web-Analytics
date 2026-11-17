@@ -72,7 +72,7 @@ const OBJECT_KEY = /^(text|html|title|label|placeholder|alt|tooltip|message|body
 const DIALOGS = ['confirm', 'alert', 'prompt', 'window.confirm', 'window.alert', 'window.prompt'];
 const TRANSLATORS = ['OWA.l', 'OWA.ln', 'OWA.translate', 'OWA.translatePlural'];
 const ESCAPES = ['esc', 'escapeHtml', 'OWA.util.escapeHtml', 'String'];
-const LABEL_TABLES = ['OWA.dataGrid.EMPTY_TESTS', 'OWA.dataGrid.OPERATOR_PHRASES', 'OWA.dataGrid.CONDITIONS', 'OWA.filterPills.OPERATORS', 'OWA.filterPills.EMPTY_TESTS', 'OWA.constraintBuilder.OPERATORS', 'OWA.constraintBuilder.EMPTY_TESTS'];
+const LABEL_TABLES = ['OWA.dataGrid.EMPTY_TESTS', 'OWA.dataGrid.OPERATOR_PHRASES', 'OWA.dataGrid.CONDITIONS'];
 
 /** A part of a flattened string not known here. */
 const HOLE = '\u0000';
@@ -817,7 +817,7 @@ describe('the guard', () => {
         ['a helper given a number', "var ui = { text: function (sel, value) { document.querySelector(sel).textContent = value; } };\nui.text('.owa_count is-on', ui.number(n));"],
         ['a function whose result is a class', "function cls() { return 'is on'; }\nel.html('<p class=\"' + cls() + '\"></p>');"],
         ['a variable given a translation', "var note = '';\nif (x) { note = OWA.l('No locations'); }\nel.text(note);"],
-        ['a label table', "OWA.filterPills.OPERATORS = { '==': 'is', '!=': 'is not' };"],
+        ['a label table', "OWA.dataGrid.OPERATOR_PHRASES = { '==': 'is', '!=': 'is not' };"],
         ['a non-text attribute', "el.attr('role', 'tab panel'); el.setAttribute('data-name', 'Visits');"],
     ])('allows %s', (_, source) => {
         expect(lines(source)).toEqual([]);
