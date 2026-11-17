@@ -104,7 +104,7 @@ class Template extends TemplateEngine {
 
             // throw error
             } else {
-                $this->e->err(sprintf('%s was not found in any template directory.', $file));
+                \OWA\Core\CoreAPI::error(sprintf('%s was not found in any template directory.', $file));
                 return false;
             }
             return $fullfile;
@@ -147,7 +147,7 @@ class Template extends TemplateEngine {
 
             // throw error
             else:
-                $this->e->err(sprintf('%s was not found in any template directory.', $file));
+                \OWA\Core\CoreAPI::error(sprintf('%s was not found in any template directory.', $file));
                 return false;
             endif;
 

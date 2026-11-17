@@ -131,7 +131,7 @@ class InstallManager extends \OWA\Core\Base {
             $name = $domain;
         }
 
-        $this->e->notice('Checking for existence of default site.');
+        \OWA\Core\CoreAPI::notice('Checking for existence of default site.');
 
         if ($site_id) {
             $existing = \OWA\Module\Base\Entity\Site::forSiteId( $site_id );
@@ -142,7 +142,7 @@ class InstallManager extends \OWA\Core\Base {
 
         if ($existing->wasPersisted()) {
 
-            $this->e->notice(sprintf(
+            \OWA\Core\CoreAPI::notice(sprintf(
                 "Default site already exists (id = %s). nothing to do here.", $existing->get('id')));
 
             return $existing->get('site_id');
@@ -176,12 +176,12 @@ class InstallManager extends \OWA\Core\Base {
         if ( ! $site->create() ) {
 
             // false, so the install step can roll back (finishInstall()).
-            $this->e->notice('Creation of default site failed.');
+            \OWA\Core\CoreAPI::notice('Creation of default site failed.');
 
             return false;
         }
 
-        $this->e->notice('Created default site.');
+        \OWA\Core\CoreAPI::notice('Created default site.');
 
         return $site->get('site_id');
     }
@@ -236,7 +236,7 @@ class InstallManager extends \OWA\Core\Base {
         } catch ( \Throwable $e ) {
 
             $db->rollbackTransaction();
-            $this->e->notice( 'Install not completed, nothing saved: ' . $e->getMessage() . '.' );
+            \OWA\Core\CoreAPI::notice( 'Install not completed, nothing saved: ' . $e->getMessage() . '.' );
 
             return false;
         }
