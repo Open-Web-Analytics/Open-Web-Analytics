@@ -81,8 +81,8 @@ final class ViewNavigationTest extends TestCase
         $this->assertFalse(\OWA\Core\CoreAPI::getNavigation('probe.view', 'no_such_nav'));
     }
 
-    /** An entry written straight into nav_links with its own view and nav_name, as 1.0 modules did, still counts. */
-    public function testANavLinksEntryNamingItsViewCounts(): void
+    /** The 1.0 form -- an entry written into nav_links with its own view and nav_name -- is no longer read. */
+    public function testANavLinksEntryNamingItsViewIsNotRead(): void
     {
         $m = $this->probe();
         $m->nav_links = array(array(
@@ -90,7 +90,6 @@ final class ViewNavigationTest extends TestCase
         ));
         $this->inject($m);
 
-        $this->assertSame(array('probe.legacy'),
-            array_column((array) \OWA\Core\CoreAPI::getNavigation('probe.view', 'legacy_nav'), 'ref'));
+        $this->assertFalse(\OWA\Core\CoreAPI::getNavigation('probe.view', 'legacy_nav'));
     }
 }

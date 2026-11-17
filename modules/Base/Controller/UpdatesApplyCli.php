@@ -86,7 +86,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
                 $ret = $s->modules[$v]->update();
 
                 if ($ret != true):
-                    $awaiting = (string) ( $s->modules[$v]->update_awaiting ?? '' );
+                    $awaiting = (string) $s->modules[$v]->update_awaiting;
                     $error = true;
                     break;
                 endif;

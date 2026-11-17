@@ -1815,9 +1815,9 @@ class CoreAPI {
      * Returns a consolidated list of nav links from all active modules for a particular view
      * and named navigation element.
      *
-     * A module adds one with Module::addViewNavigationLink(). An entry of
-     * nav_links that names its own view and nav_name, as 1.0 modules wrote
-     * them, is read too.
+     * A module adds one with Module::addViewNavigationLink(). 1.0 modules
+     * wrote such links into nav_links with their own view and nav_name; that
+     * form is no longer read.
      *
      * @param string $view
      * @param string $nav_name the name of the navigation element that you want links for
@@ -1841,16 +1841,6 @@ class CoreAPI {
             foreach ( $v->getViewNavigationLinks() as $link ) {
 
                 $links[ $link['view'] ][ $link['nav_name'] ][] = $link;
-            }
-
-            foreach ( $v->getNavigationLinks() ?: array() as $value ) {
-
-                // A report nav group (group => subgroup => item) names neither.
-                if ( isset( $value['view'], $value['nav_name'] )
-                     && is_string( $value['view'] ) && is_string( $value['nav_name'] ) ) {
-
-                    $links[ $value['view'] ][ $value['nav_name'] ][] = $value;
-                }
             }
         }
 
