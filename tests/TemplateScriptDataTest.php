@@ -24,7 +24,6 @@ final class TemplateScriptDataTest extends TestCase
     private const INLINE_CODE_LEFT = [
         'Base/templates/custom_reports.php'         => 1,
         'Base/templates/head.php'                   => 1,
-        'Base/templates/header.php'                 => 2,
         'Base/templates/js_bundle_tag.php'          => 1,
         'Base/templates/js_log_tag.php'             => 2,
         'Base/templates/msgs.php'                   => 1,
@@ -171,5 +170,32 @@ final class TemplateScriptDataTest extends TestCase
         $this->assertStringContainsString( 'last_thirty_days', $config['previewUrl'] );
         $this->assertGreaterThan( 0, $config['maxSteps'] );
         $this->assertIsArray( $config['dimensions'] );
+    }
+
+    public function testTheBellIsHandedAUrlPerMethod(): void
+    {
+        $this->requireDb();
+
+        $html = $this->screen( '\\OWA\\Module\\Base\\Controller\\CustomReports', [ 'siteId' => self::$siteId ] );
+
+        foreach ( [ 'read', 'mark-read', 'dismiss' ] as $which ) {
+
+            $this->assertSame( 1, preg_match( '~data-owa-notifications-' . $which . '="([^"]+)"~', $html, $m ), "no $which URL" );
+            $this->assertStringContainsString( 'notifications', html_entity_decode( $m[1] ) );
+        }
+    }
+
+    /** Every page with the header loads the bundle its menus are in, an error page included. */
+    public function testAnErrorPageLoadsTheHeadersCode(): void
+    {
+        $this->requireDb();
+
+        $data = [ 'view' => 'base.error', 'error_msg' => 'Refused.' ];
+        $view = \OWA\Core\CoreAPI::viewFactory( 'base.error', $data );
+        $view->setData( $data );
+        $html = (string) $view->assembleView( $data );
+
+        $this->assertStringContainsString( 'id="owa_helpMenuToggle"', $html );
+        $this->assertStringContainsString( 'base/dist/owa.reporting-combined-min.js', $html );
     }
 }
