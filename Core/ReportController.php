@@ -211,12 +211,9 @@ class ReportController extends \OWA\Core\AdminController {
     }
 
     /**
-     * Where a failed validation lands.
-     *
-     * Core\Controller has no errorAction() of its own -- doAction() calls it
-     * when validations fail, so a controller that validates without defining
-     * one fatals instead of refusing. Defining it here is part of adding the
-     * validation above, not an extra.
+     * Where a failed validation lands: a 400 and the error view, naming what
+     * was wrong with the request. Core\Controller's errorAction() sets the
+     * error view alone.
      *
      * @return mixed this controller's data
      */

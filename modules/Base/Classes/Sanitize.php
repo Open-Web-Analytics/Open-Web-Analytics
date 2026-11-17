@@ -214,15 +214,17 @@ class Sanitize {
      * Sanitizes for safe input. Takes an array of options:
      *
      * - hidden_spaces - removes any non space whitespace characters
-     * - escape_html - Encode any html entities. Encode must be true for the `remove_html` to work.
+     * - escape_html - Encode any html entities.
      * - dollar - Escape `$` with `\$`
      * - carriage - Remove `\r`
      * - unicode
      * - backslash -
-     * - remove_html - Strip HTML with strip_tags. `encode` must be true for this option to work.
+     * - remove_html - Strip HTML with strip_tags.
+     *
+     * `encode` is accepted and not read.
      *
      * @param mixed $input Data to sanitize
-     * @param array<string, mixed> $options not read
+     * @param array<string, mixed> $options name => on, over the defaults; each on by default but remove_html
      * @return mixed Sanitized data
      * @access public
      * @static

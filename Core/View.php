@@ -363,7 +363,7 @@ class View extends \OWA\Core\Base {
      * Assembles subview
      *
      * @param string|null $subview <module>.<view>; default_subview when empty
-     * @return true|null|void Error::debug()'s answer when there is no subview to load
+     * @return void
      */
     public function loadSubView($subview) {
 
@@ -372,7 +372,8 @@ class View extends \OWA\Core\Base {
                 $subview = $this->default_subview;
                 $this->data['subview'] = $this->default_subview;
             else:
-                return $this->e->debug("No Subview was specified by caller.");
+                $this->e->debug("No Subview was specified by caller.");
+                return;
             endif;
         endif;
 

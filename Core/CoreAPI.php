@@ -74,6 +74,13 @@ class CoreAPI {
 
 
 
+    /**
+     * What singleton() was last given, when it was given something.
+     *
+     * @var array<string, mixed>|null
+     */
+    public $params;
+
     // @depricated
     // @todo remove
     /**
@@ -2266,26 +2273,6 @@ class CoreAPI {
         return self::TRACKING_DISPATCH_NAMESPACE . '.' . (string) $event_type;
     }
 
-    /**
-     * Whether an event type may be accepted from a tracker at all.
-     *
-     * TWO WAYS IN, which is the change. A first-class name is one the registry
-     * declares. Anything else is admitted if it is a legal CUSTOM event name,
-     * because the tracker can emit one with any name -- trackCustomEvent() --
-     * and a site's own events have to reach the pipeline. They were being
-     * refused: trackingEventTypes() was an allowlist, so every custom event a
-     * site defined was dropped at the door.
-     *
-     * A name starts with a letter, uses only letters, numbers and underscores,
-     * and is at most 40 characters, case-sensitive. That is the same pattern a
-     * custom PROPERTY name must match -- so it is stated once and reused rather
-     * than written twice.
-     *
-     * A first-class name reaching the second test would pass it, so the order
-     * matters only for reading; what makes the reserved set work is the TRACKER
-     * refusing to send one (OWATracker.RESERVED_EVENT_NAMES), because the server
-     * cannot tell a site's `click` from its own.
-     *
     /**
      * The namespace every tracking event is dispatched under.
      *
