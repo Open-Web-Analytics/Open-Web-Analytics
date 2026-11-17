@@ -44,9 +44,8 @@ namespace OWA\Module\Base\Controller;
  * After the drops it queues a rebuild for any cube whose window reaches
  * further back than it holds (Retention::backfills()).
  *
- * partition-init, partition-drop and partition-reorganize remain for the
- * one-off jobs: converting an installation that predates partitioning, a single
- * ad-hoc prune, changing granularity. Rotation is the routine.
+ * partition-drop and partition-reorganize remain for the one-off jobs: a
+ * single ad-hoc prune, changing granularity. Rotation is the routine.
  */
 class PartitionRotateCli extends PartitionsCli {
 
@@ -264,13 +263,11 @@ class PartitionRotateCli extends PartitionsCli {
 
         foreach ( $tables as $table ) {
 
-            // Rotation maintains a table; it does not convert one. The first
-            // partitioning rewrites the whole table, which is minutes of I/O on
-            // a busy installation and has no place firing out of cron.
+            // Rotation maintains a partitioned table; it does not partition one.
             if ( ! $db->isPartitioned( $table ) ) {
 
                 \OWA\Core\CoreAPI::notice( sprintf(
-                    '%s is not partitioned; run partition-init once first. Skipping.', $table
+                    '%s is not partitioned. Skipping.', $table
                 ) );
 
                 continue;
@@ -334,16 +331,13 @@ class PartitionRotateCli extends PartitionsCli {
         }
 
         // Skipping every table is not success. Left as 'ok', a scheduled rotate
-        // on an installation that never ran partition-init would report a clean
-        // history forever while doing nothing at all -- exactly the silent
-        // failure this command exists to prevent, moved one level up. 'refused'
-        // rather than 'failed' so the occurrence is still consumed and the job
-        // is not retried every minute.
+        // over unpartitioned tables would report a clean history while doing
+        // nothing. 'refused' rather than 'failed' so the occurrence is still
+        // consumed and the job is not retried every minute.
         if ( ! $rotated ) {
 
             return $this->refuse( sprintf(
-                'Nothing to rotate: %s. Run cmd=partition-init once, in a maintenance '
-              . 'window, and this will start doing its job.',
+                'Nothing to rotate: %s.',
                 count( $tables ) === 1
                     ? 'that table is not partitioned'
                     : 'no fact table is partitioned'

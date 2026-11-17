@@ -512,61 +512,6 @@ final class PartitionCliTest extends CliControllerTestCase
         }
     }
 
-    /**
-     * partition-init is a one-time conversion, not a maintenance command.
-     *
-     * Everything it could usefully do to an already-partitioned table belongs to
-     * another command: extending the lead and coarsening the tail is exactly
-     * partition-rotate, and applying a granularity would convert only the
-     * periods being added, leaving the rest as they were -- a silent, partial
-     * reorganisation. So it reports and skips, and names the command that does
-     * the job being asked for.
-     */
-    public function testInitLeavesAnAlreadyPartitionedTableAlone()
-    {
-        $db = \OWA\Core\CoreAPI::dbSingleton();
-
-        if (! $db->supportsPartitioning()) {
-            $this->markTestSkipped('Driver cannot partition.');
-        }
-
-        $t = 'owa_test_initonce_' . $this->tok;
-
-        try {
-            $db->query("CREATE TABLE $t (id BIGINT NOT NULL, yyyymmdd INT NOT NULL, PRIMARY KEY (id,yyyymmdd))");
-
-            // A deliberately stale layout: short lead, fine tail. A maintaining
-            // command would change all of it.
-            $db->partitionTable($t, 'yyyymmdd', \OWA\Core\Db::makePartitionRanges(
-                date('Ymd', strtotime(date('Ym') . '01 -60 months')),
-                date('Ymd', strtotime(date('Ym') . '01 +1 month')),
-                'monthly'
-            ));
-
-            $before = array_map(
-                fn($s) => $s['name'] . ':' . $s['less_than'],
-                $db->getPartitionSpans($t)
-            );
-
-            // Neither a plain run nor one asking for a different granularity may
-            // touch it.
-            foreach ([[], ['granularity' => 'half-month'], ['months-ahead' => '24']] as $params) {
-
-                $ctrl = new \OWA\Module\Base\Controller\PartitionInitCli($params + ['table' => $t]);
-                $ctrl->action();
-
-                $this->assertSame(
-                    $before,
-                    array_map(fn($s) => $s['name'] . ':' . $s['less_than'], $db->getPartitionSpans($t)),
-                    'init must not modify a partitioned table, whatever it is asked for: ' . json_encode($params)
-                );
-            }
-
-        } finally {
-            $db->query("DROP TABLE IF EXISTS $t");
-        }
-    }
-
     // -----------------------------------------------------------------------
     // partition-status
     // -----------------------------------------------------------------------
@@ -625,7 +570,7 @@ final class PartitionCliTest extends CliControllerTestCase
         }
     }
 
-    /** An unpartitioned table gets one line and the command that fixes it. */
+    /** An unpartitioned table gets one line. */
     public function testStatusDescribesAnUnpartitionedTable()
     {
         $out = $this->report($this->layout([
@@ -635,7 +580,7 @@ final class PartitionCliTest extends CliControllerTestCase
         ]));
 
         $this->assertSame(
-            'owa_x: not partitioned. Run cmd=partition-init to convert it.',
+            'owa_x: not partitioned.',
             $out,
             'nothing else is knowable, so nothing else is said'
         );
@@ -825,7 +770,7 @@ final class PartitionCliTest extends CliControllerTestCase
         $this->assertStringNotContainsString('Not partitioned', $out);
     }
 
-    /** Nothing partitioned at all: init, and no deadline to invent. */
+    /** Nothing partitioned at all: no deadline to invent. */
     public function testStatusSummaryWhenNothingIsPartitioned()
     {
         $bare = $this->layout([
@@ -838,7 +783,7 @@ final class PartitionCliTest extends CliControllerTestCase
         ]));
 
         $this->assertStringContainsString('0 of 2 fact tables and cubes partitioned, 0 partitions in total.', $out);
-        $this->assertStringContainsString('cmd=partition-init converts them', $out);
+        $this->assertStringContainsString('Not partitioned: owa_a, owa_b.', $out);
         $this->assertStringNotContainsString('covering', $out, 'no range to report');
         $this->assertStringNotContainsString('deadline', $out);
         $this->assertStringNotContainsString('ACTION', $out);

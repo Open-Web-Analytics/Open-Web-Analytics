@@ -45,9 +45,8 @@ async function boxesReport(page) {
  *   - chosen      -> .chzn-container enhanced select menus
  *
  * They also PIN jQuery 3.6.0 -- the reporting bundle is on 3.x (was 1.6.4).
- * jquery-migrate bridges the 1.x API removals; the legacy plugins
- * were replaced with jQuery-3.x-clean versions (jqGrid -> free-jqgrid, Flot ->
- * 0.8.3, jQuery-UI -> 1.13.3), so the interim $.browser compat shim was deleted.
+ * The plugins run on jQuery 3 as they are (Flot 0.8.3, jQuery-UI 1.13.3), so
+ * the bundle carries neither jquery-migrate nor a $.browser shim.
  * A future version bump fails this assertion and must be a conscious, reviewed
  * change (same discipline as the bundle-integrity test).
  *
@@ -579,10 +578,11 @@ test.describe('reporting dashboard renders (post-migration baseline)', () => {
     test('the reporting bundle initializes jQuery 3.6.0 and the OWA namespace', async ({ page }) => {
         const jqv = await page.evaluate(() => window.jQuery && window.jQuery.fn.jquery);
         const owaType = await page.evaluate(() => typeof window.OWA);
-        // Every reporting plugin is jQuery-3.x-clean
-        // (jQuery-UI 1.13.3, Flot 0.8.3, ...), so the
-        // $.browser/$.curCSS compat shim was deleted -- jquery-migrate alone bridges.
+        // Every reporting plugin runs on jQuery 3 as it is (jQuery-UI 1.13.3,
+        // Flot 0.8.3, ...), so no compat layer is loaded.
+        const migrate = await page.evaluate(() => window.jQuery && window.jQuery.migrateVersion);
         expect(jqv).toBe('3.6.0');
+        expect(migrate).toBeUndefined();
         expect(owaType).toBe('object');
     });
 

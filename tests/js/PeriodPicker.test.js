@@ -11,7 +11,7 @@
 import { OWA } from '../../modules/Base/src/reporting/owa.format.js';
 import {
     PeriodPicker, compareRange, initialState, settle, toParams, calendarTarget,
-    pickDay, choosePreset, formatRange, formatDate, toIso, fromIso, parseDateInput, weekStart,
+    pickDay, choosePreset, formatRange, formatDate, toIso, fromIso, parseDateInput, weekStart, placePanel,
 } from '../../modules/Base/src/reporting/owa.periodpicker.js';
 
 const fixture = require( '../fixtures/compare-ranges.json' );
@@ -673,5 +673,118 @@ describe( 'in the install\'s locale', () => {
         field.dispatchEvent( new Event( 'change', { bubbles: true } ) );
 
         expect( el.querySelector( '.owa_periodWhy' ).textContent ).toBe( 'Datum „soon“ unlesbar, z. B. Nov 9, 2026.' );
+    } );
+} );
+
+describe( 'where the open panel goes', () => {
+
+    /** A button 280 wide and 40 tall with its top left at x, y. */
+    const button = ( x, y ) => ( { left: x, top: y, right: x + 280, bottom: y + 40 } );
+
+    test( 'under the button, right edges level, when it fits', () => {
+        expect( placePanel( button( 1119, 254 ), 680, 572, 1440, 900 ) )
+            .toEqual( { left: 719, top: 300, maxHeight: null } );
+    } );
+
+    test( 'left edges level when the right edges would run off the left', () => {
+        // The report head wrapped, so the button is under the title.
+        expect( placePanel( button( 134, 100 ), 680, 572, 901, 700 ).left ).toBe( 134 );
+    } );
+
+    test( 'moved in from the right when neither edge fits', () => {
+        expect( placePanel( button( 400, 100 ), 680, 572, 901, 700 ).left ).toBe( 901 - 8 - 680 );
+    } );
+
+    test( 'never left of the window, even for a button at its edge', () => {
+        expect( placePanel( button( 0, 100 ), 680, 572, 690, 700 ).left ).toBe( 8 );
+    } );
+
+    test( 'above the button when there is no room under it', () => {
+        expect( placePanel( button( 600, 650 ), 680, 572, 1440, 1000 ).top ).toBe( 650 - 6 - 572 );
+    } );
+
+    test( 'against the foot of the window, over the button, when it fits neither above nor under', () => {
+        expect( placePanel( button( 382, 365 ), 680, 572, 901, 700 ) )
+            .toEqual( { left: 901 - 8 - 680, top: 700 - 8 - 572, maxHeight: null } );
+    } );
+
+    test( 'a panel taller than the window is as tall as the window', () => {
+        expect( placePanel( button( 382, 100 ), 680, 572, 1024, 500 ) )
+            .toEqual( { left: 1024 - 8 - 680, top: 8, maxHeight: 484 } );
+    } );
+} );
+
+describe( 'the open panel in the page', () => {
+
+    const size = ( w, h ) => {
+        Object.defineProperty( document.documentElement, 'clientWidth', { configurable: true, value: w } );
+        Object.defineProperty( document.documentElement, 'clientHeight', { configurable: true, value: h } );
+    };
+
+    let restore;
+
+    beforeEach( () => {
+        const rect = Element.prototype.getBoundingClientRect;
+        const ow = Object.getOwnPropertyDescriptor( HTMLElement.prototype, 'offsetWidth' );
+        const oh = Object.getOwnPropertyDescriptor( HTMLElement.prototype, 'offsetHeight' );
+
+        Element.prototype.getBoundingClientRect = function () {
+            return this.classList.contains( 'owa_periodTrigger' )
+                ? { left: 134, top: 310, right: 413, bottom: 350, width: 279, height: 40 }
+                : rect.call( this );
+        };
+        Object.defineProperty( HTMLElement.prototype, 'offsetWidth', { configurable: true,
+            get() { return this.classList.contains( 'owa_periodPanel' ) ? 680 : 0; } } );
+        Object.defineProperty( HTMLElement.prototype, 'offsetHeight', { configurable: true,
+            get() { return this.classList.contains( 'owa_periodPanel' ) ? 572 : 0; } } );
+
+        restore = () => {
+            Element.prototype.getBoundingClientRect = rect;
+            Object.defineProperty( HTMLElement.prototype, 'offsetWidth', ow );
+            Object.defineProperty( HTMLElement.prototype, 'offsetHeight', oh );
+            delete document.documentElement.clientWidth;
+            delete document.documentElement.clientHeight;
+        };
+    } );
+
+    afterEach( () => restore() );
+
+    function open( css ) {
+        document.body.innerHTML = ( css ? '<style>' + css + '</style>' : '' ) + '<div id="pp"></div>';
+        const el = document.getElementById( 'pp' );
+        new PeriodPicker( el, config(), () => {} );
+        el.querySelector( '.owa_periodTrigger' ).dispatchEvent( new MouseEvent( 'click', { bubbles: true } ) );
+        return el.querySelector( '.owa_periodPanel' );
+    }
+
+    test( 'is placed in the window when it opens', () => {
+        size( 901, 700 );
+        const panel = open();
+
+        expect( panel.classList.contains( 'is-placed' ) ).toBe( true );
+        expect( [ panel.style.left, panel.style.top ] ).toEqual( [ '134px', '120px' ] );
+    } );
+
+    test( 'is placed again when the window resizes, and not after it closes', () => {
+        size( 901, 700 );
+        const panel = open();
+
+        size( 1440, 900 );
+        window.dispatchEvent( new Event( 'resize' ) );
+        expect( [ panel.style.left, panel.style.top ] ).toEqual( [ '134px', '320px' ] );
+
+        const el = document.getElementById( 'pp' );
+        el.querySelector( '[data-act="cancel"]' ).dispatchEvent( new MouseEvent( 'click', { bubbles: true } ) );
+        expect( el.querySelector( '.owa_periodPanel' ) ).toBeNull();
+
+        expect( () => window.dispatchEvent( new Event( 'resize' ) ) ).not.toThrow();
+    } );
+
+    test( 'the sheet the stylesheet fixes to the screen is left as it is', () => {
+        size( 390, 844 );
+        const panel = open( '.owa_periodPanel { position: fixed; }' );
+
+        expect( panel.classList.contains( 'is-placed' ) ).toBe( false );
+        expect( panel.style.left ).toBe( '' );
     } );
 } );

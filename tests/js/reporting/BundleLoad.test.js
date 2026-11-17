@@ -67,13 +67,13 @@ describe('reporting bundle loads under jsdom', () => {
     test('jQuery initializes at the pinned version', () => {
         if (!jq) return;
         expect(typeof jq).toBe('function');
-        // The reporting bundle uses jQuery 3.6.0 (sourced from the npm dep);
-        // jquery-migrate bridges the legacy plugins. The
-        // $.browser/$.curCSS compat shim was DELETED once every plugin went
-        // jQuery-3.x-clean (jQuery-UI -> 1.13.3, Flot -> 0.8.3), so $.browser must
-        // now be ABSENT -- assert it is gone so a shim regression fails loudly.
+        // The reporting bundle uses jQuery 3.6.0 (sourced from the npm dep).
+        // Every plugin it carries runs on jQuery 3 as it is (jQuery-UI 1.13.3,
+        // Flot 0.8.3), so neither jquery-migrate nor the old $.browser shim is
+        // in the bundle.
         expect(jq.fn.jquery).toBe('3.6.0');
         expect(jq.browser).toBeUndefined();
+        expect(jq.migrateVersion).toBeUndefined();
     });
 
     test('the OWA reporting namespace loads with its core members', () => {

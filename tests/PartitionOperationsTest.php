@@ -2026,8 +2026,8 @@ final class PartitionOperationsTest extends TestCase
         ));
     }
 
-    /** What partition-init does to an unpartitioned table. */
-    private function runInit($table, $granularity = 'monthly', $history = 120, $limit = 200)
+    /** Partition an empty table with makeTieredPartitionRanges(). */
+    private function partitionTiered($table, $granularity = 'monthly', $history = 120, $limit = 200)
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
@@ -2054,29 +2054,28 @@ final class PartitionOperationsTest extends TestCase
     }
 
     /**
-     * A freshly initialised table must already be in the shape rotation
-     * converges on.
+     * A tiered layout must already be in the shape rotation converges on.
      *
      * If the two disagree about where the coarse tail ends, every scheduled
-     * rotate rewrites what init built -- the table is reorganised on each run
+     * rotate rewrites it -- the table is reorganised on each run
      * for no change in shape, and on a large installation that is an expensive
      * no-op with writes blocked.
      */
-    public function testInitProducesTheShapeRotationWouldConvergeOn()
+    public function testATieredLayoutIsTheShapeRotationConvergesOn()
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         foreach (['monthly', 'half-month', 'quarter-month'] as $granularity) {
 
             $t = $this->makeTable();
-            $this->runInit($t, $granularity);
+            $this->partitionTiered($t, $granularity);
 
             $before = $this->shapeOf($t);
             $plan   = $db->planPartitionCompaction($t, 200, \OWA\Core\Db::PARTITION_DETAIL_MONTHS);
 
             $this->assertEmpty(
                 $plan['operations'],
-                "$granularity: rotation should find nothing to reshape straight after init"
+                "$granularity: rotation should find nothing to reshape in a tiered layout"
             );
 
             $this->runRotate($t);
@@ -2086,26 +2085,25 @@ final class PartitionOperationsTest extends TestCase
     }
 
     /**
-     * The three commands compose in any order and settle on the same layout.
+     * Reorganise and rotate compose in any order and settle on the same layout.
      *
      * They are separate entry points onto one piece of state, so the risk is
-     * that each undoes another's work: reorganise refining the tail rotation
-     * coarsened, rotation reverting the granularity reorganise chose, init
-     * disagreeing with both.
+     * that each undoes the other's work: reorganise refining the tail rotation
+     * coarsened, rotation reverting the granularity reorganise chose.
      */
-    public function testInitReorganiseAndRotateComposeInAnyOrder()
+    public function testReorganiseAndRotateComposeInAnyOrder()
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        // init -> reorganise -> rotate
+        // tiered -> reorganise -> rotate
         $a = $this->makeTable();
-        $this->runInit($a);
+        $this->partitionTiered($a);
         $db->repartitionTable($a, 'half-month');
         $this->runRotate($a);
 
-        // init -> rotate -> reorganise -> rotate
+        // tiered -> rotate -> reorganise -> rotate
         $b = $this->makeTable();
-        $this->runInit($b);
+        $this->partitionTiered($b);
         $this->runRotate($b);
         $db->repartitionTable($b, 'half-month');
         $this->runRotate($b);
@@ -2134,7 +2132,7 @@ final class PartitionOperationsTest extends TestCase
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $t  = $this->makeTable();
 
-        $this->runInit($t, 'monthly', 96);
+        $this->partitionTiered($t, 'monthly', 96);
 
         $id = 0;
         for ($m = -96; $m <= 12; $m += 3) {
