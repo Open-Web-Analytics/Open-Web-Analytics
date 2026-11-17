@@ -109,7 +109,7 @@ final class Update080Test extends TestCase
         $this->requireDb();
 
         // Another setting, which this does not touch.
-        $this->row('profile', self::EXTRA, 'example.test', 'domain_aliases');
+        $this->row('profile', self::EXTRA, 'sessionid', 'query_string_filters');
         $before = $this->rows();
 
         $this->assertTrue($this->update->up());
@@ -214,7 +214,7 @@ final class Update080Test extends TestCase
         $this->requireDb();
 
         // Another setting, which neither direction touches.
-        $this->row('profile', self::EXTRA, 'example.test', 'domain_aliases');
+        $this->row('profile', self::EXTRA, 'sessionid', 'query_string_filters');
         $seed($this);
         $before = $this->rows();
 

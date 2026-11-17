@@ -340,7 +340,7 @@ class Module extends \OWA\Core\Module {
          */
         foreach ( array(
             array( 'base.profileObservation', \OWA\Core\CoreAPI::t( 'Pages and domains' ),
-                array( 'domain_aliases', 'query_string_filters' ) ),
+                array( 'query_string_filters' ) ),
             array( 'base.profileCampaigns', \OWA\Core\CoreAPI::t( 'Campaign parameters' ),
                 array( 'campaignKeys' ) ),
             array( 'base.profilePrivacy', \OWA\Core\CoreAPI::t( 'Privacy and exclusions' ),

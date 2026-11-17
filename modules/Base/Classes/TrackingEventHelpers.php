@@ -3151,6 +3151,8 @@ class TrackingEventHelpers {
     /**
      * Filter function Strips a URL of certain defined session or tracking params
      *
+     * The host is kept as it arrived, whether or not it is the Profile's domain.
+     *
      * @return string|null
      */
     static function makeUrlCanonical( $url, $event ) {
@@ -3225,29 +3227,7 @@ class TrackingEventHelpers {
             $url = substr($url, 0, -1);
         }
 
-        // check for domain aliases
-        $das = $site->getSiteSetting( 'domain_aliases' );
-
-        if ( $das ) {
-
-            $site_domain = $site->getDomainName();
-
-            if ( ! strpos( $url, '://'. $site_domain ) ) {
-
-                $das = explode(',', $das);
-
-                foreach ($das as $da) {
-                    \OWA\Core\CoreAPI::debug("Checking URL for domain alias: $da");
-                    $da = trim($da);
-                    if ( strpos( $url, $da ) ) {
-                        $url = str_replace($da, $site_domain, $url);
-                        break;
-                    }
-                }
-            }
-        }
-
-         return self::makeUrlStorageSafe( $url );
+        return self::makeUrlStorageSafe( $url );
 
     }
 
