@@ -15,6 +15,12 @@ namespace OWA\Module\Base\Classes;
  * is pure -- give it decoded JSON, get items -- so the parsing can be tested
  * against real API shapes with no database and no network, which is the half
  * most likely to be wrong.
+ *
+ * An Item is what a from*() transform makes, and record() stores; type, when
+ * present, overrides record()'s.
+ *
+ * @phpstan-import-type Row from \OWA\Core\Db
+ * @phpstan-type Item array{source_key: string, title: string, body: string, url: string, published_at: int, type?: string}
  */
 class NotificationManager {
 
@@ -94,7 +100,7 @@ class NotificationManager {
      *
      * Pure, so the limits are testable without a database.
      *
-     * @param array $item from a from*() transform
+     * @param Item $item from a from*() transform
      * @return array{title:string, body:string, url:string}
      */
     public static function storable( array $item ) {
@@ -109,7 +115,12 @@ class NotificationManager {
         );
     }
 
-    /** Whether a URL may be a notification's link: https: only. */
+    /**
+     * Whether a URL may be a notification's link: https: only.
+     *
+     * @param  scalar|null $url  as an item or a stored row holds it
+     * @return bool
+     */
     public static function isLinkable( $url ) {
 
         return is_string( $url ) && preg_match( '#^https://[^\s/?\#]+#i', $url ) === 1;
@@ -125,7 +136,7 @@ class NotificationManager {
      * idempotent and an item without one would arrive again on every run.
      *
      * @param mixed $decoded json_decode() output from the releases endpoint
-     * @return array<int, array{source_key:string,title:string,body:string,url:string,published_at:int}>
+     * @return list<Item>
      */
     public static function fromGithubReleases( $decoded ) {
 
@@ -226,7 +237,7 @@ class NotificationManager {
      * per audience rather than globally, because the same underlying thing can
      * legitimately be addressed to several users.
      *
-     * @param array $items from a from*() transform
+     * @param list<Item> $items from a from*() transform
      * @param string $source
      * @param string $userId '' for everyone
      * @param string $type what these ARE; drives the icon the panel draws
@@ -314,6 +325,9 @@ class NotificationManager {
      * Null and 0 are different answers here -- "never fetched" versus "holds
      * something with no timestamp" -- and they lead to different behaviour, so
      * this must not collapse them into a falsy value.
+     *
+     * @param  string $source
+     * @return int|null
      */
     public static function newestPublishedAt( $source ) {
 
@@ -340,6 +354,11 @@ class NotificationManager {
      * single space as an "intentionally empty" escape; relying on that here
      * would put the correctness of dedupe on a hack the next reader has to
      * know about.
+     *
+     * @param  string $source
+     * @param  string $sourceKey
+     * @param  string $userId  '' for everyone
+     * @return bool
      */
     public static function exists( $source, $sourceKey, $userId = '' ) {
 
@@ -354,7 +373,13 @@ class NotificationManager {
         return false;
     }
 
-    /** Every stored row for one source key, whoever it is addressed to. */
+    /**
+     * Every stored row for one source key, whoever it is addressed to.
+     *
+     * @param  string $source
+     * @param  string $sourceKey
+     * @return list<Row>
+     */
     private static function rowsForSourceKey( $source, $sourceKey ) {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -384,7 +409,7 @@ class NotificationManager {
      *
      * @param string $userId
      * @param int $limit
-     * @return array<int, array>
+     * @return list<Row> each with read (bool) added
      */
     public static function undismissedFor( $userId, $limit = 25 ) {
 
@@ -452,6 +477,7 @@ class NotificationManager {
      * answer one question, and two chances for them to disagree about a row
      * written between them.
      *
+     * @param  string $userId
      * @return array<string, array{read:bool, dismissed:bool}>
      */
     private static function statesFor( $userId ) {
@@ -489,6 +515,9 @@ class NotificationManager {
      * while leaving it on screen, which is the whole point of separating the
      * two states -- so the badge and the list deliberately disagree, and the
      * client must not compute one from the other.
+     *
+     * @param  string $userId
+     * @return int
      */
     public static function unreadCountFor( $userId ) {
 
@@ -510,6 +539,10 @@ class NotificationManager {
      *
      * It stays in their list. The headline stops being bold and it stops
      * counting towards the badge, and that is all.
+     *
+     * @param  string $notificationId
+     * @param  string $userId
+     * @return bool false when either is empty, or the row was not written
      */
     public static function markRead( $notificationId, $userId ) {
 
@@ -523,6 +556,10 @@ class NotificationManager {
      * still be waiting to be looked at, and leaving read_at unset would let a
      * dismissed notification keep inflating the badge if it ever came back
      * into the list.
+     *
+     * @param  string $notificationId
+     * @param  string $userId
+     * @return bool
      */
     public static function dismiss( $notificationId, $userId ) {
 
@@ -543,6 +580,8 @@ class NotificationManager {
      * first read this" should not change because a second tab loaded the
      * panel.
      *
+     * @param string $notificationId
+     * @param string $userId
      * @param string $column read_at | dismissed_at
      * @return bool
      */

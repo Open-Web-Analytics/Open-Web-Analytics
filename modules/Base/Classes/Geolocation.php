@@ -33,8 +33,15 @@ namespace OWA\Module\Base\Classes;
 
 class Geolocation {
 
+    /**
+     * The last lookup: ip_address, city, country, state, country_code,
+     * latitude, longitude; '' for what it could not fill.
+     *
+     * @var array<string, string|null>
+     */
     public $properties = array();
-    
+
+    /** @return Geolocation */
     public static function getInstance() {
         
         return new \OWA\Module\Base\Classes\Geolocation();
@@ -48,6 +55,13 @@ class Geolocation {
     
     }
     
+    /**
+     * Look an address up, unless one has been already and $refresh is not true.
+     *
+     * @param  string|null $ip_address
+     * @param  bool        $refresh
+     * @return void
+     */
     public function getGeolocationFromIp($ip_address, $refresh = false) {
         
         if (empty($this->properties) || $refresh === true) {
@@ -84,6 +98,10 @@ class Geolocation {
         }
     }
     
+    /**
+     * @param  string $name
+     * @return string|null|void  nothing for a name not looked up
+     */
     public function getProperty($name) {
         
         if (array_key_exists($name, $this->properties)) {
@@ -91,11 +109,17 @@ class Geolocation {
         }
     }
     
+    /**
+     * @param  string      $name
+     * @param  string|null $value
+     * @return void
+     */
     public function setProperty($name, $value) {
         
         $this->properties[$name] = $value;
     }
     
+    /** @return string|null|void  nothing before a lookup */
     public function getCity() {
         
         if (array_key_exists('city', $this->properties)) {
@@ -103,18 +127,21 @@ class Geolocation {
         }
     }
     
+    /** @return string|null|void  nothing before a lookup */
     public function getState() {
         if (array_key_exists('state', $this->properties)) {
             return $this->properties['state'];
         }
     }
     
+    /** @return string|null|void  nothing before a lookup */
     public function getCountry() {
         if (array_key_exists('country', $this->properties)) {
             return $this->properties['country'];
         }
     }
     
+    /** @return string|null|void  nothing before a lookup */
     public function getCountryCode() {
         if (array_key_exists('country_code', $this->properties)) {
             return $this->properties['country_code'];

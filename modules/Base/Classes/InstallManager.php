@@ -33,6 +33,11 @@ namespace OWA\Module\Base\Classes;
 
 class InstallManager extends \OWA\Core\Base {
 
+    /**
+     * Create the schema, on a server OWA can run on.
+     *
+     * @return bool
+     */
     public function installSchema() {
 
         /*
@@ -55,6 +60,15 @@ class InstallManager extends \OWA\Core\Base {
 
     }
 
+    /**
+     * Create the first admin, unless there is one.
+     *
+     * @param  string $user_id
+     * @param  string $email_address
+     * @param  string $password
+     * @return string|false|void  the password; false without one; nothing when an
+     *                            admin, or a user with that user_id, exists
+     */
     public function createAdminUser($user_id, $email_address, $password = '') {
 
         //create user entity
@@ -122,6 +136,13 @@ class InstallManager extends \OWA\Core\Base {
      * A caller may still pin an identifier by passing $site_id -- the install
      * wizard does -- and in that case the pinned value is what gets looked up,
      * so pinning stays idempotent on its own terms.
+     *
+     * @param  string $domain
+     * @param  string $name         the domain when empty
+     * @param  string $description
+     * @param  string $site_family
+     * @param  string $site_id      minted when empty
+     * @return string|false the site_id; false when the site was not created
      */
     public function createDefaultSite($domain, $name = '', $description = '', $site_family = '', $site_id = '') {
 
@@ -186,7 +207,11 @@ class InstallManager extends \OWA\Core\Base {
         return $site->get('site_id');
     }
 
-    /** Whether the install has an admin user. */
+    /**
+     * Whether the install has an admin user.
+     *
+     * @return bool
+     */
     public function hasAdminUser() {
 
         $u = \OWA\Core\CoreAPI::entityFactory('base.user');
@@ -242,6 +267,7 @@ class InstallManager extends \OWA\Core\Base {
         }
     }
 
+    /** @return bool */
     public function checkDbConnection() {
 
         // Check DB connection status
@@ -254,6 +280,7 @@ class InstallManager extends \OWA\Core\Base {
         }
     }
     
+    /** @return bool */
     public function isInstallComplete() {
         
         // is config file present?

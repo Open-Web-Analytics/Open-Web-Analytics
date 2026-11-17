@@ -43,6 +43,7 @@ class Mailer {
      */
     const TIMEOUT = 10;
 
+    /** @var PHPMailer */
     public $mailer;
 
     /**
@@ -205,6 +206,11 @@ class Mailer {
         return false;
     }
 
+    /**
+     * sendMail(), by its older name.
+     *
+     * @return bool
+     */
     public function send() {
 
         return $this->sendMail();
@@ -213,6 +219,8 @@ class Mailer {
     /**
      * Add a recipient. An address PHPMailer refuses is logged and skipped.
      *
+     * @param  string $address
+     * @param  string $name
      * @return bool whether it was added
      */
     public function addAddress( $address, $name = '' ) {
@@ -236,31 +244,57 @@ class Mailer {
         return false;
     }
     
+    /**
+     * @param  string $address
+     * @param  string $name
+     * @return void
+     */
     public function setFrom( $address, $name ) {
         
         $this->mailer->setFrom( $address, $name );
     }
     
+    /**
+     * @param  string $html
+     * @return void
+     */
     public function setHtmlBody ( $html ) {
         
         $this->mailer->msgHTML( $html );
     }
     
+    /**
+     * @param  string $text
+     * @return void
+     */
     public function setAltBody ( $text ) {
         
         $this->mailer->AltBody =  $text;
     }
     
+    /**
+     * @param  string $subject
+     * @return void
+     */
     public function setSubject( $subject ) {
     
         $this->mailer->Subject = $subject;
     }
     
+    /**
+     * @param  string $address
+     * @param  string $name
+     * @return void
+     */
     public function addReplyTo( $address, $name ) {
     
         $this->mailer->addReplyTo( $address, $name );
     }
     
+    /**
+     * @param  string $attachment  a file's path
+     * @return void
+     */
     public function addAttachment( $attachment ) {
     
         $this->mailer->addAttachment( $attachment );
