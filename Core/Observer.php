@@ -19,8 +19,8 @@ namespace OWA\Core;
 //
 
 /**
- * Abstract observer class, wraps PEAR Log's observer to add event type.
- * 
+ * Base class for event handlers.
+ *
  * @author      Peter Adams <peter@openwebanalytics.com>
  * @copyright   Copyright &copy; 2006 Peter Adams <peter@openwebanalytics.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GPL v2.0
@@ -32,24 +32,12 @@ namespace OWA\Core;
 
 class Observer extends \OWA\Core\Base {
 
-    var $id;
-    
     /**
      * Event Message
      *
      * @var array
      */
     var $m;
-   
-    /**
-     * Creates a new basic Log_observer instance.
-     *
-     * @access public
-     */
-    function __construct() {
-        $this->id = md5(microtime());
-    }
-    
 }
 
 ?>
