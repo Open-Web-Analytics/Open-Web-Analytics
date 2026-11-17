@@ -35,6 +35,8 @@ namespace OWA\Core;
  * @method mixed      query( string $sql, array $params = array() )
  * @method array|null get_row( string $sql, array $params = array() )
  * @method array|null get_results( string $sql, array $params = array() )
+ * @method \Generator get_result_iterator( string $sql, array $params = array() )
+ * @method bool       tableExists( string $table_name )
  */
 class Db extends \OWA\Core\Base {
 

@@ -143,7 +143,7 @@ class View extends \OWA\Core\Base {
      * Assembles the view using passed model objects
      *
      * @param mixed $data
-     * @return unknown
+     * @return mixed
      */
     function assembleView($data) {
 
@@ -375,12 +375,6 @@ class View extends \OWA\Core\Base {
         $this->js = array_merge($this->js, $this->subview->js);
     }
 
-    /**
-     * Assembles the view using passed model objects
-     *
-     * @param mixed $data
-     * @return unknown
-     */
     /**
      * Hand the page the name its settings-nav link carries.
      *

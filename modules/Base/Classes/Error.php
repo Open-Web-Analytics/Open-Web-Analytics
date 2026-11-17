@@ -369,7 +369,6 @@ class Error {
      * @param string $errmsg
      * @param string $filename
      * @param string $linenum
-     * @param string $vars
      */
     function handlePhpError($errno, $errmsg, $filename = '', $linenum = '') {
 

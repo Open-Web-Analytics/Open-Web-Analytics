@@ -377,9 +377,9 @@ class EventDispatch {
      *
      * Filters event by handlers in order that they were registered
      *
-     * @param     $filter_name    string
-     * @param    $value    array
-     * @return $new_value    mixed
+     * @param string $filter_name
+     * @param mixed  $value
+     * @return mixed $new_value
      */
     function filter($filter_name, $value = '') {
 

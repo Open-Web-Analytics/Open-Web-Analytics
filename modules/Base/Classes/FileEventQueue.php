@@ -303,6 +303,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return $this->settle( $message );
     }
 
+    /** @return self|null */
     public function deadLetterQueue() {
 
         if ( $this->is_dead_letter ) {

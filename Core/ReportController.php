@@ -65,7 +65,6 @@ class ReportController extends \OWA\Core\AdminController {
      * Constructor
      *
      * @param array $params
-     * @return
      */
     function __construct($params) {
         $this->setControllerType('report');

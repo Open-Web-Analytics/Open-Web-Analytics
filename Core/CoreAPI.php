@@ -1357,7 +1357,7 @@ class CoreAPI {
      * Convienence method for generating entities
      *
      * @param mixed $entity_name
-     * @return unknown
+     * @return \OWA\Core\Entity
      */
     public static function entityFactory($entity_name) {
 

@@ -81,7 +81,7 @@ class TemplateEngine {
      * Set a template variable
      *
      * @param string $name
-     * @param unknown_value $value
+     * @param mixed $value
      * @access public
      */
     function set($name, $value) {

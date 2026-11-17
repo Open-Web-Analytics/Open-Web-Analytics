@@ -57,7 +57,7 @@ namespace OWA\Module\Base\Classes;
       * Adds a validation to be performed in next run
       * 
       * @param string    $name         the name to be given to the validation and its results
-      * @param unknown    $value        the data value that is to be validated
+      * @param mixed      $value        the data value that is to be validated
       * @param string     $validation the name of the validation to run
       * @param array     $conf         configuration array for the object being created
       */

@@ -107,7 +107,7 @@ class Maxmind extends \OWA\Core\Location {
     /**
      * Fetches the location from the Maxmind local db
      *
-     * @param string $ip
+     * @param array $location_map
      */
     function getLocation( $location_map ) {
 

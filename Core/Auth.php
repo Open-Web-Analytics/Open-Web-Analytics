@@ -495,7 +495,7 @@ class Auth extends \OWA\Core\Base {
      * Looks up user by temporary Passkey Column in db
      *
      * @param mixed $key
-     * @return unknown
+     * @return bool
      */
     function authenticateUserTempPasskey( $key ) {
 

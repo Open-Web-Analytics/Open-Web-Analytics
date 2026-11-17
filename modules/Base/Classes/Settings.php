@@ -196,25 +196,6 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * Settings a config-file constant actually supplied this boot.
-      *
-      * Recorded so load() can keep the database from overwriting them. An
-      * explicit define() in owa-config.php is a deliberate act by whoever runs
-      * the installation, and it used to lose: applyConfigConstants() runs before
-      * load(), and load() array_merges the database blob over the top, so a
-      * constant silently stopped having any effect the first time anyone saved
-      * the options form -- which writes EVERY field on the page, not only the
-      * one that was edited.
-      *
-      * Opt-in by construction, which is what makes it safe to change: an
-      * installation that defines no constants behaves exactly as before. Only a
-      * key someone deliberately declared changes hands, and it changes hands to
-      * what they declared.
-      *
-      * @var array<string, array<string, bool>>
-      */
-
-     /**
       * Set a value that came from a config-file constant, and remember that it
       * did. Same as set(), plus the ledger entry.
       */
@@ -595,7 +576,7 @@ namespace OWA\Module\Base\Classes;
       * Which store is read is decided by legacyBlobIsAuthoritative(), the same
       * way round as save() decides where to write.
       *
-      * @param string id  retained for callers; the install scope has one id
+      * @param int|string $id  retained for callers; the install scope has one id
       */
      function load($id = 1) {
 

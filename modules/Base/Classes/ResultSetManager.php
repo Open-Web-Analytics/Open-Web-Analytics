@@ -787,7 +787,7 @@ class ResultSetManager extends \OWA\Core\Base {
      * against the wrong Property's cube.
      *
      * @param  string $entity_name
-     * @return object
+     * @return \OWA\Core\Entity
      */
     protected function entityFor( $entity_name ) {
 
@@ -2291,7 +2291,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
     /**
      * Sets an individual label
      * return the key so that it can be nested
-     * @return $key string
+     * @return string $key
      */
     function addLabel($key, $label) {
 
@@ -2523,6 +2523,9 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         \OWA\Core\CoreAPI::debug($msg);
     }
     
+    /**
+     * @param \OWA\Core\Entity $bm the base entity
+     */
     function computeAggregates( $bm ) {
 
         /*
@@ -2999,7 +3002,7 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
    	/**
      * Generates a reporting result set using metrics and dimension
      *
-     * @return paginatedResultSet obj
+     * @return \OWA\Module\Base\Classes\PaginatedResultSet
      */
     function getResults() {
 

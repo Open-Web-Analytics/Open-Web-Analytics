@@ -151,7 +151,7 @@ class Metric extends \OWA\Core\Base {
     /**
      * Sets an individual label
      * return the key so that it can be nested
-     * @return $key string
+     * @return string $key
      */
     function addLabel($key, $label) {
         
@@ -169,9 +169,7 @@ class Metric extends \OWA\Core\Base {
     }
     
     /**
-     * Sets an individual label
-     * return the key so that it can be nested
-     * @return $key string
+     * Sets the label of the metric itself
      */
     function setLabel($label) {
         
