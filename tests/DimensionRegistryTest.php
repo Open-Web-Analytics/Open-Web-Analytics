@@ -174,7 +174,6 @@ final class DimensionRegistryTest extends TestCase
 
         $this->assertSame([], preg_grep('/^cd_/', array_keys($service->denormalizedDimensions)),
             'no custom dimension is in the modules\' registry');
-        $this->assertSame([], preg_grep('/^cd_/', array_keys($service->dimensions)));
     }
 
     // ---- the query engine -------------------------------------------------
@@ -188,7 +187,7 @@ final class DimensionRegistryTest extends TestCase
         $this->assertTrue($a->isDimension('cd_plan'));
         $this->assertFalse($a->isDimension('cd_seat'));
         $this->assertContains(['name' => 'cd_plan', 'label' => 'Plan'],
-            (array) ($a->getAllRelatedDimensions(CoreAPI::entityFactory('base.event'))['custom'] ?? []),
+            (array) ($a->relatedDimensions()['custom'] ?? []),
             'the grid offers it under custom');
 
         $bySite = new ResultSetManager;
@@ -202,7 +201,7 @@ final class DimensionRegistryTest extends TestCase
         $this->assertFalse($b->isDimension('cd_plan'));
 
         $custom = array_column(
-            (array) ($b->getAllRelatedDimensions(CoreAPI::entityFactory('base.event'))['custom'] ?? []), 'name');
+            (array) ($b->relatedDimensions()['custom'] ?? []), 'name');
 
         $this->assertContains('cd_seat', $custom);
         $this->assertNotContains('cd_plan', $custom, "the grid does not offer another Property's");
@@ -268,9 +267,6 @@ final class DimensionRegistryTest extends TestCase
         $this->assertNotContains('cd_seat', self::names($edit::dimensionChoices(self::A)));
         $this->assertNotContains('cd_plan', self::names($edit::dimensionChoices(self::B)));
         $this->assertNotContains('cd_plan', self::names($edit::dimensionChoices(null)));
-
-        $this->assertSame(['base.event'], $edit::dimensionEntities(self::A)['cd_plan'] ?? null);
-        $this->assertArrayNotHasKey('cd_plan', $edit::dimensionEntities(self::B));
     }
 
     public function testAReportIsValidatedAgainstThePropertysDimensions(): void

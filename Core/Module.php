@@ -89,6 +89,12 @@ abstract class Module {
      */
     const DEFAULT_NAV_ICON = 'fa fa-chart-bar';
 
+    /**
+     * The entity every metric is computed from and every dimension is a
+     * column of: the cube. A registration on any other is refused.
+     */
+    const FACT_ENTITY = 'base.event';
+
     var $admin_panels;
 
     /**
@@ -161,14 +167,7 @@ abstract class Module {
     var $event_processors = array();
 
     /**
-     * Dimensions
-     *
-     * @var array
-     */
-    var $dimensions = array();
-
-    /**
-     * Dimensions
+     * Dimensions, name => entity => registration
      *
      * @var array
      */
@@ -1256,9 +1255,7 @@ abstract class Module {
      *        'label'            => '',             // the label that will be displayed in result sets
      *        'description'    => '',             // the descript displayed in the GUI
      *        'group'            => 'unknown',    // the group that this metric will belong to in the UI
-     *        'entity'        => '',          // the entity to use when calculating this metric
-     *                                        // you must register the same metric for each entity that
-     *                                        // it can be calculated on.
+     *        'entity'        => '',          // Module::FACT_ENTITY; a metric on any other is refused
      *        'metric_type'    => '',          // 'count', 'distinct_count', 'sum', or 'calculated'
      *        'data_type'        => '',          // 'integrer', 'currency', 'average'
      *        'column'        => '',          // the column of the entity to use when calculating
@@ -1337,6 +1334,15 @@ abstract class Module {
 
         }
 
+        if ( $map['entity'] !== '' && $map['entity'] !== self::FACT_ENTITY ) {
+
+            \OWA\Core\CoreAPI::notice( sprintf(
+                'The metric "%s" is registered on %s and is ignored: metrics are computed from %s.',
+                $map['name'], $map['entity'], self::FACT_ENTITY ) );
+
+            return;
+        }
+
         $definition = array(
             'name'             => $map['name'],
             'class'         => 'base.configurableMetric',
@@ -1356,20 +1362,13 @@ abstract class Module {
      * registers a dimension for use by metrics in producing results sets.
      *
      * @param    $dim_name string
-     * @param    $entity_names    string||array the names of entity housing the dimension. uses module.name format
+     * @param    $entity_names    string||array Module::FACT_ENTITY; a registration on any other is refused
      * @param    $column    string the name of the column that represents the dimension
      * @param     $family    string the name of the group or family that this dimension belongs to. optional.
      * @param    $description    string    a short description of this metric, used in various interfaces.
      * @param    $label    string the lable of the dimension
-     * @param     $foreign_key_name the name of the foreign key column that should
-     *          be used to relate the metric entity to the dimension's entity.
-     *          If one is not specfied, metrics will use any valid foreign key column they can find.
-     *          Specifying this is important when the same column in a table is used by
-     *          two different dimensions but the meaning of the column differs based on the value of the foreign key.
-     *          a good example is the page_title column in the documents table. It is used by three dimensions:
-     *          pageTitle, entryPageTitle, and existPageTitle.
-     * @param    $denormalized    boolean    flag marks the dimension as being denormalized into a fact table
-     *          as opposed to being housed in a related table.
+     * @param     $foreign_key_name string recorded with the dimension; nothing reads it
+     * @param    $denormalized    boolean    must be true: a dimension is a column of the fact table
      */
     function registerDimension(
             $dim_name, $entity_names, $column, $label, $family,
@@ -1383,7 +1382,17 @@ abstract class Module {
 
         foreach ($entity_names as $entity) {
 
-            $dim = array_merge( $options, array(
+            if ( $entity !== self::FACT_ENTITY || ! $denormalized ) {
+
+                \OWA\Core\CoreAPI::notice( sprintf( $entity !== self::FACT_ENTITY
+                    ? 'The dimension "%1$s" is registered on %2$s and is ignored: dimensions are columns of %3$s.'
+                    : 'The dimension "%1$s" is not registered as denormalized and is ignored: dimensions are columns of %3$s.',
+                    $dim_name, $entity, self::FACT_ENTITY ) );
+
+                continue;
+            }
+
+            $this->denormalizedDimensions[$dim_name][$entity] = array_merge( $options, array(
                 'family'             => $family,
                 'name'                 => $dim_name,
                 'entity'             => $entity,
@@ -1394,29 +1403,6 @@ abstract class Module {
                 'data_type'         => $data_type,
                 'denormalized'         => $denormalized
             ) );
-
-            if ($denormalized) {
-                $this->denormalizedDimensions[$dim_name][$entity] = $dim;
-            } else {
-                /*
-                 * Keyed by entity, like the denormalized branch above.
-                 *
-                 * This loop runs once per entity the dimension was registered
-                 * against, and the old flat write ($this->dimensions[$dim_name])
-                 * overwrote itself on each turn -- so a name registered against
-                 * several entities kept only the last, and the rest were lost
-                 * before anything could read them. That is why a second schema
-                 * generation could not be registered under an existing name: it
-                 * would replace the first rather than sit beside it.
-                 *
-                 * Storing every entity does NOT change which one is resolved.
-                 * getDimension() still answers with the last registration when
-                 * asked without an entity, exactly as the flat array did. The
-                 * information is now retained so that a caller CAN ask by
-                 * entity; nothing yet changes what an unscoped caller gets.
-                 */
-                $this->dimensions[$dim_name][$entity] = $dim;
-            }
         }
     }
 
@@ -1493,13 +1479,7 @@ abstract class Module {
                 $d['family'],
                 isset( $d['description'] ) ? $d['description'] : '',
                 isset( $d['foreign_key_name'] ) ? $d['foreign_key_name'] : '',
-                /*
-                 * DENORMALISED unless the file says otherwise. A vocabulary
-                 * declared this way reads columns off one wide table -- that is
-                 * what makes it a table of names and columns rather than of
-                 * joins -- and a normalised dimension needs a foreign key to
-                 * name, which it would have to say.
-                 */
+                // A dimension declared false is refused by registerDimension().
                 isset( $d['denormalized'] ) ? (bool) $d['denormalized'] : true,
                 isset( $d['data_type'] ) ? $d['data_type'] : 'string',
                 $options );

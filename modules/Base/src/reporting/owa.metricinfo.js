@@ -31,7 +31,7 @@ export var HOVER_CLOSE = 200;
 
 /**
  * The description of a metric, from the metrics a result set relates
- * (ResultSetManager::getAllRelatedMetrics): '' when there is none.
+ * (ResultSetManager::relatedMetrics): '' when there is none.
  */
 export function metricDescription( rs, name ) {
 

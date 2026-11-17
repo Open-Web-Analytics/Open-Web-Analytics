@@ -119,8 +119,7 @@ class DimensionRegistry {
 
             // The cd_ prefix already rules a clash out; this keeps a module's
             // dimension from ever being replaced if that changes.
-            if ( isset( $service->dimensions[ $dimension['name'] ] )
-                 || isset( $service->denormalizedDimensions[ $dimension['name'] ] ) ) {
+            if ( isset( $service->denormalizedDimensions[ $dimension['name'] ] ) ) {
 
                 continue;
             }
@@ -140,11 +139,9 @@ class DimensionRegistry {
     /**
      * Every dimension, one entry per name.
      *
-     * Each registry is keyed name => entity => registration, and this flattens
-     * them by letting the last entity win, normalized first and then
-     * denormalized, because a name carried by both has always resolved to the
-     * denormalized definition. The custom dimensions come last; a name of
-     * theirs is never a module's (customOf()).
+     * The modules' registry is keyed name => entity => registration, and this
+     * flattens it by letting the last entity win. The custom dimensions come
+     * last; a name of theirs is never a module's (customOf()).
      *
      * Pass $entities to scope the answer: a dimension is offered only if it is
      * defined on one of them, and a name defined on none is absent.
@@ -164,7 +161,7 @@ class DimensionRegistry {
 
         $dims = array();
 
-        foreach ( array( $service->dimensions, $service->denormalizedDimensions, $custom ) as $registry ) {
+        foreach ( array( $service->denormalizedDimensions, $custom ) as $registry ) {
 
             foreach ( $registry as $name => $entity_dims ) {
 
@@ -190,8 +187,7 @@ class DimensionRegistry {
         $name    = (string) $name;
 
         return isset( $this->custom[ $name ] )
-            || isset( $service->denormalizedDimensions[ $name ] )
-            || isset( $service->dimensions[ $name ] );
+            || isset( $service->denormalizedDimensions[ $name ] );
     }
 
     /**
@@ -213,19 +209,6 @@ class DimensionRegistry {
         $custom = $this->custom[ (string) $name ] ?? null;
 
         return $custom && $custom['entity'] === $entity ? $custom : null;
-    }
-
-    /**
-     * A v1 normalized dimension (Service::getDimension()). A custom dimension is
-     * never one.
-     *
-     * @param  string      $name
-     * @param  string|null $entity
-     * @return array|null
-     */
-    public function normalized( $name, $entity = null ) {
-
-        return \OWA\Core\CoreAPI::serviceSingleton()->getDimension( $name, $entity );
     }
 
     /**

@@ -174,11 +174,10 @@ final class VocabularyConfigTest extends TestCase
     }
 
     /**
-     * Denormalised is the default, because a vocabulary declared this way reads
-     * columns off one wide table. A normalised dimension needs a foreign key to
-     * name, so it has to say so.
+     * Denormalised is the default. A dimension is a column of the cube, so one
+     * declared otherwise is refused rather than registered.
      */
-    public function testDimensionsAreDenormalisedUnlessTheFileSaysOtherwise(): void
+    public function testDimensionsAreDenormalisedAndANormalisedOneIsRefused(): void
     {
         $module = $this->module();
 
@@ -193,7 +192,41 @@ final class VocabularyConfigTest extends TestCase
         $this->assertArrayHasKey('base.event', $module->denormalizedDimensions['zzDefault'],
             'a row saying nothing must land denormalised');
 
-        $this->assertArrayHasKey('base.event', $module->dimensions['zzExplicit'],
-            'and one saying otherwise must land normalised');
+        $this->assertArrayNotHasKey('zzExplicit', $module->denormalizedDimensions,
+            'a dimension that is not a column of the cube is refused');
+    }
+
+    /** A vocabulary on any entity but the cube is refused, metrics and dimensions alike. */
+    public function testAVocabularyOnAnotherEntityIsRefused(): void
+    {
+        $module = $this->module();
+
+        $this->write('dimensions', "array( 'entity' => 'base.session', 'dimensions' => array(
+            'zzElsewhere' => array( 'column' => 'c', 'label' => 'D', 'family' => 'f' ) ) )");
+        $this->write('metrics', "array( 'entity' => 'base.session', 'metrics' => array(
+            'zzElsewhereCount' => array( 'label' => 'M', 'metric_type' => 'count',
+                                         'data_type' => 'integer', 'column' => 'id' ) ) )");
+
+        (new ReflectionMethod(\OWA\Core\Module::class, 'registerDimensionsFromConfig'))->invoke($module);
+        (new ReflectionMethod(\OWA\Core\Module::class, 'registerMetricsFromConfig'))->invoke($module);
+
+        $this->assertArrayNotHasKey('zzElsewhere', $module->denormalizedDimensions);
+        $this->assertArrayNotHasKey('zzElsewhereCount', $module->metrics ?? []);
+    }
+
+    /** A module registering its own metric on the cube, or a calculated one naming no entity, gets it. */
+    public function testAMetricOnTheCubeIsRegistered(): void
+    {
+        $module = $this->module();
+
+        $module->registerMetricDefinition(array(
+            'name' => 'zzCubeCount', 'label' => 'C', 'entity' => 'base.event',
+            'metric_type' => 'count', 'data_type' => 'integer', 'column' => 'id' ));
+        $module->registerMetricDefinition(array(
+            'name' => 'zzCubeRatio', 'label' => 'R', 'metric_type' => 'calculated',
+            'data_type' => 'decimal', 'numerator' => 'zzCubeCount', 'denominator' => 'sessions' ));
+
+        $this->assertSame('base.event', $module->metrics['zzCubeCount'][0]['params']['entity'] ?? null);
+        $this->assertArrayHasKey('zzCubeRatio', $module->metrics ?? []);
     }
 }

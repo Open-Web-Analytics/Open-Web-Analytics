@@ -251,192 +251,16 @@ final class CustomReportsTest extends TestCase
     // What can be asked for TOGETHER
     // ------------------------------------------------------------------
 
-    /**
-     * A query is answered from ONE fact table.
-     *
-     * Every metric is computed from one or more of them, every dimension is
-     * related to some of them, and a constraint contributes its dimension to
-     * the same reduction. So a combination is only askable if one table serves
-     * all of it -- clicks live in owa_click and visits in owa_session, and no
-     * table has both.
-     *
-     * This was SILENT. The engine detected it ('illegal metric combination')
-     * and reported it through addError(), which is where routine misses go and
-     * which reports swallow -- so an impossible set came back as an empty or
-     * nonsensical report with nothing said. It is a request error now: refused,
-     * and named.
-     */
-    public function testMetricsFromDifferentFactTablesAreRefused(): void
+    /** Every metric is computed from the cube, so any set of them is askable. */
+    public function testAnySetOfMetricsIsAccepted(): void
     {
-        /*
-         * `visits,uniqueVisitors,domClicks` USED TO BE the example here, and it
-         * is not impossible any more: the reporting cube carries all three, so
-         * one table serves the set. That is the gain PLAN 2.13 predicted --
-         * "every overlapping pair nobody hand-wrote a bridge for" -- and it is
-         * asserted below rather than left as a silently weakened test.
-         *
-         * The guard still has work to do, so it is exercised with a set that
-         * genuinely has no common table.
-         */
-        /*
-         * THE SECOND TABLE IS BUILT, not borrowed.
-         *
-         * `sessions,feedRequests` was the example, and feedRequests is gone
-         * with the v1 vocabulary -- so the check now fails with "not a known
-         * metric", a different refusal that would let this test pass while the
-         * guard it names did nothing. Every metric v2 declares lives on the
-         * cube, so there is no longer a pair in the shipped vocabulary that
-         * shares no table.
-         *
-         * The guard still has work to do -- summary tables are coming, and
-         * ResultSetManager picks a table per summary level for exactly that
-         * reason -- so the condition is created rather than looked for.
-         */
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $restore = $service->metrics;
+        foreach (array('sessions,totalUsers,goalEvents', 'sessions,totalUsers,pageViews') as $metrics) {
 
-        $service->metrics['probeOnAnotherTable'] = array( array(
-            'name'   => 'probeOnAnotherTable',
-            'class'  => 'base.configurableMetric',
-            'params' => array(
-                'name'        => 'probeOnAnotherTable',
-                'label'       => 'Probe',
-                'description' => '',
-                'group'       => 'Test',
-                'entity'      => 'base.event_raw',
-                'metric_type' => 'count',
-                'data_type'   => 'integer',
-                'column'      => 'id',
-            ),
-            'label'       => 'Probe',
-            'description' => '',
-            'group'       => 'Test',
-        ) );
-
-        try {
             $definition = $this->definition();
-            $definition['widgets'][1]['query']['metrics'] = 'sessions,probeOnAnotherTable';
+            $definition['widgets'][1]['query']['metrics'] = $metrics;
 
-            $error = CustomReports::validate($definition);
-
-            $this->assertNotSame('', $error,
-                'a cube metric and one on another table share no table');
-
-            // BOTH SIDES named: which field broke it, and what it clashed with.
-            // Listing everything asked for tells an author nothing to act on.
-            $this->assertStringContainsString('probeOnAnotherTable', $error);
-            $this->assertStringContainsString('sessions', $error);
-        } finally {
-            // The registry is a singleton; a probe left in it leaks into every
-            // later test in the run.
-            $service->metrics = $restore;
+            $this->assertSame('', CustomReports::validate($definition), $metrics);
         }
-    }
-
-    /**
-     * And the combination the cube GAINED, recorded so the widening is
-     * deliberate rather than a guard quietly going slack.
-     */
-    public function testACombinationV1CouldNotServeIsNowAnswerable(): void
-    {
-        $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,goalEvents';
-
-        $this->assertSame('', CustomReports::validate($definition),
-            'the cube carries sessions, visitors and clicks, so one table serves all three');
-
-        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-
-        $this->assertSame(array('base.event'),
-            $rsm->compatibleEntities(array('sessions', 'totalUsers', 'goalEvents'), array()),
-            'and it is the cube that serves it');
-    }
-
-    /** ...and a combination that IS askable is left alone. */
-    public function testMetricsSharingAFactTableAreAccepted(): void
-    {
-        $definition = $this->definition();
-        $definition['widgets'][1]['query']['metrics'] = 'sessions,totalUsers,pageViews';
-
-        $this->assertSame('', CustomReports::validate($definition));
-    }
-
-    /**
-     * A dimension can be as impossible as a metric, for the same reason: the
-     * base entity has to be related to it too.
-     */
-    public function testTheCheckReachesDimensionsAndConstraints(): void
-    {
-        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-
-        /*
-         * ONE TABLE ANSWERS NOW, and the reduction still runs.
-         *
-         * base.request used to qualify alongside the cube -- v1 registered
-         * sessions and pagePath against it. With one vocabulary the set has one
-         * member, so what is asserted is that the reduction REACHES the
-         * dimension and does not empty on a legitimate pairing.
-         */
-        $entities = $rsm->compatibleEntities(array('sessions'), array('pagePath'));
-
-        $this->assertSame(array('base.event'), $entities);
-
-        // ...and a dimension no fact table carries leaves nothing.
-        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-
-        $this->assertSame(array(),
-            $rsm->compatibleEntities(array('sessions'), array('notARealDimension')));
-    }
-
-    /** The offender is the field that emptied the set, not the whole list. */
-    public function testTheClashNamesTheFieldThatCausedIt(): void
-    {
-        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-
-        /*
-         * THE CLASH IS BUILT. Every metric v2 declares lives on the cube, so
-         * the shipped vocabulary no longer contains a pair that clashes --
-         * looking for one would make this pass on an empty search rather than
-         * on the reporting it names.
-         */
-        $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $restore = $service->metrics;
-
-        $service->metrics['probeOnAnotherTable'] = array( array(
-            'name'   => 'probeOnAnotherTable',
-            'class'  => 'base.configurableMetric',
-            'params' => array(
-                'name'        => 'probeOnAnotherTable',
-                'label'       => 'Probe',
-                'description' => '',
-                'group'       => 'Test',
-                'entity'      => 'base.event_raw',
-                'metric_type' => 'count',
-                'data_type'   => 'integer',
-                'column'      => 'id',
-            ),
-            'label' => 'Probe', 'description' => '', 'group' => 'Test',
-        ) );
-
-        try {
-            $clash = $rsm->firstIncompatible(
-                array('sessions', 'totalUsers', 'probeOnAnotherTable'));
-
-            $this->assertNotNull($clash);
-            $this->assertSame('probeOnAnotherTable', $clash['name'],
-                'the LAST one added is what broke it');
-            $this->assertSame('metric', $clash['kind']);
-            $this->assertContains('sessions', $clash['with']);
-        } finally {
-            $service->metrics = $restore;
-        }
-    }
-
-    public function testACompatibleSetHasNoClash(): void
-    {
-        $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
-
-        $this->assertNull($rsm->firstIncompatible(array('sessions', 'totalUsers')));
     }
 
     // ------------------------------------------------------------------
@@ -1462,34 +1286,6 @@ final class CustomReportsTest extends TestCase
         $this->assertSame( array(), $missing,
             'the builder controller sets these and the view does not forward them, so the '
           . 'template reads false for each: ' . implode( ', ', $missing ) );
-    }
-
-    /**
-     * The builder is handed the same answer the engine would give.
-     *
-     * It narrows its pickers with these maps, so if they disagreed with
-     * ResultSetManager the builder would offer combinations the save then
-     * refuses -- which is the failure this whole check exists to remove.
-     */
-    public function testTheBuilderIsGivenTheCompatibilityMaps(): void
-    {
-        $metrics = \OWA\Module\Base\Controller\CustomReportEdit::metricEntities();
-
-        $this->assertNotEmpty($metrics);
-        // Every metric resolves against the cube, so the map is uniform now.
-        // What matters is that the builder is GIVEN one -- a builder working
-        // from a different map than the save check would offer combinations
-        // the save then refuses.
-        $this->assertSame(array('base.event'), $metrics['sessions']);
-        $this->assertSame(array('base.event'), $metrics['pageViews']);
-
-        $dimensions = \OWA\Module\Base\Controller\CustomReportEdit::dimensionEntities(null);
-
-        $this->assertNotEmpty($dimensions);
-        // One vocabulary, so every dimension maps to the cube. The point of
-        // the assertion is that the builder HAS the map, not that the map is
-        // plural -- it goes plural again when summaries land.
-        $this->assertSame(array('base.event'), $dimensions['pagePath']);
     }
 
     public function testAtMostTenWidgets(): void

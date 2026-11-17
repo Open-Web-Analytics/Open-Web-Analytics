@@ -62,13 +62,7 @@ final class NewVsReturningTest extends TestCase
     {
         $service = \OWA\Core\CoreAPI::serviceSingleton();
 
-        // BOTH registries. registerDimension() files a denormalized dimension
-        // in a different array from a normalized one, so checking only the one
-        // a name used to be in is how a surviving registration hides.
         foreach (['isNewVisitor', 'isRepeatVisitor'] as $name) {
-
-            $this->assertArrayNotHasKey($name, $service->dimensions,
-                $name . ' is still registered as a normalized dimension');
 
             $this->assertArrayNotHasKey($name, $service->denormalizedDimensions,
                 $name . ' is replaced by newVsReturning. Keeping it registered keeps the '
@@ -140,7 +134,6 @@ final class NewVsReturningTest extends TestCase
 
         foreach (['exitPagePath', 'exitPageLocation', 'exitPageTitle', 'exitPageUrl'] as $name) {
 
-            $this->assertArrayNotHasKey($name, $service->dimensions, $name . ' is back');
             $this->assertArrayNotHasKey($name, $service->denormalizedDimensions, $name . ' is back');
         }
 

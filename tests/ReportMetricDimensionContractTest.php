@@ -49,13 +49,7 @@ final class ReportMetricDimensionContractTest extends TestCase
 
         self::$metrics = array_keys($svc->metrics);
 
-        // Denormalized dimensions live in a separate registry keyed by name then
-        // entity -- getDimension() alone does not see them, which is why
-        // productName looks unregistered if you only check the flat map.
-        self::$dimensions = array_values(array_unique(array_merge(
-            array_keys($svc->dimensions),
-            array_keys($svc->denormalizedDimensions)
-        )));
+        self::$dimensions = array_keys($svc->denormalizedDimensions);
     }
 
     /**
