@@ -77,7 +77,7 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
 
             $code = \OWA\Core\Controller\Cli::EXIT_USAGE;
 
-        } elseif ( $view === 'base.error' || $view === 'base.genericCli' || ! $this->get( 'site' ) ) {
+        } elseif ( $view === 'base.error' || $view === 'base.genericCli' || empty( $this->data['site'] ) ) {
 
             $code = \OWA\Core\Controller\Cli::EXIT_FAILED;
         }
