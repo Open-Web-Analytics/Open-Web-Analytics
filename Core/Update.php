@@ -120,7 +120,8 @@ class Update extends \OWA\Core\Base {
             return false;
         }
 
-        $current_version = \OWA\Core\CoreAPI::getSetting( $this->module_name, 'schema_version' );
+        // From $this->c, the settings object the new version is persisted to.
+        $current_version = $this->c->get( $this->module_name, 'schema_version' );
 
         /*
          * Only the next update applies: the one numbered one above the schema.
@@ -209,7 +210,7 @@ class Update extends \OWA\Core\Base {
 
     function rollback() {
 
-        $current_version = \OWA\Core\CoreAPI::getSetting( $this->module_name, 'schema_version' );
+        $current_version = $this->c->get( $this->module_name, 'schema_version' );
 
         // check to see that you are rolling back either an update that was successfully applied or one that might have failed.
         // we dont want people applying rollbacks out of sequence.
