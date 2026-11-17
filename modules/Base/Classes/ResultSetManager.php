@@ -698,9 +698,19 @@ class ResultSetManager extends \OWA\Core\Base {
     }
 
     /**
-     * @return mixed|void $params['siteId'], which nothing in this class sets
+     * The Profile this query is narrowed to: the siteId constraint, which
+     * setSiteId() sets, else $params['siteId'].
+     *
+     * @return mixed|void nothing when neither is set
      */
     public function getSiteId() {
+
+        $constraint = $this->getConstraint( 'siteId' );
+
+        if ( is_array( $constraint ) && isset( $constraint['value'] ) ) {
+
+            return $constraint['value'];
+        }
 
         if ( isset( $this->params['siteId'] ) ) {
 
@@ -860,11 +870,6 @@ class ResultSetManager extends \OWA\Core\Base {
     /**
      * The Property this query is of: the one set, or else the siteId's.
      *
-     * The siteId is read from the CONSTRAINT rather than from getSiteId():
-     * setSiteId() writes a constraint and a query param, and getSiteId() reads
-     * $params['siteId'], which a caller that only set the constraint never
-     * populates.
-     *
      * @return string the Property id, or ''
      */
     protected function propertyIdForRequest() {
@@ -878,18 +883,13 @@ class ResultSetManager extends \OWA\Core\Base {
     }
 
     /**
-     * The Profile this query is narrowed to, if any, read from the constraint
-     * for the reason propertyIdForRequest() gives.
+     * The Profile this query is narrowed to, if any (getSiteId()).
      *
      * @return string
      */
     protected function siteIdForRequest() {
 
-        $constraint = $this->getConstraint( 'siteId' );
-
-        return is_array( $constraint )
-            ? (string) ( $constraint['value'] ?? '' )
-            : (string) $this->getSiteId();
+        return (string) $this->getSiteId();
     }
 
     /**
