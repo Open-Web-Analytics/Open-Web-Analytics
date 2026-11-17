@@ -203,6 +203,7 @@ class TrackerIngest {
      * Whether an envelope fits the queue: a queue may declare the largest
      * message it takes (maxMessageBytes()), and one over it is refused there.
      *
+     * @param  array<string, mixed> $envelope
      * @return bool
      */
     public static function fits( \OWA\Core\IntakeQueue $queue, array $envelope ) {
@@ -235,7 +236,8 @@ class TrackerIngest {
      * The guid and the event's time travel in its properties, as they always
      * have.
      *
-     * @return array
+     * @param  Event $event
+     * @return array{v: int, type: string, properties: array<string, mixed>, queued_at: int}
      */
     public static function envelope( $event ) {
 
@@ -251,6 +253,7 @@ class TrackerIngest {
      * An envelope as a tracking event, ready for ingest; null when it is not
      * one this version reads.
      *
+     * @param  array<string, mixed> $envelope as decoded from the queue
      * @return Event|null
      */
     public static function event( array $envelope ) {
@@ -294,7 +297,7 @@ class TrackerIngest {
      * A beacon whose ingest failed in the request: queue it, to retry a minute later.
      *
      * @param  Event $event
-     * @param  array $envelope  the beacon as it arrived, before processing rewrote it
+     * @param  array<string, mixed> $envelope  the beacon as it arrived, before processing rewrote it
      * @return bool
      */
     public static function retryLater( $event, array $envelope ) {
@@ -312,7 +315,7 @@ class TrackerIngest {
      * An envelope over the intake's message size limit is refused and
      * logged, not kept: the fallback could never forward it.
      *
-     * @param  array  $envelope
+     * @param  array<string, mixed> $envelope
      * @param  int    $delay
      * @param  string $what  for the log
      * @return bool
@@ -368,6 +371,7 @@ class TrackerIngest {
     /**
      * Ingest one event the way log.php's direct mode does.
      *
+     * @param  Event $event
      * @return bool whether it was ingested: false when a handler failed or it threw
      */
     public static function ingest( $event ) {
@@ -472,7 +476,7 @@ class TrackerIngest {
      * (dead-letter/ in async_log_dir).
      *
      * @param  int $deadline unix time
-     * @return array counts: forwarded, waiting (still in the fallback), dead
+     * @return array{forwarded: int, waiting: int, dead: int} counts; waiting is still in the fallback
      */
     public static function forwardFallback( $deadline ) {
 
@@ -537,7 +541,7 @@ class TrackerIngest {
      * Receive and ingest until the intake is empty or the deadline passes.
      *
      * @param  int $deadline unix time
-     * @return array counts: ingested, released, dead
+     * @return array{ingested: int, released: int, dead: int} counts
      */
     public static function drain( $deadline ) {
 
@@ -612,7 +616,7 @@ class TrackerIngest {
      *
      * @param  bool $once_only
      * @param  int  $deadline  unix time
-     * @return array counts: replayed, kept (replayed before), unreadable, expired
+     * @return array{replayed: int, kept: int, unreadable: int, expired: int} counts; kept were replayed before
      */
     public static function replay( $once_only, $deadline ) {
 

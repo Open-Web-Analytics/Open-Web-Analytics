@@ -135,7 +135,7 @@ class V2Event {
      * a distinct page, drop it and the campaign evidence is gone from raw.
      *
      * @param string $url
-     * @return array host, path, query -- each null when the URL has none
+     * @return array{host: string|null, path: string|null, query: string|null} each null when the URL has none
      */
     public static function parseUrl( $url ) {
 
@@ -208,7 +208,7 @@ class V2Event {
      * Default.aspx answers for default.aspx too.
      *
      * @param string|null  $path
-     * @param array|string $index_pages  directory index file names (indexPageNames());
+     * @param array<mixed>|string $index_pages  directory index file names (indexPageNames());
      *                                   none folds only the trailing slash
      * @return string|null
      */
@@ -241,7 +241,7 @@ class V2Event {
      * /store/my. The name is compared without case.
      *
      * @param  string       $path
-     * @param  array|string $index_pages  as canonicalPath() takes them
+     * @param  array<mixed>|string $index_pages  as canonicalPath() takes them
      * @return string
      */
     public static function dropIndexPage( $path, $index_pages ) {
@@ -272,8 +272,8 @@ class V2Event {
      * file is likeliest to write it. Blanks are dropped, so an empty list or ''
      * names nothing.
      *
-     * @param  array|string|null $value
-     * @return array
+     * @param  array<mixed>|string|null $value
+     * @return list<string>
      */
     public static function indexPageNames( $value ) {
 

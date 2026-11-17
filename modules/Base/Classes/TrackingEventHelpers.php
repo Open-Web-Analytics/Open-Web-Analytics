@@ -2,6 +2,10 @@
 namespace OWA\Module\Base\Classes;
 
 
+/**
+ * @phpstan-type Definition array<string, mixed>
+ * @phpstan-type EventAttributes array<mixed>
+ */
 class TrackingEventHelpers {
 
     /**
@@ -46,6 +50,9 @@ class TrackingEventHelpers {
     // 0. filter/set derived event properties
     // 0. handler specific logic
 
+    /**
+     * @return TrackingEventHelpers
+     */
     public static function getInstance() {
 
         static $o;
@@ -79,30 +86,10 @@ class TrackingEventHelpers {
      */
     private $registeredCallbacks = array();
 
-    /**
-     * The properties a tracking request is allowed to set.
-     *
-     * A request reaches log.php carrying arbitrary owa_* parameters, so what a
-     * request may set has to be decided here, deliberately, rather than by
-     * whether a parameter's name happens to match a column.
-     *
-     * Membership is DECLARED, not inferred from which map a property lives in.
-     * `regular` is client-set by definition, but the classification is not a
-     * clean proxy in both directions: LocationHandlers deliberately accepts a
-     * client-supplied country and city and skips the IP lookup when it sees
-     * them, and those are registered as derived. So a derived property opts in
-     * with 'client_settable' => true rather than the endpoint guessing.
-     *
-     * Anything a module has not registered at all is still accepted -- it is
-     * sanitised in ProcessEvent and carried as a custom property, which is how
-     * custom variables and event parameters work.
-     *
-     * @return array property name => true
-     */
-    /** @var array|null the parsed config, read once per process */
+    /** @var array<string, Definition>|null the parsed config, read once per process */
     private static $property_config;
 
-    /** @var array property name => its `description`, kept aside from the definitions */
+    /** @var array<string, string> property name => its `description`, kept aside from the definitions */
     private static $property_descriptions = array();
 
     /** @var string[] the properties declared `internal`, which the wiki leaves out */
@@ -112,17 +99,19 @@ class TrackingEventHelpers {
      * Views of the registry, built once per process: it is read from a file
      * and never changes at runtime. Rebuilt per call, the v1 migration spent
      * 2.8 ms per event here, most of its time.
+     *
+     * @var array<string, mixed>
      */
     private static $memo = array();
 
     /**
      * The derived first-class event names, built once per process.
      *
-     * @var array|null
+     * @var list<string>|null
      */
     private static $event_names = null;
 
-    /** config/tracking_events.php, memoised by eventConfig(). */
+    /** @var array<string, EventAttributes>|null config/tracking_events.php, memoised by eventConfig(). */
     private static $event_config = null;
 
     /**
@@ -180,7 +169,7 @@ class TrackingEventHelpers {
      * because two of them disagreed.
      *
      * @param  string $set_by  one of SET_BY
-     * @return array  name => definition
+     * @return array<string, Definition>  name => definition
      */
     private static function propertyConfig( $set_by ) {
 
@@ -239,7 +228,11 @@ class TrackingEventHelpers {
         return self::$memo['set_by'][ $set_by ] = $out;
     }
 
-    /** Every declaration, whatever sets it. */
+    /**
+     * Every declaration, whatever sets it.
+     *
+     * @return array<string, Definition>
+     */
     public static function allProperties() {
 
         if ( isset( self::$memo['all'] ) ) {
@@ -360,7 +353,7 @@ class TrackingEventHelpers {
      * written by hand beside all three.
      *
      * @param  string $event_name
-     * @return array  property name => params key
+     * @return array<string, string>  property name => params key
      */
     public static function paramsForEvent( $event_name ) {
 
@@ -617,7 +610,12 @@ class TrackingEventHelpers {
         return $out;
     }
 
-    /** Is this event name materialized at ingest rather than sent? */
+    /**
+     * Is this event name materialized at ingest rather than sent?
+     *
+     * @param  string $event_name
+     * @return bool
+     */
     public static function isMaterialized( $event_name ) {
 
         return in_array( (string) $event_name, self::materializedEventNames(), true );
@@ -626,7 +624,7 @@ class TrackingEventHelpers {
     /**
      * config/tracking_events.php, read once: event name => attributes.
      *
-     * @return array
+     * @return array<string, EventAttributes>
      */
     private static function eventConfig() {
 
@@ -787,7 +785,7 @@ class TrackingEventHelpers {
      * callback these definitions name is a method of this class -- the
      * declaration and the behaviour were about 440 lines apart in two files.
      *
-     * @return array
+     * @return array<string, Definition>
      */
     public static function requestProperties() {
 
@@ -807,7 +805,7 @@ class TrackingEventHelpers {
      * callback these definitions name is a method of this class -- the
      * declaration and the behaviour were about 440 lines apart in two files.
      *
-     * @return array
+     * @return array<string, Definition>
      */
     public static function clientProperties() {
 
@@ -827,7 +825,7 @@ class TrackingEventHelpers {
      * callback these definitions name is a method of this class -- the
      * declaration and the behaviour were about 440 lines apart in two files.
      *
-     * @return array
+     * @return array<string, Definition>
      */
     public static function serverProperties() {
 
@@ -835,6 +833,26 @@ class TrackingEventHelpers {
 
     }
 
+    /**
+     * The properties a tracking request is allowed to set.
+     *
+     * A request reaches log.php carrying arbitrary owa_* parameters, so what a
+     * request may set has to be decided here, deliberately, rather than by
+     * whether a parameter's name happens to match a column.
+     *
+     * Membership is DECLARED, not inferred from which map a property lives in.
+     * `regular` is client-set by definition, but the classification is not a
+     * clean proxy in both directions: LocationHandlers deliberately accepts a
+     * client-supplied country and city and skips the IP lookup when it sees
+     * them, and those are registered as derived. So a derived property opts in
+     * with 'client_settable' => true rather than the endpoint guessing.
+     *
+     * Anything a module has not registered at all is still accepted -- it is
+     * sanitised in ProcessEvent and carried as a custom property, which is how
+     * custom variables and event parameters work.
+     *
+     * @return array<mixed> property name => its definition
+     */
     public static function clientSettableProperties() {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
@@ -856,12 +874,6 @@ class TrackingEventHelpers {
     }
 
     /**
-     * Drop parameters naming a property the server computes for itself.
-     *
-     * Unregistered names pass through: this refuses to let a request OVERWRITE
-     * a derivation, it does not restrict what a site may send.
-     */
-    /**
      * Properties only the server may set: derived and environmental, less
      * anything that declared itself client-settable.
      *
@@ -869,7 +881,7 @@ class TrackingEventHelpers {
      * ProcessEvent may re-apply over a derivation. Two definitions would drift,
      * and the symptom of drift is a value silently landing in the wrong column.
      *
-     * @return array property name => definition
+     * @return array<mixed> property name => definition
      */
     public static function serverOwnedProperties() {
 
@@ -914,8 +926,8 @@ class TrackingEventHelpers {
      * denylist was protecting -- they simply have to say which bag they are
      * in, which the tracker already does.
      *
-     * @param  array $params
-     * @return array  the admitted subset
+     * @param  array<mixed> $params
+     * @return array<string, mixed>  the admitted subset
      */
     public static function admitRequestParams( array $params ) {
 
@@ -986,8 +998,8 @@ class TrackingEventHelpers {
      * their ARRIVED names. log.php takes them before the second decode and adds
      * them after admission, so a beacon cannot name them.
      *
-     * @param  array $params  the request's params, decoded once by PHP
-     * @return array
+     * @param  array<mixed> $params  the request's params, decoded once by PHP
+     * @return array<string, string>
      */
     public static function arrivedUrls( array $params ) {
 
@@ -1050,17 +1062,37 @@ class TrackingEventHelpers {
         return $cut ? $url : null;
     }
 
-    /** arrivedPageLocation() and arrivedReferer(): the copy log.php set, kept as it is. */
+    /**
+     * arrivedPageLocation() and arrivedReferer(): the copy log.php set, kept as it is.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
+     */
     public static function arrivedPageLocation( $value, $event ) {
 
         return is_string( $value ) && $value !== '' ? $value : null;
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
+     */
     public static function arrivedReferer( $value, $event ) {
 
         return is_string( $value ) && $value !== '' ? $value : null;
     }
 
+    /**
+     * Drop parameters naming a property the server computes for itself.
+     *
+     * Unregistered names pass through: this refuses to let a request OVERWRITE
+     * a derivation, it does not restrict what a site may send.
+     *
+     * @param  array<mixed> $params
+     * @return array<mixed> the params the server does not own
+     */
     public static function rejectServerOwnedParams( array $params ) {
 
         $serverOwned = self::serverOwnedProperties();
@@ -1076,6 +1108,11 @@ class TrackingEventHelpers {
         return array_diff_key( $params, $serverOwned );
     }
 
+    /**
+     * @param  array<mixed> $items    property name => definition
+     * @param  int          $priority
+     * @return void
+     */
     public function registerCallbacks( $items, $priority = 0 ) {
 
         foreach ($items as $name => $item ) {
@@ -1105,6 +1142,11 @@ class TrackingEventHelpers {
         }
     }
 
+    /**
+     * @param  Event        $event
+     * @param  array<mixed> $properties property name => definition
+     * @return void
+     */
     public function setTrackerProperties( $event, $properties ) {
 
         /*
@@ -1241,6 +1283,11 @@ class TrackingEventHelpers {
         }
     }
 
+    /**
+     * @param  mixed  $var
+     * @param  string $type a data_type: integer, string, url, json, boolean
+     * @return mixed
+     */
     public static function setDataType( $var, $type = 'string' ) {
 
         switch( $type ) {
@@ -1310,6 +1357,10 @@ class TrackingEventHelpers {
     }
 
 
+    /**
+     * @param  Event $event
+     * @return void
+     */
     public function translateCustomVariables( $event ) {
 
         $maxCustomVars = \OWA\Core\CoreAPI::getSetting( 'base', 'maxCustomVars' );
@@ -1331,6 +1382,10 @@ class TrackingEventHelpers {
         }
     }
 
+    /**
+     * @param  mixed $ua the value already on the event
+     * @return mixed
+     */
     public static function userAgentDefault( $ua = '') {
 		
 		if (! $ua ) {
@@ -1352,46 +1407,82 @@ class TrackingEventHelpers {
      * which the tracker sends (p_r) and which is the page's own referrer.
      */
 
+    /**
+     * @param  mixed $value
+     * @return mixed the value already on the event, else the header
+     */
     public static function requestSecFetchMode( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_FETCH_MODE' );
     }
 
+    /**
+     * @param  mixed $value
+     * @return mixed the value already on the event, else the header
+     */
     public static function requestSecFetchSite( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_FETCH_SITE' );
     }
 
+    /**
+     * @param  mixed $value
+     * @return mixed the value already on the event, else the header
+     */
     public static function requestSecFetchDest( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_FETCH_DEST' );
     }
 
+    /**
+     * @param  mixed $value
+     * @return mixed the value already on the event, else the header
+     */
     public static function requestSecChUa( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_CH_UA' );
     }
 
+    /**
+     * @param  mixed $value
+     * @return mixed the value already on the event, else the header
+     */
     public static function requestSecChUaPlatform( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_CH_UA_PLATFORM' );
     }
 
+    /**
+     * @param  mixed $value
+     * @return mixed the value already on the event, else the header
+     */
     public static function requestSecChUaMobile( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_SEC_CH_UA_MOBILE' );
     }
 
+    /**
+     * @param  mixed $value
+     * @return mixed the value already on the event, else the header
+     */
     public static function requestAcceptEncoding( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_ACCEPT_ENCODING' );
     }
 
+    /**
+     * @param  mixed $value
+     * @return mixed the value already on the event, else the header
+     */
     public static function requestAcceptLanguage( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_ACCEPT_LANGUAGE' );
     }
 
+    /**
+     * @param  mixed $value
+     * @return mixed the value already on the event, else the header
+     */
     public static function requestReferer( $value = '' ) {
 
         return self::requestHeader( $value, 'HTTP_REFERER' );
@@ -1404,17 +1495,33 @@ class TrackingEventHelpers {
      * dollar signs escaped), which removes exactly what those rules look for.
      */
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
     public static function receivedPageLocation( $value, $event ) {
 
         return self::received( $value, $event->get( 'page_location' ) );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
     public static function receivedReferer( $value, $event ) {
 
         return self::received( $value, $event->get( 'HTTP_REFERER' ) );
     }
 
-    /** The value already on the event, else the copy. '' when neither. */
+    /**
+     * The value already on the event, else the copy. '' when neither.
+     *
+     * @param  mixed $value
+     * @param  mixed $copy
+     * @return mixed
+     */
     private static function received( $value, $copy ) {
 
         if ( $value !== null && $value !== false && $value !== '' ) {
@@ -1425,7 +1532,13 @@ class TrackingEventHelpers {
         return is_string( $copy ) ? $copy : '';
     }
 
-    /** A header of the request, or the value already on the event. '' when neither. */
+    /**
+     * A header of the request, or the value already on the event. '' when neither.
+     *
+     * @param  mixed  $value
+     * @param  string $server_key
+     * @return mixed
+     */
     private static function requestHeader( $value, $server_key ) {
 
         if ( $value !== null && $value !== false && $value !== '' ) {
@@ -1452,6 +1565,9 @@ class TrackingEventHelpers {
      * for that, and still do.
      */
 
+    /**
+     * @return string
+     */
     public static function languageDefault() {
 
         return substr( \OWA\Core\CoreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 );
@@ -1527,6 +1643,11 @@ class TrackingEventHelpers {
         return self::chooseIp( $ip );
     }
 
+    /**
+     * @param  mixed      $value
+     * @param  Event|null $event
+     * @return string
+     */
     public static function ipAddressDefault( $value = '', $event = null ) {
 
         $chosen_ip = self::requestIp();
@@ -1572,6 +1693,8 @@ class TrackingEventHelpers {
      * Separate from `microtime`, which is the historical string form of the
      * same clock and feeds owa_request.msec -- a column that holds 0 or 1 and
      * nothing else, and is deliberately not being repaired in 1.x.
+     *
+     * @return int
      */
     public static function edgeTimestampMicroseconds() {
 
@@ -1628,6 +1751,11 @@ class TrackingEventHelpers {
 
 
 
+    /**
+     * @param  mixed $yyyymmdd
+     * @param  Event $event
+     * @return string
+     */
     public static function deriveYyyymmdd( $yyyymmdd, $event ) {
 
         // Never return an empty yyyymmdd.
@@ -1669,6 +1797,9 @@ class TrackingEventHelpers {
     /**
      *  Use this function to parse out the url and query array element from
      *  a url.
+     *
+     * @param  string $url
+     * @return array<string, mixed>|false parse_url()'s parts, and query_params when there is a query
      */
     public static function parse_url( $url ) {
 
@@ -1704,6 +1835,10 @@ class TrackingEventHelpers {
 
     
     
+    /**
+     * @param  mixed $host
+     * @return true|void
+     */
     public static function isSearchEngine( $host ) {
 		
         if ( ! $host ) {
@@ -1729,6 +1864,9 @@ class TrackingEventHelpers {
     }
     
     
+    /**
+     * @return mixed searchengines.php, through the tracking.search_engine_registry filter
+     */
     public static function getSearchEngineList() {
 	    
 	    return \OWA\Core\CoreAPI::loadConf( 'searchengines.php', 'tracking.search_engine_registry' );
@@ -1761,6 +1899,10 @@ class TrackingEventHelpers {
      */
     const STORABLE_URL_SCHEMES = array( 'http', 'https' );
 
+    /**
+     * @param  mixed $url
+     * @return mixed '' for a scheme that is not stored; null and '' as they came
+     */
     public static function makeUrlStorageSafe( $url ) {
 
         if ( $url === null || $url === '' ) {
@@ -1814,6 +1956,11 @@ class TrackingEventHelpers {
             $url );
     }
 
+    /**
+     * @param  string|null $string
+     * @param  Event       $event
+     * @return string|null
+     */
     public static function utfEncodeProperty( $string, $event ) {
 	if(is_null($string)){
             return $string;
@@ -1843,21 +1990,41 @@ class TrackingEventHelpers {
             $event->get( 'HTTP_USER_AGENT' ) );
     }
 
+    /**
+     * @param  mixed $browser_type
+     * @param  Event $event
+     * @return string
+     */
     public static function resolveBrowserType( $browser_type, $event ) {
 
         return self::browscapFor( $event )->getUaFamily();
     }
 
+    /**
+     * @param  mixed $version
+     * @param  Event $event
+     * @return string
+     */
     public static function resolveBrowserVersion( $version, $event ) {
 
         return self::browscapFor( $event )->getUaVersion();
     }
 
+    /**
+     * @param  mixed $os
+     * @param  Event $event
+     * @return string
+     */
     public static function resolveOs ( $os, $event ) {
 
         return self::browscapFor( $event )->getOsFamily();
     }
 
+    /**
+     * @param  mixed $version
+     * @param  Event $event
+     * @return string
+     */
     public static function resolveOsVersion( $version, $event ) {
 
         return self::browscapFor( $event )->getOsVersion();
@@ -1871,6 +2038,10 @@ class TrackingEventHelpers {
      * absence about a phone. The OS family is what tells those apart, so the rule
      * reads it and falls through to NULL rather than guessing desktop: a wrong
      * 'desktop' is indistinguishable from a real one.
+     *
+     * @param  mixed $type
+     * @param  Event $event
+     * @return string|null
      */
     public static function resolveDeviceType( $type, $event ) {
 
@@ -1898,7 +2069,13 @@ class TrackingEventHelpers {
         return null;
     }
 
-    /** 'Other' is the parser saying it has no rule, not a brand. */
+    /**
+     * 'Other' is the parser saying it has no rule, not a brand.
+     *
+     * @param  mixed $brand
+     * @param  Event $event
+     * @return string|null
+     */
     public static function resolveDeviceBrand( $brand, $event ) {
 
         $value = (string) self::browscapFor( $event )->getDeviceBrand();
@@ -1906,7 +2083,13 @@ class TrackingEventHelpers {
         return strtolower( $value ) === 'other' ? null : $value;
     }
 
-    /** As the brand: 'Other' is an absence wearing a value. */
+    /**
+     * As the brand: 'Other' is an absence wearing a value.
+     *
+     * @param  mixed $model
+     * @param  Event $event
+     * @return string|null
+     */
     public static function resolveDeviceModel( $model, $event ) {
 
         $value = (string) self::browscapFor( $event )->getDeviceModel();
@@ -1929,17 +2112,32 @@ class TrackingEventHelpers {
      * exists. If supplying geo is wanted back it needs client_settable set,
      * which is a decision about trust, not this branch restored.
      */
-    /** The location of the event's IP address. */
+    /**
+     * The location of the event's IP address.
+     *
+     * @param  Event $event
+     * @return \OWA\Module\Base\Classes\Geolocation
+     */
     private static function location( $event ) {
 
         return \OWA\Core\CoreAPI::getGeolocationFromIpAddress( $event->get( 'ip_address' ) );
     }
 
+    /**
+     * @param  mixed $country
+     * @param  Event $event
+     * @return string|null|void
+     */
     public static function resolveCountry ( $country, $event ) {
 
         return self::location( $event )->getCountry();
     }
 
+    /**
+     * @param  mixed $city
+     * @param  Event $event
+     * @return string|null|void
+     */
     public static function resolveCity ( $city, $event ) {
 
         return self::location( $event )->getCity();
@@ -1947,16 +2145,31 @@ class TrackingEventHelpers {
 
 
 
+    /**
+     * @param  mixed $country_code
+     * @param  Event $event
+     * @return string|null|void
+     */
     public static function resolveCountryCode ( $country_code, $event ) {
 
         return self::location( $event )->getCountryCode();
     }
 
+    /**
+     * @param  mixed $state
+     * @param  Event $event
+     * @return string|null|void
+     */
     public static function resolveState ( $state, $event ) {
 
         return self::location( $event )->getState();
     }
 
+    /**
+     * @param  string|null $string
+     * @param  Event       $event
+     * @return string|null
+     */
     public static function lowercaseString ( $string, $event ) {
 	if(is_null($string)){
             return($string);
@@ -2149,10 +2362,10 @@ class TrackingEventHelpers {
         'msclkid' => array( 'bing', 'cpc' ),
     );
 
-    /** Parsed landing URLs, keyed by site and URL. */
+    /** @var array<string, array<string, mixed>> Parsed landing URLs, keyed by site and URL. */
     private static $landingTags = array();
 
-    /** Resolved campaign key maps, keyed by site. */
+    /** @var array<string, array<string, string>> Resolved campaign key maps, keyed by site. */
     private static $campaignKeys = array();
 
     /**
@@ -2249,7 +2462,7 @@ class TrackingEventHelpers {
      * builder is handed a formed event and persists it, rather than computing
      * five values inside a helper of its own.
      */
-    /** Prior touches read this process, keyed by site, visitor and session. */
+    /** @var array<string, array<string, mixed>> Prior touches read this process, keyed by site, visitor and session. */
     private static $priorTouches = array();
 
     /**
@@ -2269,7 +2482,7 @@ class TrackingEventHelpers {
      * One read per session, memoised: six properties ask.
      *
      * @param object $event
-     * @return array the last_touch_* values, or an empty array
+     * @return array<string, mixed> the last_touch_* values, or an empty array
      */
     public static function priorTouch( $event ) {
 
@@ -2305,7 +2518,13 @@ class TrackingEventHelpers {
         return self::$priorTouches[ $memo ] = $touch;
     }
 
-    /** One part of priorTouch(), or null. */
+    /**
+     * One part of priorTouch(), or null.
+     *
+     * @param  Event  $event
+     * @param  string $part
+     * @return mixed
+     */
     private static function priorTouchPart( $event, $part ) {
 
         $touch = self::priorTouch( $event );
@@ -2313,51 +2532,101 @@ class TrackingEventHelpers {
         return isset( $touch[ $part ] ) ? $touch[ $part ] : null;
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
     public static function resolvePriorTouchSource( $value, $event ) {
 
         return self::priorTouchPart( $event, 'source' );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
     public static function resolvePriorTouchMedium( $value, $event ) {
 
         return self::priorTouchPart( $event, 'medium' );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
     public static function resolvePriorTouchCampaign( $value, $event ) {
 
         return self::priorTouchPart( $event, 'campaign' );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
     public static function resolvePriorTouchAd( $value, $event ) {
 
         return self::priorTouchPart( $event, 'ad' );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
     public static function resolvePriorTouchRefererHost( $value, $event ) {
 
         return self::priorTouchPart( $event, 'referer_host' );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed
+     */
     public static function resolvePriorTouchTs( $value, $event ) {
 
         return self::priorTouchPart( $event, 'ts' );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
+     */
     public static function resolveTaggedSource( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_source' );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
+     */
     public static function resolveTaggedMedium( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_medium' );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
+     */
     public static function resolveTaggedCampaign( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_campaign' );
     }
 
+    /**
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
+     */
     public static function resolveTaggedAd( $value, $event ) {
 
         return self::taggedValue( $event, 'tagged_ad' );
@@ -2366,6 +2635,10 @@ class TrackingEventHelpers {
     /**
      * tagged_terms is the one whose halves do not share a stem -- owa_search_terms
      * on the URL, tagged_terms on the wire, tagged_search_terms as the column.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
      */
     public static function resolveTaggedTerms( $value, $event ) {
 
@@ -2392,7 +2665,7 @@ class TrackingEventHelpers {
      * partial rather than destructive.
      *
      * @param  string $site_id
-     * @return array  public parameter name => tagged_* property
+     * @return array<string, string>  public parameter name => tagged_* property
      */
     private static function campaignKeysFor( $site_id ) {
 
@@ -2435,8 +2708,8 @@ class TrackingEventHelpers {
      * Pull the campaign parameters out of one landing URL.
      *
      * @param  string $landing
-     * @param  array  $keys  public parameter name => tagged_* property, from campaignKeysFor()
-     * @return array  wire property name => value
+     * @param  array<string, string> $keys  public parameter name => tagged_* property, from campaignKeysFor()
+     * @return array<string, string>  wire property name => value
      */
     private static function parseLandingTags( $landing, array $keys ) {
 
@@ -2527,6 +2800,10 @@ class TrackingEventHelpers {
      * is what a corrected parse gets re-applied to. This is what reports group by, and a reading that varies
      * where the page does not is a broken report -- /store, /store/ and
      * /store/index.html are one page.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
      */
     public static function derivePagePath( $value, $event ) {
 
@@ -2555,7 +2832,7 @@ class TrackingEventHelpers {
      * Install-wide: which file a web server serves for a directory is not a
      * property of one Profile.
      *
-     * @return array
+     * @return list<string>
      */
     public static function directoryIndexPages() {
 
@@ -2569,6 +2846,10 @@ class TrackingEventHelpers {
      * owa_state and the campaign keys are OWA's own plumbing and have no business
      * appearing in somebody's page report. The tags are still recoverable: they
      * are parsed out of page_location, which keeps them.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
      */
     public static function derivePageQuery( $value, $event ) {
 
@@ -2609,6 +2890,10 @@ class TrackingEventHelpers {
      * so admitRequestParams() refuses a beacon that names it. The fallback is
      * kept because a caller building an event in process can still set one, and
      * the column is declared required.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return mixed the page's host, else the value
      */
     public static function deriveHost( $value, $event ) {
 
@@ -2633,6 +2918,10 @@ class TrackingEventHelpers {
      * The referrer is deliberately left alone beyond its host and query: it is
      * somebody else's URL, and collapsing it with THIS install's directory index pages
      * would be a category error.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
      */
     public static function deriveRefererHost( $value, $event ) {
 
@@ -2668,6 +2957,10 @@ class TrackingEventHelpers {
     /**
      * The referrer's query string, as it arrived -- see deriveRefererHost().
      * filterStoredUrls() then removes the query_string_filters parameters.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
      */
     public static function deriveRefererQuery( $value, $event ) {
 
@@ -2686,6 +2979,10 @@ class TrackingEventHelpers {
      * Reads target_url AFTER makeUrlCanonical() has filtered it, which is what
      * the row builder did: target_url is a client property and this is a derived
      * one, so the scopes settle the order.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
      */
     public static function deriveTargetHost( $value, $event ) {
 
@@ -2793,18 +3090,6 @@ class TrackingEventHelpers {
     }
 
     /**
-     * A money property as the minor units its column stores.
-     *
-     * ONE CALLBACK FOR ALL THREE -- ct_total, ct_tax, ct_shipping -- because it
-     * converts its own value and reads nothing else. event_raw.revenue, tax and
-     * shipping are BIGINTs of minor units with the currency beside them, because
-     * a float column sums to something nobody can reconcile.
-     *
-     * The conversion used to happen in the row builder, which is the last place
-     * it could: a property whose value is not what its column stores is a
-     * property the registry cannot describe.
-     */
-    /**
      * anchor_x: thousandths of the clicked element's width, or nothing.
      *
      * Bounded because the column is a SMALLINT and the value comes off the
@@ -2821,12 +3106,24 @@ class TrackingEventHelpers {
         return self::anchorPoint( 'anchor_x', $value, $event );
     }
 
-    /** anchor_y: as anchorX(), down the element's height. */
+    /**
+     * anchor_y: as anchorX(), down the element's height.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return int|null
+     */
     public static function anchorY( $value, $event ) {
 
         return self::anchorPoint( 'anchor_y', $value, $event );
     }
 
+    /**
+     * @param  string $name
+     * @param  mixed  $value
+     * @param  Event  $event
+     * @return int|null
+     */
     private static function anchorPoint( $name, $value, $event ) {
 
         if ( is_numeric( $value ) && $value >= 0 && $value <= 1000 ) {
@@ -2866,6 +3163,22 @@ class TrackingEventHelpers {
         return null;
     }
 
+    /**
+     * A money property as the minor units its column stores.
+     *
+     * ONE CALLBACK FOR ALL THREE -- ct_total, ct_tax, ct_shipping -- because it
+     * converts its own value and reads nothing else. event_raw.revenue, tax and
+     * shipping are BIGINTs of minor units with the currency beside them, because
+     * a float column sums to something nobody can reconcile.
+     *
+     * The conversion used to happen in the row builder, which is the last place
+     * it could: a property whose value is not what its column stores is a
+     * property the registry cannot describe.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return int|null
+     */
     public static function toMinorUnits( $value, $event ) {
 
         return Currency::toMinorUnits( $value, self::purchaseCurrency( $event ) );
@@ -2955,6 +3268,10 @@ class TrackingEventHelpers {
      * The `currency` property: on a purchase, always a code -- the one sent, else
      * the Property's -- so revenue never sits beside a NULL currency. On any other
      * event a well-formed code is kept and anything else dropped.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return string|null
      */
     public static function resolveCurrency( $value, $event ) {
 
@@ -2977,6 +3294,10 @@ class TrackingEventHelpers {
      *
      * Tax and shipping have columns of their own, so a total that kept them
      * counted them twice wherever the three were summed.
+     *
+     * @param  mixed $value
+     * @param  Event $event
+     * @return int|null
      */
     public static function deriveRevenue( $value, $event ) {
 
@@ -3153,6 +3474,8 @@ class TrackingEventHelpers {
      *
      * The host is kept as it arrived, whether or not it is the Profile's domain.
      *
+     * @param  string|null $url
+     * @param  Event       $event
      * @return string|null
      */
     public static function makeUrlCanonical( $url, $event ) {

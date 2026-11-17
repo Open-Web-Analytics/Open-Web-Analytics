@@ -140,7 +140,7 @@ class Sanitize {
      * Strips specified html tags
      *
      * @param    string    $input     String to sanitize
-     * @param     array    $tags    Tag to remove
+     * @param     string[] $tags    Tag to remove
      * @return    string sanitized String
      * @access    public
      * @static
@@ -159,26 +159,46 @@ class Sanitize {
         return $output;
     }
 
+    /**
+     * @param  string $input
+     * @return string
+     */
     public static function removeHiddenSpaces( $input = '' ) {
 
         return str_replace( chr( 0xCA ), '', str_replace( ' ', ' ', $input ) );
     }
 
+    /**
+     * @param  string $input
+     * @return string|null null when the pattern fails
+     */
     public static function escapeUnicode( $input = '' ) {
 
         return preg_replace( "/&amp;#([0-9]+);/s", "&#\\1;", $input );
     }
 
+    /**
+     * @param  string $input
+     * @return string|null null when the pattern fails
+     */
     public static function escapeBackslash( $input = '' ) {
 
         return preg_replace( "/\\\(?!&amp;#|\?#)/", "\\", $input );
     }
 
+    /**
+     * @param  string $input
+     * @return string
+     */
     public static function stripCarriageReturns( $input = '' ) {
 
         return str_replace( "\r", "", $input );
     }
 
+    /**
+     * @param  string $input
+     * @return string
+     */
     public static function escapeDollarSigns( $input = '' ) {
 
         return str_replace( "\\\$", "$", $input );
@@ -196,7 +216,7 @@ class Sanitize {
      * - remove_html - Strip HTML with strip_tags. `encode` must be true for this option to work.
      *
      * @param mixed $input Data to sanitize
-     * @param array $options
+     * @param array<string, mixed> $options not read
      * @return mixed Sanitized data
      * @access public
      * @static
@@ -315,6 +335,10 @@ class Sanitize {
         return preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', \OWA\Core\Lib::utf8Encode( $input ) );
     }
 
+    /**
+     * @param  string $str
+     * @return string
+     */
     public static function cleanFilename( $str ) {
 
         $str = str_replace("http://", "", $str);
@@ -336,6 +360,10 @@ class Sanitize {
         return $str;
     }
 
+    /**
+     * @param  mixed $url
+     * @return string|void nothing for a value cleanInput() leaves empty
+     */
     public static function cleanUrl( $url ) {
 
         $url = \OWA\Module\Base\Classes\Sanitize::cleanInput($url,
@@ -397,6 +425,10 @@ class Sanitize {
         return '#';
     }
 
+    /**
+     * @param  string $user_id
+     * @return mixed cleanInput()'s answer
+     */
     public static function cleanUserId ( $user_id ) {
 
         $illegals = \OWA\Core\CoreAPI::getSetting('base', 'user_id_illegal_chars');
@@ -412,6 +444,10 @@ class Sanitize {
          return \OWA\Module\Base\Classes\Sanitize::cleanInput($user_id, array() );
     }
 
+    /**
+     * @param  mixed $md5
+     * @return string the hash, or '' for anything that is not one
+     */
     public static function cleanMd5( $md5 ) {
 
         $valid = false;
@@ -441,6 +477,9 @@ class Sanitize {
      *
      * The literal input "null" is itself valid JSON and decodes to null, which
      * is why the check is not simply "did this decode to null".
+     *
+     * @param  string|null $json_string
+     * @return string|false|void nothing for no value; '' for one that does not parse
      */
     public static function cleanJson( $json_string ) {
 

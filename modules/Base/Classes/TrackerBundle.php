@@ -32,6 +32,9 @@ namespace OWA\Module\Base\Classes;
  * of the build files it was made from. isCurrent() recomputes both, so a saved
  * setting, a new Profile and an OWA update are all just a header that no longer
  * matches -- nothing marks a bundle stale and nothing stores publish state.
+ *
+ * @phpstan-type Config array{options: list<mixed>, features: list<mixed>, plugins: list<mixed>}
+ * @phpstan-type Manifest array<string, mixed>
  */
 class TrackerBundle {
 
@@ -55,21 +58,26 @@ class TrackerBundle {
     /** A site id that may be a file name. */
     const SITE_ID_PATTERN = '/^[A-Za-z0-9_-]{1,64}$/';
 
-    /** Absolute directories in place of the root's, for tests. Null in use. */
+    /** @var string|null Absolute directories in place of the root's, for tests. Null in use. */
     public static $distDir = null;
+    /** @var string|null */
     public static $buildDir = null;
+    /** @var string|null */
     public static $outDir  = null;
 
+    /** @return string */
     private static function distDir() {
 
         return self::$distDir ?? \OWA\Core\Env::root() . '/' . self::DIST;
     }
 
+    /** @return string */
     private static function buildDir() {
 
         return self::$buildDir ?? \OWA\Core\Env::root() . '/' . self::BUILD;
     }
 
+    /** @return string */
     private static function outDir() {
 
         return self::$outDir ?? \OWA\Core\Env::root() . '/' . self::DIR;
@@ -118,7 +126,7 @@ class TrackerBundle {
      * The built tracker's manifest: its file and each lazy chunk's, with their
      * SHA-256 (written by webpack.config.js).
      *
-     * @return array|null null when the tracker has not been built
+     * @return Manifest|null null when the tracker has not been built
      */
     public static function buildManifest() {
 
@@ -146,7 +154,7 @@ class TrackerBundle {
      * A module adds its own through the tracker_bundle_config filter.
      *
      * @param  string $site_id
-     * @return array
+     * @return Config
      */
     public static function config( $site_id ) {
 
@@ -313,8 +321,8 @@ class TrackerBundle {
     /**
      * The first line of a bundle made from this config and this build.
      *
-     * @param  array $config   from config()
-     * @param  array $manifest from buildManifest()
+     * @param  Config   $config   from config()
+     * @param  Manifest $manifest from buildManifest()
      * @return string
      */
     public static function header( array $config, array $manifest ) {
@@ -326,10 +334,6 @@ class TrackerBundle {
             self::manifestHash( $manifest ) );
     }
 
-    /**
-     * The build's identity, as a bundle's header records it: a hash of the
-     * manifest, which names every built file by its content.
-     */
     /**
      * The built tracker, as a hash of the manifest the build writes beside it:
      * the SHA-256 of the core and of each chunk. A new build is a new hash.
@@ -346,6 +350,13 @@ class TrackerBundle {
         return $manifest ? self::manifestHash( $manifest ) : '';
     }
 
+    /**
+     * The build's identity, as a bundle's header records it: a hash of the
+     * manifest, which names every built file by its content.
+     *
+     * @param  Manifest $manifest
+     * @return string
+     */
     private static function manifestHash( array $manifest ) {
 
         return hash( 'sha256', json_encode( $manifest ) );
@@ -409,7 +420,7 @@ class TrackerBundle {
     /**
      * A built file, checked against the hash the manifest gives it.
      *
-     * @param  array $part  file, sha256
+     * @param  array<mixed> $part  file, sha256
      * @return string|null
      */
     private static function builtFile( array $part ) {
@@ -442,7 +453,7 @@ class TrackerBundle {
      * twice. If a tracker is already running (owa_cmds is its live queue), the
      * commands are pushed to it.
      *
-     * @param  array $config
+     * @param  Config $config
      * @return string
      */
     public static function preamble( array $config ) {
@@ -607,7 +618,7 @@ class TrackerBundle {
      *
      * @param  bool          $force
      * @param  string[]|null $site_ids  null for every live web Profile
-     * @return array site id => 'current' | 'published' | 'failed' | 'removed'
+     * @return array<string, string> site id => 'current' | 'published' | 'failed' | 'removed'
      */
     public static function publishStale( $force = false, $site_ids = null ) {
 
@@ -744,7 +755,7 @@ class TrackerBundle {
      * What the Tracking Tag screen says about a Profile's bundle.
      *
      * @param  string $site_id
-     * @return array state ('published' | 'waiting' | 'unbuilt'), published_at (unix time or null)
+     * @return array{state: string, published_at: int|null} state is 'published', 'waiting' or 'unbuilt'; published_at unix time
      */
     public static function status( $site_id ) {
 
@@ -771,8 +782,8 @@ class TrackerBundle {
      * scope for the Tracking Tag screen.
      *
      * @param  string $site_id
-     * @return array checked_at, url, status (HTTP, 0 unreachable), ok (bool, or null
-     *               when the answer was not the file), cache_control
+     * @return array{checked_at: int, url: string, status: int, ok: bool|null, cache_control: string}
+     *               status is HTTP, 0 unreachable; ok is null when the answer was not the file
      */
     public static function checkCacheHeaders( $site_id ) {
 

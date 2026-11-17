@@ -28,8 +28,9 @@ namespace OWA\Module\Base\Classes;
 class PurchaseDeduplication {
 
     /**
-     * @param  array $events the set, incoming event first
-     * @return array
+     * @param  mixed $events the set, incoming event first; a filter's value, so
+     *                       anything but a non-empty array is handed back as it came
+     * @return mixed
      */
     public static function drop( $events ) {
 
@@ -58,6 +59,10 @@ class PurchaseDeduplication {
         return $removed ? array_values( $events ) : $events;
     }
 
+    /**
+     * @param  \OWA\Module\Base\Classes\Event $event
+     * @return bool
+     */
     private static function isStoredAlready( $event ) {
 
         if ( (string) $event->getEventType() !== 'purchase' ) {
