@@ -1678,15 +1678,29 @@ class CoreAPI {
     /**
      * Convienence method for generating metrics
      *
-     * @param string $metric_name
+     * A name without a dot is a registered metric (pageViews): its class and
+     * declared params, with $params over them. Registered more than once, the
+     * last registration is the one built, as ResultSetManager::loadMetric()
+     * keeps the last.
+     *
+     * @param string $metric_name a class id (base.configurableMetric) or a registered metric name
      * @param array<mixed> $params
      * @return mixed
      */
     public static function metricFactory($metric_name, $params = array()) {
 
-        if (!strpos($metric_name, '.')) {
-            $s = \OWA\Core\CoreAPI::serviceSingleton();
-            $metric_name = $s->getMetricClasses($metric_name);
+        if ( strpos( $metric_name, '.' ) === false ) {
+
+            $registered = \OWA\Core\CoreAPI::serviceSingleton()->getMetricClasses( $metric_name ) ?: array();
+            $definition = end( $registered );
+
+            if ( ! is_array( $definition ) || empty( $definition['class'] ) ) {
+
+                throw new \Exception( sprintf( 'No metric is registered as %s.', $metric_name ) );
+            }
+
+            $metric_name = $definition['class'];
+            $params      = array_merge( $definition['params'] ?? array(), $params );
         }
 
 
