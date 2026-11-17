@@ -109,11 +109,12 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     /** Draws cube data, so it is not drawn for a Property with no cube yet. */
     protected $reads_reporting_data = true;
 
-    /** @var array the decoded definition */
+    /** @var array<string, mixed> the decoded definition */
     private $definition = array();
 
     /**
-     * @param array $definition a decoded report definition
+     * @param array<string, mixed> $definition a decoded report definition
+     * @return void
      */
     public function setDefinition( array $definition ) {
 
@@ -468,7 +469,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * reading an undeclared parameter fails as loudly as a report's.
      *
      * @param mixed $constraints the declared value; a string is used as-is
-     * @param array $declared the report's declared params
+     * @param array<mixed> $declared the report's declared params
      * @param string $where a prefix naming the widget, empty for the report
      * @return string the first problem found, or '' if there is none
      */
@@ -528,9 +529,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * but its axis is the whole week (TimePeriod::getAxisEndDate()), and by
      * hour that put today's hours in the first 24 of 168.
      *
-     * @param  array       $query  a trend widget's query
+     * @param  array<string, mixed> $query  a trend widget's query
      * @param  object|null $period the report's TimePeriod
-     * @return array
+     * @return array<string, mixed>
      */
     public static function trendQuery( array $query, $period ) {
 
@@ -614,7 +615,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     /**
      * The row actions a report offers, through the report_row_actions filter.
      *
-     * @return array name => action
+     * @return array<array<string, mixed>> name => action
      */
     public static function rowActions() {
 
@@ -626,8 +627,8 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * A widget's rowActions names as the actions they name. A name nothing
      * registers -- a module's, with the module off -- is left out.
      *
-     * @param  array $widget
-     * @return array of action + 'id'
+     * @param  array<string, mixed> $widget
+     * @return list<array<string, mixed>> of action + 'id'
      */
     public static function resolveRowActions( array $widget ) {
 
@@ -654,9 +655,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * an added link may use the report's placeholders ({pagePath}). A widget
      * the filter leaves empty is dropped rather than drawn as an empty list.
      *
-     * @param  array  $widgets
+     * @param  array<mixed> $widgets
      * @param  string $reportId
-     * @return array
+     * @return list<mixed>
      */
     public static function filterReportLinks( array $widgets, $reportId ) {
 
@@ -691,8 +692,10 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * then the settings -- so that a setting named "title" would lose to the
      * title, as it did before. Nothing relies on that today; it is simply not
      * this change's business to alter it.
+     *
+     * @return void
      */
-    function action() {
+    public function action() {
 
         $d = self::translated( $this->definition );
 
@@ -824,7 +827,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * parameters are collected -- one read solely by a title is cosmetic, and
      * a missing one should not take the report down.
      *
-     * @param array $definition
+     * @param array<string, mixed> $definition
      * @return array<int,string> declared parameter names, in definition order
      */
     public static function constraintParams( array $definition ) {
@@ -910,8 +913,8 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * each widget. Translated before {name} is replaced, so a translation keeps
      * the placeholder.
      *
-     * @param  array $definition a decoded report definition
-     * @return array
+     * @param  array<string, mixed> $definition a decoded report definition
+     * @return array<string, mixed>
      */
     public static function translated( array $definition ) {
 
@@ -949,7 +952,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * that has to be evaluated.
      *
      * @param mixed $template
-     * @param array $values
+     * @param array<string, string> $values
      * @return string
      */
     private static function interpolate( $template, array $values ) {
@@ -977,7 +980,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * integer like resultsPerPage stays an integer.
      *
      * @param mixed $value
-     * @param array $values
+     * @param array<string, string> $values
      * @return mixed
      */
     private static function interpolateDeep( $value, array $values ) {
@@ -1022,9 +1025,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      *
      * An object DECLARES this report's own, used as written.
      *
-     * @param array $declared the definition's `metricSets`, interpolated
-     * @param array $site     what ReportController::pre() already resolved
-     * @return array<string, array>
+     * @param array<mixed> $declared the definition's `metricSets`, interpolated
+     * @param array<mixed> $site     what ReportController::pre() already resolved
+     * @return array<mixed>
      */
     private static function resolveMetricSets( array $declared, array $site ) {
 
@@ -1058,6 +1061,14 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         return $out;
     }
 
+    /**
+     * Each widget's query given the report's constraints and its own.
+     *
+     * @param  array<mixed>          $widgets
+     * @param  string                $reportConstraints the report's, interpolated
+     * @param  array<string, string> $values            parameter name => value
+     * @return list<array<mixed>>
+     */
     private static function resolveWidgetConstraints( array $widgets, $reportConstraints, array $values ) {
 
         $out = array();
@@ -1122,8 +1133,8 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * `constraints` may still be a plain string, which is used as-is. Most
      * reports constrain on nothing that varies.
      *
-     * @param array $parts
-     * @param array $values
+     * @param array<array<string, mixed>> $parts
+     * @param array<string, string> $values
      * @return string
      */
     private static function buildConstraints( array $parts, array $values ) {

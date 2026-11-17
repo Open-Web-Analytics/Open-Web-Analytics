@@ -513,14 +513,11 @@ class Service extends \OWA\Core\Base {
     }
     
     /**
-     * The route registered, a RestRoute. Not declared as one: typed so,
-     * CoreAPI::lookupRestRoute() passes it to debug(), which takes a string.
-     *
      * @param  string $module
      * @param  string $version
      * @param  string $route_name
      * @param  string $request_method
-     * @return mixed nothing when no route is registered
+     * @return RestRoute|void nothing when no route is registered
      */
     public function getRestApiRoute( $module, $version, $route_name, $request_method ) {
 	    
