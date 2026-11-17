@@ -419,15 +419,6 @@ OWA.util =  {
             return (mixed_var !== null) && (typeof( mixed_var ) == 'object');
         }
     },
-      
-      countObjectProperties : function( obj ) {
-          
-        var size = 0, key;
-        for (key in obj) {
-            if (obj.hasOwnProperty(key)) size++;
-        }
-        return size;
-      },
     
     sprintf : function( ) {
         // Return a formatted string  
