@@ -80,7 +80,7 @@ final class ReportMetricDimensionContractTest extends TestCase
 
             $blocks = [$src];
             if (strpos($label, '/templates/') !== false) {
-                $blocks = preg_match_all('/makeApiLink\(\s*array\((.*?)\)\s*,/s', $src, $m)
+                $blocks = preg_match_all('/makeApiLink\(\s*\[(.*?)\]\s*,/s', $src, $m)
                     ? $m[1]
                     : [];
             }

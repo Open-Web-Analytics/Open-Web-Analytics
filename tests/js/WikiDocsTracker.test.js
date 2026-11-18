@@ -130,7 +130,7 @@ describe( 'wiki tracker reference', () => {
         const commands = new Set();
         const options = new Set();
 
-        for ( const m of php.matchAll( /array\(\s*'((?:set|track)[A-Z]\w*)'/g ) ) {
+        for ( const m of php.matchAll( /\[\s*'((?:set|track)[A-Z]\w*)'/g ) ) {
             commands.add( m[1] );
         }
 
@@ -142,7 +142,7 @@ describe( 'wiki tracker reference', () => {
             commands.add( m[1] );
         }
 
-        for ( const m of php.matchAll( /array\(\s*'setOption',\s*'(\w+)'/g ) ) {
+        for ( const m of php.matchAll( /\[\s*'setOption',\s*'(\w+)'/g ) ) {
             options.add( m[1] );
         }
 

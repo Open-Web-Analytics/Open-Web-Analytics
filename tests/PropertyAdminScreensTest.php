@@ -1065,7 +1065,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         $this->assertStringNotContainsString( 'hierarchy_tier', $view );
         $this->assertStringContainsString(
-            "foreach ( array( 'siteId', 'propertyId' ) as \$key )", $view,
+            "foreach ( [ 'siteId', 'propertyId' ] as \$key )", $view,
             'A screen that sets only siteId or propertyId would leave the column without its Property.' );
     }
 
@@ -1171,7 +1171,7 @@ final class PropertyAdminScreensTest extends TestCase
 
         /* Add is a different route from edit: no id. */
         $this->assertStringContainsString(
-            "array( 'do' => 'base.propertyProfile' )", $template,
+            "[ 'do' => 'base.propertyProfile' ]", $template,
             'The Properties column has no add link, only per-row edit links.' );
 
         /* The Profile is added to the Property whose roster it is. */
