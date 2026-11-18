@@ -1062,11 +1062,15 @@ class Db extends \OWA\Core\Base {
 
                 $op = strtolower( $v['operator'] );
 
+                /*
+                 * A disallowed operator matches nothing. Skipped, it left the
+                 * AND written for it dangling ("WHERE a = 1 AND ", or a bare
+                 * "WHERE "), and dropping it from a working clause would widen
+                 * the statement it filters.
+                 */
                 if ( ! in_array( $op, self::ALLOWED_OPERATORS, true ) ) {
                     \OWA\Core\CoreAPI::debug( sprintf( 'Refusing constraint with disallowed operator: %s', $v['operator'] ) );
-                    // still bump the counter so the AND-join positions stay correct
-                    $i++;
-                    continue;
+                    $op = 'none';
                 }
 
                 /*
@@ -1094,6 +1098,10 @@ class Db extends \OWA\Core\Base {
                                 && in_array( $op, self::NULL_TOLERANT_OPERATORS, true );
 
                 switch ( $op ) {
+
+                    case 'none':
+                        $constraint .= '1 = 0';
+                        break;
 
                     case '==':
                         $constraint .= sprintf("%s = %s", $v['name'], $this->bindValue( $v['value'] ) );
