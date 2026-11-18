@@ -457,6 +457,17 @@ class DbColumn {
      }
 
      /**
+      * A UNIQUE constraint on this column alone. A key over several columns is
+      * the entity's: Entity::addUniqueIndex().
+      *
+      * @return void
+      */
+     public function setUnique() {
+
+         $this->is_unique = true;
+     }
+
+     /**
       * @return void
       */
      public function setIndex() {
