@@ -4915,11 +4915,11 @@ class OWATracker  {
      *
      * @deprecated Use trackCustomEvent( name, { eps_*: ... } ).
      *
-     * Sent with trackCustomEvent(): the action name is the event name, and the
-     * group, label and value are the custom event properties
-     * eps_action_group, eps_action_label and epn_numeric_value, in `params`.
-     * An action name that is not a legal event name, or is a reserved one, is
-     * refused rather than reshaped.
+     * Sent with trackCustomEvent() under the name an upgrade gives a migrated
+     * 1.x action (actionEventName()), so the two count as one event: 'Recipe
+     * Print' is sent as recipe_print. The group, label and value are the
+     * custom event properties eps_group, eps_label and epn_value, and the name
+     * as passed is eps_action_name when it had to change.
      *
      * @command
      * @param {string} action_group
@@ -4929,21 +4929,67 @@ class OWATracker  {
      */
     trackAction(action_group, action_name, action_label, numeric_value) {
 
+        var original = String( action_name === undefined || action_name === null ? '' : action_name ).trim();
+        var name     = OWATracker.actionEventName( original );
+
+        if ( ! name ) {
+
+            OWA.debug( 'trackAction: the action name has no letters or digits: ' + original );
+
+            return;
+        }
+
         var properties = {};
 
         if ( action_group !== undefined && action_group !== null && action_group !== '' ) {
-            properties.eps_action_group = String( action_group );
+            properties.eps_group = String( action_group );
         }
 
         if ( action_label !== undefined && action_label !== null && action_label !== '' ) {
-            properties.eps_action_label = String( action_label );
+            properties.eps_label = String( action_label );
         }
 
         if ( typeof numeric_value === 'number' && isFinite( numeric_value ) ) {
-            properties.epn_numeric_value = numeric_value;
+            properties.epn_value = numeric_value;
+        } else if ( typeof numeric_value === 'string' && numeric_value.trim() !== '' && isFinite( Number( numeric_value ) ) ) {
+            properties.epn_value = Number( numeric_value );
         }
 
-        return this.trackCustomEvent( action_name, properties );
+        if ( name !== original ) {
+            properties.eps_action_name = original;
+        }
+
+        return this.trackCustomEvent( name, properties );
+    }
+
+    /**
+     * The event name of a 1.x action, the same one the upgrade gives a migrated
+     * action (Classes\Migration\ActionMigrator::eventName()): lowercased, each
+     * run of other characters one underscore, at most 40 characters, and
+     * prefixed action_ where it would not start with a letter, would be a
+     * reserved event name, or would start owa_. '' when nothing is left.
+     *
+     * @param {string} name
+     * @return {string}
+     */
+    static actionEventName( name ) {
+
+        name = String( name === undefined || name === null ? '' : name ).trim().toLowerCase()
+            .replace( /[^a-z0-9]+/g, '_' ).replace( /^_+|_+$/g, '' );
+
+        if ( name === '' ) {
+
+            return '';
+        }
+
+        if ( ! /^[a-z]/.test( name )
+             || OWATracker.RESERVED_EVENT_NAMES.indexOf( name ) !== -1
+             || name.indexOf( OWATracker.RESERVED_EVENT_PREFIX ) === 0 ) {
+
+            name = 'action_' + name;
+        }
+
+        return name.slice( 0, 40 );
     }
 
     /**

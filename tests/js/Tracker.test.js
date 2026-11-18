@@ -23,42 +23,56 @@ describe('OWATracker event assembly', () => {
     });
 
     /**
-     * trackAction sends the action's OWN NAME as the event, with the rest as
-     * parameters: an event name is a name, and the group, label and value
-     * describe it, which is why eventName is a dimension.
+     * trackAction sends the action under the event name and parameters an
+     * upgrade gives a migrated 1.x action, so live and migrated actions are
+     * one event with one set of properties.
      */
-    test('trackAction sends the action name as the event, with eps_ parameters', () => {
+    test('trackAction sends the action name as the event, with the migrated parameter names', () => {
         tracker.trackAction('signup', 'newsletter_opt_in', 'footer form', 10);
 
         expect(captured).toHaveLength(1);
         const e = captured[0];
         expect(e.get('event_type')).toBe('newsletter_opt_in');
-        expect(e.get('eps_action_group')).toBe('signup');
-        expect(e.get('eps_action_label')).toBe('footer form');
-        expect(e.get('epn_numeric_value')).toBe(10);
+        expect(e.get('eps_group')).toBe('signup');
+        expect(e.get('eps_label')).toBe('footer form');
+        expect(e.get('epn_value')).toBe(10);
 
-        // No action_* spellings on the event.
-        expect(e.get('action_name')).toBeUndefined();
-        expect(e.get('action_group')).toBeUndefined();
-        expect(e.get('numeric_value')).toBeUndefined();
+        // The name did not change, so it is not repeated.
+        expect(e.get('eps_action_name')).toBeUndefined();
+        expect(e.get('eps_action_group')).toBeUndefined();
+        expect(e.get('epn_numeric_value')).toBeUndefined();
     });
 
-    /**
-     * AND AN ACTION NAME THAT IS NOT A LEGAL EVENT NAME IS REFUSED.
-     *
-     * An event name may not contain a space, so a site passing one sends
-     * nothing and gets a debug line saying why.
-     *
-     * Refused rather than reshaped on purpose: silently turning 'test action' into
-     * 'test_action' would invent a name the site never chose and split its history
-     * across two of them.
-     */
-    test('trackAction refuses an action name that is not a legal event name', () => {
-        tracker.trackAction('group', 'test action', 'label', 1);
-        tracker.trackAction('group', '9_starts_numeric', 'label', 1);
+    /** A 1.x name with a space is reshaped as the migration reshapes it, and kept. */
+    test('trackAction reshapes a 1.x action name and keeps the original', () => {
+        tracker.trackAction('cooking', 'Recipe Print', 'Italian Chicken Soup', '1');
         tracker.trackAction('group', 'page_view', 'label', 1);
 
+        expect(captured).toHaveLength(2);
+        expect(captured[0].get('event_type')).toBe('recipe_print');
+        expect(captured[0].get('eps_action_name')).toBe('Recipe Print');
+        expect(captured[0].get('epn_value')).toBe(1);
+        expect(captured[1].get('event_type')).toBe('action_page_view');
+        expect(captured[1].get('eps_action_name')).toBe('page_view');
+    });
+
+    /** A name with nothing left to send is refused. */
+    test('trackAction refuses a name with no letters or digits', () => {
+        tracker.trackAction('group', '!!!', 'label', 1);
+        tracker.trackAction('group', '', 'label', 1);
+
         expect(captured).toHaveLength(0);
+    });
+
+    /** The same table the PHP migration is held to (ActionEventNameTest.php). */
+    test('actionEventName gives the names the migration gives', () => {
+        const table = require('../fixtures/action_event_names.json');
+
+        expect(table.names.length).toBeGreaterThan(0);
+
+        for (const [action, event] of table.names) {
+            expect([action, OWATracker.actionEventName(action)]).toEqual([action, event]);
+        }
     });
 
     test('trackPageView assembles a page_view event', () => {

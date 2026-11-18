@@ -9,7 +9,8 @@ namespace OWA\Module\Base\Classes\Migration;
  * letters, digits and underscores, at most 40 -- prefixed with action_ where it
  * would otherwise be a built-in event's name, and the original kept as the
  * action_name parameter where that changed it. Group, label and value are
- * parameters, as a site sets them now.
+ * the group, label and value parameters. The tracker's trackAction() sends a
+ * live action under the same name and parameters (OWATracker.actionEventName()).
  */
 class ActionMigrator extends FactMigrator {
 
@@ -71,15 +72,21 @@ class ActionMigrator extends FactMigrator {
 
     /**
      * Whether an event name already means something other than a site's own
-     * action: a first-class event, or one a module routes to its own
-     * processor. A v1 action called "Purchase" became a purchase row, with
-     * none of a purchase's columns, and one sharing a module's event name was
-     * handed to that module's store; both are prefixed with action_ instead.
+     * action: a first-class event, one a module routes to its own processor,
+     * or one in the owa_ prefix the tracker reserves. A v1 action called
+     * "Purchase" became a purchase row, with none of a purchase's columns, and
+     * one sharing a module's event name was handed to that module's store; all
+     * are prefixed with action_ instead.
      *
      * @param  string $name
      * @return bool
      */
     public static function isTaken( $name ) {
+
+        if ( strncmp( (string) $name, 'owa_', 4 ) === 0 ) {
+
+            return true;
+        }
 
         if ( in_array( $name, \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames(), true ) ) {
 

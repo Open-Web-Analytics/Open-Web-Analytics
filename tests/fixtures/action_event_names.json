@@ -1,0 +1,21 @@
+{
+    "_comment": "A 1.x action name and the event name it becomes, read by ActionEventNameTest.php (ActionMigrator::eventName) and tests/js/Tracker.test.js (OWATracker.actionEventName).",
+    "names": [
+        [ "Signup Form Submit", "signup_form_submit" ],
+        [ "Recipe Print", "recipe_print" ],
+        [ "recipe_print", "recipe_print" ],
+        [ "  Video -- Play!  ", "video_play" ],
+        [ "Café Menu", "caf_menu" ],
+        [ "404", "action_404" ],
+        [ "_private", "private" ],
+        [ "Purchase", "action_purchase" ],
+        [ "Page View", "action_page_view" ],
+        [ "click", "action_click" ],
+        [ "owa_thing", "action_owa_thing" ],
+        [ "Download", "download" ],
+        [ "!!!", "" ],
+        [ "", "" ],
+        [ "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" ],
+        [ "9 Lives Of A Very Long Action Name Indeed", "action_9_lives_of_a_very_long_action_nam" ]
+    ]
+}
