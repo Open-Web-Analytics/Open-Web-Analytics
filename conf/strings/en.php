@@ -1377,6 +1377,7 @@ return [
     'The password for this account.' => 'The password for this account.',
     'The password must be at least %d characters.' => 'The password must be at least %d characters.',
     'The password reset link is not valid.' => 'The password reset link is not valid.',
+    'The password was not changed. Open the link again and set it once more.' => 'The password was not changed. Open the link again and set it once more.',
     'The passwords do not match.' => 'The passwords do not match.',
     'The path of the downloaded file.' => 'The path of the downloaded file.',
     'The path of the page with its query string, as it would be typed.' => 'The path of the page with its query string, as it would be typed.',

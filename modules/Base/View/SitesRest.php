@@ -67,7 +67,7 @@ class SitesRest extends \OWA\Core\View\RestApi {
 
         foreach ( $sites as $key => $site ) {
 
-            $row = (array) $site->_getProperties();
+            $row = (array) $site->getPublicProperties();
 
             /*
              * Always present, even when empty. A field that appears only

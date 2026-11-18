@@ -227,8 +227,6 @@ class InstallManager extends \OWA\Core\Base {
 
             $db->endTransaction();
 
-            return $site_id;
-
         } catch ( \Throwable $e ) {
 
             $db->rollbackTransaction();
@@ -236,6 +234,23 @@ class InstallManager extends \OWA\Core\Base {
 
             return false;
         }
+
+        /*
+         * The first Profile's tracking bundle, which its tag loads, as the
+         * Add profile screen publishes a new one. After the commit: the bundle
+         * is a file, outside the transaction. One that cannot be written now
+         * is queued for the scheduler.
+         */
+        try {
+
+            \OWA\Module\Base\Classes\TrackerBundle::publishNow( (string) $site_id );
+
+        } catch ( \Throwable $e ) {
+
+            \OWA\Core\CoreAPI::notice( 'The first Profile\'s tracking bundle was not published: ' . $e->getMessage() . '. Run cmd=publish-trackers.' );
+        }
+
+        return $site_id;
     }
 
     /** @return bool */

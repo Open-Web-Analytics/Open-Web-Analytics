@@ -132,7 +132,11 @@ class Sanitize {
                 $output = preg_replace( '/<\/' . $tag . '\b[^>]*>/i', '', $output );
             }
         } else {
-            $output = strip_tags($input);
+            // A tag is a < followed by a letter, /, ! or ?, as an HTML parser
+            // reads one; it runs to the next > or, unclosed, to the end. Any
+            // other < is text: strip_tags() treated "<5" as an unclosed tag, so
+            // the constraint pageViews<5 arrived as "pageViews".
+            $output = preg_replace( '/<!--.*?(?:-->|$)|<[a-zA-Z\/!?][^>]*(?:>|$)/s', '', (string) $input );
         }
 
         return $output;
@@ -458,7 +462,11 @@ class Sanitize {
      * The literal input "null" is itself valid JSON and decodes to null, which
      * is why the check is not simply "did this decode to null".
      *
-     * @param  string|null $json_string
+     * An array is what PHP parsed from bracketed keys, as the tracker sends
+     * line items (o_items[0][item_id]=…). It is encoded, each value cleaned as
+     * tracking text, and an array keyed by integers encodes as a list.
+     *
+     * @param  string|array<mixed>|null $json_string
      * @return string|false|void nothing for no value; '' for one that does not parse
      */
     public static function cleanJson( $json_string ) {
@@ -468,9 +476,14 @@ class Sanitize {
          * number zero -- and is falsy in PHP, so a truthiness guard here rejects
          * a legitimate document. The same trap as a dimension value of '0'.
          */
-        if ( $json_string === null || $json_string === '' ) {
+        if ( $json_string === null || $json_string === '' || $json_string === [] ) {
 
             return;
+        }
+
+        if ( is_array( $json_string ) ) {
+
+            return json_encode( self::parsedArray( $json_string ) );
         }
 
         $decoded = json_decode( $json_string, true );
@@ -483,5 +496,29 @@ class Sanitize {
         }
 
         return json_encode( $decoded );
+    }
+
+    /**
+     * A parsed query-string array with its values cleaned as tracking text, and
+     * every array keyed only by integers made a list.
+     *
+     * @param  array<mixed> $input
+     * @return array<mixed>
+     */
+    private static function parsedArray( array $input ) {
+
+        $output = [];
+
+        foreach ( $input as $key => $value ) {
+
+            $output[ $key ] = is_array( $value ) ? self::parsedArray( $value ) : self::cleanTrackingText( $value );
+        }
+
+        if ( $output && count( array_filter( array_keys( $output ), 'is_int' ) ) === count( $output ) ) {
+
+            $output = array_values( $output );
+        }
+
+        return $output;
     }
 }
