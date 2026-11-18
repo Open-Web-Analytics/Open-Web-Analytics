@@ -558,8 +558,6 @@ namespace OWA\Module\Base\Classes;
 
              $this->config->set('settings', $in_place_config);
 
-             //print_r($this->config->get('settings'));
-
          }
      }
 
@@ -851,7 +849,6 @@ namespace OWA\Module\Base\Classes;
 
                 $config->set('settings', serialize($new_config));
 
-                //$config->set('settings', serialize(array_merge($settings, $this->db_settings)));
             } else {
                 $config->set('settings', serialize($this->db_settings));
             }

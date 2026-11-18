@@ -103,7 +103,6 @@ class Sanitize {
      */
     public static function stripAllTags( $input = '' ) {
 
-        //$output = owa_sanitize::stripWhitespace( $input );
         $output = \OWA\Module\Base\Classes\Sanitize::stripScriptsAndCss( $input );
         $output = \OWA\Module\Base\Classes\Sanitize::stripImages( $output );
         $output = \OWA\Module\Base\Classes\Sanitize::stripHtml( $output );

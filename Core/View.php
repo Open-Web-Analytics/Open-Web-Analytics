@@ -205,8 +205,6 @@ class View extends \OWA\Core\Base {
             $this->data['validation_errors'] ?? []
         );
 
-        //$this->_setLinkState();
-
         // assemble subview
         if (!empty($this->data['subview'])) {
 

@@ -708,7 +708,6 @@ class Db extends \OWA\Core\Base {
         $this->limit(1);
         $ret = $this->_selectQuery();
         return (is_array($ret) && isset($ret[0])) ? $ret[0] : null;
-        //return is_null($ret)?null:$ret[0];
     }
 
     /**
@@ -892,9 +891,6 @@ class Db extends \OWA\Core\Base {
         $set = '';
 
         foreach ($params as $k => $v) {
-
-            //$sql_cols = $sql_cols.$key;
-            //$sql_values = $sql_values."'".$this->prepare($value)."'";
 
             // Add commas
             if ($i != 0):
@@ -1296,7 +1292,6 @@ class Db extends \OWA\Core\Base {
     public function _makeOrderByClause() {
 
         $sorts = $this->_fetchSqlParams('orderby');
-        //print_r($sorts);
         if (!empty($sorts)) {
 
             $order = $this->_fetchSqlParams('order');

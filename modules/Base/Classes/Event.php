@@ -14,13 +14,7 @@ class Event {
      */
     public $properties = [];
 
-    /**
-     * State
-     *
-     * @var string
-     */
-    //var $state;
-
+    /** @var string */
     public $eventType;
 
     /**
@@ -136,7 +130,6 @@ class Event {
     public function get($name) {
 
         if(array_key_exists($name, $this->properties)) {
-            //print_r($this->properties[$name]);
             return $this->properties[$name];
         } else {
             return false;

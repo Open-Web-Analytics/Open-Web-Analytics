@@ -148,8 +148,6 @@ class Metric extends \OWA\Core\Base {
             $this->params = $params;
         }
             
-        //$this->db = owa_coreAPI::dbSingleton();
-
         parent::__construct();
     }
     

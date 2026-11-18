@@ -21,7 +21,6 @@ class ServiceUser extends \OWA\Core\Base {
     public $assignedSites = [];
 
     public function __construct() {
-        //parent::__construct();
         // create empty user entity
         $this->user = \OWA\Core\CoreAPI::entityFactory('base.user');
         // set default role
@@ -40,13 +39,7 @@ class ServiceUser extends \OWA\Core\Base {
 
         if (! $user_id ) {
 
-            // if there is no user_id and role is everyone
-            // procead with loading sites and
-            //if ( $this->isAnonymousUser() ) {
-            //    return $this->initInternalProperties();
-            //} else {
                 throw new \Exception('No valid userid given!');
-            //}
         }
          
         // if there is a user_id load the user object and other properties.

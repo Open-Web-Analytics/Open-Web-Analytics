@@ -76,8 +76,6 @@ class UpdatesApply extends \OWA\Core\Controller {
         $s = \OWA\Core\CoreAPI::serviceSingleton();
 
         $modules = $s->getModulesNeedingUpdates();
-        //print_r($modules);
-        //return;
 
         // foreach do update in order
 

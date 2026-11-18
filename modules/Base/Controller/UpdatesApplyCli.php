@@ -49,8 +49,6 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
         }
         
         $modules = $s->getModulesNeedingUpdates();
-        //print_r($modules);
-        //return;
         
         // foreach do update in order
         if (!empty($modules)) {

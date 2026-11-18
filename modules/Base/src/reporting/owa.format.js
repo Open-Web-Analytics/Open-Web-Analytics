@@ -230,7 +230,6 @@ OWA.util =  {
     
     makeUrl: function(template, uri, params) {
         var url = this.sprintf(template, uri, jQuery.param(OWA.util.nsAll(params)));
-        //alert(url);
         return url;
     },
     

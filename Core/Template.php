@@ -390,7 +390,6 @@ class Template extends TemplateEngine {
 
         if (!empty($period)) {
             $all_params = array_merge($all_params, $period->getPeriodProperties());
-            //print_r($all_params);
         }
 
         return $all_params;
@@ -797,8 +796,6 @@ class Template extends TemplateEngine {
     public function makePaginationFromResultSet($pagination, $map = [], $add_state = true, $template = '') {
 
         $pages = '';
-        //print_r($pagination);
-        //print $pagination->total_pages;
 
         if ($pagination->total_pages > 1) {
 

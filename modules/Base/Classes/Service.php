@@ -188,9 +188,6 @@ class Service extends \OWA\Core\Base {
         foreach ($this->modules as $k => $module) {
 
             foreach ($module->entities as $entity_k => $entity_v) {
-                // TODO: remove this to make API stateless
-                //$this->entities[] = $module->name.$entity_v;
-                // proper call
                 $this->addEntity($entity_v, $module->name.'.'.$entity_v);
             }
         }
@@ -724,7 +721,6 @@ class Service extends \OWA\Core\Base {
      */
     public function getDenormalizedDimension($name, $entity) {
 
-        //print_r($this->denormalizedDimensions);
         if (array_key_exists($name, $this->denormalizedDimensions)) {
             if (array_key_exists($entity, $this->denormalizedDimensions[$name])) {
                 return $this->denormalizedDimensions[$name][$entity];

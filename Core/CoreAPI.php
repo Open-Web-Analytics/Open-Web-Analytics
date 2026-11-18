@@ -1521,7 +1521,6 @@ class CoreAPI {
         }
 
         $obj = \OWA\Core\Lib::factory(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($module) . '/Classes/', $class_ns, $class, $params);
-        //$obj->module = $module;
 
         return $obj;
     }
@@ -3441,7 +3440,6 @@ class CoreAPI {
 
             }
 
-            //$seed = md5($seed . $rnd_value);
         }
         // Take the first 8 digits for our value
         $value = substr($rnd_value, 0, 8);

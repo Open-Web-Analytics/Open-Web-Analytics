@@ -36,9 +36,6 @@ class OptionsModules extends \OWA\Core\AdminController {
 
         ksort($dirs);
 
-        // remove base module so it can't be deactivated
-        // unset($dirs['base']);
-
         // getActiveModules() returns runtime module names (the lowercase config
         // keys, e.g. 'maxmind_geoip'), but $dirs is keyed by on-disk directory name,
         // which is PascalCase post-PSR-4 (e.g. 'MaxmindGeoip'). Match on the stored

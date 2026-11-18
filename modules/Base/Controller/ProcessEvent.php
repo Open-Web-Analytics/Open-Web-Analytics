@@ -93,7 +93,6 @@ class ProcessEvent extends \OWA\Core\Controller {
 
         // Kept as the text that was sent (Sanitize::cleanTrackingText()), applied back below.
         $sanitized_properties = \OWA\Module\Base\Classes\Sanitize::cleanTrackingText( $unsanitized_properties );
-        //owa_coreAPI::debug( print_r($sanitized_properties, true ) );
 
         // translate custom var properties
         $teh->translateCustomVariables( $this->event );

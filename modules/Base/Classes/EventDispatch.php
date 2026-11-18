@@ -286,8 +286,6 @@ class EventDispatch {
 
         $responses = [];
         \OWA\Core\CoreAPI::debug("Notifying listeners of ".$event->getEventType());
-        //print_r($this->listenersByEventType[$event_type] );
-        //print $event->getEventType();
         /*
          * The listeners for this dispatch name, plus any registered for a
          * namespace it falls under. A custom event's name belongs to the site, so
@@ -408,7 +406,6 @@ class EventDispatch {
      * @depricated
      */
     public function log($event_params, $event_type = '') {
-        //owa_coreAPI::debug("Notifying listeners of tracking event type: $event_type");
 
         if (!is_a($event_params, \OWA\Module\Base\Classes\Event::class)) {
             $event = new \OWA\Module\Base\Classes\Event();

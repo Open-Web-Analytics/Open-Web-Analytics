@@ -50,9 +50,6 @@ $owa = new owa( $config );
 
 if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
 
-    // setting CLI mode to true
-    //$owa->setSetting('base', 'cli_mode', true);
-    
     // An admin with no user_id. A login name here would reach nonces,
     // named-user logging and anything stored per user.
     $owa->setCurrentUser('admin');

@@ -68,9 +68,7 @@ class CommandQueue {
 
     push(cmd, callback) {
 
-        //alert(func[0]);
         var args = Array.prototype.slice.call(cmd, 1);
-        //alert(args);
 
         var obj_name = '';
         var method = '';
@@ -464,11 +462,6 @@ class CommandQueue {
         	this.push(this.asyncCmds.shift(), callback);
         }
      
-        /*
-        for (var i=0; i < this.asyncCmds.length;i++) {
-            this.push(this.asyncCmds[i]);
-        }
-        */
     }
 
     /** @internal The `pause-owa` command. */

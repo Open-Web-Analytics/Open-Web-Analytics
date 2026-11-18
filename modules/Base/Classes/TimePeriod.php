@@ -34,8 +34,6 @@ class TimePeriod {
 
     public function __construct() {
 
-        //parent::__construct();
-
         $this->startDate = new \OWA\Module\Base\Classes\Date();
         $this->endDate = new \OWA\Module\Base\Classes\Date();
     }
@@ -719,8 +717,6 @@ class TimePeriod {
         $period_params['period'] = $this->get();
         $period_params['startDate'] = $this->startDate->getYyyymmdd();
         $period_params['endDate'] = $this->endDate->getYyyymmdd();
-        //$period_params['startTime'] = $this->startDate->getTimestamp();
-        //$period_params['endTime'] = $this->endDate->getTimestamp();
         return $period_params;
     }
 

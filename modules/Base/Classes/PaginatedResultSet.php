@@ -351,8 +351,6 @@ class PaginatedResultSet {
      */
     public function setResultSetUrls( $query_params ) {
         
-        //owa_coreAPI::debug('result set urls query params: ' . $query_params);
-        
         $urls = [];
         $auth = \OWA\Core\Auth::get_instance();
         $api_url = \OWA\Core\CoreAPI::getSetting('base', 'rest_api_url');

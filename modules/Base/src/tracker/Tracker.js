@@ -288,11 +288,6 @@ class OWATracker  {
 	
 	
 	
-		//var OWA = owa;
-		//OWA.event = event;
-	
-	    //this.setDebug(true);
-	
 	    // register cookies
 	    //
 	    // All JSON. Two of these used to be 'assoc', a bespoke
@@ -874,11 +869,8 @@ class OWATracker  {
                         // add cookie domain hash for current cookie domain
                         var value = Util.urldecode(pair[1]);
                         OWA.debug('pair: %s', value);
-                        //OWA.debug('about to decode shared link state value: %s', value);
                         var decodedvalue = Util.decodeCookieValue(value);
-                        //OWA.debug('decoded shared link state value: %s', JSON.stringify(decodedvalue));
                         var format = Util.getCookieValueFormat(value);
-                        //OWA.debug('format of decoded shared state value: %s', format);
 
                         // Only restore stores that decoded to a populated object.
                         // An empty sharable store (e.g. a visitor with no campaign
@@ -1036,8 +1028,6 @@ class OWATracker  {
                 OWA.debug( 'no document.domain to resolve a cookie domain from' );
                 return;
             }
-            //this.setOption('cookie_domain_mode', 'auto');
-            //OWA.setSetting('cookie_domain_mode', 'auto');
         }
 
         // remove the leading period
@@ -1102,7 +1092,6 @@ class OWATracker  {
                 OWA.debug( 'Overlay fragment ignored: its api_url is not this OWA server.' );
                 return;
             }
-            //var domain = this.getCookieDomain();
 
             // Deliberately NOT written to a cookie. The payload carries a
             // credential, and a cookie on the tracked site's own domain is
@@ -2159,8 +2148,6 @@ class OWATracker  {
 
         } else {
 
-            //properties.target_url = targ.parentNode.href || null;
-
         }
 
         return properties;
@@ -2452,14 +2439,12 @@ class OWATracker  {
 
         //if all that works then log
         if (this.getOption('logClicksAsTheyHappen')) {
-            //this.trackEvent(full_click);
             this.trackEvent(click);
         }
 
         this.classifyClickTarget( click.get( 'target_url' ), click );
 
 
-        //this.click = full_click;
         this.click = click;
     }
 
@@ -3772,10 +3757,8 @@ class OWATracker  {
     setVisitorId( event, callback ) {
 
         var visitor_id =  OWA.getState( 'v', 'vid' );
-        //OWA.debug('vid: '+ visitor_id);
         if ( ! visitor_id ) {
             var old_vid_test =  OWA.getState( 'v' );
-            //OWA.debug('vid: '+ visitor_id);
 
             if ( ! Util.is_object( old_vid_test ) ) {
                 visitor_id = old_vid_test;
@@ -5147,7 +5130,6 @@ class OWATracker  {
      * @param {boolean} [block]  internal; leave unset
      */
     trackEvent(event, block) {
-        //OWA.debug('pre global event: %s', JSON.stringify(event));
 
         if ( this.getOption('cookie_domain_set') != true ) {
             // set default cookie domain

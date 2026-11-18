@@ -278,7 +278,6 @@ class Heatmap {
     plotClickData(data) {
 
         if (data) {
-            //OWA.debug('setClicks says data is defined');
             this.clicks = data.data;
 
             //set more flag
@@ -624,10 +623,7 @@ class Heatmap {
     getDim(d) {
 
         var w=200, h=200, scr_h, off_h;
-        //OWA_instance.setSetting('debug', true);
         if( d.height ) { 
-            //OWA_instance.debug("doc dims %s %s", d.width, d.height);
-            //return {'w':d.width,'h':d.height};
         }
         
         if( d.body ) {

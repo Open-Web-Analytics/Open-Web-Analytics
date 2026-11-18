@@ -307,8 +307,6 @@ class Mysql extends \OWA\Core\Db {
             $this->query($sql, $params);
         }
 
-        //$this->result = array();
-
         if (!$this->new_result) {
             return null;
         }

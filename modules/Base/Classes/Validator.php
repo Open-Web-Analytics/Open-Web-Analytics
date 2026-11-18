@@ -99,7 +99,6 @@ namespace OWA\Module\Base\Classes;
             } else {
                 \OWA\Core\CoreAPI::debug('Validation succeeded.');
             }
-            //owa_coreAPI::debug( $this->getErrorMsgs() );
         }
           
     }

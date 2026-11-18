@@ -700,7 +700,6 @@ class ResultSetManager extends \OWA\Core\Base {
     public function constraintsStringToArray($string) {
 
         if ($string) {
-            //print_r($string);
             // add string to query params array for use in URLs.
             $this->query_params['constraints'] = $string;
 
@@ -882,7 +881,6 @@ class ResultSetManager extends \OWA\Core\Base {
         if ( ! $constraints ) {
             $constraints = $this->getConstraints();
         }
-        //owa_coreAPI::debug(print_r($constraints, true));
         foreach ($constraints as $k => $constraint) {
 
             $this->applyConstraint($constraint, $db, $entity);
@@ -1125,17 +1123,6 @@ class ResultSetManager extends \OWA\Core\Base {
             if ( $this->isMetric( $item['name'] ) ) {
                 $metrics[$item['name']] = $item;
 
-                // add to all metrics or dimensions array - needed to determin base entity
-                /*
-if ( ! in_array($item['name'], $this->allMetrics) ) {
-                    $this->allMetrics[] = $item['name'];
-                }
-
-                if ( ! in_array($item['name'], $this->allDimensions) ) {
-                    $this->allDimensions[] = $item['name'];
-                }
-*/
-
             } elseif ($this->isDimension( $item['name'] ) ) {
                 $dimensions[$item['name']] = $item;
 
@@ -1241,7 +1228,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         $dims = [];
 
         $constraints = $this->getConstraints();
-        //print_r($constraints);
         if (!empty($constraints)) {
 
             foreach ($constraints as $carray) {
@@ -1504,7 +1490,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                     $order = 'ASC';
                 }
 
-                //$col_name = $this->getColumnName($column);
                 $check = $this->isSortValid($column);
 
                 if ($check) {
@@ -1812,7 +1797,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
             else {
                 // can't throw exception here as the metrics are sometimes used to geenrate calculated metrics
                 // therefor no meta data is applied as this stage.
-                //throw new Exception($k.' is not a metric or dimension. Check the configuration!');
             }
 
 
@@ -2096,7 +2080,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
         if (array_key_exists($key, $this->labels)) {
             return $this->labels[$key];
         } else {
-            //owa_coreAPI::debug("No label found for $key.");
         }
 
     }
@@ -2262,7 +2245,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
      * @return void
      */
     public function applyMetrics() {
-        //print_r($this->metrics);
         foreach($this->metrics as $k => $metric_name) {
 
             if (!array_key_exists($metric_name, $this->calculatedMetrics)) {
@@ -2270,7 +2252,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 $m = $this->metricObjects[$metric_name];
 
                 $select = $m->getSelect();
-                //print_r ($select);
                 $this->db->selectColumn($select[0], $select[1]);
             } else {
                 $m = $this->getCalculatedMetricByName($metric_name);
@@ -2291,7 +2272,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
                         $child = $this->metricObjects[$child_name];
                         $select = $child->getSelect();
-                        //print_r ($select[0]);
                         $this->db->selectColumn($select[0], $select[1]);
                         // needed so we can remove this temp metric later
                         $this->childMetrics[] = $child_name;
@@ -2931,7 +2911,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                         $this->applySorts();
                     
                         foreach ($sorts as $sort) {
-                            //$this->db->orderBy($sort[0], $sort[1]);
                             $this->resultSet->sortColumn = $sort[0];
                             
                             if (isset($sort[1])){
@@ -3012,7 +2991,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
 
             if ( isset( $segment['metrics'] ) ) {
 
-                //$this->applyConstraints( $segment['metrics'], $db);
             }
 
             if ( isset( $segment['dimensions'] ) ) {
@@ -3022,7 +3000,6 @@ if ( ! in_array($item['name'], $this->allMetrics) ) {
                 // apply siteId, startDate, and endDate constraints
                 $constraint_names = ['siteId', 'date'];
                 $constraints_apply = [];
-                //print_r($this->params['constraints']);
                 foreach ( $constraint_names as $name ) {
 
                     $con = $this->getConstraint( $name );

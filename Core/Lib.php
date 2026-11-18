@@ -557,7 +557,6 @@ class Lib {
      * @return null
      */
     public static function redirectToView($data) {
-        //print_r($data);
         $c = \OWA\Core\CoreAPI::configSingleton();
         $config = $c->fetch('base');
 
@@ -852,7 +851,6 @@ class Lib {
     public static function encryptOldPassword($password) {
 
         return md5(strtolower($password).strlen($password));
-        //return owa_coreAPI::saltedHash( $password, 'auth');
     }
     /**
      * @param  string $password
@@ -1095,7 +1093,6 @@ class Lib {
      */
     public static function crc32AsHex($string) {
         $crc = crc32($string);
-        //$crc += 0x100000000;
         if ($crc < 0) {
             $crc = 0xFFFFFFFF + $crc + 1;
         }

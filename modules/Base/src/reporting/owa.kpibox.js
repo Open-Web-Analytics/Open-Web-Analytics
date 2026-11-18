@@ -250,7 +250,6 @@ OWA.kpiBox.prototype = {
             + 'aria-label="%3$s" data-ui="kpi-next"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>'
             + '</div><div style="clear:both;"></div>', con_id,
             OWA.util.escapeHtml( OWA.l( 'Show earlier metrics' ) ), OWA.util.escapeHtml( OWA.l( 'Show later metrics' ) ) ) );
-        //jQuery('#' + dom_id).append('<div style="clear:both;"></div>');
 
         var ordered = this.orderedAggregates( resultSet );
 

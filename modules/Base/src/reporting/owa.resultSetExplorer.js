@@ -20,7 +20,6 @@ OWA.resultSet = function( attributes ) {
 OWA.resultSet.prototype = {
 
     getMetricLabel : function(name) {
-        //alert(this.resultSet.aggregates[name].label);
         if (this.aggregates[name].label.length > 0) {
             return this.aggregates[name].label;
         } else {
@@ -450,9 +449,7 @@ OWA.resultSetExplorer.prototype = {
     },
 
     dynamicFunc : function (func){
-        //alert(func[0]);
         var args = Array.prototype.slice.call(func, 1);
-        //alert(args);
         this[func[0]].apply(this, args);
     },
 
@@ -619,7 +616,6 @@ OWA.resultSetExplorer.prototype = {
 
                     for (var y in this.columnLinks) {
                         if (this.columnLinks.hasOwnProperty(y)) {
-                            //alert(this.dom_id + ' : '+y);
                             var template = this.columnLinks[y].template;
 
                             /*
@@ -647,7 +643,6 @@ OWA.resultSetExplorer.prototype = {
                             }
 
                             if (this.resultSet.resultsRows[i][y].name.length > 0) {
-                                //if (this.resultSet.resultsRows[i][this.columnLinks[y]].name.length > 0) {
 
                                 for (var z in this.columnLinks[y].params) {
 
@@ -673,8 +668,6 @@ OWA.resultSetExplorer.prototype = {
             // convery yyyymmdd to javascript timestamp as  flot requires that
             case 'yyyymmdd':
 
-                //date = jQuery.datepicker.parseDate('yymmdd', value);
-                //value = Date.parse(date);
                 var year = value.substring(0,4) * 1;
                 var month = (value.substring(4,6) * 1) -1;
                 var day = value.substring(6,8) * 1;
@@ -697,9 +690,7 @@ OWA.resultSetExplorer.prototype = {
         var curr_date = d.getUTCDate();
         var curr_month = d.getUTCMonth() + 1;
         var curr_year = d.getUTCFullYear();
-        //alert(d+' date: '+curr_month);
         var date =  curr_month + "/" + curr_date + "/" + curr_year;
-        //var date =  curr_month + "/" + curr_date;
         return date;
     },
 

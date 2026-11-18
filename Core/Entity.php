@@ -170,7 +170,6 @@ class Entity {
             $new_cols = implode(', ', $new_cols);
         endif;
         
-        //print_r($new_cols);
         return $new_cols;
         
     }
@@ -188,7 +187,6 @@ class Entity {
         
         foreach ($properties as $k => $v) {
             
-            //if ( ! empty( $array[$v] ) ) {
             if ( array_key_exists( $v, $array ) ) {
                 if ( ! empty( $this->properties ) ) {
                     $this->set($v, $this->applyStorageDefault( $v, $array[$v] ), $apply_filters, false);

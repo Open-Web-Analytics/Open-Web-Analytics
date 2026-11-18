@@ -22,7 +22,6 @@ namespace OWA\Core\Validation;
 
                  if ($str != $this->getConfig('match')) {
                      $this->hasError();
-                     //print $str;
                  }
 
              break;

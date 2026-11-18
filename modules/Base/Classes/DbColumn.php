@@ -427,7 +427,6 @@ class DbColumn {
         // of it, so the caller can ask for the inline one to be left off.
         if ($this->get('is_primary_key') == true && ! $omit_primary_key):
             $definition .= ' '.OWA_DTD_PRIMARY_KEY;
-            //$definition .= sprintf(", INDEX (%s)", $this->get('name'));
         endif;
 
          return $definition;

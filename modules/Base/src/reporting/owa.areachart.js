@@ -270,7 +270,6 @@ OWA.areaChart.prototype = {
         
         var that = this;
         var h =  jQuery("#"+that.dom_id).height();
-        //alert(h);
         return h;    
     },
     
@@ -281,8 +280,6 @@ OWA.areaChart.prototype = {
             // convery yyyymmdd to javascript timestamp as  flot requires that
             case 'yyyymmdd':
                 
-                //date = jQuery.datepicker.parseDate('yymmdd', value);
-                //value = Date.parse(date);
                 var year = value.substring(0,4) * 1;
                 var month = (value.substring(4,6) * 1) -1;
                 var day = value.substring(6,8) * 1; 
@@ -2991,11 +2988,8 @@ OWA.areaChart.prototype = {
         
         var that = this;
         
-        //var w = this.getContainerWidth();
         var w = jQuery("#"+dom_id).css('width');
-        //alert(w);
         var h = this.getContainerHeight() || this.getOption('height');
-        //var h = this.getOption('height');
         
         /*
          * The plot, and a place under it for the legend.

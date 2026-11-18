@@ -248,8 +248,6 @@ class Controller extends \OWA\Core\Base {
         // in various concrete controller classes as they screw up things when
         // redirecting from one controller to another.
 
-        // set auth status for downstream views
-        //$this->set('auth_status', true);
         //set request params
         $this->set('params', $this->params);
         // set site_id
@@ -288,7 +286,6 @@ class Controller extends \OWA\Core\Base {
     
             //check for errors
             if ($this->v->hasErrors === true) {
-                //print_r($this->v);
                 // if errors, do the errorAction instead of the normal action
                 $this->set('validation_errors', $this->getValidationErrorMsgs());
 
@@ -463,10 +460,6 @@ class Controller extends \OWA\Core\Base {
             if ( ! $this->isCurrentUserCapable( $currentUser ) ) {
                 \OWA\Core\CoreAPI::debug('User does not have capability required by this controller.');
                 $this->authenticatedButNotCapableAction();
-                //needed?
-                //$this->set('go', urlencode(owa_lib::get_current_url()));
-                // needed? -- set auth status for downstream views
-                //$this->set('auth_status', true);
                 return false;
             }
 
@@ -817,18 +810,6 @@ class Controller extends \OWA\Core\Base {
             'do' 			=> $do,
             'view_method'	=> 'redirect'
         ];
-        
-/*
-        if ( array_key_exists('status_code', $this->data) && ! empty($this->data['status_code'] ) ) {
-            
-            $new_data['status_code'] = $this->data['status_code'];
-        }
-        
-        if ( array_key_exists('error_code', $this->data) && ! empty($this->data['error_code'] ) ) {
-            
-            $new_data['error_code'] = $this->data['error_code'];
-        }
-*/
         
         foreach ($this->data as $k => $param) {
             

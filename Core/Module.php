@@ -44,13 +44,6 @@ abstract class Module {
     public $version;
 
     /**
-     * Schema Version of Module
-     *
-     * @var string
-     */
-    //var $schema_version = 1;
-
-    /**
      * Name of author of module
      *
      * @var string
@@ -221,18 +214,11 @@ abstract class Module {
         // runtime name stays lowercase; on-disk dir is PascalCase (PSR-4)
         $this->path = \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( $this->name ) . '/';
         
-        //parent::__construct();
-        
         /**
          * Initial registration calls
          */
         $this->init();
         
-        /**
-         * Register Filters
-         */
-        //$this->registerFilters();
-
         /**
          * Register Metrics
          */
@@ -994,13 +980,11 @@ abstract class Module {
                     $all_tables_are_new = false;
                 }
 
-                //owa_coreAPI::debug("about to  execute createtable");
                 $status = $entity->createTable();
 
                 if ($status != true) {
                     \OWA\Core\CoreAPI::notice("Entity Installation Failed.");
                     $errors = true;
-                    //return false;
                 }
 
             }
@@ -1114,7 +1098,6 @@ abstract class Module {
 
         // list files in a directory (on-disk: PascalCase module dir + PSR-4 'Update' segment)
         $files = \OWA\Core\Lib::listDir(\OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName($this->name) . '/Update', false);
-        //print_r($files);
 
         $current_schema_version = \OWA\Core\CoreAPI::getSetting($this->name, 'schema_version');
 
@@ -1163,8 +1146,6 @@ abstract class Module {
 
         // sort the array
         ksort($this->updates, SORT_NUMERIC);
-
-        //print_r(array_keys($this->updates));
 
         foreach ($this->updates as $k => $obj) {
 
@@ -1278,10 +1259,7 @@ abstract class Module {
         if (empty($current_schema)) {
             $current_schema = 1;
 
-            // if this is the base module then we need to let filters know to install the base schema
             if ($this->name === 'base') {
-            //    $s = owa_coreAPI::serviceSingleton();
-            //    $s->setInstallRequired();
             }
         }
 
@@ -1451,7 +1429,6 @@ abstract class Module {
             'description'     => $map['description'],
             'group'         => $map['group']
         ];
-        //print_r($definition);
         $this->metrics[ $map['name'] ][] = $definition;
 
     }

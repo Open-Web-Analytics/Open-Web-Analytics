@@ -45,9 +45,7 @@ class Util {
     static readAllCookies() {
     
         Util.debug('Reading all cookies...');
-        //var dhash = '';
         var jar = {};
-        //var nameEQ = name + "=";
         var ca = document.cookie.split(';');
         
         if (ca) {
@@ -67,7 +65,6 @@ class Util {
 
                 var key = cat.substring( 0, pos );
                 var value = cat.substring( pos + 1 );
-                //Util.debug('key %s, value %s', key, value);
                 // create cookie jar array for that key
                 // this is needed because you can have multiple cookies with the same name
                 if ( ! jar.hasOwnProperty(key) ) {
@@ -124,12 +121,9 @@ class Util {
                 
                     
             } else {
-                //    domain = '.'+ domain
                 Util.debug("erasing " + name + " in domain3: " + domain);
                 this.setCookie(name,"",-2,"/",domain);    
             }
-            //Util.debug("erasing " + name + " in domain: ");
-            //this.setCookie(name,"",-2,"/");    
         }
         
     }
@@ -323,7 +317,6 @@ class Util {
         
         var format = Util.getCookieValueFormat(string);
         var value = '';
-        //Util.debug('decodeCookieValue - string: %s, format: %s', string, format);        
         if (format === 'json') {
             value = JSON.parse(string);
         
@@ -420,7 +413,6 @@ class Util {
                 
                 var assoc = {};
                 var outer_array = str.split(outer);
-                //Util.debug('outer array: %s', JSON.stringify(outer_array));
                 for (var i = 0, n = outer_array.length; i < n; i++) {
                 
                     var inside_array = outer_array[i].split(inner);
@@ -429,7 +421,6 @@ class Util {
                 }    
             }
             
-            //Util.debug('jsonFromAssocString: ' + JSON.stringify(assoc));
             return assoc;
         }
     }
@@ -448,7 +439,6 @@ class Util {
                 string += '|||';
             }
         }
-        //Util.debug('Util.assocStringFromJson: %s', string);
         return string;    
     
     }

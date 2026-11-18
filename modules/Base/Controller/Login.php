@@ -61,7 +61,6 @@ class Login extends \OWA\Core\Controller {
         // default landing page instead of back where they were headed. Re-derive
         // it from the request, sanitised the same way action() does.
         $this->set('go', \OWA\Module\Base\Classes\Sanitize::cleanUrl( $this->getParam('go') ));
-        //$this->set('error_code', 2002);
         $this->set('user_id', $this->getParam('user_id'));
     }
 }
