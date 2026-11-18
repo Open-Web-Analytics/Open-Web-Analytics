@@ -20,6 +20,17 @@ class UsersEdit extends \OWA\Core\AdminController {
         // check that user_id is present
         $this->addValidation('user_id', $this->getParam('user_id'), 'required');
 
+        // Checked when one is posted: the form posts none for the admin user.
+        if ( $this->getParam('role') !== null && $this->getParam('role') !== '' ) {
+
+            $roles = \OWA\Core\CoreAPI::getAssignableRoles();
+            $this->addValidation('role', $this->getParam('role'), 'inArray', [
+                'possible_values' => $roles,
+                'errorMsg'        => sprintf( \OWA\Core\CoreAPI::t( 'A user\'s role is one of: %s.' ), implode( ', ', $roles ) ),
+                'stopOnError'     => true,
+            ] );
+        }
+
         // Check user name exists
         $userEntityConf = [
             'entity'    => 'base.user',
