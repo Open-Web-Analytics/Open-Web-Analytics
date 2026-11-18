@@ -2,14 +2,8 @@
 /**
  * Reporting-facet fixture: known data whose EXACT numbers a spec can assert.
  *
- * WHY THIS EXISTS
- * The reporting e2e asserted that the dashboard rendered -- grids present,
- * dropdown sprites loaded, columns aligned -- and its only numeric assertion was
- * `expect(gridText).toMatch(/\b2\b/)`, which passes if a "2" appears anywhere. So
- * every number on every report could have been wrong and CI would have stayed
- * green. It did: Varnish was stripping owa_source before PHP saw it, the Source
- * Detail report ran with no constraint at all, and every source showed the same
- * unfiltered total. A human found that, not the suite.
+ * Asserting that a report renders says nothing about whether its numbers are
+ * right; these facets are asserted by value.
  *
  * THE DISTRIBUTION IS DELIBERATELY ASYMMETRIC
  * Every facet below answers with a DIFFERENT number, and no number is repeated:
@@ -31,13 +25,8 @@
  * The expected values are RETURNED rather than hardcoded in the spec, so the
  * fixture and its assertions cannot drift apart.
  *
- * SESSIONS ARE DRIVEN THROUGH logEvent NOW, and the change was forced rather than
- * chosen. They used to be base.session rows written straight to the table, with
- * source_id and medium set on them -- which was defensible while this exercised
- * only the reporting engine. v2 has no session table and no source dimension:
- * a session is a session_start row in owa_event_raw, and source and medium are
- * columns the cube pass derives. So there was nowhere to write the distribution
- * to, and every facet here measured an empty table.
+ * SESSIONS ARE DRIVEN THROUGH logEvent: a session is a session_start row in
+ * owa_event_raw, and source and medium are columns the cube pass derives.
  *
  * Each session is one tagged landing page view, and the cube is built at the end.
  * The tags are what state the distribution -- MediumStep is
@@ -105,9 +94,8 @@ function provision(): array
     $site_id = md5(FIXTURE_DOMAIN);
 
     /*
-     * A Property of its own. A v2 cube is per Property, and a site row with no
-     * property_id has no cube to build -- which is how this fixture came to
-     * report "cube not built" on every run.
+     * A Property of its own: a cube is per Property, and a site row with no
+     * property_id has no cube to build.
      */
     $p = \OWA\Core\CoreAPI::entityFactory('base.property');
     $p->set('id', fixturePropertyId());
@@ -152,12 +140,6 @@ function provision(): array
 
                 /*
                  * ONE TAGGED LANDING PAGE VIEW PER SESSION, through logEvent.
-                 *
-                 * This wrote base.session rows with source_id and medium columns,
-                 * and v2 has neither: the session is a session_start row in
-                 * owa_event_raw, and source and medium are CUBE columns the pass
-                 * derives. So the whole distribution existed only in a table
-                 * nothing reads, and all nine facet specs measured an empty one.
                  *
                  * TAGGED RATHER THAN CLASSIFIED FROM THE REFERRER. MediumStep is
                  * COALESCE(tagged_medium, classify(referer_host)) -- the tag wins
@@ -222,9 +204,7 @@ function provision(): array
      * hands the specs an empty table with no explanation. Building it here is the
      * same step seed_reporting_fixtures.php ends with, for the same reason.
      *
-     * The verification is not the fixture describing the query plan -- the thing
-     * this file's header refuses. It is the opposite: the distribution is DECLARED
-     * in DISTRIBUTION, and this fails loudly if the pipeline did not reproduce it,
+     * The distribution is DECLARED in DISTRIBUTION, and this fails loudly if the pipeline did not reproduce it,
      * rather than letting the specs report a wrong number as the expected one.
      */
     $cube = buildFixtureCube($site_id);
@@ -260,15 +240,6 @@ function provision(): array
         ],
     ];
 }
-
-/*
- * sourceDim() stood here and is removed with the session rows it existed for.
- *
- * It minted a base.source_dim row so a session's source_id had something to point
- * at. v2 stores no dimension key: the source is a column ON the cube row, derived
- * by SourceStep from the tag or the referrer, so there is nothing to join and
- * nothing to pre-create.
- */
 
 /** The fixture Property's id: derived, so provision and cleanup agree across runs. */
 function fixturePropertyId(): string

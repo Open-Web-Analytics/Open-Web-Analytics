@@ -15,18 +15,15 @@ namespace OWA\Module\Base\Controller;
  *
  * THE COLUMN GOES WITH IT, and so do the values in it. They are derived -- a
  * build put them there from `params`, which this does not touch -- so
- * registering again and rebuilding the range brings them back. That is the
- * whole reason dropping the column is acceptable rather than reckless: the
- * record of what was observed is somewhere else.
+ * registering again and rebuilding the range brings them back.
  *
  * The registration goes now and the column goes at the next reconcile, for the
  * same reason it arrived at one: the DROP is a full table rebuild, and pinned
  * to ALGORITHM=INPLACE because an instant DROP leaves the same row-format
  * metadata an instant ADD does, which makes EXCHANGE PARTITION refuse every
  * later build with error 1731. In between the column is INERT -- a build fills
- * the columns the registry names, and this one is no longer named -- so there
- * is no window in which anything is wrong, only one in which something is
- * untidy. From a CLI it is applied inline, since there is no request to time
+ * the columns the registry names, and this one is no longer named. From a CLI
+ * it is applied inline, since there is no request to time
  * out; --defer leaves it to the build.
  */
 class CustomDimensionDeregisterCli extends CustomDimensionsCli {

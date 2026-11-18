@@ -4,18 +4,10 @@
  *
  * A funnel counts ordered stages over the event stream: a stage counts only
  * those who reached it AFTER the stage before, which no arrangement of metrics
- * and dimensions expresses. That is why it kept a controller when 62 of 64
- * reports became JSON, and why it is a visualization rather than a report.
- *
- * It used to read its stages from a goal's funnel configuration and append one
- * more from the goal's own goal_url -- a stage the report BUILT rather than
- * read, which is exactly the one a key rename silently emptied (the constructor
- * kept saying `url` after the steps started saying `path`, so the last bar
- * constrained on nothing and reported zero). The stages come from the
- * visualization's own definition now, so there is no built stage left to get
- * wrong; the counting assertions below are kept because what they protect --
- * that no stage is constrained on something that matches nothing -- is
- * unchanged.
+ * and dimensions expresses. That is why it has a controller of its own, and
+ * why it is a visualization rather than a report. The stages come from the
+ * visualization's own definition, and the counting assertions below protect
+ * that no stage is constrained on something that matches nothing.
  *
  * So this asserts CONTENT, not that a page rendered: the stage names, their
  * paths, and a non-zero count on every one.
@@ -56,9 +48,7 @@ async function visualizationId(page) {
      *
      * Report links are built with makeLink(), which writes OWA's own URLs in
      * the app namespace -- empty on this install, so the roster's link says
-     * `reportId=` with no prefix. Reading only the prefixed name returned null,
-     * every test then asked for `owa_reportId=null`, and the funnel that could
-     * not be found looked exactly like a funnel that failed to render.
+     * `reportId=` with no prefix.
      */
     const params = new URL(href, page.url()).searchParams;
 
@@ -430,10 +420,9 @@ test.describe('visualization: funnel', () => {
     });
 
     /*
-     * Regression guard (chosen 0.9.6 -> 1.8.7): chosen-js 1.x sizes its
-     * container from the <select>'s width when it is enhanced, which is 0 inside
-     * a hidden form, and the dimension list collapsed to a sliver. The pills
-     * give it an explicit width.
+     * chosen-js 1.x sizes its container from the <select>'s width when it is
+     * enhanced, which is 0 inside a hidden form. The pills give it an explicit
+     * width.
      */
     test("the filter's dimension list opens at a usable width", async ({ page }) => {
         await openFunnel(page);
@@ -449,15 +438,11 @@ test.describe('visualization: funnel', () => {
     });
 
     test('chosen widgets are actually STYLED (stylesheet matches the markup)', async ({ page }) => {
-        // Regression guard for a build-artifact clobber that shipped a WORKING but
-        // completely UNSTYLED control. chosen-js 1.8.7's JS emits .chosen-* markup,
-        // but the SOURCE chosen.css was left as the 0.9.6 .chzn-* stylesheet when the
-        // JS was swapped (commit 36fb9d0b hand-edited only the built CSS artifact).
-        // The next `cli.php cmd=build` regenerated the artifact from the stale source,
-        // so the served CSS had ZERO .chosen-* rules -- the widget rendered as a bare
-        // unstyled text list with no dropdown arrow. So assert the stylesheet actually
-        // takes effect: the sprite-driven dropdown arrow paints a background image.
-        // On the funnel, whose filter's dimension list is a chosen widget.
+        // chosen-js 1.8.7's JS emits .chosen-* markup, so the served CSS must carry
+        // .chosen-* rules or the widget renders as a bare unstyled list. So assert the
+        // stylesheet actually takes effect: the sprite-driven dropdown arrow paints a
+        // background image. On the funnel, whose filter's dimension list is a chosen
+        // widget.
         await openFunnel(page);
 
         const arrowBg = await page.evaluate(() => {

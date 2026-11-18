@@ -7,15 +7,13 @@ use OWA\Module\Base\Classes\GoalEventDefinitionPredicate;
 /*
  * BOOTED, BUT NOT CONNECTED, and the two are different things.
  *
- * This file used to touch no framework at all: the compiler took a stubbed goal
- * event and read a const map of four property names, so nothing had to exist.
- * The check is GoalVocabulary now -- the same one the builder, the save and
- * marking use -- and that answers from the raw entity's own columns, which needs
- * the framework up. The alternative was to keep a second hand-written list of
- * columns here, which is the drift the vocabulary exists to remove.
+ * The check is GoalVocabulary -- the same one the builder, the save and marking
+ * use -- and that answers from the raw entity's own columns, which needs the
+ * framework up. A hand-written list of columns here would be the drift the
+ * vocabulary exists to remove.
  *
  * No DATABASE is needed, which is what testItCompilesWithoutAConnection below
- * still pins: bootstrap_owa.php boots configless when there is no owa-config.php,
+ * pins: bootstrap_owa.php boots configless when there is no owa-config.php,
  * which is the shape of CI's unit job.
  */
 require_once __DIR__ . '/bootstrap_owa.php';
@@ -115,9 +113,7 @@ final class GoalEventDefinitionPredicateTest extends TestCase
      * A condition column IS a cube column, and the value is BOUND, never inlined.
      *
      * Nothing translates: the cube carries every raw column under its own name,
-     * so `page_path` is `page_path`. There used to be a map of four v1 property
-     * names to four owa_document columns here, which is the table the funnel
-     * joined and which v2 ingest does not write.
+     * so `page_path` is `page_path`.
      */
     public function testAnExactPageConditionBecomesAColumnComparison(): void
     {
@@ -165,12 +161,10 @@ final class GoalEventDefinitionPredicateTest extends TestCase
     }
 
     /**
-     * ...and the columns that used to be refused now compile.
+     * ...and columns beyond a handful of property names compile.
      *
-     * tagged_medium and device_type are the two that make the point: neither was
-     * expressible before, one because the map held four names and the other
-     * because it is derived in the row handler and never existed as a property at
-     * all. Both are cube columns.
+     * tagged_medium and device_type make the point: device_type is derived in the
+     * row handler and never exists as a property at all. Both are cube columns.
      */
     public function testTheColumnsTheOldMapCouldNotReachNowCompile(): void
     {

@@ -78,13 +78,10 @@ describe('setCookieDomain: automatic (no argument) resolution from document.doma
     });
 
     test('the CONSTRUCTOR resolves it, so nothing is written against an unknown domain', () => {
-        // This used to assert the opposite -- that cookie_domain_set was still
-        // false after construction, because resolution waited for the first
-        // tracked event. That wait was a bug: every store stamps a hash of the
-        // cookie domain when it is WRITTEN, and readPersistedStore() refuses a
-        // store whose hash does not match, so a custom var set before the first
-        // event (the documented order) was stamped against the wrong domain and
-        // silently lost on the next page load.
+        // The domain is resolved at construction: every store stamps a hash of
+        // the cookie domain when it is WRITTEN, and readPersistedStore() refuses
+        // a store whose hash does not match, so a custom var set before the first
+        // event (the documented order) must be stamped against the real domain.
         setDocumentDomain('example.com');
         const t = newTracker();
 

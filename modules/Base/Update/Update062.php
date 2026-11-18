@@ -67,8 +67,8 @@ class Update062 extends \OWA\Core\Update {
 
         /*
          * First, whatever v1 holds (PLAN 2.30.6). Beacons in 1.x's FILE queue
-         * arrived and were never ingested, in a format v2 does not read, and
-         * the 1.x code that could is gone by now. Their lines are moved to an
+         * arrived and were never ingested, in a format v2 does not read. Their
+         * lines are moved to an
          * archive file in the queue directory, said in a notice, and the
          * upgrade goes on. down() leaves the archive where it is.
          *

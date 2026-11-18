@@ -105,27 +105,24 @@ test.describe('notifications', () => {
         expect(geometry.aboveButtonTop, 'the badge hangs off the top-right corner').toBe(true);
         expect(geometry.clipped, 'the badge overhangs, so it must not be cut off at the edge').toBe(false);
         /*
-         * The bell is no longer the last thing in the bar -- the account menu
-         * is -- so the claim worth making here is that the badge does not run
-         * into it. Which control sits where is asserted in header-nav.spec.js,
-         * where the arrangement is the subject.
+         * The account menu is the last thing in the bar, so the claim worth
+         * making here is that the badge does not run into it. Which control sits
+         * where is asserted in header-nav.spec.js, where the arrangement is the
+         * subject.
          */
         expect(geometry.menuRight, 'the account menu must be in the bar to compare against')
             .not.toBeNull();
     });
 
     /**
-     * Nothing unread, nothing to show.
-     *
-     * The badge used to stay and go grey, on the reasoning that a control which
-     * comes and goes moves the bell under the cursor. It cannot move anything:
-     * the badge overhangs the button and is not part of what spaces the header
-     * controls, which header-nav.spec.js measures with it forced on and off.
+     * Nothing unread, nothing to show. Hiding the badge moves nothing: it
+     * overhangs the button and is not part of what spaces the header controls,
+     * which header-nav.spec.js measures with it forced on and off.
      *
      * The empty case is driven by ANSWERING THE API with an empty list rather
      * than by reading every fixture notification. Reading persists, so a test
      * that cleared them would consume the fixtures every other spec in this
-     * file depends on -- and would pass once, then never again.
+     * file depends on.
      */
     test('the badge shows a count while something is unread', async ({ page }) => {
         const badge = page.locator('#owa_notificationBadge');

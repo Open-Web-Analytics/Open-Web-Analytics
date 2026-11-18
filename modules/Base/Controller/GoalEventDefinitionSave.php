@@ -48,10 +48,8 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         }
 
         /*
-         * A condition with no value counts nothing, and says nothing about it.
-         * This install had a goal in exactly that state -- a type the evaluator
-         * has no case for and no URL -- silently never firing since it was
-         * made. Refusing it here is the cheapest place to notice.
+         * A condition with no value counts nothing, and says nothing about it:
+         * the goal never fires. Refusing it here is the cheapest place to notice.
          */
         /*
          * At least ONE condition with something to compare against.
@@ -77,11 +75,10 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
          * THE TRIGGER HAS TO BE AN EVENT, and the conditions have to name columns
          * that event carries.
          *
-         * Both are gates at ingest now: marking refuses a row whose event_type is
+         * Both are gates at ingest: marking refuses a row whose event_type is
          * not the trigger, and a condition naming a column the row does not have
          * cannot answer, so it never matches. Either mistake produces a goal that
-         * says "active" and counts zero for ever -- which is exactly the state
-         * this install was already in, and the reason to refuse it at the one
+         * says "active" and counts zero for ever, so it is refused at the one
          * point where someone is looking at the screen.
          */
         $trigger = $this->trigger();
@@ -198,12 +195,6 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
         /*
          * The event type the conditions are evaluated against, as chosen.
-         *
-         * It was fixed at 1.x's one goal type -- and at 1.x's NAME for it -- on
-         * the reasoning that the column could be offered as a choice later
-         * without a migration. The choice is here now, and the migration was
-         * needed anyway: nothing read the column, so every row said
-         * base.page_request and marking now gates on it.
          *
          * validate() has already refused anything that is not an event name, so
          * a value reaching this point is one; falling back to the default rather

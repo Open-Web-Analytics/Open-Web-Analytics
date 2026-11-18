@@ -54,16 +54,10 @@ class UsersChangePassword extends \OWA\Core\Controller {
          * 'key', not 'k'.
          *
          * The view reads 'key' -- UsersPasswordEntry::action() sets it under
-         * that name, and View::get() answers FALSE for a name nobody set. So
-         * setting 'k' here rendered the hidden field as value="", and the
-         * passkey was gone from the form the moment any validation failed.
-         *
-         * The effect was a reset that could not be completed: mistype the
-         * confirmation once, get "Your passwords must match", correct it, and
-         * the next submit carried no key at all -- authenticateUserTempPasskey
-         * refused it and the user was redirected to the login form with "can't
-         * find key in the db". Only a brand new reset email, typed correctly
-         * first time, could get through.
+         * that name, and View::get() answers FALSE for a name nobody set. Under
+         * any other name the hidden field renders as value="", and the passkey
+         * is gone from the form the moment any validation fails, so a reset
+         * whose confirmation was mistyped once could not be completed.
          */
         $this->set('key', $this->getParam('k'));
     }

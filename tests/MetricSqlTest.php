@@ -48,15 +48,11 @@ final class MetricSqlTest extends TestCase
     public function testNoAggregateMetricHasAnEmptyExpression(): void
     {
         /*
-         * Core\Metric::getSelect() switches on the aggregation type and used to
-         * have no default, so an unrecognised type returned an undefined
-         * statement -- "a SELECT with a hole in it, built and run without
-         * complaint", as the comment there puts it. It now reports the error,
-         * but a null expression would still reach the query.
+         * Core\Metric::getSelect() switches on the aggregation type and reports an
+         * unrecognised one, but a null expression would still reach the query.
          *
-         * A conversion is exactly when this would happen: a mistyped
-         * metric_type in a config entry produces a metric that registers fine
-         * and computes nothing.
+         * A conversion is exactly when this would happen: a mistyped metric_type in a
+         * config entry produces a metric that registers fine and computes nothing.
          */
         foreach ( Harness::snapshot() as $name => $implementations ) {
 
@@ -133,12 +129,9 @@ final class MetricSqlTest extends TestCase
         }
 
         /*
-         * NOT asserted greater than zero any more. Every calculated metric
-         * became a `ratio` in #1133 -- a formula string cost an eval, a
-         * substitution by metric name that collided when one name contained
-         * another, and a child list restating what the formula already named.
-         * Formulas were then removed in v2.0, so a metric of this kind is one
-         * the build refused. Ratios carry the claim, which the count below
+         * NOT asserted greater than zero: every calculated metric is a `ratio`, and
+         * a formula is refused when the metric is built, so a metric of this kind is
+         * one the build refused. Ratios carry the claim, which the count below
          * checks.
          */
         $this->assertSame( 0, $calculated,

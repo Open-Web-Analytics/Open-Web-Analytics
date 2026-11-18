@@ -7,10 +7,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * A log write that cannot be made is dropped, never thrown.
  *
- * At shutdown the CLI's STDOUT could be closed before the cache persisted
- * itself and logged that it was doing so; the logging library then threw from
- * the closed stream, so a `cmd=update` that had succeeded ended in a fatal and
- * exit code 255. A file that cannot be opened is the same case.
+ * At shutdown the CLI's STDOUT may already be closed when something logs. A
+ * write that threw from the closed stream would turn a `cmd=update` that had
+ * succeeded into a fatal and exit code 255. A file that cannot be opened is the same case.
  */
 final class LogWriteFailureTest extends TestCase
 {

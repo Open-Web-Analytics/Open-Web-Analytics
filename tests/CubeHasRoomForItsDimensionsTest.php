@@ -14,14 +14,9 @@ use OWA\Module\Base\Classes\Cube\Dimensions;
  * arithmetic. MySQL 8.4 refuses a wide table at 65,535 bytes -- the row
  * DEFINITION limit, the sum of declared widths -- and MySQL 8.0 refuses at
  * 8,126, InnoDB's limit on the part of a row that lives on the page. The second
- * is far tighter. Measured on a cube of today's shape: 8.0 takes 19 custom
- * dimensions, 8.4 takes 25.
- *
- * Two models of the first limit were written and both were confidently wrong
- * about the second -- the more careful one predicted 8.4's refusal point
- * exactly, four times over, while 8.0 was refusing something it called fine. So
- * the capacity is measured against whatever server is actually there, and this
- * asserts the outcome rather than the calculation.
+ * is far tighter: on a cube of this shape 8.0 takes 19 custom dimensions, 8.4
+ * takes 25. So the capacity is measured against whatever server is actually
+ * there, and this asserts the outcome rather than a calculation.
  */
 final class CubeHasRoomForItsDimensionsTest extends TestCase
 {
@@ -109,9 +104,9 @@ final class CubeHasRoomForItsDimensionsTest extends TestCase
      * If this fails, a release has added columns to owa_event_raw or to the
      * cube and taken the room with them. Note before reaching for the widest
      * columns: on the limit that actually binds they are nearly free, because
-     * a long VARCHAR is already stored off the page. Measured on MySQL 8.0,
-     * dropping raw_ua bought nothing at all and dropping eight wide columns
-     * bought two dimensions. The on-page cost is in the MANY SHORT columns.
+     * a long VARCHAR is already stored off the page. On MySQL 8.0,
+     * dropping raw_ua buys nothing at all and dropping eight wide columns
+     * buys two dimensions. The on-page cost is in the MANY SHORT columns.
      */
     public function testThereIsRoomForAUsefulNumberOfDimensions(): void
     {

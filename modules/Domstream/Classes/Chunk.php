@@ -163,10 +163,8 @@ final class Chunk {
         }
 
         /*
-         * Read as sent. Ingest entity-encoded what it passed through, so this
-         * decoded the entities first -- which also turned an "&amp;" that was
-         * part of a sample into "&". A beacon queued under that encoding still
-         * reads: when the text is not JSON, its decoded form is tried.
+         * Read as sent. A beacon queued with its text entity-encoded still reads:
+         * when the text is not JSON, its decoded form is tried.
          */
         $samples = json_decode( $raw, true );
 

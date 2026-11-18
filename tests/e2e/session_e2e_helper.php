@@ -2,18 +2,16 @@
 /**
  * Session lifecycle inspector for the self-host e2e runner.
  *
- * The tracker specs can prove a beacon left the browser, but nothing until now
- * asserted that a session actually LANDS -- that one page view yields one
+ * The tracker specs can prove a beacon left the browser; this asserts that a
+ * session actually LANDS -- that one page view yields one
  * session, that a second extends it rather than minting another, and that a lost
  * first beacon does not strand every later hit in that session.
  *
  * Commands:
  *
  *   session-state site=<id>   sessions, request_count, queue_depth, queued_types,
- *                             dangling  (fact rows whose session_id has no row in
- *                             owa_session -- the silent failure the queue never
- *                             reveals, because dom.click_logged and friends reach
- *                             only the dimension handlers, never sessionHandlers)
+ *                             dangling  (raw rows whose session_id has no
+ *                             session_start row)
  *
  *   reset site=<id>           delete this site's rows so a spec starts clean
  *
@@ -89,26 +87,15 @@ function db()
 /*
  * ---- WHAT A SESSION IS ON v2 -----------------------------------------------
  *
- * NOT A ROW. This helper read owa_session, and the v1 event chain that fills it
- * came out of Module.php -- so every lookup answered nothing and each of these
- * three specs asserted against an empty table.
- *
- * A session is the set of owa_event_raw rows sharing a session_id, and its
+ * NOT A ROW. A session is the set of owa_event_raw rows sharing a session_id, and its
  * existence is a `session_start` row: ingest materialises one from the
  * request-scoped is_new_session_start flag, in the same transaction as the page
- * view that carried it. So the questions this helper answers all survive the
- * move, and two of them get SHARPER:
+ * view that carried it. So:
  *
  *   session_count   session_start rows. A click on a page whose page view was
  *                   lost carries no flag, so it raises no marker and the count
- *                   is 0 -- which is what scenario 3 asserts, and it used to
- *                   mean "sessionHandlers never ran".
- *   dangling        raw rows whose session_id has no session_start row. The
- *                   same stranding, read off the same table.
- *
- * Nothing here computes a v1 dimension id. first_page_id, last_page_id,
- * referer_id, source_id and campaign_id were foreign keys into dimension tables
- * v2 does not join, and no spec read them.
+ *                   is 0 -- which is what scenario 3 asserts.
+ *   dangling        raw rows whose session_id has no session_start row.
  */
 
 /** The raw table, asked for rather than spelled out. */
@@ -198,12 +185,9 @@ function sessionState(string $site_id): array
         /*
          * The campaign the session arrived on, under the name the spec reads.
          *
-         * v1 stored a `latest_attributions` JSON blob on the session row, written
-         * by the attribution model. v2 stores the tags as COLUMNS on every row of
-         * the session -- ingest parses them out of page_location on the landing
-         * beacon -- so the session's attribution is its start row's tags. Returned
-         * as a map so a spec can assert on the values without knowing the shape of
-         * a blob that no longer exists.
+         * The tags are COLUMNS on every row of the session -- ingest parses them
+         * out of page_location on the landing beacon -- so the session's
+         * attribution is its start row's tags, returned as a map.
          */
         $attributions = array_filter([
             'source'       => $start['tagged_source'],

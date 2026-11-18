@@ -13,8 +13,8 @@ class CommandQueue {
 
         var name = String( cmd[0] );
 
-        // includes(), not the old strpos() port: that returned an INDEX, and
-        // index 0 is falsy, so a name beginning with '.' answered "no dot".
+        // includes() rather than an index test: index 0 is falsy, and a name
+        // beginning with '.' does contain a dot.
         if ( ! name.includes( '.' ) ) {
             return { object: 'OWATracker', method: name };
         }
@@ -202,27 +202,16 @@ class CommandQueue {
 
                 /*
                  * A command this tracker does not implement is SKIPPED, not
-                 * applied to undefined.
+                 * applied to undefined. A throw here would escape process() and abandon
+                 * every command still queued behind it -- trackPageView, which is pushed
+                 * last, among them.
                  *
-                 * This used to be `window[obj_name][method].apply(...)`
-                 * unguarded, so an unknown name threw a TypeError -- and the
-                 * throw escaped process(), so every command still queued behind
-                 * it was abandoned. In practice that means trackPageView, which
-                 * is pushed last: an unrecognised command anywhere in the
-                 * snippet silently stopped tracking the page.
-                 *
-                 * That is not hypothetical, and it is not only about typos. The
-                 * snippet is generated server-side and changes the instant PHP
-                 * is upgraded; the tracker is a long-cached static file that a
-                 * returning visitor may hold for days. Every snippet command
-                 * added from now on therefore reaches some browsers running a
-                 * tracker too old to have it -- which is exactly the window in
-                 * which OWA would have stopped recording those visitors, with
-                 * no error anywhere the site owner could see it.
-                 *
-                 * Skipping is the only behaviour that degrades sensibly: the
-                 * new instruction is ignored by a tracker that cannot honour it
-                 * anyway, and everything it already understood still runs.
+                 * The snippet is generated server-side and changes the instant PHP is
+                 * upgraded; the tracker is a long-cached static file that a returning
+                 * visitor may hold for days. So a snippet command can reach a tracker too
+                 * old to have it. Skipping degrades sensibly: the new instruction is
+                 * ignored by a tracker that cannot honour it, and everything it
+                 * understands still runs.
                  */
                 OWA.debug( 'Skipping unknown command %s.%s', obj_name, method );
             }
@@ -383,7 +372,7 @@ class CommandQueue {
     /**
      * Everything a tracker must know before its constructor body runs.
      *
-     * Two things qualify, and both used to arrive too late:
+     * Two things qualify:
      *
      *   site_id       the five registerStateStore() calls, and any per-site
      *                 store naming, happen in the constructor.
@@ -396,7 +385,7 @@ class CommandQueue {
      *                 the next page load.
      *
      * An explicit setCookieDomain() anywhere in the queue wins; otherwise the
-     * constructor is told nothing and keeps its existing lazy behaviour.
+     * constructor is told nothing and resolves the domain itself.
      */
     identityFor( obj_name, current ) {
 

@@ -51,14 +51,9 @@ afterEach(() => {
 });
 
 /*
- * THE ATTRIBUTION MODELS ARE GONE and their cases with them. The client used
- * to load a campaign stack from the `c` cookie, run last-touch or first-touch
- * over the URL's tags and write the stack back -- and none of it reached the
- * server. No tracker generation put the tags on the wire: v1 and v2 both send
- * landing_url and taggedColumns() parses them out of it server-side.
- *
- * What is still tested here is what still happens: the URL parse, and the
- * session referrer, which does ride the beacon.
+ * The tracker attributes nothing: it sends landing_url, and taggedColumns()
+ * parses the tags out of it server-side. What is tested here is the URL
+ * parse, and the session referrer, which does ride the beacon.
  */
 
 
@@ -75,24 +70,11 @@ describe('the referrer reaches the server on every beacon, campaign or not', () 
     afterEach(() => { withReferrer(''); });
 
     /*
-     * WHAT THIS USED TO TEST, and why the subject changed.
-     *
-     * The regression it was written for: a landing page carrying campaign tags
-     * recorded NO referrer, because the write sat in the `else` of
-     * `if (isTrafficAttributed)`. Right while the browser decided attribution --
-     * campaign beat referrer -- and wrong once the server resolved, because the
+     * No campaign gate, anywhere, between the referrer and the server: the
      * server needs the referrer in its own right for is_searchengine and the
-     * referring-sites report.
-     *
-     * The mechanism it tested is gone: the tracker no longer writes a
-     * session-scoped `referer` into state, and session_referer is off the wire.
-     * The referrer is per-event evidence now -- HTTP_REFERER, on every beacon,
-     * from that page's own document.referrer -- and the SESSION's referrer is
-     * the referer_host of its first row, which the pass reads through the window
-     * it already opens for the landing page.
-     *
-     * So what survives is the claim that matters: no campaign gate, anywhere,
-     * between the referrer and the server.
+     * referring-sites report. The referrer is per-event evidence --
+     * HTTP_REFERER, on every beacon, from that page's own document.referrer --
+     * and the SESSION's referrer is the referer_host of its first row.
      */
     test('a campaign-tagged landing page still sends its referrer', () => {
 
@@ -118,15 +100,8 @@ describe('the referrer reaches the server on every beacon, campaign or not', () 
 
     /*
      * And a later page in the same session sends ITS OWN referrer, which is one
-     * of this site's own pages.
-     *
-     * That used to be forbidden -- session_referer was declared `scope:
-     * 'session'` and had to be identical on every event sharing a session_id, so
-     * writing it again mid-session broke the scope contract. With the field gone
-     * there is no session-scoped value to violate: each beacon reports what the
-     * browser told it, and the server takes the session's referrer from the first
-     * row. The internal referrer on later beacons is exactly the evidence that
-     * makes "first row" the right rule.
+     * of this site's own pages. Each beacon reports what the browser told it,
+     * and the server takes the session's referrer from the first row.
      */
     test('a later page in the same session sends its own referrer', () => {
 

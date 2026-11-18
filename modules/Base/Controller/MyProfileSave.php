@@ -146,9 +146,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
              *
              * updateUserPassword() moves the user's session_epoch, which every
              * session cookie is signed with (Auth::sessionCredential()), so the
-             * next request with any of them is anonymous. Left alone, someone
-             * who changed their password was silently signed out on their next
-             * click and had no idea why.
+             * next request with any of them is anonymous.
              *
              * So it is done deliberately and said out loud: credentials
              * cleared, and back to the login form asking them to sign in with

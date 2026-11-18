@@ -7,28 +7,16 @@ use PHPUnit\Framework\TestCase;
  *
  * WHY THIS EXISTS
  * ---------------
- * The PSR-4 relocation renamed every update file from '<seq>.php' to
- * 'Update<seq>.php' -- necessary, because PSR-4 maps
+ * Update files are named 'Update<seq>.php', because PSR-4 maps
  * OWA\Module\Base\Update\Update011 to Base/Update/Update011.php and '011' is
- * not a legal PHP class name. Two consumers of the old convention were not
- * renamed with them:
- *
- *   Core/Module.php    parsed the sequence as (int) substr($name, 0, -4).
- *                      (int) 'Update011' is 0, so the "is this newer than the
- *                      installed schema?" test compared 0 > 11 and NO update
- *                      ever qualified.
- *
- *   CoreAPI::updateFactory  built the legacy class name
- *                      'owa_base_Update011_update', which has not existed
- *                      since the relocation.
- *
- * The first short-circuited before the second, so nothing ever threw: the CLI
- * looped over an empty set and reported "Updates were applied." The update
- * mechanism was dead on every install, and said it had succeeded.
+ * not a legal PHP class name. Everything that reads the convention has to
+ * agree with it: Core/Module.php parsing the sequence, and
+ * CoreAPI::updateFactory building the class name. Parsed as (int) 'Update011',
+ * every sequence is 0, no update ever qualifies, and the CLI reports "Updates
+ * were applied." over an empty set.
  *
  * These assertions are deliberately mechanical -- they are about the naming
- * contract between the filename, the class and the declared schema_version,
- * which is exactly what drifted.
+ * contract between the filename, the class and the declared schema_version.
  */
 final class UpdateDiscoveryTest extends TestCase
 {

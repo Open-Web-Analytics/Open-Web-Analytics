@@ -7,12 +7,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * getDomainName() must answer for a domain stored without a scheme.
  *
- * It used to be guarded by `strpos( $domain, '://' )` and fall off the end when
- * there was none, returning NULL. That mattered because owa_site already holds
- * both shapes, and it is about to hold only the bare one: a domain is not a URL,
- * and storing a scheme was load-bearing only while a site's identity was
- * md5( domain ), where http:// and https:// produced two unrelated sites for a
- * single website.
+ * owa_site holds both shapes on an upgraded install, and stores only the bare
+ * one going forward: a domain is not a URL.
  */
 final class SiteDomainNameTest extends TestCase
 {
@@ -30,7 +26,7 @@ final class SiteDomainNameTest extends TestCase
 
     public function testABareDomainIsReturnedRatherThanNull(): void
     {
-        /* The regression. Everything else here already worked. */
+        /* A domain with no scheme. */
         $this->assertSame(
             'example.com',
             $this->siteWithDomain( 'example.com' )->getDomainName(),
@@ -77,13 +73,9 @@ final class SiteDomainNameTest extends TestCase
     }
 
     /**
-     * THE INSTALLER NOW WRITES THE BARE SHAPE, so this column stops gaining new
-     * rows with a scheme in them.
-     *
-     * The wizard asked for the scheme in a select and prefixed it onto what was
-     * typed -- while the CLI installer stored the domain as given, so the two
-     * install paths disagreed about what a domain is. The select is gone and
-     * whatever is typed is normalised instead.
+     * THE INSTALLER WRITES THE BARE SHAPE, so this column gains no new rows
+     * with a scheme in them: the wizard and the CLI installer both normalise
+     * whatever is typed.
      *
      * @dataProvider installerDomainProvider
      */

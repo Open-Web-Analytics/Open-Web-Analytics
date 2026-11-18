@@ -393,7 +393,7 @@ final class CubeReportingTest extends TestCase
      * EVERY declared dimension names a column the cube actually has.
      *
      * The one that matters, and it matters because the failure is SILENT.
-     * Measured with a column name deliberately misspelled: the result set
+     * With a column name misspelled, the result set
      * carries NO error, the aggregate is still right, and the breakdown comes
      * back with zero rows -- MySQL refuses the dimensional query with "Unknown
      * column", and that refusal is swallowed. The report renders an empty grid
@@ -588,15 +588,11 @@ final class CubeReportingTest extends TestCase
      * Every v2 metric that counts a kind of event carries a condition, and the
      * SQL it generates for itself therefore contains a string literal:
      * `sum(CASE WHEN event.event_type = 'page_view' THEN 1 ELSE 0 END)`. That
-     * expression is the operand of the HAVING clause, and it used to be run
-     * through the value escaper on its way there, which turned every quote into
-     * an escaped one and made the statement unparseable. So `pageViews > 1` --
-     * the ordinary act of hiding the long tail of a report -- returned nothing
-     * at all, on every conditional metric there is.
-     *
-     * It did not surface as a syntax error, which is why it lasted: the added
-     * backslashes desynchronised the placeholder count and the driver's binding
-     * guard refused the statement first.
+     * expression is the operand of the HAVING clause and reaches it unescaped.
+     * Through the value escaper every quote becomes an escaped one, the added
+     * backslashes desynchronise the placeholder count, and the driver's binding
+     * guard refuses the statement -- so `pageViews > 1`, the ordinary act of
+     * hiding the long tail of a report, returns nothing at all.
      */
     public function testAReportCanBeFilteredByAConditionalMetric(): void
     {

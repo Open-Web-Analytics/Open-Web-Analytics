@@ -175,9 +175,7 @@ OWA.resultSetExplorer = function(dom_id, options) {
 OWA.resultSetExplorer.prototype = {
 
     /*
-     * A view name -> the method that draws it. 'sparkline' was here, mapped to
-     * a makeSparkline() that no longer exists: a metric box draws its own
-     * sparkline (OWA.sparkline), and asking for that view threw.
+     * A view name -> the method that draws it.
      */
     viewMethods: {
         grid: 'refreshGrid',
@@ -257,10 +255,8 @@ OWA.resultSetExplorer.prototype = {
      * Group the grid by exactly these dimensions.
      *
      * The list-based sibling of changeDimension(), which swaps ONE name for
-     * another. The grid has always grouped by a LIST -- changeDimension reads
-     * `dimensions` off the result set's own URL, replaces an entry if it finds
-     * the old name and APPENDS if it does not -- so the list is the real model
-     * and the single "secondary dimension" select was a one-slot view of it.
+     * another: changeDimension reads `dimensions` off the result set's own URL,
+     * replaces an entry if it finds the old name and APPENDS if it does not.
      *
      * changeDimension stays, because secondary_dimension_change is a public
      * event and something outside this file may still fire it.
@@ -621,18 +617,10 @@ OWA.resultSetExplorer.prototype = {
                             /*
                              * The linked column may not be in this result set.
                              *
-                             * A link template is registered once, for a column
-                             * the report was built with -- but the reader can
-                             * now change WHICH dimensions the grid groups by,
-                             * and swapping one out takes its column with it. A
-                             * template for a column that is no longer there has
-                             * nothing to apply to.
-                             *
-                             * Latent until the dimension controls could replace
-                             * the FIRST dimension: the old single-slot picker
-                             * only ever changed the secondary one, so the
-                             * linked column could not disappear and this read
-                             * ...[y].name on undefined only in theory.
+                             * A link template is registered once, for a column the report was built
+                             * with -- but the reader can change WHICH dimensions the grid groups by,
+                             * and swapping one out takes its column with it. A template for a column
+                             * that is not there has nothing to apply to.
                              */
                             if ( ! this.resultSet.resultsRows[i][y] ) {
                                 continue;

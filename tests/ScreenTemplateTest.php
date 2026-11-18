@@ -5,10 +5,9 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Every screen whose View class only named a template renders that template,
- * under the same page title, now that its controller declares the template
- * (Controller::setView(), setSubview()). EXPECTED was recorded with the View
- * classes in place.
+ * A screen whose controller declares its template (Controller::setView(),
+ * setSubview()) renders that template under its page title, as EXPECTED
+ * records.
  *
  * Rendered through the controller's doAction() and the view the data names,
  * as index.php does, on a Property and Profile made for the test.

@@ -5,41 +5,15 @@ require_once __DIR__ . '/IngestionTestCase.php';
 /**
  * Every event name the tracker sends is accepted, and stores a row.
  *
- * THE BUG THIS EXISTS FOR. 4b93b248 made the v2 tracker emit v2 event names --
- * page_view, click, purchase -- and the server admitted them under their v1
- * spellings only. CoreAPI::trackingEventTypes() merges tracking_event_types (the
- * v1 names) with a hand-kept list, and the four RENAMED events were in neither
- * half except custom_event, which happened to be listed. So logEvent() refused a
- * real page_view at the door: measured, it returned false and wrote no row, while
- * the same event dispatched as base.page_request wrote three.
- *
- * Every beacon the current tracker sent was being dropped, and nothing caught it:
- *
- *   - every PHP fixture and test fires the v1 dispatch name, so the unit suite
- *     exercised a path no browser uses any more;
- *   - the e2e specs were the only thing driving a real tracker, and they were
- *     matching v1 names on the wire too, so they timed out waiting for a beacon
- *     and reported it as an empty database.
- *
- * Two assertions, and the second is the one that matters. The gate is cheap to
- * check and would have caught this; but a name can pass the gate and still have
- * no processor, in which case EventDispatch::notify() logs "no listeners
- * registered" and returns EVENT_HANDLED -- accepted and silently discarded, which
- * the Module docblock calls the worse of the two failures. So this fires each name
- * and counts rows.
+ * Two assertions, and the second is the one that matters. A name can pass the
+ * gate (CoreAPI::trackingEventTypes()) and still have no processor, in which
+ * case EventDispatch::notify() logs "no listeners registered" and returns
+ * EVENT_HANDLED -- accepted and silently discarded, which the Module docblock
+ * calls the worse of the two failures. So this fires each name and counts rows.
  *
  * DRIVEN FROM tests/fixtures/beacon_contracts.json, the standalone record of what
  * each beacon version emits, so a renamed or added event is covered here without
  * anyone editing a list.
- *
- * WHERE THE SETTING ACTUALLY LIVES, because mutation-checking this found it: the
- * effective value of v2_event_types comes from Classes\Settings.php's defaults
- * array, NOT from the per-module modules/Base/settings.php entry, which is inert
- * for this key -- it declares a `default` and none of the storable / autoload /
- * scopes keys the migrated settings carry. Editing only the registry file changes
- * nothing at runtime and this test stays green, which is exactly the false
- * negative it has to survive. Both files are kept in step; the one to change first
- * is Settings.php.
  */
 final class TrackerEventNamesAreAcceptedTest extends IngestionTestCase
 {

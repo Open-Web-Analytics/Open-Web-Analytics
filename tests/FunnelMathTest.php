@@ -250,7 +250,7 @@ final class FunnelMathTest extends TestCase
         $rows = [];
 
         // A crowd who all reach the last step and only some of whom reach the
-        // first, which is the shape that broke independent counting.
+        // first, which is the shape independent counting gets wrong.
         for ( $i = 0; $i < 20; $i++ ) {
 
             $rows[] = $this->row( 'v' . $i, 100, [ 0, 0, 1 ] );

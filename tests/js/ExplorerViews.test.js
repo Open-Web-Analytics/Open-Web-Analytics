@@ -17,9 +17,7 @@ require('../../modules/Base/src/reporting/owa.resultSetExplorer.js');
 /**
  * A view name the explorer does not know draws nothing and does not throw.
  *
- * 'sparkline' was advertised and mapped to a makeSparkline() that no longer
- * exists (a metric box draws its own sparkline), so asking for it threw a
- * TypeError and the rest of loader() -- the queued calls -- never ran.
+ * A throw here would stop the rest of loader() -- the queued calls.
  */
 describe( 'the result set explorer\'s views', () => {
 

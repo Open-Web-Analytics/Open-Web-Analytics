@@ -5,11 +5,8 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * A request carrying ?pk= and a 'u' state value reached a 1.x login-by-URL-
- * passkey branch that called authenticateUserByUrlPasskey() with one argument
- * of two: an ArgumentCountError -- a 500 -- for anyone who sent one. Nothing
- * issued those links, so the branch is gone and such a request is simply not
- * authenticated.
+ * A request carrying ?pk= and a 'u' state value is not authenticated, and is
+ * not an error: there is no login-by-URL-passkey branch.
  */
 final class AuthUrlPasskeyRemovedTest extends TestCase
 {

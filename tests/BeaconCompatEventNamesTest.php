@@ -84,7 +84,7 @@ final class BeaconCompatEventNamesTest extends TestCase
 
     /**
      * NO V1 NAME IS ROUTED. Base registers its own events under their current
-     * dispatch names; the old spellings appear in the router nowhere.
+     * dispatch names; v1 spellings appear in the router nowhere.
      */
     public function testTheRouterHoldsNoV1Name(): void
     {

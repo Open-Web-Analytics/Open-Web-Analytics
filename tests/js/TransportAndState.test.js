@@ -180,15 +180,9 @@ describe('addDefaultsToEvent', () => {
     });
 
     /*
-     * timestamp is asserted on the EVENT, not on getProperties().
-     *
-     * It used to be read off getProperties() here, which is how a value the
-     * server has no use for went on every beacon for years without anyone
-     * noticing: the only test that looked at it looked at the wire copy, so the
-     * wire copy was what the test protected.
-     *
-     * The device needs it -- isNewSession(), fsts and last_req all read it before
-     * the beacon exists -- so it is still set. It is just not sent. See
+     * timestamp is asserted on the EVENT, not on getProperties(): the device
+     * needs it -- isNewSession(), fsts and last_req all read it before the
+     * beacon exists -- but it is not sent. See
      * tests/js/BeaconContractDeviceLocal.test.js for the wire half.
      */
     test('stamps the tracker clock on the event, for the device to use', () => {

@@ -12,17 +12,14 @@
  * self-hosted e2e harness. applyUpdates() walks `$seq > $current_schema_version`,
  * which is never true. The update path is dead code under test.
  *
- * Two production failures came out of that hole in one week, and they are the
- * same bug wearing different clothes: a value that means two things, which can
- * only be told apart against a database that already has some history.
+ * The ambiguities this finds are values that mean two things, which can only
+ * be told apart against a database that already has some history:
  *
  *   - addColumn() answers false for "could not" AND for "already there". On a
  *     fresh table the column is never already there, so the ambiguity reads as
- *     success. Update023 stopped a live upgrade dead.
- *   - DbColumn::getDefinition() returned a string valid inside CREATE TABLE and
- *     invalid inside ALTER TABLE. createTable() was its only caller in any test,
- *     so it was only ever used in the context that made it correct. Update026
- *     stopped the same upgrade one update later.
+ *     success.
+ *   - a column definition that is valid inside CREATE TABLE and invalid inside
+ *     ALTER TABLE is only ever exercised by createTable() on a fresh install.
  *
  * A fresh database has no history, so both ambiguities collapse to the harmless
  * reading. This makes a database with a history.
@@ -53,8 +50,8 @@
  * scratch one; --force overrides, and should not be used.
  *
  * RUN IN PHASES, in separate processes, because the middle one has to be the
- * REAL command. `php cli.php cmd=update` is what an operator types and what
- * failed on the live site; reimplementing the walk here would be testing this
+ * REAL command. `php cli.php cmd=update` is what an operator types;
+ * reimplementing the walk here would be testing this
  * file's idea of an upgrade instead of the one that ships. Separate processes
  * also mean the verify phase reads the schema version off a cold boot rather
  * than out of the config cache that just wrote it.
@@ -138,8 +135,8 @@ if ( $phase === 'down' ) {
      *
      * Cubes are created only by a scheduled build, and a scratch install has
      * no Property that has seen data, so without this every CubeColumn loop
-     * walked zero tables. That is how every cube down() here dropped with a
-     * plain, instant DROP -- 1731 at the next swap -- and passed.
+     * would walk zero tables, and a cube down() that drops with a plain DROP --
+     * 1731 at the next swap -- would pass.
      */
     if ( ! \OWA\Module\Base\Classes\Cube\Cubes::allTables() ) {
 

@@ -9,10 +9,9 @@ use OWA\Module\Base\Classes\Sanitize;
 /**
  * "0" is a value, not an absence.
  *
- * cleanInput() returned early on empty(), which is true for "0", so every
- * request parameter and tracked string whose value was zero became null. Found
- * saving a retention window of 0 from the Data Retention page: the settings
- * form posted "0" and validation was handed null.
+ * cleanInput() must not treat "0" as empty() does: a request parameter or
+ * tracked string whose value is zero would become null -- a retention window
+ * of 0 saved from the Data Retention page reaching validation as null.
  */
 final class SanitizeKeepsZeroTest extends TestCase
 {

@@ -15,22 +15,13 @@
  * admitted if it matches CUSTOM_NAME_PATTERN, stored under the name the site
  * chose, and grouped by the eventName dimension like any other.
  *
- * DECLARED, BECAUSE IT CANNOT BE DERIVED. It used to be: eventNames() took the
- * union of every non-`*` entry in the property registry's `events` lists, on the
- * reasoning that a first-class event is one the registry describes. That holds
- * only while every event happens to carry a property no other event does, and it
- * stopped holding the moment engagement_msec was widened to `*` -- which was
- * correct, the tracker sends it on every event -- and `user_engagement`, whose
- * only distinguishing property it was, silently left the vocabulary. The symptom
- * appeared two steps away, as the tracker reserving a name the server no longer
- * called first-class.
+ * DECLARED, BECAUSE IT CANNOT BE DERIVED from the property registry: an event
+ * need not carry a property no other event does (user_engagement carries only
+ * engagement_msec, which every event sends).
  *
- * `scroll` and `view_search_results` were one property away from the same thing.
- *
- * So the derivation is still computed, but as a CHECK rather than the source:
+ * The derivation is computed as a CHECK rather than the source:
  * TrackingEventHelpers::eventNamesFromProperties() answers what the registry
- * implies, and a test asserts nothing is implied that is not declared here. An
- * event's existence no longer depends on the scope of one property.
+ * implies, and a test asserts nothing is implied that is not declared here.
  *
  * ORDER IS IRRELEVANT -- eventNames() sorts.
  *

@@ -5,19 +5,14 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Settings screens are built from the registry rather than written out.
+ * Settings screens are built from the registry rather than written out, so
+ * no field can name a setting the registry does not have -- which would not
+ * error, but save a value nothing reads.
  *
- * Every field on the general options page used to be a hand-written block: a
- * title, a description, and a control whose submit name was assembled by hand
- * as `config[base.key]`. Eight of them, and each an independent chance to name
- * a setting the registry does not have -- which does not error. It saves a
- * value nothing reads.
- *
- * WHAT THESE PIN. That the conversion lost nothing (every field still renders,
- * under the same submit name, showing the stored value), that the renderer
- * escapes what comes out of the database, and that the one behaviour it CHANGED
- * is the one intended: a setting a config-file constant governs is disabled on
- * every field now, not just on the one field somebody hand-wrote the check for.
+ * WHAT THESE PIN. Every field renders under its submit name (`config[base.key]`),
+ * showing the stored value; the renderer escapes what comes out of the
+ * database; and a setting a config-file constant governs is disabled on every
+ * field.
  */
 final class SettingsFormTest extends TestCase
 {
@@ -215,7 +210,7 @@ final class SettingsFormTest extends TestCase
 
     /**
      * Values reach the page from the database, so they are escaped. A stored
-     * quote used to end the attribute.
+     * quote must not end the attribute.
      */
     public function testAStoredValueIsEscaped(): void
     {
@@ -451,8 +446,7 @@ final class SettingsFormTest extends TestCase
      * no longer showing the operator what is configured.
      *
      * The zone this uses is asserted to be one of the repeated ones, because
-     * the whole test is vacuous against a zone that appears once. The default
-     * on this install is America/Los_Angeles, which does.
+     * the whole test is vacuous against a zone that appears once.
      */
     public function testAZoneListedUnderSeveralCountriesSelectsOnce(): void
     {
@@ -505,8 +499,7 @@ final class SettingsFormTest extends TestCase
         ] as $template) {
 
             /*
-             * The CODE, not the prose. Both templates explain in a comment what
-             * they used to do, and `config[` appears in that explanation.
+             * The CODE, not the prose: a template's comments may mention `config[`.
              */
             $code = php_strip_whitespace(\OWA\Core\Env::root() . '/' . $template);
 

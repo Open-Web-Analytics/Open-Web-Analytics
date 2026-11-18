@@ -9,23 +9,14 @@ import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
  * SESSION: the visitor store is shared across every site, the session store
  * is one per site.
  *
- * They used to share both, and this file used to assert that as correct. It was
- * not: a session row is loaded by session_id alone, so one shared id could not
- * represent two sites, and the second site's facts ended up pointing at the
- * first site's session row.
- *
  * That sharing is only real if the second tracker can see what the first one
  * derived. It runs its own manageState -- stateInit is per tracker -- so it
  * re-derives everything, and anything it reads from the wrong place it will get
  * wrong.
  *
- * The case that broke: setLastRequestTime read last_req straight from the
- * COOKIE. The first tracker's value is not in the cookie yet, because the
- * session store waits for a beacon to be accepted before it persists. So the
- * second tracker saw no last_req, declared a NEW session, minted a second sid
- * for a single page view, and overwrote the first tracker's sid in the shared
- * store. Reading memory first fixes it: memory holds what this page load set,
- * which is exactly what the second tracker needs.
+ * setLastRequestTime reads memory first: the first tracker's last_req is not in
+ * the cookie yet, because the session store waits for a beacon to be accepted
+ * before it persists, and memory holds what this page load set.
  */
 
 function reset() {
@@ -69,36 +60,17 @@ describe('two trackers sharing the state stores', () => {
         const { beacons } = trackBoth();
 
         // is_new_session_start marks THIS EVENT as the one that created a new
-        // session -- which is what resolveEntryPage() reads it as server-side.
-        // It is a fact about the page load, not about which tracker happened to
-        // derive it first, so it lives in the page store and both trackers see
-        // it.
-        //
-        // This test previously asserted the opposite -- that only the first
-        // tracker reports it -- on the reasoning that two new-session flags
-        // would have the server create the session twice. It does not: the
-        // second logSession() finds the row already persisted and skips. What
-        // actually happens is that the second site gets no session row of its
-        // own, which is the per-site limitation below, not something this flag
-        // causes.
+        // session. It is a fact about the page load, not about which tracker
+        // happened to derive it first, so it lives in the page store and both
+        // trackers see it.
         expect(beacons.a[0].is_new_session_start).toBe(true);
         expect(beacons.b[0].is_new_session_start).toBe(true);
     });
 
     test('each site owns the session its facts point at', () => {
         /*
-         * This was pinned as a KNOWN LIMITATION and is now fixed.
-         *
-         * A session row is keyed by session_id ALONE -- SessionHandlers::
-         * logSession() does load($event->get('session_id'), 'id') with no
-         * site_id -- so one shared session id could not represent two sites.
-         * Measured against a real install before the fix: both trackers sent
-         * the same session_id, site A got a session row, site B got none, and
-         * site B's request facts referenced site A's session. Reporting for B
-         * that joined the session read A's data, silently.
-         *
-         * The store is scoped to a site now: the visitor is shared across every
-         * site, and session state is held per site.
+         * The session store is scoped to a site: the visitor is shared across
+         * every site, and session state is held per site.
          */
         const { beacons } = trackBoth();
 
@@ -140,19 +112,17 @@ describe('two trackers sharing the state stores', () => {
         b.logEvent = (p) => beacons.push({ ...p });
         b.trackPageView('https://example.com/pricing');
 
-        // Named, not just absent: asserting on a key that no longer exists
-        // anywhere would pass whatever the tracker did.
+        // Named, not just absent: asserting on a key that exists nowhere would
+        // pass whatever the tracker did.
         expect(beacons[0].eps_Plan).toBeUndefined();
         expect(a.getGlobalEventProperty('eps_Plan')).toBe('Pro');
     });
 
     test('VISITOR-scoped state still rides the events of both', () => {
-        // The visitor is shared, so anything scoped to the
-        // visitor is shared with it. user_id is the v2 example: setUserId()
-        // writes the 'v' store, and every tracker collects it from there.
-        // A visitor-scoped CUSTOM var used to be the payload here; those are
-        // setUserProperty() now, which is page-lifetime by design and so is
-        // per-tracker rather than shared.
+        // The visitor is shared, so anything scoped to the visitor is shared with
+        // it. user_id is the example: setUserId() writes the 'v' store, and every
+        // tracker collects it from there. setUserProperty() is page-lifetime by
+        // design and so is per-tracker rather than shared.
         const a = new OWATracker({ cookie_domain_set: true, site_id: 'site-a' });
         a.setUserId('u-shared');
 

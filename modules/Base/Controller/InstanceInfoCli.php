@@ -4,10 +4,9 @@ namespace OWA\Module\Base\Controller;
 /**
  * One report describing the whole instance: `php cli.php cmd=instance-info`.
  *
- * WHY THIS EXISTS. Everything it reports could already be found out, and that
- * was the problem -- it took eight commands, two SQL queries and knowing which
- * settings to read, so nobody did it, and the things that fail QUIETLY are
- * exactly the things nobody went looking for. A stale user-agent database does
+ * WHY THIS EXISTS. Everything it reports can be found out otherwise, but only
+ * with several commands, SQL queries and knowing which settings to read, and
+ * the things that fail QUIETLY are the things nobody goes looking for. A stale user-agent database does
  * not error, it misattributes. An un-run scheduler does not error, it does
  * nothing. Retention that was never configured does not error, it accumulates.
  *

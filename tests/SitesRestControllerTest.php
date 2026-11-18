@@ -122,21 +122,13 @@ final class SitesRestControllerTest extends RestControllerTestCase
      * A repeated domain is a SECOND Observation Profile of the same website,
      * not an error.
      *
-     * This returned 422. The rule behind it dated to 2009, when a site's
-     * identity was md5( domain ) and two sites for one domain were literally
-     * the same row -- so the domain had to be unique. Identity is minted now,
-     * and the uniqueness check had outlived its reason into forbidding exactly
-     * what Properties were introduced to allow: nextProfileName() numbers
-     * Profiles "Observation Profile 1", "2", "3", and that counter could never
-     * reach 2 while this rejected the request.
+     * Identity is minted, so a domain need not be unique: nextProfileName()
+     * numbers Profiles "Observation Profile 1", "2", "3". An ARCHIVED Profile
+     * leaves its domain free to use again.
      *
-     * It also did not exclude ARCHIVED Profiles, so archiving one made its
-     * domain permanently unusable -- the row kept to make deletion recoverable
-     * was what blocked starting over.
-     *
-     * Deliberate contract change, and a safe one to make: the endpoint has no
-     * known consumer. The WordPress plugin only LISTS sites -- its own settings
-     * text says new websites are added through the OWA admin interface.
+     * The endpoint has no known consumer that creates sites: the WordPress
+     * plugin only LISTS sites -- its own settings text says new websites are
+     * added through the OWA admin interface.
      */
     public function testPostSitesAcceptsARepeatedDomainAsAnotherProfile(): void
     {
@@ -179,8 +171,7 @@ final class SitesRestControllerTest extends RestControllerTestCase
      * exist until the controller runs, so it cannot be registered the same way.
      * It has to be looked up afterwards.
      *
-     * The consequence of not doing so was 82 parentless Properties from this
-     * one test, each a row in the site picker.
+     * Left behind, each is a parentless Property in the site picker.
      *
      * Silent when the site is absent: the caller has already asserted that it
      * was created, and a second failure here would only obscure the first.

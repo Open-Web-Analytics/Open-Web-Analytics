@@ -5,20 +5,15 @@ use PHPUnit\Framework\TestCase;
 /**
  * A migration must not treat "the column is already there" as a failure.
  *
- * THE BUG THIS EXISTS FOR, WHICH WAS FOUND IN PRODUCTION
- *
  * addColumn() answers FALSE both for "could not" and for "already exists". A
  * migration that stops on the second never writes its schema version, so every
  * request afterwards refuses with "OWA Updates required" -- on a database that
  * is already correct.
  *
- * That is not a re-run guard and it is not hypothetical. It is the ORDINARY
- * case for an install jumping several versions at once: a table created by an
- * earlier migration is built from the CURRENT entity definition, which already
- * carries every column later migrations add. An installation at schema 20 ran
- * Update021, which created owa_property complete with the archived_date that
- * Update023 then tried to add -- and the upgrade stopped dead at 23, mid-way,
- * on a live site.
+ * That is not a re-run guard. It is the ORDINARY case for an install jumping
+ * several versions at once: a table created by an earlier migration is built
+ * from the CURRENT entity definition, which already carries every column later
+ * migrations add.
  *
  * Update::addColumnIfMissing() is the one place that gets this right. This test
  * makes sure the next migration uses it rather than rediscovering the trap.
@@ -169,10 +164,7 @@ final class UpdateAddColumnGuardTest extends TestCase
      *   - `return false` -- a refusal, which the runner reports as a failed
      *     rollback rather than a silent no-op
      *
-     * What is banned is the third: a bare success that did nothing. This test
-     * exists because five migrations were written that way in a row, which is a
-     * habit rather than an oversight and needed a mechanism rather than a
-     * resolution.
+     * What is banned is the third: a bare success that did nothing.
      *
      * @dataProvider updateFiles
      */
@@ -238,14 +230,10 @@ final class UpdateAddColumnGuardTest extends TestCase
         return substr( $code, $open );
     }
     /**
-     * THE PRODUCTION FAILURE, REPRODUCED.
-     *
      * The scans above prove the SHAPE of the code. This proves the behaviour:
-     * running an update whose column is already present must SUCCEED.
-     *
-     * That is exactly what killed a live 1.x upgrade -- Update023 asked for a
-     * column Update021 had already created, got false, and reported failure on
-     * a correct database. The source scan alone would pass against a helper
+     * running an update whose column is already present must SUCCEED. An
+     * upgrade that jumps versions meets exactly this: a table created by an
+     * earlier update already carries the column a later one adds. The source scan alone would pass against a helper
      * that was subtly wrong; this runs the real thing against a real table.
      *
      * Update040 is used because it does nothing but add one column, which is

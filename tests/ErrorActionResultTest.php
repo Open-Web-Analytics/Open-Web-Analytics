@@ -9,17 +9,16 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * WHAT THIS IS ABOUT
  *
- * The success path hands back whatever action() returns. The validation-failure
- * path called errorAction() for its side effects and then returned $this->data
- * regardless -- so a controller that answers a refusal by DELEGATING (building
- * another controller and returning its doAction()) had that answer discarded,
- * and the caller rendered the refusing controller's own data. For a write that
- * redirects on success, that data names no view at all, and the result was a
- * blank page. base.customReportSave did exactly that for a missing report name.
+ * The success path hands back whatever action() returns, and so does the
+ * validation-failure path with what errorAction() returns: a controller that
+ * answers a refusal by DELEGATING (building another controller and returning
+ * its doAction()) has that answer rendered. Returning $this->data instead
+ * would render the refusing controller's own data, which for a write that
+ * redirects on success names no view at all -- a blank page.
  *
- * The two shapes are tested rather than one, because the fix has to leave the
- * common one alone: nearly every errorAction() in the tree returns nothing and
- * sets a view instead, and those must behave exactly as they did.
+ * The two shapes are tested rather than one, because the common one must be
+ * left alone: nearly every errorAction() in the tree returns nothing and sets
+ * a view instead.
  */
 final class ErrorActionResultTest extends TestCase
 {

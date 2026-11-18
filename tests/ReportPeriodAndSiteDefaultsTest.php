@@ -138,17 +138,12 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
     }
 
     /**
-     * all_time is gone, implementation and all.
+     * There is no all_time period, implementation and all.
      *
-     * It set the start to 1 January 1969 and the end to now: a scan of every
-     * partition of every fact table, by construction, since a range that wide
-     * prunes to nothing. It was already unreachable through the normal path,
-     * which is why nobody noticed the visitor roster linking to it -- that link
-     * had been quietly serving the default period instead of the visitor's full
-     * history.
-     *
-     * Removing the case as well as the acceptance is what stops set(), which
-     * has no guard, from still being able to ask for it.
+     * It would set the start to 1 January 1969 and the end to now: a scan of
+     * every partition of every fact table, by construction, since a range that
+     * wide prunes to nothing. Removing the case as well as the acceptance is what
+     * stops set(), which has no guard, from asking for it.
      */
     public function testAllTimeIsGoneEntirely(): void
     {
@@ -160,7 +155,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $this->assertStringNotContainsString( 'case "all_time"', $source,
             'the implementation must go too, or set() can still reach it' );
 
-        // ...and nothing links to it any more.
+        // ...and nothing links to it.
         foreach ( glob( \OWA\Core\Env::root() . '/modules/Base/templates/*.php' ) as $tpl ) {
 
             $this->assertStringNotContainsString( "'all_time'", (string) file_get_contents( $tpl ),
@@ -434,7 +429,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
     public function testTheConstructorDoesNotInventASite(): void
     {
         // Any ReportController would do; this is the one every configured
-        // report now runs on, and ReportPages is no longer a class.
+        // report runs on.
         $controller = new \OWA\Core\ConfiguredReport( [] );
 
         $this->assertEmpty( $controller->getParam( 'siteId' ),

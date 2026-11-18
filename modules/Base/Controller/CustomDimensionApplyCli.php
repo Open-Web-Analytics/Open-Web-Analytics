@@ -14,10 +14,9 @@ namespace OWA\Module\Base\Controller;
  *   cmd=custom-dimension-apply property=<id>   just that one
  *
  * WHY THIS IS A COMMAND AND NOT PART OF REGISTERING. Adding the column is a
- * full table rebuild: 4.4 seconds on an empty 73-partition cube, 11.3 at 1.5M
- * rows, longer on a real one. PHP's web limit is 30 seconds, Varnish's is 60
- * and the load balancer's is 65 -- and a request killed at any of those does
- * NOT stop the ALTER. Measured: the client dies, MySQL finishes anyway. A
+ * full table rebuild, seconds on an empty cube and longer on a real one, which
+ * can outlast a web request's time limit -- and a request killed at that limit does
+ * NOT stop the ALTER: the client dies, MySQL finishes anyway. A
  * screen that did this inline would show a timeout, add the column regardless,
  * and invite a retry that pays a second rebuild before failing on a duplicate
  * column. So registering writes a row and this puts the column on.
@@ -51,7 +50,7 @@ class CustomDimensionApplyCli extends CustomDimensionsCli {
      * How long the lock outlives proof of life.
      *
      * One ALTER, not a run of them: the loop takes and releases per cube. Sized
-     * well past the worst measured rebuild rather than tightly, because the
+     * well past the slowest rebuild rather than tightly, because the
      * cost of a lease that is too short is two ALTERs on one table at once.
      */
     const APPLY_LEASE = 900;

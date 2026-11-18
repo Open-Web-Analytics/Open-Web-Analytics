@@ -3,8 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * "Load every class" smoke test — the keystone of the namespace-migration
- * safety net (Phase 6, stage 0).
+ * "Load every class" smoke test.
  *
  * WHY THIS EXISTS
  * ---------------
@@ -13,13 +12,12 @@ use PHPUnit\Framework\TestCase;
  * \OWA\Core\Lib::factory). When a class file is missing, mis-named, or its
  * class symbol doesn't match what the factory derives, the failure only
  * surfaces as a runtime "class not found" on whatever report page or CLI
- * command happens to touch that class. The existing unit + e2e suites walk
+ * command happens to touch that class. The unit and e2e suites walk
  * only a fraction of those paths, so a dropped/renamed class can sail through.
  *
  * This test converts that silent failure into a deterministic, pre-flight one:
  * it discovers EVERY OWA-owned class file, requires it, and asserts that every
- * class/interface/trait the file declares actually resolves. During the
- * namespace migration this is the net that catches:
+ * class/interface/trait the file declares actually resolves. It catches:
  *   - a multi-class file split that dropped or mis-placed a class,
  *   - a filename that no longer matches its class short-name (PSR-4 breakage),
  *   - a class_alias bridge that wasn't declared for a renamed class.

@@ -1,10 +1,7 @@
 /**
  * The reporting UI has no client-side template engine.
  *
- * jQote2 was the last hand-copied library under src/reporting/includes. Its
- * one caller, resultSetExplorer.renderTemplate, was reached only through a
- * view variable no controller set, and every template it used to render is
- * markup or a named formatter now. Nothing may call a jqote function, define a
+ * Every template is markup or a named formatter. Nothing may call a jqote function, define a
  * jqote template, or import the vendored copy.
  */
 const fs = require('fs');

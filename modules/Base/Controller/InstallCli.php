@@ -29,9 +29,9 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     }
 
     /**
-     * The admin account's password is required. It used to be set to the
-     * database password from owa-config.php, so whoever could read that file
-     * could sign in as the admin, and changing one meant remembering the other.
+     * The admin account's password is required, and is not the database
+     * password: whoever could read owa-config.php could otherwise sign in as
+     * the admin.
      */
     public function validate()
     {

@@ -39,19 +39,15 @@
  * and inventing one would put them within reach of the prune.
  *
  * The config-file-only settings -- paths, stream targets, database
- * credentials, report_wrapper -- are declared STATIC, which is the same
- * guarantee configFileOnlySettings() gives by listing them: never read from
- * the database. A stored error_log_file or report_wrapper is an RCE primitive,
- * so that list stays as a test asserting this file agrees with it.
+ * credentials, report_wrapper -- are declared STATIC: never read from the
+ * database. A stored error_log_file or report_wrapper is an RCE primitive.
  *
  * TWO SETTINGS ARE DECLARED WITH NO DEFAULT although the code has one:
  * config_file (Settings::baseDefaults()) and data_dir (applyConfigConstants()).
- * The code builds those from the
- * installation's directory (Core\Env), so their value depends on where it lives
- * -- baking one into a static file made the declaration disagree with the code
- * the moment the checkout moved, which the configless CI run caught by running
- * from a temporary directory. The code default still applies; the declaration
- * simply does not restate it.
+ * The code builds those from the installation's directory (Core\Env), so a
+ * value baked into this file would disagree with the code the moment the
+ * checkout moved. The code default applies; the declaration does not restate
+ * it.
  */
 
 return [
@@ -219,8 +215,8 @@ return [
          * Install only, and on no screen: which file a web server serves for a
          * directory is not something each Profile decides, and the default
          * covers the servers OWA sees. Not `internal`, so the wiki's settings
-         * reference lists it. It replaced the per-Profile default_page;
-         * Update080 added any stored default_page value the default lacked.
+         * reference lists it. Update080 added any stored per-Profile
+         * default_page value the default lacked.
          */
         'directory_index_pages' => [
             'default'  => \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES,
@@ -352,11 +348,7 @@ return [
          * own. The install default covers the common case of one convention
          * everywhere; a Property whose links already use utm_* overrides it.
          *
-         * It has to be a SERVER setting. The tracker used to parse the tags and
-         * had setCampaignSourceKey() and friends for exactly this, but the parse
-         * moved server-side and the server built its own ns-prefixed list -- so a
-         * site calling those setters was renaming a key nothing read, and its
-         * campaigns silently stopped being attributed.
+         * A SERVER setting, because the server parses the tags.
          *
          * Keyed by ROLE, not by parameter name, so the two ends cannot disagree
          * about which tag is the medium.

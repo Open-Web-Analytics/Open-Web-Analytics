@@ -207,10 +207,8 @@ class CustomReports extends \OWA\Core\ReportController {
          * anything on the page.
          *
          * THE SITES FILTER STAYS. The list is of the Property it shows, and
-         * every report link on it carries that propertyId (add_state). It was
-         * once hidden on the reasoning that a custom report was site-agnostic,
-         * which left that state invisible and unchangeable, and read as the
-         * tile going missing.
+         * every report link on it carries that propertyId (add_state); hidden,
+         * that state would be invisible and unchangeable.
          */
         $this->hideTimeControls();
     }

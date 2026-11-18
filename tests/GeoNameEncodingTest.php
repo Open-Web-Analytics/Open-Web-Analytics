@@ -23,7 +23,7 @@ final class GeoNameEncodingTest extends TestCase
      */
 
     /**
-     * The source no longer converts, and cannot regress to converting.
+     * The source does not convert, and cannot regress to converting.
      *
      * Read out of the file because mapCityRecord() is private and calling it
      * needs a MaxMind record, which needs the reader package and a database
@@ -40,8 +40,8 @@ final class GeoNameEncodingTest extends TestCase
         $this->assertStringNotContainsString( 'latin1ToUtf8', $src,
             'the Latin-1 conversion is back; MaxMind names are UTF-8 and this double-encodes them' );
 
-        // The helper is gone, so no call site can quietly reintroduce it, and
-        // nothing else in the reader should be converting a name either.
+        // No conversion helper exists for a call site to reintroduce, and nothing
+        // else in the reader should be converting a name either.
         $this->assertDoesNotMatchRegularExpression(
             "/mb_convert_encoding\s*\(\s*\\\$?\w+\s*,\s*'UTF-8'\s*,\s*'ISO-8859-1'/", $src );
         $this->assertDoesNotMatchRegularExpression(

@@ -4,7 +4,7 @@ const path = require('path');
 /**
  * Per-module asset build registration.
  *
- * The webpack build no longer hardcodes its products. Each module declares what it
+ * The webpack build does not hardcode its products. Each module declares what it
  * builds in a build.manifest.json in its own directory, and webpack.config.js
  * DISCOVERS them by scanning modules/*.build.manifest.json -- the direct analogue of
  * how root composer.json merges modules/*.composer.json via
@@ -119,9 +119,9 @@ describe('per-module build manifest discovery', () => {
                 expect(Object.keys(cfg.entry)).toEqual([pkg.name]);
 
                 if (pkg.type === 'js') {
-                    // No ProvidePlugin anywhere anymore (Phase 4): the reporting entry
-                    // publishes jQuery on window itself via its first import, so neither
-                    // JS product injects jQuery at the config level.
+                    // No ProvidePlugin: the reporting entry publishes jQuery on window itself
+                    // via its first import, so neither JS product injects jQuery at the config
+                    // level.
                     const hasProvide = (cfg.plugins || []).some(
                         (p) => p && p.constructor && p.constructor.name === 'ProvidePlugin'
                     );

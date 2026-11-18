@@ -6,9 +6,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Writing the config file evicts OPcache's compiled copy of any earlier file at
- * that path. Without it, a worker that had included the earlier file kept
- * running it until OPcache next checked the timestamp, so a re-install's next
- * request connected to the old (installed) database and redirected to login.
+ * that path. Without it, a worker that had included the earlier file keeps
+ * running it until OPcache next checks the timestamp, so a re-install's next
+ * request connects to the old (installed) database and redirects to login.
  */
 final class ConfigFileOpcacheTest extends TestCase
 {

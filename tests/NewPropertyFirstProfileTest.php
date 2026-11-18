@@ -7,10 +7,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Adding a Property goes on to adding its first Profile.
  *
- * A Property collects nothing until it has an Observation Profile, and the
- * add-a-Profile form used to open on "a new Property" with nothing to carry
- * the one just created. The save now redirects there with the Property
- * chosen, and the form starts from what that Property implies.
+ * A Property collects nothing until it has an Observation Profile. The save
+ * redirects to the add-a-Profile form with the Property chosen, and the form
+ * starts from what that Property implies.
  */
 final class NewPropertyFirstProfileTest extends TestCase
 {

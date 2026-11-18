@@ -4,16 +4,16 @@ require_once __DIR__ . '/IngestionTestCase.php';
 
 /**
  * A beacon's values are decoded twice -- PHP's decode, then
- * RequestContainer::decodeRequestParams() -- and stored in that form, as
- * before. The second decode cuts a URL that holds an encoded ? or # in its
- * path, or & or # in its query, so those are read from the copy taken before
- * it (TrackingEventHelpers::arrivedUrls(), arrivedUrlIfCut()): the campaign
+ * RequestContainer::decodeRequestParams() -- and stored in that form. The
+ * second decode cuts a URL that holds an encoded ? or # in its path, or & or #
+ * in its query, so those are read from the copy taken before it
+ * (TrackingEventHelpers::arrivedUrls(), arrivedUrlIfCut()): the campaign
  * tags, page_path, page_query and referer_query.
  *
- * Each case is stored twice through real ingest: as the old log.php left the
- * params (no copies, which is also how an event built in process or queued
- * before this looks), and as log.php leaves them now. Every stored column is
- * identical except, where the old row was cut, the ones the cut broke.
+ * Each case is stored twice through real ingest: with no copies (as an event
+ * built in process, or queued by an older log.php, arrives), and with the
+ * copies log.php takes. Every stored column is identical except, where the
+ * copy-less row was cut, the ones the cut broke.
  */
 final class BeaconDecodeOnceTest extends IngestionTestCase
 {
@@ -171,7 +171,7 @@ final class BeaconDecodeOnceTest extends IngestionTestCase
         return self::decodedTwice($wire) + $H::arrivedUrls($wire);
     }
 
-    /** The old log.php: every value decoded a second time (decodeRequestParams()), then admitted. */
+    /** With no copies: every value decoded a second time (decodeRequestParams()), then admitted. */
     private static function decodedTwice(array $wire): array
     {
         return \OWA\Module\Base\Classes\TrackingEventHelpers::admitRequestParams(array_map(

@@ -9,7 +9,7 @@ use OWA\Module\Base\Classes\NotificationManager;
  *
  * The badge in the header renders its COUNT server-side, because it is on every
  * page and a request per page load to learn a small number would be worse than
- * the query it replaces. The list behind the badge is fetched here, once, when
+ * the query. The list behind the badge is fetched here, once, when
  * someone actually opens it.
  *
  * Audience comes from the SESSION. There is no user parameter to pass, so
@@ -88,9 +88,9 @@ class NotificationsRest extends \OWA\Core\AdminController {
                 'read'         => ! empty( $row['read'] ),
                 'type'         => ( $row['type'] ?? '' ) ?: NotificationManager::TYPE_GENERAL,
                 'title'        => $row['title'],
-                // Read, not computed: the column holds it. Falls back to
-                // deriving one so a row written before this column existed
-                // still shows something rather than a bare headline.
+                // Read, not computed: the column holds it. Falls back to deriving one
+                // for a row with no excerpt stored, so it shows something rather than a
+                // bare headline.
                 'excerpt'      => ( $row['excerpt'] ?? '' ) !== ''
                                     ? $row['excerpt']
                                     : NotificationManager::excerpt( $row['body'] ?? '' ),

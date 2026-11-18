@@ -234,7 +234,7 @@ final class OverlayLauncherTest extends TestCase
         $this->assertSame('', $this->launchPath('pricing'));
     }
 
-    /** A comma no longer splits the constraint, so a page holding one opens; a relative path does not. */
+    /** A comma does not split the constraint, so a page holding one opens; a relative path does not. */
     public function testAPageWithACommaOpensAndARelativePathDoesNot(): void
     {
         $url = $this->launchPage('/pricing?a=1,2');

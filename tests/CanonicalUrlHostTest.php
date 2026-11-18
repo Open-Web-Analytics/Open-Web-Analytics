@@ -58,7 +58,7 @@ final class CanonicalUrlHostTest extends TestCase
         $this->assertSame( 'https://shop.example.net/cart?id=2', $this->canonical( 'https://shop.example.net/cart?id=2' ) );
     }
 
-    /** A value an installation still holds under the old domain_aliases name changes nothing. */
+    /** A value an installation still holds under domain_aliases changes nothing. */
     public function testAStoredDomainAliasesValueIsNotApplied(): void
     {
         \OWA\Core\CoreAPI::setSetting( 'base', 'domain_aliases', 'example.org, example.net' );

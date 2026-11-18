@@ -19,10 +19,7 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  * Compatibility handled at the READ side spreads outwards. Every reader grows a
  * fallback; every fallback is a place the old shape can come back; and none of
  * them are ever removed, because nobody can demonstrate the last visitor holding
- * the old shape has gone. The legacy 'b' custom-variable store is the worked
- * example -- reading it as a fallback did keep visitors from losing values, and
- * also carried a session-boundary leak into the store it was being moved away
- * from, because nothing ever cleared it.
+ * the old shape has gone.
  *
  * A migration finishes. It normalises storage BEFORE anything reads it, so
  * readers only ever see the current shape and downstream code never learns a

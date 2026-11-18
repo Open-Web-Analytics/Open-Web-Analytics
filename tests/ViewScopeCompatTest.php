@@ -10,14 +10,14 @@ use PHPUnit\Framework\TestCase;
  *
  * TWO CONTRACTS ARE PINNED HERE:
  *
- *  1. THE BARE-VARIABLE PATH IS GONE (v2.0). fetch() no longer extract()s the
- *     view vars, and it includes the template from a static closure, so a
+ *  1. NO BARE VARIABLES. fetch() does not extract() the view vars, and it
+ *     includes the template from a static closure, so a
  *     template sees neither a bare $headline nor $this. A template written for
  *     1.x fails on its first such read instead of rendering with values
  *     missing.
  *
  *  2. THE $view PATH is strict about a key that was never set, and otherwise
- *     behaves as the extracted locals did. __isset has to match native isset()
+ *     behaves as extracted locals would. __isset has to match native isset()
  *     exactly (false for null, false for missing, NEVER throwing) because the
  *     isset() and empty() call sites across the templates depend on it. A
  *     __isset that threw, or that reported true for a null value, would turn
@@ -245,12 +245,11 @@ final class ViewScopeCompatTest extends TestCase
     /**
      * A template that throws must not leak fetch()'s output buffer.
      *
-     * Found by this suite on its first run: making __get throw turned a
-     * previously-fatal condition into a catchable exception that unwinds out of
-     * include(), so the ob_end_clean() after it never ran. Renders nest, so every
-     * swallowed template error left output captured in a buffer nobody closed and
-     * a later ob_get_contents() could return unrelated markup. fetch() now wraps
-     * the include in try/finally; this asserts the buffer level is restored.
+     * __get throws, and the exception unwinds out of include(), so without the
+     * try/finally in fetch() the ob_end_clean() after it would never run.
+     * Renders nest, so a swallowed template error would leave output captured
+     * in a buffer nobody closed, and a later ob_get_contents() could return
+     * unrelated markup. This asserts the buffer level is restored.
      */
     public function testAThrowingTemplateDoesNotLeakTheOutputBuffer(): void
     {

@@ -5,25 +5,17 @@ use PHPUnit\Framework\TestCase;
 /**
  * Values reach the database as they arrived.
  *
- * Sanitize::stripSql() presented itself as an SQL defence and was not one. It
- * deleted parentheses, commas, and any word matching a list of SQL keywords
- * from the value:
+ * Nothing strips SQL keywords, parentheses or commas from a value -- that
+ * corrupts what passes through and defends nothing:
  *
  *   "How to update your camera"        -> "How to  your camera"
  *   "https://example.com/select-a-print/" -> "https://example.com/-a-print/"
  *   "Mozilla/5.0 (Macintosh; ...)"     -> "Mozilla/5.0 Macintosh; ..."
  *
- * It defended nothing -- values are escaped by the driver, identifiers are
- * checked against the registry -- and it corrupted whatever passed through it.
- * On this installation it ran on user agents for six months, giving every
- * browser two identities and roughly quadrupling the cardinality of the
- * user-agent dimension. Reports over that window are still wrong.
- *
- * It was reachable because Db::prepare() offered it as the base-class escape,
- * so any driver that did not override prepare() silently mangled every value it
- * wrote. There is no correct database-agnostic escape -- escaping depends on
- * the connection's character set -- so the base class now refuses instead of
- * offering a plausible-looking one.
+ * Values are escaped by the driver and identifiers are checked against the
+ * registry. There is no correct database-agnostic escape -- escaping depends
+ * on the connection's character set -- so Db::prepare() in the base class
+ * refuses instead of offering a plausible-looking one.
  */
 final class NoContentManglingTest extends TestCase {
 

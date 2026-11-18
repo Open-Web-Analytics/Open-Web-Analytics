@@ -125,11 +125,9 @@ final class SettingsDeclarationContractTest extends TestCase
      * Every setting the code persists is declared storable.
      *
      * Derived by scanning for persistSetting() and setSetting(..., true) call
-     * sites rather than from a list here, because the list is what went wrong:
-     * base.queue_incoming_tracking_events has no code default and was not
-     * stored on the machine this declaration was generated from, so neither
-     * source saw it. The e2e queue suite found it -- the helper persisted the
-     * value, nothing read it back, and every beacon bypassed the queue.
+     * sites rather than from a list here: a list misses a key that has no code
+     * default and is not stored where the list was generated, and such a key is
+     * written, never read back, and silently ignored.
      *
      * An undeclared key of a declared module is written and then never
      * fetched. That is deliberate, and it is why this has to be checked.

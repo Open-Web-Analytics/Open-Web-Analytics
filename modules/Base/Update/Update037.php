@@ -11,8 +11,7 @@ namespace OWA\Module\Base\Update;
  *
  * Why it moved: it was the only reason a build ran a second window function,
  * partitioned by visitor where the other partitions by session, so the two
- * could not share a sort. Measured at a million rows, that one window cost 128
- * of 195 seconds.
+ * could not share a sort -- most of a build's time.
  *
  * The tracker already sends last_req and already maintains it for its own
  * session decision, so 1.5.3's rule covers it: an anchor the client keeps is

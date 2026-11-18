@@ -3,17 +3,15 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * Regression tests for the siteUsers REST controller
- * (modules/base/controllers/siteAddAllowedUserRestController.php).
+ * Tests for the siteUsers REST controller (Base\Controller\SiteAddAllowedUserRest).
  *
  * These lock the behavior of the security hardening for the endpoint
  * POST /owa/api/base/v1/siteUsers:
  *
  *   1. An unauthenticated request is rejected (401) and never reaches
  *      action() -- the edit_sites capability gate fires.
- *   2. A legitimate authenticated admin request still succeeds -- proving
- *      that moving the parent from owa_cliController (CLI-only, exits for
- *      web/REST) to owa_adminController did NOT break the intended use.
+ *   2. A legitimate authenticated admin request succeeds: the controller is
+ *      an AdminController, not a CLI-only one that exits for web/REST.
  *   3. The password, temp_passkey and session_epoch are NOT disclosed in the
  *      response body.
  *   4. A bogus siteId / user_id is rejected by validation and NEVER writes
@@ -134,11 +132,9 @@ final class SiteAddAllowedUserRestControllerTest extends TestCase
     }
 
     /**
-     * Finding #2 (regression): a legitimate authenticated admin request still
-     * succeeds under owa_adminController -- the CLI-only parent would have
-     * exited before ever reaching here.
-     * Finding #1 (disclosure): password / temp_passkey / session_epoch are absent
-     * from the response body.
+     * A legitimate authenticated admin request succeeds -- a CLI-only parent
+     * would exit before reaching here -- and password / temp_passkey /
+     * session_epoch are absent from the response body.
      */
     public function testAuthenticatedAdminRequestSucceedsAndHidesSecrets(): void
     {

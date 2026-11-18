@@ -8,21 +8,9 @@ require_once __DIR__ . '/CatalogCharacterizationHarness.php';
 use OWA\Tests\CatalogCharacterizationHarness as Harness;
 
 /**
- * The metric and dimension catalog, recorded so a change to it is visible.
- *
- * REWRITTEN when the v1 vocabulary was removed. The previous version pinned the
- * catalog "before it is changed to hold two schema generations under one name",
- * and said in its own docblock that the tests asserting that shape were
- * EXPECTED TO CHANGE. They have: there is one generation now.
- *
- * What went with them were assertions that only made sense while both existed
- * -- that a name holds several entities, that normalized dimensions exist at
- * all, that the related-dimension recording runs past 250 entries. Every one
- * described the 1.x star schema, and keeping them would have meant asserting
- * the shape v2 exists to replace.
- *
- * What stays is the part that was always the point: a recording, and enough
- * mutation guards to show the recording would notice a change.
+ * The metric and dimension catalog, recorded so a change to it is visible:
+ * a recording, and enough mutation guards to show the recording would notice
+ * a change. There is one schema generation; nothing here describes v1's.
  */
 final class CatalogCharacterizationTest extends TestCase
 {

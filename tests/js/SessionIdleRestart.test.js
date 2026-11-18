@@ -10,10 +10,8 @@ import { Util } from '../../modules/Base/src/common/Util.js';
 /**
  * A page left open past the inactivity window starts a new session on its next
  * event, whatever the event is.
- *
- * The session used to be decided once, on the page's first event, so a click
- * 40 minutes after the page view carried the old session_id and stretched that
- * session over the idle time.
+ * A click 40 minutes after the page view does not carry the old session_id or
+ * stretch that session over the idle time.
  */
 
 const SITE   = 'idle-site';

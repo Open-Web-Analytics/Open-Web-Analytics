@@ -7,9 +7,8 @@ use OWA\Module\Base\Classes\NotificationManager;
 /**
  * Fetch release announcements and store them as notifications.
  *
- * Runs on the scheduler. What it replaces was an outbound request to
- * api.github.com in the critical path of every dashboard render -- uncached,
- * never stored, and a slow network made the dashboard slow.
+ * Runs on the scheduler, so no outbound request to api.github.com sits in the
+ * critical path of a dashboard render.
  *
  * Idempotent, and it has to be: it sees the same releases on every run and
  * stores only the ones it does not already have.

@@ -34,7 +34,7 @@ final class CleanTrackingTextTest extends TestCase
 
     public function testAMultibyteCharacterIsNotCut(): void
     {
-        // Byte 0xCA leads many UTF-8 characters; the old hidden-space step removed it alone.
+        // Byte 0xCA leads many UTF-8 characters; removing it alone would break the character.
         $this->assertSame('ʀ', $this->clean('ʀ'));
     }
 

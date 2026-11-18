@@ -69,9 +69,7 @@ class OverlayLauncher extends \OWA\Core\Controller {
      *
      * NOTHING TO LOOK UP. The url is the Profile's domain with the path and the
      * query string; the clicks drawn are constrained to that same
-     * pagePathPlusQuery for the report's period. Choosing "the url with the
-     * most clicks for a path" scanned every click the Property ever had and
-     * then drew every variant's clicks over whichever one it opened.
+     * pagePathPlusQuery for the report's period.
      *
      * The data link is minted here, at the click, because a row only exists in
      * the browser: the report could not have minted one per row.

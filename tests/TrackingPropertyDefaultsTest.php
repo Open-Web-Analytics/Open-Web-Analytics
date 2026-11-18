@@ -5,29 +5,20 @@ use PHPUnit\Framework\TestCase;
 /**
  * A required tracking property resolves to a value, never to null.
  *
- * Three separate defects in setTrackerProperties() let a null reach the
- * database, and each one hid the next:
+ * Three things in setTrackerProperties() keep a null out of the database:
  *
- *  1. THE TYPE WAS APPLIED TOO EARLY. setDataType() ran on the value as it
- *     arrived, BEFORE the callback. So it only ever sanitised input, and
- *     whatever a callback returned went onward untouched -- which is how a
- *     derivation that falls off the end wrote NULL into a column whose declared
- *     type is boolean. setRepeatVisitorFlag did exactly that from 2015 until
- *     8d24fc65.
+ *  1. THE TYPE IS APPLIED AFTER THE CALLBACK, not only to the value as it
+ *     arrived, so a derivation that falls off the end does not write NULL into
+ *     a column whose declared type is boolean.
  *
- *  2. THE DEFAULT COULD NEVER BE FALSY. The guard was
- *     `isset($property['default_value']) && $property['default_value']`, so
- *     `false` and `0` -- the only defaults a boolean or a counter would ever
- *     want -- failed the truthy test. The one case a default exists for was the
- *     one case it was skipped.
+ *  2. A FALSY DEFAULT APPLIES. `false` and `0` are the only defaults a boolean
+ *     or a counter would ever want, so a truthy test on default_value would
+ *     skip the one case a default exists for.
  *
- *  3. is_new_visitor's DEFAULT KEY HAD A LEADING SPACE (' default_value'), so
- *     isset() never matched it at all. Dead for the whole life of the file, and
- *     invisible because defect 2 would have discarded it anyway.
+ *  3. THE DEFAULT KEY IS SPELLED EXACTLY: isset() never matches a key with a
+ *     leading space (' default_value').
  *
- * Why it matters now: until #1028 a null was interpolated as '' and MySQL
- * coerced it to 0, so none of this was observable. PDO binds the null, so it
- * reaches the column intact.
+ * PDO binds a null, so a null reaches the column intact.
  */
 final class TrackingPropertyDefaultsTest extends TestCase
 {

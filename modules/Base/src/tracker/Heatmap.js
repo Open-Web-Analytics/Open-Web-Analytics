@@ -29,18 +29,13 @@ class Heatmap {
 	     * Gradients accumulate OFF screen, and the visible canvas is painted
 	     * from it.
 	     *
-	     * They used to be drawn straight onto the visible canvas, which was
-	     * then recoloured a dot at a time. That is wrong twice over. Once a
-	     * region has been recoloured its pixels hold colour, not the black
-	     * alpha ramp the next dot composites against -- so wherever two clicks
-	     * overlapped, the second one blended into the first one's colour and
-	     * the result was neither click's intensity. And it cost a
-	     * getImageData/putImageData round trip PER CLICK: on a page with
-	     * 345,620 of them that is 345,620 canvas reads.
-	     *
-	     * Accumulating alpha off screen and colourising the whole canvas once
-	     * per fetch is the standard way round, and makes overlap mean what it
-	     * should -- more clicks, hotter.
+	     * Drawn straight onto the visible canvas and recoloured a dot at a time,
+	     * a recoloured region would hold colour, not the black alpha ramp the next
+	     * dot composites against -- so overlapping clicks would blend into each
+	     * other's colour -- and each click would cost a getImageData/putImageData
+	     * round trip. Accumulating alpha off screen and colourising the whole
+	     * canvas once per fetch makes overlap mean what it should -- more clicks,
+	     * hotter.
 	     */
 	    this.shadowCanvas = document.createElement('canvas');
 	    this.shadowCanvas.width = w;
@@ -264,14 +259,10 @@ class Heatmap {
             return;
         }
 
-        // A plain cross-origin GET for JSON, not JSONP.
-        //
-        // JSONP returns the body as a <script> the browser executes, which
-        // makes the endpoint readable by any page on the internet. It was
-        // used here only because these run on the tracked site and call
-        // back to the OWA origin, and CORS did not work -- addCorsHeaders()
-        // never emitted a header, and isHttps() let a client's Origin flip
-        // the server's scheme and break the request signature. Both fixed.
+        // A plain cross-origin GET for JSON, not JSONP: JSONP returns the body as a
+        // <script> the browser executes, which makes the endpoint readable by any page
+        // on the internet. These run on the tracked site and call back to the OWA
+        // origin, so the request is cross-origin and relies on CORS.
         OverlayDom.getJson( url, ( data ) => this.plotClickData( data ) );
     }
 
@@ -521,7 +512,7 @@ class Heatmap {
      *
      * Every point contributes a radial alpha gradient scaled by how many clicks
      * landed there. Overlapping gradients ADD, which is the whole idea of a
-     * heatmap and is what the old per-dot recolouring destroyed.
+     * heatmap.
      */
     plotDotsRound(data) {
 

@@ -5,26 +5,17 @@ namespace OWA\Core;
 /**
  * The explicit render scope handed to a template as `$view`.
  *
- * WHY THIS EXISTS
- * ---------------
- * Templates in 1.x received their data as bare local variables, produced by
- * `extract($this->vars)` in TemplateEngine::fetch(), and reached the template
- * helpers through `$this`. A key the controller never set was simply an
- * UNDEFINED VARIABLE -- a warning in scalar context, a fatal in `foreach`
- * ("must be of type array|object, bool given") -- raised in the template, far
- * from the controller that forgot the key. Nothing declared what a template
- * needed, so neither PHPStan nor an IDE could see the contract.
- *
- * `$view` replaces both: `$view->tabs` for data, `$view->out(...)` for helpers.
- * Reading a key that was never set throws instead of silently yielding false.
- * Since v2.0 it is the ONLY way in: fetch() extracts nothing and includes the
- * template from a static closure, so `$this` is not in scope either.
+ * `$view->tabs` for data, `$view->out(...)` for helpers. Reading a key that was
+ * never set throws, in the template, naming the key -- rather than yielding an
+ * undefined variable far from the controller that forgot it. It is the ONLY
+ * way in: fetch() extracts nothing and includes the template from a static
+ * closure, so `$this` is not in scope.
  *
  * isset() AND empty() BEHAVE AS ON A LOCAL
  * ----------------------------------------
  * __isset() uses isset() on the underlying value, so `isset($view->x)` and
- * `empty($view->x)` behave exactly as `isset($x)` / `empty($x)` did against an
- * extracted local -- false for a null value, false for a missing key, and NEVER
+ * `empty($view->x)` behave exactly as `isset($x)` / `empty($x)` on a local --
+ * false for a null value, false for a missing key, and NEVER
  * throwing. The guarded reads across the templates depend on that. __get() uses
  * array_key_exists(), so a key set to null returns null rather than throwing;
  * only a key that was NEVER set is an error.
@@ -32,7 +23,7 @@ namespace OWA\Core;
  * The @method list below is the TEMPLATE-FACING API surface -- every helper OWA's
  * own templates actually call, forwarded by __call to the Template. It is declared
  * rather than left to magic because PHPStan does not infer anything from __call:
- * without these, each of the 560 helper call sites reports an undefined method.
+ * without these, each helper call site reports an undefined method.
  * Declaring them also documents what a template is allowed to reach for.
  *
  * @method string codeBlock($code, $language = 'HTML')

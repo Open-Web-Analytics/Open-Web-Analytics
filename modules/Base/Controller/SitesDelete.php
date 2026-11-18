@@ -16,10 +16,10 @@ class SitesDelete extends \OWA\Core\AdminController {
     /**
      * Archives the Profile rather than destroying it.
      *
-     * The row deletion left everything hanging off it behind -- the access
-     * grants in owa_site_user, the scoped settings rows, and every fact row
-     * ever collected under that site_id -- as orphans that a re-minted
-     * identifier could have inherited. It was also unrecoverable.
+     * Deleting the row would leave everything hanging off it behind -- the
+     * access grants in owa_site_user, the scoped settings rows, and every fact
+     * row ever collected under that site_id -- as orphans that a re-minted
+     * identifier could inherit, and it would be unrecoverable.
      *
      * Archiving stamps a date and stops the Profile being listed, reported on,
      * or collected for. Everything it owns stays exactly where it is, which is
@@ -38,7 +38,7 @@ class SitesDelete extends \OWA\Core\AdminController {
             \OWA\Module\Base\Classes\TrackerBundle::remove( (string) $this->getParam( 'siteId' ) );
         }
 
-        // Back to the roster it was reached from, which no longer lists it.
+        // Back to the roster it was reached from, which does not list it.
         if ( $site->get( 'property_id' ) ) {
 
             $this->set( 'propertyId', (string) $site->get( 'property_id' ) );

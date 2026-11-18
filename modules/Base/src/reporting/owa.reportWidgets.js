@@ -21,13 +21,11 @@ import { OWA } from './owa.format.js';
  * the set's result sets belong to. After the last set, `report-widgets:tabs`
  * names the report whose tabs are built.
  *
- * THE GLOBALS STAY. Each widget was an inline script declaring top-level
- * variables, and the page, e2e specs and code outside this repository read
- * them by name: the explorer as `<name>`, its data URL as `<name>url`, a grid's
+ * THE GLOBALS STAY. The page, e2e specs and code outside this repository read
+ * each widget's variables by name: the explorer as `<name>`, its data URL as `<name>url`, a grid's
  * column link as `<name>link`, a broken-out trend's grid as `<name>Breakdown`
  * (with `<name>Breakdownurl`), and a metric set's tab as `owaSet_<set>`. They
- * are published on window under the same names, holding the same objects and
- * strings.
+ * are published on window under those names.
  *
  * They are created on DOMContentLoaded rather than while the page parses. The
  * listener is registered when the bundle loads in the head, so it runs before

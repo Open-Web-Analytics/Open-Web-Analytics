@@ -8,30 +8,24 @@ use PHPUnit\Framework\TestCase;
  * An unbuilt download must SAY what is missing, not answer with a blank 500.
  *
  * WHY IT MATTERS
- * A GitHub release page offers three downloads: the packaged tarball, which
- * carries vendor/ and public/, and the two "Source code" archives, which carry
- * neither and cannot be run as they are. People take the source archive, and
- * what OWA did about it was nothing visible -- every entry point, install.php
- * included, answered 500 with an empty body:
+ * A release's "Source code" archives carry neither vendor/ nor public/ and
+ * cannot be run as they are. OWA's own classes load through Composer's PSR-4
+ * map, so with no vendor/ the autoloader that would find them is missing, and
+ * every entry point -- install.php included -- would answer 500 with an empty
+ * body:
  *
  *   PHP Fatal error: Uncaught Error: Class "OWA\Core\Caller" not found in owa.php:19
  *
- * OWA's own classes load through Composer's PSR-4 map, so with no vendor/ the
- * autoloader that would find them is the thing that is missing. The installer
- * has had a "Dependencies: missing -- run composer install" check the whole
- * time (modules/Base/Controller/InstallCheckEnv.php); it could never run,
- * because reaching it needed the autoloader it was there to ask about.
- *
- * Three things had to be true for that screen to render, and this test pins all
- * three, because each fails silently and none is covered by booting normally:
+ * The installer's "Dependencies: missing -- run composer install" check
+ * (modules/Base/Controller/InstallCheckEnv.php) can say so only if three
+ * things hold, and this test pins all three, because each fails silently and
+ * none is covered by booting normally:
  *
  *   1. owa_env.php registers a fallback PSR-4 autoloader for OWA's own classes.
- *   2. Nothing on the boot path REQUIRES a Composer package. Monolog was the
- *      only one -- constructed eagerly in Error::__construct() -- and is now
- *      built lazily. A single new `use` of a vendor class on this path puts the
- *      blank 500 back, which is exactly what this test is here to catch.
- *   3. The environment check screen renders at all. It reads $view->checks, and
- *      the view forwarded only $view->errors, so ANY failing check was a fatal.
+ *   2. Nothing on the boot path REQUIRES a Composer package. A single new
+ *      `use` of a vendor class on this path puts the blank 500 back.
+ *   3. The environment check screen renders at all: it reads $view->checks,
+ *      so the view must forward it.
  *
  * HOW IT IS RUN
  * From a fake root holding everything the real tree has EXCEPT vendor/ and

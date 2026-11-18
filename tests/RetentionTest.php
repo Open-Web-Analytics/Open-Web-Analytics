@@ -139,7 +139,7 @@ final class RetentionTest extends TestCase
 
     /**
      * Blank is "keep everything" on the screen: valid, stored as no value, and
-     * named in the field's placeholder. 0 is no longer a window.
+     * named in the field's placeholder. 0 is not a window.
      */
     public function testABlankWindowKeepsEverything(): void
     {

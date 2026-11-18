@@ -18,8 +18,7 @@ namespace OWA\Module\Base\Update;
  * A GOAL CONDITION MAY NAME IT, so conditions are migrated before the column is
  * dropped. The two values are identical -- the same property wrote both -- so
  * `browser` -> `browser_type` is lossless, unlike Update049's many-to-one
- * mapping. Measured here: no install has a condition on it, and other people's
- * might.
+ * mapping.
  *
  * NOT CLI-ONLY: one column off raw and off every cube.
  *
@@ -68,9 +67,7 @@ class Update052 extends \OWA\Core\Update {
     /**
      * A condition on `browser` becomes a condition on browser_type.
      *
-     * Read through the query builder rather than raw SQL: a raw read of this
-     * table answered zero rows once during this work and made every condition
-     * look orphaned.
+     * Read through the query builder rather than raw SQL.
      *
      * IDEMPOTENT: a second run finds no condition naming the old column.
      *

@@ -61,27 +61,16 @@ class Base {
      * Builds $e, $c and $config on first read rather than at construction.
      *
      * WHY THIS IS NOT AN OPTIMISATION
-     * Constructing any object used to require a working settings system, and
-     * settings cannot be built without constructing objects. Settings::__construct
+     * Settings cannot be built without constructing objects: Settings::__construct
      * loads the config file, then creates the base.configuration ENTITY, and only
-     * then applies the config constants as settings -- so the entity is built
-     * while the settings object that will hold its values is still half-built.
+     * then applies the config constants as settings -- so the entity is built while
+     * the settings object that will hold its values is still half-built. Reading
+     * eagerly here would re-enter configSingleton() before its own static was
+     * assigned, and recurse until the stack ran out.
      *
-     * That worked only because three classes -- Settings, Entity and Module --
-     * were kept outside this hierarchy, so nothing on that path ever ran this
-     * constructor. It was a real constraint enforced by nothing: giving entities
-     * a $this->c "like every other class" would have had configSingleton()
-     * re-entered before its own static was assigned, building a second Settings,
-     * a second entity, and so on until the stack ran out. On every request.
-     *
-     * Reading late instead of eagerly removes the cycle rather than dodging it.
-     * Construction touches nothing, so the first read happens when someone
-     * actually wants a value, by which time settings exist.
-     *
-     * $config is a snapshot of the base settings, and it is now taken at first
-     * read rather than at construction. Where that differs, later is the more
-     * correct of the two: an object built before a module applied its overrides
-     * used to keep the values from before them.
+     * Construction touches nothing, so the first read happens when someone actually
+     * wants a value, by which time settings exist. $config is a snapshot of the
+     * base settings taken at that first read, after any module overrides.
      *
      * @param  string $name
      * @return \OWA\Module\Base\Classes\Error|\OWA\Module\Base\Classes\Settings|array<string, mixed>|null

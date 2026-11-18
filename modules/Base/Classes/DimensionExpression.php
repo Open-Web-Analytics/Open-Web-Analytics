@@ -12,21 +12,18 @@ namespace OWA\Module\Base\Classes;
  *
  * WHY THIS IS AN EXPRESSION AND NOT A COLUMN
  * ------------------------------------------
- * The obvious alternative is a cube pass that writes the joined value into a
- * real column, and it was measured against this one. On 262,144 rows grouping
- * by the expression cost 374ms against 340ms for `GROUP BY source, medium` --
- * about ten per cent -- and NEITHER form can use an index for the grouping,
- * because the query ranges on yyyymmdd before it groups, which rules out a
- * loose index scan either way. A functional index on the CONCAT is accepted by
- * MySQL 8.4 and then ignored by the optimiser.
+ * The alternative is a cube pass that writes the joined value into a real
+ * column. Grouping by the expression costs about a tenth more than grouping by
+ * the columns, and NEITHER form can use an index for the grouping, because the
+ * query ranges on yyyymmdd before it groups. A functional index on the CONCAT
+ * is accepted by MySQL 8.4 and then ignored by the optimiser.
  *
  * So the column buys no speed, and it costs: six more columns against the
  * 65,535-byte row limit, two of them duplicating a 1024-byte page_path and its
- * query string, plus a rebuild every time one is added. The expression costs a
- * tenth of one group-by and nothing else.
+ * query string, plus a rebuild every time one is added.
  *
- * TWO KINDS SO FAR
- * ----------------
+ * TWO KINDS
+ * ---------
  * `sql()` joins several columns into one value; `datePart()` reads a component
  * out of one. They have nothing in common except the thing below, which is why
  * they live together: both produce SQL rather than a column name, and the
@@ -34,12 +31,11 @@ namespace OWA\Module\Base\Classes;
  *
  * WHAT THE ALIAS PLACEHOLDER IS FOR
  * ---------------------------------
- * ResultSetManager::lookupDimension() historically built a dimension's column
- * by writing the table alias in front of whatever the declaration said, which
- * turns `CONCAT_WS(' / ', source, medium)` into `event.CONCAT_WS(...)` -- SQL
- * that MySQL reads as a call to a function named CONCAT_WS in a schema named
- * event. The emitted SQL therefore carries `%1$s` wherever the alias belongs
- * and the seam substitutes rather than prefixes.
+ * ResultSetManager::lookupDimension() writes the table alias in front of a
+ * column name, which would turn `CONCAT_WS(' / ', source, medium)` into
+ * `event.CONCAT_WS(...)` -- a call to a function in a schema named event. The
+ * emitted SQL therefore carries `%1$s` wherever the alias belongs and the seam
+ * substitutes rather than prefixes.
  */
 class DimensionExpression {
 
@@ -258,19 +254,13 @@ class DimensionExpression {
      *
      * THE ZONE NAME IS PASSED, NOT AN OFFSET, and the difference is not
      * cosmetic. An offset computed in PHP is a single number, correct only for
-     * the moment it was computed: measured against six instants spanning the
-     * 2026 US transitions, a `-07:00` fixed at one point in the year answered
-     * three of them wrong -- including every winter timestamp. The zone name
-     * was right on all six, both transitions included, because the SERVER does
-     * the lookup per row.
+     * the moment it was computed, so a summer offset answers every winter
+     * timestamp wrong. With the zone name the SERVER does the lookup per row.
      *
      * THE ZONE IS A SECOND PLACEHOLDER, filled where the alias is, rather than
-     * written in at registration. Baking it in made the emitted SQL depend on
-     * the machine that generated it -- the catalog recording held
-     * 'America/Los_Angeles' and would not have matched on any server configured
-     * differently -- and it meant an installation that changed its timezone
-     * kept querying with the old one until something re-registered. Both go
-     * away when the zone arrives at the same moment the table alias does.
+     * written in at registration, so the emitted SQL does not depend on the
+     * machine that generated it and an installation that changes its timezone
+     * queries with the new one.
      *
      * KNOWN DEPENDENCY, and it is the reason the other seven parts do not come
      * through here: CONVERT_TZ resolves a zone NAME out of MySQL's timezone

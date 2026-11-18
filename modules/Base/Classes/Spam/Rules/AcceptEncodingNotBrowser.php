@@ -13,9 +13,7 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  * space after a comma (`gzip,deflate,br`).
  *
  * Browsers send `gzip, deflate, br` or `gzip, deflate, br, zstd`. A bare `gzip`
- * is Go's net/http default, which is what the 4 November attack sent. Measured
- * the week before it: 128 beacons with `gzip` or a list without spaces, no
- * real browser.
+ * is Go's net/http default; no real browser sends it or a list without spaces.
  *
  * READ AS APACHE RECEIVED IT. A proxy in front of OWA that rewrites
  * Accept-Encoding -- Varnish sets it to `gzip` on a request it fetches for its

@@ -68,8 +68,8 @@ test.describe('install: CLI installer (cli.php cmd=install into a scratch DB)', 
             return { code: r.status, out: `${r.stdout}${r.stderr}` };
         };
 
-        // Without a password it refuses, and installs nothing. The admin's
-        // password used to be the database password from owa-config.php.
+        // Without a password it refuses, and installs nothing: the admin's
+        // password is not taken from owa-config.php.
         const refused = install([]);
         expect(refused.code).toBe(2);
         expect(refused.out).toMatch(/password for the admin account is required/);

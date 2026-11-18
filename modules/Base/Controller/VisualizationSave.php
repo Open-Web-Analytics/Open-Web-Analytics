@@ -35,17 +35,11 @@ class VisualizationSave extends \OWA\Core\AdminController {
     /**
      * How many steps one funnel may have.
      *
-     * Ten.
-     *
-     * This was briefly a structural limit -- each step was a derived table
-     * nested inside the next, so the count was the nesting depth of the query.
-     * That implementation is gone; the counting is one flat scan now, and
-     * another step costs one more CASE column and one more term in an OR. So
-     * the cap is no longer about the database.
-     *
-     * Kept anyway, because it is about the CHART. A funnel drawn with fifty
-     * stages is unreadable long before it is expensive, and a limit somebody
-     * meets while building is kinder than one they meet while reading.
+     * Ten, because of the CHART: the counting is one flat scan, and another
+     * step costs one more CASE column and one more term in an OR, but a funnel
+     * drawn with fifty stages is unreadable long before it is expensive. A
+     * limit somebody meets while building is kinder than one they meet while
+     * reading.
      */
     const MAX_STEPS = 10;
 
@@ -341,13 +335,11 @@ class VisualizationSave extends \OWA\Core\AdminController {
      * A REDIRECT rather than rendering the form from here.
      *
      * The report builder refuses by constructing CustomReportEdit and returning
-     * its doAction(). That works there; here it produced an empty document, and
-     * so did setting the subview and view directly -- this controller is an
-     * AdminController (which is what makes the success redirect carry its data)
-     * and the edit screen is a ReportController that needs its own chrome.
-     *
-     * Redirecting sidesteps the mismatch entirely and is what the rest of the
-     * admin does on a refused save. The submitted values ride along so the form
+     * its doAction(). Here that, or setting the subview and view directly,
+     * renders an empty document: this controller is an AdminController (which
+     * is what makes the success redirect carry its data) and the edit screen is
+     * a ReportController that needs its own chrome. Redirecting is what the rest
+     * of the admin does on a refused save. The submitted values ride along so the form
      * comes back filled in rather than blank -- losing someone's typing is a
      * worse failure than the one being reported.
      */
@@ -394,9 +386,9 @@ class VisualizationSave extends \OWA\Core\AdminController {
         /*
          * The REASONS, carried the same way the steps are.
          *
-         * A redirect keeps nothing the controller set on itself, so every
-         * per-field message this save writes was being dropped and the author
-         * saw only the chrome's generic "the form data contained one or more
+         * A redirect keeps nothing the controller set on itself, so without
+         * this every per-field message would be dropped and the author would
+         * see only the chrome's generic "the form data contained one or more
          * errors". For a path that is survivable -- the field is right there
          * and its problem is usually obvious. For a condition it often is not:
          * "a click event does not carry page_title" is the whole of what the

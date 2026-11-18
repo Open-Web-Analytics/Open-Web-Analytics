@@ -5,18 +5,14 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Settings that describe ONE observed thing now live on that thing.
+ * Settings that describe ONE observed thing live on that thing, so a box
+ * watching two sites can anonymize, exclude office IPs and announce new
+ * sessions per site.
  *
- * The install-wide blob was the only place several of these could be stored,
- * so a box watching two sites had to anonymize both or neither, exclude the
- * same office IPs from both, and announce new sessions to one address. That is
- * a storage limit that had leaked into the product.
- *
- * Two seams are covered here. First, the store: getSiteSetting() had to stop
- * reading owa_site.settings, or an edit made on the Profile screen would be
- * written to the new table and read back from the old blob. Second, the READ SITES: each moved setting had to be given a
- * site to ask about, and two of them had none in scope where they were being
- * read.
+ * Two seams are covered here. First, the store: getSiteSetting() reads the
+ * scoped table, not owa_site.settings, so an edit made on the Profile screen
+ * is read back from where it was written. Second, the READ SITES: each of
+ * these settings is read with a site to ask about.
  */
 final class SettingTierMoveTest extends TestCase
 {
@@ -326,11 +322,10 @@ final class SettingTierMoveTest extends TestCase
     /**
      * The one that could not be scoped in place.
      *
-     * announce_visitors and notice_email were tested in
+     * announce_visitors and notice_email are not read in
      * Module::_registerEventHandlers, which runs at module-registration time --
-     * before any event, and so before there is a site to ask about. Leaving the
-     * test there would have meant the settings could only ever be install-wide
-     * no matter where they were stored.
+     * before any event, and so before there is a site to ask about. Read there,
+     * they could only ever be install-wide.
      */
     public function testTheAnnouncementDecisionIsNotMadeAtRegistrationTime(): void
     {

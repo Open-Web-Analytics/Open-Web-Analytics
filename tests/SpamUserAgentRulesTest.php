@@ -10,9 +10,7 @@ use OWA\Module\Base\Classes\Spam\Rules\UaParserSpider;
 /**
  * The user_agent rule set: what Browscap::robotCheck() decided, as two rules.
  *
- * Moved from BrowscapRobotDetectionTest and BotDetectionTest, which asserted
- * the same things of isRobot() and robotRegexCheck(). Those are gone; the
- * token list is UA_ROBOT_TOKEN and the parser's Spider is UA_PARSER_SPIDER,
+ * The token list is UA_ROBOT_TOKEN and the parser's Spider is UA_PARSER_SPIDER,
  * and `normal` blocks either one at the default threshold.
  */
 final class SpamUserAgentRulesTest extends TestCase
@@ -138,7 +136,7 @@ final class SpamUserAgentRulesTest extends TestCase
         $this->assertNull(UaRobotToken::matchingToken(''));
     }
 
-    /** The robot methods are gone from Browscap; the parser's other readings stay. */
+    /** Browscap has no robot methods; the parser's other readings stay. */
     public function testBrowscapNoLongerDecidesRobots(): void
     {
         foreach (['robotCheck', 'isRobot', 'robotRegexCheck', 'parserSaysSpider'] as $method) {

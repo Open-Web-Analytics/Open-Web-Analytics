@@ -41,9 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     header("Content-type: image/gif");
     /*
-     * The real length. It said 42 for a 43-byte image, so the header did not
-     * survive and the response went out chunked -- which a client can only
-     * see the end of when the script ends, ingest and all.
+     * The real length, so the header survives and the response is not sent
+     * chunked -- which a client can only see the end of when the script ends,
+     * ingest and all.
      */
     header("Content-Length: " . strlen( $pixel ));
     header("Cache-Control: private, no-cache, no-cache=Set-Cookie, proxy-revalidate");
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
  *
  * flush() alone does not do that under PHP-FPM, which is how this runs on
  * most servers: the web server is not told the response is complete until
- * the script exits, so the request stayed open for the whole ingest.
+ * the script exits, so the request would stay open for the whole ingest.
  * fastcgi_finish_request() tells it now (LiteSpeed has its own); the flush
  * is what is left for a server API with neither.
  */
@@ -109,13 +109,8 @@ if ( $owa->isEndpointEnabled( basename( __FILE__ ) ) ) {
     /*
      * Only parameters a request is ALLOWED to set reach the event.
      *
-     * A tracking request is untrusted input. This used to refuse the names the
-     * server computes for itself and let everything else through -- a denylist,
-     * and its own note said as much: unregistered names still passed. So the
-     * gate was open for exactly the inputs nobody had thought about, which is
-     * the shape of the mistake OWA already made once in the settings registry.
-     *
-     * Two things are admitted now and nothing else: a name some event declares
+     * A tracking request is untrusted input, so this is an allowlist. Two things
+     * are admitted and nothing else: a name some event declares
      * it carries, which the tracking property registry states; and a custom
      * value under one of the four scope/type prefixes -- eps_, epn_, vps_, vpn_
      * -- with a legal name. A site's own keys stay unrestricted, because the

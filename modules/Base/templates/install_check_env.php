@@ -3,13 +3,9 @@
 /*
  * What was checked, and what each check found.
  *
- * This listed the FAILURES only, under "Uh-oh. We found a few issues." -- so
- * there was no way to tell a check that passed from one that was never made,
- * which on a screen describing the environment is most of what you want to
- * know. Every check is listed, and the ones that failed carry the fix.
- *
- * The <style> block that used to be here positioned the columns absolutely at
- * left:620px and left:850px; the rules live in owa.css with the rest now.
+ * Every check is listed, passed or failed, so a check that passed can be told
+ * from one that was never made; the ones that failed carry the fix. The layout
+ * rules live in owa.css.
  */
 $owa_failed = count( (array) $view->errors );
 ?>

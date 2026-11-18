@@ -6,13 +6,11 @@ use PHPUnit\Framework\TestCase;
  * What happens to a request naming an action that resolves to nothing.
  *
  * Every one of these is reachable by anyone who can type a URL, without
- * credentials, so the question is not whether they can be sent but what they
- * are answered with. Until this was fixed the answer was an uncaught exception:
- * HTTP 500 and a PHP fatal in the web server's log, for what is a missing page.
+ * credentials, so the question is what they are answered with: a missing page,
+ * not an uncaught exception (HTTP 500 and a PHP fatal in the web server's log).
  *
- * Two separate defects produced that, and both are covered here -- the action
- * resolver raising with nothing to catch it, and the production error handler
- * registering no exception handler at all.
+ * Both causes are covered here -- the action resolver raising with nothing to
+ * catch it, and the production error handler registering no exception handler.
  */
 final class ActionResolutionTest extends TestCase
 {
@@ -279,10 +277,10 @@ final class ActionResolutionTest extends TestCase
 
     /**
      * Only the registry resolves an action. Each of these names a real
-     * controller class that the convention lookup removed in v2.0 would have
-     * built: base.LoginForm is the LoginForm controller under a name nobody
-     * registered (only base.loginForm is), and base.partitionsCli an abstract
-     * base whose instantiation fataled the request.
+     * controller class that a convention lookup would build: base.LoginForm is
+     * the LoginForm controller under a name nobody registered (only
+     * base.loginForm is), and base.partitionsCli an abstract base whose
+     * instantiation is a fatal.
      */
     public function testAnUnregisteredNameIsNotResolvedByConvention()
     {

@@ -17,21 +17,16 @@ namespace OWA\Module\Base\Controller;
 /*
  * A REPORTING screen, not an options screen.
  *
- * It was an options screen first, copied from the goal forms, and that was
- * wrong twice over. An options screen configures the INSTALLATION -- settings,
- * users, modules -- and a custom report is not a setting; it is something the
- * author makes, which is why the roster is already a reporting screen.
+ * An options screen configures the INSTALLATION -- settings, users,
+ * modules -- and a custom report is something the author makes, which is
+ * why the roster is a reporting screen too. View/Options.php loads
+ * owa.admin.css and nothing else, and the reporting stylesheet is loaded by
+ * report pages only, so the builder's rules and its widget dialog need the
+ * reporting family.
  *
- * It was also wrong concretely. View/Options.php loads owa.admin.css and
- * nothing else, so the builder's own rules never reached it and the whole page
- * rendered unstyled; and the reporting stylesheet is loaded by report pages only,
- * so the widget dialog opened as an unstyled block. Both were symptoms of the
- * screen being in the wrong family, and both go away here rather than being
- * patched around.
- *
- * The third thing it fixes is the site. A report is viewed against one, and the
- * site the author is building against is the one the View link and the share
- * URL use -- the reporting chrome puts that filter on the page instead of it
+ * It also gives the site. A report is viewed against one, and the site the
+ * author is building against is the one the View link and the share URL
+ * use -- the reporting chrome puts that filter on the page instead of it
  * travelling invisibly.
  */
 class CustomReportEdit extends \OWA\Core\ReportController {
@@ -114,9 +109,7 @@ class CustomReportEdit extends \OWA\Core\ReportController {
         /*
          * The definition the form starts from. A NEW report starts from NONE --
          * no widgets and no report metric set -- so the first thing an author
-         * does is choose what to build. It used to be seeded with one table
-         * widget, which meant a report could be saved without a single choice
-         * having been made, and what came out was a table of nothing.
+         * does is choose what to build.
          */
         $definition = $report ? (array) $report['definition'] : [];
 
@@ -311,14 +304,9 @@ class CustomReportEdit extends \OWA\Core\ReportController {
          * link and the saved report's URL name.
          */
         /*
-         * The reporting navigation STAYS on this screen.
-         *
-         * It was hidden because the builder is a form rather than a report, and
-         * a form with a report's chrome around it looked like a mistake. It is
-         * the wrong call: the builder is reached from the roster and left for
-         * the report it just made, and both of those are in that nav -- so
-         * hiding it made the one screen in the reporting section with no way
-         * back into it.
+         * The reporting navigation STAYS on this screen: the builder is reached
+         * from the roster and left for the report it just made, and both of those
+         * are in that nav.
          */
         $this->hideTimeControls();
 

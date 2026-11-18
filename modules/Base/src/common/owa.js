@@ -371,15 +371,11 @@ class OWA {
         // set global is overlay actve flag
         this.overlayActive = true;
         
-        // Hold the overlay params for this page's lifetime.
-        //
-        // They used to be written to an owa_overlay cookie on the TRACKED
-        // site's own domain, so the overlays' fetchData()
-        // could read api_url back out -- which meant every other script on
-        // that page could read the credential in it, and the browser re-sent
-        // it to that site on every request. The params only ever need to
-        // survive from page load until the overlay fetches, so memory is the
-        // right lifetime and a cookie bought persistence nothing wanted.
+        // Hold the overlay params for this page's lifetime, in memory: they carry
+        // a credential (api_url), and a cookie on the TRACKED site's domain would
+        // let every other script on that page read it and send it to that site on
+        // every request. The params only need to survive from page load until the
+        // overlay fetches.
         this.overlayParams = p;
         
         if (p.hasOwnProperty('api_url')) {
@@ -489,10 +485,7 @@ class OWA {
 	
 	        // Arrow functions: these callbacks reference `this` to debug, and a
 	        // plain function passed to forEach is called with `this` undefined
-	        // under the strict mode an ES module always runs in. Registering a
-	        // single filter therefore threw a TypeError before this ran. It went
-	        // unnoticed because nothing in the tree calls addFilter -- applyFilters
-	        // is only ever reached with an empty list, which skips this block.
+	        // under the strict mode an ES module always runs in.
 	        filters.forEach( ( hooks ) => {
 
 	            hooks.forEach( ( callback ) => {

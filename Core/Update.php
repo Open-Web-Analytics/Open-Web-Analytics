@@ -187,9 +187,6 @@ class Update extends \OWA\Core\Base {
      * out-of-sequence rollback and a failing down() both return false, matching
      * apply()'s contract in this class.
      *
-     * (This previously returned true unconditionally, so callers could not tell
-     * a completed rollback from one that never ran.)
-     *
      * @return boolean true if the rollback was applied, false if refused or failed
      */
     public function rollback() {
@@ -274,11 +271,6 @@ class Update extends \OWA\Core\Base {
      * column that LATER migrations add -- so the column exists before the
      * migration that adds it ever runs.
      *
-     * Found on a live deploy: an installation at schema 20 ran Update021, which
-     * created owa_property complete with the archived_date that Update023 then
-     * tried to add. The upgrade stopped dead at 23, on a database that was
-     * already correct.
-     *
      * Interpolated, not bound: SHOW COLUMNS takes no parameters, and both values
      * come from the migration's own code rather than from a request.
      *
@@ -311,8 +303,7 @@ class Update extends \OWA\Core\Base {
          * an update is permanent and a shape is not -- a LATER update may drop
          * the column, and from then on this one is asking the entity to
          * describe something it has deliberately forgotten. getColumn() throws,
-         * and the whole upgrade path from before that version is broken, which
-         * is a fresh install's path too.
+         * and would break the whole upgrade path from before that version.
          *
          * Update037 is the case: it adds prev_event_ts, and Update046 removes
          * it. The mirror of Update046::down() having to spell its types out for

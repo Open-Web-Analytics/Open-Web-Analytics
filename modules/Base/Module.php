@@ -27,9 +27,8 @@ class Module extends \OWA\Core\Module {
     /**
      * The schema 1.14.0 left behind, and the oldest this release upgrades.
      *
-     * v2's updates start at 34. The ones before are gone with the v1 code they
-     * migrated, so an older installation upgrades to 1.14 first (PLAN.html
-     * 2.21).
+     * v2's updates start at 34, so an older installation upgrades to 1.14 first
+     * (PLAN.html 2.21).
      */
     const OLDEST_UPGRADABLE_SCHEMA = 33;
 
@@ -37,8 +36,7 @@ class Module extends \OWA\Core\Module {
      * Refuse an installation older than 1.14.0 before applying anything.
      *
      * No recorded version is refused too. Module::install() records one when it
-     * creates every table, so its absence means tables made by something older,
-     * which the chain used to handle by replaying from Update001.
+     * creates every table, so its absence means tables made by something older.
      */
     public function update() {
 
@@ -706,8 +704,7 @@ class Module extends \OWA\Core\Module {
          * closed by then, is left alone (Cube\Builder::isCurrent()), and one
          * empty in both raw and the cube costs an index probe. So a quiet
          * Property costs a scan per partition and no swap, and an active one
-         * rebuilds today's partition -- measured at 0.6s for 1k rows, 1.4s for
-         * 10k and 12.6s for 100k on a db.t4g.small. An installation that wants
+         * rebuilds today's partition. An installation that wants
          * it more or less often says so in OWA_SCHEDULED_JOBS.
          *
          * Spread, not on the minute, for the reason rotate-partitions is:
@@ -737,11 +734,10 @@ class Module extends \OWA\Core\Module {
          * no DDL at all.
          *
          * What it buys is the wait. Registering a dimension cannot do the ALTER
-         * inline: it is a full table rebuild, 11.3 seconds measured at 1.5M
-         * rows, well past PHP's 30-second limit and the load balancer's 65 --
-         * and a killed request does not stop it, so a screen doing this inline
-         * would time out, add the column anyway, and invite a retry that pays a
-         * second rebuild. The build reconciles too, so nothing DEPENDS on this
+         * inline: it is a full table rebuild, which on a large cube runs past a
+         * request's time limit -- and a killed request does not stop it, so a
+         * screen doing this inline would time out, add the column anyway, and
+         * invite a retry that pays a second rebuild. The build reconciles too, so nothing DEPENDS on this
          * job; without it a dimension registered from a screen would simply
          * wait for the next daily build instead of a quarter of an hour.
          */
@@ -756,8 +752,7 @@ class Module extends \OWA\Core\Module {
         /*
          * Daily is the right cadence for release announcements: they are not
          * urgent, and the endpoint is rate limited per IP. Nothing renders from
-         * the network any more, so a missed run costs a day's freshness rather
-         * than a broken dashboard.
+         * the network, so a missed run costs a day's freshness.
          *
          * NOT '@daily'. That is `0 0 * * *` -- midnight exactly -- so every
          * install running this job would call api.github.com at the same
@@ -832,8 +827,8 @@ class Module extends \OWA\Core\Module {
          *
          * What each control looks like is already in the declaration -- `type`
          * says select or text, `label` and `description` say what to call it --
-         * so the screen no longer spells any of that out a second time. The
-         * order here is the order they render in.
+         * so the screen does not spell any of that out a second time. The order
+         * here is the order they render in.
          */
         $this->registerSettingsFieldSet( [
             'id'       => 'base.tracking',
@@ -893,30 +888,22 @@ class Module extends \OWA\Core\Module {
 
 
         /*
-         * No Properties panel. The hierarchy is navigated from the site control
-         * above the report nav, which is where someone is when they need it;
-         * an admin-menu roster was a second place to browse the same tree.
-         * The per-Property edit screen is reached from that control.
+         * No Properties panel: the hierarchy is navigated from the site control above
+         * the report nav, which also reaches the per-Property edit screen.
          */
 
         /*
          * The settings nav is for INSTALL-WIDE configuration only.
          *
-         * Everything else now hangs off the Organization / Property / Profile
-         * hierarchy and is reached from the site control, which is where
-         * someone is when they need it:
+         * Everything else hangs off the Organization / Property / Profile hierarchy
+         * and is reached from the site control: user accounts on the Organization,
+         * goals on a Profile.
          *
-         *   - User Management -> the Organization, because that is where user
-         *     accounts live.
-         *   - Tracked Sites   -> the control itself replaced that roster.
-         *   - Goal Settings   -> a Profile, since goals are per site.
-         *
-         * What is left here is genuinely install-scoped: the modules that are
-         * active, and the timezone -- which cannot move down, because yyyymmdd
-         * and nine other date parts are baked into every fact row at collection
-         * in the configured zone, so it is not retroactive and two profiles
-         * disagreeing about it would put rows of different meanings in one
-         * table with nothing recording which.
+         * What is here is install-scoped: the modules that are active, and the
+         * timezone -- which cannot move down, because yyyymmdd and nine other date parts
+         * are baked into every fact row at collection in the configured zone, so it is
+         * not retroactive and two profiles disagreeing about it would put rows of
+         * different meanings in one table with nothing recording which.
          */
         $this->registerSettingsPage([
                 'do'             => 'base.optionsModules',
@@ -991,21 +978,14 @@ class Module extends \OWA\Core\Module {
         ] );
         $this->registerReport( 'document', 'reports/document.json' );
         /*
-         * EVENTS, grouped by name, and it replaces the v1 action reports.
-         *
-         * 1.x had an Actions report over owa_action_fact with actionName,
-         * actionLabel and actionGroup dimensions and an `actions` metric. NONE of
-         * those exist on v2 and none should: a tracked action is a `custom_event`
-         * row like any other event, and what separates it from a page view is
-         * event_type -- the column `eventName` is registered against. So "what
-         * happened on this site, and how often" is one report over one dimension
-         * instead of a report per event family.
+         * EVENTS, grouped by name. A tracked action is a `custom_event` row like any
+         * other event, and what separates it from a page view is event_type -- the
+         * column `eventName` is registered against. So "what happened on this site,
+         * and how often" is one report over one dimension.
          *
          * An action's own name, label and group ride `params`, and params ARE the
          * custom dimensions -- site-defined keys, promoted to a cube column by
-         * Classes\Cube\Dimensions. So there is nothing for this release's
-         * vocabulary to declare, and the reports that grouped by them are removed
-         * rather than reimplemented.
+         * Classes\Cube\Dimensions.
          */
         $this->registerReport( 'events', 'reports/events.json' );
         $this->registerReport( 'clicks', 'reports/clicks.json' );
@@ -1070,27 +1050,11 @@ class Module extends \OWA\Core\Module {
 
         //Ecommerce
         /*
-         * Every e-commerce report is in the NAV, not behind a links widget on
-         * the overview.
+         * Every e-commerce report is in the NAV, not behind a links widget on the
+         * overview.
          *
-         * The overview used to carry a report-links widget listing eight of
-         * them, which meant a reader had to know to open the overview first and
-         * then read a list -- while the nav, the thing built for moving between
-         * reports, showed four of the eight. Reports belong in the menu.
-         *
-         * The five that were only in the widget -- products, product-skus,
-         * product-categories, avg-order-value, ecommerce-conversion-rate -- are
-         * added here. `transactions` was already in the nav and not in the
-         * widget, so it stays.
-         *
-         * Ordered by what a reader is answering: money first, then what sold,
-         * then how long buying took.
-         *
-         * Every child declares view_reports_ecommerce like the group. The
-         * default is the weaker view_reports, which was masked -- a child is
-         * only reachable once its group's capability passed -- but a link
-         * claiming a weaker requirement than the group holding it is a
-         * disagreement waiting to be read the wrong way.
+         * Every child declares view_reports_ecommerce like the group, so no link
+         * claims a weaker requirement than the group holding it.
          */
         $this->addNavigationSubGroup('Ecommerce', $this->reportRef( 'ecommerce' ), \OWA\Core\CoreAPI::t( 'Ecommerce' ), 6, 'view_reports_ecommerce', 'Reports','fa fa-shopping-cart');
         $this->addNavigationLinkInSubGroup('Ecommerce', $this->reportRef( 'revenue' ), \OWA\Core\CoreAPI::t( 'Revenue' ), 2, 'view_reports_ecommerce');
@@ -1158,11 +1122,8 @@ class Module extends \OWA\Core\Module {
     }
 
     /*
-     * The combined reporting stylesheet is now produced by webpack
-     * (reportingCssConfig in webpack.config.js), emitting the same file to the
-     * same directory. The PHP-CLI build package that used to concatenate the six
-     * source CSS files here has been retired along with the whole build-package
-     * machinery (the base.build CLI command + owa_buildController).
+     * The combined reporting stylesheet is produced by webpack (reportingCssConfig
+     * in webpack.config.js).
      */
 
     /**
@@ -1239,13 +1200,12 @@ class Module extends \OWA\Core\Module {
                 'organization',
                 'property',
             /*
-             * 'configuration' is NOT here. Update043 unpacked that table into
-             * install-scope rows of owa_setting and dropped it, so a fresh
-             * install must not create it -- its presence is what tells
-             * Settings the blob is still the store of record.
+             * 'configuration' is NOT here: Update043 unpacked that table into
+             * install-scope rows of owa_setting and dropped it, and its presence is what
+             * tells Settings the blob is still the store of record.
              *
-             * The entity class stays: the rollback recreates the table, and
-             * entityFactory resolves by PSR-4 rather than from this list.
+             * The entity class stays: the rollback recreates the table, and entityFactory
+             * resolves by PSR-4 rather than from this list.
              */
             'setting',
             'goal_event_definition',

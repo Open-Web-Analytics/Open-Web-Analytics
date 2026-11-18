@@ -7,9 +7,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * `cmd=instance-info` describes the whole instance in one report.
  *
- * WHAT IT IS FOR. Everything it reports could already be found out -- and that
- * was the problem. It took several commands, some SQL and knowing which
- * settings to read, so nobody did it, and the things that fail QUIETLY are
+ * WHAT IT IS FOR. Everything it reports can be found out otherwise, but that
+ * takes several commands, some SQL and knowing which settings to read, and the
+ * things that fail QUIETLY are
  * exactly the things nobody goes looking for: a stale user-agent database
  * misattributes rather than erroring, an un-run scheduler does nothing rather
  * than complaining, retention that was never configured accumulates forever.

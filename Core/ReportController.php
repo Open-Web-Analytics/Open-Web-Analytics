@@ -103,20 +103,12 @@ class ReportController extends \OWA\Core\AdminController {
     }
 
     /**
-     * An invalid period is refused rather than quietly replaced.
-     *
-     * It used to fall back to the default reporting period and say so only in a
-     * debug line, which is off unless debugging is on. That silence is not
-     * hypothetical harm: the visitor roster linked to `period=all_time` for
-     * years, all_time was never an accepted value, and every one of those links
-     * served seven days while claiming to show a visitor's whole history.
-     * Nobody could see it.
+     * An invalid period is refused rather than quietly replaced by the default,
+     * which would serve one period while claiming to show another.
      *
      * The picker constrains the choice, so an invalid period means the URL was
      * edited by hand -- exactly the case where an answer is better than a
-     * guess. This is also what the REST API already does, against the same
-     * list, so the two paths now agree on what a period may be AND on what
-     * happens when it is not one.
+     * guess. The REST API does the same, against the same list.
      *
      * setFromMap() keeps its fallback. It is the backstop for callers that do
      * not come through a controller, and defence in depth is worth more than
@@ -311,23 +303,11 @@ class ReportController extends \OWA\Core\AdminController {
         }
 
         /*
-         * Derived from the report's identity, not from the action that reached
-         * it.
-         *
-         * Every report used to have its own action, so hyphenating `do` gave
-         * each one a distinct container id -- base-reportPages,
-         * base-reportEntryPages. Reaching them all through base.report collapses
-         * that to the single value "base-report" for every report on the
-         * installation.
-         *
-         * Nothing keys persistence off dom_id today, so nothing is broken by the
-         * collision right now. It is still worth not introducing: the id is what
-         * OWA.report binds to and what anything remembering per-report UI state
-         * would naturally key on, and a collision that costs nothing today is
-         * the kind that costs a confusing afternoon later.
-         *
-         * The direct route is unchanged -- there is no reportId on it -- so this
-         * adds a distinct id for the new route rather than altering the old one.
+         * Derived from the report's identity, not from the action that reached it:
+         * every report is reached through base.report, so hyphenating `do` would give
+         * every report the container id "base-report". The id is what OWA.report binds
+         * to and what anything remembering per-report UI state would key on. The
+         * direct route has no reportId and keeps its id.
          */
         $reportId = $this->getParam('reportId');
 
@@ -347,9 +327,8 @@ class ReportController extends \OWA\Core\AdminController {
          *
          * Derived by Core\MetricSets rather than built here: a report shows one
          * dimension measured several ways, and which ways exist depends on the
-         * Property, not on the report. The interface draws them as tabs today,
-         * which is why this used to be called $tabs; that is a presentation
-         * choice and is expected to change.
+         * Property, not on the report. The interface draws them as tabs, which
+         * is a presentation choice and is expected to change.
          */
         $metricSets = \OWA\Core\MetricSets::forProperty( $propertyId );
 

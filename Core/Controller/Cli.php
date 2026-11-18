@@ -70,16 +70,13 @@ class Cli extends \OWA\Core\AdminController {
     /**
      * What this command actually did: 'ok', 'refused' or 'failed'.
      *
-     * doAction() returns $this->data and CLI actions return void, so until the
-     * scheduler existed a command that declined to act and one that did the work
-     * looked identical to a caller. That is fine for a person reading a terminal
-     * and useless to a dispatcher, which has to decide whether an occurrence was
-     * satisfied and record why.
+     * doAction() returns $this->data and CLI actions return void, so without this
+     * a command that declined to act and one that did the work look identical to
+     * a dispatcher, which has to decide whether an occurrence was satisfied and
+     * record why.
      *
-     * Defaults to 'ok': a command that never says otherwise ran to completion,
-     * which is what every existing command means today. Nothing had to be
-     * rewritten; commands opt in one at a time by calling refuse() or fail()
-     * where they already call notice().
+     * Defaults to 'ok': a command that never says otherwise ran to completion.
+     * Commands call refuse() or fail() where they call notice().
      *
      * @var string
      */
@@ -142,7 +139,7 @@ class Cli extends \OWA\Core\AdminController {
     /**
      * Tried and failed. The occurrence is left unsatisfied and retried.
      *
-     * This matters more than it looks: Db::query() swallows SQL errors and
+     * Db::query() swallows SQL errors and
      * returns falsy, so without commands calling this, a job whose ALTER TABLE
      * was rejected by the server would record 'ok' indefinitely.
      *

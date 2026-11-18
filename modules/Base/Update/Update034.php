@@ -5,10 +5,7 @@ namespace OWA\Module\Base\Update;
 /**
  * Create v2's two tables: owa_event_raw and owa_visitor_acquisition.
  *
- * Both are empty when this runs, so it adds storage and changes no behaviour. It
- * is the first schema change of the v2 work and deliberately the whole of it:
- * the cube and its build are a later phase, and neither is specified well
- * enough yet to be created and then altered.
+ * Both are empty when this runs, so it adds storage and changes no behaviour.
  *
  * createTable() emits CREATE TABLE IF NOT EXISTS and builds the statement from
  * the entity, so up() is idempotent and converges with a fresh install, which
@@ -30,7 +27,7 @@ namespace OWA\Module\Base\Update;
  * settings, goal events, visualizations -- so the installation stops deriving
  * 32-bit ids here, before any of them do, and the kept rows still holding one
  * are moved to 64-bit. It does not depend on the administrator having run
- * rederive-dimension-ids on 1.14, which v2 no longer has.
+ * rederive-dimension-ids on 1.14.
  */
 class Update034 extends \OWA\Core\Update {
 

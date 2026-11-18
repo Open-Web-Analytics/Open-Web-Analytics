@@ -140,11 +140,9 @@ class Error {
     /**
      * Record an exception nothing else caught, and answer with a server error.
      *
-     * Only the development handler used to register one, which had the effect
-     * backwards: the installation exposed to the internet was the one running
-     * without an exception handler. An uncaught exception there became a PHP
-     * fatal, recorded in the web server's log rather than OWA's own, where an
-     * administrator would look for it.
+     * Registered by the production handler too, so an uncaught exception is
+     * recorded in OWA's own log, where an administrator would look for it,
+     * rather than becoming a PHP fatal in the web server's.
      *
      * The status is set deliberately rather than inherited from PHP's fatal, and
      * the response body is left empty: the message and stack trace go to the log,

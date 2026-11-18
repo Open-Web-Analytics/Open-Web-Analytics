@@ -8,21 +8,19 @@ use PHPUnit\Framework\TestCase;
  * Tracking must refuse an event naming a site this installation does not have.
  *
  * WHY IT MATTERS
- * The site id arrives in the request and was never checked, so an event naming
- * a site that does not exist was recorded in full: fact rows, sessions, the lot.
- * Nothing ever reads them -- reporting is entered through a site, and the site
- * cannot be selected -- and nothing ever removes them. Two real installations
- * were carrying 165 and 15,173 such rows.
+ * The site id arrives in the request. An event naming a site that does not
+ * exist would be recorded in full -- fact rows, sessions, the lot -- read by
+ * nothing (reporting is entered through a site, and that site cannot be
+ * selected) and removed by nothing.
  *
- * It also made tracking an unauthenticated write path: anyone could post events
- * naming any site id and add rows indefinitely, invisible in every report while
- * consuming partitions and open-file budget.
+ * It would also make tracking an unauthenticated write path: anyone could post
+ * events naming any site id and add rows indefinitely, invisible in every
+ * report while consuming partitions and open-file budget.
  *
- * The values are not hypothetical. Observed in production data:
- * 'yoursiteidgoeshere' and 'your_site_id' -- the documentation placeholder,
- * pasted into live tracking code -- 'No options are available.', which is a
- * select-box label submitted as a value, and one real site id truncated at six
- * different lengths.
+ * The values are real: 'yoursiteidgoeshere' and 'your_site_id' -- the
+ * documentation placeholder, pasted into live tracking code -- 'No options are
+ * available.', which is a select-box label submitted as a value, and a real
+ * site id truncated at several lengths.
  */
 final class UnknownSiteRejectionTest extends TestCase
 {
@@ -108,7 +106,7 @@ final class UnknownSiteRejectionTest extends TestCase
         $this->assertFalse(\OWA\Core\CoreAPI::isSiteRegistered($value), $label . ' must not be accepted');
     }
 
-    /** Every one of these was found in a real installation's fact tables. */
+    /** Values seen in real installations' fact tables. */
     public static function rubbishSiteIds(): array
     {
         return [
@@ -138,7 +136,7 @@ final class UnknownSiteRejectionTest extends TestCase
     }
 
     /**
-     * THE REGRESSION THIS FEATURE COULD CAUSE: a legitimate event must still log.
+     * A legitimate event must still log.
      *
      * Everything else here checks that bad events are refused. This checks the
      * expensive mistake -- refusing a good one, which would silently stop a

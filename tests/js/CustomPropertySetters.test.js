@@ -9,16 +9,13 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  * which bag a value belongs to, and the same name in two scopes is two
  * different things all the way to the column.
  *
- * Both are PAGE-LIFETIME and in memory. Neither writes a cookie, which is the
- * deliberate break from v1: a visitor-scoped custom variable persisted in the
- * 'v' store and was re-sent on every later beacon, so a value could outlive the
- * thing it described. What persists now is a server record written at ingest.
+ * Both are PAGE-LIFETIME and in memory. Neither writes a cookie, so a value
+ * cannot outlive the thing it described; what persists is a server record
+ * written at ingest.
  *
- * setCustomVar's three scopes collapse onto the two. Session maps to EVENT,
- * which looks like a loss and is not: a session-scoped value carried by the
- * client is something the server can derive from the session's own events and
- * something the client can get wrong -- v1's own session store kept a variable
- * past the session that set it, because nothing cleared it at the boundary.
+ * setCustomVar's three scopes collapse onto the two. Session maps to EVENT: a
+ * session-scoped value carried by the client is something the server can derive
+ * from the session's own events.
  */
 describe('custom property setters', () => {
 

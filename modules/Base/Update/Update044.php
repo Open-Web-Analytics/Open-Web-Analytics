@@ -15,12 +15,12 @@ namespace OWA\Module\Base\Update;
  * has no slot for value labels, so a stored code has no way to become two named
  * buckets.
  *
- * EXISTING ROWS READ AS `(not set)` UNTIL A REBUILD. Measured on MySQL 8 under
+ * EXISTING ROWS READ AS `(not set)` UNTIL A REBUILD. On MySQL 8 under
  * STRICT_ALL_TABLES, ADD COLUMN ... NOT NULL with no default backfills '' on a
  * populated table rather than refusing -- sql_mode governs what DML may store,
  * not what an ALTER writes. So the column is present and empty until
- * cmd=cube-rebuild runs, exactly as Update038's referer_query stayed NULL until
- * one did. Nothing is lost by that: every row of a cube came from a build.
+ * cmd=cube-rebuild runs. Nothing is lost by that: every row of a cube came
+ * from a build.
  *
  * NOT CLI-ONLY. The trait pins ALGORITHM=INPLACE, which is a full rebuild of
  * each cube -- online, and the same one a release adding any cube column pays.

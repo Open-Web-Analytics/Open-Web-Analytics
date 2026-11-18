@@ -5,10 +5,8 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * A nav group renders by its entries' `order`, and each entry's links by theirs.
- *
- * The number was stored and never read, so the report nav came out in module
- * registration order and a new entry went wherever it was added.
+ * A nav group renders by its entries' `order`, and each entry's links by theirs,
+ * not in module registration order.
  */
 final class NavigationSortTest extends TestCase
 {

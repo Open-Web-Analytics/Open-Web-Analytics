@@ -5,10 +5,8 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
  * The collection surfaces v1 never had: scroll depth, downloads, forms, site
  * search, and a selector that actually identifies what was clicked.
  *
- * The scroll ones matter most. 1.x's handler queued an event on EVERY scroll
- * tick. v2 first made it one event per threshold, which was still four per page
- * view and four at load on a page that fits the window; now it is one event per
- * page view, at its deepest threshold, and only after a scroll.
+ * Scroll is one event per page view, at its deepest threshold, and only after a
+ * scroll.
  */
 
 function newTracker(options) {
@@ -229,8 +227,8 @@ describe('downloads and outbound links', () => {
     });
 
     /*
-     * An indented, multi-line link was a different value for every way it was
-     * formatted. Runs of whitespace are one space, and the ends are trimmed.
+     * Runs of whitespace are one space, and the ends are trimmed, so an
+     * indented, multi-line link is one value however it is formatted.
      */
     test('link text collapses whitespace, on the click and the download', () => {
         const t = newTracker();
@@ -264,9 +262,7 @@ describe('downloads and outbound links', () => {
     });
 
     /*
-     * OUTBOUND IS DECIDED HERE, and the rules are these. It was briefly a server
-     * derivation off target_url and page_location -- which only serves a sender
-     * shaped like a browser, and cannot see a DOM.
+     * OUTBOUND IS DECIDED HERE, where the DOM is, and the rules are these.
      */
     test('a different host is outbound and the same host is not', () => {
         const t = newTracker();
@@ -569,8 +565,7 @@ describe('scroll depth', () => {
     });
 
     /*
-     * NOTHING AT LOAD. A page that fits the window used to report every
-     * threshold here, without a scroll.
+     * NOTHING AT LOAD, without a scroll.
      */
     test('a page already loaded is measured from, not reported', () => {
         const t = newTracker();
@@ -827,11 +822,8 @@ describe('site search', () => {
     });
 
     /*
-     * THE DEFAULTS ARE THE FEATURE. This used to assert the opposite -- that
-     * nothing is raised without configuration -- on the reasoning that no
-     * convention exists so a default would guess wrong. The cost of that was total:
-     * siteSearchParams was empty AND trackSiteSearch() had no caller, so
-     * view_search_results could not fire on any install at all.
+     * THE DEFAULTS ARE THE FEATURE: with siteSearchParams empty, or nothing
+     * calling trackSiteSearch(), view_search_results could not fire.
      */
     test('the shipped defaults raise it with no configuration', () => {
         const t = newTracker();
@@ -884,7 +876,7 @@ describe('site search', () => {
         expect(t.getOption('siteSearchParams')).toEqual(['kw']);
 
         const sent = captureSends(t);
-        // ?q= is still on the URL and must no longer be read as a search.
+        // ?q= is still on the URL and must not be read as a search.
         history.replaceState({}, '', '/search?q=shoes');
         t.trackSiteSearch();
 

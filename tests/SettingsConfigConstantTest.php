@@ -9,15 +9,11 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * Constants have to be applied EARLY -- the database credentials are among
  * them, so load() cannot run until they exist -- and load() then merges stored
- * values over whatever they set. That was handled by removing the
- * constant-supplied keys from the losing side before the merge, which works and
- * requires the merge to remember a rule that is not its business.
- *
- * Saying it twice instead: the constants are re-applied as the last pass of
- * boot, and a governed key becomes static, so nothing stores a value for it and
- * nothing goes looking for one. The options form's disabled field then stops
- * being a courtesy backed by a special case and becomes the ordinary
- * consequence of the declaration.
+ * values over whatever they set. So the stored values a constant supplied are
+ * removed before the merge, and the constants are also re-applied as the last
+ * pass of boot: a governed key is static, nothing stores a value for it and
+ * nothing goes looking for one. The options form's disabled field is the
+ * ordinary consequence of the declaration.
  *
  * SUBPROCESS, because a constant is a process-global define and the runner has
  * already booted OWA once against the live config.

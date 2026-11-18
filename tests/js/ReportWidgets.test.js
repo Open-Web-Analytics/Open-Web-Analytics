@@ -18,8 +18,8 @@ const { render, publish } = require('../../modules/Base/src/reporting/owa.report
 
 /**
  * A report's widgets built from the descriptions report_widgets.php hands over
- * (owa.reportWidgets.js): the globals each inline script used to declare, what
- * each explorer is given, and the order sets and tabs are wired in.
+ * (owa.reportWidgets.js): the globals each widget declares, what each explorer
+ * is given, and the order sets and tabs are wired in.
  */
 
 const json = (hook, data) => `<script type="application/json" data-ui="${hook}">${JSON.stringify(data)}</script>`;

@@ -9,16 +9,11 @@ use OWA\Module\Base\Entity\GoalEventDefinition;
 /**
  * Goal declarations move to the v2 vocabulary, or their goal is switched off.
  *
- * Every goal event in existence said what it watches in words v2 does not use.
- * The trigger was 'base.page_request' -- a v1 event name, which was read by
- * nothing until marking started gating on it -- and the conditions named v1
- * PROPERTIES. Measured on both installs here: every condition said page_uri or
- * medium, and neither is a column of the stored row, so every goal counted
+ * A 1.x goal event says what it watches in v1 words: the trigger
+ * 'base.page_request', a v1 event name, and conditions naming v1 PROPERTIES
+ * such as page_uri and medium, neither a column of the stored row. Marking
+ * gates on the trigger and matches columns, so an unmigrated goal counts
  * nothing.
- *
- * The gate and this migration have to ship together: gating on a v1 trigger name
- * would refuse every row, so the goals would go from counting nothing quietly to
- * counting nothing differently.
  *
  * Run on the goal tables as an upgrade meets them here, under the names they had
  * before Update076: setUp() rolls Update076 back and tearDown() applies it again.
@@ -137,10 +132,9 @@ final class Update049Test extends TestCase
     /**
      * A CONDITION THAT CANNOT BE EXPRESSED SWITCHES ITS GOAL OFF.
      *
-     * The old builder offered every property name there was, including ones with
-     * no column at all -- page_type here. Left active, such a goal says "active"
-     * on the screen and counts zero for ever, which is the state this whole
-     * change exists to remove. Switched off it is visible, and one click turns it
+     * A 1.x condition may name a property with no column at all -- page_type
+     * here. Left active, such a goal says "active" on the screen and counts zero
+     * for ever. Switched off it is visible, and one click turns it
      * back on once the condition is rewritten.
      */
     public function testAnUntranslatableConditionSwitchesItsGoalOff(): void
@@ -189,10 +183,10 @@ final class Update049Test extends TestCase
     /**
      * AND THE MIGRATED GOAL ACTUALLY MARKS A ROW.
      *
-     * The two halves of this change meet here: a declaration written in 1.x's
+     * The two halves meet here: a declaration written in 1.x's
      * words, migrated, gating on the trigger, matched against a stored row. Each
-     * piece is tested on its own, and this is the one that would have caught the
-     * whole thing being pointless.
+     * piece is tested on its own, and this is the one that shows they work
+     * together.
      */
     public function testAMigratedGoalMarksTheRowItWasAlwaysMeantTo(): void
     {

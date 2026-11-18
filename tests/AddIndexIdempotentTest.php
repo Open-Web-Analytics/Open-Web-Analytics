@@ -63,7 +63,7 @@ final class AddIndexIdempotentTest extends TestCase
         return (int) $row['n'];
     }
 
-    /** The regression: calling twice used to leave two indexes. */
+    /** Calling twice leaves a single index. */
     public function testRepeatedCallsLeaveASingleIndex()
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
@@ -96,7 +96,7 @@ final class AddIndexIdempotentTest extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        // Exactly what the old unnamed statement produced.
+        // An unnamed index, which MySQL names after the column.
         $db->query(sprintf('ALTER TABLE %s ADD INDEX (site_id)', $this->table));
         $this->assertSame(1, $this->copies('site_id'));
 

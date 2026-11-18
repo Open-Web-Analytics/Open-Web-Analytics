@@ -8,22 +8,14 @@ use PHPUnit\Framework\TestCase;
  *
  * WHY THIS EXISTS
  * ---------------
- * Three bugs of this shape were found by hand in one sitting, all silent:
+ * A report whose sort does not resolve renders perfectly and shows nothing,
+ * which is indistinguishable from a site with no data -- no non-200, no
+ * exception, no log line -- and on an install where the feature is off, nobody
+ * is looking anyway.
  *
- *   ReportProducts          sort='actions'              -> grid returned no rows
- *   report_ecommerce.php    sort='transactionsRevenue-' -> jqGrid threw on null
- *                           (template since deleted; the report is JSON now)
- *   ReportCampaigns         read the wrong setting      -> columns missing
- *
- * None of them produced a non-200, an exception, or a log line. A report with an
- * unresolvable sort renders perfectly and shows nothing, which is
- * indistinguishable from a site with no data -- and on an install where the
- * feature is off, nobody is looking anyway. The only reason they surfaced was a
- * test that asserted on report CONTENT.
- *
- * A name being registered is not enough on its own: 'actions' IS a real metric,
- * it is simply not one ReportProducts queries. So sort is checked against the
- * report's own metric/dimension list, which is what makes it resolvable.
+ * A name being registered is not enough on its own: a metric can be real and
+ * still not one the report queries. So sort is checked against the report's
+ * own metric/dimension list, which is what makes it resolvable.
  *
  * WHAT THIS CANNOT SEE
  * --------------------

@@ -5,19 +5,12 @@ use PHPUnit\Framework\TestCase;
 /**
  * Which grants a submission of the site-access form actually changes.
  *
- * The old form was a `<select multiple>` posting the complete desired set, and
- * the controller replaced the whole grant list with whatever arrived:
- *
- *     if ( $this->getParam('allowed_users') ) { updateAssignedUserIds( ... ); }
- *     else                                    { updateAssignedUserIds( array() ); }
- *
- * A multi-select posts *nothing* when nothing is selected, so "deselect all", a
- * stray plain click (which collapses a nine-user selection down to one), a
- * truncated POST and a JavaScript error are indistinguishable at the server --
- * and every one of them revoked access for every user of that site, silently.
- *
- * The replacement submits a delta: the ids the form *rendered* travel with the
- * ids the operator *checked*, so absence stops meaning revocation. A user who
+ * The form submits a delta: the ids the form *rendered* travel with the ids
+ * the operator *checked*, so absence does not mean revocation. A form posting
+ * only the complete desired set cannot tell "deselect all", a stray click, a
+ * truncated POST and a JavaScript error apart -- a multi-select posts
+ * *nothing* when nothing is selected -- and would revoke access for every
+ * user of the site. A user who
  * was not on the page cannot be affected by it, which also makes the form safe
  * to filter, paginate or render partially.
  *
@@ -79,7 +72,6 @@ final class SiteAccessGrantsTest extends TestCase
 
     /**
      * The common edit: one user added, one removed, everyone else left alone.
-     * The old code rewrote the entire set to achieve this.
      */
     public function testASingleChangeTouchesOnlyThatUser(): void
     {

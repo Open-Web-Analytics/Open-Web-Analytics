@@ -230,9 +230,8 @@ final class SettingsRegistryTest extends TestCase
     /**
      * Nav placement: section, order and capability.
      *
-     * All three were declared and ignored. Every registered page was forced
-     * under Instance, appeared in whatever order its module registered, and was
-     * shown to anyone with edit_settings whatever capability it asked for.
+     * All three are honoured: a page sits in its section, in its order, and is
+     * shown only to whoever has the capability it asks for.
      */
     public function testRegisteredPagesAreBucketedOrderedAndCapabilityChecked(): void
     {
@@ -387,10 +386,9 @@ final class SettingsRegistryTest extends TestCase
      *
      * A static setting is never queried -- that is what not declaring
      * `storable` means -- so persisting one writes a durable row nothing will
-     * ever look at. Demonstrated across two processes before this existed: the
-     * row was in the table, save() reported success, and getSetting answered
-     * with the default. A write that succeeds and has no effect is worse than
-     * one that fails.
+     * ever look at: across two processes the row would be in the table, save()
+     * would report success, and getSetting would answer with the default. A
+     * write that succeeds and has no effect is worse than one that fails.
      */
     public function testPersistingAStaticSettingIsRefused(): void
     {
@@ -458,9 +456,9 @@ final class SettingsRegistryTest extends TestCase
      * get() consults the pending map BEFORE it reads the array, so a key not
      * yet resolved would be fetched on the next read and the stored row would
      * overwrite what was just set. persistSetting() sets before it queues the
-     * write, so this was live: saving a new MaxMind licence key and
-     * redisplaying it returned the OLD key, and re-saving what was displayed
-     * would have discarded the new one.
+     * write, so without this, saving a new MaxMind licence key and
+     * redisplaying it would show the OLD key, and re-saving what was displayed
+     * would discard the new one.
      */
     public function testAValueSetInMemoryIsNotOverwrittenByALaterResolve(): void
     {
@@ -526,7 +524,7 @@ final class SettingsRegistryTest extends TestCase
         /*
          * The row is CREATED here rather than looked for.
          *
-         * Every module in this repository declares now, so on a healthy install
+         * Every module in this repository declares, so on a healthy install
          * there is no undeclared module left to observe -- and a test that
          * skips when the clause is unexercised is exactly the test that stops
          * noticing when the clause breaks. A third-party module is the case
@@ -607,8 +605,8 @@ final class SettingsRegistryTest extends TestCase
      * Two ways for a declared module to have a row outside its declaration,
      * and both mean the value is ignored: the key is absent from the
      * declaration, or it is declared without `storable` and so never queried.
-     * The read path used to quietly query for the first case, at one query per
-     * key per request, which hid the condition someone needed to be told about.
+     * Quietly querying for the first case, at one query per key per request,
+     * would hide the condition someone needs to be told about.
      */
     public function testAnOrphanedStoredValueIsReported(): void
     {
@@ -684,10 +682,8 @@ final class SettingsRegistryTest extends TestCase
     /**
      * The GeoIP and SQS screens are in the Instance section.
      *
-     * They registered with `group` 'Modules', which became a section of that
-     * name.
-     * getHierarchyNav() drops a section it did not build, so none of the
-     * screens had an entry in any menu.
+     * getHierarchyNav() drops a section it did not build, so a screen
+     * registered under any other `group` would have no entry in any menu.
      */
     public function testTheModuleSettingsPagesAreInTheInstanceSection(): void
     {

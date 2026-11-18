@@ -41,9 +41,7 @@ return [
          * Which lookup path the module takes. Read in the module's own
          * constructor, so boot needs it.
          *
-         * No UI offers it, which is the only reason its absence went unnoticed
-         * for so long -- see the note on Maxmind::getLocationFromWebService().
-         * It is still storable: an operator sets it from the config file or
+         * No UI offers it. It is storable: an operator sets it from the config file or
          * directly, and a declaration that left it out would mean the stored
          * value was written and never read.
          */

@@ -4,7 +4,7 @@
  * How this Profile watches its Property.
  * 
  * An Observation Profile IS a way of observing, so these are the settings
- * that define it. Split out of the old three-form Profile page.
+ * that define it.
  */
 ?>
 <h1 class="panel_headline"><?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Settings' ) );?></h1>

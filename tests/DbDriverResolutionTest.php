@@ -82,10 +82,8 @@ final class DbDriverResolutionTest extends TestCase {
     /**
      * 'pdo' is a configuration spelling, and it has to name a real driver.
      *
-     * It used to reach the class owa_db_pdo, which exists nowhere -- it was an
-     * entry in the compatibility map pointing at PdoMysql. A value an
-     * installation may put in its config file is not a legacy class name, so
-     * the spelling is normalised here instead, and the map no longer carries it.
+     * A value an installation may put in its config file is not a legacy class
+     * name, so the spelling is normalised here rather than mapped to a class.
      */
     public function testPdoIsAnAliasForThePdoDriver() {
 

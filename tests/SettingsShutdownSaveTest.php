@@ -9,22 +9,19 @@ use PHPUnit\Framework\TestCase;
  * take the process down on its way out.
  *
  * WHY IT MATTERS
- * owa_settings tracks unsaved changes with is_dirty and used to flush them from
- * __destruct(). PHP destroys objects in no guaranteed order during shutdown, so
- * the database handle was frequently destroyed first and the flush then threw
- * "mysqli object is already closed" from inside a destructor. Two consequences,
- * both silent:
+ * owa_settings tracks unsaved changes with is_dirty and flushes them from a
+ * shutdown FUNCTION, which PHP runs before it destroys objects, so the database
+ * is still reachable. From __destruct() the database handle may already be
+ * destroyed -- PHP destroys objects in no guaranteed order during shutdown --
+ * and the flush throws "mysqli object is already closed" from inside a
+ * destructor. Two consequences, both silent:
  *
- *   1. The setting was LOST. The write never reached the database and nothing
- *      reported that, because there is no caller left to return a failure to.
- *   2. The uncaught Error set the process exit status to 255. A CLI command that
- *      had done its work correctly reported failure to whatever ran it -- for a
- *      scheduled job, that is cron.
- *
- * The fix registers the save as a shutdown FUNCTION, which PHP runs before it
- * destroys objects, so the database is still reachable. This test is the reason
- * to keep it that way: it was found because a green PHPUnit run still exited
- * 255, which only the per-file isolation sweep surfaced.
+ *   1. The setting is LOST. The write never reaches the database and nothing
+ *      reports that, because there is no caller left to return a failure to.
+ *   2. The uncaught Error sets the process exit status to 255. A CLI command
+ *      that did its work correctly reports failure to whatever ran it -- for a
+ *      scheduled job, that is cron. A green PHPUnit run can still exit 255;
+ *      the per-file isolation sweep sees it.
  */
 final class SettingsShutdownSaveTest extends TestCase
 {
@@ -32,11 +29,9 @@ final class SettingsShutdownSaveTest extends TestCase
     /**
      * A DECLARED, storable setting -- not an ad-hoc probe key.
      *
-     * It used to be 'owa_settings_shutdown_probe', which worked while base
-     * declared nothing and every base row was loaded wholesale at boot. Base
-     * has a catalogue now, so a key outside it is written and then never read:
-     * the shutdown save would succeed and the read-back would still see
-     * nothing, and this test would be reporting the wrong failure.
+     * Base has a catalogue, so a key outside it is written and then never read:
+     * the shutdown save would succeed, the read-back would see nothing, and
+     * this test would report the wrong failure.
      *
      * spam_detection is storable, has a code default to restore to, and is not on
      * the boot path for anything this test disturbs.
@@ -53,11 +48,8 @@ final class SettingsShutdownSaveTest extends TestCase
     protected function tearDown(): void
     {
         /*
-         * removeSetting(), not persistSetting('') -- which is what this used to
-         * do, and which is not a removal. '' is a VALUE, so it stored a row
-         * holding an empty string, and every install this test ever ran against
-         * still carries `base.owa_settings_shutdown_probe` because of it. The
-         * live one here did, from long before settings became rows.
+         * removeSetting(), not persistSetting(''): '' is a VALUE, so it would store
+         * a row holding an empty string.
          */
         \OWA\Core\CoreAPI::configSingleton()->removeSetting('base', self::KEY);
         \OWA\Core\CoreAPI::configSingleton()->save();

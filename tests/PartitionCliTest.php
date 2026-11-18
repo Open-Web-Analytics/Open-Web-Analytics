@@ -360,12 +360,9 @@ final class PartitionCliTest extends CliControllerTestCase
     }
 
     /**
-     * The ceiling does not move with how many tables a run touches.
-     *
-     * It used to: the limit was one server-wide allowance divided by the number
-     * of partitioned tables, so `table=owa_session` would have permitted
-     * several times what the same command without a filter did. A ceiling
-     * cannot vary that way, which is part of why it replaced the budget.
+     * The ceiling does not move with how many tables a run touches: a ceiling
+     * divided by the number of partitioned tables would let `table=owa_session`
+     * permit several times what the same command without a filter does.
      */
     public function testTheCeilingIsTheSameWhateverTheRunTouches()
     {

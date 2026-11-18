@@ -4,10 +4,8 @@ import { OWA_instance as OWA } from '../../modules/Base/src/common/owa.js';
 /**
  * A command addressed to OWA is skipped, and makes no tracker (#858).
  *
- * 1.x took ['OWA.addFilter', ...]. With no window.OWA, the queue read OWA as a
- * tracker's name: it built a second tracker called OWA, then skipped
- * addFilter as a command that tracker did not have. 2.0 offers no OWA
- * commands, so the command is skipped, and only that.
+ * 1.x took ['OWA.addFilter', ...]. 2.0 offers no OWA commands, so the command is
+ * skipped, and only that: OWA is not read as a tracker's name.
  */
 
 function installImageSpy() {

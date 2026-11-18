@@ -7,21 +7,15 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Every join constant the dialect defines has to be a join the database accepts.
  *
- * OWA_SQL_JOIN_LEFT_INNER expanded to "LEFT INNER JOIN" and
- * OWA_SQL_JOIN_RIGHT_INNER to "RIGHT INNER JOIN". Neither is SQL -- a join is
- * inner or outer, not both -- so any query built with one was rejected by the
- * server.
+ * "LEFT INNER JOIN" and "RIGHT INNER JOIN" are not SQL -- a join is inner or
+ * outer, not both -- and nothing downstream distinguishes a rejected statement
+ * from an empty result: Db::getOneRow() answers null for both, so the overlay
+ * launcher's urlForPath() would read one as "no document matches this path"
+ * and draw an empty heatmap.
  *
- * It survived because nothing downstream distinguishes a rejected statement from
- * an empty result: Db::getOneRow() answers null for both. The overlay launcher's
- * urlForPath() read that as "no document matches this path" and returned '',
- * which draws an empty heatmap -- the exact symptom its own docblock warns is
- * indistinguishable from a broken one. The only visible trace was an ERROR line
- * per call in OWA's log, on a screen nobody watches.
- *
- * So the test is not "is the constant spelled correctly". It is "does the server
- * accept a statement built with it", which is the property that was actually
- * missing, and it extends to any join constant added later.
+ * So the test is not "is the constant spelled correctly". It is "does the
+ * server accept a statement built with it", and it extends to any join
+ * constant added later.
  */
 final class SqlJoinConstantsTest extends TestCase
 {
@@ -70,8 +64,8 @@ final class SqlJoinConstantsTest extends TestCase
     }
 
     /**
-     * The two that were wrong are gone rather than corrected, because there is
-     * nothing to correct them to: a join is inner or outer.
+     * The two non-SQL joins are not defined: a join is inner or outer, so there
+     * is nothing for them to mean.
      */
     public function testTheJoinsThatWereNotSqlAreNotDefined(): void
     {

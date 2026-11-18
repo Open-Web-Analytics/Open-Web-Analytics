@@ -3,34 +3,19 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * A column nobody assigned is written as its type's zero, not as NULL.
+ * A column nobody assigned is written as its type's zero, not as NULL --
+ * unless it declares itself nullable.
  *
- * WHAT WAS WRONG
  * Entity::create() sets EVERY column, so a column no caller touched still goes
- * into the INSERT -- explicitly, as null. That was harmless until the PDO
- * driver landed (#1028, 2026-08-21): the old driver interpolated values as
- * quoted literals, so a PHP null became '' and MySQL -- with sql_mode empty --
- * coerced '' to 0 on a numeric column. Eleven years of rows were written that
- * way. PDO binds the null instead, so identical application code began storing
- * a real NULL.
+ * into the INSERT -- explicitly, as null -- and PDO binds that null as NULL.
+ * Each distinct value is its own GROUP BY bucket, so a two-state fact would
+ * report as three, and a counter that meant "none" would stop being comparable
+ * to the 0s around it.
  *
- * On the demo install that flipped ~70 owa_session columns and ~14 owa_request
- * columns from 0 to NULL overnight: is_repeat_visitor, every goal_N, every
- * commerce_*, num_goals, the prior_session_* group. Measured, not inferred --
- * '0' rows stop dead on 20260821 and NULL rows start there, while
- * is_new_visitor (which the tracker always sends) is unchanged across the same
- * boundary.
- *
- * WHY IT MATTERS
- * Each distinct value is its own GROUP BY bucket, so a two-state fact starts
- * reporting as three and a counter that meant "none" stops being comparable to
- * the eleven years of 0s above it.
- *
- * WHAT v2 KEEPS OF IT
  * A column that declares itself nullable stores NULL for absence -- the form
  * v2 uses, and the one the reporting layer renders as "(not set)". A column
- * declared NOT NULL still takes its type's zero, since NULL there is refused
- * under STRICT_ALL_TABLES. Asserted on owa_event_raw, which has both.
+ * declared NOT NULL takes its type's zero, since NULL there is refused under
+ * STRICT_ALL_TABLES. Asserted on owa_event_raw, which has both.
  */
 final class EntityUnsetColumnWriteTest extends TestCase
 {
@@ -102,10 +87,8 @@ final class EntityUnsetColumnWriteTest extends TestCase
     }
 
     /**
-     * A type with no sensible zero keeps NULL.
-     *
-     * The old path turned these into '0000-00-00', which is not a value worth
-     * restoring and is refused outright under STRICT_ALL_TABLES.
+     * A type with no sensible zero keeps NULL. '0000-00-00' is not a value
+     * worth storing, and is refused outright under STRICT_ALL_TABLES.
      */
     public function testAnUnrecognisedTypeIsLeftAlone(): void
     {

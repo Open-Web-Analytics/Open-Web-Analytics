@@ -119,7 +119,7 @@ final class SpamPageOriginRulesTest extends TestCase
     /**
      * Against a stored Profile: only its domain and the domain's subdomains are
      * its hosts. Another domain fires, whatever an installation still holds
-     * under the old domain_aliases name.
+     * under domain_aliases.
      */
     public function testAStoredProfilesHostsAreItsDomainAndItsSubdomainsOnly(): void
     {

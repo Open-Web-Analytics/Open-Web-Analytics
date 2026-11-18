@@ -13,12 +13,10 @@ class UpdatesApply extends \OWA\Core\Controller {
      * before the rest of the application can be relied on, and the authentication
      * path is part of what may be waiting on it.
      *
-     * This action WAS gated. Gating it made the documented upgrade unusable for a
-     * signed-out admin, which is what #979 reported. base.updates renders
-     * anonymously, so its Apply link carries a nonce minted with no user_id;
-     * createNonce() binds to user_id, so that nonce can never verify once the
-     * admin signs in. The request was turned away, the browser returned to the
-     * login form, and correct credentials appeared to be rejected.
+     * Gating it would make the documented upgrade unusable for a signed-out
+     * admin: base.updates renders anonymously, so its Apply link carries a nonce
+     * minted with no user_id, and createNonce() binds to user_id, so that nonce
+     * can never verify once the admin signs in.
      *
      * WordPress takes the same position for the equivalent step: wp-admin/upgrade.php
      * loads wp-load.php rather than admin.php and calls wp_upgrade() with no
@@ -33,9 +31,8 @@ class UpdatesApply extends \OWA\Core\Controller {
      * `php cli.php cmd=update` (base.updatesApplyCli) remains the route for
      * updates that cannot run over the web; updates 005/006/007/010 require it.
      *
-     * ONE AT A TIME. Anyone can request this, and nothing stopped two requests
-     * applying the same updates at once -- a reload during a slow update was
-     * enough. A lease (JobLease, in owa_job_lock, which a 1.14 schema already
+     * ONE AT A TIME. Anyone can request this, and a reload during a slow update
+     * would apply the same updates twice at once. A lease (JobLease, in owa_job_lock, which a 1.14 schema already
      * has) lets one request apply them; another is told they are under way.
      * An update the web may run is bounded; one that is not runs from the
      * command line, so the lease outlasts any web run, and a request that died

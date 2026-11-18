@@ -111,8 +111,6 @@ class Site extends \OWA\Core\Entity {
          * library and no documented app ingestion, so splitting 'app' into ios
          * and android would be schema for something with no way to send. It can
          * split later; nothing here assumes there are only two.
-         *
-         * Everything that exists is a website, which is what the default says.
          */
         $this->properties['stream_type'] = new \OWA\Module\Base\Classes\DbColumn;
         $this->properties['stream_type']->setDataType(OWA_DTD_VARCHAR255);
@@ -125,15 +123,15 @@ class Site extends \OWA\Core\Entity {
         $this->properties['app_id']->setDataType(OWA_DTD_VARCHAR255);
     }
 
-    /** Web is the default: every Profile that existed before types did is one. */
+    /** Web is the default, and what every Profile migrated from 1.x is. */
     const STREAM_WEB = 'web';
     const STREAM_APP = 'app';
 
     /**
      * What kind of thing this Profile observes.
      *
-     * Falsy means web. The column is added by a migration and defaults to
-     * NULL on rows that predate it, and every one of those is a website.
+     * Falsy means web: a NULL is a row from 1.x, and every one of those is a
+     * website.
      *
      * @return string
      */
@@ -161,13 +159,10 @@ class Site extends \OWA\Core\Entity {
     /**
      * The identifier an existing site was given, derived from its domain.
      *
-     * LEGACY. Every site_id issued before identity was decoupled from the
-     * domain has this shape, and they are never reissued -- every fact row
-     * references one. Kept so a legacy identifier can still be reconstructed
-     * from a domain where something needs to; new sites get mintSiteId().
-     *
-     * Deriving identity from the domain is what made two sites for one domain
-     * impossible, which is why new sites no longer use this.
+     * LEGACY. 1.x site_ids have this shape, and they are never reissued --
+     * every fact row references one. Kept so a legacy identifier can still be
+     * reconstructed from a domain; new sites get mintSiteId(), so one domain can
+     * have two sites.
      *
      * @param  string $domain
      * @return string
@@ -241,10 +236,8 @@ class Site extends \OWA\Core\Entity {
     /**
      * This Profile's effective value for one setting.
      *
-     * Reads the scoped store rather than this row's own settings blob. The
-     * blob is legacy: Update022 copied it into scoped rows and the screens
-     * write there, so reading it here would answer with a stale copy and
-     * could never inherit from the Property or Organization.
+     * Reads the scoped store rather than this row's own settings blob: the
+     * screens write there, and it inherits from the Property and Organization.
      *
      * @param  string $name
      * @return mixed a setting's value, any type
@@ -258,16 +251,8 @@ class Site extends \OWA\Core\Entity {
     /**
      * The bare host, whether or not one was stored with a scheme.
      *
-     * Returned unconditionally. It used to be guarded by
-     * `strpos( $domain, '://' )` and fall off the end when there was no scheme
-     * -- returning NULL for a domain stored bare, which the table already
-     * contains.
-     *
-     * Schemes are on their way out of this column: a domain is not a URL, and
-     * storing one was only load-bearing while a site's identity was
-     * md5( domain ), where http:// and https:// produced two unrelated sites for
-     * one website. This method therefore has to cope with both shapes for as
-     * long as both exist.
+     * A domain is stored bare (SiteManager::domainOnly()), but rows from 1.x
+     * may carry a scheme, so this copes with both shapes.
      *
      * @return string
      */

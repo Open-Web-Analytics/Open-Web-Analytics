@@ -9,18 +9,13 @@ use OWA\Module\Base\Classes\Beacon\Compat;
 /**
  * Every old-beacon bridge is indexed, and every indexed bridge still exists.
  *
- * WHY AN INDEX AND NOT A REGISTRY. The bridges were spread over seven
- * mechanisms -- a JSON registry, a const map, callbacks, open-coded `||`
- * fallbacks, encoding coercions, a URL chain, and one that was dead and
- * unnoticed. Consolidating them in one move would mean changing how ingest
- * resolves values on live traffic, all at once, with no way to tell whether the
- * set was complete to begin with. So the set is enumerated FIRST, here, and
- * entries migrate to being applied from the index one at a time.
+ * WHY AN INDEX AND NOT A REGISTRY. The bridges are applied by more than one
+ * mechanism; an index enumerates them all, and shows the set is complete,
+ * without changing how ingest resolves values on live traffic.
  *
  * WHAT MAKES IT TRUSTWORTHY is that it is checked in BOTH directions. A bridge
  * added to the code without an entry fails; an entry whose code has gone fails.
- * Without the second half an index is a comment that rots, which is what the
- * dead `translateKeys()` was.
+ * Without the second half an index is a comment that rots.
  *
  * NOT A RUNTIME CONTRACT. Nothing looks a beacon up in here. Whether a single
  * beacon can become a row is `row()`'s identity guard, which knows nothing of
@@ -60,17 +55,14 @@ final class BeaconCompatInventoryTest extends TestCase
     }
 
     /**
-     * THE REGISTRY CARRIES NO RENAMES AT ALL any more.
+     * THE REGISTRY CARRIES NO RENAMES.
      *
-     * `alternative_key` did this per property, inside the property loop, gated
-     * on the canonical value being FALSY -- so it could not tell "absent" from
-     * "present and false", needed 0 and "0" carved out by hand, and could never
-     * be used for a boolean. Classes\Beacon\Compat does it once, up front, on
-     * presence.
+     * Classes\Beacon\Compat does every rename once, up front, on presence. A
+     * rename inside the property loop, gated on the canonical value being FALSY,
+     * cannot tell "absent" from "present and false" and cannot serve a boolean.
      *
-     * Asserted as an absence because the mechanism is what was removed. A
-     * declaration creeping back would be a second place renames happen, which
-     * is the thing this whole exercise was about.
+     * Asserted as an absence: a declaration creeping back would be a second place
+     * renames happen.
      */
     public function testTheRegistryDeclaresNoRenames(): void
     {
@@ -154,17 +146,10 @@ final class BeaconCompatInventoryTest extends TestCase
         }
 
         /*
-         * TWO now, down from eight. The renames and the URL chain moved into the
-         * layer; the flag fallback went with its flag; and the two callback
-         * passthroughs went when days_since_first_session and
-         * days_since_prior_session left the registry -- a bridge whose
-         * destination no property declares can only put a value on the event for
-         * nobody to read.
-         *
-         * What is left is the two value-encoding coercions, where a value
-         * counting from zero arrived as a string from one generation and a number
-         * from the next. Those are the entries a falsy check would misread, so
-         * they are the ones most worth holding.
+         * TWO: the value-encoding coercions, where a value counting from zero
+         * arrived as a string from one generation and a number from the next. Those
+         * are the entries a falsy check would misread, so they are the ones most
+         * worth holding.
          *
          * A floor rather than an exact count, so moving one more INTO the layer
          * does not fail this -- but dropping the needles silently does.
@@ -197,11 +182,10 @@ final class BeaconCompatInventoryTest extends TestCase
      * A rename to a name nothing accepts is a bridge to nowhere -- the value
      * arrives, resolves, and is dropped.
      *
-     * TWO KINDS OF TARGET, and the second is new. A declared property is the
-     * original case. The other is a CUSTOM-PREFIX key: user_name and user_email
-     * left the release vocabulary to become custom user properties (PLAN.html
-     * §2.26.1), so their bridges point at up_user_name and up_user_email, which
-     * no registry entry declares and admitRequestParams() admits by prefix.
+     * TWO KINDS OF TARGET: a declared property, or a CUSTOM-PREFIX key.
+     * user_name and user_email are custom user properties (PLAN.html §2.26.1), so
+     * their bridges point at up_user_name and up_user_email, which no registry
+     * entry declares and admitRequestParams() admits by prefix.
      *
      * Checked against the same two rules the endpoint uses -- the registry, then
      * CUSTOM_PREFIXES plus CUSTOM_NAME_PATTERN -- rather than a second list here,
@@ -312,11 +296,9 @@ final class BeaconCompatInventoryTest extends TestCase
                 $this->assertSame( 'string', $property['data_type'] );
 
                 /*
-                 * NO STORAGE SENTINEL, and the axes are declared like any other
-                 * entry. It used to carry default_value '(not set)', which only
-                 * ever reached v1's NOT NULL text columns -- a nullable column is
-                 * opted out of the substitution -- while the reporting layer
-                 * renders absence as that same label at read time.
+                 * NO STORAGE SENTINEL: the reporting layer renders absence as
+                 * '(not set)' at read time, and a nullable column is opted out of the
+                 * substitution anyway.
                  */
                 $this->assertArrayNotHasKey( 'default_value', $property,
                     'a contributed property must not invent a storage label either' );

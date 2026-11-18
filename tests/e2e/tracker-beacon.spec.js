@@ -120,12 +120,10 @@ test.describe('the built tracker fires beacons on the wire', () => {
     });
 
     test("a clicked link whose href has '#' and '&' still sends a complete beacon", async ({ page }) => {
-        // Regression for the value-truncation bug, end to end in a real browser.
-        // The link's href ('#sec?a=1&b=2') becomes the click's target_url. With
-        // raw GET values the '#' made the browser drop the rest of the beacon URL
-        // as a fragment, so nothing after target_url reached the server. Now that
-        // values are url-encoded, the whole href rides as one token and the params
-        // queued after it survive -- which is exactly what we assert.
+        // Values are url-encoded, end to end in a real browser. The link's href
+        // ('#sec?a=1&b=2') becomes the click's target_url; a raw '#' would make the
+        // browser drop the rest of the beacon URL as a fragment. Encoded, the whole
+        // href rides as one token and the params queued after it survive.
         await page.waitForFunction(() => typeof window.OWATracker !== 'undefined', null, { timeout: 20_000 });
         await page.evaluate(() => window.OWATracker.trackClicks());
 

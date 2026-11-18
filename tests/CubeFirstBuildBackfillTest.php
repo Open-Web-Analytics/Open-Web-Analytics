@@ -270,10 +270,9 @@ final class CubeFirstBuildBackfillTest extends TestCase
     }
 
     /**
-     * A NAMED range reaches back too. With from= earlier than the first day in
-     * raw, the cube this run created had only its lead, and the build covered
-     * just those partitions: found rehearsing the upgrade, where
-     * from=20110101 over 15 years of migrated history built 3 partitions.
+     * A NAMED range reaches back too: with from= earlier than the first day in
+     * raw, the build covers the whole range, not only the partitions of the
+     * lead this run created.
      */
     public function testANamedRangeOnANewCubeReachesBackToTheFirstDay(): void
     {

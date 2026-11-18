@@ -6,28 +6,16 @@ use PHPUnit\Framework\TestCase;
 use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 
 /**
- * NO PROPERTY DECLARES A STORAGE SENTINEL, and this file is what keeps it that
- * way.
+ * NO PROPERTY DECLARES A STORAGE SENTINEL.
  *
- * "(not set)" and "(unknown)" were declared as `default_value` on twelve
- * properties, and on the v2 path they did nothing at all:
+ * "(not set)" or "(unknown)" as a `default_value` does nothing on the v2 path:
+ * setTrackerProperties() skips "(not set)" by name, applyStorageDefault() opts
+ * out of any NULLABLE column and every v2 column is one, and the row builder's
+ * text() maps "(unknown)" back to NULL. The reporting layer produces both labels
+ * at render time: ResultSetManager::NOT_SET_LABEL for a row that carried nothing
+ * and UNKNOWN_LABEL for a build that could not resolve one.
  *
- *   - "(not set)" was never applied to the event -- setTrackerProperties()
- *     skips it by name -- and never reached a raw column either, because
- *     applyStorageDefault() opts out of any NULLABLE column and every v2 column
- *     is one. Measured on the live table: zero rows carry it, in any column.
- *   - "(unknown)" WAS applied, to os, and the row builder's text() then mapped
- *     it straight back to NULL. A value invented at ingest so it could be
- *     removed before storage.
- *
- * Their only live consumer was v1's NOT NULL text columns, which nothing on this
- * branch writes -- and the reporting layer produces both labels at render time
- * anyway: ResultSetManager::NOT_SET_LABEL for a row that carried nothing and
- * UNKNOWN_LABEL for a build that could not resolve one. So the round trip was
- * ingest inventing a label, storage refusing it, and reporting re-creating it.
- *
- * What survives is the distinction the sentinels were confused with: a default
- * that is a REAL value still belongs on the event.
+ * A default that is a REAL value still belongs on the event.
  */
 final class AbsentValueIsStorageOnlyTest extends TestCase
 {

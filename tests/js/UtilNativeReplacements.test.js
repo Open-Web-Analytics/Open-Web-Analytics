@@ -14,29 +14,19 @@ import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
 import { OWATracker } from '../../modules/Base/src/tracker/Tracker.js';
 
 /**
- * What changed when the PHP-function ports came out of Util.
+ * Util uses the language's own string and array functions, not ports of
+ * PHP's.
  *
- * Util carried hand-written JavaScript ports of PHP's standard library --
- * strpos, str_pad, trim, in_array, explode, strtolower, is_array,
- * countObjectProperties -- most of them lifted from phpjs.org around 2010, when
- * the language really was missing the equivalents. It is not any more, and the
- * ports are not free: they ship in every page view, and they carry PHP's return
- * conventions into a language that does not share them.
- *
- * That last part is the reason this file exists rather than being a pure
- * deletion. PHP's strpos returns the INDEX of a match or false when there is
- * none, so a match at position 0 is indistinguishable from no match to any
- * caller that tests it as a boolean -- and all three callers did. Nobody hit it
- * because the strings involved rarely start with the character being looked
- * for, which is what "latent" means. Replacing the port with includes() asks
- * the question the callers were actually asking, and these tests pin the
- * answers at the positions the port got wrong.
+ * PHP's strpos returns the INDEX of a match or false when there is none, so a
+ * match at position 0 is indistinguishable from no match to any caller that
+ * tests it as a boolean. includes() asks the question the callers ask, and
+ * these tests pin the answers at position zero.
  */
 describe('a match at position zero is a match', () => {
 
     test('a command name beginning with a dot is parsed as namespaced', () => {
-        // strpos('.foo', '.') is 0, which is falsy, so this used to be read as
-        // a bare method name on OWATracker with the dot still attached.
+        // A match at index 0 is still a match: the name is namespaced, not a
+        // bare method name on OWATracker with the dot attached.
         const parsed = CommandQueue.parseCmd(['.setSiteId', 'x']);
 
         expect(parsed.method).not.toBe('.setSiteId');
@@ -65,8 +55,7 @@ describe('cookie parsing without the strpos port', () => {
     /*
      * document.cookie is driven directly rather than through assignment.
      * jsdom's setter refuses to store a fragment with no '=', so a cookie jar
-     * that actually contains one cannot be produced by setting cookies -- and
-     * that fragment is exactly the input the old parser mishandled. A real
+     * that actually contains one cannot be produced by setting cookies. A real
      * browser will hand this string over: a cookie whose name is empty, or one
      * set by another script with a bare flag, both serialise this way.
      */
@@ -89,11 +78,8 @@ describe('cookie parsing without the strpos port', () => {
         const jar = withCookieHeader('owa_real=value1; justaflag; owa_other=value2',
             () => Util.readAllCookies());
 
-        // substring(0, false) is substring(0, 0), so the old code filed the
-        // orphan under the empty-string key with its first character eaten --
-        // 'ustaflag' under ''. A phantom entry any later lookup could collide
-        // with, and one that changed shape depending on what else was in the
-        // jar.
+        // A fragment with no '=' is not filed under the empty-string key, where
+        // any later lookup could collide with it.
         expect(jar['owa_real']).toEqual(['value1']);
         expect(jar['owa_other']).toEqual(['value2']);
         expect(jar).not.toHaveProperty('');
@@ -155,8 +141,8 @@ describe('string coercion the ports used to provide', () => {
 });
 
 /**
- * Beacon param names carry no prefix. They were once built from an app_ns
- * setting, which is gone: a page that still sets one changes nothing.
+ * Beacon param names carry no prefix: a page that sets an app_ns changes
+ * nothing.
  */
 describe('beacon param names', () => {
 
@@ -212,22 +198,19 @@ describe('base64 through the browser', () => {
 
         expect(Util.base64_decode(Util.base64_encode(withEmoji))).toBe(withEmoji);
 
-        // The round trip alone is not the test -- the old port round-tripped
-        // too. This is the part it got wrong: the bytes have to be the UTF-8
-        // ones, which is what any other decoder will assume they are.
-        // The expected value is stated literally rather than computed, so this
-        // asserts a fact about UTF-8 rather than restating the implementation.
-        // 😀 is U+1F600: f0 9f 98 80. The old port emitted the two surrogates
-        // separately, giving 7aC97biA where this gives 8J+YgA==.
+        // The round trip alone is not the test: the bytes have to be the UTF-8
+        // ones, which is what any other decoder will assume they are. The expected
+        // value is stated literally rather than computed, so this asserts a fact
+        // about UTF-8 rather than restating the implementation.
+        // 😀 is U+1F600: f0 9f 98 80.
         expect(Util.base64_encode('😀')).toBe('8J+YgA==');
         expect(Util.base64_encode(withEmoji)).toBe('cGxhbj1wcm8g8J+YgA==');
     });
 
     test('a token from an older tracker decodes instead of throwing', () => {
-        // CESU-8 for U+1D11E, which is what the port used to emit: the two
-        // surrogates encoded separately. decodeURIComponent rejects it, and a
-        // throw here would break the landing page's state restore rather than
-        // degrade it.
+        // CESU-8 for U+1D11E, the two surrogates encoded separately, as an older
+        // tracker wrote it. decodeURIComponent rejects it, and a throw here would
+        // break the landing page's state restore rather than degrade it.
         const legacy = '7aC07bSe';
 
         expect(() => Util.base64_decode(legacy)).not.toThrow();

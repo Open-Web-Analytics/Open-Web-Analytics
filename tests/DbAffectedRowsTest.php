@@ -8,10 +8,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * getAffectedRows() reports the statement that just ran, on both drivers.
  *
  * The mysqli driver keeps a bound statement's count until someone reads it,
- * because the statement handle is closed straight away. Nothing cleared it
- * when the next statement ran, so an unbound DELETE after a bound INSERT
- * nobody asked about answered the INSERT's 1 -- which is how the visitor-store
- * sweep undercounted a batch in CI's mysqli job and not in the PDO ones.
+ * because the statement handle is closed straight away, and clears it when
+ * the next statement runs: otherwise an unbound DELETE after a bound INSERT
+ * nobody asked about would answer the INSERT's 1.
  *
  * Each driver is built here from the installation's own credentials, so both
  * are exercised whichever one this environment is configured with.

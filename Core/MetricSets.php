@@ -13,13 +13,6 @@ namespace OWA\Core;
  * exist depends on the Property a report is of. So they are derived here, per
  * Property, and merged with whatever a report declares.
  *
- * There was one per goal GROUP too, measuring goal{N}Completions and
- * goalValueAll. Neither metric exists on v2, and goal groups were removed
- * (Update056).
- *
- * Extracted from ReportController::pre(), where this was built inline as
- * `$tabs`.
- *
  *
  * @phpstan-type MetricSet array{label: string, metrics: string, chartMetric: string}
  *         metrics is a comma-separated list of metric names
@@ -85,12 +78,8 @@ class MetricSets {
      *
      * Each is: label, metrics, chartMetric.
      *
-     * `sort` is deliberately absent. The runtime sets have always carried one
-     * and nothing has ever used it: the only template that reads a set's sort
-     * does `$view->sort ?: $tab['sort']`, and all 20 reports with a grid
-     * declare their own sort, so the set's never applies. The other 9 build no
-     * grid at all. Carrying it forward would be preserving a field that has
-     * never had an effect.
+     * `sort` is deliberately absent: every report with a grid declares its own
+     * sort.
      *
      * @param string|int $propertyId
      * @return array<string, MetricSet>

@@ -81,7 +81,7 @@ final class ViewNavigationTest extends TestCase
         $this->assertFalse(\OWA\Core\CoreAPI::getNavigation('probe.view', 'no_such_nav'));
     }
 
-    /** The 1.0 form -- an entry written into nav_links with its own view and nav_name -- is no longer read. */
+    /** The 1.0 form -- an entry written into nav_links with its own view and nav_name -- is not read. */
     public function testANavLinksEntryNamingItsViewIsNotRead(): void
     {
         $m = $this->probe();

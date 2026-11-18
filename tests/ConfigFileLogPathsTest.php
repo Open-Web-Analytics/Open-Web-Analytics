@@ -92,15 +92,10 @@ final class ConfigFileLogPathsTest extends TestCase
     /**
      * Pins why the config file is the only channel.
      *
-     * A stored value used to be dropped on load, by a strip that ran over
-     * whatever had been fetched. Base declares both of these STATIC now, so
-     * the boot query never asks for them and persistSetting() refuses to
-     * create one -- there is nothing arriving to drop. If they ever stopped
-     * being static, a stale path could arrive from the database and the tests
-     * above would be guarding nothing.
-     *
-     * Two real installs carried async_log_dir values pointing at a previous
-     * server's /home/<user>/... paths, which is how this came to be pinned.
+     * Base declares both of these STATIC, so the boot query never asks for them
+     * and persistSetting() refuses to create one. If they ever stopped being
+     * static, a stale path -- a previous server's /home/<user>/..., say -- could
+     * arrive from the database and the tests above would be guarding nothing.
      */
     public function testBothPathsRemainConfigFileOnly(): void
     {

@@ -4,10 +4,8 @@
  *
  * A nonce carries a time window and the user_id it was minted for, so it lapses
  * for perfectly valid sessions -- a form left open too long, or one rendered
- * before signing in as somebody else. Both conditions used to reach the
- * not-authenticated handler, so the user was shown the login form despite having
- * a working session, re-entered credentials that were never the problem, and had
- * no way to tell what had actually happened.
+ * before signing in as somebody else. Showing the login form for either would
+ * send the user to re-enter credentials that were never the problem.
  *
  * Driven through the real form rather than a hand-built URL. The capability
  * check runs BEFORE the nonce check, so a direct GET is refused for lacking

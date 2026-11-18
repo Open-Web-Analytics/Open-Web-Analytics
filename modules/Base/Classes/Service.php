@@ -104,16 +104,9 @@ class Service extends \OWA\Core\Base {
     /**
      * The user-agent parse, memoised PER AGENT.
      *
-     * It used to memoise the first parse a process made and then ignore every
-     * $ua it was given afterwards -- so a queue drain, which walks many events in
-     * one process, versioned all of them by whichever agent it happened to see
-     * first. Every reading came from that one parse: browser, browser_version,
-     * os, os_version and the three device columns.
-     *
-     * Keyed by the agent instead. One parse per distinct agent, which is the
-     * memo the callers were promised: a single request still parses once however
-     * many properties ask, and a drain parses once per distinct visitor agent
-     * rather than once, wrongly.
+     * One parse per distinct agent: a single request parses once however many
+     * properties ask, and a queue drain, which walks many events in one process,
+     * parses once per distinct visitor agent.
      *
      * @param  string $ua  the agent to parse; the request's own when empty
      * @return object

@@ -93,13 +93,9 @@ class PartitionRotateCli extends PartitionsCli {
      *
      * WHAT MAKES A ROTATE SLOW IS DATA REWRITTEN, NOT PARTITIONS COUNTED.
      * Extending the lead is ONE `REORGANIZE PARTITION pmax INTO (...)` however
-     * many periods it creates -- measured here at 1.52s to create 31 of them --
-     * and its cost is proportional to what is sitting in the catch-all. Each
+     * many periods it creates -- and its cost is proportional to what is sitting in the catch-all. Each
      * merge is a separate REORGANIZE over the partitions it combines. Drops are
      * not counted at all: DROP PARTITION discards a file and returns.
-     *
-     * Charging per partition created was wrong twice over, and produced a lease
-     * of 2.6 hours for that 1.52-second extension.
      *
      * Row counts come from information_schema and are estimates, which is
      * appropriate: this is an estimate, and an exact COUNT(*) over a large
@@ -180,13 +176,12 @@ class PartitionRotateCli extends PartitionsCli {
     }
 
     /**
-     * The lease arithmetic, separated so it can be tested at sizes this
-     * installation does not have.
+     * The lease arithmetic, separated so it can be tested at any size.
      *
      * Two minutes per statement covers fixed overhead and lock acquisition.
      * Five minutes per million rows rewritten is around sixty times the
-     * ~5s/million measured when this partitioning was built -- the margin a
-     * crash-recovery timeout should carry. Scaled smoothly rather than rounded
+     * time a rewrite takes -- the margin a crash-recovery timeout should
+     * carry. Scaled smoothly rather than rounded
      * up per million, so a few hundred rows do not cost the same as a million.
      * Half an hour floor, so a rotate with nothing to do still tolerates a slow
      * instance.

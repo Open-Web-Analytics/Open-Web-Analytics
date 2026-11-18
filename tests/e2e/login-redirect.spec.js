@@ -136,9 +136,8 @@ test.describe('admin pages are not cacheable', () => {
  * A session cookie that no longer signs anyone in does not lock the browser
  * out of the login form.
  *
- * The form refused the stale cookie by redirecting to the login form -- to
- * itself -- nesting go= in go= until the URL was too long to serve: a 500 for
- * anyone whose cookie had gone stale, on every screen.
+ * Refusing the stale cookie by redirecting to the login form -- to itself --
+ * would nest go= in go= until the URL was too long to serve.
  */
 test.describe('a stale session cookie', () => {
 

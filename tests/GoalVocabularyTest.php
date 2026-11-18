@@ -10,12 +10,9 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
 /**
  * One vocabulary for goal conditions: the columns of the stored row.
  *
- * There used to be three answers to "what can a condition name". The builder
- * offered every client and server PROPERTY name; marking matched against the
- * tracking event, so it read property names too; and GoalEventDefinitionPredicate kept a
- * hand-written map of four v1 names to four v1 columns. None of the three agreed
- * with the row that actually gets written, which is why every goal declaration in
- * the field named something the row does not have.
+ * The builder, marking and GoalEventDefinitionPredicate all answer "what can a
+ * condition name" from it, so a goal declaration can only name something the
+ * row has.
  */
 final class GoalVocabularyTest extends TestCase
 {
@@ -77,9 +74,9 @@ final class GoalVocabularyTest extends TestCase
     /**
      * A condition is offered for an event only if that event carries it.
      *
-     * The old builder offered every property for every goal, so "the clicked
-     * element's id" was offered on a page view -- a goal that cannot fire,
-     * indistinguishable on the screen from one that can.
+     * Offered for every goal, "the clicked element's id" would appear on a page
+     * view -- a goal that cannot fire, indistinguishable on the screen from one
+     * that can.
      */
     public function testAConditionIsScopedToWhatTheEventCarries(): void
     {
@@ -107,9 +104,7 @@ final class GoalVocabularyTest extends TestCase
          * page view left the site" is not askable.
          *
          * NOT ON file_download, which carries target_url and target_host but is
-         * not a departure -- the visitor stayed on the page and a file arrived. A
-         * goal declared on it would have been satisfiable, because the column
-         * really was written there before deriveIsOutbound() gated on the event.
+         * not a departure -- the visitor stayed on the page and a file arrived.
          */
         $this->assertArrayHasKey( 'is_outbound', $click );
         $this->assertArrayNotHasKey( 'is_outbound', Vocab::columnsForEvent( 'file_download' ),
@@ -239,9 +234,8 @@ final class GoalVocabularyTest extends TestCase
     /**
      * The v1 names every declaration in the field actually uses.
      *
-     * Measured on both installs here before the migration: every condition named
-     * page_uri or medium. page_uri was a v1 DERIVATION that has since been
-     * deleted outright, so it maps to the column the row cuts from the location;
+     * Every v1 condition names page_uri or medium. page_uri was a v1
+     * DERIVATION, so it maps to the column the row cuts from the location;
      * medium maps to tagged_medium, because the raw row records what the landing
      * URL claimed and the classified answer is the cube's.
      */
@@ -274,8 +268,7 @@ final class GoalVocabularyTest extends TestCase
     public function testAnUntranslatableNameAnswersNull(): void
     {
         /*
-         * page_type was a v1 document classification and the old builder offered
-         * it. There is no v2 column for it, so the migration reports the
+         * page_type was a v1 document classification. There is no v2 column for it, so the migration reports the
          * condition and switches its goal off rather than inventing a meaning.
          */
         $this->assertNull( Vocab::columnFor( 'page_type' ) );

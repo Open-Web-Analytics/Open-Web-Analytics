@@ -546,9 +546,7 @@ class Builder {
      * and the JOIN of an UPDATE are LOCKING reads: shared next-key locks on
      * every raw row and gap the build scans, held until the statement ends.
      * log.php's inserts into that range wait for the build, and a beacon that
-     * writes several rows can deadlock against it. Measured on app: a landing
-     * page's first_visit, rolled back while a build held 1,368 shared locks on
-     * site_type_date. At READ COMMITTED the same reads are a consistent
+     * writes several rows can deadlock against it. At READ COMMITTED the same reads are a consistent
      * snapshot and lock nothing. A row that arrives while the build reads is
      * what refusal() already allows for.
      *
@@ -1314,10 +1312,9 @@ class Builder {
          *
          * This feeds the idle-timeout test -- "has this session gone quiet long
          * enough to call its exit final" -- and that is about wall-clock
-         * recency, not about position. LAST_VALUE was the same thing as MAX
-         * while the sort was on ts; once the sort is on event_seq it is not,
-         * and a session whose latest beacon arrived late would have been judged
-         * closed on an earlier timestamp.
+         * recency, not about position. The sort is on event_seq, so LAST_VALUE
+         * would judge a session whose latest beacon arrived late closed on an
+         * earlier timestamp.
          */
         $columns[] = 'MAX(w.ts) OVER session_w AS session_last_ts';
 
@@ -1375,8 +1372,8 @@ class Builder {
          *
          *   - a session whose rows all carry a sequence sorts by it, with ts
          *     breaking ties between duplicates from two tabs;
-         *   - a session from a tracker cached from before this has 0 on every
-         *     row, so ts orders it and nothing changes;
+         *   - a session from a tracker that sends no sequence has 0 on every
+         *     row, so ts orders it;
          *   - a session spanning a tracker upgrade puts its un-sequenced rows
          *     first, in arrival order. Rare, bounded to one session, and the
          *     alternative -- sorting them last -- would move a real exit onto
@@ -1411,10 +1408,10 @@ class Builder {
      * Each page view's neighbours: the page viewed before it and after it in
      * its session, keyed back to the row like windowedRaw().
      *
-     * LAG and LEAD over the page views alone, in the session window's order.
-     * Measured on MySQL 8.4, a MIN or MAX over a frame running to either end of
-     * the session was recomputed for every row -- 3.5s for one session of 5,000
-     * events -- where this is a sort of the page views: 0.16s for 50,000.
+     * LAG and LEAD over the page views alone, in the session window's order: a
+     * MIN or MAX over a frame running to either end of the session is
+     * recomputed for every row on MySQL 8.4, where this is one sort of the page
+     * views.
      *
      * has_prev and has_next say whether there IS a neighbour, apart from what
      * its path is: a page view with no path is still a page view, and must not

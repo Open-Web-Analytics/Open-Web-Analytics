@@ -15,12 +15,12 @@ class UsersResetPassword extends \OWA\Core\Controller {
         $u->getByColumn('email_address', $event->get('email_address'));
 
         /*
-         * An address with no account reaches here now, because the request form
-         * deliberately no longer reports whether one exists. Stop here rather
+         * An address with no account reaches here, because the request form
+         * deliberately does not report whether one exists. Stop here rather
          * than mint a passkey for nobody and run an UPDATE keyed on an empty id.
          *
          * Nothing is reported back either: the caller shows the same message
-         * whether or not this found anyone, which is the point.
+         * whether or not this found anyone.
          */
         if ( ! $u->get('id') ) {
 

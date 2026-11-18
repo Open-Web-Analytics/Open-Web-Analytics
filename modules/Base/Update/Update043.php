@@ -25,15 +25,10 @@ namespace OWA\Module\Base\Update;
  * RECREATES the tables underneath them: a cached object from an earlier call
  * answers with an id, the write takes the update() branch, the UPDATE matches
  * no row in the table that has since been rebuilt, and the write reports
- * success having stored nothing. That is exactly what the rewind-and-reapply
- * cycle does -- down(), up(), down() again in one process -- and the second
- * down() silently wrote no blob, which left a cold boot with no
- * schema_version and sent the upgrade back to Update003.
+ * success having stored nothing. The rewind-and-reapply cycle -- down(), up(),
+ * down() again in one process -- does exactly that.
  *
- * A migration writes the shape it is creating, without a cache in front of it.
- *
- * NOT CLI-ONLY. It rewrites one small table -- 15 keys on the install this was
- * measured against -- and drops another.
+ * NOT CLI-ONLY. It rewrites one small table and drops another.
  */
 class Update043 extends \OWA\Core\Update {
 

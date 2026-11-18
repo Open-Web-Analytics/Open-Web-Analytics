@@ -49,12 +49,9 @@ class GoalMarking {
      * site_id => the active definitions, each with its conditions
      *
      * Ingest runs this for every row of every beacon, so the definitions and
-     * their conditions are read ONCE per site per process. Both halves matter:
-     * loadConditions() is a query, and matching used to call it per definition
-     * per event -- a query per beacon per definition, which is the shape that
-     * makes a tracker endpoint slow. The old docblock claimed this was already
-     * the case because the definition ENTITIES were memoised; their conditions
-     * were not.
+     * their conditions are read ONCE per site per process: loadConditions() is a
+     * query, and per definition per event it would be a query per beacon per
+     * definition.
      *
      * @var array<string, list<Goal>>
      */
@@ -326,12 +323,7 @@ class GoalMarking {
      * The active definitions of the Property this Profile belongs to, with their
      * conditions.
      *
-     * READ FROM THE TABLE, not through GoalManager::getActiveGoals(). That
-     * method answers in the 1.x goal shape, keyed by SLOT NUMBER, and it seeds
-     * slots 1..20 and keeps only the goals whose number is one of them -- so a
-     * definition created without a slot, which is what the current screen makes,
-     * was never marked at ingest at all. Reading the table by property_id and
-     * is_active has no opinion about slots.
+     * Read from the table by property_id and is_active.
      *
      * @param  string $site_id
      * @return list<Goal>

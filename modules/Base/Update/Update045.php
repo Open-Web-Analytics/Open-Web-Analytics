@@ -5,11 +5,11 @@ namespace OWA\Module\Base\Update;
 /**
  * Add event_seq: the event's position in its session, counted on the device.
  *
- * WHAT IT FIXES. `ts` is stamped at edge receipt and the cube's session window
- * sorted on it, so events ordered by ARRIVAL rather than by occurrence. A
- * beacon that lands late -- the unload beacon is the standing case -- sorted
- * after events that happened after it, which put is_exit on the wrong row and
- * mis-ordered any funnel spanning it.
+ * WHAT IT IS FOR. `ts` is stamped at edge receipt, so sorting a session on it
+ * orders events by ARRIVAL rather than by occurrence. A beacon that lands late
+ * -- the unload beacon is the standing case -- sorts after events that
+ * happened after it, which puts is_exit on the wrong row and mis-orders any
+ * funnel spanning it.
  *
  * A counter rather than a client timestamp, because a device clock can be
  * wrong, skewed or set by hand while a counter is monotonic regardless. That is
@@ -21,8 +21,8 @@ namespace OWA\Module\Base\Update;
  * -- instant on raw, a rebuild on the cube.
  *
  * NULLABLE, and the sort coalesces it to 0. A tracker cached from before this
- * sends nothing, so every row of those sessions is NULL together and they keep
- * ordering by arrival exactly as they did. Nothing needs backfilling: the
+ * sends nothing, so every row of those sessions is NULL together and they
+ * order by arrival. Nothing needs backfilling: the
  * position was never recorded and cannot be recovered from a stored row.
  *
  * A REBUILD IS WHAT APPLIES IT. The column only changes an answer once a build

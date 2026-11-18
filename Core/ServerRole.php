@@ -75,9 +75,8 @@ final class ServerRole {
     const URL_CONSTANTS = [ 'OWA_PUBLIC_URL' ];
 
     /**
-     * Constants that are no longer read, and what replaced them. The 1.x
-     * names still have an effect (Settings::applyConfigConstants()); the
-     * others were never released.
+     * Retired constants, and what replaces them. The 1.x names still have an
+     * effect (Settings::applyConfigConstants()).
      */
     const RETIRED_CONSTANTS = [
         'OWA_QUEUE_EVENTS'              => 'The 1.x name of OWA_QUEUE_TRACKING_EVENTS, still read while that is not set. Rename it.',

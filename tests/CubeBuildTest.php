@@ -323,9 +323,7 @@ final class CubeBuildTest extends TestCase
             'referer_url'   => 'https://' . str_repeat('b', 300) . '/x',
         ]);
 
-        // An engine that still puts the term in its referrer. Yandex is the
-        // only one measured doing it since 2022 -- 8 sessions -- which is why
-        // the compute step exists for the mechanism rather than the volume.
+        // An engine that still puts the term in its referrer, as Yandex does.
         $this->seed('page_view', self::VISITOR_SEARCHER, 8881000000000007, $t, [
             'page_location' => 'https://example.test/found',
             'page_path'     => '/found',
@@ -868,8 +866,8 @@ final class CubeBuildTest extends TestCase
     }
 
     /**
-     * Measured on app: four refused builds in 8,025 runs, each missing exactly
-     * the rows a visitor sent during it (a first visit's three rows, once).
+     * A row a visitor sends during the build -- a first visit's three rows, say
+     * -- does not stop the swap.
      */
     public function testARowArrivingDuringTheBuildDoesNotStopTheSwap(): void
     {
@@ -917,7 +915,7 @@ final class CubeBuildTest extends TestCase
      * The other connection is log.php in the middle of a landing page: a raw
      * row inserted and not committed. At REPEATABLE READ the build's read of
      * raw waits for that row's lock, and a beacon that then needs a gap the
-     * build holds is the deadlock measured on app. The lock wait is cut to a
+     * build holds is a deadlock. The lock wait is cut to a
      * second, so a build that waits fails rather than stalling the suite.
      */
     public function testAnUncommittedBeaconDoesNotHoldTheBuildUp(): void
@@ -1139,9 +1137,8 @@ final class CubeBuildTest extends TestCase
     /**
      * A session with no sequence at all still orders by arrival.
      *
-     * Every other visitor in this fixture is seeded without event_seq, which is
-     * what a tracker cached from before it sends. Those sessions must behave
-     * exactly as they did -- the COALESCE puts them all at 0 together, so ts
+     * Every other visitor in this fixture is seeded without event_seq, as an older
+     * cached tracker sends. The COALESCE puts them all at 0 together, so ts
      * decides.
      */
     public function testASessionWithNoSequenceKeepsArrivalOrder(): void
@@ -1267,11 +1264,11 @@ final class CubeBuildTest extends TestCase
     /**
      * A session that runs across midnight is one session on both days.
      *
-     * /before at 23:50, /after at 00:10 the next day. A day's build read a day
-     * back and none forward, so the first day saw the session end at midnight:
-     * /before was an exit there, /after was one on the next day -- two exits
-     * for one session -- and /before had no next page. Each day is built on its
-     * own, as the scheduler builds them.
+     * /before at 23:50, /after at 00:10 the next day. A build reading a day back
+     * and none forward would see the session end at midnight on the first day:
+     * /before an exit there, /after one on the next day -- two exits for one
+     * session -- and /before with no next page. Each day is built on its own,
+     * as the scheduler builds them.
      */
     public function testASessionAcrossMidnightIsOneSessionOnBothDays(): void
     {
@@ -1471,12 +1468,10 @@ final class CubeBuildTest extends TestCase
      * unresolved; "a row that recorded no campaign" is an ordinary absence, and
      * most first visits are untagged so it is the common case, not the edge.
      *
-     * acq_campaign and acq_ad were declared NOT NULL with the two that actually
-     * resolve, and one untagged visitor then failed the INSERT for the WHOLE
-     * partition -- "Column 'acq_campaign' cannot be null" -- leaving the
-     * partition at whatever the last good build wrote, because a failed build
-     * does not swap. It went unnoticed while the only visitor rows in existence
-     * were seeded by this file with every column filled.
+     * Declared NOT NULL, acq_campaign and acq_ad would fail the INSERT for the
+     * WHOLE partition on one untagged visitor -- "Column 'acq_campaign' cannot
+     * be null" -- leaving the partition at whatever the last good build wrote,
+     * because a failed build does not swap.
      */
     public function testAnUntaggedVisitorGetsNullAcquisitionAndDoesNotFailTheBuild(): void
     {
@@ -1503,8 +1498,7 @@ final class CubeBuildTest extends TestCase
             'page_title'    => 'Untagged',
         ]);
 
-        // The build has to survive it. Before the fix this threw the whole
-        // partition away.
+        // The build has to survive it rather than throw the whole partition away.
         $this->rebuild();
 
         $row = $this->built('page_view', $visitor, 8881000000000010, $this->t0);

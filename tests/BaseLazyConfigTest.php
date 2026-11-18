@@ -8,20 +8,13 @@ use PHPUnit\Framework\TestCase;
  * Settings::__construct loads the config file, creates the base.configuration
  * ENTITY, and only afterwards applies the config constants as settings. So an
  * entity gets built while the settings object that will hold its values is
- * still half-constructed -- and Base::__construct used to ask for that settings
- * object, via configSingleton(), whose static is assigned only AFTER the
- * constructor it is calling returns.
+ * still half-constructed. Base therefore reads its config properties on first
+ * access: asking configSingleton() for them during construction would re-enter
+ * it with its static still unset, building a second Settings, a second entity,
+ * and so on until the stack ran out.
  *
- * Nothing detected that. It stayed upright because Settings, Entity and Module
- * were each kept outside the Base hierarchy, which is a real constraint that
- * was written down nowhere: giving entities a $this->c "like every other class"
- * would have re-entered configSingleton() with its static still unset, building
- * a second Settings, a second entity, and so on until the stack ran out -- on
- * every request, not in some corner case.
- *
- * Base now reads those properties on first access instead, so construction
- * touches nothing. These tests pin both halves: that construction really is
- * inert, and that every reader still gets what it got before.
+ * These tests pin both halves: that construction really is inert, and that
+ * every reader still gets its values.
  */
 final class BaseLazyConfigTest extends TestCase {
 
@@ -141,10 +134,10 @@ final class BaseLazyConfigTest extends TestCase {
     }
 
     /**
-     * The constraint that used to hold the boot together on its own. It is no
-     * longer load-bearing, but these classes sit on the path that builds
-     * settings, so a future move into the hierarchy deserves to be a decision
-     * rather than an accident -- and this test is where that decision surfaces.
+     * Settings, Entity and Module stay outside the Base hierarchy. Nothing
+     * depends on that now that Base reads lazily, but these classes sit on the
+     * path that builds settings, so moving one into the hierarchy should be a
+     * decision rather than an accident -- and this test is where it surfaces.
      */
     public function testTheClassesOnTheSettingsPathStayOutsideTheHierarchy() {
 

@@ -9,10 +9,8 @@ use PHPUnit\Framework\TestCase;
  * value want different shapes. Nobody writes `dry-run=0` -- they leave it off --
  * so a switch has to mean true by its presence. Values still need `key=value`.
  *
- * The third form exists only for compatibility. `--force=1` used to store a
- * parameter whose NAME was literally `--force`, dashes included, because the
- * parser kept whatever sat left of the '='. UpdatesApplyCli read it back that
- * way. Anything relying on that now reads the undashed name.
+ * The third form, `--force=1`, exists only for compatibility, and stores the
+ * undashed name.
  */
 final class CliArgumentParsingTest extends TestCase
 {

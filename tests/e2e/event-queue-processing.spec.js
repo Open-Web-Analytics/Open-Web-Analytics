@@ -94,12 +94,8 @@ test.describe('tracking events queue to a file and ingest on drain @selfhost-onl
      * async_log_dir is a filesystem path derived from the install directory, NOT
      * from the database, so pointing the run at a scratch DB does not move the
      * file queue. Sharing it with the live install means queue_depth counts files
-     * anyone else left there and the drain consumes their events.
-     *
-     * That is why this spec failed locally and passed in CI for weeks -- a fresh
-     * checkout has an empty directory -- and it masked a real queue bug the whole
-     * time. Asserting the location makes a regression say so, instead of
-     * reappearing as an unexplained local-only failure.
+     * anyone else left there and the drain consumes their events. A fresh
+     * checkout has an empty directory, so only a local run would notice.
      */
     test('the queue under test is this run\'s own, not the install default', () => {
         const state = helper('state', `site=${HARNESS_SITE_ID}`);

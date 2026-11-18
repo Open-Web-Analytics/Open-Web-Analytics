@@ -62,12 +62,8 @@ class InstallCheckEnv extends \OWA\Core\Controller\Install {
         }
 
         /*
-         * Every check, not just the failures.
-         *
-         * The screen used to list only what was wrong, which left no way to
-         * tell "this was checked and is fine" from "this was never looked at"
-         * -- and on a screen whose whole job is to describe the environment,
-         * that is most of the information.
+         * Every check, not just the failures, so "this was checked and is fine"
+         * reads differently from "this was never looked at".
          */
         $this->set( 'checks', $checks );
         $this->set( 'errors', $failed );

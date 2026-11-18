@@ -7,13 +7,11 @@ namespace OWA\Module\Base\Entity;
  *
  * Holds what the thing IS -- name, domain, description -- as opposed to how it
  * is measured, which belongs to the observation profiles beneath it. A property
- * may have several profiles, which is what lets two schema generations run side
- * by side and what lets one website be measured more than one way.
+ * may have several profiles, which lets one website be measured more than one
+ * way.
  *
- * ACCESS IS GRANTED HERE, not on the profile. Someone who may see a website
- * should see its measurements: a per-profile grant would mostly express "you
- * may read the v1 data but not the v2 data", which nobody wants and which would
- * silently split a user's view at cutover (PLAN.html §3.5).
+ * ACCESS IS GRANTED HERE, not on the profile: someone who may see a website
+ * should see its measurements (PLAN.html §3.5).
  */
 class Property extends \OWA\Core\Entity {
 
@@ -35,9 +33,7 @@ class Property extends \OWA\Core\Entity {
 
         /*
          * The domain describes the website, so it lives here rather than on the
-         * profile -- two profiles measuring one website necessarily share it,
-         * which is exactly what md5( domain ) as an identifier made impossible
-         * before identity was decoupled from it.
+         * profile -- two profiles measuring one website necessarily share it.
          */
         $domain = new \OWA\Module\Base\Classes\DbColumn( 'domain', OWA_DTD_VARCHAR255 );
         $domain->setIndex();
@@ -89,7 +85,7 @@ class Property extends \OWA\Core\Entity {
         $this->setProperty( $archived_date );
     }
 
-    /** Web is the default: every Property that existed before types did is one. */
+    /** Web is the default, and what every Property migrated from 1.x is. */
     const TYPE_WEB = 'web';
     const TYPE_APP = 'app';
 
@@ -109,9 +105,8 @@ class Property extends \OWA\Core\Entity {
     /**
      * What kind of thing this Property is.
      *
-     * Falsy means web. The column is added by a migration and is NULL on rows
-     * that predate it, and every one of those is a website -- they were minted
-     * from sites that had domains.
+     * Falsy means web: a NULL is a row minted from a 1.x site, which had a
+     * domain.
      *
      * @return string
      */

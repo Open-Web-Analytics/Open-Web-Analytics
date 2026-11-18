@@ -258,12 +258,11 @@ class Controller extends \OWA\Core\Base {
          * that redirected here, so it belongs to THAT action -- not to whatever
          * the user does next from the same URL.
          *
-         * Carrying it onto a POST showed two contradictory messages at once.
-         * A completed password reset redirects to
+         * Carried onto a POST it would show two contradictory messages: a
+         * completed password reset redirects to
          * '...do=base.loginForm&status_code=3006', the login form posts back to
-         * the URL it was served from, and so a failed login rendered "your
-         * password has been changed" beside "login failed" -- one describing the
-         * reset, one describing the login, with nothing to say which was which.
+         * the URL it was served from, and a failed login would render "your
+         * password has been changed" beside "login failed".
          *
          * A redirect always arrives as a GET, so every legitimate use still
          * works; a POST is a new action and reports its own outcome.
@@ -290,29 +289,16 @@ class Controller extends \OWA\Core\Base {
                 $this->set('validation_errors', $this->getValidationErrorMsgs());
 
                 /*
-                 * WHAT errorAction() RETURNS IS USED, not discarded.
+                 * WHAT errorAction() RETURNS IS USED, not discarded, as the success path
+                 * below hands back whatever action() returns. A controller that answers a
+                 * refusal by DELEGATING -- building another controller and returning its
+                 * doAction() -- has that answer rendered, not this controller's own data,
+                 * which for a write that redirects on success names no view at all.
                  *
-                 * This called errorAction() for its side effects and then
-                 * returned $this->data regardless, while the success path below
-                 * hands back whatever action() returns. So a controller that
-                 * answers a refusal by DELEGATING -- building another
-                 * controller and returning its doAction() -- had that answer
-                 * thrown away, and the caller rendered this controller's own
-                 * data, which for a write that redirects on success names no
-                 * view at all. The result was a blank page:
-                 * base.customReportSave did exactly this for a missing report
-                 * name, every time.
-                 *
-                 * Only the return value changes. success() is NOT called here,
-                 * unlike finishActionCall(): most controllers override it to
-                 * set the view for the SUCCESS case, and running it now would
-                 * overwrite whatever errorAction() just set. post() is not
-                 * called either -- ReportController overrides it and returns
-                 * $this->data from errorAction(), so calling it would add a
-                 * side effect to a path that has never had one.
-                 *
-                 * Every errorAction() that returns nothing therefore behaves
-                 * exactly as before.
+                 * success() is NOT called here, unlike finishActionCall(): most controllers
+                 * override it to set the view for the SUCCESS case, and running it now would
+                 * overwrite whatever errorAction() just set. post() is not called either --
+                 * ReportController overrides it and returns $this->data from errorAction().
                  */
                 $error_result = $this->errorAction();
 
@@ -338,8 +324,8 @@ class Controller extends \OWA\Core\Base {
      * success() is NOT called. Controllers override it to describe the outcome
      * of an action that ran -- base.usersAdd redirects to the user list with
      * "User added", a REST create answers 201 -- so routing a refused nonce
-     * through finishActionCall() reported a write that never happened, and
-     * replaced the refusal's own view and status code. post() is skipped for
+     * through finishActionCall() would report a write that never happened, and
+     * replace the refusal's own view and status code. post() is skipped for
      * the same reason the validation-error path skips it.
      *
      * @param mixed $handlerResult what the refusal handler returned
@@ -426,11 +412,10 @@ class Controller extends \OWA\Core\Base {
 
                     /*
                      * A session cookie that no longer signs anyone in, on a
-                     * screen anyone may open. Refusing it sent the browser to
-                     * the login form, which is such a screen, so the form
-                     * refused it again and redirected to itself until the URL
-                     * was too long to serve. The cookie is cleared and the
-                     * request goes on signed out.
+                     * screen anyone may open. Refusing it would send the browser
+                     * to the login form, which is such a screen, in a redirect
+                     * loop. The cookie is cleared and the request goes on signed
+                     * out.
                      */
                     if ( ! $needs_user ) {
                         if ( ! $auth->refusedLegacyApiKey() ) {
@@ -964,7 +949,7 @@ class Controller extends \OWA\Core\Base {
          * A GET that names itself as its own referrer would link to itself. A
          * POST is different: a form posting back to the URL it was rendered at
          * has that URL as its referrer, and loading it again is exactly the way
-         * back -- which this used to drop, so the link never appeared.
+         * back.
          */
         if ( $referer === \OWA\Core\Lib::currentPublicUrl()
                 && strtoupper( (string) ( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) ) !== 'POST' ) {
@@ -986,11 +971,9 @@ class Controller extends \OWA\Core\Base {
     /**
      * Answers a request whose nonce was missing or did not verify.
      *
-     * A nonce failure and a missing session are different conditions and were
-     * answered the same way -- with the login form. For someone who is already
-     * signed in that is untrue and unactionable: they re-enter credentials that
-     * were never the problem, which is what made the report on #979 read as an
-     * authentication failure rather than an expired token.
+     * A nonce failure and a missing session are different conditions. Answering
+     * a signed-in user with the login form would be untrue and unactionable:
+     * they would re-enter credentials that were never the problem.
      *
      * A nonce carries a time window and the user_id it was minted for, so it can
      * lapse for a perfectly valid session: a form left open too long, or one
@@ -1199,13 +1182,9 @@ class Controller extends \OWA\Core\Base {
         $propertyId = (string) $propertyId ?: (string) $this->getParam( 'propertyId' );
 
         /*
-         * A Property in context picks a Profile OF THAT PROPERTY.
-         *
-         * Arriving from the control's edit link on some other Property carries
-         * a propertyId and no siteId. Falling straight through to "the first
-         * site I can see" then left the tile and the Profile group describing
-         * whatever site happened to be first -- so the nav disagreed with the
-         * Property whose screen you were looking at.
+         * A Property in context picks a Profile OF THAT PROPERTY, so the tile and
+         * the Profile group describe the Property whose screen is open. The control's
+         * edit link on another Property carries a propertyId and no siteId.
          */
         if ( $propertyId ) {
 
@@ -1236,9 +1215,8 @@ class Controller extends \OWA\Core\Base {
     /**
      * The Property a Property screen is about.
      *
-     * The one the request names; else the Property of the siteId it names,
-     * which is how these screens were addressed before they were Property
-     * screens, so old links still land; else the Property of the first Profile
+     * The one the request names; else the Property of the siteId it names, so
+     * links addressed by Profile still land; else the Property of the first Profile
      * the user may see (resolveCurrentSiteId()).
      *
      * @param  string $propertyId
@@ -1318,23 +1296,14 @@ class Controller extends \OWA\Core\Base {
         ];
 
         /*
-         * Install-wide options head the SAME nav now.
-         *
-         * They were split into a separate settings menu because the hierarchy
-         * screens had no reliable context -- a screen reached without a Profile
-         * drew a tile with two blank lines. Landing every session on a Profile
-         * settled that: the tile is always populated, so one nav can carry both
-         * without either half looking broken.
-         *
-         * First, because they are the widest scope: the install contains the
-         * Organization contains the Property contains the Profile, and the nav
-         * reads in that order.
+         * Install-wide options head the SAME nav, first, because they are the widest
+         * scope: the install contains the Organization contains the Property contains
+         * the Profile, and the nav reads in that order.
          */
         /*
          * Built from the registered admin panels rather than listed here, so a
-         * module that adds one still appears -- MaxmindGeoip and Sqs both
-         * register into that map, and hardcoding Base's two entries would have
-         * left theirs unreachable when the old settings menu went.
+         * module that adds one still appears -- MaxmindGeoip and Sqs both register
+         * into that map.
          */
         $registered = $this->registeredSettingsNav();
 
@@ -1502,17 +1471,13 @@ class Controller extends \OWA\Core\Base {
     /**
      * Registered settings pages, bucketed by the nav section each asked for.
      *
-     * Three things here were declared and ignored until now. `section` did not
-     * exist at all, so every registered page was forced under Instance and a
-     * module with per-Property configuration had nowhere to put it. `order`
-     * was defaulted to 1 and never read, so pages appeared in whatever order
-     * their modules happened to register. And `capability` was recorded and
-     * then overridden with a hard-coded 'edit_settings', so a page asking for
-     * something stricter was shown to anyone who could edit settings at all.
+     * Each page's `section`, `order` and `capability` are honoured: a module
+     * with per-Property configuration can put it there, pages sort by order,
+     * and a page asking for something stricter than edit_settings is shown only
+     * to those who have it.
      *
-     * `group` is still honoured as the name for `section`: it is what existing
-     * registrations write, and breaking them to rename a key would be a poor
-     * trade.
+     * `group` is honoured as the name for `section`: it is what existing
+     * registrations write.
      *
      * @return array<string, list<SettingsEntry>> section => list of nav items
      */
@@ -1682,10 +1647,9 @@ class Controller extends \OWA\Core\Base {
          * "none of its Profiles are yours" and showing it would leak that the
          * website exists. For an admin it means the Property really has none,
          * and that is a state worth being in: archiving a Property's last
-         * Profile leaves it empty so it can be repopulated. Dropping it there
-         * made the Property unreachable -- no screen could get back to it --
-         * which is also what happened to a Property created from the fan-out
-         * before it had a Profile.
+         * Profile leaves it empty so it can be repopulated, and a Property
+         * created from the fan-out has no Profile yet. Dropping it there would
+         * make the Property unreachable.
          */
         $seesEveryProfile = \OWA\Core\CoreAPI::getCurrentUser()->isAdmin();
 
@@ -1725,8 +1689,8 @@ class Controller extends \OWA\Core\Base {
 
             foreach ($relations as $siteRow) {
 
-                // From the row getSitesList() already read: loading each site
-                // again by id was one query per site on every admin page.
+                // From the row getSitesList() already read, rather than one
+                // query per site on every admin page.
                 $site = \OWA\Core\CoreAPI::entityFactory('base.site');
                 $site->hydrate( (array) $siteRow );
 

@@ -5,10 +5,9 @@ namespace OWA\Module\Base\Update;
 /**
  * Add the referring host to owa_event_raw, the visitor store and owa_event.
  *
- * Parsed at ingest by V2Event::parseUrl(), beside host and target_host. The
- * build classifies it; it used to parse it too, in SQL, which was both wrong and
- * expensive -- SUBSTRING_INDEX cannot tell a URL from a string that is not one,
- * and the expression was inlined once per classifier branch.
+ * Parsed at ingest by V2Event::parseUrl(), beside host and target_host; the
+ * build classifies it. Parsing it in SQL would be wrong and expensive --
+ * SUBSTRING_INDEX cannot tell a URL from a string that is not one.
  *
  * owa_event_raw and the visitor store take the column instantly, which costs
  * nothing. owa_event cannot, and the difference is the partition swap.
@@ -29,7 +28,7 @@ namespace OWA\Module\Base\Update;
  * throughout, and it costs once per release that adds a column rather than once
  * per run.
  *
- * Measured on 8.4.10, since none of it is guessable from the error:
+ * On MySQL 8.4, since none of it is guessable from the error:
  *
  *   instant ADD COLUMN            all 14 partitions to version 1, swap refused
  *   ALTER ... REBUILD PARTITION   still version 1, swap still refused

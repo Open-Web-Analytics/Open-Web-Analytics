@@ -114,8 +114,8 @@ final class RetentionPagesTest extends TestCase
 
     /**
      * A number field that says what blank means is wide enough to say it. At
-     * the browser's width "Same as event data" read "Same" until the field
-     * was clicked. Measured roughly: about 0.55em a character, and 3em for the
+     * the browser's default width "Same as event data" would read "Same".
+     * Roughly 0.55em a character, and 3em for the
      * padding and the spinner.
      */
     public function testANumberFieldIsWideEnoughForWhatBlankMeans(): void

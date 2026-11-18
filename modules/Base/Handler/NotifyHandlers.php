@@ -18,10 +18,8 @@ class NotifyHandlers extends \OWA\Core\Observer {
         if ( $event->getSiteId() ) {
 
             /*
-             * Was tested in Module::_registerEventHandlers, which runs before
-             * any event exists and so could only ever read the install-wide
-             * value. Both settings are per-Profile now, so the decision has
-             * moved to the first point that knows which Profile this is.
+             * Decided here, at the first point that knows which Profile this is: both
+             * settings are per-Profile.
              */
             $siteId = $event->getSiteId();
 

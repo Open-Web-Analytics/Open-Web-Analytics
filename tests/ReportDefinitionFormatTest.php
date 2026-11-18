@@ -438,8 +438,8 @@ final class ReportDefinitionFormatTest extends TestCase
     /**
      * Metrics are report-wide, and reach every widget's query.
      *
-     * Every widget in every multi-widget report asks for the same metrics --
-     * measured across all 13, without exception. Holding the value once is
+     * Every widget in every multi-widget report asks for the same metrics.
+     * Holding the value once is
      * also what will let a metric set replace it in ONE place instead of
      * rewriting each widget's query, which is the loop-with-override this
      * format is trying not to grow.
@@ -678,14 +678,9 @@ final class ReportDefinitionFormatTest extends TestCase
      * The link-resolution test above proves the target exists. This proves the
      * link is usable once you follow it: a report that enumerates a constraint
      * is refused outright when the value is missing, so a link that names the
-     * right report and hands it the wrong parameter lands on a 400.
-     *
-     * That is not hypothetical -- it is exactly what the pageUrl-to-pagePath
-     * move would have done silently. Five places linked into `document` with
-     * pageUrl; the moment `document` declared pagePath instead, every one of
-     * them was a dead link, and nothing in the suite said so. The render
+     * right report and hands it the wrong parameter lands on a 400. The render
      * golden records each report's queries and commands but not its link
-     * URLs, so it could not have.
+     * URLs, so it cannot catch this.
      *
      * Only DECLARED parameters are checked. A link may carry extras -- the
      * dispatcher ignores what a report does not read.
@@ -786,19 +781,11 @@ final class ReportDefinitionFormatTest extends TestCase
         $checked  = 0;
 
         /*
-         * EVERY report a definition points at, not just the report-links ones.
-         *
-         * This used to skip any widget that was not report-links, which left
-         * two thirds of the targets unguarded: a grid's "View Full Report"
-         * link (`more`) and the per-row link a grid puts on a column
-         * (`link.template.reportId`). Those are the same kind of thing and fail
-         * the same way -- an anchor to the report dispatcher naming a report
-         * that does not exist, which answers 400 where the reader expected a
-         * report.
-         *
-         * It is also the exact defect that made this worth testing: two links
-         * on the Content report pointed at the wrong report for years, because
-         * as hand-written markup nobody could check them.
+         * EVERY report a definition points at, not just the report-links ones: a
+         * grid's "View Full Report" link (`more`) and the per-row link a grid puts
+         * on a column (`link.template.reportId`) fail the same way -- an anchor to
+         * the report dispatcher naming a report that does not exist, which answers
+         * 400 where the reader expected a report.
          */
         foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
@@ -1438,8 +1425,8 @@ final class ReportDefinitionFormatTest extends TestCase
      * once regardless of what the site offers.
      *
      * Web Pages is page views and visits; it is not "page views, measured by
-     * e-commerce". This distinction used to be implicit in which subview a
-     * report used, and it is why 21 of the multi-set reports declare metrics
+     * e-commerce". The declaration makes the distinction, not which subview a
+     * report uses, and 21 of the multi-set reports declare metrics
      * that never reach a query -- they are the other kind, carrying a
      * declaration that belongs to this one.
      */
@@ -1685,13 +1672,9 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /**
-     * An empty side is dropped rather than joined.
-     *
-     * The template this replaces built one of `traffic`'s three constraints by
-     * concatenating onto a report-wide part that resolved to nothing, and
-     * emitted `,medium==organic-search` -- an empty first clause. The other two
-     * were built slightly differently and were fine, which is exactly why this
-     * survived: it was one malformed string among three that looked alike.
+     * An empty side is dropped rather than joined: an empty report-wide part
+     * joined on would emit `,medium==organic-search` -- an empty first clause,
+     * one malformed string among others that look alike.
      */
     public function testAWidgetConstraintDoesNotLeadWithACommaWhenTheReportHasNone(): void
     {
@@ -1800,9 +1783,7 @@ final class ReportDefinitionFormatTest extends TestCase
             ],
         ], [] );
 
-        // Three arguments, not four: makeMetricBoxes' second parameter used to be
-        // a jqote template id, which it forwarded to a kpiBox option that
-        // generate() never read. The label now sits in the slot it vacated.
+        // Three arguments, not four: makeMetricBoxes takes no template id.
         $this->assertSame( [ [ 'makeMetricBoxes', '', 'Visits From Search Engines' ] ],
             $this->widgetNamed( $html, 'fromsearch' )['queue'],
             'the title must reach the box as its label' );
@@ -2235,16 +2216,11 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /**
-     * The renderer is fixed, not configured.
+     * The renderer is fixed, not configured: there is no `subview` key.
      *
-     * `subview` was a definition key while the conversion was in progress and
-     * reports still rendered through a dozen different views. By the end all 53
-     * named the same one, so it was a required field with a single legal value.
-     *
-     * It is removed rather than defaulted because a definition is meant to
-     * become something a user can author, and a key naming a view can name any
-     * view in the tree. Widgets own their own rendering, which is what makes
-     * fixing it safe.
+     * A definition is meant to become something a user can author, and a key
+     * naming a view could name any view in the tree. Widgets own their own
+     * rendering, which is what makes fixing it safe.
      */
     public function testAReportRendersThroughTheWidgetRendererWithoutSayingSo(): void
     {
@@ -2478,7 +2454,7 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertSame( [ "pageUrl'];alert(1);//" ], $this->widgetNamed( $html, 'dim' )['options']['grid']['excludeColumns'] ?? null );
     }
 
-    /** A string is refused, since a string is what used to be interpolated. */
+    /** A string of excluded columns is refused: only a list is accepted. */
     public function testAStringOfExcludedColumnsIsRefused(): void
     {
         $error = \OWA\Core\ConfiguredReport::getDefinitionError( [
@@ -2728,12 +2704,9 @@ final class ReportDefinitionFormatTest extends TestCase
     public function testTheConvertedWidgetsAreCards(): void
     {
         /*
-         * Two of the original four are gone with their reports:
-         * action-tracking (its dimensions are params paths, which only a
-         * registered custom dimension can reach) and ecommerce's productName
-         * widget (v2 carries no line items). Content's Page Types left its
-         * overview: a handful of values, short beside the page lists. The
-         * conversion they recorded is still recorded by the one that remains.
+         * One: action-tracking's dimensions are params paths, which only a
+         * registered custom dimension can reach, v2 carries no line items for
+         * ecommerce's productName, and Content's overview has no Page Types widget.
          */
         $expected = [
             'visitors.json' => 'browserTypes',
@@ -2757,11 +2730,6 @@ final class ReportDefinitionFormatTest extends TestCase
 
     /**
      * A card is a NARROW table, wherever it ships.
-     *
-     * The rule this replaces was "the converted ones kept their half width",
-     * which was true of the four converted in one go and stopped being true the
-     * moment a report was laid out deliberately: Content's two are a quarter
-     * each now, beside each other.
      *
      * What holds regardless is the type's own meaning. A card shows one metric
      * against one dimension and draws no controls; at full width it would be a

@@ -174,10 +174,8 @@ describe('clickEventHandler builds the click event', () => {
     });
 
     /*
-     * A CLICK INSIDE A LINK IS A CLICK ON THE LINK. Only a click directly on the
-     * <a>, or on an <img> in one, used to carry the URL, so most modern link
-     * markup reached the server with no destination: not outbound, not a
-     * download, and named by the inner element's missing id.
+     * A CLICK INSIDE A LINK IS A CLICK ON THE LINK: it carries the link's
+     * URL, whatever element inside it was hit.
      */
     test('a click on markup inside a link reports the link', () => {
         const t = newTracker();

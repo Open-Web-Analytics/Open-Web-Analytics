@@ -14,14 +14,11 @@ class PasswordResetRequest extends \OWA\Core\Controller {
         /*
          * There is deliberately NO check that the address belongs to a user.
          *
-         * This form is unauthenticated, and an entityExists validation here
-         * answered "A user with that email address does not exist" for an
-         * unknown address and "an e-mail has been sent to X" for a known one --
-         * which let anyone confirm whether an address is registered, one guess
-         * at a time.
-         *
-         * An unknown address now takes the same path and gets the same reply;
-         * UsersResetPassword simply finds no user and sends nothing.
+         * This form is unauthenticated, and answering differently for an unknown
+         * address and a known one would let anyone confirm whether an address is
+         * registered, one guess at a time. An unknown address takes the same path
+         * and gets the same reply; UsersResetPassword finds no user and sends
+         * nothing.
          */
     }
 

@@ -11,26 +11,14 @@ namespace OWA\Module\Base\Classes\Beacon;
  * Normalises an incoming beacon into the CURRENT format, once, before anything
  * reads it.
  *
- * WHY ONE PLACE. The bridges between an older tracker's beacon and the current
- * one had accumulated across seven mechanisms, and the cost was not the count
- * -- it was that no two behaved alike and nothing could enumerate them. The
- * index (conf/beacon_compat.php) made the set visible; this applies it.
+ * WHY ONE PLACE. Every bridge between an older tracker's beacon and the
+ * current one behaves alike and can be enumerated: the index
+ * (conf/beacon_compat.php) lists them; this applies it.
  *
- * PRESENCE, NOT TRUTHINESS, and that is the substantive change. The mechanism
- * this replaces fired when the canonical key was FALSY:
- *
- *     if ( ! $value && $value !== 0 && $value !== "0" )
- *
- * which cannot tell "absent" from "present and false". Fine for the counters
- * and strings it carried, with the zero cases carved out by hand -- and the
- * reason a BOOLEAN could never use it: a flag legitimately sent as false is
- * indistinguishable from one never sent, so the fallback fires on it and
- * asserts the opposite of what the tracker said. That is why the flag
- * fallbacks had to be open-coded instead, in three places, one of which
- * deliberately differs from the other two.
- *
- * Asking whether the key is THERE has no such hole, and it needs no carve-outs:
- * 0, "0", '' and false are all values a beacon may legitimately send.
+ * PRESENCE, NOT TRUTHINESS. A falsy test cannot tell "absent" from "present
+ * and false", so a flag legitimately sent as false would be read as never
+ * sent. Asking whether the key is THERE needs no carve-outs: 0, "0", '' and
+ * false are all values a beacon may legitimately send.
  *
  * WHAT IT IS NOT. Not a contract and not a gate. It never decides whether a
  * beacon is acceptable -- that is the identity guard in
@@ -126,15 +114,11 @@ class Compat {
      * an ENTRY, once no beacon carries it any more; the contribution point
      * stays.
      *
-     * Today's entry is the v1 custom variable slots: v1 carried five numbered
-     * ones, the current format carries named keys under `eps_` and `vps_`, and
-     * params() still reads a slot off an older beacon and writes it out as the
-     * same named param a current one produces.
-     *
-     * They were in tracking_properties.json, which is the statement of what
-     * the CURRENT format carries -- so a compat property sitting there made a
-     * measurement of what v2 reads report them as dead, because the slot names
-     * are built at runtime and appear nowhere as literals.
+     * The entry is the v1 custom variable slots: v1 carried five numbered ones,
+     * the current format carries named keys under `eps_` and `vps_`, and
+     * params() reads a slot off an older beacon and writes it out as the same
+     * named param a current one produces. Not in tracking_properties.json,
+     * which states what the CURRENT format carries.
      *
      * Contributed to the MAPS rather than to the config, so the runtime sees
      * them -- the allowlist at log.php admits `cv1` because the regular map
@@ -188,11 +172,8 @@ class Compat {
                 }
 
                 /*
-                 * NO STORAGE SENTINEL. It used to declare '(not set)', which
-                 * reached only v1's NOT NULL text columns -- a nullable column
-                 * is opted out of the substitution, so no v2 column ever
-                 * received it, and the reporting layer renders absence as that
-                 * same label at read time.
+                 * NO STORAGE SENTINEL: the reporting layer renders absence as "(not set)" at
+                 * read time.
                  */
                 $properties[ $key ] = [
                     'set_by'    => 'client',
@@ -223,11 +204,9 @@ class Compat {
      *
      * THE ALLOWLIST HAS TO ADMIT THESE OR THE BRIDGE CANNOT FIRE. apply() runs
      * after the event is built, so a name it renames must survive the gate at
-     * log.php first -- and three of the four are not registered properties at
-     * all: `dsfs`, `dsps` and `email_address` exist only as the FROM side of a
-     * rename. The old gate was a denylist and passed anything unregistered, so
-     * they arrived by accident. Under an allowlist they have to be named, and
-     * this is the only place that knows they are legitimate.
+     * log.php first -- and most are not registered properties at all: they
+     * exist only as the FROM side of a rename. Under an allowlist they have to
+     * be named, and this is the only place that knows they are legitimate.
      *
      * Read from the same index apply() reads, so the two cannot disagree about
      * which names are bridged.

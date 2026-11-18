@@ -82,9 +82,8 @@ class JobLease {
      * update: an UPDATE that matches no rows is still a successful statement,
      * and getAffectedRows() would tell us the difference on MySQL only -- which
      * is the portability this whole design is avoiding. The read-back costs one
-     * query on a call that is infrequent by nature, and turns a return value
-     * that could only ever say "the statement ran" into one a long job can act
-     * on by stopping early when it has been superseded.
+     * query on a call that is infrequent by nature, and gives a long job an
+     * answer it can act on by stopping early when it has been superseded.
      *
      * @param int $lease
      * @return bool  false when the lock is no longer ours

@@ -5,31 +5,21 @@ use PHPUnit\Framework\TestCase;
 /**
  * Adding an INDEXED column to a table that already exists.
  *
- * THE BUG THIS EXISTS FOR, ALSO FOUND IN PRODUCTION
- *
- * DbColumn::getDefinition() used to append `, INDEX (col)` to the column's own
- * definition. Inside a CREATE TABLE's parenthesised column list that is legal
- * and does the right thing. Everywhere else it is a syntax error, and every
- * other caller of getDefinition() is an ALTER:
+ * A column definition describes a column. Table-level clauses are written by
+ * whoever is composing the statement -- inline by createTable(), as a separate
+ * ALTER by addColumn(). `, INDEX (col)` inside the definition is legal in a
+ * CREATE TABLE's column list and a syntax error in an ALTER:
  *
  *     ALTER TABLE owa_custom_report ADD report_type VARCHAR(255), INDEX (report_type)
  *     ERROR 1064: ... near '(report_type)'
  *
- * So Entity::addColumn() had never once worked for an indexed column -- not a
- * regression, a hole that had always been there. It stayed invisible because a
- * fresh install CREATEs every table from the current entity definition, index
- * clauses and all, so the ALTER path is only reached by an UPGRADE of an older
- * install. That is where it surfaced: a live site at schema 25 stopped dead on
- * Update026 with the statement above.
- *
- * The fix is that a column definition describes a column. Table-level clauses
- * are written by whoever is composing the statement -- inline by createTable(),
- * as a separate ALTER by addColumn().
+ * The ALTER path is only reached by an upgrade: a fresh install CREATEs every
+ * table from the current entity definition, index clauses and all.
  *
  * These tests are in two halves on purpose. The first needs no database, so it
  * runs in CI's configless job where the ALTER can never be attempted; the
  * second actually issues the statement, because a scan of the definition string
- * would not have caught a driver composing the clause back in.
+ * would not catch a driver composing the clause back in.
  */
 final class AddIndexedColumnTest extends TestCase
 {

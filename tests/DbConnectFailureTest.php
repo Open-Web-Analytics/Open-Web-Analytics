@@ -7,25 +7,21 @@ use PHPUnit\Framework\TestCase;
 /**
  * A refused database connection must degrade, not kill the request.
  *
- * This was observed in production: the database refused connections for a few
- * seconds, and every page render and tracking request in that window died with
+ * The database refusing connections for a few seconds must not kill every page
+ * render and tracking request in that window with
  *
  *   PHP Warning:  mysqli_real_connect(): (HY000/2002): Connection refused
  *   PHP Fatal error: Uncaught Error: mysqli object is not fully initialized
  *
- * rather than logging "Could not connect to database" and moving on -- which is
- * what connect() visibly intends to do, and could never do.
- *
- * Three separate things conspired, and each is pinned below:
+ * but log "Could not connect to database" and move on. Three things are
+ * pinned below:
  *
  *  1. mysqli_init() returns an object whether or not the subsequent connect
- *     succeeds, so `if ( ! $this->connection )` was never true and the failure
- *     branch was unreachable.
- *  2. mysqli_real_connect()'s return value -- the only reliable signal -- was
- *     discarded.
- *  3. The handle was then used immediately by mysqli_set_charset(), which in
- *     PHP 8 raises an Error rather than an Exception, so query()'s
- *     `catch (\Exception)` could not have caught it either.
+ *     succeeds, so `! $this->connection` is not the test of failure.
+ *  2. mysqli_real_connect()'s return value is the only reliable signal.
+ *  3. A failed handle must not reach mysqli_set_charset(), which in PHP 8
+ *     raises an Error rather than an Exception, so query()'s
+ *     `catch (\Exception)` cannot catch it.
  */
 final class DbConnectFailureTest extends TestCase
 {
@@ -129,11 +125,8 @@ final class DbConnectFailureTest extends TestCase
      * Releasing the dead handle is what stops it being mistaken for a
      * connection, but it also makes `! $this->connection` true again -- so
      * without this, every query re-dials a database that is down and every
-     * attempt raises its own warning. CI caught exactly that: the fix as first
-     * written turned one warning per request into one per query, which
-     * failOnWarning correctly rejected.
-     *
-     * The old code got this right by accident, having kept the dead handle.
+     * attempt raises its own warning: one per query instead of one per
+     * request, which failOnWarning rejects.
      */
     public function testAFailedConnectIsNotRetriedOnEveryQuery(): void
     {
@@ -163,7 +156,7 @@ final class DbConnectFailureTest extends TestCase
     /**
      * The accessors above query() already degrade on a falsy result, which is
      * what makes returning false safe rather than merely quieter. Pinned
-     * because the fix depends on it: if either started assuming a result
+     * because returning false depends on it: if either started assuming a result
      * object, a connection failure would fatal again one layer up.
      */
     public function testTheAccessorsAboveQueryTolerateAFalsyResult(): void
@@ -180,9 +173,8 @@ final class DbConnectFailureTest extends TestCase
 
     /**
      * The test suite decides whether a database is available by probing with a
-     * real round-trip, and 100+ tests skip on the result. Before this fix the
-     * probe worked by catching the fatal; it now gets a null row instead. Pin
-     * the property the probe actually relies on -- that a failed probe returns
+     * real round-trip, and 100+ tests skip on the result. A failed probe gets
+     * a null row. Pin the property the probe actually relies on -- that a failed probe returns
      * rather than escapes -- so a future change here cannot silently turn every
      * DB-dependent test into an error on a runner with no database.
      */

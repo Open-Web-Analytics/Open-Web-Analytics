@@ -6,18 +6,13 @@ namespace OWA\Module\Base\Entity;
  * One goal event definition: an author-named thing worth counting. Each event
  * that meets it adds a goal event, a row named by it (Classes\GoalMarking).
  *
- * This replaces the twenty numbered goal slots that lived, all twenty of them
- * whether used or not, inside one serialized array in a settings row. That
- * shape could not be queried, could not be indexed, could not be edited by two
- * people without one clobbering the other, and put a RECORD -- a thing that
- * happened being worth counting -- inside a settings blob, which is not what a
- * setting is.
+ * A row per definition, so definitions can be queried, indexed and edited by two
+ * people at once.
  *
- * MODELLED FOR v2, DELIBERATELY. In v2 an author names a goal event definition,
+ * In v2 an author names a goal event definition,
  * gives it an event type and a condition, and when the condition matches the server
  * materialises an additional row whose event_type IS that name (PLAN.html
- * §7.14). The columns here are exactly what that needs, so the v2 migration is
- * a read of this table and not a reinterpretation of it:
+ * §7.14). The columns are exactly what that needs:
  *
  *   name                 becomes the materialised row's event_type
  *   trigger_event_type   the event type the condition is evaluated against
@@ -28,7 +23,7 @@ namespace OWA\Module\Base\Entity;
  * v2's worked example -- "a click whose target is x" -- is trigger_event_type
  * 'click', condition_property 'element_id', operator 'exact'. 1.x's only
  * implemented goal type, url_destination, is the same row with property
- * 'page_uri'. One shape, both eras, no translation.
+ * 'page_uri'.
  */
 class GoalEventDefinition extends \OWA\Core\Entity {
 
@@ -274,9 +269,8 @@ class GoalEventDefinition extends \OWA\Core\Entity {
 
         /*
          * The 1.x slot a definition was migrated from (Update025), or NULL for
-         * one created since. Nothing writes it any more and nothing on v2 reads
-         * it: the goal{N} metrics it numbered were removed with the v1 metric
-         * vocabulary. It is the only link between a definition and the
+         * one created since. Nothing writes it and nothing on v2 reports on it.
+         * It is the only link between a definition and the
          * owa_session.goal_N columns that hold 1.x's goal history.
          *
          * PENDING REMOVAL. Kept only for the v1-to-v2 history migration; drop it
@@ -555,8 +549,6 @@ class GoalEventDefinition extends \OWA\Core\Entity {
              * which is populated by whatever loaded the site first -- so this
              * could be handed a Site object that predates its property_id being
              * set, and return a different Property than the row actually has.
-             * Measured: the write and the read resolved two different
-             * Properties in the same process.
              *
              * A column read cannot be stale, and this is on the goal marking
              * path, where it is asked once per event.
@@ -664,10 +656,8 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     /**
      * Delete this definition AND the conditions that belong to it.
      *
-     * Entity::delete() removes one row from one table, so every delete until
-     * now left the conditions behind with nothing able to reach them. Measured
-     * on the test install before the fix: 31 of 40 condition rows pointed at a
-     * definition that no longer existed.
+     * Entity::delete() removes one row from one table, which would leave the
+     * conditions behind with nothing able to reach them.
      *
      * ON THE ENTITY rather than in GoalEventDefinitionDelete, because that
      * controller is not the only caller: the e2e fixtures and the tests delete
@@ -752,32 +742,22 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     /**
      * Does this ROW satisfy the definition?
      *
-     * THE ROW, NOT THE EVENT, and that is the whole point of moving this. A
-     * condition used to be matched against the tracking event, which meant it
-     * could only test what the beacon and the property callbacks had produced.
-     * Half the vocabulary an author would reach for does not exist until the
-     * row is assembled: device_type is derived in the handler from the
-     * user-agent parse, and the tagged_* columns are transcribed there too. A
-     * goal on "mobile" or "organic" was therefore unexpressible, and a goal
-     * declared on one of those names matched nothing without saying so.
+     * THE ROW, NOT THE EVENT: half the vocabulary an author would reach for does
+     * not exist until the row is assembled -- device_type is derived in the
+     * handler from the user-agent parse, and the tagged_* columns are
+     * transcribed there too.
      *
      * The row is the one EventRawHandlers::rowFor() says the event will be
      * stored as, so a condition can name any column the row has.
      *
-     * THE TRIGGER IS A GATE NOW. trigger_event_type has been stored since
-     * Update025 and read by NOTHING, so a goal declared on a page view was
-     * evaluated against every event on the site -- clicks, scrolls,
-     * session_start, everything. It mostly went unnoticed because a condition
-     * on a page column finds that column NULL on a click, but a goal on, say,
-     * host would have fired on every event type there is.
+     * THE TRIGGER IS A GATE: a goal declared on a page view is evaluated against
+     * page views only, so a goal on, say, host does not fire on every event type.
      *
-     * AN EMPTY TRIGGER MATCHES NOTHING, the same answer as no conditions. It
-     * used to mean every event, for rows written before the column existed --
-     * but Update025 gives every migrated definition a trigger and
-     * GoalEventDefinitionSave defaults one, so no such row exists. Meaning
-     * "every event" would have marked the page view AND the session_start and
-     * first_visit materialized beside it, three goal events for one visit to a
-     * goal page.
+     * AN EMPTY TRIGGER MATCHES NOTHING, the same answer as no conditions.
+     * Update025 gives every migrated definition a trigger and
+     * GoalEventDefinitionSave defaults one. Meaning "every event" would mark the
+     * page view AND the session_start and first_visit materialized beside it,
+     * three goal events for one visit to a goal page.
      *
      * AN ABSENT OR NULL COLUMN CANNOT ANSWER, so it does not match -- whatever
      * the operator. Passing NULL through to compare() would make `not` true for
@@ -811,10 +791,8 @@ class GoalEventDefinition extends \OWA\Core\Entity {
          * NO conditions means no match, not every match.
          *
          * An empty rule is vacuously true, and treating it that way would make
-         * a half-written definition count every single event on the site --
-         * loudly wrong, and only after it had already happened. This install
-         * already had a goal that could never fire; one that fires for
-         * everything is the worse direction to be wrong in.
+         * a half-written definition count every single event on the site, which is
+         * the worse direction to be wrong in.
          *
          * EXCEPT ON A CUSTOM EVENT, whose name is the condition: every
          * newsletter_signup is one.

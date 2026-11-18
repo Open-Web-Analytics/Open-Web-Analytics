@@ -18,16 +18,12 @@ namespace OWA\Module\Base\Classes\Cube;
  *
  * A MEDIUM, NOT A CHANNEL. Social, paid and the rest are the channel's to say
  * (ChannelStep), from the source and the medium together; a Facebook visit is
- * medium `referral` and channel Organic Social. This used to put
- * the classification here -- `organic-search`, `social-network` -- so the
- * column mixed what a site tagged with what OWA decided.
+ * medium `referral` and channel Organic Social, so the column does not mix what
+ * a site tagged with what OWA decided.
  *
  * THE CLASSIFICATION IS IN THE CUBE, NOT AT INGEST, and that is the whole
  * reason this step exists rather than a column. The lists grow and get
- * corrected -- duckduckgo was missing from the search list until January 2023,
- * so every OWA install recorded those arrivals as `referral` and v1 can never
- * fix that history. Here the same correction plus a rebuild fixes every
- * affected row.
+ * corrected, and here a correction plus a rebuild fixes every affected row.
  */
 class MediumStep extends Step {
 

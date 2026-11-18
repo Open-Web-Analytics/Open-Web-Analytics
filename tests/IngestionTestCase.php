@@ -120,11 +120,9 @@ abstract class IngestionTestCase extends TestCase
 
         if (!$site->wasPersisted()) {
 
-            // Pin the identifier rather than relying on how one is generated.
-            // site_id used to be md5( domain ), so hashing the domain happened
-            // to reproduce it; identifiers are now minted, so the fixture says
-            // which one it wants. The value itself is an arbitrary constant
-            // these tests share -- nothing derives it any more.
+            // Pin the identifier rather than relying on how one is generated:
+            // identifiers are minted, so the fixture says which one it wants. The value
+            // itself is an arbitrary constant these tests share.
             $sm = \OWA\Core\CoreAPI::supportClassFactory('base', 'siteManager');
             $sm->createNewSite('owa-test-site', 'OWA ingestion test site', '', '', $site_id);
         }
@@ -212,10 +210,9 @@ abstract class IngestionTestCase extends TestCase
         }
 
         // logEvent refuses an event naming a site this installation does not
-        // have, exactly as the beacon endpoint now does in production. These
-        // tests had been relying on that check not existing: they fire events
-        // for md5('owa-test-site'), which no installation has ever registered.
-        // Registering it makes the fixture match what a real tracked site is.
+        // have, as the beacon endpoint does. These tests fire events for
+        // md5('owa-test-site'), so the fixture registers it, as a real tracked site
+        // is.
         if (!empty($props['site_id'])) {
             $this->ensureSiteRegistered((string) $props['site_id']);
         }
@@ -338,16 +335,9 @@ abstract class IngestionTestCase extends TestCase
     /**
      * A landing URL carrying campaign tags, built from the configured `ns`.
      *
-     * The tracker no longer sends tagged_* -- it carries the landing URL and
-     * the server parses it -- so an ingestion test that fired tagged_* would be
-     * exercising a wire shape the tracker has stopped producing. The beacon
-     * contract guard in IngestionTestCase is what catches that, and it caught
-     * exactly this.
-     *
-     * The old shape is still accepted and still tested, in
-     * LandingUrlCampaignParseTest, which asserts a sent tagged_* beats the
-     * parse -- that is the compatibility path for cached trackers, and it does
-     * not belong in a contract-checked ingestion test.
+     * The tracker carries the landing URL and the server parses it, so an
+     * ingestion test fires the URL rather than tagged_*: the beacon contract guard
+     * in IngestionTestCase refuses a wire shape the tracker does not produce.
      */
     protected function landingUrlWithTags(string $path, array $tags): string
     {

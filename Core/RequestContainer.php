@@ -125,12 +125,9 @@ class RequestContainer {
                         $v = str_replace("&gt;", ">", $v);
                     }
 
-                    // $this->cookies, not a local: this branch used to
-                    // populate an undeclared $cookies that went out of scope
-                    // immediately, so a request whose Cookie header held a
-                    // SINGLE cookie -- the only way to reach this branch, since
-                    // the raw-header path above requires a ';' -- arrived with
-                    // no cookies at all, and OWA saw a stateless visitor.
+                    // $this->cookies, not a local: a request whose Cookie header holds a
+                    // SINGLE cookie reaches only this branch, since the raw-header path above
+                    // requires a ';'.
                     $this->cookies[ $n ][] = $v;
                 }
             }
@@ -262,8 +259,7 @@ class RequestContainer {
          * the form body -- resolves to whichever sits LATER in the array. Any
          * regrouping silently changes which controller runs. Building both
          * spellings into one pass keeps each param in the position it arrived
-         * in, which is what preserved that behaviour when the bare spelling was
-         * added.
+         * in.
          *
          * The gate matters too. stripParams() does not just rename keys, it
          * FILTERS: anything without the prefix is dropped. That is what stops a
@@ -423,18 +419,12 @@ class RequestContainer {
     /**
      * Move the request clock, BOTH readings of it.
      *
-     * THE TWO FIELDS HAD TO BE SET TOGETHER AND ONE CALLER SET ONE. $timestamp is
-     * seconds and $timestamp_usec is the same instant in microseconds; the
-     * constructor takes them from a single microtime() reading so they cannot
-     * disagree. Assigning ->timestamp directly broke that: seconds moved and
-     * microseconds did not.
-     *
-     * That is not cosmetic, because v2 reads the MICROSECOND field. `ts` is
+     * $timestamp is seconds and $timestamp_usec is the same instant in
+     * microseconds; the constructor takes them from a single microtime() reading
+     * so they cannot disagree, and this keeps them that way. Assigning
+     * ->timestamp alone would not move what v2 reads: `ts` is
      * TrackingEventHelpers::edgeTimestampMicroseconds(), yyyymmdd is derived from
-     * ts, and the event id is a hash over ts. So a caller that backdated
-     * ->timestamp got an event stamped NOW, with today's date parts, and no error
-     * -- measured: the reporting e2e seeder spreads its fixture over four days by
-     * assigning ->timestamp per event, and every row landed on today.
+     * ts, and the event id is a hash over ts.
      *
      * Seconds in, because that is what every caller has and it is the coarser of
      * the two: multiplying up cannot invent precision, where truncating down would

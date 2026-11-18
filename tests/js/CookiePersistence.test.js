@@ -6,12 +6,8 @@ import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
 /**
  * Session-only cookies, via the cookiePersistence option. Issue #941.
  *
- * cookie_persistence has made SERVER-set cookies session-only since 2016
- * (CoreAPI::setCookie sets $expires = 0). The JavaScript tracker never read it
- * -- there is no reference to the setting anywhere under modules/Base/src -- so
- * an install that turned persistence off still got a year-long visitor cookie
- * from every page the tracker ran on. A privacy setting that reports success and
- * does nothing is worse than one that is missing, because nobody goes looking.
+ * cookie_persistence makes SERVER-set cookies session-only (CoreAPI::setCookie
+ * sets $expires = 0); the tracker reads the cookiePersistence option for its own.
  *
  * WHY THIS IS NOT "EXPIRATION 0". writePersistedStore() turns any falsy
  * expiration into the shipped 364 for permanent stores, so a configured zero is

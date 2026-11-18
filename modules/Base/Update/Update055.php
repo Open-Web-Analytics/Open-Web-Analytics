@@ -15,12 +15,11 @@ namespace OWA\Module\Base\Update;
  * entity layer trims an over-long value to its column, so a 25-40 character
  * name was stored cut while the row id was derived from the whole name: two
  * events sharing their first 24 characters reported as one, and a goal event
- * triggered by the full name never matched. The column is not truncatable any
- * more (Entity\EventRaw), so an over-long name is refused rather than altered.
+ * triggered by the full name never matched. The column is not truncatable
+ * (Entity\EventRaw), so an over-long name is refused rather than altered.
  *
- * AN UPDATE, NOT A SCHEMA EDIT, because owa_event_raw is on master: Update034
- * shipped there in #1119, and an install deployed from master has the narrow
- * column. A fresh install creates the table from the entity at the new width,
+ * AN UPDATE, NOT A SCHEMA EDIT, because an install that ran Update034 before
+ * this has the narrow column. A fresh install creates the table from the entity at the new width,
  * and this is then a no-op.
  *
  * NOT CLI-ONLY. Widening a VARCHAR is in place, and rows already stored keep

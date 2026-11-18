@@ -377,11 +377,9 @@ final class JoinedDimensionTest extends TestCase
     }
 
     /**
-     * ...and SORTED on, which is a separate claim and was not being made.
+     * ...and SORTED on, which is a separate claim.
      *
-     * This case used setSort(), whose body was commented out -- so it asserted
-     * a single constrained row and proved nothing about ordering while looking
-     * like it did. setSorts( sortStringToArray( ... ) ) is the path the REST
+     * setSorts( sortStringToArray( ... ) ) is the path the REST
      * controller uses, and the ordering is asserted against values chosen so
      * that grouped order and sorted order differ.
      */

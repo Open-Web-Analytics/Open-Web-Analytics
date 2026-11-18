@@ -3,9 +3,8 @@
  * element at whatever width the page is read at.
  *
  * A click's page coordinate places it only in a window the width of the one it
- * was recorded in. Measured on a centred layout, the same element sits 320px
- * further right at 1920 than at 1280, and a reflowing article moved elements up
- * to 858px down. So a click also records WHICH element it hit and where in that
+ * was recorded in: on a centred layout the same element sits 320px further
+ * right at 1920 than at 1280. So a click also records WHICH element it hit and where in that
  * element's box, and the heatmap draws it at that spot of the same element on
  * the reader's page.
  *

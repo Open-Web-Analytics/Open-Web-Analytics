@@ -22,11 +22,8 @@ class SitesRest extends \OWA\Core\ReportController {
     }
 
     /*
-     * This action used to be inherited from base.sites, the flat roster screen
-     * that was also the landing page. That screen is retired; the endpoint is
-     * not, so the one thing it needed from it lives here now. Inheriting a
-     * screen controller to reuse four lines is how deleting the screen broke
-     * the API.
+     * Its own action rather than one inherited from a screen controller, so
+     * the endpoint does not depend on a screen.
      */
     public function action() {
 

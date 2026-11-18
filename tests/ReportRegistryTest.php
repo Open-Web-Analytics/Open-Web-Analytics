@@ -44,9 +44,7 @@ final class ReportRegistryTest extends TestCase
      *
      * A file nobody registers is loaded by nobody -- left behind by a rename, it
      * sits there diverging from the report it looks like it belongs to. A
-     * registration naming a missing file is a nav link to an error. This used to
-     * be asked of a hand-kept list of converted and authored reports, which meant
-     * a new report had to be added to it before any of these tests looked at it.
+     * registration naming a missing file is a nav link to an error.
      */
     public function testEveryDefinitionFileIsRegisteredAndEveryRegistrationHasOne(): void
     {
@@ -157,11 +155,11 @@ final class ReportRegistryTest extends TestCase
     }
 
     /**
-     * For a report still implemented by a controller, the new route is the old
-     * route.
+     * For a report still implemented by a controller, the registry route is the
+     * direct route.
      *
      * Reports that are configuration are deliberately not in this provider: they
-     * have no direct route left to compare against. Their definitions are checked
+     * have no direct route to compare against. Their definitions are checked
      * by ReportDefinitionFilesTest, and running each of them by
      * ReportCharacterizationTest.
      *
@@ -196,16 +194,14 @@ final class ReportRegistryTest extends TestCase
     public static function sampleReportProvider(): array
     {
         /*
-         * The bespoke report -- singular now, and a module's: Base has none.
+         * The bespoke report -- one, and a module's: Base has none.
          *
-         * The funnel was the other one. It is not a registered report any more:
-         * it became a VISUALIZATION, which is a row on owa_custom_report drawn
-         * by its own controller, reached as custom-<id> rather than by a
-         * registered id. So there is no registry route to compare a direct
-         * route against.
+         * The funnel is a VISUALIZATION, a row on owa_custom_report drawn by its own
+         * controller and reached as custom-<id>, so it has no registry route to
+         * compare.
          *
          * domstreams prefetches result sets, so the characterization harness
-         * could not snapshot it; this is the coverage it gets instead.
+         * cannot snapshot it; this is the coverage it gets instead.
          */
         return [
             'bespoke stays'  => [ 'domstreams', '\OWA\Module\Domstream\Controller\ReportDomstreams' ],
@@ -213,14 +209,14 @@ final class ReportRegistryTest extends TestCase
     }
 
     /**
-     * A converted report renders through the registry, and its old action is
-     * gone.
+     * A report that is configuration renders through the registry, and has no
+     * action of its own.
      *
      * Both halves matter. The first says the JSON path actually works end to
-     * end rather than only under the harness; the second says the controller
-     * really was retired, because an action left registered would keep serving
-     * a report from code that no longer matches the configuration -- two
-     * answers to one question, with nothing to say which is authoritative.
+     * end rather than only under the harness; the second says no controller still
+     * serves it, because an action left registered would serve a report from code
+     * that does not match the configuration -- two answers to one question, with
+     * nothing to say which is authoritative.
      *
      * @dataProvider convertedReportProvider
      */

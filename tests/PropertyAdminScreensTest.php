@@ -48,9 +48,9 @@ final class PropertyAdminScreensTest extends TestCase
     /**
      * A refused save shows the form again as it was sent, not what is stored.
      *
-     * It redirected, and a redirect carries only scalars, so the settings and
-     * their Override switches were dropped and the screen reloaded the stored
-     * Property: one field to correct meant entering every other change again.
+     * A redirect carries only scalars, so redirecting would drop the settings
+     * and their Override switches and reload the stored Property: one field to
+     * correct would mean entering every other change again.
      */
     public function testARefusedSaveShowsTheFormAsItWasSent(): void
     {
@@ -362,14 +362,8 @@ final class PropertyAdminScreensTest extends TestCase
     /**
      * A settings screen is named ONCE, where it is registered.
      *
-     * The nav label and the page heading used to be declared separately -- an
-     * 'anchortext' in the module and a headline the view set for itself -- so
-     * they drifted apart on four screens. base.optionsGeneral said "Main
-     * Configuration" in the nav and "General Configuration Options" on the
-     * page.
-     *
-     * registerSettingsPage() takes one title and both consumers read it, so the
-     * fix is structural rather than a rule someone has to remember. This test
+     * registerSettingsPage() takes one title, and the nav label and the page
+     * heading both read it. This test
      * enforces the mechanism, not a list of matching strings: a screen that
      * names itself a second time is the thing that could drift, so that is what
      * fails here -- even when the two names happen to agree today.
@@ -492,17 +486,14 @@ final class PropertyAdminScreensTest extends TestCase
         $template = (string) file_get_contents( \OWA\Core\Env::root() . '/modules/Base/templates/site_control.php' );
 
         /*
-         * base.goalEventDefinitions is NOT in this list any more.
+         * base.goalEventDefinitions is NOT in this list. getHierarchyNav() files
+         * Goal Event Definitions under Property, so the "edit" link on any row
+         * reaches the settings screen whose left-hand nav carries it -- and goals
+         * are per Property, not per Profile: owa_goal_event_definition is keyed on
+         * property_id.
          *
-         * It was, on the grounds that the control was the only way in. It is
-         * not: getHierarchyNav() files Goal Event Definitions under Property, so the
-         * "edit" link on any row reaches the settings screen whose left-hand
-         * nav carries it. The control's own link was a second door to the same
-         * room, hung on the Profile row -- which said goals are per Profile,
-         * and they are not: owa_goal_event_definition is keyed on property_id.
-         *
-         * What this still guards is that each TIER is reachable, which is what
-         * the control is for.
+         * What this guards is that each TIER is reachable, which is what the
+         * control is for.
          */
         foreach ( [ 'base.organizationProfile' => 'the Organization',
                          'base.propertyProfile'     => 'a Property' ] as $action => $what ) {
@@ -705,12 +696,9 @@ final class PropertyAdminScreensTest extends TestCase
         $this->assertLessThan( strpos( $header, 'owa_navigation' ), strpos( $header, 'site_control.php' ) );
     }
     /**
-     * Each tier's screens are separate pages, not sections of one.
-     *
-     * The site page used to stack three forms -- details, observation settings
-     * and allowed users -- on one screen that saved in pieces, with nothing
-     * saying which tier each belonged to. The access one is not even a Profile
-     * concern: access is granted to a WEBSITE.
+     * Each tier's screens are separate pages, not sections of one: details,
+     * observation settings and allowed users each save on their own and belong
+     * to their own tier. Access is not a Profile concern.
      */
     public function testTheProfileFormsAreSeparateScreens(): void
     {
@@ -860,7 +848,7 @@ final class PropertyAdminScreensTest extends TestCase
             $this->markTestSkipped( 'Needs at least two parented Properties.' );
         }
 
-        // Not the first: the first is what the old fallback picked anyway.
+        // Not the first: a fallback to the first would pass too.
         $propertyId = (string) array_keys( $byProperty )[ count( $byProperty ) - 1 ];
         $profiles   = $byProperty[ $propertyId ];
 
@@ -906,10 +894,9 @@ final class PropertyAdminScreensTest extends TestCase
      * The screens speak the hierarchy's language, not the flat one.
      *
      * These pages describe Organizations, Properties and Observation Profiles.
-     * Saying "website" or "site" in the prose leaves the old model showing
+     * Saying "website" or "site" in the prose leaves the flat model showing
      * through in the one place it is most confusing -- the screens that exist
-     * to teach the new one. "Access is granted to the website" was the example
-     * that prompted this: it named a thing the UI no longer has.
+     * to teach the hierarchy.
      *
      * Only visible prose. Identifiers -- siteId, base.site, owa_siteControl --
      * are the wire and the code, and renaming those is a different change.
@@ -1234,13 +1221,9 @@ final class PropertyAdminScreensTest extends TestCase
     /**
      * One settings nav, install-wide options at the top.
      *
-     * They were split out because the hierarchy screens had no reliable
-     * context: reached without a Profile, the tile drew two blank lines.
-     * Landing every session on a Profile settled that.
-     *
      * The Installation group is built from the registered admin panels, not
-     * listed by hand -- MaxmindGeoip and Sqs both register one, and
-     * hardcoding Base's two would have left theirs unreachable.
+     * listed by hand -- MaxmindGeoip and Sqs both register one, and a list
+     * of Base's two would leave theirs unreachable.
      */
     public function testInstallWideOptionsHeadTheSameNav(): void
     {
@@ -1254,7 +1237,7 @@ final class PropertyAdminScreensTest extends TestCase
          * Install-wide options head the SCOPE CHAIN -- install, Organization,
          * Property, Profile -- which is the ordering this is about.
          *
-         * They are no longer literally first: My Preferences sits above them,
+         * They are not literally first: My Preferences sits above them,
          * and it is not a step in that chain. It is the group about the person
          * rather than about the tree, so it is neither wider nor narrower than
          * the rest and does not belong anywhere inside their order.
@@ -1291,10 +1274,8 @@ final class PropertyAdminScreensTest extends TestCase
     }
 
     /**
-     * There is one settings nav. The old menu is gone, not merely bypassed.
-     *
-     * Two menus was the thing to remove. Leaving base.options behind for the
-     * module screens would have meant a settings surface that looked like a
+     * There is one settings nav, and no base.options menu beside it for the
+     * module screens: two menus would make a settings surface that looks like a
      * different application depending on which link you followed.
      */
     public function testTheOldSettingsMenuIsGone(): void

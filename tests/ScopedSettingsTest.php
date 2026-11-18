@@ -199,10 +199,9 @@ final class ScopedSettingsTest extends TestCase
      * Values are not all scalars.
      *
      * owa_site.settings holds nested arrays as well as scalars -- `goals` is a
-     * map of goal definitions, fifteen deep on this install.
-     * The value column is serialized rather than typed precisely so those
-     * survive; typing it would have meant deciding a type per key and losing
-     * the structured ones.
+     * map of goal definitions. The value column is serialized rather than
+     * typed precisely so those survive; typing it would mean deciding a type
+     * per key and losing the structured ones.
      */
     public function testANestedArrayValueSurvivesUnchanged(): void
     {

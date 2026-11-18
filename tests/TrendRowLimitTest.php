@@ -11,13 +11,13 @@ use OWA\Module\Base\Classes\Cube\Cubes;
  * or one per hour by dateHour.
  *
  * A trend card asks for no page size, so this is the limit every trend runs
- * under. It was the day DIFFERENCE: a week of days returned seven rows of
- * eight and dropped the last, which sorted by date was today; and a single day
- * by hour, a difference of zero, fell through to the result set's ten rows and
- * stopped at the tenth hour that had traffic.
+ * under. A limit of the day DIFFERENCE would return seven rows of an
+ * eight-day period, dropping the last -- today, sorted by date -- and a single
+ * day by hour, a difference of zero, would fall through to the result set's
+ * ten rows.
  *
- * Every query here sets no limit, and every fixture has more rows than the old
- * limit allowed.
+ * Every query here sets no limit, and every fixture has more rows than either
+ * would allow.
  */
 final class TrendRowLimitTest extends TestCase
 {
@@ -228,9 +228,8 @@ final class TrendRowLimitTest extends TestCase
     }
 
     /**
-     * Over several days it was cut to the day DIFFERENCE: eight paths, one a
-     * day from 20260601 to 20260608, came back as seven, and "no more". Over
-     * the last seven days, the default period, every such table stopped at six.
+     * Over several days a table is not cut to the day DIFFERENCE: eight paths,
+     * one a day from 20260601 to 20260608, all come back.
      */
     public function testABreakdownOverSeveralDaysIsNotCutToOneRowADay(): void
     {
@@ -251,8 +250,7 @@ final class TrendRowLimitTest extends TestCase
 
     /**
      * Two filters on one dimension both apply: the paths containing /p1 but
-     * not /p12, of the fourteen /p8../p21 that day. The second used to replace
-     * the first, and every path but /p12 came back.
+     * not /p12, of the fourteen /p8../p21 that day.
      */
     public function testTwoFiltersOnOneDimensionBothApply(): void
     {

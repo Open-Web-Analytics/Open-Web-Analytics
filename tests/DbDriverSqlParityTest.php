@@ -384,11 +384,11 @@ final class DbDriverSqlParityTest extends TestCase
      * get_result_iterator() exists because some callers treat the rows as WORK
      * rather than as the answer -- the funnel walks a row per matching event
      * and only ever looks at one -- and get_results() would build a PHP array
-     * of all of them first, measured at 46MB per 100,000 rows.
+     * of all of them first, about 46MB per 100,000 rows.
      *
      * Tested against both drivers HERE rather than left to whichever one the
-     * box happens to run, because that is the trap this file exists for: this
-     * machine is PDO, so local green proves nothing about mysqli.
+     * machine runs, because that is the trap this file exists for: a machine
+     * runs one driver, so local green proves nothing about the other.
      */
     public function testBothDriversCanIterateRowsOneAtATime(): void
     {

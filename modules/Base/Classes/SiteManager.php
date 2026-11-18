@@ -12,16 +12,9 @@ class SiteManager extends \OWA\Core\Base {
     /**
      * Ensure a site exists for a domain, and return it if this call created it.
      *
-     * The contract is unchanged: calling this twice for one domain creates one
-     * site, and the second call returns nothing. What changed is HOW that is
-     * achieved. Identity used to be md5( $domain ), so deriving the key and
-     * finding a row already there was the same operation as recognising the
-     * domain -- idempotency came free, as a side effect of the coupling that
-     * made two sites per domain impossible.
-     *
-     * Identity is now minted, so the domain is looked up explicitly instead.
-     * Same behaviour, no longer resting on identity and domain being the same
-     * fact.
+     * Calling this twice for one domain creates one site, and the second call
+     * returns nothing. Identity is minted, not derived from the domain, so the
+     * domain is looked up explicitly.
      *
      * For a second site on a domain that already has one -- a website measured
      * by more than one profile -- use createSite().
@@ -51,16 +44,6 @@ class SiteManager extends \OWA\Core\Base {
         return $this->createSite( $domain, $name, $description, $site_family, $site_id );
     }
 
-    /**
-     * Create a site for a domain, whether or not one already exists.
-     *
-     * Nothing calls this yet. It exists because a tracked website will be able
-     * to have several profiles measuring it, and that is only expressible once
-     * identity stops being a function of the domain. Introducing it now keeps
-     * the two intents that createNewSite() used to conflate -- "make sure there
-     * is one" and "make another" -- separable and testable before anything
-     * depends on the distinction.
-     */
     /*
      * The hierarchy defaults. 1.13's Update021 built the hierarchy of every
      * upgraded installation with these same values, so a fresh install and an
@@ -82,8 +65,8 @@ class SiteManager extends \OWA\Core\Base {
      *
      * A database OWA created for this install is named for its Organization
      * (InstallDatabase): the Organization takes that id, so the two belong
-     * together from the start. Otherwise the id is the one every install has
-     * always derived.
+     * together from the start. Otherwise the id is derived from
+     * DEFAULT_ORGANIZATION_KEY.
      *
      * @param string $db_name
      * @return string
@@ -108,19 +91,12 @@ class SiteManager extends \OWA\Core\Base {
         $organization = \OWA\Core\CoreAPI::entityFactory( 'base.organization' );
 
         /*
-         * Found by EXISTENCE, not by name.
+         * Found by EXISTENCE, not by name: there is a screen for renaming an
+         * Organization, and a name match would mint a second one after a rename.
          *
-         * This matched on DEFAULT_ORGANIZATION_NAME, which quietly made the
-         * name a key -- and there is a screen for renaming an Organization.
-         * Renaming the only one made this stop finding it and mint a second,
-         * so the rename appeared to revert, OrganizationProfile showed the new
-         * empty row, and every Property added afterwards hung from that one
-         * instead.
-         *
-         * There is exactly one Organization until someone builds a screen to
-         * make more, so the first row IS the answer -- and looking for it this
-         * way is indifferent to how its id was derived, which matters because
-         * installs made before this fix derived it from the name.
+         * There is exactly one Organization, so the first row IS the answer -- and
+         * looking for it this way is indifferent to how its id was derived, which
+         * differs between installs.
          */
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( $organization->getTableName() );
@@ -182,18 +158,13 @@ class SiteManager extends \OWA\Core\Base {
         /*
          * The id encodes nothing about the Property.
          *
-         * A Property is an artificial grouping. Its domain is OPTIONAL -- an
-         * app has none -- and editable where it exists, so it is not an
-         * identity. This derived the id from 'domain:' . $domain, which made a
-         * mutable, absent-able attribute the primary key: move a Property from
-         * a.com to b.com and its id stays derived from a.com, so the next
-         * Property for a.com derived an id that was already taken, the insert
-         * failed, and this handed back null -- the Profile being added would
-         * have been created with no Property at all.
+         * A Property is an artificial grouping. Its domain is OPTIONAL -- an app has
+         * none -- and editable where it exists, so it is not an identity: an id
+         * derived from it would collide once a Property moved to another domain and a
+         * new one was made for the old.
          *
-         * Grouping still happens by the domain COLUMN, looked up above. It is
-         * just no longer what the row is CALLED. PropertyEdit already minted
-         * ids this way; the two paths agree now.
+         * Grouping happens by the domain COLUMN, looked up above. PropertyEdit mints
+         * ids the same way.
          */
         $id = \OWA\Core\Lib::randomId( \OWA\Core\Lib::useNarrowGuid() );
 
@@ -237,6 +208,9 @@ class SiteManager extends \OWA\Core\Base {
     }
 
     /**
+     * Create a site for a domain, whether or not one already exists: a website
+     * may have several Profiles measuring it.
+     *
      * @param mixed  $domain
      * @param string $name
      * @param string $description
@@ -285,11 +259,9 @@ class SiteManager extends \OWA\Core\Base {
         }
 
         /*
-         * A Property named by the caller wins over one derived from the domain.
-         *
-         * Deriving was the only way in, which made the domain the Property's
-         * key -- so a second Profile for a website meant retyping its domain,
-         * and a Property with no domain (an app) could never be chosen at all.
+         * A Property named by the caller wins over one derived from the domain: a
+         * second Profile for a website needs no retyped domain, and a Property with
+         * no domain (an app) can be chosen.
          */
         if ( $property_id ) {
 
@@ -354,12 +326,9 @@ class SiteManager extends \OWA\Core\Base {
     /**
      * A minted site_id whose derived numeric key is not already taken.
      *
-     * Worth the loop rather than trusting the width. Under the old scheme a
-     * derived key colliding meant "same domain", and returning the existing row
-     * was correct. Under a minted one a collision would mean handing back a
-     * DIFFERENT site than the caller asked to create -- silently, with no error
-     * anywhere. Checking costs one indexed read on a table with a handful of
-     * rows.
+     * Worth the loop rather than trusting the width: a collision would hand
+     * back a DIFFERENT site than the caller asked to create, silently. Checking
+     * costs one indexed read on a table with a handful of rows.
      *
      * @param  \OWA\Module\Base\Entity\Site $site
      * @param  int $attempts

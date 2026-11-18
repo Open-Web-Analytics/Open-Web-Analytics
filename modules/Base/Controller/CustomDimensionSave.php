@@ -10,11 +10,9 @@ namespace OWA\Module\Base\Controller;
 /**
  * Register one custom dimension.
  *
- * THE SCREEN CANNOT DO THE ALTER, and that is why this returns so quickly.
- * Adding the column is a full table rebuild -- measured at 11.3 seconds on a
- * 1.5M-row table, and longer on a real cube -- which is past PHP's 30-second
- * limit, Varnish's 60 and the load balancer's 65. Worse, a request killed at
- * any of those does NOT stop the ALTER: the client dies and MySQL finishes
+ * THE SCREEN CANNOT DO THE ALTER. Adding the column is a full table rebuild,
+ * which on a real cube can outlast a web request's time limit, and a request
+ * killed at that limit does NOT stop the ALTER: the client dies and MySQL finishes
  * anyway, so a synchronous form would show a timeout, add the column
  * regardless, and invite a retry that pays a second rebuild before failing on
  * a duplicate column.

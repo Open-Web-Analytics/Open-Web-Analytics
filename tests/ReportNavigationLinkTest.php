@@ -7,10 +7,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * Navigation links point at reports by id, and only one of them is current.
  *
- * A nav `ref` used to be an action name, and "is this the page I am on" was
- * `ref === params['do']`. Routing every report through one action breaks that
- * test in the worst available way: it does not stop matching, it starts
- * matching EVERYTHING, so the whole Reports menu highlights at once.
+ * Every report routes through one action, so "is this the page I am on" as
+ * `ref === params['do']` would not stop matching -- it would match
+ * EVERYTHING, and the whole Reports menu would highlight at once.
  *
  * These pin the pair -- what a ref resolves to, and which one is current.
  */
@@ -115,9 +114,7 @@ final class ReportNavigationLinkTest extends TestCase
             (array) glob( \OWA\Core\Env::root() . '/modules/*/templates/*.php' ),
             (array) glob( \OWA\Core\Env::root() . '/modules/*/Controller/*.php' ),
             (array) glob( \OWA\Core\Env::root() . '/modules/Base/reports/*.json' ),
-            // The e2e specs navigate to these URLs for real. Leaving them out
-            // is how a swept tree still broke six browser tests: the scan said
-            // no link named a controller action while tests/e2e/ held eleven.
+            // The e2e specs navigate to these URLs for real, so they are scanned too.
             (array) glob( \OWA\Core\Env::root() . '/tests/e2e/*.js' )
         );
 
@@ -324,13 +321,10 @@ final class ReportNavigationLinkTest extends TestCase
     /**
      * The rail is handed the whole request, not just its action.
      *
-     * THE BUG THIS EXISTS FOR
-     *
      * navLinkIsCurrent() compares every key of a link's ref, and a report link
-     * is {do: base.report, reportId: pages}. The old menu built the params it
-     * compared against as array('do' => $current_action) -- one key -- so
-     * `reportId` was never present and NO report link was ever current:
-     * nothing highlighted, and the menu collapsed on every page load.
+     * is {do: base.report, reportId: pages}. Params holding only the action
+     * never contain `reportId`, so NO report link would be current: nothing
+     * highlighted, and the menu collapsed on every page load.
      */
     public function testTheRailIsGivenTheWholeRequestNotJustTheAction(): void
     {
@@ -396,11 +390,8 @@ final class ReportNavigationLinkTest extends TestCase
     // ------------------------------------------------------------------
 
     /**
-     * The eight reports the overview's links widget used to list.
-     *
-     * Written out rather than read back from the widget, because the widget is
-     * GONE -- reading it would make the test pass by finding nothing. This is
-     * the list that has to remain reachable, so this is where it is recorded.
+     * The eight e-commerce reports that have to remain reachable, written out:
+     * there is no widget to read them from, and reading nothing would pass.
      */
     private const ECOMMERCE_REPORTS = [
         'avg-order-value',
@@ -433,11 +424,8 @@ final class ReportNavigationLinkTest extends TestCase
     }
 
     /**
-     * Removing the links widget must not make a report unreachable.
-     *
-     * The overview carried a report-links widget listing eight reports while
-     * the nav -- the thing built for moving between reports -- showed four of
-     * them. The widget is gone and all eight are in the menu.
+     * Every e-commerce report is reachable from the nav, the thing built for
+     * moving between reports.
      */
     public function testEveryEcommerceReportIsInTheNav(): void
     {
@@ -460,7 +448,7 @@ final class ReportNavigationLinkTest extends TestCase
             . implode( "\n  ", $missing ) );
     }
 
-    /** ...and the overview no longer carries the widget they came from. */
+    /** ...and the overview carries no report-links widget. */
     public function testTheEcommerceOverviewHasNoReportLinksWidget(): void
     {
         $definition = json_decode( (string) file_get_contents(

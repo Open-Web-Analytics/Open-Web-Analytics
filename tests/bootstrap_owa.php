@@ -70,10 +70,11 @@ if (!defined('OWA_TEST_BOOTSTRAPPED')) {
  * Hold every scheduled job's lease for as long as this PHPUnit process runs.
  *
  * The suite writes to the configured database, and on a development install
- * that database also has a cron running `cmd=schedule-run` every minute. The
- * two collided both ways: a routine cube build picked up a test's fixture
- * cube and dropped its working tables mid-test, and a build of the install's
- * real cube failed on a column an update test had just rolled back. With the
+ * that database also has a cron running `cmd=schedule-run` every minute.
+ * Unheld, the two collide both ways: a routine cube build can pick up a test's
+ * fixture cube and drop its working tables mid-test, and a build of the
+ * install's real cube can fail on a column an update test has just rolled
+ * back. With the
  * leases held, schedule-run skips each job for the tick ("already running")
  * and nothing is recorded as a failure.
  *

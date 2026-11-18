@@ -122,10 +122,9 @@ class Sanitize {
     public static function stripHtml( $input = '', $tags = [] ) {
 
         if ($tags) {
-            // Each tag is stripped from what the previous pass left. Every pass
-            // used to start again from $input, so only the LAST tag in the list
-            // was removed. The closing tag is matched by whole name, as the
-            // opening one is: stripping b no longer takes </blockquote> too.
+            // Each tag is stripped from what the previous pass left. The closing tag is
+            // matched by whole name, as the opening one is, so stripping b does not take
+            // </blockquote> too.
             $output = $input;
             foreach ( $tags as $tag ) {
                 $tag = preg_quote( (string) $tag, '/' );
@@ -454,8 +453,7 @@ class Sanitize {
      *
      * json_decode() answers null for input that is not JSON at all, and
      * json_encode(null) is the four-character string "null" -- so anything
-     * malformed used to be stored as if it were data, and a reader taking it at
-     * face value gets a string where it expected a structure.
+     * malformed would be stored as if it were data.
      *
      * The literal input "null" is itself valid JSON and decodes to null, which
      * is why the check is not simply "did this decode to null".

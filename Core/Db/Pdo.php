@@ -17,19 +17,14 @@ namespace OWA\Core\Db;
  *
  * WHY THE BUILDER STILL INTERPOLATES
  * ----------------------------------
- * NOTE: query() DOES prepare and bind when it is handed parameters -- see the
- * $params path below, which is how inserts and constrained selects run. What
- * follows describes the builder, which is a separate thing and still
- * interpolates.
+ * query() DOES prepare and bind when it is handed parameters -- see the
+ * $params path below, which is how inserts and constrained selects run. The
+ * builder is a separate thing and interpolates.
  *
- * The builder deliberately does not use placeholders throughout,
- * and that is not laziness. OWA's reporting layer composes its SQL
- * dynamically -- Db's builder assembles select lists, joins, group-bys and
- * constraints from a registry at runtime, and ResultSetManager drives it -- so
- * the statement text is not known until the moment it runs, and the values are
- * interpolated into it by the builder. Converting that to placeholders means
- * rewriting the builder, which is a much larger change than swapping a
- * transport and is not what this driver is for.
+ * OWA's reporting layer composes its SQL dynamically -- Db's builder assembles
+ * select lists, joins, group-bys and constraints from a registry at runtime,
+ * and ResultSetManager drives it -- so the statement text is not known until
+ * the moment it runs, and the values are interpolated into it by the builder.
  *
  * THE QUOTING TRAP
  * ----------------
@@ -40,10 +35,8 @@ namespace OWA\Core\Db;
  *
  * mysqli_real_escape_string() escapes without adding quotes. PDO::quote() adds
  * them -- quote("O'Brien") is "'O''Brien'". Returning that verbatim would
- * produce `col = ''O''Brien''` and break every query in the application, with
- * reporting hit hardest since that is where the dynamic construction lives. So
- * prepare() strips the outer pair that quote() adds. PdoDriverTest pins this;
- * it is the single easiest thing to get wrong here.
+ * produce `col = ''O''Brien''` and break every query in the application. So
+ * prepare() strips the outer pair that quote() adds. PdoDriverTest pins this.
  *
  * A row: column => value, every value a string or NULL.
  *
@@ -116,17 +109,13 @@ abstract class Pdo extends \OWA\Core\Db
                 \PDO::ATTR_PERSISTENT         => (bool) $this->getConnectionParam('persistant'),
                 // Server-side prepares would gain nothing here (no placeholders
                 // are used) and change quote()/error timing, so keep the driver
-                // behaving like the transport it replaces.
+                // behaving like the mysqli transport.
                 \PDO::ATTR_EMULATE_PREPARES   => true,
                 // Columns come back as STRINGS, as mysqli returns them.
                 //
-                // Without this PDO returns native types on mysqlnd, so an
-                // integer column arrives as int where it used to be '1'. That is
-                // not cosmetic: it changes `===` comparisons throughout, and it
-                // changes the REST API's JSON, where counts would start
-                // serialising as numbers instead of quoted strings -- a public
-                // contract change smuggled in by a transport swap. Caught by
-                // DbDriverSqlParityTest::testBothDriversReturnTheSameRows.
+                // Without this PDO returns native types on mysqlnd, which changes `===`
+                // comparisons throughout and the REST API's JSON, where counts would serialise
+                // as numbers instead of quoted strings. DbDriverSqlParityTest holds this.
                 \PDO::ATTR_STRINGIFY_FETCHES  => true,
             ];
 
@@ -355,13 +344,12 @@ abstract class Pdo extends \OWA\Core\Db
      * get_results() builds a PHP array of the whole result before the caller
      * sees a single row, which is right for the small result sets most callers
      * ask for and wrong for a query whose rows are the work rather than the
-     * answer. One assoc array per row is about 460 bytes once PHP's overhead is
-     * counted -- measured at 46MB per 100,000 rows -- so a caller that only
-     * ever looks at one row at a time pays for all of them at once.
+     * answer: one assoc array per row is about 460 bytes once PHP's overhead is
+     * counted, so a caller that only ever looks at one row at a time would pay
+     * for all of them at once.
      *
      * The driver's own buffer still holds the result; what this avoids is the
-     * second, far more expensive copy in PHP arrays. Measured on the funnel:
-     * 30MB to 2MB, with no change in time.
+     * second, far more expensive copy in PHP arrays.
      *
      * Yields nothing at all when the query failed or matched no rows, which is
      * the same non-answer get_results() gives as null -- a foreach over it

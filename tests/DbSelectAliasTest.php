@@ -6,9 +6,6 @@ require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
  * Db::select() passes its alias on to selectColumn().
- *
- * It called selectColumn($name, $as = ''), an assignment, so the alias given
- * was replaced by '' before the call.
  */
 final class DbSelectAliasTest extends TestCase
 {

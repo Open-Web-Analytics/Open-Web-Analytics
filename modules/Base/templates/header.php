@@ -44,7 +44,7 @@
             <?php
             /*
              * An icon, named by aria-label and a tooltip. An entry a module adds
-             * without one shows its label, as every entry used to.
+             * without one shows its label.
              */
             ?>
             <?php if ( ! empty( $owa_link['icon'] ) ):?>
@@ -134,14 +134,10 @@
         /*
          * THE ACCOUNT MENU.
          *
-         * This was "Hi, <name> ! * Logout" -- a greeting, a bullet and a link,
-         * which spent the widest part of the bar saying hello and left the two
-         * things people come here to do looking like punctuation.
-         *
-         * The name is now the control: a button that opens a menu holding
-         * Profile and Logout. Same interaction as the notification bell beside
-         * it -- a button with aria-expanded, a panel with hidden, and a click
-         * outside to close -- so the two behave alike.
+         * The name is the control: a button that opens a menu holding Profile and
+         * Logout. Same interaction as the notification bell beside it -- a button with
+         * aria-expanded, a panel with hidden, and a click outside to close -- so the
+         * two behave alike.
          */
     ?>
 <?php if ( ! \OWA\Core\CoreAPI::isCurrentUserAuthenticated() ): ?>

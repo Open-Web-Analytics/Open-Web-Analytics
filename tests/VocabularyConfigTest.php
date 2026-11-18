@@ -118,12 +118,9 @@ final class VocabularyConfigTest extends TestCase
     /**
      * The FILE is the only place the cube's vocabulary is declared.
      *
-     * v1's registrations are still inline in Module.php, but they are residue
-     * being deleted as each is replaced -- NOT a path being maintained. Nothing
-     * uses v1 reporting on this branch; that is what the branch is for. So this
-     * asserts one direction only: a cube dimension or metric added the old way
-     * fails here. It says nothing about what else Module.php still contains,
-     * because that number should only ever go down.
+     * A v1 registration inline in Module.php is residue, not a maintained path.
+     * So this asserts one direction only: a cube dimension or metric added the
+     * old way fails here.
      */
     public function testTheCubesVocabularyIsDeclaredOnlyInTheFile(): void
     {

@@ -4,10 +4,9 @@ namespace OWA\Core;
 /**
  * The controller every configured report is rendered by.
  *
- * A config-driven report controller never did anything but name a subview, a
- * title, and a bag of values for that subview to read -- so there is one
- * controller here and the differences live in JSON. This class is what makes
- * 35 near-identical files unnecessary rather than what replaces them.
+ * A configured report names a subview, a title, and a bag of values for that
+ * subview to read -- so there is one controller here and the differences live in
+ * JSON.
  *
  * It deliberately does NOT interpret the settings bag. Those keys are the
  * subview's vocabulary, not this class's -- a subview reads what it needs and
@@ -75,15 +74,10 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     /**
      * The renderer every configured report uses.
      *
-     * Fixed here rather than named by each definition. It was a definition key
-     * while the conversion was in progress and reports still rendered through
-     * a dozen different subviews; all 53 named this one by the end, so it was
-     * a required field with exactly one legal value.
-     *
-     * Removing it is not only tidiness: a report definition is meant to become
-     * something a user can author, and a definition that names a renderer can
-     * point at any view in the tree. Widgets already own their own rendering,
-     * which is what makes this safe to fix.
+     * Fixed here rather than named by each definition: a report definition is meant
+     * to become something a user can author, and a definition that names a
+     * renderer could point at any view in the tree. Widgets own their own
+     * rendering.
      */
     const SUBVIEW = 'base.reportWidgets';
 
@@ -156,12 +150,8 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             }
 
             /*
-             * A list of column names, never a fragment of JavaScript.
-             *
-             * This used to be echoed raw into a JS array literal, so the
-             * definitions carried their own quoting -- "'pageUrl'". A string
-             * here would be interpolated again the moment someone restored
-             * that, so the format refuses one outright.
+             * A list of column names, never a fragment of JavaScript, so the format
+             * refuses a string outright.
              */
             // Names, never targets: see ROW_ACTIONS.
             if ( isset( $widget['rowActions'] ) && ( ! is_array( $widget['rowActions'] )
@@ -182,8 +172,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
 
             /*
              * `formatters` maps a column to the NAME of a formatter the widget
-             * implements. The value it replaces was a JavaScript function
-             * carried in a controller and echoed raw into the page.
+             * implements, never to code.
              */
             if ( isset( $widget['formatters'] ) ) {
 
@@ -301,8 +290,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                  * `document` links to dom-clicks, which is
                  * ABOUT a page -- so a link that carried only a reportId would
                  * land on a report constrained on a parameter it was not given,
-                 * which is now refused outright. A plain reportId is still the
-                 * common case and stays optional.
+                 * which is refused. A plain reportId is the common case.
                  *
                  * A flat map of name => value, values interpolated from the
                  * report's own declared parameters. Never nested and never
@@ -362,9 +350,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
          * Which metric sets this report offers, and in what order.
          *
          * Absent means the site's own -- Site Usage, and e-commerce when the site
-         * setting is on. That is what every
-         * definition does today and stays the default, so this key only ever
-         * narrows or replaces.
+         * setting is on -- so this key only ever narrows or replaces.
          *
          * Two shapes, deliberately not mixable:
          *
@@ -667,12 +653,8 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     }
 
     /**
-     * Declare exactly what the controller this replaces declared.
-     *
-     * The order is the order those controllers used -- subview, then title,
-     * then the settings -- so that a setting named "title" would lose to the
-     * title, as it did before. Nothing relies on that today; it is simply not
-     * this change's business to alter it.
+     * Declare the subview, then the title, then the settings, so a setting named
+     * "title" loses to the title.
      *
      * @return void
      */
@@ -683,13 +665,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
         $values = $this->resolveParams();
 
         /*
-         * Neither view is named by the definition.
-         *
-         * ReportController::pre() already sets the outer view to base.report,
-         * and four converted reports used to restate it -- kept during the
-         * conversion so a definition could produce a byte-identical result to
-         * the controller it replaced. That is done, and restating a default is
-         * just a way for the two to disagree later.
+         * Neither view is named by the definition: ReportController::pre() sets the
+         * outer view to base.report, and restating a default is a way for the two to
+         * disagree.
          */
         $this->setSubview( self::SUBVIEW, [
             'template' => 'report_widgets.php',
@@ -728,11 +706,9 @@ class ConfiguredReport extends \OWA\Core\ReportController {
          * getDefinitionError() has to be able to check them.
          */
         /*
-         * Report-wide, like the constraint and for the same reason: every
-         * widget in a report asks for the same metrics -- measured across all
-         * 13 multi-widget reports, without exception. Holding it once is also
-         * what lets a metric set replace it in ONE place rather than rewriting
-         * every widget's query.
+         * Report-wide, like the constraint: every widget in a report asks for the
+         * same metrics, and holding it once lets a metric set replace it in ONE
+         * place rather than rewriting every widget's query.
          */
         if ( isset( $d['metrics'] ) ) {
 
@@ -797,14 +773,11 @@ class ConfiguredReport extends \OWA\Core\ReportController {
      * about, so the value behind it is required: `document` constrained on
      * pagePath is not a page report without a page.
      *
-     * It used to fail silently either way. buildConstraints() emitted
-     * `pagePath==` for an absent value -- a constraint no fact row carries, so
-     * the widget returned nothing and said nothing about why. Dropping the
-     * empty clause instead is worse: the query then has no constraint at all
-     * and the report renders SITE-WIDE data under a "Page Detail" heading,
-     * which reads as real.
-     *
-     * So the caller checks this before rendering and refuses. Only constraint
+     * Without it an absent value fails silently either way: `pagePath==` is a
+     * constraint no fact row carries, so the widget returns nothing; dropping
+     * the empty clause renders SITE-WIDE data under a "Page Detail" heading,
+     * which reads as real. So the caller checks this before rendering and
+     * refuses. Only constraint
      * parameters are collected -- one read solely by a title is cosmetic, and
      * a missing one should not take the report down.
      *
@@ -1005,9 +978,6 @@ class ConfiguredReport extends \OWA\Core\ReportController {
              * `!== ''` before issuing makeAreaChart, the same way `traffic`
              * suppresses its metric boxes. Filling one in would hand a chart to
              * a set that asked for none.
-             *
-             * The warning this looked like it should fix was in the renderer
-             * assuming the key, and is fixed there.
              */
             return $declared;
         }
@@ -1061,8 +1031,7 @@ class ConfiguredReport extends \OWA\Core\ReportController {
                 /*
                  * Empty parts are dropped rather than joined, so a report with
                  * no constraint of its own does not hand the widget a string
-                 * with a leading comma -- an empty first clause, which is what
-                 * the template this replaces emitted for one of these three.
+                 * with a leading comma -- an empty first clause.
                  */
                 $query['constraints'] = implode( ',',
                     array_filter( [ $reportConstraints, $own ], static fn ( $part ) => (string) $part !== '' ) );

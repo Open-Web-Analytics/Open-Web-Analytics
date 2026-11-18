@@ -5,9 +5,8 @@ require_once __DIR__ . '/bootstrap_owa.php';
 use PHPUnit\Framework\TestCase;
 
 /**
- * Base registers nothing for install_complete. Its installCompleteHandler()
- * was empty and is gone; InstallBase still raises the event, for a module of
- * its own to hear.
+ * Base registers nothing for install_complete. InstallBase still raises the
+ * event, for a module of its own to hear.
  */
 final class InstallCompleteHandlerTest extends TestCase
 {

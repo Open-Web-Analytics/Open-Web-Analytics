@@ -216,10 +216,6 @@ class ServiceUser extends \OWA\Core\Base {
     /**
      * Mark the user as authenticated, or not.
      *
-     * It used to ignore its argument and always set true, so a caller passing
-     * false to withdraw authentication authenticated the user instead. Every
-     * caller in OWA passes true.
-     *
      * @param  bool $bool whether the user is authenticated
      * @return void
      */

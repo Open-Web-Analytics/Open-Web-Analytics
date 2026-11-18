@@ -6,11 +6,9 @@ use OWA\Module\Base\Classes\Sanitize;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Sanitize::stripHtml() with a list of tags removes every one of them.
- *
- * Each pass used to start again from the original input, so only the last
- * tag in the list was removed; and the closing-tag pattern matched by prefix,
- * so stripping b also removed </blockquote>.
+ * Sanitize::stripHtml() with a list of tags removes every one of them: each
+ * pass works on the previous pass's result, and the closing-tag pattern
+ * matches a whole tag name, so stripping b leaves </blockquote> alone.
  */
 final class SanitizeStripHtmlTest extends TestCase
 {

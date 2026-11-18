@@ -41,8 +41,8 @@ class TimePeriod {
     /**
      * Periods the picker no longer offers.
      *
-     * Comparison replaced them: "Same month last year" is This month compared
-     * to the previous year. A request naming one is treated as naming no
+     * Comparison covers them: "Same month last year" is This month compared to
+     * the previous year. A request naming one is treated as naming no
      * period, so an old bookmark opens on the default period rather than an
      * error page.
      */
@@ -426,10 +426,8 @@ class TimePeriod {
     /**
      * Every period a request may name.
      *
-     * One list, because there were two: this class accepted the picker's labels
-     * plus date_range, while the REST controller built its own from the labels
-     * alone. The same request was therefore valid over the web and rejected
-     * over the API -- `period=date_range` -- for no reason anyone chose.
+     * One list, read by this class and the REST controller, so a request is
+     * valid over the web and over the API alike.
      *
      * date_range belongs here and not in getPeriodLabels() because that list is
      * the DROPDOWN: a custom range is not an entry in it, it is what the
@@ -659,22 +657,12 @@ class TimePeriod {
 
 
             /*
-             * "all_time" is gone. It set the start to 1 January 1969 and the
-             * end to now, which is a full scan of every fact table on the
-             * installation -- across every partition, by construction, since
-             * the range cannot be pruned to any of them.
+             * No "all_time": a range from 1969 to now is a full scan of every fact table,
+             * across every partition, since it cannot be pruned to any of them.
              *
-             * It was already unreachable through the normal path: isValid() is
-             * built from the picker's labels plus date_range, so a request for
-             * it silently became the default reporting period. Removing the
-             * case makes that refusal honest instead of accidental, and stops
-             * set() -- which has no such guard -- from being able to ask for it
-             * directly.
-             *
-             * The sub-hour periods (last_hour, last_half_hour, last_24_hours)
-             * remain implemented and unoffered. They need bound pruning that
-             * works at finer than day granularity before they would be
-             * anything but expensive, and nothing needs them today.
+             * The sub-hour periods (last_hour, last_half_hour, last_24_hours) are
+             * implemented and unoffered. They need bound pruning that works at finer than
+             * day granularity before they would be anything but expensive.
              */
 
             case "last_thirty_days":

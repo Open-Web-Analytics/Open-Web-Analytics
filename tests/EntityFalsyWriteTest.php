@@ -5,33 +5,19 @@ use PHPUnit\Framework\TestCase;
 /**
  * An entity can store a legitimate falsy value on a numeric column.
  *
- * WHAT WAS WRONG
- * Entity::set() guarded on `if ( $value )`, so 0, false and '' were all
- * discarded without a word. Setting a numeric column to 0 did nothing, and the
- * caller could not tell. Entity::update() then repeated the mistake, including
- * a column only when its value was truthy, so even a 0 that had been stored
- * could not be persisted.
- *
- * The visible consequence was SessionHandlers writing the STRING 'false' into
- * is_bounce: a truthy value was the only kind that survived both guards, and
- * MySQL coerced the non-numeric string to 0 on the way in. That worked by
- * accident, broke under a strict sql_mode, and was TRUTHY when read back into
- * PHP -- so a session that had not bounced reported that it had.
+ * set() and update() keep 0 and false on a numeric column. A truthiness guard
+ * would discard them without a word, and the caller could not tell.
  *
  * WHY BY TYPE, NOT BY REMOVING THE GUARD
  * The two falsy cases are not alike. On a numeric column, 0 is a value. On a
  * string column, '' is what a caller passes when it has nothing, and several
  * handlers depend on `set('tagged_medium', $maybeEmpty)` leaving the existing value
- * alone -- storing empties there would blank data that is deliberately kept
- * today. So numeric columns widened; everything else unchanged.
+ * alone -- storing empties there would blank data that is deliberately kept.
+ * So numeric columns store falsy values; everything else ignores them. The type
+ * is the one every column declares as DbColumn's second constructor argument.
  *
- * The type is not new information: every column already declares one as
- * DbColumn's second constructor argument. Nothing consulted it until now.
- *
- * WHY IT MATTERS BEYOND is_bounce
  * v2's event table is full of columns where 0 is ordinary -- the sticky
- * `engaged` flag, `is_exit`, engagement-time deltas. Without this, writing any
- * of them through an entity would silently do nothing.
+ * `engaged` flag, `is_exit`, engagement-time deltas.
  */
 final class EntityFalsyWriteTest extends TestCase
 {
@@ -110,11 +96,8 @@ final class EntityFalsyWriteTest extends TestCase
     /**
      * clear() is how a caller says "this is now blank".
      *
-     * set() ignoring '' is deliberate and load-bearing (the test above), but it
-     * left an edit form unable to express an emptied field: the user cleared a
-     * description, the save discarded it, and the old text came back with
-     * nothing said. Property and Observation Profile descriptions could not be
-     * removed at all.
+     * set() ignoring '' is deliberate and load-bearing (the test above), so an edit
+     * form expresses an emptied field -- a cleared description -- through clear().
      */
     public function testClearEmptiesAStringColumnThatSetWillNotTouch(): void
     {

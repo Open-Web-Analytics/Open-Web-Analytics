@@ -7,8 +7,7 @@
 <?php
 // Status first, because it is the question someone opening this page actually
 // has: is geolocation working right now. A missing key and a missing database
-// both present as "locations are blank", and neither was visible anywhere
-// before this page existed.
+// both present as "locations are blank".
 ?>
 <fieldset name="owa-geoip-status" class="options">
 <legend><?php $view->out( \OWA\Core\CoreAPI::t( 'Status' ) ); ?></legend>

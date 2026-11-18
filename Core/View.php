@@ -198,8 +198,8 @@ class View extends \OWA\Core\Base {
         // UNCONDITIONALLY so a form template can always read it: a template that
         // renders both a fresh form and a re-submitted one with errors should not
         // have to care which branch of the controller it arrived through. The
-        // subview equivalent below already does this. Empty array, not null, so
-        // if()/empty() keep behaving exactly as they did when the key was absent.
+        // subview equivalent below does the same. Empty array, not null, so
+        // if()/empty() behave as for an absent key.
         $this->body->set(
             'validation_errors',
             $this->data['validation_errors'] ?? []
@@ -379,9 +379,8 @@ class View extends \OWA\Core\Base {
      * Called from BOTH assembly paths, which is the whole point of it being a
      * method. A main view goes through assembleView() and a subview through
      * assembleSubView(), and every settings screen is a subview while the
-     * Maxmind screen renders through neither: wiring this into one path alone
-     * left the other rendering blank, because ViewScope throws on a template
-     * variable that was never set rather than falling back to empty.
+     * Maxmind screen renders through neither. A path without it would render
+     * blank, because ViewScope throws on a template variable that was never set.
      *
      * Empty for anything that is not a registered settings page -- reports, the
      * install wizard -- whose templates do not read it.
@@ -487,9 +486,9 @@ class View extends \OWA\Core\Base {
     /**
      * The ?version= a built asset is requested with.
      *
+     * The built file's modification time, which changes with each build:
      * Env::VERSION is 'master' in a source checkout, the same string for every
-     * build, so a browser kept the stylesheet and scripts it already had across
-     * a deploy. The built file's modification time changes with each build.
+     * build.
      *
      * @param  string $path under the public asset tree
      * @return string

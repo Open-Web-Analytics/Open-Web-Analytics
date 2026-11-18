@@ -17,10 +17,8 @@ namespace OWA\Module\Base\Update;
  *
  * WHY OWA NEEDS IT. A tracker served with a short cache TTL of its own could
  * reason about its stale population from that policy. OWA hands a static file
- * to the customer's own
- * origin -- currently with no Cache-Control at all, so browsers apply a
- * heuristic that grows with the file's age -- and then has no idea how long an
- * old tracker lives. Counting rows is the only way to know.
+ * to the customer's own origin, whose caching it does not control, and then
+ * has no idea how long an old tracker lives. Counting rows is the only way to know.
  *
  * NULL IS GENERATION 0, and nullable is load-bearing: every tracker cached on
  * the day this ships sends nothing. Nothing to backfill -- a stored row cannot

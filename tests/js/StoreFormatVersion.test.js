@@ -23,12 +23,9 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  * bytes can answer it, because two versions can write the same-looking bytes
  * with different meanings.
  *
- * That is not hypothetical here. The stored shape has already changed under
- * live visitors twice: assoc to JSON, and a single shared session store to a
- * per-site 's_<siteId>'. Both were survivable only because someone knew the
- * change was happening and hand-wrote a migration for it. A visitor arriving
- * with the old shape and no migration would have been read confidently and
- * wrong.
+ * The stored shape can change under live visitors (assoc to JSON; a shared
+ * session store to a per-site 's_<siteId>'), and a visitor arriving with an old
+ * shape and no migration would be read confidently and wrong.
  *
  * The direction that has no answer at all is a value written by a NEWER
  * tracker. It happens without anyone deploying anything twice -- a visitor

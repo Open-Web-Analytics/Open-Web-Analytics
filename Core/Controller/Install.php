@@ -35,10 +35,9 @@ class Install extends \OWA\Core\Controller {
      * Nothing of the installer runs on an installed system: every install
      * screen and action redirects to the install's public URL instead.
      *
-     * This was pre()'s job, and pre() only sent the redirect header:
-     * Controller::doAction() goes on to action() whatever pre() returns. So
-     * after install, anyone could still open the install screens, and post
-     * base.installBase -- which re-ran the schema install and added a site.
+     * Here rather than in pre(): Controller::doAction() goes on to action()
+     * whatever pre() returns, so a redirect header from pre() would still let
+     * base.installBase re-run the schema install and add a site.
      *
      * @return mixed an empty array after the redirect, else parent::doAction()'s
      *               result: whatever the action returned

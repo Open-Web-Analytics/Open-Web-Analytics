@@ -42,8 +42,8 @@ class SitesEdit extends \OWA\Core\AdminController {
         $site->set('domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) ) );
 
         /*
-         * An emptied description means empty. set() drops '' on a string column
-         * so the old text used to survive the save with nothing said about it.
+         * An emptied description means empty. set() drops '' on a string column,
+         * so the old text would survive the save.
          */
         $description = (string) $this->getParam( 'description' );
 
@@ -59,12 +59,11 @@ class SitesEdit extends \OWA\Core\AdminController {
         $site->save();
 
         /*
-         * Back to the Profile that was edited, not to reporting. This sent
-         * every rename to the dashboard, which reads as the save having thrown
-         * the screen away -- and is not what the other two Profile editors do.
+         * Back to the Profile that was edited, not to reporting, as the other two
+         * Profile editors do.
          *
          * 'edit' as well as the siteId: base.sitesProfile draws the add form
-         * without it, so a rename landed on "New Observation Profile".
+         * without it.
          */
         $this->set( 'siteId', $this->getParam( 'siteId' ) );
         $this->set( 'edit', true );

@@ -222,9 +222,9 @@ final class TimePeriodTest extends TestCase
     }
 
     /**
-     * Normalizing must not have changed what a well-formed map resolves to.
-     * This is the regression half: the guard is only worth having if the
-     * ordinary cases still land on exactly the same dates.
+     * Normalizing must not change what a well-formed map resolves to: the guard
+     * is only worth having if the ordinary cases still land on exactly the
+     * same dates.
      */
     public function testAWellFormedMapIsUnaffectedByNormalization()
     {
@@ -264,10 +264,9 @@ final class TimePeriodTest extends TestCase
      * ---------------------------------------------------------------------
      * Date ranges have to be complete and ordered.
      *
-     * A range is both bounds or neither. One bound alone was not refused: the
-     * missing one resolved to today, so ?endDate=20260810 asked for "up to the
-     * 10th" and got a window running from today BACKWARDS to the 10th. The
-     * report then rendered that inverted window without complaint.
+     * A range is both bounds or neither. With one bound alone the missing one
+     * would resolve to today, so ?endDate=20260810 would ask for "up to the
+     * 10th" and get a window running from today BACKWARDS to the 10th.
      *
      * getRangeError() is static and touches no settings, so it holds without a
      * database -- which is what lets both the web and REST paths ask before
@@ -316,8 +315,7 @@ final class TimePeriodTest extends TestCase
             'ordered range'          => [ [ 'startDate' => '20260801', 'endDate' => '20260810' ] ],
             'ordered range, named'   => [ [ 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260810' ] ],
 
-            // Equal bounds are a single day, which is how ReportVisitorsRoster
-            // asks for one. The rule is start <= end, not start < end.
+            // Equal bounds are a single day. The rule is start <= end, not start < end.
             'single day'             => [ [ 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260801' ] ],
             'single day, no period'  => [ [ 'startDate' => '20260801', 'endDate' => '20260801' ] ],
 

@@ -12,21 +12,17 @@ final class MaxmindWebServiceLookupTest extends TestCase
     /**
      * The lookup declines instead of fatalling when the client class is absent.
      *
-     * Setting the module's lookup_method to 'geoip_city_isp_org_web_service'
-     * used to reach `new \Client(...)` with the import commented out, naming a
-     * root-namespace class that has never existed. That is an uncaught Error on
-     * every tracked request that reaches a geo lookup, and the setting has no UI
-     * so nobody found it.
+     * With the module's lookup_method set to 'geoip_city_isp_org_web_service' and
+     * no client class, an uncaught Error would hit every tracked request that
+     * reaches a geo lookup -- and the setting has no UI.
      *
      * geoip2/geoip2 is not a dependency of this module, so class_exists() is
      * false here -- which is the same state as any installation that set the
      * option without installing the package, and is therefore the case worth
      * asserting. The map must come back untouched.
      *
-     * Asserted by CALLING it. An earlier version of this test scanned the source
-     * for the offending string, which cannot work: the docblock above the fixed
-     * method quotes `new \Client(...)` while explaining the bug, so a pattern
-     * correct enough to catch the code also matches the documentation.
+     * Asserted by CALLING it, not by scanning the source for a string the
+     * documentation might also contain.
      */
     public function testTheLookupDeclinesRatherThanFatallingWithoutTheClient(): void
     {

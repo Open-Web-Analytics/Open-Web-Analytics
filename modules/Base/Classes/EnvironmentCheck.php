@@ -126,12 +126,9 @@ class EnvironmentCheck {
         }
 
         /*
-         * Whether the config file can be WRITTEN.
-         *
-         * On a docroot the web server cannot write to, an author used to fill in
-         * the whole database form before anything went wrong, and what went
-         * wrong was a file handle failing rather than a message. An existing
-         * file is fine: that path skips the form entirely.
+         * Whether the config file can be WRITTEN, checked before the database form is
+         * filled in rather than failing on a file handle afterwards. An existing file
+         * is fine: that path skips the form entirely.
          */
         $config_dir = dirname( $config_file );
 

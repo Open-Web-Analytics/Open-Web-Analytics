@@ -49,8 +49,7 @@ describe('device-local properties', () => {
 
     /*
      * A COPY, so a caller cannot reach this.properties through the return value
-     * and put the local-only property back. getProperties() used to hand back the
-     * live object.
+     * and put the local-only property back.
      */
     test('the wire view is a copy, not the event internals', () => {
         const event = new OwaEvent();

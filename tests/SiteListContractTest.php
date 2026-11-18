@@ -7,10 +7,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * What GET /v1/sites emits, and who it emits it to.
  *
- * Pinned before the Organization / Property / Observation Profile hierarchy
- * splits owa_site in two, because this endpoint is consumed by the WordPress
- * plugin: it lists sites so an author can pick one, and puts the chosen
- * site_id into the tracking tag.
+ * Pinned because this endpoint is consumed by the WordPress plugin: it lists
+ * sites so an author can pick one, and puts the chosen site_id into the
+ * tracking tag.
  *
  * Two consequences follow from that, and both are easy to break without
  * noticing:
@@ -20,20 +19,14 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *     in the tag.
  *
  *   - domain and name must keep appearing on each entry, even though both
- *     conceptually belong to the Property once the hierarchy exists. If the
- *     profile stops carrying them the view has to enrich from the parent -- the
- *     fields cannot simply move.
+ *     conceptually belong to the Property. If the profile stops carrying them
+ *     the view has to enrich from the parent -- the fields cannot simply move.
  *
- *     CORRECTED: an earlier version of this note said both are "what the
- *     plugin's picker labels its options with". Only domain is. The plugin
- *     builds its label from site_id and domain and never reads name:
+ *     The plugin builds its picker label from site_id and domain and never
+ *     reads name:
  *
  *         sprintf('%s (%s)', $site['properties']['site_id']['value'],
  *                            $site['properties']['domain']['value'])
- *
- *     That line also shows the plugin reading the PRE-#977 nested payload, so
- *     its picker has been broken since 2026-08-02 independently of any of
- *     this. Recorded here because this file is where someone will look.
  *
  * The endpoint returns entities directly (SitesRest sets tracked_sites as the
  * response data), so the emitted field names ARE the entity's columns. That
@@ -165,18 +158,12 @@ final class SiteListContractTest extends TestCase
     public function testOurOwnSelectorReadsTheSameTwoFieldsAsThePlugin(): void
     {
         /*
-         * The reporting UI's site filter and the WordPress plugin's picker are
-         * the same problem twice: both get their list from
-         * getSitesAllowedForCurrentUser().
-         *
-         * CORRECTED twice. This used to pin that both labelled with 'name', and
-         * then that our control navigated by site_id. It navigates by PROPERTY
-         * now -- a report is of a Property and covers every Profile in it -- so
-         * the plugin, which reports on one site, and our control no longer
-         * choose the same thing. What the plugin reads is unchanged: the site
-         * list, keyed by site_id.
-         *
-         * The tracking id moved with the Profiles, to the Property's roster.
+         * The reporting UI's site control and the WordPress plugin's picker both
+         * get their list from getSitesAllowedForCurrentUser(). The control
+         * navigates by PROPERTY -- a report is of a Property and covers every
+         * Profile in it -- while the plugin, which reports on one site, reads the
+         * site list keyed by site_id. The tracking id is on the Property's roster,
+         * with the Profiles.
          *
          * Pinned by reading the templates, because the coupling is invisible
          * from PHP: nothing references the control's field names.

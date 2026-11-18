@@ -18,17 +18,11 @@ final class PaddingResolver
 }
 
 /**
- * Leading and trailing whitespace is removed once, in the pipeline.
- *
- * It used to be removed in some paths and not others. The catch-all property
- * definition applies lowercaseString(), which is strtolower( trim() ); eight
- * resolvers trim for themselves; and Sanitize::cleanInput(), which every
- * explicitly-defined string property flows through, does not trim at all --
- * removeHiddenSpaces() only swaps a non-breaking space. So the properties that
- * escaped trimming were exactly the ones carrying their own definitions.
- *
- * That asymmetry had teeth rather than being untidy: ' Google ' and 'Google'
- * hashed to different dimension rows depending which code path derived the id.
+ * Leading and trailing whitespace is removed once, in the pipeline, for every
+ * property -- not by each resolver, and not by Sanitize::cleanInput(), which
+ * does not trim (removeHiddenSpaces() only swaps a non-breaking space).
+ * ' Google ' and 'Google' must not hash to different dimension rows depending
+ * on which code path derived the id.
  */
 final class TrackingValuesAreTrimmedTest extends TestCase
 {
@@ -90,14 +84,14 @@ final class TrackingValuesAreTrimmedTest extends TestCase
          * encodes non-ASCII on the way in -- 'Grüße' becomes 'Gr&uuml;&szlig;e'
          * -- which is long-standing and is what keeps stored payloads inert.
          * Trimming neither causes nor changes it, and asserting a round-trip
-         * here would be testing the encoder, not this change.
+         * here would be testing the encoder, not the trim.
          */
 
         /*
          * Not asserted on a custom variable: cv{n}_name and cv{n}_value are
          * added dynamically and pick up the CATCH-ALL definition, whose callback
-         * is lowercaseString(). So they are lowercased today, and this change
-         * neither causes that nor fixes it -- whether user-supplied values
+         * is lowercaseString(). So they are lowercased, and trimming neither
+         * causes that nor fixes it -- whether user-supplied values
          * should be case-folded is its own question.
          */
     }
@@ -113,20 +107,16 @@ final class TrackingValuesAreTrimmedTest extends TestCase
      * It runs after the callbacks, not only on the raw input.
      *
      * setDataType() sanitises the value as it ARRIVES, and a callback's return
-     * goes to the event untouched -- which is how a derivation that reintroduced
-     * padding would have slipped through. resolveSource() happens to trim for
-     * itself; this asserts the pipeline no longer depends on each resolver
-     * remembering to.
+     * goes to the event untouched, so a derivation that reintroduces padding is
+     * caught by the pipeline rather than by each resolver remembering to trim.
      */
     public function testAResolvedValueIsTrimmedToo(): void
     {
         /*
-         * Deliberately a synthetic resolver rather than a real one. Asserting
-         * on resolveSource() proved nothing: it trims for itself, so the test
-         * passed with the trim moved to BEFORE the callbacks -- vacuous, and it
-         * survived a mutation that reintroduced the defect. This callback
-         * returns padding unconditionally, so only a trim placed after the
-         * filter can clean it up.
+         * Deliberately a synthetic resolver rather than a real one: a resolver
+         * that trims for itself would pass with the trim moved to BEFORE the
+         * callbacks. This callback returns padding unconditionally, so only a trim
+         * placed after the filter can clean it up.
          *
          * A unique property name per run: registerFilter() is global and
          * registerCallbacks() dedupes per process, so reusing a real property

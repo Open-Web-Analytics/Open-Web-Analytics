@@ -101,7 +101,7 @@ final class RedirectTargetTest extends TestCase
 
     /**
      * The cases above exercise the resolver directly, so they stay green even if
-     * redirectBrowser() stops calling it -- which is the regression that would
+     * redirectBrowser() stops calling it -- which is the failure that would
      * actually matter. It emits headers, so it cannot be invoked under PHPUnit;
      * assert on the source instead.
      *

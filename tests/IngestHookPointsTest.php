@@ -9,13 +9,11 @@ use OWA\Module\Base\Classes\Ingest;
 /**
  * Ingest has a pre and a post filter point at every stage.
  *
- * WHY THIS MATTERS ENOUGH TO TEST. Ingest was four procedural stages with no
- * seams, and the beacon compat layer is what proved that insufficient: it
- * renames names an older tracker sends, apply() runs in the PROPERTY stage, and
- * the gate that must admit those names first is in the REQUEST stage. So the
- * layer needed to act in a stage it could not reach, and the moment that gate
- * became an allowlist three of its four bridges went unreachable -- with no test
- * failing, because no test sent an old name.
+ * WHY THIS MATTERS ENOUGH TO TEST. A layer may need to act in a stage other
+ * than its own: the beacon compat layer renames names an older tracker sends in
+ * the PROPERTY stage, and the gate that must admit those names first is in the
+ * REQUEST stage. A point that stops being wired fails no other test, because
+ * no other test sends an old name.
  *
  * These cases hold the two things that can rot silently: that a point is still
  * WIRED at the site it names, and that the pairing means what it says.
@@ -86,8 +84,6 @@ final class IngestHookPointsTest extends TestCase
      *
      * There is no detach API, so anything this file attaches survives for the
      * rest of the process and reaches every other test that ingests an event.
-     * That is not hypothetical: it errored two cases in
-     * UnknownSiteRejectionTest before the probe points were split out.
      */
     public function testThisFileLeavesNoListenerOnARealPoint(): void
     {

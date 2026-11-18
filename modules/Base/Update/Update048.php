@@ -5,17 +5,8 @@ namespace OWA\Module\Base\Update;
 /**
  * Delete goal event conditions that belong to no goal event.
  *
- * Entity::delete() removes one row from one table, and nothing overrode it for
- * a goal event -- so every goal event ever deleted left its conditions behind
- * with nothing able to reach them. Entity\GoalEventDefinition::delete() cascades
- * now; this clears what accumulated before it did.
- *
- * MEASURED, not suspected. On the test install at the time of writing: 40
- * condition rows, of which 31 pointed at a goal event that no longer existed --
- * left by e2e fixtures that create a goal, delete it, and had no way to take the
- * conditions with it. The demo install had one goal event and its one condition,
- * with no orphans, which is what a hand-made goal that nobody deleted looks
- * like.
+ * Entity\GoalEventDefinition::delete() cascades to its conditions; this clears
+ * the conditions left by goal events deleted before it did.
  *
  * WHY IT MATTERS BEYOND TIDINESS. A condition row carries no property_id and no
  * site_id: it is reachable only through its goal event. An orphan is therefore

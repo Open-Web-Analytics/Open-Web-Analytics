@@ -13,22 +13,16 @@ namespace OWA\Module\Base\Classes\Cube;
  *
  * THE FIRST COMPUTE STEP, and a deliberately cheap one. Pulling a named
  * parameter out of a referring URL and percent-decoding it is a few lines of
- * PHP and not expressible in SQL at all -- MySQL has no URL decode -- so
- * before compute steps existed this fallback had nowhere to go but ingest,
- * which is the layer a corrected engine list can never reach.
+ * PHP and not expressible in SQL at all -- MySQL has no URL decode -- and
+ * here, unlike at ingest, a corrected engine list reaches history.
  *
- * IT IS WORTH ALMOST NOTHING, MEASURED, and that is fine. Organic-search
- * sessions carrying a real term on peteradamsphoto: 97.1% in 2011, 59.0% by
- * 2013 as Google encrypted search, 0.6% by 2019, and 12 sessions out of 16,083
- * across 2022-2026 -- 0.075%. Only yandex.ru still does it at all, last seen
- * 2026-07-13. The column is built for the mechanism, not the volume: it proves
- * the shared candidate query, the side table, the fill-never-overwrite rule and
- * the cap, so the next one is a registration rather than a design.
+ * Few organic-search sessions carry a real term now that the major engines
+ * encrypt search. The column is built for the mechanism, not the volume: the
+ * shared candidate query, the side table, the fill-never-overwrite rule and
+ * the cap.
  *
- * NO `(not provided)`. v1 returns that literal when a known engine withheld
- * the term, and it is the single most common "search term" on the demo install
- * -- 10,773 of them against 1,530 for the top real one. A sentinel that looks
- * like an observation is exactly what 2.11 refuses; where nothing was
+ * NO `(not provided)`, the literal v1 returns when a known engine withheld the
+ * term. A sentinel that looks like an observation is what 2.11 refuses; where nothing was
  * collected the column is NULL and the renderer says so once, at the edge.
  */
 class SearchTermsStep extends ComputeStep {

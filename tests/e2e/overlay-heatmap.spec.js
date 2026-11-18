@@ -34,16 +34,14 @@ function installRoot(baseURL) {
 }
 
 // The harness HTML, read from disk and fulfilled via route interception below.
-// It USED to be fetched over HTTP from tests/e2e/, but the Phase 5 deny-all
-// .htaccess (correctly) 403s the whole tests/ tree -- test infra ships in no
-// release tarball and is not a public asset, so it must not be web-served. We
-// still need the harness to load at an OWA-origin URL, though: the tracker is
-// injected by absolute URL and webpack's auto publicPath derives the heatmap
-// import() chunk base from document.currentScript.src, so that chunk fetch is
-// same-origin and CORS-clean ONLY if the harness document itself is same-origin.
-// So we navigate to the (denied) OWA URL and fulfill the document from disk --
-// origin stays the OWA host, the real tracker + chunk still load from the live
-// server (both allowlisted, 200), and no tests/ exception is punched in the deny-all.
+// The deny-all .htaccess 403s the whole tests/ tree, but the harness has to load
+// at an OWA-origin URL: the tracker is injected by absolute URL and webpack's
+// auto publicPath derives the heatmap import() chunk base from
+// document.currentScript.src, so that chunk fetch is same-origin and CORS-clean
+// ONLY if the harness document itself is same-origin. So we navigate to the
+// (denied) OWA URL and fulfill the document from disk -- origin stays the OWA
+// host, the real tracker + chunk still load from the live server (both
+// allowlisted, 200), and no tests/ exception is punched in the deny-all.
 const HARNESS_HTML = fs.readFileSync(
     path.join(__dirname, 'overlay_harness.html'), 'utf8'
 );
@@ -82,10 +80,7 @@ test.describe('heatmap overlay renders on the tracker path', () => {
 
     /**
      * The panel carries the OWA logo and one control, Stats, which opens the
-     * counts of what was and was not drawn. Start and Stop are gone -- they
-     * paused fetching pages of clicks that now come in one request -- and so
-     * is X, which threw rather than closing anything; the reader closes the
-     * window.
+     * counts of what was and was not drawn. The reader closes the window.
      */
     test('the tracker builds the overlay panel from the URL anchor: the logo and Stats', async ({ page }) => {
         // The dynamic import of Heatmap.js is async, so wait on the element
@@ -132,10 +127,10 @@ test.describe('heatmap overlay renders on the tracker path', () => {
 
     test('the overlay stylesheet loads from public/ (not the denied module tree)', async ({ page }) => {
         // loadHeatmap() does Util.loadCss(baseUrl + '/public/base/css/owa.overlay.css').
-        // The Phase 5 deny-all 403s modules/base/css/, so this asset MUST resolve under
-        // public/ or the overlay renders unstyled. Regression guard: the tracker/overlay
-        // code hardcodes asset paths (webpack can't rewrite a runtime-built URL string),
-        // so a stale modules/base/ path silently 403s -- caught here, not by the DOM tests.
+        // The deny-all 403s modules/base/css/, so this asset MUST resolve under
+        // public/ or the overlay renders unstyled. The tracker/overlay code hardcodes
+        // asset paths (webpack can't rewrite a runtime-built URL string), so a stale
+        // modules/base/ path silently 403s -- caught here, not by the DOM tests.
         // The fetch is recorded in beforeEach (listener attached before navigation); wait
         // for the overlay to build, then assert on what was fetched.
         await expect(page.locator('#owa_overlay')).toBeVisible({ timeout: 20_000 });

@@ -14,13 +14,11 @@ namespace OWA\Module\Base\Controller;
  * values in it -- which is acceptable because they are DERIVED. A build put
  * them there by reading owa_event_raw, which this does not touch, so
  * registering the key again and rebuilding the range reproduces them exactly.
- * What is destroyed is a copy, and the original is somewhere else.
  *
  * The row goes now and the column goes at the next reconcile, for the same
  * reason it arrived at one: the DROP is a full table rebuild and cannot happen
  * inside the request. In between the column is INERT -- a build fills the
- * columns the registry names, and this one is no longer named -- so there is no
- * window in which anything is wrong, only one in which something is untidy.
+ * columns the registry names, and this one is no longer named.
  */
 class CustomDimensionDelete extends \OWA\Core\AdminController {
 

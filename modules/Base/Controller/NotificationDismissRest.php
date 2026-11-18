@@ -8,17 +8,14 @@ use OWA\Module\Base\Classes\NotificationManager;
  * DELETE v1/notifications/{id} -- one user is done with one notification.
  *
  * REST and nothing else, deliberately. The badge sits in the header of every
- * page, so dismissing must not be a navigation; a second link-and-redirect
- * route would be a second write path maintained for a UI that no longer
- * exists.
+ * page, so dismissing must not be a navigation.
  *
  * Nonce required: this writes on behalf of the logged-in user.
  *
  * No capability beyond being someone. Dismissing is scoped to the caller, so
  * the worst anyone can do is clear their own badge -- and the user id comes
  * from the SESSION, never from a parameter. Reading it from the request would
- * let one user dismiss another\'s notifications, which is the entire security
- * surface of this feature.
+ * let one user dismiss another\'s notifications.
  */
 class NotificationDismissRest extends \OWA\Core\AdminController {
 

@@ -3,21 +3,15 @@
 require_once __DIR__ . '/IngestionTestCase.php';
 
 /**
- * The server resolves campaign tags by parsing the landing beacon's own URL.
+ * The server resolves campaign tags by parsing the landing beacon's own URL,
+ * so the answer is re-derivable: a fix to the parser, or a site changing `ns`,
+ * applies on reprocess instead of being frozen in whatever a browser decided.
  *
- * The tracker used to parse `campaignKeys` itself and send six tagged_*
- * parameters on every beacon of the session. Then it sent landing_url instead and
- * the parse moved here -- which is what makes the answer re-derivable: a fix to
- * the parser, or a site changing `ns`, applies on reprocess instead of being
- * frozen in whatever a browser decided months ago.
- *
- * NOW IT SENDS NEITHER. On the session-starting beacon page_location IS the
- * landing URL -- the tracker set landing_url from getCurrentUrl() and
- * page_location comes from the same call -- and that beacon is the only one this
- * parse ever ran on, because taggedValue() gates on is_new_session_start. So it
- * reads the URL the event already carries, and a session-scoped copy stops riding
- * every beacon for the life of every session. Session source is fixed by the
- * session's first event, so no cookie needs to hold a URL.
+ * On the session-starting beacon page_location IS the landing URL, and that
+ * beacon is the only one this parse runs on, because taggedValue() gates on
+ * is_new_session_start. So no session-scoped copy of the URL rides every
+ * beacon, and since session source is fixed by the session's first event, no
+ * cookie needs to hold a URL.
  *
  * page_location rather than page_query, deliberately: the query has the
  * Profile's dropped parameters removed, so a site filtering owa_source out of its
@@ -86,7 +80,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     }
 
     /**
-     * A stored campaignKeys naming ad_type, from before the role went, is
+     * A stored campaignKeys naming ad_type, a role that does not exist, is
      * ignored: the roles it names still read, and the parse does not fail.
      */
     public function testAStoredOverrideNamingAdTypeIsIgnored(): void
@@ -142,11 +136,9 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
         ]);
 
         /*
-         * Through taggedValue(), not the resolvers. resolveSource() and friends
-         * are gone: they classified at ingest and reached no column, and the
-         * classification is the cube pass's now. What survives -- and what this
-         * file is about -- is the PARSE: the tags coming out of the landing URL
-         * as tagged_* claims.
+         * Through taggedValue(). Classification is the cube pass's; what this
+         * file is about is the PARSE: the tags coming out of the landing URL as
+         * tagged_* claims.
          */
         $H = '\OWA\Module\Base\Classes\TrackingEventHelpers';
 
@@ -156,17 +148,12 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     }
 
     /**
-     * WHAT THE BEACON CLAIMS IS IGNORED, and this asserted the opposite.
+     * WHAT THE BEACON CLAIMS IS IGNORED.
      *
-     * A tagged_* the beacon sent used to win over the parse, on the reasoning
-     * that trackers are cached in browsers and a transmitted value beats one
-     * re-derived from evidence. But no recorded tracker has ever sent one --
-     * neither wire contract carries a tagged_* field -- and with no wire key in
-     * the registry the gate refuses the name outright, so the branch was
-     * unreachable as well as unused.
-     *
-     * What it would have meant, had anything sent one: a beacon asserting its own
-     * attribution. The URL is the evidence; the tags are the server's reading.
+     * No recorded tracker sends a tagged_* -- neither wire contract carries one --
+     * and with no wire key in the registry the gate refuses the name outright. A
+     * beacon sending one would be asserting its own attribution: the URL is the
+     * evidence; the tags are the server's reading.
      *
      * The two deliberately disagree here, so the assertion cannot pass by both
      * paths returning the same thing.
@@ -208,12 +195,7 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     /**
      * A Property can name the parameters its links actually use.
      *
-     * The tracker used to own this: setCampaignSourceKey('utm_source') remapped
-     * the key it parsed. The parse moved server-side and the server built its
-     * own ns-prefixed list, so that setter renamed a key nothing read and a site
-     * using utm_* silently got no attribution at all.
-     *
-     * It is a setting now, resolved at profile scope so the chain walks Profile
+     * It is a setting, resolved at profile scope so the chain walks Profile
      * -> Property -> Install: one convention by default, and a Property whose
      * links already use utm_* overrides it.
      */
@@ -254,11 +236,11 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
     /**
      * THE SAME LANDING URL PARSES DIFFERENTLY FOR TWO PROPERTIES.
      *
-     * The parse is memoised, and the key map is per-Property now, so the memo
-     * has to be keyed on the site as well as the URL. Keyed on the URL alone --
-     * which is how it was written, because the map used to be installation-wide
-     * -- the first Property's answer is handed to the second, and a site reading
-     * utm_source silently inherits whatever the site before it resolved.
+     * The parse is memoised, and the key map is per-Property, so the memo has
+     * to be keyed on the site as well as the URL. Keyed on the URL alone, the
+     * first Property's answer would be handed to the second, and a site
+     * reading utm_source would silently inherit what the site before it
+     * resolved.
      *
      * Two Properties cannot be given different settings from here, so the
      * setting is changed BETWEEN the two parses, which exercises exactly the

@@ -217,11 +217,10 @@ class Template extends TemplateEngine {
     /**
      * The link parameters a navigation entry points at.
      *
-     * A `ref` was always a bare action name, which stopped being enough when
-     * every report started sharing one: `base.report` identifies the
-     * dispatcher, not the report. A ref may now be the whole parameter map
-     * instead -- array('do' => 'base.report', 'reportId' => 'pages') -- and a
-     * plain string still means what it always meant.
+     * A `ref` is a bare action name, or the whole parameter map --
+     * array('do' => 'base.report', 'reportId' => 'pages') -- since every
+     * report shares `base.report`, which identifies the dispatcher, not the
+     * report.
      *
      * @param array<string, mixed> $link a nav link struct: ref, anchortext, priviledge, ...
      * @return array<string, mixed> parameters for makeLink(): a ref given as a map is returned as given
@@ -236,12 +235,8 @@ class Template extends TemplateEngine {
     /**
      * Whether a navigation entry is the page being looked at.
      *
-     * Comparing `ref` against params['do'] used to be enough. It is not any
-     * more: every report answers to do=base.report, so that test now says yes
-     * to EVERY report link at once and the whole Reports menu highlights.
-     *
      * Every parameter the ref names has to match, which for a report means the
-     * reportId as well as the action.
+     * reportId as well as the action: every report answers to do=base.report.
      *
      * @param array<string, mixed> $link a nav link struct: ref, anchortext, priviledge, ...
      * @param array<string, mixed> $params the current request parameters
@@ -506,17 +501,11 @@ class Template extends TemplateEngine {
     /**
      * An API link for an overlay: the heatmap, or a module's.
      *
-     * These two are the only cross-origin API consumers: they run on the
-     * *tracked* site and call back to the OWA origin. They used to be built
-     * with makeApiLink( ..., $add_apiKey = true ), which put the signed-in
-     * user's long-lived apiKey into a URL that the tracker then wrote to a
-     * cookie on the tracked site's own domain -- readable by every other script
-     * on that page, and re-sent to that site on every subsequent request.
-     *
-     * They now carry a token scoped to one endpoint and one resource that
-     * expires in minutes, so what leaks is worth almost nothing. No signature:
-     * request signing exists to make a long-lived key survivable in a URL, and
-     * there is no longer a long-lived key here.
+     * These are the only cross-origin API consumers: they run on the *tracked*
+     * site and call back to the OWA origin, so the URL is readable by every
+     * other script on that page. They carry a token scoped to one endpoint and
+     * one resource that expires in minutes, so what leaks is worth almost
+     * nothing. No signature: there is no long-lived key here to protect.
      *
      * **The full API URL must be built here and handed to the overlay. Do not
      * be tempted to send only the token and let the tracker derive the URL.**
@@ -540,9 +529,8 @@ class Template extends TemplateEngine {
      * **The token holds the resource as the API will READ it back**, which is
      * the parameter decoded once: the link carries the value as given, and PHP
      * decodes the query string. The heatmap encodes its page path into
-     * `constraints` (pagePath==%2Fpricing), the request arrived as
-     * pagePath==/pricing, and no token ever matched -- every heatmap's data
-     * was refused with a 401 and the overlay drew nothing.
+     * `constraints` (pagePath==%2Fpricing), and the request arrives as
+     * pagePath==/pricing.
      *
      * @param    LinkParams $params      the API request params
      * @param    string    $resourceKey    which param names the resource
@@ -574,14 +562,12 @@ class Template extends TemplateEngine {
         );
 
         // add_state MUST be true. It is what carries siteId and the reporting
-        // period onto the link, and both overlay call sites used
-        // makeApiLink( $params, true, true ) before this method existed.
+        // period onto the link.
         //
-        // Dropping it fails asymmetrically, which is why it is worth a comment:
-        // the player's controller declares siteId required and answers a clean
-        // 422, but the heatmap's reports route does not, so it returns 200 for a
-        // query with no site filter and a defaulted period -- the wrong clicks,
-        // reported as success. Only the cross-origin e2e caught that half.
+        // Dropping it fails asymmetrically: the player's controller declares siteId
+        // required and answers a clean 422, but the heatmap's reports route does not,
+        // so it would return 200 for a query with no site filter and a defaulted
+        // period -- the wrong clicks, reported as success.
         return $this->makeLink( $params, true, $this->config['rest_api_url'] );
     }
 
@@ -700,32 +686,21 @@ class Template extends TemplateEngine {
      * it back into a widget's description, as the values a grid's column link
      * is given (owa.reportWidgets.js passes them to addLinkToColumn()).
      *
-     * It used to be assembled by string concatenation and escaped with
-     * Sanitize::escapeForDisplay(), which is htmlentities(): an HTML escape
-     * applied to a JavaScript context. HTML escaping answers the wrong question
-     * here. It leaves a backslash untouched, and a backslash is precisely what a
-     * JS string literal treats as an escape, so the closing quote a value was
-     * meant to sit inside is not reliably the one that ends it.
-     *
-     * json_encode() is the right tool and needs no reasoning about which
-     * characters matter. The HEX flags additionally emit <, >, &, ' and " as
+     * json_encode(), not an HTML escape: htmlentities() leaves a backslash
+     * untouched, and a backslash is precisely what a JS string literal treats as
+     * an escape. The HEX flags additionally emit <, >, &, ' and " as
      * \uXXXX, which is what makes the result safe to embed inline -- '</script>'
      * inside a value cannot close the block.
      *
-     * Three behaviours are preserved deliberately:
+     * Deliberately:
      *
-     *   - values are strings, as they have always been. Letting json_encode
-     *     infer types would hand the JS a number or a bool where it has always
-     *     had a string.
+     *   - values are strings. Letting json_encode infer types would hand the JS
+     *     a number or a bool where it expects a string.
      *   - entities are decoded first. Some values are stored HTML-encoded, and
-     *     the true value is what the JS should receive; escapeForDisplay() did
-     *     this too, by decoding before re-encoding.
-     *   - FORCE_OBJECT, because one caller passes a list. (array) on its
-     *     valueColumns yields integer keys, which emitted `0: "x"` before and
-     *     must stay an object rather than becoming a JS array.
-     *
-     * One bug goes with it: an empty array used to return '}' on its own, since
-     * substr('{', 0, -2) is ''. It now returns '{}'.
+     *     the true value is what the JS should receive.
+     *   - FORCE_OBJECT, because one caller passes a list: (array) on its
+     *     valueColumns yields integer keys, and the result must be an object
+     *     rather than a JS array.
      *
      * @param  array<mixed> $array values of any type: an object by its
      *                             toString(), an array as 'Array'
@@ -746,10 +721,8 @@ class Template extends TemplateEngine {
 
             if ( is_array( $v ) ) {
 
-                // Stringified before this change too, via sprintf's %s. Kept
-                // rather than serialised, because a caller that has always been
-                // handed the word "Array" should not silently start receiving a
-                // structure.
+                // Stringified rather than serialised: a caller expecting a string is
+                // handed the word "Array", not a structure.
                 $v = 'Array';
             }
 

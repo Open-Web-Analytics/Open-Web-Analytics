@@ -6,22 +6,13 @@ const { execSync } = require('child_process');
  * Build-integrity characterization of the reporting bundle
  * (modules/Base/dist/owa.reporting-combined-min.js).
  *
- * The reporting bundle is a REAL webpack module graph (formerly a flat
- * WebpackConcatPlugin concatenation), mirroring the tracker entry:
+ * The reporting bundle is a webpack module graph, mirroring the tracker entry:
  *   - reporting-entry.js is the entry point; it side-effect-imports the vendor
  *     plugins in load-bearing order, then the seven OWA files.
- *   - The seven OWA files are kept as PLAIN (sloppy-mode) scripts, NOT ESM: they
- *     are legacy code full of implicit globals (undeclared `for (x in ...)` loop
- *     vars, bare `y = ...` assigns) that throw under the strict mode ESM forces.
- *     So OWA is shared via a browser global exactly as the old concat did: owa.format.js
- *     publishes `window.OWA`, and the six augmenters read the bare `OWA` global.
- *     Adding an import/export to any of these files would flip it to strict and
- *     break it -- this test guards that they stay non-ESM.
  *   - OWA's own files import jQuery explicitly; the legacy vendor plugins that read a
  *     free `jQuery`/`$` at eval time get it from window, published by the entry's first
  *     import (vendor-jquery-global.js) before any vendor runs. There is no ProvidePlugin.
- *   - The bundle is emitted under the SAME filename as the old concat, and is a
- *     single self-contained file (splitChunks excludes it) so the report
+ *   - The bundle is a single self-contained file (splitChunks excludes it) so the report
  *     templates keep loading exactly one script.
  *
  * These tests pin that contract: the source graph is present, the OWA files are real
@@ -179,7 +170,7 @@ describe('reporting bundle build integrity', () => {
         // build.manifest.json (discovered by webpack.config.js), not inline in the
         // config. The reporting bundle is a single self-contained file (no vendor
         // split); jQuery is published on window by the entry itself, so there is no
-        // provideJquery flag (ProvidePlugin was retired in Phase 4).
+        // provideJquery flag (there is no ProvidePlugin).
         expect(reportingPkg).toBeDefined();
         expect(reportingPkg.type).toBe('js');
         expect(reportingPkg.entry).toMatch(/reporting-entry\.js$/);
@@ -194,9 +185,9 @@ describe('reporting bundle build integrity', () => {
         const cfg = fs.readFileSync(configPath, 'utf8');
         // Packages are discovered from per-module build manifests.
         expect(cfg).toMatch(/build\.manifest\.json/);
-        // ProvidePlugin was retired in Phase 4 -- the reporting entry publishes jQuery
-        // on window itself (vendor-jquery-global.js), so the config no longer constructs
-        // one (nor requires webpack for it) and both JS products share one factory.
+        // No ProvidePlugin: the reporting entry publishes jQuery on window itself
+        // (vendor-jquery-global.js), so the config constructs none (nor requires
+        // webpack for it) and both JS products share one factory.
         // (Match the construction/require, not any mention -- the comments name it.)
         expect(cfg).not.toMatch(/new\s+webpack\.ProvidePlugin/);
         expect(cfg).not.toMatch(/require\(['"]webpack['"]\)/);
@@ -263,10 +254,10 @@ describe('reporting bundle build integrity', () => {
             // <script>, not a runtime import(), so `__webpack_require__.e` never
             // appears and there is no literal 'owa.vendors' reference to grep. The
             // observable difference is that the vendor code either lives IN this
-            // file or it doesn't. A split collapses this bundle from ~350KB to ~70KB
-            // and moves every vendor fingerprint out into the sibling chunk -- so a
-            // size floor no split can clear, plus the vendor tokens being present
-            // right here, is what actually catches the regression.
+            // file or it doesn't. A split collapses this bundle to a fraction of its
+            // size and moves every vendor fingerprint out into the sibling chunk -- so
+            // a size floor no split can clear, plus the vendor tokens being present
+            // right here, is what catches it.
             expect(bundle.length).toBeGreaterThan(300 * 1024);
             for (const token of ['"3.6.0"', 'flot-base']) {
                 expect(bundle.includes(token)).toBe(true);

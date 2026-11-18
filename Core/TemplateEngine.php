@@ -4,10 +4,7 @@ namespace OWA\Core;
 /**
  * Minimal PHP template engine — set vars, then include-and-buffer a template
  * file. OWA\Core\Template extends this with all the OWA-specific rendering
- * helpers. (Formerly the global-namespace `Template` class in
- * includes/template_class.php; relocated into Core/ during the Phase-6 PSR-4
- * migration. The old `CachedTemplate` subclass was dropped as dead code — it
- * had no instantiations or references anywhere in the tree.)
+ * helpers.
  */
 // Templates set properties they do not declare; this attribute is PHP 8.2's
 // supported way to allow it.
@@ -90,17 +87,16 @@ class TemplateEngine {
         endif;
 
         // A template reads its data through $view and nothing else. There is no
-        // extract() -- the bare-variable contract was removed at v2.0 -- and the
-        // include runs in a static closure, so $this is not in scope either.
+        // extract(), and the include runs in a static closure, so $this is not
+        // in scope either.
         $view = new ViewScope($this);
 
         // try/finally so the buffer is always discarded, even when the template
         // throws. ViewScope::__get raises on a view var that was never set, and
         // that exception unwinds straight out of include() -- without the finally
-        // the ob_start() above would leak. A leaked buffer is nastier than it
-        // sounds: renders nest, so each swallowed template error leaves output
-        // captured in a buffer nobody closes, and a later ob_get_contents()
-        // returns unrelated markup.
+        // the ob_start() above would leak. Renders nest, so each swallowed
+        // template error would leave output captured in a buffer nobody closes,
+        // and a later ob_get_contents() would return unrelated markup.
         ob_start();
         try {
             ( static function ( $__owa_template_file, $view ) {

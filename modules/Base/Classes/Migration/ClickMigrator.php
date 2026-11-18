@@ -13,9 +13,8 @@ namespace OWA\Module\Base\Classes\Migration;
  * Whether a click left the site is decided on the client now; v1 never
  * recorded it, so it is worked out here by the tracker's rule
  * (TrackingEventHelpers::isOutboundHost()): the site is its cookie domain and
- * every subdomain of it, not just the page's own host. Comparing hosts exactly
- * made a link from www.example.com to shop.example.com outbound in migrated
- * history and internal in everything tracked since.
+ * every subdomain of it, not just the page's own host, so migrated history
+ * agrees with what is tracked.
  */
 class ClickMigrator extends FactMigrator {
 

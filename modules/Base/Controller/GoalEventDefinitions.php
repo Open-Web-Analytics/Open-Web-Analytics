@@ -4,16 +4,13 @@ namespace OWA\Module\Base\Controller;
 /**
  * The goal event definitions of one Property.
  *
- * Replaces the goals screen, which listed twenty numbered slots whether or not
- * anyone had filled them in -- because the storage was a fixed-length array and
- * the screen showed the storage. This lists what exists.
+ * This lists what exists.
  *
  * "Goal event definition" rather than "goal": each one names the goal events,
- * rows added when a behaviour pattern matches, rather than being one of twenty
- * slots belonging to a site.
+ * rows added when a behaviour pattern matches.
  *
  * PLAN.html calls the same idea a KEY event. Keeping "goal" is deliberate: it
- * is the word 1.x users already have, and it survives the change.
+ * is the word 1.x users already have.
  */
 class GoalEventDefinitions extends \OWA\Core\AdminController {
 
@@ -67,13 +64,8 @@ class GoalEventDefinitions extends \OWA\Core\AdminController {
 
         /*
          * How many funnel steps each one has, so the list can offer the funnel
-         * report only where there is a funnel to look at.
-         *
-         * The old report chose a goal from a dropdown of twenty NUMBERS -- all
-         * twenty, whether or not a goal existed there or had any steps -- so
-         * the one funnel worth opening was indistinguishable from nineteen that
-         * were not. Counted here rather than in the template, which should not
-         * be running queries.
+         * report only where there is a funnel to look at. Counted here rather than
+         * in the template, which should not be running queries.
          */
         foreach ( $rows as $i => $row ) {
 

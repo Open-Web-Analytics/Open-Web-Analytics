@@ -7,8 +7,7 @@ namespace OWA\Module\Base\Controller;
  * The submission is a delta, not a replacement: the form posts the ids it
  * rendered alongside the ids that were checked, and only users appearing in
  * the rendered list can be affected. That is what makes an empty submission
- * mean "everyone shown was unchecked" rather than "revoke every user", which
- * is what it meant when the form was a multi-select.
+ * mean "everyone shown was unchecked" rather than "revoke every user".
  *
  * The delta is applied to every Profile of the Property (PropertyGrants).
  */

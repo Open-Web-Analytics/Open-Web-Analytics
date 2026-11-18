@@ -29,12 +29,10 @@ final class EventPropertyRegistryTest extends TestCase
     private static function storableEvents(): array
     {
         /*
-         * DERIVED FROM THE REGISTRY, which is now the only statement of what a
-         * first-class event is: an event is one exactly when some property declares
-         * it. This merged V2Event::typeMap() with a v2_event_types SETTING -- a
-         * hand-kept list beside the registry, which is the thing that let a renamed
-         * event fall out of the gate entirely. The setting is gone, and reading it
-         * here yielded '' and then an empty event name.
+         * DERIVED FROM THE REGISTRY, the only statement of what a first-class
+         * event is: an event is one exactly when some property declares it. A
+         * hand-kept list beside the registry is how a renamed event falls out
+         * of the gate.
          *
          * The markers need no special case: session_start and first_visit are
          * declared by the tagged_* properties, so eventNames() already has them.
@@ -70,11 +68,8 @@ final class EventPropertyRegistryTest extends TestCase
           . 'acquired nine of them.');
 
         /*
-         * And they are not registered AT ALL now, which is the stronger state.
-         * They were kept as entries declaring an empty event list so that
-         * serverOwnedProperties() could refuse a request setting `source`
-         * directly; the allowlist refuses an unregistered name anyway, so the
-         * entries went with the derivations.
+         * And they are not registered AT ALL: the allowlist refuses an unregistered
+         * name, so a request setting `source` directly is refused.
          */
         foreach (['source', 'medium', 'campaign', 'ad', 'search_terms'] as $reading) {
 
@@ -197,11 +192,9 @@ final class EventPropertyRegistryTest extends TestCase
      * case the declared list exists to cover. Asserting the reverse would forbid
      * exactly the shape this was built for.
      *
-     * The list used to BE the derivation, and it broke silently: widening
-     * engagement_msec to every event -- correct, the tracker sends it on all of
-     * them -- removed the only property naming user_engagement and took the event
-     * out of the vocabulary. Nothing here failed. It surfaced two steps away, as
-     * the tracker reserving a name the server no longer treated as first-class.
+     * A list that WAS the derivation would lose an event silently whenever its
+     * only property widens to every event: engagement_msec, sent on all of
+     * them, would take user_engagement out of the vocabulary.
      */
     public function testEveryImpliedEventNameIsDeclared(): void
     {
@@ -220,10 +213,8 @@ final class EventPropertyRegistryTest extends TestCase
     /**
      * And an event carrying no property of its own still counts.
      *
-     * The regression in one assertion: user_engagement is declared, is reserved by
-     * the tracker, and is named by NO property -- because everything it carries is
-     * common to every event. Under the old derivation it was in the vocabulary only
-     * while engagement_msec happened to be scoped to it.
+     * user_engagement is declared, is reserved by the tracker, and is named by NO
+     * property -- because everything it carries is common to every event.
      */
     public function testAnEventWithNoPropertyOfItsOwnIsStillFirstClass(): void
     {

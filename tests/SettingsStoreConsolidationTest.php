@@ -7,9 +7,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 /**
  * One store for settings, and one query to resolve a scope chain.
  *
- * Install-wide values used to be a serialized blob in owa_configuration and
- * scoped values were rows in owa_setting. Update043 made install one more scope
- * in the one table. What is asserted here is the behaviour that motivated it:
+ * Install is one more scope in owa_setting. What is asserted here:
  *
  *   - a value stored at three levels at once resolves to the narrowest, and it
  *     does so without a priority column -- the rank is in the ORDER BY
@@ -233,11 +231,10 @@ final class SettingsStoreConsolidationTest extends TestCase
     /**
      * An install row stores the scope_id it was given.
      *
-     * It did not, for the first version of this: the id was '0', scope_id is a
-     * string column, and Entity::set() drops a falsy value on one of those. The
-     * rows were written, load() still found them -- it filters on scope_type
-     * alone -- and every SCOPED read fell through to the code default, because
-     * the chain query matches on scope_id and nothing matched. Silent, and only
+     * The id is '0' and scope_id is a string column, where Entity::set() drops a
+     * falsy value. Dropped, the rows would still be found by load() -- it filters
+     * on scope_type alone -- while every SCOPED read fell through to the code
+     * default, because the chain query matches on scope_id. Silent, and only
      * visible from a scope.
      */
     public function testAnInstallRowKeepsItsScopeId(): void

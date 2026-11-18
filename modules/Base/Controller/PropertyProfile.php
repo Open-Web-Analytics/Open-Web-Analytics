@@ -6,9 +6,7 @@ namespace OWA\Module\Base\Controller;
  * The edit form for ONE Property.
  *
  * Reached from the site control's Properties column, which is where the
- * hierarchy is navigated now -- there is no Property roster screen. A roster
- * was a second place to browse the same tree, answering a question people ask
- * while looking at reports, on a screen reached from the admin menu.
+ * hierarchy is navigated -- there is no Property roster screen.
  */
 class PropertyProfile extends \OWA\Core\AdminController {
 

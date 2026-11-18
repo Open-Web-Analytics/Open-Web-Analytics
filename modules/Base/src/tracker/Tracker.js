@@ -35,20 +35,12 @@ class OWATracker  {
 		this.id  =  '';
 	    /*
 	     * The site id, seeded HERE -- at the top of the constructor, before
-	     * anything else runs.
-	     *
-	     * It used to arrive only via setSiteId(), which the command queue applies
-	     * AFTER construction returns. That left the whole constructor body running
-	     * with no identity: the five registerStateStore() calls below, the
+	     * anything else runs: the five registerStateStore() calls below, the
 	     * 'cookieDomainEstablished' action that storage migrations peg to, and
-	     * 'tracker.init'. A store cannot be scoped to a site that is not known
-	     * yet, and a migration cannot move a per-site cookie it cannot name.
+	     * 'tracker.init' all need it. A store cannot be scoped to a site that is not
+	     * known yet, and a migration cannot move a per-site cookie it cannot name.
 	     *
-	     * So the site id is an argument to the call that CREATES the tracker, and
-	     * there is no window in which a tracker exists without knowing what it is.
-	     *
-	     * setSiteId() still works and is still supported; it means "reconfigure"
-	     * now rather than "finally tell me who I am".
+	     * setSiteId() reconfigures a tracker after construction.
 	     */
 	    this.siteId  =  ( options && options.site_id ) ? options.site_id : '';
 	    // ???
@@ -81,21 +73,12 @@ class OWATracker  {
 	     * rewritten with a different one. Only visitor_id and fsts qualify:
 	     * everything else in the visitor store is recomputed.
 	     *
-	     * That constraint found two errors in the first version of this
-	     * registry. dsfs was declared visitor-scoped but is rewritten on EVERY
-	     * page load, so two page loads either side of a midnight disagree; it
-	     * is page scope. nps was declared visitor-scoped but is rewritten at
-	     * each session boundary; it is session scope. Both passed the invariant
-	     * suite, because no scenario there spans a day or a session boundary.
-	     *
 	     * Scope cannot be read off the store either. last_req is page scope and
 	     * lives in the session store, so it outlives its own validity -- safe
 	     * only because it is re-captured each page load rather than read back.
 	     *
 	     * 'session' scope carries the contract that matters most: identical on
 	     * every event sharing a session_id, a divergence being a regression.
-	     * That is what rules out deriving days_since_prior_session as calendar
-	     * days -- see TrackingEventHelpers::deriveDaysSincePriorSession().
 	     *
 	     * Enforced by tests/js/SessionScopedInvariant.test.js, which reads this
 	     * rather than restating it.
@@ -135,35 +118,18 @@ class OWATracker  {
 	    this.isNewSessionFlag =  false;
 	    /*
 	     * Whether the event that CREATED this session is still waiting to be
-	     * sent. Distinct from is_new_session, which is page-scoped and rides
-	     * every event from the session's first page:
-	     *
-	     * True for exactly one beacon, which is what materialising a
+	     * sent. True for exactly one beacon, which is what materialising a
 	     * session_start event needs.
 	     *
-	     * THE PAGE-SCOPED TWIN IS GONE. is_new_session rode every event from
-	     * the session's first page, and existed because v1's session listener
-	     * decided create-vs-update on it -- badly, since "we are on the landing
-	     * page" is true several times, so a second trackPageView() re-entered
-	     * logSession() for a session that already existed. Splitting the two
-	     * fixed that; removing v1's listener removes the need for a second flag
-	     * at all.
-	     *
-	     * Nothing session-scoped is sent as a flag now. The tracker reports the
+	     * Nothing session-scoped is sent as a flag. The tracker reports the
 	     * EVENT -- this request started a session -- and the pass spreads what
 	     * belongs to the whole session across its rows.
 	     */
 	    this.pendingSessionStart = false;
 	    /*
-	     * The visitor half of the same pair, and the same distinction:
-	     *
-	     * This REQUEST minted the visitor, true for one beacon, and first_visit
-	     * is materialised from it on the server.
-	     *
-	     * Its session-scoped twin is gone too. The one thing that still wanted
-	     * it -- writing the visitor's acquisition from any event of the first
-	     * session -- reads prior_sessions == 0 instead, which rides every
-	     * beacon and says the same thing.
+	     * The visitor half of the same pair: this REQUEST minted the visitor,
+	     * true for one beacon, and first_visit is materialised from it on the
+	     * server.
 	     */
 	    this.pendingVisitorCreated = false;
 	    // flag for whether or not traffic has been attributed
@@ -264,16 +230,10 @@ class OWATracker  {
 	
 	    // register cookies
 	    //
-	    // All JSON. Two of these used to be 'assoc', a bespoke
-	    // key=>value|||key=>value string with no escaping of either separator --
-	    // so a value containing '=>' or '|||' corrupted the whole store, and
-	    // nothing detected it. JSON has one encoder, one decoder, and escapes.
-	    //
-	    // Safe to change under an existing installation because the loader
-	    // SNIFFS the format of what it reads (Util.getCookieValueFormat: a
-	    // leading '{' means JSON, anything else means assoc). A visitor holding
-	    // an old assoc cookie has it parsed as assoc and rewritten as JSON on
-	    // the next write. No migration, no flag day.
+	    // All JSON. The loader sniffs the format of what it reads
+	    // (Util.getCookieValueFormat: a leading '{' means JSON, anything else means
+	    // the older assoc format), so an assoc cookie is parsed as assoc and
+	    // rewritten as JSON on the next write.
 	    /*
 	     * Which stores belong to ONE SITE rather than to the visitor.
 	     *
@@ -317,24 +277,14 @@ class OWATracker  {
 	    this.registerSiteScopedStores();
 	    this.registerSessionStoreSiteMigration();
 
-	    // 'b' held session-scoped custom variables, alongside 's' which is the
-	    // session store -- two cookies for one concept. Session-scoped custom
-	    // variables now live in 's'; see setCustomVar(). Still REGISTERED and
-	    // still read, so a visitor mid-session keeps the variables they already
-	    // have, but nothing is written to it any more and it is actively
+	    // 'b' is a legacy store of session-scoped custom variables, which live in
+	    // 's' (see setCustomVar()). It stays registered and read, so a visitor
+	    // mid-session keeps the variables they have; nothing writes it, and it is
 	    // collapsed into 's' as soon as the cookie domain is known -- see
 	    // StateManager.collapseLegacyStores().
-	    //
-	    // Reading it as a fallback was not enough on its own: because nothing
-	    // cleared it at a session boundary, a variable left there by a session
-	    // that had ended was still found by that read and put back on the wire.
 
 	    // 'd' holds page-scoped custom variables. Memory only, for the life of
-	    // the page -- the state manager never writes it to a cookie. Page scope
-	    // used to be the ABSENCE of a case in setCustomVar(): the value fell
-	    // through to a global event property and happened to work. Declaring it
-	    // makes the three scopes symmetrical. The scoped custom-variable
-	    // getters that read from it are gone; see setEventProperty().
+	    // the page -- the state manager never writes it to a cookie.
 	    OWA.registerStateStore('d', '', '', 'json', { persist: 'never' });
 	
 	    // Configuration options
@@ -517,21 +467,14 @@ class OWATracker  {
 	     *
 	     * Every store stamps a hash of the cookie domain (cdh) into its value at
 	     * WRITE time, and readPersistedStore() refuses a store whose hash does not
-	     * match the current domain. This used to be resolved lazily, on the first
-	     * tracked event -- so anything written before that, which includes the
-	     * documented "set your custom vars, then track" flow, was stamped against
-	     * a domain that was not yet the real one and was silently unreadable on
-	     * the next page load.
+	     * match the current domain, so a value written before the domain is known
+	     * -- the documented "set your custom vars, then track" flow -- would be
+	     * unreadable on the next page load. setCookieDomain() with no argument
+	     * resolves document.domain. 'cookieDomainEstablished' fires here, so storage
+	     * migrations run before anything reads.
 	     *
-	     * Moving it does not change the VALUE: setCookieDomain() with no argument
-	     * resolves document.domain, exactly what the lazy path did later. Only the
-	     * timing changes -- and with it the timing of 'cookieDomainEstablished',
-	     * so storage migrations now run before anything reads rather than after
-	     * something may already have written.
-	     *
-	     * trackEvent() still calls setCookieDomain() when it finds the domain
-	     * unset. That is a safety net for a tracker built where no domain could
-	     * be resolved, not the normal path any more.
+	     * trackEvent() calls setCookieDomain() when it finds the domain unset: a
+	     * safety net for a tracker built where no domain could be resolved.
 	     */
 	    if ( this.getOption('cookie_domain_declared') ) {
 
@@ -976,8 +919,7 @@ class OWATracker  {
             // Nothing to resolve from, so leave the domain unestablished rather
             // than crashing on substr() below. A real browser always has
             // document.domain; jsdom and non-DOM contexts do not, and this path
-            // now runs at CONSTRUCTION where it used to run on the first event,
-            // so it is reached far more often.
+            // runs at construction.
             if ( ! domain ) {
                 OWA.debug( 'no document.domain to resolve a cookie domain from' );
                 return;
@@ -1030,7 +972,7 @@ class OWATracker  {
         if ( a ) {
 
             // A malformed fragment is not an overlay, and must not stop the
-            // tracker starting: a throw here left the visit untracked.
+            // tracker starting: a throw here would leave the visit untracked.
             try {
                 a = Util.base64_decode(Util.urldecode(a));
                 a = Util.urldecode( a );
@@ -1097,20 +1039,10 @@ class OWATracker  {
     /**
      * One query parameter of the current URL, or false.
      *
-     * The constructor seeds this.urlParams to {} -- a truthy value -- so the old
-     * `this.urlParams || parseUrlParams()` guard ALWAYS short-circuited to the
-     * empty object and never parsed the URL, making this return false for every
-     * query param (e.g. the ?owa_state= cross-domain linking token in
-     * checkForLinkedState).
-     *
-     * THE CACHE IS KEYED ON THE URL IT WAS PARSED FROM. It used to be filled once
-     * and kept, which is correct for a document that loads once and wrong for an
-     * SPA: after a route change the parameters are the FIRST page's, so a reader
-     * gets a stale answer rather than no answer. Site search is where that showed
-     * up -- every virtual page view would have reported the term from whatever
-     * screen the visitor landed on first.
-     *
-     * Still one parse per URL, so the saving that motivated the cache is intact.
+     * THE CACHE IS KEYED ON THE URL IT WAS PARSED FROM, so after an SPA route
+     * change a reader gets the current page's parameters, not the first page's
+     * -- site search reports the term of the screen it was searched on. One
+     * parse per URL.
      */
     getUrlParam(name) {
 
@@ -1359,24 +1291,18 @@ class OWATracker  {
     /**
      * Carry an existing shared session into this site's store.
      *
-     * Every visitor in the world holds an 'owa_s' cookie written before the
-     * session store was scoped to a site. Renaming the store without moving it
-     * would end every in-flight session on upgrade and drop last_req, the
-     * session id and the session's attribution -- a real cost paid by every
-     * single-tracker install, which is nearly all of them, for a fix aimed at
-     * the two-tracker case.
+     * A visitor may hold an 'owa_s' cookie written before the session store was
+     * scoped to a site. Renaming the store without moving it would end every
+     * in-flight session and drop last_req, the session id and the session's
+     * attribution.
      *
-     * FIRST TRACKER WINS, and then the legacy store is gone. That is deliberate
-     * rather than incidental: the old 'owa_s' was ONE store shared by whatever
-     * trackers were on the page, so letting a second tracker inherit it too
-     * would hand both of them the same session id -- reproducing exactly the
-     * collision this change exists to remove. A second site never had a session
-     * of its own under the old scheme, so starting one fresh is the honest
-     * answer, not a loss.
+     * FIRST TRACKER WINS, and then the legacy store is gone. 'owa_s' was ONE
+     * store shared by whatever trackers were on the page, so letting a second
+     * tracker inherit it too would hand both of them the same session id. A
+     * second site starts a fresh session.
      *
      * Pegged to cookieDomainEstablished like every other migration: it moves a
-     * cookie, so it genuinely depends on knowing the domain, and now on knowing
-     * the site too -- which is why identity had to reach the constructor first.
+     * cookie, so it depends on knowing the domain, and on knowing the site.
      */
     registerSessionStoreSiteMigration() {
 
@@ -1468,10 +1394,10 @@ class OWATracker  {
      * AND separate cookies, since a cookie is named ns + store name. Global
      * stores are returned unchanged.
      *
-     * Falls back to the bare name when no site is known. That is not a silent
-     * failure mode any more -- the command queue resolves the site id before
-     * the constructor runs -- but a tracker built by hand with no site should
-     * still work rather than write to a store called 's_undefined'.
+     * Falls back to the bare name when no site is known. The command queue
+     * resolves the site id before the constructor runs; a tracker built by
+     * hand with no site still works rather than writing to a store called
+     * 's_undefined'.
      */
     storeName( logical ) {
 
@@ -1716,17 +1642,8 @@ class OWATracker  {
     /**
      * Delivers a payload too large for the query string.
      *
-     * This path used to be the odd one out. A URL over
-     * getRequestCharacterLimit fell back to a hidden-iframe POST, which yields
-     * NO delivery signal, so it had to commit the session optimistically -- the
-     * one transport that asserted a session on disk without knowing whether
-     * anything arrived. Withholding was not an option either: a site whose
-     * payloads always exceed the limit would then never persist a session at
-     * all, minting a new one on every page view.
-     *
-     * sendBeacon with a body removes the dilemma rather than choosing a side of
-     * it. It returns whether the browser queued the payload, which is the same
-     * acceptance signal the query-string path already uses, so a large event now
+     * sendBeacon with a body returns whether the browser queued the payload,
+     * the same acceptance signal the query-string path uses, so a large event
      * persists a session on exactly the same terms as a small one.
      *
      * The body is form-urlencoded deliberately, on two counts: PHP populates
@@ -1797,7 +1714,7 @@ class OWATracker  {
      * A REJECTION IS NOT RE-SENT. It does not say the request failed to arrive:
      * a keepalive fetch still in flight when the page navigates away rejects in
      * the departing document while the browser completes the request. Re-sending
-     * on it delivered the landing page view twice, and so two session starts,
+     * on it would deliver the landing page view twice, and so two session starts,
      * whenever the collector was still answering at navigation. The other
      * rejection, the keepalive quota, is one sendBeacon shares -- the Beacon spec
      * defines it as a keepalive fetch -- so a re-send could not have rescued it.
@@ -1876,8 +1793,7 @@ class OWATracker  {
         var image = new Image(1, 1);
 
         // NOTE: 'onload', not 'onLoad'. The latter is not a DOM property and
-        // never fires -- it sat here unnoticed for years because nothing hung
-        // off the success path until now.
+        // never fires.
         image.onload  = function () { that.sendAccepted(); };
         // No counterpart to onload: acceptance is what triggers persistence, so
         // a failure simply never triggers it. The session stays out of the
@@ -2115,8 +2031,7 @@ class OWATracker  {
      * reported every link between www and the apex, or to a sibling subdomain,
      * as outbound.
      *
-     * THE CLIENT DECIDES THIS, and briefly the server did. Three reasons it
-     * belongs here:
+     * THE CLIENT DECIDES THIS, for three reasons:
      *
      *   - a non-web client has no page_location and target_url to compare, but it
      *     knows perfectly well whether the thing it just raised left the property.
@@ -2181,17 +2096,12 @@ class OWATracker  {
     /**
      * The downloaded file's PATH -- no host, no query, no fragment.
      *
-     * THE PATH, NOT THE BASENAME. It was the basename since download tracking was
-     * added, so /2024/report.pdf and /2025/report.pdf collapsed into one row of a
-     * downloads report. The path keeps them apart.
+     * THE PATH, NOT THE BASENAME, so /2024/report.pdf and /2025/report.pdf are two
+     * rows of a downloads report.
      *
      * The HOST is deliberately dropped: a file served from the site and the same
      * file served from a CDN are one document, and target_host on the same row
      * answers where it came from for anyone who needs that.
-     *
-     * A method, because the expression was inline and cut the same string THREE
-     * times -- split('#')[0].split('?')[0] twice more inside its own
-     * substring(lastIndexOf()).
      *
      * new URL() rather than string surgery, so a relative href resolves against
      * the page instead of being read as a path that happens to start with a
@@ -2309,9 +2219,8 @@ class OWATracker  {
         click.setEventType( 'click' );
 
         /*
-         * NOTHING IS SENT FOR AN ABSENT id, name OR class. It was the literal
-         * '(not set)', which the row builder turns back into NULL: bytes on the
-         * wire meaning nothing.
+         * NOTHING IS SENT FOR AN ABSENT id, name OR class: absence is NULL in the
+         * row either way.
          */
         if ( targ.hasAttribute && targ.hasAttribute('name') && targ.getAttribute('name') ) {
             click.set("dom_element_name", targ.getAttribute('name'));
@@ -2404,10 +2313,7 @@ class OWATracker  {
      * Note how deep the visitor has scrolled, and send it if nothing deeper is
      * possible. Called once per frame while the page scrolls.
      *
-     * ONE EVENT PER PAGE VIEW, at its deepest threshold. Every threshold used to
-     * be its own event -- four per page view by default, and all four at load on
-     * a page that fits the window, without a scroll. That made scroll the most
-     * frequent event of all.
+     * ONE EVENT PER PAGE VIEW, at its deepest threshold.
      *
      * GATED ON A SCROLL. Nothing is noted until the page has moved from where it
      * sat when loading finished: a page that fits the window cannot scroll and
@@ -3245,66 +3151,14 @@ class OWATracker  {
     }
 
     /**
-     * Record what the session arrived from.
-     *
-     * THE CLIENT NO LONGER ATTRIBUTES ANYTHING. This loaded a campaign stack
-     * out of the `c` cookie, parsed the URL's owa_* tags, ran one of two
-     * attribution models over them and wrote the stack back -- and none of it
-     * reached the server. NO tracker generation ever put the tags on the wire:
-     * the server parses the tags out of the landing beacon's own page_location
-     * in taggedColumns(), where a corrected rule can reach data already
-     * collected.
-     *
-     * So the models, the stack, the cookie, maxPriorCampaigns and
-     * trafficAttributionMode were a browser deciding an answer nobody read.
-     * What remains is the one thing that does ride the beacon and that the
-     * server cannot derive: the referrer this session arrived on.
+     * Kept in the event chain; it adds nothing to the event. The server parses
+     * the campaign tags out of the landing beacon's own page_location in
+     * taggedColumns().
      *
      * @internal
      */
     setTrafficAttribution( event, callback ) {
 
-
-        /*
-         * The session's referrer is recorded whether or not a campaign was
-         * attributed.
-         *
-         * This used to sit in an `else`, so a landing page carrying campaign
-         * tags recorded no referrer at all. That was right while the BROWSER
-         * decided attribution: campaign beat referrer, so the referrer was not
-         * part of the answer and dropping it lost nothing anyone read.
-         *
-         * Since #812 the server resolves instead, and it wants both for
-         * different jobs -- resolveSource()/resolveMedium() read the tagged_*
-         * params first and fall back to the referrer, while the referrer itself
-         * is what fills owa_referer.url, decides is_searchengine, and puts the
-         * session in the referring-sites report. The gate was a client-side
-         * arbitration with nothing left to arbitrate: the server already decides
-         * precedence, so recording the referrer cannot override the campaign.
-         *
-         * It bit hardest on the hit that mattered most. isTrafficAttributed is
-         * set only when a NEW campaign is seen, so the first hit of a campaign
-         * touch -- the one whose referrer identifies where the campaign was
-         * clicked -- was the one that lost it, while later hits on the same
-         * campaign fell through and recorded it.
-         *
-         * The new-session guard stays, and not merely because document.referrer
-         * on a later page is an internal URL. session_referer is DECLARED
-         * `scope: 'session'` on trackingProperties, and a session-scoped
-         * property must be identical on every event sharing a session_id --
-         * a divergence is a regression whatever causes it. Writing this key
-         * again mid-session would make a session-scoped value vary within its
-         * own session, which is the scope contract broken, not just a wrong
-         * value. It is written once and re-sent from session state thereafter.
-         */
-
-        // apply traffic attribution realted properties to events
-        // all properties should be set in the state store by this point.
-        // The campaign keys and the session referer are no longer copied onto
-        // globals here. They were already being READ out of 's' at this point --
-        // the loop that stood here did nothing but move them into a
-        // tracker-private cache -- so collectStateProperties() reads the same
-        // values from the same place, for every event and every tracker.
 
 
 
@@ -3372,9 +3226,7 @@ class OWATracker  {
          *
          * Not collected because nothing reports on them: a billing address is
          * not a reporting dimension, and v2's country
-         * and city are the geolocation readings from the observed IP. The two
-         * facts used to share three names, so a transaction's billing address
-         * silently replaced the visitor's location -- and only on transactions.
+         * and city are the geolocation readings from the observed IP.
          */
 
         OWA.debug('setting up ecommerce transaction');
@@ -3657,19 +3509,9 @@ class OWATracker  {
      *
      * Counts from zero, which is the whole difficulty: a visitor's first
      * session stores 0, so "never counted" and "counted once" are not
-     * distinguishable by truthiness. This used to write the STRING "0" the
-     * first time and a NUMBER every time after, and read it back with
-     * `! nps` -- which worked only because "0" is truthy in JavaScript while
-     * 0 is not. The value's type was carrying the distinction, and anything
-     * that normalised the store -- a JSON round-trip, a store that coerces
-     * numeric-looking strings -- would have turned the first session's 0 back
-     * into "absent" and reset the count on every visit. Every session would
-     * then report prior_sessions = 0, and newVsReturning would read New
-     * forever, with nothing anywhere saying so.
-     *
-     * Absence is now tested for directly and the value is a number both ways.
-     * A store still holding the old "0" reads as seen and increments to 1,
-     * which is the right answer for it.
+     * distinguishable by truthiness. Absence is tested for directly and the
+     * value is a number both ways. A store holding the string "0" reads as seen
+     * and increments to 1, which is the right answer for it.
      *
      * Reading 0 back out is safe on the wire: collectStateProperties() omits a
      * property only when it is undefined or '', never when it is falsy.
@@ -3834,7 +3676,7 @@ class OWATracker  {
          * browser removes both cookies while a page is open, the next event
          * writes the session back and nothing writes the visitor, and the next
          * page finds a live session with no visitor. Continuing that session
-         * under the new visitor id put one session across two visitors: a
+         * under the new visitor id would put one session across two visitors: a
          * second first_visit part way through it, and no nps on the new
          * visitor's beacons, because nps is set only at a session boundary --
          * so the server could not tell new from returning.
@@ -3860,12 +3702,10 @@ class OWATracker  {
              *
              * Both stamps come from this browser's clock, moments or days apart
              * but from one clock, so any skew cancels and what is sent is a
-             * real elapsed time. The server used to compute this itself as
-             * `session.timestamp - event.last_req` -- its own clock minus the
-             * browser's -- which is wrong by the visitor's skew and can come out
-             * NEGATIVE. It feeds the 'Time Since Last Visit' dimension
-             * (timeSinceLastVisit / time_sinse_priorsession), so that was the
-             * one prior-session value anybody reports on.
+             * real elapsed time. Computed on the server -- its own clock minus
+             * the browser's -- it would be wrong by the visitor's skew and could
+             * come out NEGATIVE. It feeds the 'Time Since Last Visit' dimension
+             * (timeSinceLastVisit / time_sinse_priorsession).
              *
              * A duration rather than a timestamp on purpose. It makes no claim
              * about whose clock it is, so nothing downstream has to know; and
@@ -3885,13 +3725,8 @@ class OWATracker  {
              * A date, like first_session_date, and coarse for the same reason:
              * the anchor is stamped by the visitor's clock, so a date absorbs
              * anything short of a midnight-crossing error. The server counts
-             * days from it.
-             *
-             * This replaces sending an interval in seconds. That interval fed
-             * timeSinceLastVisit, which was never really a dimension -- a
-             * continuous seconds value gives one bucket per distinct second, so
-             * it was a metric wearing a dimension's clothes. Days bucket;
-             * seconds do not.
+             * days from it. Days bucket, where a continuous seconds value gives one
+             * bucket per distinct second.
              */
             var prior_session_start = OWA.getPersistedState( this.storeName('s'), 'sts' );
 
@@ -4189,12 +4024,9 @@ class OWATracker  {
     /**
      * Properties that are COPIES of state, read from the stores for this event.
      *
-     * Each of these was derived once during manageState() and then cached as a
-     * global event property on the tracker. The cache was never wrong -- every
-     * branch that set it also wrote the same value to the store -- but it was a
-     * second copy, private to one tracker, of something the stores already hold
-     * and every tracker on the page shares. Reading it here is the same value
-     * from the one place that owns it.
+     * Each of these is derived during manageState() and written to a store, which
+     * every tracker on the page shares; reading it here takes the value from the
+     * one place that owns it.
      *
      * Names differ from store keys for three of them, which is why this is a
      * map rather than a loop over key names.
@@ -4228,24 +4060,13 @@ class OWATracker  {
         }
 
         /*
-         * last_req is no longer collected onto the event.
+         * last_req is not collected onto the event.
          *
-         * THE STORE KEY STAYS. `s.last_req` is how the DEVICE decides a session
-         * has timed out -- isNewSession() compares it with this request -- and
-         * `prior_last_req` still holds the previous session's last hit so the
-         * boundary can read it before it is overwritten. Both are state; neither
-         * needs to be on the wire.
-         *
-         * What the SERVER did with it: v1's logSession() wrote
-         * prior_session_lastreq and six date parts formatted from it, and
-         * visitDuration was AVG(last_req - timestamp). Those handlers are
-         * unregistered, and engagement_msec replaced visitDuration because the
-         * old one could not see the final page. Nothing on v2 reads it, and the
-         * prior session's start arrives as `psts` with a column of its own.
-         *
-         * It was also the one CLIENT-clock value reaching the schema, subtracted
-         * from a SERVER clock -- see project_clock_provenance. Removing it ends
-         * that mixing rather than documenting it.
+         * `s.last_req` is how the DEVICE decides a session has timed out --
+         * isNewSession() compares it with this request -- and `prior_last_req`
+         * holds the previous session's last hit so the boundary can read it before
+         * it is overwritten. Both are state; nothing on the server reads either, and
+         * the prior session's start arrives as `psts`.
          */
 
 
@@ -4278,14 +4099,9 @@ class OWATracker  {
         // attribution model. Their names are configured rather than fixed, so
         // they cannot go in the map above.
         /*
-         * The tagged_* keys are no longer collected, because nothing writes
-         * them to session state any more -- the server parses page_location
-         * instead. The loop that stood here read six keys that are now always
-         * absent.
-         *
-         * Beacons from an OLD tracker still carry them, and the server still
-         * prefers what it was sent over what it re-derives, so those installs
-         * are unaffected until their cached tracker expires.
+         * The tagged_* keys are not collected: the server parses page_location
+         * instead. Beacons from an older tracker still carry them, and the server
+         * prefers what it was sent over what it re-derives.
          */
 
         return collected;
@@ -4316,14 +4132,11 @@ class OWATracker  {
         /*
          * The DOM is the base layer -- what the page actually IS -- and the
          * page store is laid over it, because a site that called setPageTitle()
-         * meant it. Stating it in that order puts the precedence in one place.
-         * It used to be inverted and split: the override was applied here and
-         * the DOM value backfilled afterwards by addDefaultsToEvent(), guarded
-         * so it would not overwrite. Same result, read backwards.
+         * meant it.
          *
-         * addDefaultsToEvent() still backfills these. In the normal chain it
-         * runs after this and finds them already set, so it is a no-op; it
-         * stays because it is also reachable on its own.
+         * addDefaultsToEvent() also backfills these. In the normal chain it
+         * runs after this and finds them already set, so it is a no-op; it is
+         * also reachable on its own.
          */
         var collected = {
             'page_location': this.getCurrentUrl(),
@@ -4391,20 +4204,6 @@ class OWATracker  {
 
             event.set('timestamp', this.getTimestamp() );
         }
-
-        /*
-         * client_ts_usec was stamped here and is not sent any more.
-         *
-         * It existed for ONE column: the server subtracted it from its own
-         * receipt time into owa_event_raw.clock_offset_usec, so skew would be a
-         * stored number rather than a silent error. Update046 dropped that
-         * column -- ordering is settled by event_seq, a counter that needs no
-         * clock -- and the field went on being sent for every beacon afterwards,
-         * read by nothing on either side. The tracker never read it back either.
-         *
-         * If skew is wanted again it needs the column back, and then this line;
-         * sending the number to nowhere is not a step toward that.
-         */
 
         /*
          * ENGAGEMENT RIDES EVERY EVENT, as a delta.
@@ -4490,13 +4289,10 @@ class OWATracker  {
          */
 
         /*
-         * user_name is no longer collected from the visitor store.
-         *
-         * setUserName() writes the PAGE store under the vps_ prefix, so
-         * collectPageProperties() has already put it on the event as vps_user_name
-         * by the time this runs -- the same shape every other custom user property
-         * arrives in. Reading it back out of a cookie here is what made it
-         * visitor-scoped transport for a value that is page-scoped and temporal.
+         * user_name is not read from the visitor store. setUserName() writes the
+         * PAGE store under the vps_ prefix, so collectPageProperties() has already
+         * put it on the event as vps_user_name, the shape every other custom user
+         * property arrives in.
          */
 
         for ( var name in collected ) {
@@ -4568,21 +4364,8 @@ class OWATracker  {
 
         /*
          * Advance the session's last-request time for EVERY event, not just the
-         * first of the page.
-         *
-         * It used to sit inside the block above, which runs once per tracker
-         * under the stateInit guard -- so last_req was the timestamp of the
-         * page's FIRST tracked event and never moved after that. The timeout
-         * was therefore measured from when the previous page started rather
-         * than from the last thing the visitor did: someone active for 25
-         * minutes on one page who navigated 10 minutes later got a new session
-         * at 35 minutes from page start, despite having been active 10 minutes
-         * ago.
-         *
-         * isNewSession() already reads as though this were the case -- its
-         * variable is time_since_lastreq and its own comment says "prev session
-         * expired, because no requests since some time" -- and sessionLength
-         * means an inactivity window. This makes the value match the name.
+         * first of the page, so the inactivity window is measured from the last
+         * thing the visitor did rather than from when the page started.
          *
          * Placed after the identity block so the first event of a page still
          * decides sessionization against the PREVIOUS request before this one
@@ -4650,12 +4433,10 @@ class OWATracker  {
     /**
      * Decide the session again for a later event on the same page.
      *
-     * The block above decides it once, on the page's first event. A page left
-     * open past the inactivity window used to keep that session for every event
-     * after it, however long the tab sat: a click 40 minutes later carried the
-     * old session_id and stretched the session over the idle time. Now the next
-     * event, whatever it is, starts a new session, as a page load after the same
-     * gap would. The server needs nothing for it: any event carrying
+     * The block above decides it once, on the page's first event. On a page left
+     * open past the inactivity window, the next event, whatever it is, starts a
+     * new session, as a page load after the same gap would, rather than carrying
+     * the old session_id over the idle time. The server needs nothing for it: any event carrying
      * is_new_session_start raises the session_start.
      *
      * THE COOKIE AS WELL AS MEMORY. Memory holds this page's last request; the
@@ -4887,12 +4668,8 @@ class OWATracker  {
      * THE INTERNAL HALF of trackCustomEvent(). The guard there exists to stop a
      * SITE claiming a name OWA defines -- once a beacon arrives the server cannot
      * tell a site's `click` from its own. OWA raising its OWN first-class event is
-     * not that case, and routing it through the public method made the tracker
-     * refuse form_start, form_submit, view_search_results and exception, which are
-     * reserved precisely because they are ours.
-     *
-     * Measured as four failing specs the moment the guard was added, which is the
-     * distinction the two methods now carry.
+     * not that case: form_start, form_submit, view_search_results and exception
+     * are reserved precisely because they are ours.
      */
     raiseEvent( event_type, properties, block ) {
 
@@ -5085,13 +4862,6 @@ class OWATracker  {
                 block_flag = true;
             }
 
-            /*
-             * State is managed on the client. There used to be a 'thirdParty'
-             * branch here that instead stamped a flag and handed campaign
-             * params upstream for someone else to evaluate -- and never called
-             * logEvent(), so turning it on made the tracker silently stop
-             * sending. Long dead, and removed rather than repaired.
-             */
             var that = this;
             this.manageState( event, function(event) {
                 that.addGlobalPropertiesToEvent( event, function(event) {
@@ -5745,12 +5515,9 @@ class OWATracker  {
         this.exceptionsSent[ key ] = true;
 
         /*
-         * PREFIXED, because these are custom event properties.
-         *
-         * They were sent bare -- description, source, line -- and not one
-         * of them is a declared property or carries a prefix, so
-         * admitRequestParams() dropped all three and every exception event
-         * arrived carrying nothing but its site id. Measured.
+         * PREFIXED, because these are custom event properties:
+         * admitRequestParams() drops a name that is neither declared nor
+         * prefixed.
          */
         this.raiseEvent( 'exception', {
             eps_description: description,
@@ -5910,8 +5677,7 @@ class OWATracker  {
          * count as one. At `load`, not now: the snippet can run this before the
          * document is laid out.
          *
-         * No depth is reported here. A page that fits the window used to report
-         * every threshold at load without a scroll.
+         * No depth is reported here.
          */
         if ( typeof document !== 'undefined' && document.readyState === 'complete' ) {
 

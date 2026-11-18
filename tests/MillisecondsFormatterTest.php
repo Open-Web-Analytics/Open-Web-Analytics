@@ -8,13 +8,9 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * Engagement time is stored in milliseconds and READ as a duration.
  *
  * The beacon carries `engagement_msec`, accrued on the device. The row keeps
- * that, and the
- * renderer decides how to say it, which is the rule "(not set)" and "(unknown)"
- * already follow.
- *
- * Without this the replacement for 1.x's visitDuration would have rendered a
- * four-minute average as "247,000", which is a regression in the one respect
- * anybody would notice.
+ * that, and the renderer decides how to say it, which is the rule "(not set)"
+ * and "(unknown)" already follow: a four-minute average reads as a duration,
+ * not as "247,000".
  */
 final class MillisecondsFormatterTest extends TestCase
 {

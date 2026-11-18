@@ -215,11 +215,8 @@ class Auth extends \OWA\Core\Base {
      * are cross-origin: a session cookie would be a third-party cookie, and an
      * Authorization header would turn a simple GET into a preflighted one. The
      * credential has to sit in the URL, so what matters is that it is worth as
-     * little as possible to anyone who reads it there.
-     *
-     * It replaces the user's apiKey, which was long-lived and carried the whole
-     * account. This carries one user, one endpoint, one resource, and expires
-     * in minutes.
+     * little as possible to anyone who reads it there: one user, one endpoint,
+     * one resource, and it expires in minutes.
      *
      * **Scope is checked here, before the user is loaded**, so a request outside
      * the token's scope never authenticates. Deferring the check to an

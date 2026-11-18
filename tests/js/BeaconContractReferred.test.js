@@ -105,7 +105,7 @@ describe('tracker referred pageview beacon contracts', () => {
         expect(expected).toBeDefined();
         expect(actual).toEqual(expected.slice().sort());
         // Guard the mutually-exclusive invariant explicitly.
-        // The referrer rides as HTTP_REFERER; the session-scoped copy is gone.
+        // The referrer rides as HTTP_REFERER, with no session-scoped copy.
         expect(actual).toContain('HTTP_REFERER');
         expect(actual).not.toContain('session_referer');
         expect(actual).not.toContain('tagged_campaign');
@@ -122,9 +122,8 @@ describe('tracker referred pageview beacon contracts', () => {
         const expected = CONTRACTS['2']['page_view.campaign'];
         expect(expected).toBeDefined();
         expect(actual).toEqual(expected.slice().sort());
-        // The tracker no longer reports the tags it read off the URL. It
-        // reports the URL, and the server parses it -- so the evidence is on
-        // the wire instead of one page load's reading of it.
+        // The tracker does not report the tags on the URL. It reports the URL,
+        // and the server parses it -- so the evidence is on the wire.
         expect(actual).not.toContain('tagged_campaign');
         expect(actual).not.toContain('tagged_source');
         expect(actual).not.toContain('tagged_terms');

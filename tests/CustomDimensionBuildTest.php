@@ -82,8 +82,8 @@ final class CustomDimensionBuildTest extends TestCase
      * Leave the fixture cube ONE dated partition, and the catch-all.
      *
      * Every ALTER here is a full table rebuild, and the rebuild's cost is the
-     * partition count: measured on this cube, adding a column took 4,361ms
-     * across its 72 dated partitions and 130ms across one. Twenty-odd ALTERs
+     * partition count: adding a column takes about 4.4s across 72 dated
+     * partitions and 0.13s across one. Twenty-odd ALTERs
      * is the difference between two minutes and four seconds.
      *
      * Nothing in this file is about the lead's shape -- that is
@@ -398,7 +398,7 @@ final class CustomDimensionBuildTest extends TestCase
      * A value that will not convert is NULL, not a failed build.
      *
      * The declared type is the cube's decision and the JSON is the site's, so
-     * they can disagree on any beacon. Measured on 8.4: JSON_VALUE with
+     * they can disagree on any beacon. On 8.4, JSON_VALUE with
      * RETURNING answers NULL on a conversion error rather than raising one.
      */
     public function testANonNumericValueForANumericDimensionIsNull(): void
@@ -567,10 +567,9 @@ final class CustomDimensionBuildTest extends TestCase
     /**
      * ONE ALTER CARRIES THE ADDS AND THE DROPS TOGETHER.
      *
-     * Measured on a 73-partition cube: one added column 4,361ms, two added
-     * 4,247ms, one added and one dropped together 4,193ms. The rebuild is the
-     * cost and the clause count is not, which is the entire argument for
-     * accumulating changes rather than applying each as it arrives.
+     * On a 73-partition cube, one added column, two added, and one added with one
+     * dropped each take about 4.2s. The rebuild is the cost and the clause count
+     * is not, which is why changes accumulate rather than apply as each arrives.
      */
     public function testOneReconcileAppliesEverythingThatAccumulated(): void
     {
@@ -604,7 +603,7 @@ final class CustomDimensionBuildTest extends TestCase
      * a Property does not lose its reporting over it.
      *
      * Provoked by padding the cube until one more column will not fit, which
-     * takes a deliberate act now that twenty dimensions need 4,020 bytes of the
+     * takes a deliberate act: twenty dimensions need 4,020 bytes of the
      * 12,509 a cube leaves.
      */
     public function testAnAlterTheServerRefusesIsRecordedAndDoesNotBreakTheBuild(): void

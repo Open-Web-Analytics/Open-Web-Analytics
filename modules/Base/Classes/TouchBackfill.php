@@ -17,9 +17,8 @@ namespace OWA\Module\Base\Classes;
  * beacon at a time; this does it per site, in set-based statements over one
  * range of visitors at a time.
  *
- * BATCHED BY VISITOR, because the database is shared: as one statement per
- * site it was a 12-minute UPDATE over a million rows of a real 1.x install's
- * history, holding its locks throughout. Every step is per visitor -- the
+ * BATCHED BY VISITOR, because the database is shared: one statement per site
+ * over a 1.x install's history would hold its locks for minutes. Every step is per visitor -- the
  * window is partitioned by visitor, the store keyed by one -- so a range of
  * visitors gives exactly the values the whole site would.
  *

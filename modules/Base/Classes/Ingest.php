@@ -10,13 +10,10 @@ namespace OWA\Module\Base\Classes;
 /**
  * The stages of ingest, and the filter points at each one.
  *
- * WHY THESE EXIST. Ingest was four procedural stages with no seams, and the
- * only way to influence it was to edit the stage. That is how the beacon compat
- * layer ended up unable to do its job: it renames names an older tracker sends,
- * apply() runs in the PROPERTY stage, and the gate that had to admit those
- * names first is in the REQUEST stage -- so the layer needed to participate in a
- * stage it had no access to, and the bridge went unreachable the moment that
- * gate became an allowlist. No test caught it, because no test sent an old name.
+ * WHY THESE EXIST. Ingest is four stages, and a layer may need to take part in
+ * more than one: the beacon compat layer renames names an older tracker sends
+ * in the PROPERTY stage, and the gate that must admit those names is in the
+ * REQUEST stage.
  *
  * TWO POINTS PER STAGE for the first three, and the pairing is the contract:
  *

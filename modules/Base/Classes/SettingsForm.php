@@ -10,23 +10,15 @@ namespace OWA\Module\Base\Classes;
 /**
  * Builds a settings form out of the registry.
  *
- * WHAT THIS REPLACES. Every settings screen hand-wrote its controls: a <select>
- * with Off and On spelled out, a title div, a description div, and the field
- * name assembled by hand as `config[module.key]`. Eight fields of that on the
- * general options page alone, and each one an independent chance to write the
- * wrong key -- a typo there does not error, it saves a setting nothing reads.
+ * The declaration says what each setting is. `type` says what control it takes,
+ * `options` says what a select offers, `label` and `description` say what to
+ * call it. A screen that reads those cannot disagree with the registry about
+ * what a setting is called or whether it can be saved at all, and cannot write
+ * a key nothing reads.
  *
- * The declaration already says what each setting is. `type` says what control
- * it takes, `options` says what a select offers, `label` and `description` say
- * what to call it. A screen that reads those cannot disagree with the registry
- * about what a setting is called or whether it can be saved at all, because it
- * is not repeating either.
- *
- * WHAT IT FIXES ALONG THE WAY. A setting supplied by a config-file constant is
- * unsettable from a form -- the constant wins on every boot -- and until now
- * exactly one field said so, because someone hand-wrote the check for
- * base.timezone. Every other field accepted an edit that silently did nothing.
- * The check is in the renderer, so it is on every field.
+ * A setting supplied by a config-file constant is unsettable from a form -- the
+ * constant wins on every boot -- so every field it governs is rendered disabled
+ * with a note naming it.
  *
  * DESCRIPTIONS ARE HTML, and deliberately: they carry <strong> and <br>, and
  * they come from declaration files in the repository, never from a request.

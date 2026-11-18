@@ -2,10 +2,9 @@
 /**
  * REST route fixture provisioner for the self-host e2e runner.
  *
- * The REST routes have unit coverage but nothing exercises them over HTTP, so a
- * registration or wiring error -- a class that no longer exists, a route name
- * that no longer matches, a controller that cannot be constructed -- passes both
- * suites and only surfaces in production. This helper supplies what a spec needs
+ * A registration or wiring error in a REST route -- a class that does not exist,
+ * a route name that does not match, a controller that cannot be constructed --
+ * passes the unit suite and only surfaces over HTTP. This helper supplies what a spec needs
  * to call them for real:
  *
  *   provision            create an admin user + a site, return their identifiers

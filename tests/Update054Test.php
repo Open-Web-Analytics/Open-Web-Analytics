@@ -16,14 +16,13 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  *
  * THE NON-PROMOTION IS THE OTHER HALF, and is asserted here too. The element,
  * form and commerce params stay in the bag because most installs will never group
- * by them, and a column is width on every row of every Property. Measured on
- * MySQL 8.4: promoting nine of them took the custom-dimension ceiling from 62 to
+ * by them, and a column is width on every row of every Property. On MySQL 8.4,
+ * promoting nine of them would take the custom-dimension ceiling from 62 to
  * 37. Without a test, that is a decision that erodes one column at a time.
  *
- * NOTHING HERE TESTS A CLEANUP OF CUSTOM REGISTRATIONS. An earlier version did:
- * a registration for `file_name` would read params.file_name, which nothing
- * writes any more. Unreachable -- custom dimensions are a v2 feature and the
- * branch has not shipped, so no install can carry one for either key.
+ * NOTHING HERE TESTS A CLEANUP OF CUSTOM REGISTRATIONS: custom dimensions are a
+ * v2 feature and the branch has not shipped, so no install can carry one for
+ * either key.
  */
 final class Update054Test extends TestCase
 {

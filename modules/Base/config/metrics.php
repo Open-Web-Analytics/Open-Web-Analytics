@@ -54,17 +54,11 @@ return [
          * Exits: the last event of a session, counted on the page it happened
          * on. A METRIC, not a dimension, which is the whole point of it.
          *
-         * 1.x spelled this as exitPagePath / exitPageUrl / exitPageTitle --
-         * dimensions that resolve to a page only on the session's last row.
-         * Grouping by one puts every OTHER view of that page into a single
-         * anonymous bucket, so the report loses the denominator and cannot
-         * state an exit rate at all -- the only number anyone wants exits for.
-         * Measured on three sessions (/a then /b, /a then /c, /a alone) the
-         * dimension reports /a once; /a was viewed three times and exited from
-         * once.
-         *
-         * So Exits is a metric, paired with the ordinary page dimension, and
-         * there is no exit-page dimension at all. Entrances likewise.
+         * An exit-page DIMENSION resolves to a page only on the session's last
+         * row, so grouping by it puts every OTHER view of that page into one
+         * anonymous bucket and the report cannot state an exit rate. So Exits is
+         * a metric, paired with the ordinary page dimension, and there is no
+         * exit-page dimension at all. Entrances likewise.
          *
          * THE SESSION'S LAST PAGE VIEW, by device sequence (Cube\IsExitStep):
          * not the last event of any kind, since a click after it happened on
@@ -235,16 +229,13 @@ return [
          *
          * Util.generateRandomGuid() gives it 62 random bits: the expected
          * collisions among n session ids are n^2 / 2^63, a few hundredths over
-         * a decade of a large site. Ids from before 2.0 were a unix timestamp
-         * plus nine random digits -- about 30 random bits per second, roughly
-         * 0.8 collisions a year at 10 new sessions a second -- and history
-         * keeps them. Measured across 15,643 sessions of real history: zero
-         * session ids shared by more than one visitor.
+         * a decade of a large site. Ids from before 2.0 are a unix timestamp
+         * plus nine random digits -- about 30 random bits per second -- and
+         * history keeps them.
          *
          * Pairing is also actively worse here. COUNT(DISTINCT a, b) drops any
-         * row where either column is NULL, and 48 of those sessions carry a
-         * NULL visitor id -- so the pair under-counts by exactly 48 to guard
-         * against a one-in-a-billion collision.
+         * row where either column is NULL, and some sessions carry a NULL
+         * visitor id.
          *
          * Pairing is only necessary where a session id is a bare start timestamp
          * with no randomness in it. Ours is not.
@@ -296,10 +287,8 @@ return [
          * newVisitors has no `returningVisitors` twin, deliberately.
          *
          * To count returning users you take totalUsers and group it by the
-         * New/returning dimension. Two metrics splitting
-         * one population is the same shape as the isNewVisitor /
-         * isRepeatVisitor dimensions this replaced -- and newVsReturning is
-         * exactly the dimension to group uniqueVisitors by.
+         * New/returning dimension: two metrics splitting one population would
+         * be the boolean-twin shape the dimensions avoid.
          */
 
         // ---- summing ------------------------------------------------------
@@ -403,10 +392,8 @@ return [
         ],
 
         /*
-         * PURCHASING SESSIONS over sessions. It was transactions over sessions,
-         * which is transactions per session under a name promising a share: two
-         * purchases in one of two sessions read 100% where the share is 50%, and
-         * a store with repeat buyers could pass 100%.
+         * PURCHASING SESSIONS over sessions, not transactions over sessions,
+         * which would read 100% for two purchases in one of two sessions.
          */
         'ecommerceConversionRate' => [
             'label'       => 'Ecommerce Conversion Rate',
@@ -422,9 +409,7 @@ return [
         /*
          * Goal events per session, off the flag the event row already carries.
          * A DECIMAL, not a percentage: it counts goal events, not sessions that
-         * had one, so it passes 1 wherever a session has two. 1.x spelled the
-         * nearest thing goalConversionRateAll and needed the goal configuration
-         * to compute it.
+         * had one, so it passes 1 wherever a session has two.
          */
         'goalEventsPerSession' => [
             'label'       => 'Goal Events Per Session',
@@ -528,9 +513,7 @@ return [
         /*
          * A NAME SAYS WHICH IT IS. This is a total and the one below is an
          * average, and the pair is unreadable if either is called plain
-         * "Engagement Time" -- which is the defect 1.x's `visitDuration` had:
-         * an AVG whose name promised a duration, so every report showing it
-         * was showing an average nobody had been told about.
+         * "Engagement Time".
          */
         'totalEngagementTime' => [
             'label'       => 'Total Engagement Time',
@@ -542,26 +525,16 @@ return [
         ],
 
         /*
-         * REPLACES 1.x's visitDuration, and measures something it could not.
+         * Engagement time is accrued on the DEVICE and sent, so the last page counts
+         * -- a span between a session's first and last beacon would score a
+         * single-pageview visit 0 however long it was read.
          *
-         * visitDuration was AVG(session.last_req - session.timestamp): the span
-         * between a session's first and last BEACON. So it could never see the
-         * final page -- whatever the visitor did after the last beacon was
-         * invisible -- and a single-pageview visit scored exactly 0 however long
-         * they read it. The entire bounce population contributed zero to the
-         * site's average.
-         *
-         * Engagement time is accrued on the DEVICE and sent, so the last page
-         * counts.
-         *
-         * No ordering caveat, unlike exits: this sums over a session, so which
-         * event the pass calls last does not enter into it.
+         * No ordering caveat, unlike exits: this sums over a session, so which event
+         * the pass calls last does not enter into it.
          */
         /*
          * PER SESSION, and the name says so. There is a per-user one too, and a
-         * bare "average engagement time" does not say which denominator it used --
-         * the same defect as 1.x's visitDuration, which was an AVG under a name
-         * that promised a duration.
+         * bare "average engagement time" does not say which denominator it used.
          */
         'averageEngagementTimePerSession' => [
             'label'       => 'Average Engagement Time Per Session',

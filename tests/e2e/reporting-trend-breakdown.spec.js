@@ -33,10 +33,8 @@ const { FIXTURE, loginAs } = require('./fixtures');
 /*
  * An AUTHORED report, not a shipped one.
  *
- * No shipped report has a broken-out trend any more: Content's became a card,
- * and a card cannot be broken out. The feature is still reachable to anyone
- * building a report, so it is driven through one -- rather than giving a
- * shipped report a shape nobody asked it to have, purely to keep a test alive.
+ * No shipped report has a broken-out trend; the feature is reachable to anyone
+ * building a report, so it is driven through one.
  *
  * The seeder plants it; this finds it by name on the roster, because a report
  * id is minted at seed time and cannot be written down here.

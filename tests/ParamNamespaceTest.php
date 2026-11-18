@@ -8,7 +8,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  * Which spellings of a request param OWA reads, and where the `owa_` prefix
  * still has to be there.
  *
- * The prefix was ONE setting doing three unrelated jobs:
+ * The prefix is ONE setting doing three unrelated jobs:
  *
  *   1. cookie names, in a jar shared with the tracked page
  *   2. attribution params a customer puts on their own URLs (owa_source,
@@ -17,12 +17,10 @@ require_once __DIR__ . '/bootstrap_owa.php';
  *
  * Only (3) has nothing to collide with -- OWA owns that whole query string --
  * so only (3) drops the prefix: OWA emits its own names bare, while 'ns' stays
- * 'owa_' and keeps doing (1) and (2). Conflating them is the trap
- * this file exists to catch: RequestContainer ran cookies, $_SESSION and query
- * params through the SAME stripParams() call, so a change aimed at links landed
- * on the cookie jar unless the surfaces were held apart deliberately. The param
- * path has its own resolution loop now; cookies and $_SESSION still go through
- * stripParams(), and still require the prefix.
+ * 'owa_' and keeps doing (1) and (2). Conflating them is the trap this file
+ * exists to catch: a change aimed at links must not land on the cookie jar.
+ * The param path has its own resolution loop; cookies and $_SESSION go through
+ * stripParams(), and require the prefix.
  *
  * The other half is that stripParams() does not merely rename keys, it FILTERS:
  * anything without the prefix is dropped -- and the param loop keeps that
@@ -281,10 +279,9 @@ final class ParamNamespaceTest extends TestCase
     }
 
     /**
-     * The namespace has to be a PREFIX. stripParams() used to test strstr() --
-     * present ANYWHERE -- and then chop four characters off the front anyway,
-     * so a host page's 'my_owa_setting' was both claimed as OWA's and mangled
-     * into a key nobody sent.
+     * The namespace has to be a PREFIX. Matched ANYWHERE, a host page's
+     * 'my_owa_setting' would be claimed as OWA's and mangled into a key nobody
+     * sent.
      */
     public function testACookieThatMerelyContainsTheNamespaceIsNotOwaS(): void
     {
@@ -297,9 +294,8 @@ final class ParamNamespaceTest extends TestCase
 
     /**
      * A single cookie is the only way to reach the $_COOKIE fallback -- the
-     * raw-header path above needs a ';' -- and that branch used to assign to an
-     * undeclared local, so the cookies went out of scope with the loop and OWA
-     * saw a stateless visitor.
+     * raw-header path above needs a ';' -- so it is tested on its own: a dropped
+     * single cookie makes OWA see a stateless visitor.
      */
     public function testASingleCookieIsNotDropped(): void
     {

@@ -24,9 +24,8 @@ class Error extends \OWA\Core\View {
         /*
          * The message is shown ONCE, in the page's error banner (msgs.php in
          * the wrapper), which reads a headline and a message. Controllers pass
-         * either getMsg()'s array or a plain string; a string reached the
-         * banner as something with neither key, so it drew an empty red box and
-         * the text was echoed again, unstyled, below it.
+         * either getMsg()'s array or a plain string, which is turned into the
+         * one shape here.
          */
         $this->t->set( 'error_msg', self::bannerMessage( $data['error_msg'] ?? null ) );
 

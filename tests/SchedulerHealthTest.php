@@ -247,9 +247,9 @@ final class SchedulerHealthTest extends CliControllerTestCase
                 // The headline carries its own full stop, so the template must
                 // not append one of its own.
                 $this->assertStringNotContainsString('running.!', $html);
-                // Exactly once. The message used to carry the line as well as
-                // the code block below it, which printed it twice on the page --
-                // invisible to a "contains" assertion, obvious on screen.
+                // Exactly once: the line is in the code block, not in the message as
+                // well -- a duplicate is invisible to a "contains" assertion and obvious
+                // on screen.
                 $this->assertSame(1, substr_count($html, 'cmd=schedule-run'),
                     'the crontab line belongs on the page once, not once per author');
                 $this->assertStringContainsString('owa-scheduler-nag', $html);

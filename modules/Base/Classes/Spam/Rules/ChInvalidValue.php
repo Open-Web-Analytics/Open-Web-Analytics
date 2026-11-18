@@ -12,9 +12,7 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  * outside ChPlatformMismatch::PLATFORMS, such as "Mac OS X", or a
  * Sec-CH-UA-Mobile other than ?0 or ?1.
  *
- * Measured the week before the 4 November attack: 5 beacons with platform
- * "Mac OS X", none from a real browser. The platform is compared without its
- * quotes, so "Windows" and Windows are the same value here.
+ * The platform is compared without its quotes, so "Windows" and Windows are the same value here.
  */
 class ChInvalidValue extends \OWA\Module\Base\Classes\Spam\Rule {
 

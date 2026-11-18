@@ -282,11 +282,7 @@ final class CustomReportsTest extends TestCase
          * The dimension is dropped for the metric-count cases so that only the
          * COUNT is under test, so every metric in the set has to be one that
          * exists and shares a table -- otherwise the set fails for a different
-         * and correct reason and says nothing about the limit. bounceRate was
-         * here and has no v2 definition yet; it used to be measured on
-         * the session and pagePath lives on the request, so they cannot be
-         * grouped together. That is the compatibility rule doing its job, and
-         * it would make this test look like a limit failure.
+         * and correct reason and says nothing about the limit.
          */
         $definition = $this->definition();
         unset( $definition['widgets'][1]['query']['dimensions'] );
@@ -547,9 +543,7 @@ final class CustomReportsTest extends TestCase
      * Several dimensions constrained from ONE parameter: the one named after
      * the parameter is the one a link comes from.
      *
-     * No shipped report has this shape since Page Detail's Next Pages widget
-     * (pagePath and priorPagePath, both from `pagePath`) was removed, so the
-     * definition is synthetic.
+     * No shipped report has this shape, so the definition is synthetic.
      */
     public function testSeveralDimensionsFromOneValuePreferTheParametersName(): void
     {
@@ -959,18 +953,13 @@ final class CustomReportsTest extends TestCase
     // ------------------------------------------------------------------
 
     /**
-     * A widget that names no metrics is refused, because there is no longer
-     * anything for it to inherit.
+     * A widget that names no metrics is refused when there is nothing for it
+     * to inherit: it would draw an empty panel, and an empty panel is not
+     * something an author can have meant.
      *
-     * The builder used to ask for a report metric set beside the report's name,
-     * and a widget that named none fell back to it. That is gone: a widget
-     * declares what it measures or it draws an empty panel, and an empty panel
-     * is not something an author can have meant.
-     *
-     * Asserted on a GRID, deliberately. A card, a pie and a trend card were
-     * always refused for this by rules of their own; the grid is the type that
-     * used to be legal with an empty list, so it is the one that shows the new
-     * rule is doing something.
+     * Asserted on a GRID, deliberately. A card, a pie and a trend card are
+     * refused for this by rules of their own; the grid is the type that shows
+     * this rule doing something.
      */
     public function testAWidgetThatNamesNoMetricsIsRefused(): void
     {
@@ -1009,14 +998,13 @@ final class CustomReportsTest extends TestCase
     }
 
     /**
-     * ...UNLESS the report carries a metric set, which is the case this rule
-     * deliberately does not break.
+     * ...UNLESS the report carries a metric set.
      *
      * validate() runs when a report is RENDERED as well as when it is saved, so
-     * a rule applied unconditionally would take down every report built while
-     * the builder still offered a set -- and leave the author no way to fix it,
-     * because the field they would have to fill no longer exists. The fallback
-     * therefore stays legal exactly where there is something to fall back to.
+     * a rule applied unconditionally would take down every report that carries a
+     * set -- and leave the author no way to fix it, because the builder offers no
+     * field for one. The fallback therefore stays legal exactly where there is
+     * something to fall back to.
      *
      * The fixture definition is that shape already: a report metric set, and a
      * trend that names nothing of its own.
@@ -1166,9 +1154,8 @@ final class CustomReportsTest extends TestCase
     /**
      * A trend cannot be broken out by ANY time dimension, by its registered name.
      *
-     * The list used to be a copy, with dayOfWeek, dayOfYear and weekOfYear in
-     * lower case and no yearMonth, hour, minute or dateHour -- so a strict match
-     * refused none of those seven, and the builder offered them.
+     * Every one of them: dayOfWeek, dayOfYear, weekOfYear, yearMonth, hour,
+     * minute and dateHour included, in the case they are registered in.
      */
     public function testATrendCannotBeBrokenOutByAnyTimeDimension(): void
     {
@@ -1204,9 +1191,9 @@ final class CustomReportsTest extends TestCase
     /**
      * The chart-metric question is asked on exactly the types that plot one.
      *
-     * The builder used to carry its own copy of this list in JavaScript, which
-     * is the copy that does not get updated when a type is added -- and the
-     * symptom is a chart with no line rather than an error anybody notices.
+     * The builder is handed this list rather than keeping a copy in JavaScript,
+     * which would not be updated when a type is added -- and the symptom would be
+     * a chart with no line rather than an error anybody notices.
      */
     public function testTheChartTypesAreOfferedAChartMetric(): void
     {
@@ -1229,11 +1216,6 @@ final class CustomReportsTest extends TestCase
      * null or an error. So a forgotten name does not fail: `(array) false` is
      * `array(false)`, the JavaScript gets `[false]`, and an indexOf against it
      * quietly says no.
-     *
-     * That is not hypothetical. Adding CHART_TYPES and OWN_METRIC_TYPES to the
-     * controller without forwarding them left the builder deciding that NO
-     * type draws a chart -- so the chart-metric field would have disappeared
-     * from a trend and a pie, with nothing anywhere saying why.
      *
      * The controller is read from the source, because the failure is a
      * MISSING name and every set() has to be found, whichever branch it is on.

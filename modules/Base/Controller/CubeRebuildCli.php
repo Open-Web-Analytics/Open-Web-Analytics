@@ -22,10 +22,9 @@ namespace OWA\Module\Base\Controller;
  * property= this covers every cube that exists plus every Property that has raw
  * rows in the range -- the second half being how a cube comes to exist at all:
  * it is created here, on a Property's first data, rather than when the Property
- * is created. Seventy-odd partitions and 2.7 seconds each is not worth spending
- * on the 216 Properties of this installation that have never collected
- * anything, and the alternative reading -- create it on the first event -- puts
- * that CREATE TABLE inside a beacon request.
+ * is created. Seventy-odd partitions at seconds each are not worth spending on
+ * a Property that has never collected anything, and creating it on the first
+ * event would put that CREATE TABLE inside a beacon request.
  *
  * The cost of a cube that has stopped collecting is one empty partition per
  * run, and it is not optional: skipping it would leave rows in a partition that
@@ -41,7 +40,7 @@ namespace OWA\Module\Base\Controller;
  * command prints what each date range resolved to for exactly that reason.
  *
  * It is also why partition granularity and the run interval are one decision
- * rather than two (2.5.1): at a quarter-hourly cadence on a monthly partition,
+ * rather than two: at a quarter-hourly cadence on a monthly partition,
  * the last run of the month rewrites a month.
  *
  * REGISTERED AS `rebuild-cube`, every five minutes at a spread offset
@@ -106,8 +105,8 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      * How long the per-cube build lock outlives proof of life.
      *
      * Sized for ONE partition, not a whole run, because the run refreshes after
-     * each. A million-row partition measured 162 seconds; thirty minutes is
-     * generous against that and short enough that a crashed build does not
+     * each. A million-row partition takes minutes; thirty is generous against
+     * that and short enough that a crashed build does not
      * block the next one for a working day.
      */
     const BUILD_LEASE = 1800;
@@ -256,11 +255,11 @@ class CubeRebuildCli extends \OWA\Core\Controller\Cli {
      *
      * EVERY EXISTING CUBE, PLUS EVERY PROPERTY WITH RAW ROWS IN THE RANGE.
      *
-     * The second half is §2.27.3: a cube is created on first data, by a build.
+     * The second half: a cube is created on first data, by a build.
      * The first half is why it is a union rather than just the collecting set
      * -- a Property that has stopped collecting still has to be rebuilt, or a
      * partition keeps rows that raw no longer has. A build is convergent, so a
-     * cube with nothing to say costs one empty partition and 235ms.
+     * cube with nothing to say costs one empty partition.
      *
      * @param DayRange $range from resolveRange()
      * @return string[]|null  property ids, or null having already refused

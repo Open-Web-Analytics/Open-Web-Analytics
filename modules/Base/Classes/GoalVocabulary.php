@@ -11,18 +11,14 @@ namespace OWA\Module\Base\Classes;
  * What a goal condition is allowed to name.
  *
  * THE RAW ROW'S COLUMNS, and nothing else. A goal is decided by what the stored
- * row holds, and that one rule answers three questions at once: what the builder offers, what a saved
- * condition may say, and what Classes\GoalMarking reads. Before this there were
- * three answers. The builder offered every client and server PROPERTY name;
- * marking matched against the tracking event, so it saw property names too; and
- * GoalEventDefinitionPredicate kept a hand-written map of four v1 names to four
- * v1 columns. None of the three agreed with the row that actually gets stored.
+ * row holds, and that one rule answers three questions at once: what the builder
+ * offers, what a saved condition may say, and what Classes\GoalMarking reads.
  *
  * SCOPED BY EVENT TYPE, from the property registry. A condition on element_id is
  * meaningless on a page view -- only a click carries one -- and offering it
- * produces a goal that cannot fire. propertiesForEvent() already answers which
- * properties an event carries, so the only thing missing was the link from a
- * property to the column it lands in.
+ * produces a goal that cannot fire. propertiesForEvent() answers which
+ * properties an event carries; this adds the link from a property to the column
+ * it lands in.
  *
  * THAT LINK IS ONE MAP, and every column is either in it or named after its own
  * property. A column whose name differs from its source is a RENAME
@@ -173,18 +169,17 @@ class GoalVocabulary {
      * v1 property names that no longer exist, and the v2 column that means what
      * they meant.
      *
-     * For the migration of stored declarations, not for the builder. Every
-     * condition in the field names one of these -- page_uri or medium, measured
-     * on both installs here -- because they are what the old builder offered and
-     * what Update025 wrote. Neither is a column, so without this map the
-     * migrated goals count nothing.
+     * For the migration of stored declarations, not for the builder: 1.x
+     * conditions name these -- page_uri or medium, what the 1.x builder offered
+     * and what Update025 wrote. Neither is a column, so without this map the
+     * migrated goals would count nothing.
      *
      * The acquisition four map to the tagged_* columns deliberately: the raw row
      * records what the LANDING URL CLAIMED, and the classified answer -- tag if
      * there was one, else the referrer classified -- is the pass's, on the cube.
      * A goal is decided at ingest, so it can only test the claim.
      *
-     * NOT EXHAUSTIVE, and cannot be: the old builder offered every property name
+     * NOT EXHAUSTIVE, and cannot be: the 1.x builder offered every property name
      * there was, including ones with no column at all (page_type, is_robot, the
      * date parts). Those are reported by the migration rather than guessed at.
      */
@@ -373,7 +368,7 @@ class GoalVocabulary {
         /*
          * A property whose column is named differently -- the row's own renames.
          * Read from the same map the builder uses rather than a second list,
-         * because a condition saved before this existed could name either side.
+         * because a stored condition can name either side.
          */
         $column = array_search( $property, self::SOURCE, true );
 

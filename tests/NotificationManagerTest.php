@@ -204,8 +204,7 @@ final class NotificationManagerTest extends TestCase
      *
      * These tests write to a real table that a real UI reads. Left behind, the
      * rows accumulate run after run and show up in the notification panel of
-     * whoever next logs into this install -- which is exactly how the badge
-     * ended up reading 25 with 66 undismissed behind it.
+     * whoever next logs into this install.
      */
     public static function tearDownAfterClass(): void
     {

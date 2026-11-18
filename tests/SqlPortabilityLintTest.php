@@ -7,14 +7,10 @@ use PHPUnit\Framework\TestCase;
  *
  * OWA has a dialect layer -- the OWA_SQL_* and OWA_DTD_* constants -- whose job
  * is to be the one place a backend's spelling lives. It works, and the pattern
- * is followed almost everywhere. The failures are not architectural, they are
- * individual lines that slipped past, and every one found so far had the
- * correct pattern in view when it was written:
- *
- *   LOCATE(a, b)   sat two lines below =~ correctly using OWA_SQL_REGEXP
- *   SHOW TABLES    was written out twice while OWA_SQL_SHOW_TABLE existed and
- *                  InstallManager was already using it
- *   IFNULL()       was reached for where ANSI COALESCE means the same thing
+ * is followed almost everywhere. The failures are individual lines that slip
+ * past, usually with the correct pattern in view: LOCATE(a, b) beside =~ using
+ * OWA_SQL_REGEXP, SHOW TABLES beside OWA_SQL_SHOW_TABLE, IFNULL() where ANSI
+ * COALESCE means the same thing.
  *
  * That is what makes a lint the right shape for this rather than a note in a
  * review. These are not caught by reading, because each one looks ordinary
@@ -207,7 +203,7 @@ final class SqlPortabilityLintTest extends TestCase {
     /**
      * A lint nobody can see the scope of is a lint nobody trusts. If the exempt
      * list grows a stale entry, this says so rather than quietly covering a file
-     * that no longer exists.
+     * that does not exist.
      */
     public function testEveryExemptFileStillExists(): void {
 

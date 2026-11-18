@@ -73,14 +73,12 @@ class UserManager extends \OWA\Core\Base {
     /**
      * Delete a user, and the site access that only meant anything for them.
      *
-     * The grants in owa_site_user were left behind, keyed on a user row that
-     * no longer existed. Nothing reads them -- every screen lists users and
-     * looks their grants up, never the reverse -- so they accumulated
-     * invisibly, and Property Access Management could not clear them either:
-     * it submits a delta of the users it RENDERED, and a deleted user is never
-     * rendered, so its row survived every save forever.
+     * Grants left in owa_site_user for a deleted user would be invisible --
+     * every screen lists users and looks their grants up, never the reverse --
+     * and Property Access Management could not clear them: it submits a delta of
+     * the users it RENDERED.
      *
-     * They are also not quite inert. User ids are auto-increment rather than
+     * They would not be quite inert either. User ids are auto-increment rather than
      * derived from the username, so re-creating a deleted username does NOT
      * inherit its access -- but a restore from backup can reset the counter to
      * MAX(id)+1, and then a new user can be minted onto a deleted user's id and

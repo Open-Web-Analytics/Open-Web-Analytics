@@ -182,9 +182,7 @@ namespace OWA\Module\Base\Classes;
      private function loadConfigFile() {
  
         /*
-         * The same setting isConfigFilePresent() checks. It used to check one
-         * path and include another, so the two could disagree about which file
-         * an install was running on.
+         * The same setting isConfigFilePresent() checks.
          */
         $file = $this->get('base', 'config_file');
         
@@ -217,12 +215,9 @@ namespace OWA\Module\Base\Classes;
           * install: nothing may store a value for it, and nothing goes looking
           * for one.
           *
-          * That is what makes the constant's precedence structural rather than
-          * something every read has to remember. A stored row for a static key
-          * is never queried, and persistSetting() refuses to create one -- so
-          * the options form's disabled field stops being a courtesy backed by a
-          * special case in OptionsUpdate and becomes the ordinary consequence
-          * of the declaration.
+          * That makes the constant's precedence structural rather than something
+          * every read has to remember: a stored row for a static key is never
+          * queried, and persistSetting() refuses to create one.
           *
           * Declared storability is what a setting CAN be; a constant narrows it
           * for one installation. Only ever narrower -- a constant cannot make
@@ -259,10 +254,7 @@ namespace OWA\Module\Base\Classes;
       *
       * ON THE REGISTRY, not in a ledger beside it, because everything that
       * follows is a property of the setting: it becomes static, it is left OUT
-      * OF THE BOOT QUERY, and it cannot be persisted. Keeping the name
-      * somewhere else meant those three had to be kept in step by hand -- and
-      * the value was fetched, overwritten by the stored row, then set back from
-      * the constant, which is three steps to arrive where it started.
+      * OF THE BOOT QUERY, and it cannot be persisted.
       *
       * The NAME, not a flag: the options form tells the operator which constant
       * governs a field, and "set somewhere in owa-config.php" is not an
@@ -602,7 +594,7 @@ namespace OWA\Module\Base\Classes;
 
         if (!empty($db_settings)) {
 
-            // needed to get rid of legacy setting that used to be stored in the DB.
+            // A legacy setting some installs still store.
             if ( isset( $db_settings['base'] )
                  && array_key_exists('error_handler', $db_settings['base'] ) ) {
 
@@ -610,17 +602,10 @@ namespace OWA\Module\Base\Classes;
             }
 
             /*
-             * No config-file-only strip. Base declares all 21 of these static,
-             * so the boot query never asks for them and persistSetting()
-             * refuses to create one.
-             *
-             * The route this used to guard -- modules/Base/settings.php missing,
-             * so Base falls back into the wholesale sweep and its rows load
-             * again -- is guarded where it belongs now:
-             * BaseDeclarationPresentTest fails if the file is not there, and
-             * OptionsUpdate refuses to save a setting the registry does not
-             * describe. A rule enforced in two places acquires two slightly
-             * different definitions.
+             * No config-file-only strip. Base declares these static, so the boot query
+             * never asks for them and persistSetting() refuses to create one.
+             * BaseDeclarationPresentTest fails if modules/Base/settings.php is missing,
+             * and OptionsUpdate refuses to save a setting the registry does not describe.
              */
 
             /*
@@ -632,12 +617,10 @@ namespace OWA\Module\Base\Classes;
              * only be expressed as absence.
              *
              * A precedence rule about what the operator declared, and nothing
-             * more. The security half of this used to live beside it as a
-             * denylist of keys an authenticated request must never write, an
-             * RCE primitive in the case of error_log_file and report_wrapper.
-             * That is the declaration's job now: those settings are declared
-             * static, so no query asks for them and persistSetting() refuses
-             * them.
+             * more. Keys an authenticated request must never write -- an RCE
+             * primitive in the case of error_log_file and report_wrapper -- are
+             * the declaration's job: those settings are declared static, so no
+             * query asks for them and persistSetting() refuses them.
              */
             $db_settings = $this->stripSettingsSuppliedByConstants( $db_settings );
 
@@ -663,22 +646,17 @@ namespace OWA\Module\Base\Classes;
             }
 
             /*
-             * Modules absent from the stored settings are dropped here rather
-             * than merged, which is how this has always behaved. It looks
-             * wrong -- a module holding only in-memory values from
-             * applyConfigConstants() loses them -- but default_config carries
-             * 'base' alone and every install stores base rows, so nothing has
-             * ever been observed to fall through it. Left as found: changing
-             * it would resurrect values for modules this has been discarding
-             * for years, which is not a change to make alongside a storage
-             * migration.
+             * Modules absent from the stored settings are dropped here rather than
+             * merged. A module holding only in-memory values from applyConfigConstants()
+             * loses them; default_config carries 'base' alone and every install stores
+             * base rows, so nothing falls through in practice. Merging instead would
+             * resurrect values for modules this discards.
              */
             /*
-             * Except what a constant set. A constant wins over the database, so
-             * it cannot be what loses here: a module its own constant activates
-             * (ModuleActivation) with nothing stored had its is_active dropped
-             * with it, and never loaded. Only the constant-governed keys are
-             * carried over, so nothing else a module once held comes back.
+             * Except what a constant set. A constant wins over the database, so it
+             * cannot be what loses here: a module its own constant activates
+             * (ModuleActivation) with nothing stored would otherwise have its is_active
+             * dropped, and never load. Only the constant-governed keys are carried over.
              */
             foreach ( $this->configConstants() as $module => $keys ) {
 
@@ -710,8 +688,7 @@ namespace OWA\Module\Base\Classes;
      /**
       * Every install-scope setting, as [module][key] => value.
       *
-      * ONE query: the blob this replaced was read whole because a blob cannot
-      * be read in part, and rows would otherwise cost a query each.
+      * ONE query: rows would otherwise cost a query each.
       *
       * @return array<mixed> module => key => value
       */
@@ -754,7 +731,7 @@ namespace OWA\Module\Base\Classes;
             unset( $this->pending[ $row['module'] . '|' . $row['name'] ] );
 
             /*
-             * Array data only, as the blob read was. A row is written by
+             * Array data only. A row is written by
              * save() and holds a scalar or an array of them; refusing objects
              * costs nothing and means a tampered-with row cannot instantiate a
              * class during unserialize.
@@ -810,8 +787,7 @@ namespace OWA\Module\Base\Classes;
      /**
       * The pre-Update043 write path: one serialized blob in one row.
       *
-      * Unchanged from what save() used to be, and reachable only while
-      * owa_configuration exists. It goes when that table's last install does.
+      * Reachable only while owa_configuration exists.
       *
       * @return boolean
       */
@@ -964,17 +940,14 @@ namespace OWA\Module\Base\Classes;
      /**
       * Write the install-wide settings back, one row per key.
       *
-      * The stored set is made to MATCH db_settings, which is what writing
-      * serialize($this->db_settings) into a single blob did implicitly. Both
-      * places that drop a key -- persistSetting()'s default-equivalence prune
-      * and pruneRedundantPersistedSettings() -- unset it from db_settings and
-      * rely on that, so the deletes here are not an extra feature, they are
-      * the half of the old behaviour that rows make explicit.
+      * The stored set is made to MATCH db_settings. Both places that drop a key
+      * -- persistSetting()'s default-equivalence prune and
+      * pruneRedundantPersistedSettings() -- unset it from db_settings and rely
+      * on the deletes here.
       *
       * When load() never ran, the stored rows are merged UNDER db_settings and
-      * nothing is deleted. That is the same guard the blob version carried, and
-      * for the same reason: a process that never read the settings does not
-      * know what it would be throwing away.
+      * nothing is deleted: a process that never read the settings does not know
+      * what it would be throwing away.
       *
       * While owa_configuration still exists this writes the blob instead, by
       * the rule in legacyBlobIsAuthoritative(). It matters in both directions:
@@ -1174,19 +1147,15 @@ namespace OWA\Module\Base\Classes;
          /*
           * No last-ditch lookup, deliberately.
           *
-          * It used to query for any key that was neither declared nor in the
-          * array, justified as keeping un-adopted modules working. That
-          * justification was wrong: a module with no settings.php is swept up
-          * wholesale by the boot query's `module NOT IN (declared)` clause, and
-          * so is one whose files were deleted but whose rows remain. The only
-          * case that ever reached the fallback was a DECLARED module with a row
-          * for a key its declaration does not mention -- which is a bug in the
-          * declaration, and papering over it at one query per key per request
-          * hid the exact condition someone needed to be told about.
+          * A module with no settings.php is swept up wholesale by the boot query's
+          * `module NOT IN (declared)` clause, and so is one whose files were deleted
+          * but whose rows remain. So the only key that reaches here belongs to a
+          * DECLARED module with a row its declaration does not mention -- a bug in the
+          * declaration, which a query per key per request would hide.
           *
-          * A declaration is now the complete list of what a module stores.
-          * Anything else is reported by declarationProblems() and ignored, the
-          * same way a key declared static already ignored its row.
+          * A declaration is the complete list of what a module stores. Anything else is
+          * reported by declarationProblems() and ignored, the same way a key declared
+          * static ignores its row.
           */
          return false;
      }
@@ -1208,10 +1177,8 @@ namespace OWA\Module\Base\Classes;
           * get() consults the pending map before it reads the array, so
           * without this a key that had not been resolved yet would be fetched
           * on the next read and the stored row would overwrite what was just
-          * set. That is not hypothetical: persistSetting() sets before it
-          * queues the write, so an admin saving a new MaxMind licence key and
-          * a screen re-reading it to redisplay got the OLD key back -- and
-          * re-saving what it displayed would have discarded the new one.
+          * set. persistSetting() sets before it queues the write, so a screen
+          * re-reading a value just saved would get the old one back.
           *
           * It applies just as much to an in-memory override with no intention
           * to persist, which overloadConfig() makes: an explicit set must not
@@ -1236,11 +1203,6 @@ namespace OWA\Module\Base\Classes;
       * nothing may go to the store for it afterwards. Seeding means "this is
       * what it falls back to", and must leave the key pending so the stored
       * value can still be read and applied over it.
-      *
-      * registerField() went through set() for one commit. Every registered
-      * field was marked resolved the moment it was declared, so nothing was
-      * ever pending and no stored value would ever have been read again. The
-      * test that counts the batch query caught it on the first run.
       *
       * @param  string $module
       * @param  string $key
@@ -1609,12 +1571,7 @@ namespace OWA\Module\Base\Classes;
          // A stored value overrides the default FOREVER. Writing one that is
          // currently identical to the default looks harmless, but it silently
          // pins that value: when the default later changes, the install keeps
-         // the old one and no longer tracks the code. report_wrapper is the
-         // case that proved this -- installs had 'wrapper_default.tpl' stored
-         // back when that WAS the default, so the .tpl -> .php migration could
-         // not reach them and every report render fataled on an empty include
-         // path, with the only clue written to OWA's own log rather than the
-         // web server's.
+         // the old one and no longer tracks the code.
          //
          // Keys with no code default (schema_version, install_complete) can
          // never match here, so they are always stored -- which is required,
@@ -1853,10 +1810,9 @@ namespace OWA\Module\Base\Classes;
       *   2. what each module that HAS declared says boot needs;
       *   3. EVERYTHING belonging to a module that has declared nothing.
       *
-      * Part 3 is the adoption path. Before registration existed every stored
-      * setting was loaded at boot, and a module that has not adopted keeps
-      * exactly that behaviour -- so this can ship without converting anything,
-      * and each module narrows its own boot cost when it declares.
+      * Part 3 is the adoption path: a module that has not declared has every
+      * stored setting loaded at boot, and each module narrows its own boot cost
+      * when it declares.
       *
       * PART 3 IS MEANT TO BE REMOVED. It is a compatibility clause, not a
       * permanent feature: every module in this repository can declare, and a
@@ -2059,9 +2015,7 @@ namespace OWA\Module\Base\Classes;
       *   - the key is declared without `storable`, so it is never queried.
       *
       * Neither is visible otherwise. The row sits in the table, the setting
-      * answers with its default, and nothing reports the disagreement -- which
-      * is the whole reason the read path stopped quietly querying for the first
-      * case rather than continuing to mask it.
+      * answers with its default, and nothing reports the disagreement.
       *
       * Only DECLARED modules are examined. A module with no settings.php has
       * all its rows loaded at boot and has made no claim to contradict.
@@ -2274,9 +2228,7 @@ namespace OWA\Module\Base\Classes;
       *
       * ONE flag, said explicitly. It decides whether the code ever goes
       * looking for a stored value, which is too load-bearing to infer from
-      * something else -- an earlier version read it off the presence of a
-      * `type` key, so one rule was stated in two places and a field could
-      * become queryable by acquiring a label.
+      * something else, such as the presence of a `type` key.
       *
       * Without it a setting is static: a code constant with a default, in the
       * catalogue so the UI layer knows it exists and refuses to write it, and
@@ -2326,9 +2278,8 @@ namespace OWA\Module\Base\Classes;
       * load-bearing: a setting can be declared with NOTHING -- static, no
       * default, no chrome -- which is exactly what a config-file-only setting
       * whose default is derived from the install's location looks like. Reading the empty
-      * array as "not registered" made those unconstrained, so persistSetting()
-      * would have accepted a stored db_class_dir. Caught by the contract test
-      * the moment the baked-in paths were removed.
+      * array as "not registered" would leave those unconstrained, and
+      * persistSetting() would accept a stored db_class_dir.
       *
       * A module's mechanical keys count as declared whether or not it ships a
       * settings.php: see mechanicalField().
@@ -2404,9 +2355,7 @@ namespace OWA\Module\Base\Classes;
       *
       * Registering a setting says "there might be a row for this". Asking the
       * database once per key would make registration expensive in proportion
-      * to how many settings exist -- base alone has 159, and about six of them
-      * have ever been stored, so that would be ~150 queries to discover ~150
-      * absences.
+      * to how many settings exist, nearly all of them never stored.
       *
       * Collectively it is one query, and it does not enumerate the keys: the
       * rows not already in hand ARE the answer, and there are only ever as many
@@ -2436,9 +2385,9 @@ namespace OWA\Module\Base\Classes;
           * is cheaper than enumerating a hundred names -- but that means it
           * also brings back rows for keys nobody asked about: static ones, and
           * the config-file-only ones whose whole point is never to come from
-          * the database. Applying what arrived rather than what was wanted
-          * made a static setting's stored value take effect whenever something
-          * else happened to trigger the batch, and do nothing when it did not.
+          * the database. Applying what arrived rather than what was wanted would
+          * make a static setting's stored value take effect whenever something
+          * else happened to trigger the batch.
           */
          $wanted = $this->pending;
 
@@ -2480,7 +2429,7 @@ namespace OWA\Module\Base\Classes;
 
          /*
           * No config-file-only strip here, and no constant strip either. Both
-          * are redundant on this path now: only keys that were PENDING are
+          * are redundant on this path: only keys that were PENDING are
           * applied, a config-file-only setting is declared static so is never
           * pending, and a constant-governed key is made static the moment the
           * constant is applied.
@@ -2506,9 +2455,7 @@ namespace OWA\Module\Base\Classes;
       * persistSetting() cannot express this. Writing '' or false STORES that
       * value -- a row holding an empty string is not the same as no row, and
       * the caller who meant "unset this" gets a setting that overrides the
-      * default with emptiness forever. SettingsShutdownSaveTest did exactly
-      * that and left `base.owa_settings_shutdown_probe` in the config of every
-      * install it ever ran against, including this one.
+      * default with emptiness forever.
       *
       * The row goes on the next save(), through the pruning that already
       * removes stored keys db_settings no longer holds.
@@ -2548,11 +2495,6 @@ namespace OWA\Module\Base\Classes;
 
      /**
       * Settings that cannot hold a stored value, DERIVED from the registry.
-      *
-      * The replacement for configFileOnlySettings(), which was a
-      * hand-maintained list of 21 keys saying what the declaration now says:
-      * not storable. Two statements of one rule are two things to keep in
-      * step, and the list is the one that goes.
       *
       * A setting is here because its module declared it without `storable`, or
       * because a config-file constant governs it. Nothing to update when a
@@ -2673,12 +2615,10 @@ namespace OWA\Module\Base\Classes;
      /**
       * Drop persisted settings that merely restate the current code default.
       *
-      * Historic installs accumulated these: an old config GUI wrote the whole
-      * settings array rather than just changed fields, so a value identical to
-      * the default of the day got stored and then pinned forever. Each one is a
-      * latent bug that surfaces the moment that default changes -- see the
-      * report_wrapper '.tpl' case, which turned into a fatal on every report
-      * render years after it was written.
+      * An old config GUI wrote the whole settings array rather than just changed
+      * fields, so installs hold values identical to the default of the day,
+      * pinned forever. Each one is a latent bug that surfaces the moment that
+      * default changes.
       *
       * Removing them is behaviour-preserving by definition: get() falls back to
       * the very default the stored value duplicates. Keys with no code default
@@ -2852,12 +2792,12 @@ namespace OWA\Module\Base\Classes;
         // separated from the source they are built from so the deny-all .htaccess can
         // allow public/** wholesale without exposing PHP source, templates, or config.
         // setJs()/setCss() and makeImageLink() (assetsUrl()) all resolve
-        // here, NOT modules_url -- which no longer serves anything to the browser. The
-        // tracker family (owa.tracker/vendors/heatmap/player) now lives here too, under
-        // public/base/dist/; old embeds hardcoding modules/base/dist/owa.tracker.js are
-        // 301'd here, and the tracker pins its own chunk publicPath to owa_baseUrl +
-        // 'public/base/dist/' so the async chunks resolve correctly through the redirect
-        // (see .htaccess and src/tracker/tracker-dom.js).
+        // here, NOT modules_url, which serves nothing to the browser. The tracker
+        // family lives here too, under public/base/dist/; embeds hardcoding
+        // modules/base/dist/owa.tracker.js are 301'd here, and the tracker pins its
+        // own chunk publicPath to owa_baseUrl + 'public/base/dist/' so the async
+        // chunks resolve through the redirect (see .htaccess and
+        // src/tracker/tracker-dom.js).
         //
         // OWA_ASSETS_URL serves the same tree from elsewhere (a CDN), and
         // OWA_TRACKING_URL is where log.php is reached: assetsUrl() and
@@ -2866,16 +2806,12 @@ namespace OWA\Module\Base\Classes;
 
         // Fill these only when nothing has already named a path.
         //
-        // Both are declared config-file-only (configFileOnlySettings), which is
-        // what a stored value from a previous server would otherwise poison --
-        // so the config file is the ONE place they may be set. loadConfigFile()
-        // runs before this method, so setting them unconditionally here silently
-        // discarded whatever the file said, and the config-file-only contract
-        // could not be honoured by the config file.
+        // Both are config-file-only, so the config file is the ONE place they may be
+        // set, and loadConfigFile() runs before this method: setting them
+        // unconditionally here would discard whatever the file said.
         //
-        // Their declared default is '' (modules/Base/settings.php), so "empty means
-        // nobody set it" is exactly the existing convention, and every install
-        // that does not set them is unaffected.
+        // Their declared default is '' (modules/Base/settings.php), so empty means
+        // nobody set it.
         if ( ! $this->get( 'base', 'error_log_file' ) ) {
 
             $this->set(
@@ -2945,11 +2881,8 @@ namespace OWA\Module\Base\Classes;
      public function createConfigFile($config_values) {
 
          /*
-          * The same setting the loader reads.
-          *
-          * This method used to build the path itself while isConfigFilePresent()
-          * and loadConfigFile() consulted `config_file`, so the installer could
-          * write one file and the loader read another. They cannot disagree now.
+          * The same setting the loader reads, so the installer cannot write one file
+          * while isConfigFilePresent() and loadConfigFile() read another.
           */
          $file = $this->get('base', 'config_file');
 
@@ -3030,23 +2963,16 @@ namespace OWA\Module\Base\Classes;
         /*
          * The file is NOT loaded here.
          *
-         * Its constants are already defined in this request -- InstallConfig
-         * defines the database ones from the submitted form so it can test the
-         * connection before writing anything, and install.php defines the error
-         * handler and cache ones. Loading the file then re-ran define() on all
-         * of them, and define() on an existing constant keeps the first value
-         * and emits a warning: eight "Constant OWA_DB_TYPE already defined in
-         * owa-config.php" warnings per install, in the error log, and printed
-         * ahead of the redirect below on any host with display_errors on.
+         * Its constants are already defined in this request -- InstallConfig defines
+         * the database ones from the submitted form so it can test the connection
+         * before writing anything, and install.php defines the error handler and cache
+         * ones. define() on an existing constant keeps the first value and emits a
+         * warning, which would be printed ahead of the redirect below on any host with
+         * display_errors on.
          *
          * Nothing needs it loaded. The only caller redirects immediately
-         * (InstallConfig::action), and a redirect is a new request that reads
-         * the file from scratch with nothing predefined -- once the compiled
-         * copy above is gone.
-         *
-         * Guarding the defines in owa-config-dist.php would have fixed only
-         * files written from that template afterwards; every existing install
-         * would keep warning.
+         * (InstallConfig::action), and a redirect is a new request that reads the file
+         * from scratch with nothing predefined -- once the compiled copy above is gone.
          */
         return true;
 
@@ -3061,11 +2987,8 @@ namespace OWA\Module\Base\Classes;
      * dropping schema_version would re-run its updates. Base also keeps its
      * install flag.
      *
-     * This used to write $module's schema version into BASE's settings
-     * whatever module it was given, so resetting any other module would have
-     * set base's schema version to that module's. A module with no stored
-     * schema version is not installed, and is refused rather than given a
-     * settings row of its own.
+     * A module with no stored schema version is not installed, and is refused
+     * rather than given a settings row of its own.
      *
      * @param  string $module
      * @return bool
@@ -3159,7 +3082,7 @@ namespace OWA\Module\Base\Classes;
      * destroyed first the save throws "mysqli object is already closed": the
      * setting is silently lost, and because the Error is uncaught in a
      * destructor it also turns a CLI command that did its job into exit
-     * status 255. Registering here fixes both, and costs one callback per
+     * status 255. Registering here avoids both, and costs one callback per
      * process that actually changes a setting.
      *
      * @return void
@@ -3181,8 +3104,7 @@ namespace OWA\Module\Base\Classes;
      * Runs during shutdown, from a registered function and again from the
      * destructor, so it must not be able to take the process down. There is no
      * caller left to hand a failure to, and an uncaught Throwable here would
-     * change the exit status of a process that had already done its work --
-     * which is the exact defect this class was changed to stop causing. A save
+     * change the exit status of a process that had already done its work. A save
      * can legitimately fail at this point: an installation with no config file
      * has no auth key to hash a cache entry with, and a process that is shutting
      * down because the database went away has nothing to write to.

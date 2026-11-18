@@ -9,10 +9,10 @@ use PHPUnit\Framework\TestCase;
  * failure.
  *
  * The installer's first page asks whether OWA is already installed. With an
- * owa-config.php whose details do not connect, connect() logged "Could not
- * connect to database." at ALERT on that page (#1401) -- before the reader had
- * reached the environment check, which is where a failed connection is
- * reported. connect() itself still logs it.
+ * owa-config.php whose details do not connect, logging there would put "Could
+ * not connect to database." at ALERT on that page, before the reader reaches
+ * the environment check, which is where a failed connection is reported.
+ * connect() itself logs it.
  */
 final class DbQuietConnectTest extends TestCase
 {

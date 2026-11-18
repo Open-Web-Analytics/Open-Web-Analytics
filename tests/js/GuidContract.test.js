@@ -8,11 +8,8 @@ import { Util } from '../../modules/Base/src/common/Util.js';
  * TO (the 32-bit to 63-bit dimension id conversion) -- and as random as that
  * allows: 62 bits, with bit 62 set so every id is exactly 19 digits.
  *
- * It used to lead with 10 digits of unix seconds, leaving about 30 random bits
- * per second: roughly 0.8 collisions a year at 10 new visitors a second, each
- * silently merging two visitors or two sessions. The seconds spent ~33 bits
- * encoding three centuries an installation never sees. Among n ids of 62
- * random bits the expected collisions are n^2 / 2^63.
+ * Among n ids of 62 random bits the expected collisions are n^2 / 2^63; a
+ * collision silently merges two visitors or two sessions.
  */
 describe('generateRandomGuid contract', () => {
 

@@ -14,9 +14,7 @@ use PHPUnit\Framework\TestCase;
  * mysqli_result::fetchAll()` on the other.
  *
  * It is a mistake that hides completely on a developer machine, because a
- * machine has one driver. It surfaced in CI's isolation sweep -- the mysqli job
- * failing while the pdo job passed -- on the goal funnel and the domstreams
- * list, both written against the driver the author happened to be running.
+ * machine has one driver. CI's isolation sweep runs both.
  *
  * WHAT TO USE INSTEAD
  *

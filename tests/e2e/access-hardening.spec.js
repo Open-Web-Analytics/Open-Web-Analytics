@@ -1,26 +1,23 @@
 /**
- * HTTP-level web-access hardening safety net (Phase 5, variant A).
+ * HTTP-level web-access hardening safety net.
  *
- * The repo root IS the Apache docroot, so today the WHOLE tree is web-served: not
- * just the public entry points and built assets, but PHP source (owa_db.php,
- * classes/*.php), raw templates (*.tpl), owa-config.php (DB credentials), and build
- * metadata (webpack.config.js, package.json, composer.json). This spec pins the
- * intended access policy:
+ * The repo root IS the Apache docroot, so the whole tree is reachable by URL
+ * unless denied: PHP source, raw templates, owa-config.php (DB credentials),
+ * and build metadata (webpack.config.js, package.json, composer.json). This
+ * spec pins the intended access policy:
  *
  *   - PUBLIC set  -> must be reachable (200/301/302). The public PHP endpoints, the
- *     built JS/CSS assets (now including the whole tracker family under public/), AND
- *     the two legacy tracker ENTRY points that old embeds hardcode: the previous
- *     modules/base/dist/owa.tracker.js and the ancient
- *     modules/base/js/owa.tracker-combined-min.js. Neither has a physical file anymore --
- *     both are 301-redirected to public/base/dist/owa.tracker.js by .htaccess (the
- *     rewrites fire unconditionally, no -f test), so old embed snippets keep resolving.
+ *     built JS/CSS assets (including the whole tracker family under public/), AND
+ *     the two legacy tracker ENTRY points that old embeds hardcode:
+ *     modules/base/dist/owa.tracker.js and modules/base/js/owa.tracker-combined-min.js.
+ *     Neither has a physical file -- both are 301-redirected to
+ *     public/base/dist/owa.tracker.js by .htaccess (the rewrites fire
+ *     unconditionally, no -f test), so old embed snippets keep resolving.
  *   - DENIED set  -> must NOT be served as source (expect 403, or 404 if the allow
  *     rule makes it vanish). Source PHP, templates, config, data, build metadata.
  *
- * This is RED before the deny-all .htaccess allowlist lands (the DENIED set returns
- * 200 today) and GREEN after -- write-the-test-first, watch it flip. It is the whole
- * point of the phase, so it guards the policy independently of how it's implemented
- * (Apache .htaccess here; an nginx equivalent would satisfy the same contract).
+ * It guards the policy independently of how it's implemented (Apache .htaccess
+ * here; an nginx equivalent would satisfy the same contract).
  *
  * Target: derived from OWA_E2E_BASE_URL (or the default) by stripping the trailing
  * index.php -- i.e. the install ROOT that public_url points at.
@@ -51,10 +48,9 @@ const PUBLIC_PATHS = [
     // makeImageLink images (report icons/logos) now resolve here via images_url.
     'public/base/i/funnel_flow.png',
     'public/base/i/user_icon_small.gif',
-    // The two legacy tracker ENTRY points stay reachable -- neither has a physical file
-    // anymore; .htaccess 301s both to public/base/dist/owa.tracker.js. Old embed codes
-    // in the wild point at one or the other, so both must keep resolving (the redirect
-    // is the compat, not a duplicate file). The moved tracker pins its own publicPath to
+    // The two legacy tracker ENTRY points stay reachable -- neither has a physical
+    // file; .htaccess 301s both to public/base/dist/owa.tracker.js. Old embed codes
+    // in the wild point at one or the other. The tracker pins its own publicPath to
     // public/, so its async chunks are never requested from these old locations.
     'modules/base/dist/owa.tracker.js',
     'modules/base/js/owa.tracker-combined-min.js',
@@ -68,14 +64,13 @@ const DENIED_PATHS = [
     'owa_coreAPI.php',                                // core class source
     'modules/base/classes/trackingEventHelpers.php',  // module class source
     'modules/base/templates/report.php',              // raw template
-    // Module-tree images are no longer served -- makeImageLink now resolves against
-    // public/ (images_url = assets_url), so the source-tree copy must be denied like
-    // the rest of modules/. (The public/base/i/ copy above is what's actually served.)
+    // Module-tree images are not served -- makeImageLink resolves against public/
+    // (images_url = assets_url), so the source-tree copy is denied like the rest of
+    // modules/.
     'modules/base/i/user_icon_small.gif',
-    // The tracker's async chunks used to live (and be allowlisted) at modules/base/dist/.
-    // The tracker moved to public/ and pins its publicPath there, so it never requests
-    // these from the module tree -- the allow was dropped and they must now be denied.
-    // (Only modules/base/dist/owa.tracker.js stays reachable there, as a 301 entry point.)
+    // The tracker pins its publicPath to public/, so it never requests its async
+    // chunks from the module tree; they are denied. (Only
+    // modules/base/dist/owa.tracker.js is reachable there, as a 301 entry point.)
     'modules/base/dist/owa.vendors.js',
     'webpack.config.js',                              // build metadata
     'package.json',                                   // build metadata
@@ -138,21 +133,17 @@ test.describe('web-access hardening policy @server-config', () => {
         });
     }
 
-    // The install ROOT itself -- the first URL anyone visits after unpacking, and the one
-    // this suite used to miss completely: ROOT was only ever used as a PREFIX for the
-    // paths above, never requested on its own. That blind spot is how OWA 1.9.0 shipped
-    // a 403 on every fresh install (issue #950) -- authorization runs in the auth phase,
-    // but mod_dir does not map a bare directory URL onto DirectoryIndex until the handler
-    // phase, so deny-all rejected the request as a DIRECTORY before index.php was ever
-    // considered.
+    // The install ROOT itself, requested on its own. Authorization runs in the
+    // auth phase, but mod_dir does not map a bare directory URL onto
+    // DirectoryIndex until the handler phase, so a deny-all rejects the request as
+    // a DIRECTORY before index.php is considered.
     test('public: the install root is served', async ({ request }) => {
         const code = await statusOf(request, ROOT);
         expect(code, 'the install root should be publicly reachable').toBeLessThan(400);
     });
 
-    // The same directory without its trailing slash. Also 403'd before the fix, and for
-    // the same reason: mod_dir's canonical "add the slash" 301 is a handler-phase
-    // response, so it never ran either.
+    // The same directory without its trailing slash: mod_dir's canonical "add
+    // the slash" 301 is a handler-phase response, so the same deny-all blocks it.
     test('public: the install root is served without a trailing slash', async ({ request }) => {
         const code = await statusOf(request, ROOT.replace(/\/$/, ''));
         expect(code, 'the slashless install root should be publicly reachable').toBeLessThan(400);

@@ -60,7 +60,7 @@ final class DocblocksAndUnreadReturnsTest extends TestCase
         $this->assertSame(1, substr_count($doc, '/**'));
     }
 
-    /** Core\Controller has an errorAction(); ReportController's docblock no longer says otherwise. */
+    /** Core\Controller has an errorAction(), as ReportController's docblock says. */
     public function testReportControllerErrorActionDocblock(): void
     {
         $this->assertTrue(method_exists(\OWA\Core\Controller::class, 'errorAction'));

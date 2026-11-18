@@ -5,10 +5,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * The GeoIP settings page renders, and says what an administrator needs.
  *
- * The module had no settings page at all. Its licence key -- without which the
- * database cannot be downloaded -- could only be set by hand-editing
- * owa-config.php, and nothing in the interface said so, or that a key was
- * needed, or that the database goes stale.
+ * Its licence key, without which the database cannot be downloaded, is set
+ * here, and the page says that a key is needed and that the database goes
+ * stale.
  *
  * WHY THE RENDER IS ASSERTED AND NOT JUST THE WIRING
  * A template that fails renders as NOTHING, not as an error. ViewScope raises
@@ -36,7 +35,7 @@ final class MaxmindOptionsPageTest extends TestCase {
 
         $data = array_merge( [
             /*
-             * The two editable settings are NOT passed in any more. They are
+             * The two editable settings are NOT passed in. They are
              * built from the registry -- what they are called, what the edition
              * list holds and what is stored are all in settings.php now -- so a
              * test that injected them would be asserting against its own
@@ -144,7 +143,7 @@ final class MaxmindOptionsPageTest extends TestCase {
 
     /**
      * The page's real job. A missing key and a missing database both present as
-     * "locations are blank", and neither was visible anywhere before this.
+     * "locations are blank", and this page is where either shows.
      */
     public function testItSaysWhenGeolocationCannotWork(): void {
 

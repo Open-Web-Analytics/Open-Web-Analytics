@@ -138,12 +138,8 @@ function emittedKeys(spec) {
  *                  payload carries is_new_session
  *   'established'  a session already in the cookie, left by a previous page
  *
- * The scenario used to be implicit, and unstated scenarios are not scenarios:
- * every emitter ran against whatever the previous test had left in the shared
- * in-memory state store, so the three non-pageview contracts omitted
- * is_new_session only because page_view happened to run first in file
- * order. Run alone, each of them failed -- before any of this work. Naming the
- * scenario is what makes the contract mean something.
+ * The scenario is stated, so an emitter does not depend on whatever the previous
+ * test left in the shared in-memory state store.
  */
 const EMITTERS = {
     'page_view': {
@@ -250,10 +246,7 @@ describe('tracker beacon contract', () => {
  * from anything but the page view would discard evidence the raw store exists to
  * keep.
  *
- * It WAS briefly scoped to the page view, on the grounds that no report read a
- * click's copy. That was a statement about today's reports, not about what the
- * data is for. Asserted here so the saving is not made again by someone counting
- * bytes: the per-event cost comes from sending one beacon per event, and batching
+ * The per-event cost comes from sending one beacon per event, and batching
  * several events into one request is the answer to it.
  */
 describe('the referrer rides every beacon', () => {

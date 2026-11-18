@@ -5,17 +5,15 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/bootstrap_owa.php';
 
 /**
- * Regression guard for stored-XSS in server-rendered admin templates.
+ * Guard against stored XSS in server-rendered admin templates.
  *
- * A security audit found several admin/reporting templates that echoed
- * attacker-controllable, tracker-sourced values (page URLs, page titles,
- * visitor user_name/user_email) RAW into HTML an admin views -- notably into
- * <a href="..."> attributes and an HTML notification email. The tracker's
- * makeUrlCanonical() runs html_entity_decode() on stored URLs and never
- * re-escapes, so a page URL like  https://x/?a=1"><script>...  keeps its raw
- * quote and breaks out of the href attribute when the report renders.
+ * Admin and reporting templates render attacker-controllable, tracker-sourced
+ * values (page URLs, page titles, visitor user_name/user_email) into HTML an
+ * admin views -- notably into <a href="..."> attributes and an HTML
+ * notification email. A stored page URL like  https://x/?a=1"><script>...
+ * keeps its raw quote, so echoed raw it breaks out of the href attribute.
  *
- * The fix routes those sinks through \OWA\Core\Template::out() (htmlentities,
+ * Those sinks go through \OWA\Core\Template::out() (htmlentities,
  * ENT_QUOTES). These tests render the ACTUAL template files with a breakout
  * payload and assert the dangerous sequence does not survive into the output.
  * They are DB-free: templates only need their view vars set directly.

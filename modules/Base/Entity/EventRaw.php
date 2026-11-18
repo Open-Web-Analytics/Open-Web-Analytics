@@ -66,11 +66,8 @@ class EventRaw extends \OWA\Core\Entity {
         /*
          * Wide enough for any name a site may give a custom event -- 40
          * characters, TrackingEventHelpers::CUSTOM_NAME_PATTERN -- and NOT
-         * TRUNCATABLE. It was VARCHAR(24), and the entity layer trims an
-         * over-long value to fit, so a 25-40 character name was stored cut while
-         * the row id was derived from the whole name: two events sharing their
-         * first 24 characters reported as one. Refused rather than trimmed now,
-         * because a trimmed name is a different event. Update055.
+         * TRUNCATABLE: the row id is derived from the whole name, so a trimmed
+         * name is a different event. Refused rather than trimmed.
          */
         $event_type = $this->column( 'event_type', OWA_DTD_VARCHAR64, false );
         $event_type->setTruncatable( false );
@@ -119,15 +116,9 @@ class EventRaw extends \OWA\Core\Entity {
          *
          * Anchors, both of them: offsets are derived from them downstream,
          * because an offset computed at collection cannot be re-derived when
-         * the rule for it changes. `psts` is what daysSinceLastVisit reads --
-         * the tracker's own comment says so, and says why the seconds interval
-         * it replaced was wrong ("a continuous seconds value gives one bucket
-         * per distinct second, so it was a metric wearing a dimension's
-         * clothes. Days bucket; seconds do not").
-         *
-         * Both were already on the wire and reached NO column, while
-         * prev_event_ts was written to a column nothing read. The value that
-         * was stored was not the one anybody wanted.
+         * the rule for it changes. `psts` is what daysSinceLastVisit reads: days
+         * bucket, where a continuous seconds value would give one bucket per
+         * distinct second.
          */
         $this->setProperty( $this->column( 'session_start_ts', OWA_DTD_BIGINT ) );
         $this->setProperty( $this->column( 'prior_session_start_ts', OWA_DTD_BIGINT ) );
@@ -139,7 +130,7 @@ class EventRaw extends \OWA\Core\Entity {
          * existed sends nothing, and the sort has to read that as "no device
          * order for this session" rather than as position zero. Every row of an
          * old session is NULL together, so those sessions fall back to arrival
-         * order and behave exactly as they did.
+         * order.
          *
          * Counted from 1, so a stored 0 is not a position and never appears.
          */
@@ -157,10 +148,9 @@ class EventRaw extends \OWA\Core\Entity {
          *
          *     SELECT beacon_version, COUNT(*) ... GROUP BY 1
          *
-         * NULL is generation 0 -- a tracker from before versioning, which is
-         * every tracker in the wild on the day this shipped. Nullable for
-         * exactly that reason, and it must stay nullable while any of them can
-         * still be cached.
+         * NULL is generation 0 -- a tracker from before versioning. Nullable for
+         * that reason, and it must stay nullable while any of them can still be
+         * cached.
          */
         $this->setProperty( $this->column( 'beacon_version', OWA_DTD_INT ) );
 
@@ -209,12 +199,6 @@ class EventRaw extends \OWA\Core\Entity {
          * Device and browser, resolved from raw_ua at ingest so realtime can
          * report on them. raw_ua is kept beside them so a parser fix can be
          * re-applied to history.
-         *
-         * `browser` was here too, VARCHAR(128), written from the same property as
-         * browser_type and read by nothing -- dimensions.php declares browserType
-         * against browser_type. Dropped in Update052: on a table whose row cannot
-         * exceed 65,535 bytes, a second copy of a value is budget a real
-         * dimension does not get.
          */
         $this->setProperty( $this->column( 'browser_type', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'browser_version', OWA_DTD_VARCHAR32 ) );
@@ -271,8 +255,8 @@ class EventRaw extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'target_host', OWA_DTD_VARCHAR255 ) );
 
         /*
-         * Whether that target was off-site, decided at ingest from target_url's
-         * host against page_location's.
+         * Whether that target was off-site, as the tracker decided it
+         * (OWATracker.isOutboundUrl()).
          *
          * NOT NULL WITH A DEFAULT, like is_goal_event and for the same reason: a
          * boolean holding three values groups as three things, and the boolean
@@ -300,9 +284,8 @@ class EventRaw extends \OWA\Core\Entity {
          *
          * The element and form params STAY in the bag on purpose. Most installs
          * will never group by an element class or a form name, and a column is
-         * width on every row of every Property whether or not anyone reads it.
-         * Measured on MySQL 8.4: promoting nine of them took the custom-dimension
-         * ceiling from 62 to 37.
+         * width on every row of every Property whether or not anyone reads it, and
+         * room the custom dimensions do not get.
          *
          * file_name is the PATH, without host, query or fragment. The extension
          * is bounded by the tracker's downloadExtensions list, so 32 is generous.
@@ -316,12 +299,10 @@ class EventRaw extends \OWA\Core\Entity {
          * custom dimension, and "what do people search for" is not a question an
          * install should spend one of its twenty slots on.
          *
-         * NO MIGRATION, unlike the two above. Update034 creates owa_event_raw from
-         * THIS ENTITY, so every upgrade path that reaches 34 builds the table with
-         * whatever columns are declared here -- and v2 has never shipped, so no
-         * install exists that was created before this line. Update053 and Update054
-         * are no-ops on the same reasoning; they served exactly one dev install.
-         * While v2 is unshipped, adding a column here is the whole change.
+         * NO MIGRATION: Update034 creates owa_event_raw from THIS ENTITY, so every
+         * upgrade path that reaches 34 builds the table with whatever columns are
+         * declared here. While v2 is unshipped, adding a column here is the whole
+         * change.
          *
          * 255 because it is what somebody typed into a box. Longer than that is a
          * paste, and strict mode refuses an over-long value rather than truncating
@@ -443,8 +424,7 @@ class EventRaw extends \OWA\Core\Entity {
           . 'Empty when it met none. Not carried into the cube.' );
 
         /*
-         * Indexes, as measured in the prototype. The two composites are the
-         * report shapes: every query bounds site_id and a date range, and the
+         * Indexes. The two composites are the report shapes: every query bounds site_id and a date range, and the
          * event-type one serves a breakdown of a single event over a period.
          * Two single-column indexes are not a substitute -- MySQL picks one and
          * filters the rest.

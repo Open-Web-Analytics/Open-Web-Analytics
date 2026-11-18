@@ -8,9 +8,8 @@ use PHPUnit\Framework\TestCase;
  * A write drops every cached copy of the row, not only the one under id.
  *
  * getByColumn() caches a row under the column it was looked up by, so a site
- * loaded by site_id and by id is cached twice. update() refreshed and delete()
- * dropped the id entry only, and a load by site_id went on returning the row
- * as it was: a renamed Profile under its old name, an archived one active, a
+ * loaded by site_id and by id is cached twice. Refreshing or dropping only the
+ * id entry would leave a load by site_id returning the row as it was: a renamed Profile under its old name, an archived one active, a
  * deleted one still there.
  */
 final class EntityCacheEveryKeyTest extends TestCase

@@ -6,12 +6,10 @@ const { FIXTURE, login, openReport, openReportNoTabs } = require('./fixtures');
  *
  * WHY THIS EXISTS
  * ---------------
- * enableEcommerceReporting is a PER-PROPERTY setting. The install-wide value
- * has been false since it was introduced, and reading the wrong one is a silent
- * failure: the report still renders, it just quietly leaves the e-commerce
- * columns out. That
- * is exactly what ReportCampaigns did until this suite was written, and nothing
- * caught it because every page still returned 200.
+ * enableEcommerceReporting is a PER-PROPERTY setting, and the install-wide value
+ * is false. Reading the wrong one is a silent failure: the report still renders,
+ * it just quietly leaves the e-commerce columns out, and every page still
+ * returns 200.
  *
  * WHICH REPORTS GET TABS
  * ----------------------
@@ -125,10 +123,8 @@ test.describe('e-commerce reporting', () => {
     });
 
     test('Campaigns includes e-commerce metrics, which requires reading the SITE setting', async ({ page }) => {
-        // ReportCampaigns used owa_coreAPI::getSetting('base', ...) -- the global
-        // -- so transactions/transactionRevenue were never added to its metric
-        // list no matter how the site was configured. The columns come from the
-        // metrics string, so their absence is the observable symptom.
+        // The columns come from the metrics string, so their absence is the
+        // observable symptom of reading the wrong (install-wide) setting.
         await openReport(page, { reportId: 'campaigns' });
 
         const body = await page.content();
@@ -166,15 +162,9 @@ test.describe('e-commerce reporting', () => {
         expect(text).toContain('Revenue Per Session');
     });
 
-    // Regression test for a real bug this suite found.
-    //
-    // base.reportEcommerce set sort='actions' -- neither a metric it queries nor
-    // a dimension it groups on, and the report has no dimensions at all. The
-    // unresolvable sort came back as a null sortColumn/sortOrder, which
-    // setGridOptions handed to jqGrid (the grid then), which called .toLowerCase() on it:
-    // "Cannot read properties of null (reading 'toLowerCase')", thrown while
-    // building the grid. The page still rendered, so the only trace was the
-    // browser console -- which nothing was watching.
+    // An unresolvable sort comes back as a null sortColumn/sortOrder, which
+    // throws while building the grid. The page still renders, so the only trace
+    // is the browser console.
     test('no report page raises a browser console error', async ({ page }) => {
         // The dimension-resolution warning that started this work was invisible
         // in the browser -- it only reached the server log. This catches the
@@ -192,10 +182,8 @@ test.describe('e-commerce reporting', () => {
     /**
      * A money axis is labelled in money, in the install's own currency.
      *
-     * Two things this pins, and the second is why the first was wrong for a
-     * while. Revenue is stored in MINOR units and the chart's formatValue is
-     * what divides it by a hundred -- dropping that call plotted 6300 for
-     * $63.00, which nothing noticed until an axis put a unit on it. And the
+     * Two things this pins. Revenue is stored in MINOR units and the chart's
+     * formatValue is what divides it by a hundred. And the
      * symbol comes from the server's own formatting of the metric: which
      * currency an install uses is a setting the browser cannot see.
      */

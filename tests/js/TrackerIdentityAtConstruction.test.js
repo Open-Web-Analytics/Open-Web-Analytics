@@ -11,10 +11,9 @@ import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
 /**
  * A tracker is built knowing which site it is.
  *
- * It did not used to be. The command queue constructs a tracker on the FIRST
- * command naming it and applies that command afterwards, so the entire
- * constructor body ran with siteId still ''. Everything that matters happens in
- * that body: the five registerStateStore() calls, the 'cookieDomainEstablished'
+ * The command queue constructs a tracker on the FIRST command naming it and
+ * applies that command afterwards, so a setter would leave the constructor body
+ * running with siteId ''. Everything that matters happens in that body: the five registerStateStore() calls, the 'cookieDomainEstablished'
  * action that storage migrations peg to, and 'tracker.init'. A store cannot be
  * scoped to a site nobody has named yet.
  *
@@ -24,9 +23,8 @@ import { CommandQueue } from '../../modules/Base/src/tracker/CommandQueue.js';
  * ORDER MUST NOT MATTER, and that is the point of the look-ahead. OWA's own
  * snippet template puts setDebug ahead of setSiteId whenever the install is in
  * development mode, and setApiEndpoint ahead of it whenever that option is set
- * -- and those snippets are already pasted into sites that will never be
- * regenerated. Trusting "setSiteId is first" would fix the tidy case and leave
- * the real ones broken. loadCmds() receives the whole array before process()
+ * -- and those snippets are pasted into sites that will never be regenerated.
+ * loadCmds() receives the whole array before process()
  * starts shifting it, so the queue looks the identity up instead.
  */
 describe('a tracker is constructed knowing its site', () => {

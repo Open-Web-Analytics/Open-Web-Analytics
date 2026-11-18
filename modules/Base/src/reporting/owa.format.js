@@ -7,9 +7,9 @@
  * @license     http://www.openwebanalytics.com/licenses/ BSD-3 Clause
  */
 
-// jQuery is imported explicitly (was supplied by webpack.ProvidePlugin before the
-// ESM renovation). The 'jquery' package is CommonJS, so webpack's interop makes the
-// namespace import the callable jQuery function -- same pattern as the tracker files.
+// jQuery is imported explicitly. The 'jquery' package is CommonJS, so webpack's
+// interop makes the namespace import the callable jQuery function -- same pattern
+// as the tracker files.
 import * as jQuery from 'jquery';
 
 var OWA = {
@@ -290,9 +290,7 @@ OWA.util =  {
      *
      * A grid formatter's return value becomes the cell's HTML, so any
      * value concatenated into one is markup unless it passes through here
-     * first. Two formatters in owa.resultSetExplorer.js each carried their
-     * own copy of these five replaces; this is that, shared, and now also
-     * used by the formatters that were building markup without it.
+     * first.
      *
      * Covers both positions a value lands in: text content, and inside a
      * double-quoted attribute.
@@ -624,12 +622,8 @@ OWA.util =  {
  * chart element on every redraw -- a metric change, a granularity change, any
  * refetch. The node flot registered is then detached, the poller reads a
  * detached node as invisible and stops watching it, and the chart never grows
- * again. Measured: shrinking 1600 -> 1000 redrew at 678px, and going back to
- * 1600 left the canvas at 678 inside a 1272px placeholder.
- *
- * Observing the CONTAINER rather than the thing being drawn is what keeps that
- * from happening again -- the container is the element the layout sizes and the
- * one thing here that is never replaced.
+ * again. The CONTAINER is observed instead: it is the element the layout sizes
+ * and the one thing here that is never replaced.
  *
  * INTEGER widths only, and height is deliberately ignored. Sub-pixel churn from
  * a flex layout would otherwise redraw continuously, and a redraw that changes

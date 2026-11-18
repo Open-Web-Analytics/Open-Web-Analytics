@@ -725,7 +725,7 @@ describe('the reporting JavaScript', () => {
 
         expect(problems).toEqual([]);
 
-        // An entry nothing matches any more is taken out.
+        // An entry nothing matches is taken out.
         expect(ALLOWED.filter((a) => !allowedSeen.has(a))).toEqual([]);
     });
 

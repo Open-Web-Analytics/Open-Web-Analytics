@@ -12,8 +12,8 @@ namespace OWA\Module\Base\Classes\Spam\Rules;
  * than 500 (QUERY_VERY_LONG takes those, so the two never fire together).
  *
  * The query string is everything after the first `?` up to a `#`, as the beacon
- * carried it (Spam\Received). Measured across app's sites: none over 200 on 1-3
- * November, 386 during the 4-5 November attack.
+ * carried it (Spam\Received). Real pages rarely carry one this long; crawler
+ * floods do.
  */
 class QueryLong extends \OWA\Module\Base\Classes\Spam\Rule {
 

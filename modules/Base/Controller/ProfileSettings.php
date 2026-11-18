@@ -5,9 +5,8 @@ namespace OWA\Module\Base\Controller;
 /**
  * Observation Settings: how a Profile watches its site.
  *
- * Split out of the old site page, which stacked details, these settings and the
- * access grants into three forms that saved in pieces. An Observation Profile
- * IS a way of observing, so these settings are what define it.
+ * An Observation Profile IS a way of observing, so these settings are what
+ * define it.
  */
 class ProfileSettings extends \OWA\Core\AdminController {
 

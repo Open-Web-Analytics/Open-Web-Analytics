@@ -198,24 +198,10 @@ class Entity {
     /**
      * Normalise a value that is really absence, on the way into a column.
      *
-     * WHAT IS LEFT OF A LARGER MECHANISM. This applied the '(not set)' storage
-     * label: a v1 column already held that literal on every historical row, so
-     * writing NULL to half a column would have been worse than either spelling,
-     * and the label was declared per property in tracking_properties.json.
-     *
-     * Nothing declares it any more -- v2 carries absence as NULL from the first
-     * row, and the twelve v1 declarations came out with the properties they were
-     * on -- so the lookup could never fire. It is removed, along with the nullable
-     * and numeric opt-outs that existed only to keep the label away from columns
-     * that should not hold text.
-     *
-     * The whitespace guard stays, and is the reason this method still exists.
-     * '   ' is three bytes that look like a value, sort like one and group as
-     * their own row in a report; the label used to catch it in passing, so
-     * removing the last declaration left the one case that must be normalised
-     * with nothing normalising it. The pipeline trims before this is reached --
-     * this is the entity's own guard for a caller handing setProperties() a value
-     * directly.
+     * '   ' is three bytes that look like a value, sort like one and group as their
+     * own row in a report, so a whitespace-only value is stored as NULL. The
+     * pipeline trims before this is reached; this is the entity's own guard for a
+     * caller handing setProperties() a value directly.
      *
      * @param  string $column
      * @param  mixed  $value
@@ -279,22 +265,13 @@ class Entity {
             
             // A falsy value is stored when the COLUMN can legitimately hold one.
             //
-            // This guard used to be a bare `if ( $value )`, so 0, false and ''
-            // were all discarded silently -- setting a numeric column to 0 did
-            // nothing at all, and the caller had no way to tell. That is why
-            // SessionHandlers once wrote the STRING 'false' into is_bounce: a
-            // truthy value was the only kind that survived, and MySQL coerced it
-            // to 0 on the way in.
+            // By TYPE, because the two cases are not alike. On a numeric column 0 is a
+            // value like any other. On a string column, '' is what a caller passes when it
+            // has nothing -- several handlers rely on `set('medium', $maybeEmpty)` leaving
+            // the existing value alone -- so storing empties there would wipe data.
             //
-            // Widened by TYPE rather than removed, because the two cases are not
-            // alike. On a numeric column 0 is a value like any other. On a string
-            // column, '' is what a caller passes when it has nothing -- several
-            // handlers rely on `set('medium', $maybeEmpty)` leaving the existing
-            // value alone -- so blanket-storing empties there would start wiping
-            // data that is currently preserved.
-            //
-            // Numeric columns therefore accept 0/false; everything else keeps
-            // the old behaviour exactly.
+            // Numeric columns therefore accept 0/false; everything else ignores a falsy
+            // value.
             if ( $value || $this->columnAcceptsFalsy( $name, $value ) ) {
 
                 $this->properties[$name]->setValue( $value );
@@ -313,11 +290,8 @@ class Entity {
      * set() discards '' on a string column, on purpose: several handlers rely
      * on `set('medium', $maybeEmpty)` leaving the existing value alone, and
      * blanket-storing empties there would wipe data that is currently kept.
-     * The cost is that a caller who genuinely means "this is now blank" -- an
-     * edit form whose textarea the user emptied -- had no way to say so, and
-     * the old value survived with no error shown.
-     *
-     * This is that way. It marks the column dirty so update() writes it, which
+     * This is how a caller says "this is now blank" -- an edit form whose
+     * textarea the user emptied. It marks the column dirty so update() writes it, which
      * is the half set() cannot reach: its falsy guard wraps the markDirty call
      * as well as the assignment.
      *
@@ -339,13 +313,11 @@ class Entity {
      * Whether a falsy value is a real value for this column.
      *
      * Reads the type the entity already declares -- DbColumn's second
-     * constructor argument, e.g. new DbColumn('priority', OWA_DTD_INT) -- so no
-     * entity needs changing to get this. Every column in the codebase already
-     * carries one.
+     * constructor argument, e.g. new DbColumn('priority', OWA_DTD_INT).
      *
      * Numeric columns only. 0 and false are values there; on a VARCHAR, '' is
      * how callers say "I have nothing", and treating that as a value would blank
-     * columns that are deliberately left alone today.
+     * columns that are deliberately left alone.
      *
      * PORTABILITY
      * The comparison is against the OWA_DTD_* constants, never against the SQL
@@ -354,13 +326,13 @@ class Entity {
      * dialect calls one -- 'BIGINT' here, something else elsewhere. The
      * constants are OWA's portable vocabulary; the strings are MySQL's.
      *
-     * Matching the strings instead would have re-broken this silently on the
-     * first non-MySQL driver: the type would fail to look numeric, falsy values
-     * would go back to being dropped, and nothing would report it.
+     * Matching the strings instead would break silently on a non-MySQL driver:
+     * the type would fail to look numeric, falsy values would be dropped, and
+     * nothing would report it.
      *
      * A dialect that introduces a numeric type of its own adds its constant to
-     * numericColumnTypes(). Anything unrecognised keeps the old conservative
-     * behaviour rather than guessing.
+     * numericColumnTypes(). Anything unrecognised is treated as non-numeric
+     * rather than guessed.
      *
      * @param string $name
      * @param mixed  $value any type
@@ -489,17 +461,10 @@ class Entity {
     /**
      * The options Db::createTable() builds the table clause from.
      *
-     * Returns the whole set, which is what the caller indexes into. It used to
-     * return the VALUE of table_type whenever one was set -- a bare string
-     * where an array was expected -- so any second option was unreachable by
-     * construction, and setCharacterEncoding() has been inert since it was
-     * written: it stores an encoding that nothing ever reads back.
-     *
-     * That matters now rather than as tidying. An entity naming its own
-     * encoding is how a v2 table can be created as utf8mb4 alongside v1 tables
-     * that stay utf8, in one database, without converting anything. The
-     * connection is already the wider encoding (see MysqlDialect), so the only
-     * thing standing in the way was this.
+     * Returns the whole set, which is what the caller indexes into. An entity
+     * naming its own encoding (setCharacterEncoding()) is how a v2 table can be
+     * created as utf8mb4 alongside v1 tables that stay utf8, in one database,
+     * without converting anything.
      *
      * @return array{table_type: string, character_encoding?: string}
      */
@@ -532,25 +497,16 @@ class Entity {
     /**
      * The value to WRITE for a column, resolving an unset one by its declared type.
      *
-     * create() sets EVERY column, so a column nobody assigned goes into the
-     * INSERT explicitly. Until the PDO driver landed (#1028) that did not
-     * matter: the old driver interpolated values as quoted literals, so a PHP
-     * null became '' and MySQL -- with sql_mode empty -- coerced '' to 0 for a
-     * numeric column. Eleven years of rows were written that way.
+     * create() sets EVERY column, so a column nobody assigned goes into the INSERT
+     * explicitly. PDO binds a PHP null as a real NULL, while the rows written by
+     * the interpolating driver hold '' or 0 for the same absence -- and each
+     * distinct value is its own GROUP BY bucket, so a two-state fact would report
+     * as three. This writes the stored representation those rows have, so old rows
+     * and new rows agree.
      *
-     * PDO binds the null instead, so the same code now stores a real NULL. On
-     * demo that flipped ~70 session columns and ~14 request columns from 0 to
-     * NULL overnight (2026-08-21), including is_repeat_visitor, every goal_N,
-     * and every commerce_*. Each distinct value is its own GROUP BY bucket, so
-     * a two-state fact started reporting as three.
-     *
-     * This restores the pre-#1028 STORED REPRESENTATION rather than inventing a
-     * new one -- the point is that old rows and new rows agree, which is what
-     * anything reading across the boundary depends on.
-     *
-     * TIMESTAMP and anything unrecognised are deliberately left NULL: the old
-     * path turned those into '0000-00-00', which is not a value worth
-     * restoring and is refused outright under STRICT_ALL_TABLES.
+     * TIMESTAMP and anything unrecognised are deliberately left NULL: the
+     * interpolating driver turned those into '0000-00-00', which is refused under
+     * STRICT_ALL_TABLES.
      *
      * @param string $col column name
      * @return mixed the value to write
@@ -571,26 +527,23 @@ class Entity {
 
         $type = (string) $this->properties[ $col ]->get( 'data_type' );
 
-        // Numeric: '' coerced to 0 under the old driver.
+        // Numeric: 0, as the interpolating driver stored ''.
         //
-        // Same exemption as the text branch below, and for the same reason: a
-        // column that declares itself nullable was added after that driver and
-        // has no rows from then to keep the shape of. It matters more here than
-        // it reads -- 0 is a REAL number, so a numeric column that cannot store
-        // NULL has no way to say "absent" at all. owa_event_raw.clock_offset_usec
-        // is the case that found this: a beacon carrying no client clock is not
-        // a beacon reporting zero skew.
+        // Unless the column declares itself nullable, as in the text branch below: a
+        // nullable column has no rows of that shape to match, and 0 is a REAL number,
+        // so a numeric column that cannot store NULL has no way to say "absent". A
+        // beacon carrying no client clock is not reporting zero skew
+        // (owa_event_raw.clock_offset_usec).
         if ( in_array( $type, $this->numericColumnTypes(), true ) ) {
 
             return ! empty( $this->properties[ $col ]->nullable ) ? null : 0;
         }
 
-        // Character and binary: '' stayed '' under the old driver.
+        // Character and binary: '', as the interpolating driver stored it.
         //
-        // Unless the column declares itself nullable, which only a column added
-        // after that driver can honestly do -- it has no rows from then to keep
-        // the shape of. Those store NULL for absence, which is the form v2 uses
-        // and the one the reporting layer already renders as "(not set)".
+        // Unless the column declares itself nullable. Those store NULL for absence,
+        // which is the form v2 uses and the one the reporting layer renders as
+        // "(not set)".
         if ( in_array( $type, $this->textColumnTypes(), true ) ) {
 
             return ! empty( $this->properties[ $col ]->nullable ) ? null : '';
@@ -738,19 +691,13 @@ class Entity {
         
             // drop column is it is marked as auto-increment as DB will take care of that.
             
-            // Truthy OR explicitly changed.
+            // Truthy OR explicitly changed, so a legitimate falsy value set through
+            // set() is written.
             //
-            // The truthy test alone could never write a 0, which is why a
-            // legitimate falsy value could not be persisted through an entity at
-            // all. Dirty tracking already existed (markDirty, populated by set())
-            // and was simply never consulted here.
-            //
-            // ADDED to the truthy test rather than replacing it: some callers
-            // change a property without going through set(), so those values are
-            // not marked dirty, and a dirty-only update would silently stop
-            // persisting them. Every column written before is still written.
-            // Same type resolution as create(): a column that IS written must
-            // not land as NULL where the column has only a zero meaning. See
+            // The truthy test stays: some callers change a property without going through
+            // set(), so those values are not marked dirty, and a dirty-only update would
+            // stop persisting them. Same type resolution as create(): a column that IS
+            // written must not land as NULL where the column has only a zero meaning. See
             // writeValue().
             if ($this->get($v, false) || array_key_exists($v, $this->dirty)) {
                 $db->set($v, $this->writeValue($v));
@@ -800,12 +747,9 @@ class Entity {
      * Drop every cached copy of these rows.
      *
      * getByColumn() caches a row under the column it was looked up by, as
-     * column . value: a site loaded by site_id and by id is cached twice. A
-     * write used to refresh or drop the id entry only, so the copy under
-     * site_id kept the old values -- an archived Profile still active, a
-     * deleted one still loading -- until it expired, an hour later with a
-     * cache that outlives the request. Every column of each row is dropped,
-     * since any of them can have been the one a lookup used.
+     * column . value: a site loaded by site_id and by id is cached twice. Every
+     * column of each row is dropped, since any of them can have been the one a
+     * lookup used.
      *
      * @param  list<array<string, scalar|null>> $rows as stored, before the write
      * @return void
@@ -880,9 +824,8 @@ class Entity {
     /**
      * This entity from a row already fetched, as load() would have left it.
      *
-     * For a caller that reads many rows in one query. Loading each of them
-     * again by id is one query per row -- which is how every admin page came to
-     * run one query per site to draw the site picker.
+     * For a caller that reads many rows in one query, rather than one query per
+     * row to load each again by id.
      *
      * @param  array<string, scalar|null> $row column => value
      * @return $this
@@ -960,9 +903,7 @@ class Entity {
             $cache_obj = $cache->get($this->getTableName(), $col.$value);
         }
             
-        // A row's values. Anything else -- an entity object cached before
-        // rows were cached as values, which a file cache now refuses to
-        // rebuild -- is a miss, and the row is read again.
+        // A row's values. Anything else is a miss, and the row is read again.
         if ( is_array( $cache_obj ) && $cache_obj ) {
 
             $this->setProperties( $cache_obj );
@@ -1144,10 +1085,7 @@ class Entity {
      *
      * The index, when the column declares one, is a SECOND statement. MySQL
      * will not take `ALTER TABLE t ADD col VARCHAR(255), INDEX (col)` -- the
-     * index clause is legal only inside a CREATE TABLE's column list -- and
-     * building it into the column definition meant this method had never
-     * worked for an indexed column on any install that reached it, which is
-     * every upgrade rather than any fresh install.
+     * index clause is legal only inside a CREATE TABLE's column list.
      *
      * @param  string $column_name
      * @return bool
@@ -1284,14 +1222,11 @@ class Entity {
      * An update that DROPS a column has a down() which must put it back -- and
      * by then the entity no longer declares it, because removing it is what
      * up() did. So addColumn()/addColumnIfMissing() ask here for a definition
-     * that cannot exist. Undefined array key, a DbColumn that is null, and a
-     * down() that reports failure without saying why; the upgrade cycle is the
-     * only job that runs it, so it surfaces far from the change that caused it.
+     * that cannot exist, and the upgrade cycle is the only job that runs it.
      *
      * The fix is always the same and the message says it: a down() restoring a
      * removed column spells out its own type, the way Update039 and Update046
-     * do. Naming that here means the next one is a sentence rather than an
-     * afternoon.
+     * do.
      *
      * @param string $column_name
      * @return \OWA\Module\Base\Classes\DbColumn

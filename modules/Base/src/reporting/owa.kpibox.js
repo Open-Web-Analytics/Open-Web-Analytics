@@ -18,8 +18,8 @@ OWA.kpiBox = function( options ) {
          * Inline rather than in the stylesheet because it is the ONE piece of a
          * box's sizing a caller varies: the boxes share their row by flexing,
          * and this is the basis they flex from. A trend card lowers it so four
-         * metrics fit a half-width row; everything else keeps the 135 that a
-         * full-width row was tuned for.
+         * metrics fit a half-width row; everything else keeps 135, for a
+         * full-width row.
          */
         minWidth: '135px',
 
@@ -78,22 +78,17 @@ OWA.kpiBox.prototype = {
 
         this.dom_id = dom_id;
         /*
-         * '#' + the id. Without it this read as a TYPE selector -- an element
-         * called <siteTrend-metrics> -- which is valid CSS matching nothing, so
-         * the remove() below was a silent no-op and every new result set
-         * appended ANOTHER full set of boxes under the old ones. Every refetch
-         * doubled them: a granularity change, a page change, a site change.
-         *
-         * The area chart and the pie chart both build this selector with the
-         * '#'; this was the one that did not.
+         * '#' + the id. Without it this reads as a TYPE selector -- an element
+         * called <siteTrend-metrics> -- which matches nothing, so the remove()
+         * below would do nothing and every refetch would append another full set
+         * of boxes under the old ones.
          */
         /*
-         * The CAROUSEL, which is what wraps the boxes now -- see makeCarousel.
-         * This selector is what generate() removes before rebuilding, so it has
-         * to name the outermost thing generate() creates. Naming the inner
-         * container instead would leave the wrapper behind and stack a fresh
-         * set of boxes under the old ones on every result set, which is the
-         * bug the '#' below was added to fix.
+         * The CAROUSEL, which wraps the boxes -- see makeCarousel. This selector
+         * is what generate() removes before rebuilding, so it has to name the
+         * outermost thing generate() creates; naming the inner container would
+         * leave the wrapper behind and stack a fresh set of boxes under the old ones
+         * on every result set.
          */
         this.domSelector = '#' + this.dom_id + ' > .owa_metricCarousel';
         // listen for data change events

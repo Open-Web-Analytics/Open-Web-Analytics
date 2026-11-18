@@ -11,8 +11,7 @@ namespace OWA\Module\Base\Update;
  * element_anchor, anchor_x and anchor_y arrive on owa_event_raw and every cube:
  * where on the clicked element a click landed, which the heatmap draws it by.
  *
- * Twelve bytes a row, all fixed width. Measured on MySQL 8.4 against an empty
- * cube of today's shape, the custom-dimension capacity stays at 36 with them.
+ * Twelve bytes a row, all fixed width.
  *
  * Clicks stored before this have no anchor and none can be derived: the element
  * was in the visitor's browser, not in the row. The heatmap draws those by

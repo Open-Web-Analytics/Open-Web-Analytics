@@ -10,19 +10,9 @@ namespace OWA\Module\Base\Handler;
 /**
  * v2 ingest: one beacon becomes its rows in owa_event_raw.
  *
- * Registered beside v1's handlers on the same tracking events, for EVERY site.
- * There is no setting: `v2_raw_collection` was a development instrument for
- * exercising ingest against one site, and it is gone now that the tracker sends
- * v2-shaped events.
+ * Registered on the tracking events, for EVERY site.
  *
- * STILL NOT THE ARCHITECTURE. v2 is meant to collect where v1 does not run
- * beside it, and the two pipelines are not meant to be compared live --
- * migrating v1's history into v2 is the oracle. Both run today because the
- * reporting layer reads v1's tables and nothing reads owa_event yet: 151 metric
- * and dimension registrations, none of them over the cube. v1's ingest can stop
- * when that is no longer true, which is 2.25 step 4.
- *
- * WHAT THIS DOES THAT v1's HANDLERS DO NOT
+ * WHAT IT DOES
  *
  *   - Writes ONE table. No session upsert, no dimension check-and-create, no
  *     foreign keys: a write is an insert with no lookups.
@@ -187,18 +177,10 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * how each property is set and a callback sets it, so this method's whole
      * job is property name -> column name.
      *
-     * It did not start that way. Sixteen columns were computed in here -- five
-     * readings of the user agent, five campaign tags, six readings of a URL and
-     * the three money conversions -- two of them in helper methods whose result
-     * was merged with `+=`, which silently discards a key the literal already
-     * set. That is how browser_version came to be the parser's answer in one
-     * place and the beacon's claim in another.
-     *
-     * The rule now, and RowIsAMappingTest holds it: if a column exists, a
-     * property backs it, and the property's value is what lands there. Two
-     * things follow. A column cannot appear that no property declares, which is
-     * the `revenue` bug -- this read a property of that name, the registry
-     * declares none, and every purchase stored NULL. And every event in the
+     * The rule, and RowIsAMappingTest holds it: if a column exists, a property
+     * backs it, and the property's value is what lands there. Two things follow.
+     * A column cannot read a property the registry does not declare, which
+     * would store NULL on every row. And every event in the
      * set handed to Ingest::TRACKING_EVENTS_PRE_SAVE is complete, so anything
      * wanting to decide something about one listens there rather than being a
      * step in here.
@@ -208,7 +190,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * of the event's type, which the `event_type` property -- what the beacon
      * SENT -- need not be; and `params`, which is by definition everything with
      * no column.
-
      *
      * @param object $event
      * @param string $name  the v2 event name
@@ -239,10 +220,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
         }
 
         /*
-         * getSiteId() prefers `siteId` over `site_id`, where the guard above
-         * reads `site_id`. Left as it was: the id hash and the stored column
-         * agree with each other, which is the part that matters, and changing
-         * which of the two names wins is not a change to the row builder.
+         * getSiteId() prefers `siteId` over `site_id`, where the guard above reads
+         * `site_id`. The id hash and the stored column agree with each other, which is
+         * the part that matters.
          */
         $site_id = $event->getSiteId();
 
@@ -317,15 +297,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
             'element_id'   => $this->text( $event->get( 'dom_element_id' ) ),
 
             /*
-             * Whether the click left the site, decided by deriveIsOutbound().
+             * Whether the click left the site, as the tracker decided it
+             * (OWATracker.isOutboundUrl()).
              *
-             * flag() rather than number(). On a beacon the property is always
-             * set: setTrackerProperties() walks the whole derived map and does not
-             * gate on `events`, so the callback runs for every event type and
-             * answers 0 where there is no target. Off that path -- an event built
-             * in process, or one drained from the queue -- the property is absent,
-             * Event::get() answers false, and number() would hand NULL to a
-             * NOT NULL column, which strict mode aborts the whole insert over.
+             * flag() rather than number(). Where the property is absent --
+             * any event but a click, or one built in process -- Event::get()
+             * answers false, and number() would hand NULL to a NOT NULL column,
+             * which strict mode aborts the whole insert over.
              */
             'is_outbound' => $this->flag( $event->get( 'is_outbound' ) ),
 
@@ -349,9 +327,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
              * carried since 1.x and the ones the registry declares for the
              * purchase event; the columns are minor units, and toMinorUnits()
              * has already converted each property to what its column stores.
-             *
-             * This read a property named `revenue`, which the registry does not
-             * declare, so the column was NULL on every purchase ever stored.
              */
             'revenue'  => $this->number( $event->get( 'revenue' ) ),
             'tax'      => $this->number( $event->get( 'ct_tax' ) ),
@@ -419,9 +394,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
      *
      * Site-defined keys unknown at release time, and the per-event-type values
      * that are too narrow to earn a column of their own. Every field whose name
-     * the release knows gets a column instead: the wide prototype measured
-     * storage as a wash, JSON extraction is slower than a column, and MySQL 8's
-     * INSTANT ADD COLUMN removes the ALTER cost for release-known fields.
+     * the release knows gets a column instead: storage is a wash, and JSON
+     * extraction is slower than a column.
      *
      * Returns null rather than '{}' for an event with nothing to carry, so
      * COUNT(params) answers how many events carried any.
@@ -529,8 +503,7 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * KEYED BY EVENT TYPE, not one flat list. A flat list collects any
          * property that happens to exist on the event with a falsy-but-real
          * value -- numeric_value is registered with a default of 0, so every
-         * page_view came out carrying {"numeric_value": 0}, a param the event
-         * does not have wearing a value it was never given.
+         * page_view would carry {"numeric_value": 0}.
          */
         foreach ( $this->declaredParams( $event ) as $wire => $key ) {
 
@@ -546,12 +519,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
              * string inside a string.
              *
              * ct_line_items arrives from the wire as JSON TEXT, and Sanitize::
-             * cleanJson() validates it and hands the text back. Assigning that here
-             * meant json_encode() escaped it again, so the column held
-             * {"items": "[{\"sku\": ...}]"} -- the value of $.items being one
-             * scalar string. Measured on a seeded purchase. JSON_TABLE over
-             * '$.items[*]' then sees a single string rather than a row per line
-             * item, which is why the Products report has nothing to read.
+             * cleanJson() validates it and hands the text back. Assigned as is,
+             * json_encode() would escape it again, and JSON_TABLE over
+             * '$.items[*]' would see one string rather than a row per line item.
              *
              * Decoded, so the document nests: {"items": [{"sku": ...}]}.
              *
@@ -607,17 +577,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
     /**
      * The params this event type may carry, as wire name => params key.
      *
-     * READ FROM THE REGISTRY. This was a map written by hand here, and the hand
-     * was wrong: it listed `transaction_id, tax, shipping, gateway, items` for a
-     * purchase while the wire sends `ct_order_id, ct_tax, ct_shipping,
-     * ct_gateway, ct_line_items`, so every lookup missed, `params` came back
-     * NULL, and a NULL params column is indistinguishable from an event that
-     * carried none. Four of its click entries -- link_url, link_domain,
-     * link_text, outbound -- named fields no tracker has ever sent.
-     *
-     * Every one of those is a fact the registry already holds: which events carry
-     * a property, what the wire calls it, and what key it is reached by. Asking
-     * it is how the three stop drifting apart.
+     * READ FROM THE REGISTRY, which holds which events carry a property, what
+     * the wire calls it, and what key it is reached by -- so the three cannot
+     * drift apart.
      *
      * @param object $event
      * @return array<string, string>  wire name => params key
@@ -653,10 +615,6 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * session_start is not something a later build can repair: the flag was on
      * the beacon that half-wrote, so re-reading raw reproduces the same partial
      * state. The guarantee has to be made where the rows are created.
-     *
-     * 1.x does not do this. Db::beginTransaction() exists and the fact tables
-     * are InnoDB, but its only callers are the schema-update CLI -- nothing
-     * depended on it while one beacon meant one row.
      *
      * @param list<array<string, mixed>> $rows
      * @param object                     $event
@@ -729,8 +687,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * The routine build covers yesterday and today, and a day before that is
      * not built again once it is settled. A beacon can arrive later than that:
      * retried for hours, replayed from the dead letters, or sent by a device
-     * whose clock was off. Without this its row sat in raw, never reported,
-     * while the cube's status read green. One job per Property and day; a
+     * whose clock was off. Without this its row would sit in raw, never
+     * reported, while the cube's status read green. One job per Property and day; a
      * pending one absorbs the rest.
      *
      * After the commit, as JobQueue::enqueue() asks.
@@ -783,11 +741,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * (notify()); a failed announcement is not retried, since the raw rows it
      * announces are already written.
      *
-     * WHY HERE AND NOT FROM v1. base.new_session used to be raised by v1's
-     * SessionHandlers, two hops downstream of the beacon -- page_request to
-     * page_request_logged to the session write to the announcement. Every hop
-     * was v1 machinery kept alive to deliver one signal. v2 knows all three
-     * facts at ingest, because it is what materialises the marker rows.
+     * HERE because ingest knows all three facts: it is what materialises the
+     * marker rows.
      *
      * The event carries the BEACON's properties, which is what the
      * announcement templates read: visitor_id, user_name, host, city, country,
@@ -1123,11 +1078,9 @@ class EventRawHandlers extends \OWA\Core\Observer {
     protected function writeVisitorAcquisition( $event, $row, $landing = false ) {
 
         /*
-         * prior_sessions == 0 alone. The session-scoped is_new_visitor flag
-         * said the same thing and was ORed in for robustness -- ANY event of
-         * the first session may write this row -- but that robustness is what
-         * this half already gives: the count rides every beacon, so losing one
-         * still leaves the rest able to write the acquisition.
+         * prior_sessions == 0: ANY event of the first session may write this row,
+         * and the count rides every beacon, so losing one still leaves the rest able
+         * to write the acquisition.
          */
         $is_first_session = (string) $event->get( 'num_prior_sessions' ) === '0';
 
@@ -1165,8 +1118,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
          * Filling the columns of an acquisition-less row rather than skipping
          * it is what keeps write-once true across a late first_visit: a queue
          * drain that delivers it after a property write still lands, where
-         * skipping on row-presence would have lost it permanently and
-         * silently. Once acq_ts is set nothing here touches it again.
+         * skipping on row-presence would lose it. Once acq_ts is set nothing
+         * here touches it again.
          */
         if ( $entity->wasPersisted() ) {
 
@@ -1272,8 +1225,8 @@ class EventRawHandlers extends \OWA\Core\Observer {
             return null;
         }
 
-        // Text that is not UTF-8 fails the insert under a strict sql_mode, so
-        // the beacon was retried before it landed. Converted here, it lands.
+        // Text that is not UTF-8 fails the insert under a strict sql_mode.
+        // Converted here, it lands.
         $value = \OWA\Core\Lib::utf8Encode( (string) $value );
         $value = \OWA\Module\Base\Classes\V2Event::strip( $value );
 
