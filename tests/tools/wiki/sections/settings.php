@@ -40,8 +40,6 @@ return function ( $arg = null ) {
     $registry = Module::settingsRegistry();
     $config   = CoreAPI::configSingleton();
 
-    $registry['declared'] = array_diff_key( $registry['declared'], array_flip( OWA_WIKI_EXCLUDED_MODULES ) );
-
     // ---- fieldsets, from every present module -------------------------------
 
     $service = CoreAPI::serviceSingleton();

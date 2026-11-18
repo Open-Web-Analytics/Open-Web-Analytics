@@ -121,10 +121,6 @@ final class WikiDocsReportingTest extends TestCase
 
         foreach ( glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $path ) {
 
-            if ( basename( dirname( $path, 2 ) ) === 'Hello' ) {
-                continue; // OWA_WIKI_EXCLUDED_MODULES
-            }
-
             $d = json_decode( (string) file_get_contents( $path ), true );
 
             foreach ( (array) ( $d['widgets'] ?? array() ) as $widget ) {

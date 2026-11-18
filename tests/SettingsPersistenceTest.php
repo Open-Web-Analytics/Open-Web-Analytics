@@ -345,7 +345,7 @@ final class SettingsPersistenceTest extends TestCase
         $this->assertArrayHasKey('report_wrapper', $static['base'],
             'base.report_wrapper is static');
 
-        $this->assertArrayNotHasKey('report_wrapper', $static['hello'] ?? [],
+        $this->assertArrayNotHasKey('report_wrapper', $static['test_fixture'] ?? [],
             'an identically named key in another module is not covered by Base');
 
         foreach (['domstream' => 'is_active', 'sqs' => 'is_active'] as $module => $key) {
@@ -378,12 +378,12 @@ final class SettingsPersistenceTest extends TestCase
         $c = $this->settings();
 
         $this->assertArrayNotHasKey(
-            'hello',
+            'test_fixture',
             $c->default_config,
-            'hello declares nothing, so its defaults must stay unknown'
+            'test_fixture declares nothing, so its defaults must stay unknown'
         );
 
-        $c->db_settings['hello']         = ['schema_version' => 1, 'is_active' => true];
+        $c->db_settings['test_fixture']  = ['schema_version' => 1, 'is_active' => true];
         $c->db_settings['sqs']           = ['is_active' => false];
         $c->db_settings['maxmind_geoip'] = ['schema_version' => 1, 'is_active' => false];
 
@@ -396,7 +396,7 @@ final class SettingsPersistenceTest extends TestCase
                 "prune removed $entry; schema_version is database state and must never be dropped");
         }
 
-        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['hello'],
+        $this->assertSame(['schema_version' => 1, 'is_active' => true], $c->db_settings['test_fixture'],
             'a module that declares nothing is left alone entirely');
         $this->assertSame(['is_active' => false], $c->db_settings['sqs']);
         $this->assertSame(['schema_version' => 1, 'is_active' => false], $c->db_settings['maxmind_geoip'],

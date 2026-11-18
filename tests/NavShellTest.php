@@ -250,7 +250,7 @@ final class NavShellTest extends TestCase
             'Profiles' => array(
                 array( 'do' => 'base.sitesInvocation', 'label' => 'Main profile', 'params' => array( 'siteId' => 's1' ),
                        'capability' => 'edit_sites',
-                       'current_for' => array( 'base.sitesInvocation', 'base.profileSettings', 'base.sitesProfile', 'hello.profileTab' ) ),
+                       'current_for' => array( 'base.sitesInvocation', 'base.profileSettings', 'base.sitesProfile', 'test_fixture.profileTab' ) ),
                 array( 'do' => 'base.sitesProfile', 'label' => 'Add profile', 'params' => array( 'propertyId' => 'p1' ), 'capability' => 'edit_sites' ),
             ),
             'Observation Profile' => array(
@@ -258,7 +258,7 @@ final class NavShellTest extends TestCase
                 array( 'do' => 'base.profileSettings', 'label' => 'Observation settings', 'params' => array( 'siteId' => 's1' ), 'capability' => 'edit_sites' ),
                 array( 'do' => 'base.sitesProfile', 'label' => 'Details', 'params' => array( 'siteId' => 's1', 'edit' => true ), 'capability' => 'edit_sites' ),
                 // As a module registers one: no params of its own.
-                array( 'do' => 'hello.profileTab', 'label' => 'Hello', 'params' => array(), 'capability' => 'edit_sites' ),
+                array( 'do' => 'test_fixture.profileTab', 'label' => 'Fixture tab', 'params' => array(), 'capability' => 'edit_sites' ),
             ),
         );
     }
@@ -305,7 +305,7 @@ final class NavShellTest extends TestCase
     /** A Profile's entry is current on each of its tabs, a module's included. */
     public function testAProfilesEntryIsCurrentOnEveryTab(): void
     {
-        foreach ( array( 'base.sitesInvocation', 'base.profileSettings', 'hello.profileTab' ) as $do ) {
+        foreach ( array( 'base.sitesInvocation', 'base.profileSettings', 'test_fixture.profileTab' ) as $do ) {
 
             $groups = $this->template()->settingsColumn( $this->hierarchyNav(), array( 'do' => $do, 'siteId' => 's1' ) );
 
@@ -331,7 +331,7 @@ final class NavShellTest extends TestCase
     {
         $tabs = $this->template()->profileTabs( $this->hierarchyNav(), array( 'do' => 'base.profileSettings', 'siteId' => 's1' ) );
 
-        $this->assertSame( array( 'Tracking tag', 'Observation settings', 'Details', 'Hello' ), $this->labels( $tabs ) );
+        $this->assertSame( array( 'Tracking tag', 'Observation settings', 'Details', 'Fixture tab' ), $this->labels( $tabs ) );
         $this->assertSame( array( false, true, false, false ), array_column( $tabs, 'current' ) );
         $this->assertStringContainsString( 's1', $tabs[3]['href'], "a module's tab is of this Profile" );
     }

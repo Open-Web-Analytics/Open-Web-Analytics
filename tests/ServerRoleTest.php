@@ -6,6 +6,7 @@ use OWA\Core\ServerRole;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/fixtures/TestFixtureModule.php';
 
 /**
  * OWA_SERVER_ROLE (Core\ServerRole): what each role serves, what it needs in
@@ -306,16 +307,16 @@ final class ServerRoleTest extends TestCase
     public function testTheModulesScreenCannotTurnOffAModuleItsConstantActivates(): void
     {
         $c = \OWA\Core\CoreAPI::configSingleton();
-        $c->noteConfigConstant('hello', 'is_active', 'OWA_ZZ_HELLO');
+        $c->noteConfigConstant('test_fixture', 'is_active', 'OWA_ZZ_FIXTURE');
 
         try {
-            $this->assertSame('OWA_ZZ_HELLO', \OWA\Core\Module::activatedByConstant('hello'));
-            $this->assertFalse(\OWA\Core\CoreAPI::moduleClassFactory('hello')->deactivate());
+            $this->assertSame('OWA_ZZ_FIXTURE', \OWA\Core\Module::activatedByConstant('test_fixture'));
+            $this->assertFalse(\OWA\Core\CoreAPI::moduleClassFactory('test_fixture')->deactivate());
         } finally {
-            $c->forgetConfigConstant('hello', 'is_active');
+            $c->forgetConfigConstant('test_fixture', 'is_active');
         }
 
-        $this->assertSame('', \OWA\Core\Module::activatedByConstant('hello'));
+        $this->assertSame('', \OWA\Core\Module::activatedByConstant('test_fixture'));
     }
 
     // ---------------------------------------------------------------------

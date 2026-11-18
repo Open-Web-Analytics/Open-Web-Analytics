@@ -1239,7 +1239,7 @@ final class PropertyAdminScreensTest extends TestCase
      * Landing every session on a Profile settled that.
      *
      * The Installation group is built from the registered admin panels, not
-     * listed by hand -- Hello and MaxmindGeoip both register one, and
+     * listed by hand -- MaxmindGeoip and Sqs both register one, and
      * hardcoding Base's two would have left theirs unreachable.
      */
     public function testInstallWideOptionsHeadTheSameNav(): void
@@ -1308,7 +1308,7 @@ final class PropertyAdminScreensTest extends TestCase
         $c->set( 'maxmind_geoip', 'db_edition', $c->get( 'maxmind_geoip', 'db_edition' ) );
 
         foreach ( array( \OWA\Module\MaxmindGeoip\Controller\OptionsGeoip::class,
-                         \OWA\Module\Hello\Controller\ExampleSettingsController::class ) as $module ) {
+                         \OWA\Module\Sqs\Controller\OptionsSqs::class ) as $module ) {
 
             $this->assertSame( 'base.optionsHierarchy', $this->viewAfterAction( $module ),
                 "$module still renders in the retired settings menu." );

@@ -391,8 +391,7 @@ final class SettingsDeclarationContractTest extends TestCase
     public function testTheDirectoryIndexListIsOnNoScreen(): void
     {
         foreach ( array( \OWA\Module\Base\Module::class, \OWA\Module\Domstream\Module::class,
-                         \OWA\Module\MaxmindGeoip\Module::class, \OWA\Module\Sqs\Module::class,
-                         \OWA\Module\Hello\Module::class ) as $class ) {
+                         \OWA\Module\MaxmindGeoip\Module::class, \OWA\Module\Sqs\Module::class ) as $class ) {
 
             $module = new $class();
             $module->registerActions();

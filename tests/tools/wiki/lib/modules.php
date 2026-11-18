@@ -1,6 +1,5 @@
 <?php
 
-require_once __DIR__ . '/../generate.php'; // OWA_WIKI_EXCLUDED_MODULES
 /**
  * Every module that ships, active or not, for the sections that document what
  * modules register.
@@ -42,8 +41,6 @@ function owa_wiki_all_modules() {
 
         $modules[ $module->name ] = $module;
     }
-
-    $modules = array_diff_key( $modules, array_flip( OWA_WIKI_EXCLUDED_MODULES ) );
 
     ksort( $modules );
 

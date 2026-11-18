@@ -47,10 +47,6 @@ final class WikiDocsReportsTest extends TestCase
 
             $module = basename( dirname( $path ) );
 
-            if ( $module === 'Hello' ) {
-                continue;
-            }
-
             preg_match_all( "/registerReport\(\s*'([^']+)'/", (string) file_get_contents( $path ), $m );
 
             foreach ( $m[1] as $id ) {
@@ -76,8 +72,7 @@ final class WikiDocsReportsTest extends TestCase
 
     public function testEveryShippedReportFileHasADescription(): void
     {
-        $files = array_filter( glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ),
-            fn ( $p ) => basename( dirname( $p, 2 ) ) !== 'Hello' );
+        $files = glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' );
 
         $this->assertGreaterThan( 30, count( $files ) );
 
@@ -106,11 +101,6 @@ final class WikiDocsReportsTest extends TestCase
     {
         // Domstream is not active on a configless boot; the page documents it anyway.
         $this->assertStringContainsString( "| Recordings | `domstreams` |", self::section( 'reports' ) );
-    }
-
-    public function testTheDeveloperExampleIsLeftOut(): void
-    {
-        $this->assertStringNotContainsString( 'hello-dashboard', self::section( 'reports' ) );
     }
 
     public function testReportsAreGroupedInNavigationOrder(): void
