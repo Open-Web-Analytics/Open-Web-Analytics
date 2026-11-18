@@ -328,93 +328,17 @@ OWA.util =  {
         return blank( cell.value ) ? '\u2014' : String( cell.value );
     },
 
-    urlEncode : function(str) {
-        // URL-encodes string  
-        // 
-        // version: 1009.2513
-        // discuss at: http://phpjs.org/functions/urlencode
-        // +   original by: Philip Peterson
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: AJ
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: travc
-        // +      input by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Lars Fischer
-        // +      input by: Ratheous
-        // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Joris
-        // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
-        // %          note 1: This reflects PHP 5.3/6.0+ behavior
-        // %        note 2: Please be aware that this function expects to encode into UTF-8 encoded strings, as found on
-        // %        note 2: pages served as UTF-8
-        // *     example 1: urlencode('Kevin van Zonneveld!');
-        // *     returns 1: 'Kevin+van+Zonneveld%21'
-        // *     example 2: urlencode('http://kevin.vanzonneveld.net/');
-        // *     returns 2: 'http%3A%2F%2Fkevin.vanzonneveld.net%2F'
-        // *     example 3: urlencode('http://www.google.nl/search?q=php.js&ie=utf-8&oe=utf-8&aq=t&rls=com.ubuntu:en-US:unofficial&client=firefox-a');
-        // *     returns 3: 'http%3A%2F%2Fwww.google.nl%2Fsearch%3Fq%3Dphp.js%26ie%3Dutf-8%26oe%3Dutf-8%26aq%3Dt%26rls%3Dcom.ubuntu%3Aen-US%3Aunofficial%26client%3Dfirefox-a'
-        str = (str+'').toString();
-        
-        // Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
-        // PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
-        return encodeURIComponent(str).replace(/!/g, '%21').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/%20/g, '+');
-    
-    },
-    
-    urldecode : function (str) {
-        // Decodes URL-encoded string  
-        // 
-        // version: 1008.1718
-        // discuss at: http://phpjs.org/functions/urldecode
-        // +   original by: Philip Peterson
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: AJ
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Brett Zamir (http://brett-zamir.me)
-        // +      input by: travc
-        // +      input by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Lars Fischer
-        // +      input by: Ratheous
-        // +   improved by: Orlando
-        // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
-        // +      bugfixed by: Rob
-        // %        note 1: info on what encoding functions to use from: http://xkr.us/articles/javascript/encode-compare/
-        // %        note 2: Please be aware that this function expects to decode from UTF-8 encoded strings, as found on
-        // %        note 2: pages served as UTF-8
-        // *     example 1: urldecode('Kevin+van+Zonneveld%21');
-        // *     returns 1: 'Kevin van Zonneveld!'
-        // *     example 2: urldecode('http%3A%2F%2Fkevin.vanzonneveld.net%2F');
-        // *     returns 2: 'http://kevin.vanzonneveld.net/'
-        // *     example 3: urldecode('http%3A%2F%2Fwww.google.nl%2Fsearch%3Fq%3Dphp.js%26ie%3Dutf-8%26oe%3Dutf-8%26aq%3Dt%26rls%3Dcom.ubuntu%3Aen-US%3Aunofficial%26client%3Dfirefox-a');
-        // *     returns 3: 'http://www.google.nl/search?q=php.js&ie=utf-8&oe=utf-8&aq=t&rls=com.ubuntu:en-US:unofficial&client=firefox-a'
-        
-        return decodeURIComponent(str.replace(/\+/g, '%20'));
-    },
-    
-    // Returns true if variable is an object  
-    // 
-    // version: 1008.1718
-    // discuss at: http://phpjs.org/functions/is_object
-    // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-    // +   improved by: Legaev Andrey
-    // +   improved by: Michael White (http://getsprink.com)
-    // *     example 1: is_object('23');
-    // *     returns 1: false
-    // *     example 2: is_object({foo: 'bar'});
-    // *     returns 2: true
-    // *     example 3: is_object(null);
-    // *     returns 3: false
-      is_object : function (mixed_var) {
+    /** A string URL-encoded for a query value or a fragment. */
+    urlEncode : function( str ) {
 
-        if (mixed_var instanceof Array) {
-            return false;
-        } else {
-            return (mixed_var !== null) && (typeof( mixed_var ) == 'object');
-        }
+        return encodeURIComponent( String( str ) );
+    },
+    
+    
+    /** Whether a value is an object: not null, and not an array. */
+    is_object : function( mixed_var ) {
+
+        return mixed_var !== null && typeof mixed_var === 'object' && ! Array.isArray( mixed_var );
     },
     
     sprintf : function( ) {
@@ -568,42 +492,13 @@ OWA.util =  {
         return format.replace(regex, doFormat);
     },
     
-    in_array : function(needle, haystack, argStrict) {
-        // Checks if the given value exists in the array  
-        // 
-        // version: 1008.1718
-        // discuss at: http://phpjs.org/functions/in_array
-        // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: vlado houba
-        // +   input by: Billy
-        // +   bugfixed by: Brett Zamir (http://brett-zamir.me)
-        // *     example 1: in_array('van', ['Kevin', 'van', 'Zonneveld']);
-        // *     returns 1: true
-        // *     example 2: in_array('vlado', {0: 'Kevin', vlado: 'van', 1: 'Zonneveld'});
-        // *     returns 2: false
-        // *     example 3: in_array(1, ['1', '2', '3']);
-        // *     returns 3: true
-        // *     example 3: in_array(1, ['1', '2', '3'], false);
-        // *     returns 3: true
-        // *     example 4: in_array(1, ['1', '2', '3'], true);
-        // *     returns 4: false
-        var key = '', strict = !!argStrict;
-     
-        if (strict) {
-            for (key in haystack) {
-                if (haystack[key] === needle) {
-                    return true;
-                }
-            }
-        } else {
-            for (key in haystack) {
-                if (haystack[key] == needle) {
-                    return true;
-                }
-            }
-        }
-     
-        return false;
+    /**
+     * Whether an array (or an object's values) holds a value: compared with
+     * ===, or with == unless argStrict is set.
+     */
+    in_array : function( needle, haystack, argStrict ) {
+
+        return Object.values( haystack || {} ).some( ( value ) => argStrict ? value === needle : value == needle );
     }
     
 };

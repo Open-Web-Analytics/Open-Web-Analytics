@@ -177,71 +177,19 @@ class Util {
         return pairs.join( '&' );
     }
 
+    /** A string URL-encoded for a query value or a fragment. */
     static urlEncode ( str ) {
-        // URL-encodes string  
-        // 
-        // version: 1009.2513
-        // discuss at: http://phpjs.org/functions/urlencode
-        // +   original by: Philip Peterson
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: AJ
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: travc
-        // +      input by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Lars Fischer
-        // +      input by: Ratheous
-        // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Joris
-        // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
-        // %          note 1: This reflects PHP 5.3/6.0+ behavior
-        // %        note 2: Please be aware that this function expects to encode into UTF-8 encoded strings, as found on
-        // %        note 2: pages served as UTF-8
-        // *     example 1: urlencode('Kevin van Zonneveld!');
-        // *     returns 1: 'Kevin+van+Zonneveld%21'
-        // *     example 2: urlencode('http://kevin.vanzonneveld.net/');
-        // *     returns 2: 'http%3A%2F%2Fkevin.vanzonneveld.net%2F'
-        // *     example 3: urlencode('http://www.google.nl/search?q=php.js&ie=utf-8&oe=utf-8&aq=t&rls=com.ubuntu:en-US:unofficial&client=firefox-a');
-        // *     returns 3: 'http%3A%2F%2Fwww.google.nl%2Fsearch%3Fq%3Dphp.js%26ie%3Dutf-8%26oe%3Dutf-8%26aq%3Dt%26rls%3Dcom.ubuntu%3Aen-US%3Aunofficial%26client%3Dfirefox-a'
-        str = (str+'').toString();
-        
-        // Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
-        // PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
-        return encodeURIComponent(str).replace(/!/g, '%21').replace(/'/g, '%27').replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/%20/g, '+');
-    
+
+        return encodeURIComponent( String( str ) );
     }
     
+    /**
+     * A URL-encoded string decoded. A '+' is a space: PHP's urlencode(), which
+     * writes the overlay link, encodes a space that way, and so did earlier trackers.
+     */
     static urldecode ( str ) {
-        // Decodes URL-encoded string  
-        // 
-        // version: 1008.1718
-        // discuss at: http://phpjs.org/functions/urldecode
-        // +   original by: Philip Peterson
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: AJ
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Brett Zamir (http://brett-zamir.me)
-        // +      input by: travc
-        // +      input by: Brett Zamir (http://brett-zamir.me)
-        // +   bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Lars Fischer
-        // +      input by: Ratheous
-        // +   improved by: Orlando
-        // +      reimplemented by: Brett Zamir (http://brett-zamir.me)
-        // +      bugfixed by: Rob
-        // %        note 1: info on what encoding functions to use from: http://xkr.us/articles/javascript/encode-compare/
-        // %        note 2: Please be aware that this function expects to decode from UTF-8 encoded strings, as found on
-        // %        note 2: pages served as UTF-8
-        // *     example 1: urldecode('Kevin+van+Zonneveld%21');
-        // *     returns 1: 'Kevin van Zonneveld!'
-        // *     example 2: urldecode('http%3A%2F%2Fkevin.vanzonneveld.net%2F');
-        // *     returns 2: 'http://kevin.vanzonneveld.net/'
-        // *     example 3: urldecode('http%3A%2F%2Fwww.google.nl%2Fsearch%3Fq%3Dphp.js%26ie%3Dutf-8%26oe%3Dutf-8%26aq%3Dt%26rls%3Dcom.ubuntu%3Aen-US%3Aunofficial%26client%3Dfirefox-a');
-        // *     returns 3: 'http://www.google.nl/search?q=php.js&ie=utf-8&oe=utf-8&aq=t&rls=com.ubuntu:en-US:unofficial&client=firefox-a'
-        
-        return decodeURIComponent(str.replace(/\+/g, '%20'));
+
+        return decodeURIComponent( String( str ).replace( /\+/g, '%20' ) );
     }
     
     /**
@@ -349,26 +297,10 @@ class Util {
         return String( number ).padStart( length, '0' );
     }
       
-    // Returns true if variable is an object  
-    // 
-    // version: 1008.1718
-    // discuss at: http://phpjs.org/functions/is_object
-    // +   original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-    // +   improved by: Legaev Andrey
-    // +   improved by: Michael White (http://getsprink.com)
-    // *     example 1: is_object('23');
-    // *     returns 1: false
-    // *     example 2: is_object({foo: 'bar'});
-    // *     returns 2: true
-    // *     example 3: is_object(null);
-    // *     returns 3: false
+    /** Whether a value is an object: not null, and not an array. */
     static is_object ( mixed_var ) {
 
-        if (mixed_var instanceof Array) {
-            return false;
-        } else {
-            return (mixed_var !== null) && (typeof( mixed_var ) == 'object');
-        }
+        return mixed_var !== null && typeof mixed_var === 'object' && ! Array.isArray( mixed_var );
     }
       
     
@@ -652,25 +584,6 @@ class Util {
     
     
     
-    static rand ( min, max ) {
-        // Returns a random number  
-        // 
-        // version: 1008.1718
-        // discuss at: http://phpjs.org/functions/rand
-        // +   original by: Leslie Hoare
-        // +   bugfixed by: Onno Marsman
-        // *     example 1: rand(1, 1);
-        // *     returns 1: 1
-        
-        var argc = arguments.length;
-        if (argc === 0) {
-            min = 0;
-            max = 2147483647;
-        } else if (argc === 1) {
-            throw new Error('Warning: rand() expects exactly 2 parameters, 1 given');
-        }
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
     
     
     
@@ -690,26 +603,10 @@ class Util {
     
     
     
+    /** A 32-bit integer as unsigned hexadecimal: a negative one as its two's complement. */
     static dechex( number ) {
-	    
-        // Returns a string containing a hexadecimal representation of the given number  
-        // 
-        // version: 1009.2513
-        // discuss at: http://phpjs.org/functions/dechex
-        // +   original by: Philippe Baumann
-        // +   bugfixed by: Onno Marsman
-        // +   improved by: http://stackoverflow.com/questions/57803/how-to-convert-decimal-to-hex-in-javascript
-        // +   input by: pilus
-        // *     example 1: dechex(10);
-        // *     returns 1: 'a'
-        // *     example 2: dechex(47);
-        // *     returns 2: '2f'
-        // *     example 3: dechex(-1415723993);
-        // *     returns 3: 'ab9dc427'
-        if (number < 0) {
-            number = 0xFFFFFFFF + number + 1;
-        }
-        return parseInt(number, 10).toString(16);
+
+        return ( number >>> 0 ).toString( 16 );
     }
     
     
