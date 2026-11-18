@@ -577,8 +577,11 @@ abstract class Module {
      * stays out of the UI now -- rather than by being absent from template
      * markup and present in a denylist that fails open.
      *
-     * A missing file is not an error: that module declares nothing and keeps
-     * the pre-registration behaviour. Adoption is one module at a time.
+     * A module ships one only if it has settings of its own (or activation
+     * constants). Its is_active and schema_version are OWA's bookkeeping and
+     * need no file: Settings::isRegistered() declares them for any module on
+     * disk. A module with stored settings beyond those two and no file is
+     * still loaded wholesale at boot, with a notice (Settings::undeclaredModules()).
      *
      * The file may also name the constants that activate the module, and the
      * intake queue type it provides (ModuleActivation):
