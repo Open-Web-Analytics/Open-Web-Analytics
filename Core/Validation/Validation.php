@@ -77,7 +77,7 @@ namespace OWA\Core\Validation;
       */
      public function setName( $name ) {
          
-        $this->name = $name;	
+        $this->name = $name;
      }
      
      /**

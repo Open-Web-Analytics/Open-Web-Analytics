@@ -525,7 +525,7 @@ class Service extends \OWA\Core\Base {
             
                         return $this->restApiRoutes[$module][ $version ][ $route_name ][ $request_method ] ;
                     }
-                }	
+                }
             }
         }
     }

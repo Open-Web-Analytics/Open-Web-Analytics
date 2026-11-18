@@ -42,7 +42,7 @@ class UsersDelete extends \OWA\Core\AdminController {
     
     public function validate() {
         
-        $this->addValidation('user_id', $this->getParam('user_id'), 'required', ['stopOnError'	=> true]);
+        $this->addValidation('user_id', $this->getParam('user_id'), 'required', ['stopOnError'  => true]);
         $this->addValidation('user_id', $this->getParam('user_id'), 'isNotCurrentUser');
     }
 

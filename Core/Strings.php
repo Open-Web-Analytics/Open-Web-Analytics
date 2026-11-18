@@ -1511,19 +1511,19 @@ class Strings {
             '// conf/strings/<locale>.php: the same keys, translated values -- for a counted',
             '// message, as many forms as the locale\'s plural rule has (Strings::pluralIndex()).',
             '//',
-            'return array(',
+            'return [',
         ];
 
         foreach ( $map as $key => $english ) {
 
             $value = is_array( $english )
-                ? 'array( ' . implode( ', ', array_map( function ( $form ) { return self::export( $form ); }, $english ) ) . ' )'
+                ? '[ ' . implode( ', ', array_map( function ( $form ) { return self::export( $form ); }, $english ) ) . ' ]'
                 : self::export( $english );
 
             $lines[] = '    ' . self::export( $key ) . ' => ' . $value . ',';
         }
 
-        $lines[] = ');';
+        $lines[] = '];';
 
         return implode( "\n", $lines ) . "\n";
     }
@@ -1544,7 +1544,7 @@ class Strings {
             '// The keys of conf/strings/en.php that the reporting JavaScript uses (OWA.l(),',
             '// OWA.ln()). A page in a translated locale is sent the translations of these.',
             '//',
-            'return array(',
+            'return [',
         ];
 
         foreach ( $keys as $key ) {
@@ -1552,7 +1552,7 @@ class Strings {
             $lines[] = '    ' . self::export( $key ) . ',';
         }
 
-        $lines[] = ');';
+        $lines[] = '];';
 
         return implode( "\n", $lines ) . "\n";
     }

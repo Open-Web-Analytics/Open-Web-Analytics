@@ -131,8 +131,8 @@ class Caller extends \OWA\Core\Base {
         // must come after user overides are applied
         // This will apply configuration overirdes that are specified by the calling application.
         // This is usually used by plugins to setup integration specific configuration values.
-        $this->overloadConfig( $config );	
-        
+        $this->overloadConfig( $config );
+
         /* SET ERROR HANDLER */
 
         // Sets the correct mode of the error logger now that final config values are in place
