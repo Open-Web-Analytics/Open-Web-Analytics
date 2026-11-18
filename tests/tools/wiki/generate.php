@@ -29,15 +29,6 @@
 
 const SECTIONS_DIR = __DIR__ . '/sections';
 
-/*
- * Modules the wiki does not document, whatever is active. Hello is the sample
- * module a developer copies, not a feature: its example report, settings and
- * command would read as part of OWA. Every section that walks modules or what
- * they register filters on this, because an install's own config or stored
- * is_active rows can activate it.
- */
-const OWA_WIKI_EXCLUDED_MODULES = array( 'hello' );
-
 require_once __DIR__ . '/../../../owa_env.php';
 
 // Boots without owa-config.php: the registry needs the DB driver's OWA_DTD_*
@@ -53,8 +44,6 @@ if ( ! defined( 'OWA_DB_TYPE' ) && ! file_exists( \OWA\Core\Env::root() . '/owa-
  * registers through the normal boot rather than being added to the service
  * afterwards, when its metrics, dimensions and entities would already have
  * been collected without it.
- *
- * OWA_WIKI_EXCLUDED_MODULES are left out.
  *
  * Only when run as a script: a test that includes this file shares its process
  * with the rest of the suite, which must keep the modules its own config
@@ -76,8 +65,7 @@ function owa_wiki_module_overrides() {
 
     foreach ( glob( \OWA\Core\Env::root() . '/modules/*/Module.php' ) as $path ) {
 
-        if ( preg_match( "/\\\$this->name\s*=\s*'([^']+)'/", (string) file_get_contents( $path ), $m )
-            && ! in_array( $m[1], OWA_WIKI_EXCLUDED_MODULES, true ) ) {
+        if ( preg_match( "/\\\$this->name\s*=\s*'([^']+)'/", (string) file_get_contents( $path ), $m ) ) {
             $out[ $m[1] ] = array( 'is_active' => true );
         }
     }

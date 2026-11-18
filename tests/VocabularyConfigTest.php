@@ -3,6 +3,7 @@
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/bootstrap_owa.php';
+require_once __DIR__ . '/fixtures/TestFixtureModule.php';
 
 /**
  * Metrics and dimensions are declared in a file, and core reads it.
@@ -47,7 +48,7 @@ final class VocabularyConfigTest extends TestCase
     /** A module object whose path is the scratch directory. */
     private function module()
     {
-        $module = (new ReflectionClass(\OWA\Module\Hello\Module::class))
+        $module = (new ReflectionClass(\OWA\Module\TestFixture\Module::class))
             ->newInstanceWithoutConstructor();
 
         $p = new ReflectionProperty(\OWA\Core\Module::class, 'path');

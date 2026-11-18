@@ -641,59 +641,59 @@ test.describe('admin: user CRUD + site association', () => {
 
 test.describe('admin: module activation (snapshot + restore)', () => {
 
-    test('deactivate then reactivate the hello module', async ({ page }) => {
+    test('deactivate then reactivate an optional module', async ({ page }) => {
         await adminLogin(page);
 
-        // The hello module is always present and, by convention, starts active
-        // (renders a "Deactivate" link). We toggle it off then back on so the
-        // install ends in its original state regardless.
-        const helloRow = () =>
-            page.locator('#module_roster tr', { hasText: 'Hello' }).first();
+        // FIXTURE.toggleModule ships with every install and has no tables. We
+        // toggle it and back so the install ends in its original state
+        // whichever way it started.
+        const moduleRow = () =>
+            page.locator('#module_roster tr', { hasText: FIXTURE.toggleModule }).first();
 
         await gotoAction(page, 'base.optionsModules');
         // Determine the starting state from which toggle link renders.
         const startsActive =
-            (await helloRow().locator('a[href*="base.moduleDeactivate"]').count()) > 0;
+            (await moduleRow().locator('a[href*="base.moduleDeactivate"]').count()) > 0;
 
         try {
             if (startsActive) {
                 // Deactivate -> the row must now offer "Activate".
                 await clickAndWait(
                     page,
-                    helloRow().locator('a[href*="base.moduleDeactivate"]').first()
+                    moduleRow().locator('a[href*="base.moduleDeactivate"]').first()
                 );
                 await gotoAction(page, 'base.optionsModules');
                 await expect(
-                    helloRow().locator('a[href*="base.moduleActivate"]')
+                    moduleRow().locator('a[href*="base.moduleActivate"]')
                 ).toHaveCount(1);
 
                 // Reactivate -> back to offering "Deactivate".
                 await clickAndWait(
                     page,
-                    helloRow().locator('a[href*="base.moduleActivate"]').first()
+                    moduleRow().locator('a[href*="base.moduleActivate"]').first()
                 );
                 await gotoAction(page, 'base.optionsModules');
                 await expect(
-                    helloRow().locator('a[href*="base.moduleDeactivate"]')
+                    moduleRow().locator('a[href*="base.moduleDeactivate"]')
                 ).toHaveCount(1);
             } else {
-                // Symmetric path if hello happened to start deactivated.
+                // Symmetric path if the module started deactivated.
                 await clickAndWait(
                     page,
-                    helloRow().locator('a[href*="base.moduleActivate"]').first()
+                    moduleRow().locator('a[href*="base.moduleActivate"]').first()
                 );
                 await gotoAction(page, 'base.optionsModules');
                 await expect(
-                    helloRow().locator('a[href*="base.moduleDeactivate"]')
+                    moduleRow().locator('a[href*="base.moduleDeactivate"]')
                 ).toHaveCount(1);
 
                 await clickAndWait(
                     page,
-                    helloRow().locator('a[href*="base.moduleDeactivate"]').first()
+                    moduleRow().locator('a[href*="base.moduleDeactivate"]').first()
                 );
                 await gotoAction(page, 'base.optionsModules');
                 await expect(
-                    helloRow().locator('a[href*="base.moduleActivate"]')
+                    moduleRow().locator('a[href*="base.moduleActivate"]')
                 ).toHaveCount(1);
             }
         } catch (e) {
@@ -702,7 +702,7 @@ test.describe('admin: module activation (snapshot + restore)', () => {
             const wantLink = startsActive
                 ? 'base.moduleDeactivate'
                 : 'base.moduleActivate';
-            const restore = helloRow().locator(`a[href*="${wantLink}"]`).first();
+            const restore = moduleRow().locator(`a[href*="${wantLink}"]`).first();
             if ((await restore.count()) > 0) {
                 await clickAndWait(page, restore);
             }

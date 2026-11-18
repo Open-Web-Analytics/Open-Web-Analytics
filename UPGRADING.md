@@ -414,6 +414,13 @@ subdomains is stored as it arrived and is not rewritten to the domain. To track
 another domain, add it as its own Profile in the same Property. Update090
 deletes the stored `domain_aliases` rows; its down() does not put them back.
 
+### The Hello example module is removed
+
+`modules/Hello/` no longer ships. Its code, with an explanation of each part, is
+the wiki page [Writing a Module](https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki/v2-Writing-a-Module).
+Update091 deletes the stored `hello` rows, so an install that had it active no
+longer lists `hello` as an active module. The update's down() puts them back.
+
 ### The API key and request signature are refused
 
 1.x signed a REST request in with the user's API key (`apiKey`, or the

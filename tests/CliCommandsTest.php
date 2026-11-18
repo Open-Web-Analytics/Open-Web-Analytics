@@ -1,6 +1,7 @@
 <?php
 
 require_once(__DIR__ . '/CliControllerTestCase.php');
+require_once(__DIR__ . '/fixtures/TestFixtureModule.php');
 
 /**
  * Contract + behavior tests for the documented OWA CLI commands
@@ -21,12 +22,15 @@ require_once(__DIR__ . '/CliControllerTestCase.php');
  *
  * Everything else is either safe to fully round-trip (add-site, change-password,
  * the module activate/deactivate/install commands against the
- * schema-less 'hello' sample module, and the crawl/queue maintenance commands
+ * schema-less test fixture module, and the crawl/queue maintenance commands
  * which no-op on an empty working set) or is asserted at the contract level
  * (command is registered + capability gate + argument validation).
  */
 final class CliCommandsTest extends CliControllerTestCase
 {
+    /** The module the lifecycle commands are driven against. */
+    private const MODULE = \OWA\Module\TestFixture\Module::NAME;
+
     // =================================================================
     // Registry: every documented command resolves to a controller class.
     // This is the wiki-to-code completeness check -- if a command is
@@ -239,47 +243,47 @@ final class CliCommandsTest extends CliControllerTestCase
 
     // =================================================================
     // Module lifecycle: activate / deactivate / install-module
-    // (cap: edit_modules) -- exercised against the schema-less 'hello'
-    // sample module so there are no tables to create/drop. Each test
-    // snapshots hello's is_active and restores it afterward.
+    // (cap: edit_modules) -- exercised against the schema-less test fixture
+    // module (tests/fixtures/TestFixtureModule.php) so there are no tables to
+    // create/drop. Each test deletes the fixture's stored rows afterward.
     // =================================================================
 
-    public function testActivateModuleActivatesHello(): void
+    public function testActivateModuleActivatesTheModule(): void
     {
-        $restore = $this->snapshotHelloActive();
+        $restore = $this->forgetFixtureAfter();
         try {
             // Start from deactivated so activation is observable.
-            \OWA\Core\CoreAPI::deactivateModule('hello');
+            \OWA\Core\CoreAPI::deactivateModule(self::MODULE);
 
             $result = $this->runCommand(
                 \OWA\Module\Base\Controller\ModuleActivateCli::class,
                 'moduleActivateCli.php',
-                ['module' => 'hello']
+                ['module' => self::MODULE]
             );
 
             $this->assertNull($result['view'], 'activate should run cleanly.');
-            $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting('hello', 'is_active'),
-                "activate module=hello should set hello's is_active to true.");
+            $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting(self::MODULE, 'is_active'),
+                "activate should set the module's is_active to true.");
         } finally {
             $restore();
         }
     }
 
-    public function testDeactivateModuleDeactivatesHello(): void
+    public function testDeactivateModuleDeactivatesTheModule(): void
     {
-        $restore = $this->snapshotHelloActive();
+        $restore = $this->forgetFixtureAfter();
         try {
-            \OWA\Core\CoreAPI::activateModule('hello');
+            \OWA\Core\CoreAPI::activateModule(self::MODULE);
 
             $result = $this->runCommand(
                 \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
                 'moduleDeactivateCli.php',
-                ['module' => 'hello']
+                ['module' => self::MODULE]
             );
 
             $this->assertNull($result['view'], 'deactivate should run cleanly.');
-            $this->assertFalse((bool) \OWA\Core\CoreAPI::getSetting('hello', 'is_active'),
-                "deactivate module=hello should set hello's is_active to false.");
+            $this->assertFalse((bool) \OWA\Core\CoreAPI::getSetting(self::MODULE, 'is_active'),
+                "deactivate should set the module's is_active to false.");
         } finally {
             $restore();
         }
@@ -292,9 +296,9 @@ final class CliCommandsTest extends CliControllerTestCase
         // modules and returned false otherwise -- so deactivating an already
         // inactive module fataled with deactivate()-on-bool. It now loads a
         // fresh instance via moduleClassFactory() like activate/install do.
-        // hello, made inactive first: a harmless no-op to drive.
-        $module  = 'hello';
-        $restore = $this->snapshotHelloActive();
+        // The fixture, made inactive first: a harmless no-op to drive.
+        $module  = self::MODULE;
+        $restore = $this->forgetFixtureAfter();
         \OWA\Core\CoreAPI::deactivateModule($module);
 
         try {
@@ -313,23 +317,23 @@ final class CliCommandsTest extends CliControllerTestCase
         $this->assertFalse($active, "{$module} should remain inactive after a no-op deactivate.");
     }
 
-    public function testInstallModuleActivatesHello(): void
+    public function testInstallModuleActivatesTheModule(): void
     {
-        $restore = $this->snapshotHelloActive();
+        $restore = $this->forgetFixtureAfter();
         try {
-            \OWA\Core\CoreAPI::deactivateModule('hello');
+            \OWA\Core\CoreAPI::deactivateModule(self::MODULE);
 
-            // hello has no entities, so install-module just persists the schema
+            // The fixture has no entities, so install-module just persists the schema
             // version and activates -- no tables are created.
             $result = $this->runCommand(
                 \OWA\Module\Base\Controller\ModuleInstallCli::class,
                 'moduleInstallCli.php',
-                ['module' => 'hello']
+                ['module' => self::MODULE]
             );
 
             $this->assertNull($result['view'], 'install-module should run cleanly.');
-            $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting('hello', 'is_active'),
-                'install-module module=hello should leave hello active.');
+            $this->assertTrue((bool) \OWA\Core\CoreAPI::getSetting(self::MODULE, 'is_active'),
+                'install-module should leave the module active.');
         } finally {
             $restore();
         }
@@ -342,7 +346,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $result = $this->runCommand(
             \OWA\Module\Base\Controller\ModuleActivateCli::class,
             'moduleActivateCli.php',
-            ['module' => 'hello']
+            ['module' => self::MODULE]
         );
 
         $this->assertNotCapable($result, 'activate requires edit_modules.');
@@ -355,7 +359,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $result = $this->runCommand(
             \OWA\Module\Base\Controller\ModuleDeactivateCli::class,
             'moduleDeactivateCli.php',
-            ['module' => 'hello']
+            ['module' => self::MODULE]
         );
 
         $this->assertNotCapable($result, 'deactivate requires edit_modules.');
@@ -368,7 +372,7 @@ final class CliCommandsTest extends CliControllerTestCase
         $result = $this->runCommand(
             \OWA\Module\Base\Controller\ModuleInstallCli::class,
             'moduleInstallCli.php',
-            ['module' => 'hello']
+            ['module' => self::MODULE]
         );
 
         $this->assertNotCapable($result, 'install-module requires edit_modules.');
@@ -529,21 +533,15 @@ final class CliCommandsTest extends CliControllerTestCase
     // ---------------------------------------------------------------------
 
     /**
-     * Snapshot the hello module's is_active flag and return a restorer that
-     * persists it back, so module-lifecycle tests never leak state.
+     * A restorer that deletes the fixture module's stored rows, so
+     * module-lifecycle tests never leak state.
      *
      * @return callable():void
      */
-    private function snapshotHelloActive(): callable
+    private function forgetFixtureAfter(): callable
     {
-        $wasActive = (bool) \OWA\Core\CoreAPI::getSetting('hello', 'is_active');
-
-        return function () use ($wasActive): void {
-            if ($wasActive) {
-                \OWA\Core\CoreAPI::activateModule('hello');
-            } else {
-                \OWA\Core\CoreAPI::deactivateModule('hello');
-            }
+        return static function (): void {
+            \OWA\Module\TestFixture\Module::forget();
         };
     }
 }

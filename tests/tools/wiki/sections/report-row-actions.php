@@ -45,8 +45,7 @@ return function () {
     // Which shipped widgets name each action.
     $offered = array();
 
-    $registry = array_filter( CoreAPI::getReportRegistry(),
-        fn ( $entry ) => ! in_array( $entry['module'] ?? '', OWA_WIKI_EXCLUDED_MODULES, true ) );
+    $registry = CoreAPI::getReportRegistry();
     ksort( $registry );
 
     foreach ( $registry as $id => $entry ) {

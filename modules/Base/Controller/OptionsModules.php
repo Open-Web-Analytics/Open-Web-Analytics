@@ -66,8 +66,8 @@ class OptionsModules extends \OWA\Core\AdminController {
         // unset($dirs['base']);
 
         // getActiveModules() returns runtime module names (the lowercase config
-        // keys, e.g. 'hello'), but $dirs is keyed by on-disk directory name,
-        // which is PascalCase post-PSR-4 (e.g. 'Hello'). Match on the stored
+        // keys, e.g. 'maxmind_geoip'), but $dirs is keyed by on-disk directory name,
+        // which is PascalCase post-PSR-4 (e.g. 'MaxmindGeoip'). Match on the stored
         // runtime name ($mod->name) rather than the directory key so the roster
         // renders Deactivate for active modules.
         $active_modules = array_flip( \OWA\Core\CoreAPI::getActiveModules() );

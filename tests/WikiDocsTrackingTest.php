@@ -49,7 +49,7 @@ final class WikiDocsTrackingTest extends TestCase
 
             $class = 'OWA\\Module\\' . basename( dirname( $path ) ) . '\\Module';
 
-            if ( basename( dirname( $path ) ) !== 'Hello' && class_exists( $class )
+            if ( class_exists( $class )
                  && defined( $class . '::FEATURE_SETTINGS' ) ) {
                 $out[ $class ] = (array) constant( $class . '::FEATURE_SETTINGS' );
             }

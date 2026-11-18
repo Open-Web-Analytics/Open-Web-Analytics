@@ -1375,7 +1375,7 @@ class Controller extends \OWA\Core\Base {
          */
         /*
          * Built from the registered admin panels rather than listed here, so a
-         * module that adds one still appears -- Hello and MaxmindGeoip both
+         * module that adds one still appears -- MaxmindGeoip and Sqs both
          * register into that map, and hardcoding Base's two entries would have
          * left theirs unreachable when the old settings menu went.
          */

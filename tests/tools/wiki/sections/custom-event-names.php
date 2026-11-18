@@ -66,10 +66,6 @@ return function () {
 
         $dir = basename( dirname( $path ) );
 
-        if ( in_array( strtolower( $dir ), OWA_WIKI_EXCLUDED_MODULES, true ) ) {
-            continue;
-        }
-
         $manifest = json_decode( (string) file_get_contents( $path ), true );
 
         foreach ( (array) ( $manifest['contributes_lazy'] ?? array() ) as $plugins ) {

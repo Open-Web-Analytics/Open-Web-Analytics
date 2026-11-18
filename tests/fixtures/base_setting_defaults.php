@@ -57,6 +57,7 @@ return [
     'goal_event_names_before_075' => [],
     'goal_groups_before_056' => [],
     'goals_switched_off_by_049' => [],
+    'hello_settings_before_091' => [],
     'is_active' => true,
     'link_template' => '%s?%s',
     'log_named_users' => true,

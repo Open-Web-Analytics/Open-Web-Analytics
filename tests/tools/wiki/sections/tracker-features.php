@@ -43,7 +43,7 @@ return function () {
         foreach ( $names as $name ) {
 
             if ( \OWA\Core\Lib::moduleDirName( $name ) === $dir
-                 && $name !== 'base' && ! in_array( $name, OWA_WIKI_EXCLUDED_MODULES, true ) ) {
+                 && $name !== 'base' ) {
 
                 $sources[ $name ] = (array) constant( $class . '::FEATURE_SETTINGS' );
                 $display[ $name ] = $dir;

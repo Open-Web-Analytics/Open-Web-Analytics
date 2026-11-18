@@ -51,6 +51,15 @@ final class SettingsResetTest extends TestCase
 
         $probe->saved = 0;
 
+        /*
+         * A config of its own. clone is shallow, and the entity holds its
+         * values in column objects, so the probe's set() below wrote base's
+         * schema_version 90 into the live settings, which the next test that
+         * reads it then saw.
+         */
+        $probe->config = \OWA\Core\CoreAPI::entityFactory( 'base.configuration' );
+        $probe->config->set( 'settings', $real->config->get( 'settings' ) );
+
         $module = array( 'schema_version' => 3, 'is_active' => true, 'custom_key' => 'customised' );
         $settings = $probe->config->get( 'settings' );
         $settings['resetprobe'] = $module;

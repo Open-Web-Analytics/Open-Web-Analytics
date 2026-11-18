@@ -204,8 +204,9 @@ const FIXTURE = {
         toDismissAndReload: 'E2E Notification Three',
         untouched: 'E2E Notification One',
     },
-    // The always-present optional module the module-activation test toggles.
-    toggleModule: 'hello',
+    // The display name of the optional module the module-activation test
+    // toggles: shipped, schemaless, and activated by no constant.
+    toggleModule: 'Maxmind GeoIP',
 };
 
 /**
