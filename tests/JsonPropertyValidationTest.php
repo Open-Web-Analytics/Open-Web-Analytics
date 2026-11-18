@@ -62,6 +62,42 @@ final class JsonPropertyValidationTest extends TestCase
     {
         $this->assertNull( Sanitize::cleanJson( '' ) );
         $this->assertNull( Sanitize::cleanJson( null ) );
+        $this->assertNull( Sanitize::cleanJson( [] ) );
     }
 
+    /**
+     * The tracker sends line items as bracketed keys (o_items[0][item_id]=…),
+     * which PHP parses into an array, not JSON text. json_decode() threw a
+     * TypeError on it, so a purchase or refund with items was never stored.
+     */
+    public function testLineItemsSentAsBracketedKeysAreEncoded(): void
+    {
+        // What PHP makes of o_items[0][item_id]=SKU-1&o_items[0][price]=19.99&
+        // o_items[0][quantity]=2&o_items[1][item_name]=Blue mug
+        $parsed = [
+            0 => [ 'item_id' => 'SKU-1', 'price' => '19.99', 'quantity' => '2' ],
+            1 => [ 'item_name' => 'Blue mug' ],
+        ];
+
+        $out = Helpers::setDataType( $parsed, 'json' );
+
+        $this->assertSame( $parsed, json_decode( $out, true ) );
+        $this->assertStringStartsWith( '[', $out, 'items must encode as a JSON list' );
+    }
+
+    /** Items with a gap in their indexes still encode as a list. */
+    public function testIntegerKeysWithAGapEncodeAsAList(): void
+    {
+        $out = Sanitize::cleanJson( [ 1 => [ 'item_id' => 'A' ], 3 => [ 'item_id' => 'B' ] ] );
+
+        $this->assertSame( [ [ 'item_id' => 'A' ], [ 'item_id' => 'B' ] ], json_decode( $out, true ) );
+    }
+
+    /** A value in the array is tracking text: control characters go, invalid UTF-8 is read. */
+    public function testArrayValuesAreCleanedAsTrackingText(): void
+    {
+        $out = Sanitize::cleanJson( [ [ 'item_name' => "Mug\x01", 'item_brand' => "Caf\xE9" ] ] );
+
+        $this->assertSame( [ [ 'item_name' => 'Mug', 'item_brand' => 'Café' ] ], json_decode( $out, true ) );
+    }
 }
