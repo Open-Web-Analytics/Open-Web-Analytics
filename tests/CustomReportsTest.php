@@ -1297,6 +1297,15 @@ final class CustomReportsTest extends TestCase
         $this->assertStringContainsString('subview', $error);
     }
 
+    /** Who may open a saved report is mayView()'s answer, not its definition's. */
+    public function testASavedReportCannotDeclareACapability(): void
+    {
+        $definition = $this->definition();
+        $definition['capability'] = 'install_schema';
+
+        $this->assertStringContainsString('capability', CustomReports::validate($definition));
+    }
+
     public function testAnUnknownTopLevelKeyIsRefused(): void
     {
         $definition = $this->definition();

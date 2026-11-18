@@ -178,6 +178,7 @@ return [
     'A report has at most %d widgets; this one has %d.' => 'A report has at most %d widgets; this one has %d.',
     'A report needs at least one widget.' => 'A report needs at least one widget.',
     'A request whose spam score reaches this number is not recorded. Leave blank to record every request; each one still gets a score.' => 'A request whose spam score reaches this number is not recorded. Leave blank to record every request; each one still gets a score.',
+    'A saved report cannot declare a capability.' => 'A saved report cannot declare a capability.',
     'A shorter event-data window deletes older event data at the next maintenance run, and it cannot be recovered.' => 'A shorter event-data window deletes older event data at the next maintenance run, and it cannot be recovered.',
     'A to Z' => 'A to Z',
     'A user with that email address already exists.' => 'A user with that email address already exists.',
