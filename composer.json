@@ -41,12 +41,15 @@
         }
     },
     "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^10.5"
     },
     "scripts": {
         "lint": "find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -print0 | xargs -0 -n1 php -l",
         "phpstan": "phpstan analyse -c phpstan.neon --memory-limit=1G",
+        "cs": "php-cs-fixer check --diff --sequential --show-progress=none",
+        "cs:fix": "php-cs-fixer fix --sequential",
         "test": "phpunit",
         "test:isolation": "bash tests/tools/isolation_sweep.sh",
         "test:scratch": "bash tests/tools/scratch_db_run.sh",

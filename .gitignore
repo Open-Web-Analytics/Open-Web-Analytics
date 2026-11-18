@@ -11,6 +11,7 @@ node_modules/
 # public/.htaccess is written by the build too (webpack.public-htaccess.js).
 public/
 /.phpunit.cache/
+/.php-cs-fixer.cache
 /test-results/
 /playwright-report/
 owa-data/e2e-selfhost-logs/
