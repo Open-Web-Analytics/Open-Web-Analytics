@@ -63,7 +63,7 @@ class Update056 extends \OWA\Core\Update {
         $condition  = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' )->namedBefore076();
         $definition = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
 
-        $found = array( 'conditions' => array(), 'roles' => array(), 'groups' => array(), 'settings' => array() );
+        $found = [ 'conditions' => [], 'roles' => [], 'groups' => [], 'settings' => [] ];
 
         if ( $this->hasColumn( $condition, 'role' ) ) {
 
@@ -106,7 +106,7 @@ class Update056 extends \OWA\Core\Update {
             // The first run's copy is the one down() restores.
             foreach ( $found as $kind => $values ) {
 
-                $record[ $kind ] = ( isset( $record[ $kind ] ) && is_array( $record[ $kind ] ) ? $record[ $kind ] : array() ) + $values;
+                $record[ $kind ] = ( isset( $record[ $kind ] ) && is_array( $record[ $kind ] ) ? $record[ $kind ] : [] ) + $values;
             }
 
             // Kept before anything changes, so a run that stops part way can still be undone.
@@ -177,7 +177,7 @@ class Update056 extends \OWA\Core\Update {
             return true;
         }
 
-        foreach ( (array) ( $record['conditions'] ?? array() ) as $row ) {
+        foreach ( (array) ( $record['conditions'] ?? [] ) as $row ) {
 
             if ( ! $this->restoreRow( (array) $row, $condition->getTableName() ) ) {
 
@@ -187,25 +187,25 @@ class Update056 extends \OWA\Core\Update {
             }
         }
 
-        foreach ( (array) ( $record['roles'] ?? array() ) as $id => $role ) {
+        foreach ( (array) ( $record['roles'] ?? [] ) as $id => $role ) {
 
             if ( $db->query( sprintf( 'UPDATE %s SET role = ? WHERE id = ?', $condition->getTableName() ),
-                    array( $role, (string) $id ) ) === false ) {
+                    [ $role, (string) $id ] ) === false ) {
 
                 return false;
             }
         }
 
-        foreach ( (array) ( $record['groups'] ?? array() ) as $id => $group ) {
+        foreach ( (array) ( $record['groups'] ?? [] ) as $id => $group ) {
 
             if ( $db->query( sprintf( 'UPDATE %s SET goal_group = ? WHERE id = ?', $definition->getTableName() ),
-                    array( $group, (string) $id ) ) === false ) {
+                    [ $group, (string) $id ] ) === false ) {
 
                 return false;
             }
         }
 
-        foreach ( (array) ( $record['settings'] ?? array() ) as $row ) {
+        foreach ( (array) ( $record['settings'] ?? [] ) as $row ) {
 
             if ( ! $this->restoreRow( (array) $row ) ) {
 
@@ -236,5 +236,3 @@ class Update056 extends \OWA\Core\Update {
             "SHOW COLUMNS FROM %s LIKE '%s'", $entity->getTableName(), $column ) );
     }
 }
-
-?>

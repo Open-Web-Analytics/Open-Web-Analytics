@@ -16,7 +16,7 @@ return function () {
 
     foreach ( SiteLists::FILES as $list => $spec ) {
 
-        $entries = array();
+        $entries = [];
 
         foreach ( (array) include \OWA\Core\Env::confDir() . $spec[0] as $entry ) {
 

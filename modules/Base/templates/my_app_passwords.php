@@ -10,8 +10,8 @@
  */
 $owa_passwords = (array) $view->app_passwords;
 $owa_scopes    = (array) $view->scopes;
-$owa_empty_row = array( 'lookup_id' => '', 'name' => '', 'scope' => '', 'created_at' => 0,
-                        'last_used_at' => 0, 'last_used_ip' => '' );
+$owa_empty_row = [ 'lookup_id' => '', 'name' => '', 'scope' => '', 'created_at' => 0,
+                        'last_used_at' => 0, 'last_used_ip' => '' ];
 
 /*
  * One roster row. Drawn for each password, and once, empty, inside the
@@ -27,7 +27,7 @@ $owa_password_row = function ( array $owa_row ) use ( $view, $owa_scopes ) {
         <td><?php $view->out( $owa_row['last_used_at'] ? date( 'Y-m-d H:i', (int) $owa_row['last_used_at'] ) : \OWA\Core\CoreAPI::t( 'Never' ) ); ?></td>
         <td><?php $view->out( (string) $owa_row['last_used_ip'] ); ?></td>
         <td>
-            <form method="post" style="margin:0" action="<?php echo $view->makeLink( array( 'do' => 'base.myAppPasswordRevoke' ) ); ?>">
+            <form method="post" style="margin:0" action="<?php echo $view->makeLink( [ 'do' => 'base.myAppPasswordRevoke' ] ); ?>">
                 <?php echo $view->createNonceFormField( 'base.myAppPasswordRevoke' ); ?>
                 <input type="hidden" name="lookup_id" data-field="lookup_id" value="<?php $view->out( $owa_row['lookup_id'] ); ?>">
                 <input type="hidden" name="siteId" value="<?php $view->out( $view->siteId ); ?>">
@@ -85,7 +85,7 @@ $owa_password_row = function ( array $owa_row ) use ( $view, $owa_scopes ) {
 <div id="owa_appPasswordDialog" class="owa_appPasswordDialog" data-ui="dialog:app-password" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Add an application password' ) ); ?>" hidden>
 
     <form method="post" class="owa_appPasswordForm" novalidate
-          action="<?php echo $view->makeLink( array( 'do' => 'base.myAppPasswordCreateAjax' ) ); ?>">
+          action="<?php echo $view->makeLink( [ 'do' => 'base.myAppPasswordCreateAjax' ] ); ?>">
         <?php echo $view->createNonceFormField( 'base.myAppPasswordCreateAjax' ); ?>
         <div class="setting">
             <div class="title"><label for="owa_appPasswordName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?></label></div>

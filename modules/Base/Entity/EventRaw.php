@@ -456,17 +456,17 @@ class EventRaw extends \OWA\Core\Entity {
          * Two single-column indexes are not a substitute -- MySQL picks one and
          * filters the rest.
          */
-        $this->addCompositeIndex( 'site_date', array( 'site_id', 'yyyymmdd' ) );
-        $this->addCompositeIndex( 'site_type_date', array( 'site_id', 'event_type', 'yyyymmdd' ) );
+        $this->addCompositeIndex( 'site_date', [ 'site_id', 'yyyymmdd' ] );
+        $this->addCompositeIndex( 'site_type_date', [ 'site_id', 'event_type', 'yyyymmdd' ] );
 
         // A purchase already stored under this transaction id, looked up per
         // purchase at ingest (Classes\PurchaseDeduplication). Update057.
-        $this->addCompositeIndex( 'site_transaction', array( 'site_id', 'transaction_id' ) );
+        $this->addCompositeIndex( 'site_transaction', [ 'site_id', 'transaction_id' ] );
 
         // The realtime screen's window: a site's last thirty minutes by ts, so
         // its cost follows the window rather than the day (Classes\Realtime).
         // Raw only -- nothing reads the cube by time. Update064.
-        $this->addCompositeIndex( 'site_ts', array( 'site_id', 'ts' ) );
+        $this->addCompositeIndex( 'site_ts', [ 'site_id', 'ts' ] );
     }
 
     /**
@@ -518,5 +518,3 @@ class EventRaw extends \OWA\Core\Entity {
         return $column;
     }
 }
-
-?>

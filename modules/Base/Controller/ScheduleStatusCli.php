@@ -32,18 +32,18 @@ class ScheduleStatusCli extends SchedulerCli {
     /** See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer. */
     public static function serverRoles() {
 
-        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE );
+        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE ];
     }
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Reports what the scheduler is doing and, for a job that is behind, the first cause that explains it. Read-only.',
-            'arguments'   => array(
+            'arguments'   => [
                 'format=markdown' => 'Print the registered jobs as a Markdown table instead.',
-            ),
-        );
+            ],
+        ];
     }
 
     /** See JobStatus::MIN_GRACE. */
@@ -63,10 +63,10 @@ class ScheduleStatusCli extends SchedulerCli {
         $state   = $this->allState();
         $pending = \OWA\Core\CoreAPI::isSchemaUpdateRequired();
 
-        $lines = array( sprintf(
+        $lines = [ sprintf(
             'Scheduler status, %s (%s). %d job%s registered.',
             $this->readable( $now ), $this->timezone(), count( $jobs ), \OWA\Core\Lib::plural( count( $jobs ), '', 's' )
-        ) );
+        ) ];
 
         // One source for this string, shared with the admin banner and the
         // install page -- an installation told two different cron lines depending
@@ -153,14 +153,14 @@ class ScheduleStatusCli extends SchedulerCli {
      */
     public static function markdownTable( array $jobs, callable $schedule ) {
 
-        $lines = array( '| Job | Runs | Schedule | What it does |', '|---|---|---|---|' );
-        $cell  = fn ( $v ) => str_replace( array( '|', "\n" ), array( '\\|', ' ' ), (string) $v );
+        $lines = [ '| Job | Runs | Schedule | What it does |', '|---|---|---|---|' ];
+        $cell  = fn ( $v ) => str_replace( [ '|', "\n" ], [ '\\|', ' ' ], (string) $v );
 
         foreach ( $jobs as $name => $job ) {
 
-            $args = array( $job['command'] );
+            $args = [ $job['command'] ];
 
-            foreach ( (array) ( $job['params'] ?? array() ) as $k => $v ) {
+            foreach ( (array) ( $job['params'] ?? [] ) as $k => $v ) {
                 $args[] = $k . '=' . $v;
             }
 
@@ -183,7 +183,7 @@ class ScheduleStatusCli extends SchedulerCli {
         $section = \OWA\Module\Base\Classes\SystemHealth::queue();
         $q       = $section['stats'];
 
-        $lines = array( '', 'Queued jobs' );
+        $lines = [ '', 'Queued jobs' ];
 
         $lines[] = sprintf( '  due %d, delayed %d, running %d, failed %d, done %d',
             $q['due'], $q['delayed'], $q['running'], $q['failed'], $q['done'] );
@@ -201,7 +201,7 @@ class ScheduleStatusCli extends SchedulerCli {
 
         $lines = self::problemLines( \OWA\Module\Base\Classes\SystemHealth::intake() );
 
-        return $lines ? array_merge( array( '', 'Tracker ingest' ), $lines ) : array();
+        return $lines ? array_merge( [ '', 'Tracker ingest' ], $lines ) : [];
     }
 
     /**
@@ -212,7 +212,7 @@ class ScheduleStatusCli extends SchedulerCli {
      */
     private static function problemLines( array $section ) {
 
-        $lines = array();
+        $lines = [];
 
         foreach ( $section['findings'] as $f ) {
 
@@ -250,12 +250,12 @@ class ScheduleStatusCli extends SchedulerCli {
         $lock   = $db->getJobLock( $name );
         $parsed = $this->parsedSchedule( $job );
 
-        $lines = array( sprintf(
+        $lines = [ sprintf(
             '%s    %s (%s)',
             $name,
             $this->isDisabled( $job ) ? 'off' : \OWA\Core\Cron::describe( $job['schedule'] ),
             $job['source']
-        ) );
+        ) ];
 
         if ( ( $job['description'] ?? '' ) !== '' ) {
 
@@ -365,10 +365,10 @@ class ScheduleStatusCli extends SchedulerCli {
 
         if ( ! $orphans ) {
 
-            return array();
+            return [];
         }
 
-        $lines = array( '', sprintf( 'Orphaned (%d) -- no longer registered, never run, kept for their history:', count( $orphans ) ) );
+        $lines = [ '', sprintf( 'Orphaned (%d) -- no longer registered, never run, kept for their history:', count( $orphans ) ) ];
 
         foreach ( $orphans as $name => $row ) {
 
@@ -392,7 +392,7 @@ class ScheduleStatusCli extends SchedulerCli {
      */
     protected function summarise( $jobs, $state, $ever, $last_activity, $now ) {
 
-        $lines = array( '' );
+        $lines = [ '' ];
 
         if ( ! $jobs ) {
 

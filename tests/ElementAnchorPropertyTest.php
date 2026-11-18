@@ -17,10 +17,10 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  */
 final class ElementAnchorPropertyTest extends TestCase
 {
-    const PARTS = array( 'element_anchor', 'anchor_x', 'anchor_y' );
+    const PARTS = [ 'element_anchor', 'anchor_x', 'anchor_y' ];
 
     /** The registry's order, and each one's callback: the hash reads both points. */
-    const ORDER = array( 'anchor_x' => 'anchorX', 'anchor_y' => 'anchorY', 'element_anchor' => 'elementAnchor' );
+    const ORDER = [ 'anchor_x' => 'anchorX', 'anchor_y' => 'anchorY', 'element_anchor' => 'elementAnchor' ];
 
     private static function click( array $properties )
     {
@@ -40,14 +40,14 @@ final class ElementAnchorPropertyTest extends TestCase
     private static function resolve( $event ): array
     {
         foreach ( self::ORDER as $name => $callback ) {
-            $value = call_user_func( array( Helpers::class, $callback ), $event->get( $name ), $event );
+            $value = call_user_func( [ Helpers::class, $callback ], $event->get( $name ), $event );
 
             if ( $value !== null ) {
                 $event->set( $name, $value );
             }
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( self::PARTS as $name ) {
             $out[ $name ] = $event->get( $name ) === false ? null : $event->get( $name );
@@ -68,8 +68,8 @@ final class ElementAnchorPropertyTest extends TestCase
         $registry = json_decode( file_get_contents( \OWA\Core\Env::root() . '/modules/Base/config/tracking_properties.json' ), true );
 
         foreach ( self::ORDER as $name => $callback ) {
-            $this->assertSame( array( Helpers::class . '::' . $callback ), $registry[ $name ]['callbacks'], $name );
-            $this->assertSame( array( 'click' ), $registry[ $name ]['events'], $name );
+            $this->assertSame( [ Helpers::class . '::' . $callback ], $registry[ $name ]['callbacks'], $name );
+            $this->assertSame( [ 'click' ], $registry[ $name ]['events'], $name );
         }
 
         $keys = array_keys( $registry );
@@ -79,10 +79,10 @@ final class ElementAnchorPropertyTest extends TestCase
 
     public function testAWholeAnchorInRangeIsKept(): void
     {
-        $event = self::click( array( 'element_anchor' => '9007199254740991', 'anchor_x' => '0', 'anchor_y' => '1000' ) );
+        $event = self::click( [ 'element_anchor' => '9007199254740991', 'anchor_x' => '0', 'anchor_y' => '1000' ] );
 
         $this->assertSame(
-            array( 'element_anchor' => 9007199254740991, 'anchor_x' => 0, 'anchor_y' => 1000 ),
+            [ 'element_anchor' => 9007199254740991, 'anchor_x' => 0, 'anchor_y' => 1000 ],
             self::resolve( $event ) );
     }
 
@@ -96,20 +96,20 @@ final class ElementAnchorPropertyTest extends TestCase
 
     public static function brokenAnchors(): array
     {
-        $none = array( 'element_anchor' => null, 'anchor_x' => null, 'anchor_y' => null );
+        $none = [ 'element_anchor' => null, 'anchor_x' => null, 'anchor_y' => null ];
 
-        return array(
-            'x past the box'    => array( array( 'element_anchor' => '12345', 'anchor_x' => '99999', 'anchor_y' => '5' ),
-                                          array( 'element_anchor' => null, 'anchor_x' => null, 'anchor_y' => 5 ) ),
-            'y below it'        => array( array( 'element_anchor' => '12345', 'anchor_x' => '5', 'anchor_y' => '-1' ),
-                                          array( 'element_anchor' => null, 'anchor_x' => 5, 'anchor_y' => null ) ),
-            'hash past 53 bits' => array( array( 'element_anchor' => '9007199254740992', 'anchor_x' => '5', 'anchor_y' => '5' ),
-                                          array( 'element_anchor' => null, 'anchor_x' => 5, 'anchor_y' => 5 ) ),
-            'not a number'      => array( array( 'element_anchor' => '#main>a:1', 'anchor_x' => '5', 'anchor_y' => '5' ),
-                                          array( 'element_anchor' => null, 'anchor_x' => 5, 'anchor_y' => 5 ) ),
-            'a point missing'   => array( array( 'element_anchor' => '12345', 'anchor_x' => '5' ),
-                                          array( 'element_anchor' => null, 'anchor_x' => 5, 'anchor_y' => null ) ),
-            'none of it'        => array( array(), $none ),
-        );
+        return [
+            'x past the box'    => [ [ 'element_anchor' => '12345', 'anchor_x' => '99999', 'anchor_y' => '5' ],
+                                          [ 'element_anchor' => null, 'anchor_x' => null, 'anchor_y' => 5 ] ],
+            'y below it'        => [ [ 'element_anchor' => '12345', 'anchor_x' => '5', 'anchor_y' => '-1' ],
+                                          [ 'element_anchor' => null, 'anchor_x' => 5, 'anchor_y' => null ] ],
+            'hash past 53 bits' => [ [ 'element_anchor' => '9007199254740992', 'anchor_x' => '5', 'anchor_y' => '5' ],
+                                          [ 'element_anchor' => null, 'anchor_x' => 5, 'anchor_y' => 5 ] ],
+            'not a number'      => [ [ 'element_anchor' => '#main>a:1', 'anchor_x' => '5', 'anchor_y' => '5' ],
+                                          [ 'element_anchor' => null, 'anchor_x' => 5, 'anchor_y' => 5 ] ],
+            'a point missing'   => [ [ 'element_anchor' => '12345', 'anchor_x' => '5' ],
+                                          [ 'element_anchor' => null, 'anchor_x' => 5, 'anchor_y' => null ] ],
+            'none of it'        => [ [], $none ],
+        ];
     }
 }

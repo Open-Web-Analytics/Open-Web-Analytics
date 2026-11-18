@@ -45,7 +45,7 @@ class OptionsGeneral extends \OWA\Core\AdminController {
 
         // add data to container
         $owa_site_id = $this->resolveCurrentSiteId();
-        $this->settingsChrome( array( 'siteId' => $owa_site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
+        $this->settingsChrome( [ 'siteId' => $owa_site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $owa_site_id ) );
         // What the page renders, from the page's own registration. The template
         // loops over these; it does not know which settings it is showing.
         $this->setSubview( 'base.optionsGeneral', [
@@ -57,7 +57,3 @@ class OptionsGeneral extends \OWA\Core\AdminController {
     }
 
 }
-
-
-
-?>

@@ -286,7 +286,7 @@ abstract class IngestionTestCase extends TestCase
              * own vocabulary, so v1's base.page_request and v2's page_view are
              * separate keys.
              */
-            $flattened = array();
+            $flattened = [];
 
             foreach ($data as $version => $contracts) {
 
@@ -297,7 +297,7 @@ abstract class IngestionTestCase extends TestCase
                     }
 
                     $flattened[$event_type] = array_values(array_unique(array_merge(
-                        $flattened[$event_type] ?? array(), (array) $fields)));
+                        $flattened[$event_type] ?? [], (array) $fields)));
                 }
             }
 

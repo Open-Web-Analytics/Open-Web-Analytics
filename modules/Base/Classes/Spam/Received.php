@@ -71,7 +71,7 @@ class Received {
      */
     private static function either( $event, $received, $property ) {
 
-        foreach ( array( $received, $property ) as $name ) {
+        foreach ( [ $received, $property ] as $name ) {
 
             $value = $event->get( $name );
 
@@ -84,5 +84,3 @@ class Received {
         return '';
     }
 }
-
-?>

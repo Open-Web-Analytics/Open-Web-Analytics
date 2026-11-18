@@ -55,7 +55,7 @@ class PropertyProfile extends \OWA\Core\AdminController {
         $siteId = $this->resolveCurrentSiteId(
             $this->getParam( 'siteId' ), $this->getParam( 'propertyId' ) );
 
-        $this->settingsChrome( array( 'siteId' => $siteId ), '', $this->getParam( 'propertyId' ) );
+        $this->settingsChrome( [ 'siteId' => $siteId ], '', $this->getParam( 'propertyId' ) );
         $this->setSubview( 'base.propertyProfile', self::screen( $this->getParam( 'propertyId' ) ) );
     }
 
@@ -112,5 +112,3 @@ class PropertyProfile extends \OWA\Core\AdminController {
         return $live;
     }
 }
-
-?>

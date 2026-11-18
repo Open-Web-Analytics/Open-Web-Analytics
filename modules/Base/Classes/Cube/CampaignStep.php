@@ -26,11 +26,11 @@ namespace OWA\Module\Base\Classes\Cube;
  */
 class CampaignStep extends Step {
 
-    const PLACEHOLDERS = array(
+    const PLACEHOLDERS = [
         '(none)'       => '(direct)',
         'organic'      => '(organic)',
         'ai-agent'     => '(ai-agent)',
-    );
+    ];
 
     const FALLBACK = '(referral)';
 
@@ -70,12 +70,12 @@ class CampaignStep extends Step {
 
     public function requires() {
 
-        return array( $this->join );
+        return [ $this->join ];
     }
 
     public function execute( Context $context ) {
 
-        $tagged = array();
+        $tagged = [];
 
         foreach ( $this->tags as $tag ) {
 
@@ -105,5 +105,3 @@ class CampaignStep extends Step {
             $this->absent, $context->literal( \OWA\Module\Base\Classes\V2Event::UNRESOLVED ), $resolved );
     }
 }
-
-?>

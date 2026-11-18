@@ -87,13 +87,13 @@ final class DeletedUserGrantsTest extends TestCase
     {
         $um = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'userManager' );
 
-        $created = $um->createNewUser( array(
+        $created = $um->createNewUser( [
             'user_id'       => $this->userId,
             'role'          => 'viewer',
             'password'      => 'probe-' . uniqid( '', true ),
             'email_address' => $this->userId . '@example.test',
             'real_name'     => 'Grant Probe',
-        ) );
+        ] );
 
         $this->assertNotFalse( $created, 'could not create the probe user' );
 

@@ -27,7 +27,7 @@ final class BeaconWireNamesTest extends TestCase
 
         preg_match_all( "/^\s*([A-Za-z_]+):\s*'([^']+)',?\s*$/m", $m[1], $pairs, PREG_SET_ORDER );
 
-        $out = array();
+        $out = [];
 
         foreach ( $pairs as $pair ) {
 
@@ -40,7 +40,7 @@ final class BeaconWireNamesTest extends TestCase
     /** @return array<string,string> wire key => property, the compat index's `wire` entries */
     private function wireRenames(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( (array) ( include \OWA\Core\Env::root() . '/conf/beacon_compat.php' )['renames'] as $entry ) {
 
@@ -65,7 +65,7 @@ final class BeaconWireNamesTest extends TestCase
 
         $this->assertCount( 57, $table, 'the parse found a different number of entries than WireNames.js holds' );
 
-        $expected = array();
+        $expected = [];
 
         foreach ( $table as $name => $wire ) {
 
@@ -83,14 +83,14 @@ final class BeaconWireNamesTest extends TestCase
     /** Every client property is in the table, and the registry declares its short key. */
     public function testTheRegistryDeclaresEachClientPropertysWireKey(): void
     {
-        $table = array();
+        $table = [];
 
         foreach ( $this->trackerTable() as $name => $wire ) {
 
             $table[ self::propertyFor( $name ) ] = $wire;
         }
 
-        $clients = array();
+        $clients = [];
 
         foreach ( Helpers::allProperties() as $name => $definition ) {
 
@@ -105,10 +105,10 @@ final class BeaconWireNamesTest extends TestCase
         foreach ( $clients as $name => $from ) {
 
             $this->assertArrayHasKey( $name, $table, "$name is client-set and has no wire key in WireNames.js" );
-            $this->assertSame( array( $table[ $name ] ), $from, "$name's registry `from` is not its wire key" );
+            $this->assertSame( [ $table[ $name ] ], $from, "$name's registry `from` is not its wire key" );
         }
 
-        $this->assertSame( array(), array_values( array_diff( array_keys( $table ), array_keys( $clients ) ) ),
+        $this->assertSame( [], array_values( array_diff( array_keys( $table ), array_keys( $clients ) ) ),
             'WireNames.js names a property the registry does not declare client-set' );
     }
 
@@ -140,7 +140,7 @@ final class BeaconWireNamesTest extends TestCase
     /** A short-keyed beacon through the gate and the compat layer reaches the long names. */
     public function testAShortKeyedBeaconArrivesUnderThePropertyNames(): void
     {
-        $params = Helpers::admitRequestParams( array(
+        $params = Helpers::admitRequestParams( [
             '_v'        => '2',
             'site'      => 'abc123',
             'v_nps'     => '3',
@@ -150,7 +150,7 @@ final class BeaconWireNamesTest extends TestCase
             'eps_plan'  => 'pro',
             'vpn_seats' => '4',
             'not_a_key' => 'refused',
-        ) );
+        ] );
 
         $this->assertArrayNotHasKey( 'not_a_key', $params );
 

@@ -60,10 +60,10 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
     private $segment = null;
 
     /** Subject columns, keyed by the scope that selects them. */
-    const SCOPES = array(
+    const SCOPES = [
         'visitor' => 'visitor_id',
         'session' => 'session_id',
-    );
+    ];
 
     /**
      * The cube's alias in the funnel query.
@@ -143,7 +143,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         if ( ! $visualization ) {
 
-            $this->set( 'funnel', array() );
+            $this->set( 'funnel', [] );
             $this->setSubview( 'base.visualizationFunnel' );
             $this->setTitle( \OWA\Core\CoreAPI::t( 'Funnel' ) );
 
@@ -151,7 +151,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         }
 
         $definition = (array) $visualization['definition'];
-        $funnel     = isset( $definition['steps'] ) ? (array) $definition['steps'] : array();
+        $funnel     = isset( $definition['steps'] ) ? (array) $definition['steps'] : [];
 
         // Before anything builds the segment, which reads it.
         $this->savedConstraints = trim( (string) ( $definition['constraints'] ?? '' ) );
@@ -197,7 +197,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
                  * the gap would be a real-looking number computed against the
                  * wrong denominator.
                  */
-                $this->set( 'funnel', array() );
+                $this->set( 'funnel', [] );
                 $this->setSubview( 'base.visualizationFunnel' );
                 $this->setTitle( (string) $visualization['name'] );
                 $this->set( 'visualization_id', $this->visualizationId() );
@@ -308,7 +308,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      */
     private function stepsAsResultSet( array $steps, $entered, $label ) {
 
-        $rows = array();
+        $rows = [];
 
         foreach ( $steps as $i => $step ) {
 
@@ -318,7 +318,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             $dropped   = $prior === null ? null : $prior - $count;
             $of_entry  = $entered > 0 ? round( ( $count / $entered ) * 100, 1 ) . '%' : '0%';
 
-            $rows[] = array(
+            $rows[] = [
                 'step'      => self::cell( 'dimension', 'step', 'Step', $step['step_number'] ),
                 'name'      => self::cell( 'dimension', 'name', 'Name', $step['name'] ),
                 'matches'   => self::cell( 'dimension', 'matches', \OWA\Core\CoreAPI::t( 'Matches' ), $step['summary'] ),
@@ -328,17 +328,17 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
                 'dropped'   => self::cell( 'metric', 'dropped', 'Dropped',
                                    $dropped === null ? '' : $dropped, 'integer' ),
                 'ofEntry'   => self::cell( 'metric', 'ofEntry', 'Of entry', $of_entry ),
-            );
+            ];
         }
 
-        return array(
+        return [
             'resultsRows'     => $rows,
             'resultsReturned' => count( $rows ),
             'resultsTotal'    => count( $rows ),
             // The grid skips a redraw when the guid is unchanged, so it has to
             // differ whenever the numbers do.
             'guid'            => md5( json_encode( $rows ) ),
-        );
+        ];
     }
 
     /**
@@ -353,14 +353,14 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      */
     private static function cell( $type, $name, $label, $value, $dataType = 'string' ) {
 
-        return array(
+        return [
             'result_type'     => $type,
             'name'            => $name,
             'label'           => $label,
             'value'           => $value,
             'formatted_value' => (string) $value,
             'data_type'       => $dataType,
-        );
+        ];
     }
 
     /**
@@ -511,7 +511,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         if ( ! $steps ) {
 
-            return array();
+            return [];
         }
 
         $db      = \OWA\Core\CoreAPI::dbSingleton();
@@ -569,9 +569,9 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
 
         $table = $cubes[ (string) $property ];
 
-        $params = array();
-        $select = array();
-        $any    = array();
+        $params = [];
+        $select = [];
+        $any    = [];
 
         foreach ( $steps as $i => $step ) {
 
@@ -605,7 +605,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         $params = array_merge( $params, $params );
 
         // The cube is the Property's, so every row in it is in the funnel's scope.
-        $where = array( '( ' . implode( ' OR ', $any ) . ' )' );
+        $where = [ '( ' . implode( ' OR ', $any ) . ' )' ];
 
         $bounds = $this->dateBounds();
 
@@ -635,7 +635,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
          */
         $segment = $this->segmentSubjects( $scope );
 
-        if ( $segment === array() ) {
+        if ( $segment === [] ) {
 
             // A segment that matches nobody is a funnel nobody entered, not an
             // unsegmented funnel.
@@ -745,7 +745,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         $counts  = array_fill( 0, $count, 0 );
         $current = null;
         $stage   = 0;
-        $tied    = array();
+        $tied    = [];
 
         /*
          * The tally happens when the SUBJECT CHANGES, not per row, which is why
@@ -758,7 +758,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             if ( $current !== $row['subj'] ) {
 
                 $stage = self::resolveTied( $tied, $stage, $count );
-                $tied  = array();
+                $tied  = [];
 
                 for ( $i = 0; $i < $stage; $i++ ) {
 
@@ -795,7 +795,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
             if ( $tied && $tied[0]['ts'] !== $row['ts'] ) {
 
                 $stage = self::resolveTied( $tied, $stage, $count );
-                $tied  = array();
+                $tied  = [];
             }
 
             $tied[] = $row;
@@ -827,7 +827,7 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
      */
     private static function resolveTied( array $tied, $stage, $count ) {
 
-        $used = array();
+        $used = [];
 
         while ( $stage < $count ) {
 
@@ -925,8 +925,8 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
                 $startDate,
                 $endDate,
                 // The funnel's own filter AND the reader's: both narrow it.
-                implode( ',', array_filter( array(
-                    $this->savedConstraints, trim( (string) $this->getParam( 'constraints' ) ) ), static fn ( $constraints ) => $constraints !== '' ) )
+                implode( ',', array_filter( [
+                    $this->savedConstraints, trim( (string) $this->getParam( 'constraints' ) ) ], static fn ( $constraints ) => $constraints !== '' ) )
             );
         }
 
@@ -944,8 +944,3 @@ class VisualizationFunnel extends \OWA\Core\ReportController {
         return $this->segment()->bounds();
     }
 }
-
-
-
-
-?>

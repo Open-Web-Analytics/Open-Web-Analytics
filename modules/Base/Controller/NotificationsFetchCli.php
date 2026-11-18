@@ -19,10 +19,10 @@ class NotificationsFetchCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Fetches OWA\'s release announcements and stores the new ones as notifications. Runs on the scheduler daily as fetch-notifications.',
-            'arguments'   => array(),
-        );
+            'arguments'   => [],
+        ];
     }
 
     public function action() {

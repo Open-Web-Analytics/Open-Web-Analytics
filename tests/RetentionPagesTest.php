@@ -13,13 +13,13 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class RetentionPagesTest extends TestCase
 {
-    const ACTIONS = array(
+    const ACTIONS = [
         'base.optionsRetention'        => \OWA\Module\Base\Controller\OptionsRetention::class,
         'base.optionsRetentionUpdate'  => \OWA\Module\Base\Controller\OptionsRetentionUpdate::class,
         'base.propertyRetention'       => \OWA\Module\Base\Controller\PropertyRetention::class,
         'base.propertyRetentionUpdate' => \OWA\Module\Base\Controller\PropertyRetentionUpdate::class,
         'base.retentionPreviewRest'    => \OWA\Module\Base\Controller\RetentionPreviewRest::class,
-    );
+    ];
 
     public function testEveryActionAndTheRouteAreRegistered(): void
     {
@@ -37,14 +37,14 @@ final class RetentionPagesTest extends TestCase
     public function testEveryScreenNeedsEditSettings(): void
     {
         foreach ( self::ACTIONS as $action => $class ) {
-            $this->assertSame( 'edit_settings', ( new $class( array() ) )->getRequiredCapability(), $action );
+            $this->assertSame( 'edit_settings', ( new $class( [] ) )->getRequiredCapability(), $action );
         }
 
         $nonce = new \ReflectionProperty( \OWA\Core\Controller::class, 'is_nonce_required' );
 
-        foreach ( array( 'base.optionsRetentionUpdate', 'base.propertyRetentionUpdate' ) as $action ) {
+        foreach ( [ 'base.optionsRetentionUpdate', 'base.propertyRetentionUpdate' ] as $action ) {
             $class = self::ACTIONS[ $action ];
-            $this->assertTrue( $nonce->getValue( new $class( array() ) ), "$action saves, so it needs a nonce" );
+            $this->assertTrue( $nonce->getValue( new $class( [] ) ), "$action saves, so it needs a nonce" );
         }
     }
 
@@ -52,7 +52,7 @@ final class RetentionPagesTest extends TestCase
     {
         $m = new \ReflectionMethod( \OWA\Module\Base\Controller\OptionsRetentionUpdate::class, 'returnAction' );
 
-        $this->assertSame( 'base.optionsRetention', $m->invoke( new \OWA\Module\Base\Controller\OptionsRetentionUpdate( array() ) ) );
+        $this->assertSame( 'base.optionsRetention', $m->invoke( new \OWA\Module\Base\Controller\OptionsRetentionUpdate( [] ) ) );
     }
 
     /** Both windows on the install page, in a form the confirmation binds to. */
@@ -79,7 +79,7 @@ final class RetentionPagesTest extends TestCase
         $template = new \OWA\Core\Template( 'base' );
         $template->set_template( 'property_retention.php' );
         $template->set( 'headline', 'Data Retention' );
-        $template->set( 'property', array( 'id' => '7781000000000009', 'name' => 'Alice\'s shop' ) );
+        $template->set( 'property', [ 'id' => '7781000000000009', 'name' => 'Alice\'s shop' ] );
 
         return (string) $template->fetch();
     }
@@ -127,7 +127,7 @@ final class RetentionPagesTest extends TestCase
 
         preg_match( '/#panel input\[type="number"\]\[placeholder\] \{\s*width: (\d+)em;/', $css, $width );
 
-        $blanks = array();
+        $blanks = [];
 
         foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/settings.php' ) as $file ) {
 
@@ -146,17 +146,17 @@ final class RetentionPagesTest extends TestCase
     /** The Property tier of the settings nav links its Data Retention page, for administrators only. */
     public function testThePropertyNavLinksThePage(): void
     {
-        $controller = new \OWA\Module\Base\Controller\PropertyRetention( array() );
+        $controller = new \OWA\Module\Base\Controller\PropertyRetention( [] );
         $nav = new \ReflectionMethod( \OWA\Core\Controller::class, 'getHierarchyNav' );
 
-        $entries = array_filter( (array) ( $nav->invoke( $controller, '', '7781000000000009' )['Property'] ?? array() ),
+        $entries = array_filter( (array) ( $nav->invoke( $controller, '', '7781000000000009' )['Property'] ?? [] ),
             fn ( $e ) => $e['do'] === 'base.propertyRetention' );
 
         $this->assertCount( 1, $entries );
         $entry = reset( $entries );
         $this->assertSame( 'Data retention', $entry['label'] );
         $this->assertSame( 'edit_settings', $entry['capability'] );
-        $this->assertSame( array( 'propertyId' => '7781000000000009' ), $entry['params'] );
+        $this->assertSame( [ 'propertyId' => '7781000000000009' ], $entry['params'] );
     }
 
     /** A save names a Property that exists, and a window the declaration accepts. */
@@ -166,10 +166,10 @@ final class RetentionPagesTest extends TestCase
             $this->markTestSkipped( 'loads a Property' );
         }
 
-        foreach ( array(
-            array( 'propertyId' => '999999999999' ),
-            array(),
-        ) as $params ) {
+        foreach ( [
+            [ 'propertyId' => '999999999999' ],
+            [],
+        ] as $params ) {
             $this->assertContains( 'propertyId', $this->validatedNames( $params ), json_encode( $params ) );
         }
     }
@@ -184,7 +184,7 @@ final class RetentionPagesTest extends TestCase
         $validator = $v->getValue( $controller );
 
         if ( ! $validator ) {
-            return array();
+            return [];
         }
 
         $list = new \ReflectionProperty( $validator, 'validations' );

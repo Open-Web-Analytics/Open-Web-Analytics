@@ -36,17 +36,17 @@ class PartitionDropCli extends PartitionsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Drops partitions holding only data older than a cutoff. A partition that straddles the cutoff is kept, and the command reports the date before which data no longer exists. Not bound by the retention settings.',
-            'arguments'   => array(
+            'arguments'   => [
                 'older-than=<cutoff>' => 'Required. A date (yyyymmdd) or a period back from today, such as 12months, 18m or 2years.',
                 'only=<raw|cubes>'    => 'Drop from the raw event tables only, or from every reporting cube only.',
                 'property=<id>'       => 'Drop only from this Property\'s cube.',
                 'table=<name>'        => 'Drop only from this table.',
                 '--force'             => 'Proceed when every historical partition of a table would be dropped.',
                 '--dry-run'           => 'Report what would be dropped, and change nothing.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
@@ -119,7 +119,7 @@ class PartitionDropCli extends PartitionsCli {
         $property = (string) $this->getParam( 'property' );
         $tables   = $this->factTables( $this->getParam( 'table' ) ?: null );
 
-        if ( $only !== '' && ! in_array( $only, array( 'raw', 'cubes' ), true ) ) {
+        if ( $only !== '' && ! in_array( $only, [ 'raw', 'cubes' ], true ) ) {
 
             $this->usageError( sprintf( 'only=%s: use only=raw (event data) or only=cubes (reporting cubes).', $only ) );
 
@@ -137,7 +137,7 @@ class PartitionDropCli extends PartitionsCli {
                 return false;
             }
 
-            return array( $cube );
+            return [ $cube ];
         }
 
         if ( $only === '' ) {
@@ -145,7 +145,7 @@ class PartitionDropCli extends PartitionsCli {
             return $tables;
         }
 
-        $keep = array();
+        $keep = [];
 
         foreach ( $tables as $table ) {
 

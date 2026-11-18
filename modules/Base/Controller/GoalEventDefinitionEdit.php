@@ -31,9 +31,9 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
 
         $this->set( 'goalEventDefinition', $definition->_getProperties() );
 
-        $conditions = array();
+        $conditions = [];
 
-        foreach ( $definition->get( 'id' ) ? $definition->loadConditions() : array() as $condition ) {
+        foreach ( $definition->get( 'id' ) ? $definition->loadConditions() : [] as $condition ) {
 
             $conditions[] = $condition->_getProperties();
         }
@@ -66,7 +66,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
         // Typed on the form when the trigger is a custom event; nothing to show here.
         $this->set( 'customTriggerEvent', '' );
 
-        $this->settingsChrome( array( 'propertyId' => $propertyId ), '', $propertyId );
+        $this->settingsChrome( [ 'propertyId' => $propertyId ], '', $propertyId );
         $this->setSubview( 'base.goalEventDefinitionEdit', self::screen( $definition->get( 'id' ) ) );
     }
 
@@ -101,7 +101,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
      */
     public static function vocabulary() {
 
-        $vocabulary = array();
+        $vocabulary = [];
 
         foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::goalTriggerEventNames() as $event ) {
 
@@ -142,7 +142,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
         if ( ! ctype_digit( (string) $propertyId )
              || ! \OWA\Module\Base\Classes\Cube\Cubes::exists( $propertyId ) ) {
 
-            return array();
+            return [];
         }
 
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
@@ -157,7 +157,7 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
         // Room for OWA's own events, which come back too and are dropped below.
         $rsm->setLimit( self::CUSTOM_EVENT_LIMIT + 50 );
 
-        $names = array();
+        $names = [];
 
         foreach ( (array) $rsm->getResults()->getResultsRows() as $row ) {
 
@@ -192,16 +192,16 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
      * @param  array<mixed> $conditions  this definition's stored conditions
      * @return list<array<string, mixed>> list of { name, label, description, carried }
      */
-    public static function conditionProperties( $event_name, array $conditions = array() ) {
+    public static function conditionProperties( $event_name, array $conditions = [] ) {
 
         $available = \OWA\Module\Base\Classes\GoalVocabulary::columnsForEvent( $event_name );
 
-        $out = array();
+        $out = [];
 
         foreach ( $available as $name => $label ) {
 
-            $out[] = array( 'name' => $name, 'label' => $label, 'carried' => true,
-                'description' => \OWA\Module\Base\Classes\GoalVocabulary::description( $name ) );
+            $out[] = [ 'name' => $name, 'label' => $label, 'carried' => true,
+                'description' => \OWA\Module\Base\Classes\GoalVocabulary::description( $name ) ];
         }
 
         foreach ( $conditions as $condition ) {
@@ -213,13 +213,13 @@ class GoalEventDefinitionEdit extends \OWA\Core\AdminController {
                 continue;
             }
 
-            $out[] = array(
+            $out[] = [
                 'name'        => $name,
                 'label'       => sprintf( \OWA\Core\CoreAPI::t( '%s -- not carried by %s' ),
                                  \OWA\Module\Base\Classes\GoalVocabulary::label( $name ), $event_name ),
                 'carried'     => false,
                 'description' => \OWA\Module\Base\Classes\GoalVocabulary::description( $name ),
-            );
+            ];
         }
 
         return $out;

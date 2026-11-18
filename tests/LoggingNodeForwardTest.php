@@ -56,7 +56,7 @@ final class LoggingNodeForwardTest extends TestCase
 
     public function testEveryRoleWithADatabaseIsGated(): void
     {
-        foreach (array('full', 'worker', 'console', 'api', 'collector,worker') as $role) {
+        foreach (['full', 'worker', 'console', 'api', 'collector,worker'] as $role) {
             \OWA\Core\CoreAPI::setSetting('base', 'server_role', $role);
 
             $this->assertTrue($this->drain(['forward_only' => 1])->needsCurrentSchema(), $role);

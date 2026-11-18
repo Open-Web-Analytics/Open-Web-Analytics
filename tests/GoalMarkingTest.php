@@ -79,7 +79,7 @@ final class GoalMarkingTest extends TestCase
         if ( $this->siteId !== '' ) {
 
             \OWA\Core\CoreAPI::dbSingleton()->query( 'DELETE FROM owa_event_raw WHERE site_id = ? AND visitor_id = ?',
-                array( $this->siteId, self::STORED_VISITOR ) );
+                [ $this->siteId, self::STORED_VISITOR ] );
         }
 
         /*
@@ -99,33 +99,33 @@ final class GoalMarkingTest extends TestCase
      */
     public function testTheCallbackIsRegisteredAndAddsAGoalEvent(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ] );
 
-        $events = $this->filter( $this->event( array( 'page_path' => '/thanks/you', 'engagement_msec' => 4000 ) ) );
+        $events = $this->filter( $this->event( [ 'page_path' => '/thanks/you', 'engagement_msec' => 4000 ] ) );
 
-        $this->assertSame( array( 'page_view' => 0, 'Marking_probe' => 1 ), $this->flags( $events ),
+        $this->assertSame( [ 'page_view' => 0, 'Marking_probe' => 1 ], $this->flags( $events ),
             'No goal event. Either the callback is not registered at '
             . Ingest::TRACKING_EVENTS_PRE_SAVE . ' or it did not match.' );
 
         $goalEvent = $events[1];
 
-        foreach ( array( 'site_id', 'visitor_id', 'session_id', 'ts', 'page_path' ) as $copied ) {
+        foreach ( [ 'site_id', 'visitor_id', 'session_id', 'ts', 'page_path' ] as $copied ) {
             $this->assertSame( $events[0]->get( $copied ), $goalEvent->get( $copied ), $copied );
         }
 
         $this->assertArrayNotHasKey( 'engagement_msec', $goalEvent->getProperties(),
             'copied, the page view\'s engagement time would count twice in the session' );
 
-        $rows = array_map( array( \OWA\Module\Base\Handler\EventRawHandlers::class, 'rowFor' ), $events );
+        $rows = array_map( [ \OWA\Module\Base\Handler\EventRawHandlers::class, 'rowFor' ], $events );
         $this->assertNotSame( $rows[0]['id'], $rows[1]['id'], 'one beacon, two rows, two ids' );
     }
 
     /** ...and an event that matches nothing comes back 0, not absent. */
     public function testAnUnmatchedEventIsMarkedZero(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ] );
 
-        $events = $this->filter( $this->event( array( 'page_path' => '/pricing' ) ) );
+        $events = $this->filter( $this->event( [ 'page_path' => '/pricing' ] ) );
 
         $this->assertSame( 0, $events[0]->get( 'is_goal_event' ) );
     }
@@ -136,9 +136,9 @@ final class GoalMarkingTest extends TestCase
      */
     public function testAStaleFlagOnTheEventIsOverwritten(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ] );
 
-        $event = $this->event( array( 'page_path' => '/pricing', 'is_goal_event' => 1 ) );
+        $event = $this->event( [ 'page_path' => '/pricing', 'is_goal_event' => 1 ] );
 
         $this->assertSame( 0, $this->filter( $event )[0]->get( 'is_goal_event' ) );
     }
@@ -154,26 +154,26 @@ final class GoalMarkingTest extends TestCase
      */
     public function testAPageViewGoalDoesNotMarkTheMaterializedEvents(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'exact', '/thanks' ) ) );
+        $this->makeGoal( [ [ 'page_path', 'exact', '/thanks' ] ] );
 
-        $events = $this->filter( $this->event( array(
+        $events = $this->filter( $this->event( [
             'page_path'              => '/thanks',
             'is_new_session_start'   => true,
             'is_new_visitor_created' => true,
-        ) ) );
+        ] ) );
 
-        $marked = array();
+        $marked = [];
 
         foreach ( $events as $event ) {
             $marked[ $event->getEventType() ] = $event->get( 'is_goal_event' );
         }
 
-        $this->assertSame( array(
+        $this->assertSame( [
             'page_view'     => 0,
             'session_start' => 0,
             'first_visit'   => 0,
             'Marking_probe' => 1,
-        ), $marked, 'marking has to run after the materializers and judge each event' );
+        ], $marked, 'marking has to run after the materializers and judge each event' );
     }
 
     /**
@@ -182,21 +182,21 @@ final class GoalMarkingTest extends TestCase
      */
     public function testAGoalTriggeredByAMaterializedEventMarksIt(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'exact', '/landing' ) ),
-            array( 'trigger_event_type' => 'first_visit' ) );
+        $this->makeGoal( [ [ 'page_path', 'exact', '/landing' ] ],
+            [ 'trigger_event_type' => 'first_visit' ] );
 
-        $events = $this->filter( $this->event( array(
+        $events = $this->filter( $this->event( [
             'page_path'              => '/landing',
             'is_new_visitor_created' => true,
-        ) ) );
+        ] ) );
 
-        $marked = array();
+        $marked = [];
 
         foreach ( $events as $event ) {
             $marked[ $event->getEventType() ] = $event->get( 'is_goal_event' );
         }
 
-        $this->assertSame( array( 'page_view' => 0, 'first_visit' => 0, 'Marking_probe' => 1 ), $marked );
+        $this->assertSame( [ 'page_view' => 0, 'first_visit' => 0, 'Marking_probe' => 1 ], $marked );
     }
 
     /**
@@ -205,13 +205,13 @@ final class GoalMarkingTest extends TestCase
      */
     public function testAGoalWithNoTriggerMarksNothing(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'exact', '/thanks' ) ),
-            array( 'trigger_event_type' => '' ) );
+        $this->makeGoal( [ [ 'page_path', 'exact', '/thanks' ] ],
+            [ 'trigger_event_type' => '' ] );
 
-        $events = $this->filter( $this->event( array(
+        $events = $this->filter( $this->event( [
             'page_path'              => '/thanks',
             'is_new_session_start'   => true,
-        ) ) );
+        ] ) );
 
         foreach ( $events as $event ) {
             $this->assertSame( 0, $event->get( 'is_goal_event' ), $event->getEventType() );
@@ -232,14 +232,14 @@ final class GoalMarkingTest extends TestCase
      */
     public function testAGoalEventDefinitionWithNoSlotNumberStillMarks(): void
     {
-        $goal = $this->makeGoal( array( array( 'page_path', 'exact', '/slotless' ) ) );
+        $goal = $this->makeGoal( [ [ 'page_path', 'exact', '/slotless' ] ] );
 
         $this->assertSame( '', (string) $goal->get( 'goal_number' ),
             'the fixture gave it a slot, so this would pass without proving anything' );
 
-        $events = $this->filter( $this->event( array( 'page_path' => '/slotless' ) ) );
+        $events = $this->filter( $this->event( [ 'page_path' => '/slotless' ] ) );
 
-        $this->assertSame( array( 'page_view' => 0, 'Marking_probe' => 1 ), $this->flags( $events ),
+        $this->assertSame( [ 'page_view' => 0, 'Marking_probe' => 1 ], $this->flags( $events ),
             'A definition with no slot number marked nothing -- which is every one '
             . 'the current screen creates.' );
     }
@@ -247,28 +247,28 @@ final class GoalMarkingTest extends TestCase
     /** An inactive goal event marks nothing. */
     public function testAnInactiveGoalEventDefinitionDoesNotMark(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'exact', '/off' ) ), array(
-            'is_active' => 0 ) );
+        $this->makeGoal( [ [ 'page_path', 'exact', '/off' ] ], [
+            'is_active' => 0 ] );
 
-        $events = $this->filter( $this->event( array( 'page_path' => '/off' ) ) );
+        $events = $this->filter( $this->event( [ 'page_path' => '/off' ] ) );
 
-        $this->assertSame( array( 'page_view' => 0 ), $this->flags( $events ),
+        $this->assertSame( [ 'page_view' => 0 ], $this->flags( $events ),
             'A definition switched off still added goal events.' );
     }
 
     /** An event meeting two definitions adds a goal event for each. */
     public function testTwoMatchingGoalsAddTwoRows(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ), array( 'name' => 'Thanks_page' ) );
-        $this->makeGoal( array( array( 'host', 'exact', 'example.com' ) ), array( 'name' => 'Example_host' ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ], [ 'name' => 'Thanks_page' ] );
+        $this->makeGoal( [ [ 'host', 'exact', 'example.com' ] ], [ 'name' => 'Example_host' ] );
 
-        $events = $this->filter( $this->event( array(
-            'page_path' => '/thanks', 'host' => 'example.com' ) ) );
+        $events = $this->filter( $this->event( [
+            'page_path' => '/thanks', 'host' => 'example.com' ] ) );
 
         $flags = $this->flags( $events );
         ksort( $flags );
 
-        $this->assertSame( array( 'Example_host' => 1, 'Thanks_page' => 1, 'page_view' => 0 ), $flags );
+        $this->assertSame( [ 'Example_host' => 1, 'Thanks_page' => 1, 'page_view' => 0 ], $flags );
     }
 
     /**
@@ -278,13 +278,13 @@ final class GoalMarkingTest extends TestCase
      */
     public function testTwoGoalsWithOneNameAddOneRow(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ) );
-        $this->makeGoal( array( array( 'host', 'exact', 'example.com' ) ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ] );
+        $this->makeGoal( [ [ 'host', 'exact', 'example.com' ] ] );
 
-        $events = $this->filter( $this->event( array(
-            'page_path' => '/thanks', 'host' => 'example.com' ) ) );
+        $events = $this->filter( $this->event( [
+            'page_path' => '/thanks', 'host' => 'example.com' ] ) );
 
-        $this->assertSame( array( 'page_view' => 0, 'Marking_probe' => 1 ), $this->flags( $events ) );
+        $this->assertSame( [ 'page_view' => 0, 'Marking_probe' => 1 ], $this->flags( $events ) );
         $this->assertCount( 2, $events );
     }
 
@@ -297,9 +297,9 @@ final class GoalMarkingTest extends TestCase
      */
     public function testAnEventWithNoSiteIdIsNotMarked(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'exact', '/anything' ) ) );
+        $this->makeGoal( [ [ 'page_path', 'exact', '/anything' ] ] );
 
-        $event = $this->event( array( 'page_path' => '/anything' ) );
+        $event = $this->event( [ 'page_path' => '/anything' ] );
         $event->delete( 'site_id' );
 
         $this->assertSame( 0, $this->filter( $event )[0]->get( 'is_goal_event' ),
@@ -310,16 +310,16 @@ final class GoalMarkingTest extends TestCase
     /** A definition on a site's own event, with no condition, is met by every one of them. */
     public function testACustomEventGoalWithNoConditionMarksEveryOne(): void
     {
-        $this->makeGoal( array(), array( 'trigger_event_type' => 'newsletter_signup', 'name' => 'Signed_up_probe' ) );
+        $this->makeGoal( [], [ 'trigger_event_type' => 'newsletter_signup', 'name' => 'Signed_up_probe' ] );
 
-        $signup = $this->event( array( 'page_path' => '/anything' ) );
+        $signup = $this->event( [ 'page_path' => '/anything' ] );
         $signup->setEventType( 'newsletter_signup' );
 
-        $this->assertSame( array( 'newsletter_signup' => 0, 'Signed_up_probe' => 1 ),
+        $this->assertSame( [ 'newsletter_signup' => 0, 'Signed_up_probe' => 1 ],
             $this->flags( $this->filter( $signup ) ) );
 
-        $this->assertSame( array( 'page_view' => 0 ),
-            $this->flags( $this->filter( $this->event( array( 'page_path' => '/anything' ) ) ) ),
+        $this->assertSame( [ 'page_view' => 0 ],
+            $this->flags( $this->filter( $this->event( [ 'page_path' => '/anything' ] ) ) ),
             'the trigger gates' );
     }
 
@@ -328,14 +328,14 @@ final class GoalMarkingTest extends TestCase
     /** Once per event: every match adds one, whatever the session already has. */
     public function testOncePerEventAddsAGoalEventForEveryMatch(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ),
-            array( 'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ],
+            [ 'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT ] );
 
         $start = time() - 120;
 
         $this->store( $this->filter( $this->beacon( 8885200000000101, $start, $start + 10, '/thanks' ) ) );
 
-        $this->assertSame( array( 'page_view' => 0, 'Marking_probe' => 1 ),
+        $this->assertSame( [ 'page_view' => 0, 'Marking_probe' => 1 ],
             $this->flags( $this->filter( $this->beacon( 8885200000000101, $start, $start + 60, '/thanks/again' ) ) ),
             'the session already has one, and this definition counts every match' );
     }
@@ -347,22 +347,22 @@ final class GoalMarkingTest extends TestCase
      */
     public function testOncePerSessionAddsOneAcrossTheSessionsBeacons(): void
     {
-        foreach ( array( \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION, null ) as $i => $mode ) {
+        foreach ( [ \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION, null ] as $i => $mode ) {
 
             // A path of its own, so the definition made for the other mode does not match.
-            $this->makeGoal( array( array( 'page_path', 'begins', '/thanks-' . $i ) ),
-                array( 'count_mode' => $mode, 'name' => 'Session_probe_' . $i ) );
+            $this->makeGoal( [ [ 'page_path', 'begins', '/thanks-' . $i ] ],
+                [ 'count_mode' => $mode, 'name' => 'Session_probe_' . $i ] );
 
             $session = 8885200000000201 + $i;
             $start   = time() - 120;
 
             $first = $this->filter( $this->beacon( $session, $start, $start + 10, '/thanks-' . $i ) );
 
-            $this->assertSame( array( 'page_view' => 0, 'Session_probe_' . $i => 1 ), $this->flags( $first ) );
+            $this->assertSame( [ 'page_view' => 0, 'Session_probe_' . $i => 1 ], $this->flags( $first ) );
 
             $this->store( $first );
 
-            $this->assertSame( array( 'page_view' => 0 ),
+            $this->assertSame( [ 'page_view' => 0 ],
                 $this->flags( $this->filter( $this->beacon( $session, $start, $start + 60, '/thanks-' . $i . '/again' ) ) ),
                 var_export( $mode, true ) . ': the session already has its goal event' );
         }
@@ -375,8 +375,8 @@ final class GoalMarkingTest extends TestCase
      */
     public function testOncePerSessionFindsTheGoalEventOfASessionThatStartedTheDayBefore(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ),
-            array( 'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ],
+            [ 'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION ] );
 
         $midnight = mktime( 0, 0, 0 );
         $start    = $midnight - 600;
@@ -384,28 +384,28 @@ final class GoalMarkingTest extends TestCase
         $first = $this->filter( $this->beacon( 8885200000000301, $start, $midnight - 300, '/thanks' ) );
 
         $this->assertSame( (int) date( 'Ymd', $midnight - 300 ), (int) $first[0]->get( 'yyyymmdd' ) );
-        $this->assertSame( array( 'page_view' => 0, 'Marking_probe' => 1 ), $this->flags( $first ) );
+        $this->assertSame( [ 'page_view' => 0, 'Marking_probe' => 1 ], $this->flags( $first ) );
 
         $this->store( $first );
 
         $after = $this->beacon( 8885200000000301, $start, $midnight + 300, '/thanks/again' );
 
         $this->assertNotSame( $first[0]->get( 'yyyymmdd' ), $after->get( 'yyyymmdd' ), 'the next day' );
-        $this->assertSame( array( 'page_view' => 0 ), $this->flags( $this->filter( $after ) ),
+        $this->assertSame( [ 'page_view' => 0 ], $this->flags( $this->filter( $after ) ),
             'the goal event stored before midnight was not found' );
     }
 
     /** ...and another session of the same visitor adds its own. */
     public function testOncePerSessionAddsAgainInASecondSession(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ),
-            array( 'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ],
+            [ 'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION ] );
 
         $start = time() - 7200;
 
         $this->store( $this->filter( $this->beacon( 8885200000000401, $start, $start + 10, '/thanks' ) ) );
 
-        $this->assertSame( array( 'page_view' => 0, 'Marking_probe' => 1 ),
+        $this->assertSame( [ 'page_view' => 0, 'Marking_probe' => 1 ],
             $this->flags( $this->filter( $this->beacon( 8885200000000402, time() - 60, time() - 50, '/thanks' ) ) ) );
     }
 
@@ -413,23 +413,23 @@ final class GoalMarkingTest extends TestCase
     public function testTheLookupIsBoundedToTheSessionsDays(): void
     {
         $midnight = mktime( 0, 0, 0 );
-        $row      = array( 'yyyymmdd' => (int) date( 'Ymd', $midnight + 300 ), 'ts' => ( $midnight + 300 ) * 1000000 );
+        $row      = [ 'yyyymmdd' => (int) date( 'Ymd', $midnight + 300 ), 'ts' => ( $midnight + 300 ) * 1000000 ];
 
-        $this->assertSame( array( (int) date( 'Ymd', $midnight - 600 ), $row['yyyymmdd'] ),
-            GoalMarking::sessionDays( $row + array( 'session_start_ts' => $midnight - 600 ) ), 'started yesterday' );
+        $this->assertSame( [ (int) date( 'Ymd', $midnight - 600 ), $row['yyyymmdd'] ],
+            GoalMarking::sessionDays( $row + [ 'session_start_ts' => $midnight - 600 ] ), 'started yesterday' );
 
-        $this->assertSame( array( $row['yyyymmdd'], $row['yyyymmdd'] ),
-            GoalMarking::sessionDays( $row + array( 'session_start_ts' => $midnight + 60 ) ), 'started today' );
+        $this->assertSame( [ $row['yyyymmdd'], $row['yyyymmdd'] ],
+            GoalMarking::sessionDays( $row + [ 'session_start_ts' => $midnight + 60 ] ), 'started today' );
 
-        $this->assertSame( array( (int) date( 'Ymd', $midnight + 300 - 86400 ), $row['yyyymmdd'] ),
-            GoalMarking::sessionDays( $row + array( 'session_start_ts' => $midnight - 86400 * 365 ) ),
+        $this->assertSame( [ (int) date( 'Ymd', $midnight + 300 - 86400 ), $row['yyyymmdd'] ],
+            GoalMarking::sessionDays( $row + [ 'session_start_ts' => $midnight - 86400 * 365 ] ),
             'a visitor clock a year behind reads no more than the day before' );
 
-        $this->assertSame( array( $row['yyyymmdd'], $row['yyyymmdd'] ),
-            GoalMarking::sessionDays( $row + array( 'session_start_ts' => null ) ), 'no start: this day' );
+        $this->assertSame( [ $row['yyyymmdd'], $row['yyyymmdd'] ],
+            GoalMarking::sessionDays( $row + [ 'session_start_ts' => null ] ), 'no start: this day' );
 
-        $this->assertSame( array( $row['yyyymmdd'], $row['yyyymmdd'] ),
-            GoalMarking::sessionDays( $row + array( 'session_start_ts' => $midnight + 86400 ) ),
+        $this->assertSame( [ $row['yyyymmdd'], $row['yyyymmdd'] ],
+            GoalMarking::sessionDays( $row + [ 'session_start_ts' => $midnight + 86400 ] ),
             'a start after the event is a clock ahead' );
     }
 
@@ -442,10 +442,10 @@ final class GoalMarkingTest extends TestCase
      */
     public function testADefinitionsValueIsCarriedWithTheReportingCurrency(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ),
-            array( 'value' => 250, 'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ],
+            [ 'value' => 250, 'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT ] );
 
-        $events = $this->filter( $this->event( array( 'page_path' => '/thanks' ) ) );
+        $events = $this->filter( $this->event( [ 'page_path' => '/thanks' ] ) );
 
         $currency = \OWA\Module\Base\Classes\Currency::normalize(
             \OWA\Module\Base\Classes\Currency::ofProperty( $this->propertyId ) ) ?: 'USD';
@@ -463,17 +463,17 @@ final class GoalMarkingTest extends TestCase
     /** A purchase meeting a definition with no value of its own lends it the purchase's revenue. */
     public function testAPurchaseMeetingADefinitionWithNoValueCarriesItsRevenue(): void
     {
-        $this->makeGoal( array( array( 'revenue', 'gt', '0' ) ),
-            array( 'trigger_event_type' => 'purchase', 'name' => 'Bought_probe',
-                   'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT ) );
+        $this->makeGoal( [ [ 'revenue', 'gt', '0' ] ],
+            [ 'trigger_event_type' => 'purchase', 'name' => 'Bought_probe',
+                   'count_mode' => \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT ] );
 
-        $purchase = $this->event( array( 'page_path' => '/checkout', 'revenue' => 1999, 'currency' => 'EUR',
-            'ct_order_id' => 'marking-probe-1' ) );
+        $purchase = $this->event( [ 'page_path' => '/checkout', 'revenue' => 1999, 'currency' => 'EUR',
+            'ct_order_id' => 'marking-probe-1' ] );
         $purchase->setEventType( 'purchase' );
 
         $events = $this->filter( $purchase );
 
-        $this->assertSame( array( 'purchase' => 0, 'Bought_probe' => 1 ), $this->flags( $events ) );
+        $this->assertSame( [ 'purchase' => 0, 'Bought_probe' => 1 ], $this->flags( $events ) );
 
         $row = \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $events[1] );
 
@@ -484,9 +484,9 @@ final class GoalMarkingTest extends TestCase
     /** A definition with no value, met by anything but a purchase, adds a goal event worth nothing. */
     public function testAGoalEventWithNothingToCarryHasNoValue(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ] );
 
-        $events = $this->filter( $this->event( array( 'page_path' => '/thanks' ) ) );
+        $events = $this->filter( $this->event( [ 'page_path' => '/thanks' ] ) );
         $row    = \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $events[1] );
 
         $this->assertSame( 1, $row['is_goal_event'] );
@@ -497,9 +497,9 @@ final class GoalMarkingTest extends TestCase
     /** THE MARKING IS THE AUTHORITY on value too: an event carrying one into it comes out with none. */
     public function testAValueOnAnIncomingEventIsCleared(): void
     {
-        $this->makeGoal( array( array( 'page_path', 'begins', '/thanks' ) ) );
+        $this->makeGoal( [ [ 'page_path', 'begins', '/thanks' ] ] );
 
-        $events = $this->filter( $this->event( array( 'page_path' => '/pricing', 'value' => 5000 ) ) );
+        $events = $this->filter( $this->event( [ 'page_path' => '/pricing', 'value' => 5000 ] ) );
 
         $this->assertNull( \OWA\Module\Base\Handler\EventRawHandlers::rowFor( $events[0] )['value'] );
     }
@@ -509,7 +509,7 @@ final class GoalMarkingTest extends TestCase
     /** event name => is_goal_event, in the order the set holds them. */
     private function flags( array $events ): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( $events as $event ) {
             $out[ $event->getEventType() ] = $event->get( 'is_goal_event' );
@@ -521,7 +521,7 @@ final class GoalMarkingTest extends TestCase
     /** Run one incoming event through the real store point. */
     private function filter( $event ): array
     {
-        return Ingest::at( Ingest::TRACKING_EVENTS_PRE_SAVE, array( $event ) );
+        return Ingest::at( Ingest::TRACKING_EVENTS_PRE_SAVE, [ $event ] );
     }
 
     /** An incoming page_view, identified well enough to become a row. */
@@ -529,13 +529,13 @@ final class GoalMarkingTest extends TestCase
     {
         $event = new \OWA\Module\Base\Classes\Event;
         $event->setEventType( 'page_view' );
-        $event->setProperties( array_merge( array(
+        $event->setProperties( array_merge( [
             'site_id'    => $this->siteId,
             'visitor_id' => 7775200000000001,
             'session_id' => 8885200000000001,
             'ts'         => (int) ( microtime( true ) * 1000000 ),
             'yyyymmdd'   => (int) date( 'Ymd' ),
-        ), $properties ) );
+        ], $properties ) );
 
         return $event;
     }
@@ -546,14 +546,14 @@ final class GoalMarkingTest extends TestCase
      */
     private function beacon( int $session, int $start, int $ts, string $path )
     {
-        return $this->event( array(
+        return $this->event( [
             'visitor_id' => self::STORED_VISITOR,
             'session_id' => $session,
             'ts'         => $ts * 1000000,
             'yyyymmdd'   => (int) date( 'Ymd', $ts ),
             'sts'        => $start,
             'page_path'  => $path,
-        ) );
+        ] );
     }
 
     /** Store a marked set in raw, as ingest would, so the next beacon can find it. */
@@ -577,7 +577,7 @@ final class GoalMarkingTest extends TestCase
      * No goal_number, deliberately: that is what the current screen creates, and
      * it is the case marking used to miss.
      */
-    private function makeGoal( array $conditions, array $overrides = array() )
+    private function makeGoal( array $conditions, array $overrides = [] )
     {
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
         $id     = $entity->generateId( 'goal_event:marking-probe:' . uniqid( '', true ) );

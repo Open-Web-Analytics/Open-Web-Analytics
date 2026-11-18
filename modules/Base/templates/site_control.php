@@ -17,7 +17,7 @@
  * Organizations; there is one today and it is not a list yet, but the column is
  * where it will go.
  */
-$owa_hierarchy = $view->site_hierarchy ?: array( 'organization' => array(), 'properties' => array() );
+$owa_hierarchy = $view->site_hierarchy ?: [ 'organization' => [], 'properties' => [] ];
 
 /*
  * The Property in context: the one the screen names, or else the one the
@@ -26,7 +26,7 @@ $owa_hierarchy = $view->site_hierarchy ?: array( 'organization' => array(), 'pro
 $owa_context_property = (string) ( $view->params['propertyId'] ?? '' );
 $owa_context_site     = (string) ( $view->params['siteId'] ?? '' );
 
-$owa_current = array( 'index' => null, 'property' => '', 'domain' => '' );
+$owa_current = [ 'index' => null, 'property' => '', 'domain' => '' ];
 
 foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ) {
 
@@ -36,7 +36,7 @@ foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ) {
 
     if ( $owa_match && $owa_context_site . $owa_context_property !== '' ) {
 
-        $owa_current = array( 'index' => $owa_i, 'property' => $owa_p['name'], 'domain' => $owa_p['domain'] );
+        $owa_current = [ 'index' => $owa_i, 'property' => $owa_p['name'], 'domain' => $owa_p['domain'] ];
     }
 }
 ?>
@@ -61,10 +61,10 @@ foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ) {
             <ul>
                 <li class="owa_siteControlItem is-selected">
                     <span class="owa_siteControlItemName"><?php $view->out( $owa_hierarchy['organization']['name'] ?? '' );?></span>
-                    <?php foreach ( \OWA\Core\Navigation::links( 'nav_site_control', array(
-                        array( 'id' => 'edit', 'label' => \OWA\Core\CoreAPI::t( 'edit' ), 'capability' => 'edit_settings',
-                               'href' => $view->makeLink( array( 'do' => 'base.organizationProfile' ) ) ),
-                    ), 'organization', '' ) as $owa_action ):?>
+                    <?php foreach ( \OWA\Core\Navigation::links( 'nav_site_control', [
+                        [ 'id' => 'edit', 'label' => \OWA\Core\CoreAPI::t( 'edit' ), 'capability' => 'edit_settings',
+                               'href' => $view->makeLink( [ 'do' => 'base.organizationProfile' ] ) ],
+                    ], 'organization', '' ) as $owa_action ):?>
                     <a class="owa_siteControlEdit" href="<?php $view->safeHref( $owa_action['href'] );?>"><?php $view->out( $owa_action['label'] );?></a>
                     <?php endforeach;?>
                 </li>
@@ -72,28 +72,28 @@ foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ) {
         </div>
 
         <div class="owa_siteControlColumn owa_siteControlProperties">
-            <div class="owa_siteControlColumnHead"><?php $view->out( \OWA\Core\CoreAPI::t( 'Properties' ) );?><?php foreach ( \OWA\Core\Navigation::links( 'nav_site_control', array(
-                array( 'id' => 'add', 'label' => \OWA\Core\CoreAPI::t( 'add new' ), 'capability' => 'edit_sites',
-                       'href' => $view->makeLink( array( 'do' => 'base.propertyProfile' ) ) ),
-            ), 'properties', '' ) as $owa_action ):?><a class="owa_siteControlAdd" href="<?php $view->safeHref( $owa_action['href'] );?>"><?php $view->out( $owa_action['label'] );?></a><?php endforeach;?></div>
+            <div class="owa_siteControlColumnHead"><?php $view->out( \OWA\Core\CoreAPI::t( 'Properties' ) );?><?php foreach ( \OWA\Core\Navigation::links( 'nav_site_control', [
+                [ 'id' => 'add', 'label' => \OWA\Core\CoreAPI::t( 'add new' ), 'capability' => 'edit_sites',
+                       'href' => $view->makeLink( [ 'do' => 'base.propertyProfile' ] ) ],
+            ], 'properties', '' ) as $owa_action ):?><a class="owa_siteControlAdd" href="<?php $view->safeHref( $owa_action['href'] );?>"><?php $view->out( $owa_action['label'] );?></a><?php endforeach;?></div>
             <ul>
             <?php foreach ( $owa_hierarchy['properties'] as $owa_i => $owa_p ):?>
                 <li class="owa_siteControlItem<?php echo $owa_i === $owa_current['index'] ? ' is-selected' : '';?>">
-                    <a class="owa_siteControlSelect" href="<?php echo $view->makeLink( array(
+                    <a class="owa_siteControlSelect" href="<?php echo $view->makeLink( [
                         'do'         => 'base.report',
                         'reportId'   => 'dashboard',
                         'propertyId' => $owa_p['id'],
-                    ), true );?>">
+                    ], true );?>">
                         <span class="owa_siteControlItemName"><?php $view->out( $owa_p['name'] );?></span>
                         <?php if ( $owa_p['domain'] ):?>
                         <span class="owa_siteControlDomain"><?php $view->out( $owa_p['domain'] );?></span>
                         <?php endif;?>
                     </a>
                     <?php if ( $owa_p['id'] ):?>
-                    <?php foreach ( \OWA\Core\Navigation::links( 'nav_site_control', array(
-                        array( 'id' => 'edit', 'label' => \OWA\Core\CoreAPI::t( 'edit' ), 'capability' => 'edit_sites',
-                               'href' => $view->makeLink( array( 'do' => 'base.propertyProfile', 'propertyId' => $owa_p['id'] ) ) ),
-                    ), 'property', (string) $owa_p['id'] ) as $owa_action ):?>
+                    <?php foreach ( \OWA\Core\Navigation::links( 'nav_site_control', [
+                        [ 'id' => 'edit', 'label' => \OWA\Core\CoreAPI::t( 'edit' ), 'capability' => 'edit_sites',
+                               'href' => $view->makeLink( [ 'do' => 'base.propertyProfile', 'propertyId' => $owa_p['id'] ] ) ],
+                    ], 'property', (string) $owa_p['id'] ) as $owa_action ):?>
                     <a class="owa_siteControlEdit" href="<?php $view->safeHref( $owa_action['href'] );?>"><?php $view->out( $owa_action['label'] );?></a>
                     <?php endforeach;?>
                     <?php endif;?>

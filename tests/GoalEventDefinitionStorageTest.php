@@ -241,7 +241,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
             $this->saveErrors( '^/x{1,500}$' ) );
         $this->assertContains( 'The regular expression was refused: it uses a branch reset group (?|...), '
             . 'which MySQL\'s regular expressions do not support.', $this->saveErrors( '(?|a|b)' ) );
-        $this->assertSame( array(), array_filter( $this->saveErrors( '^/(shop|store)/[0-9]{1,6}$' ),
+        $this->assertSame( [], array_filter( $this->saveErrors( '^/(shop|store)/[0-9]{1,6}$' ),
             static function ( $m ) { return strpos( $m, 'regular expression' ) !== false; } ) );
     }
 
@@ -250,7 +250,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /** Update075's renaming: other characters to one underscore, a letter first, 40 at most. */
     public function testANameIsMadeFromFreeText(): void
     {
-        $from = array( \OWA\Module\Base\Entity\GoalEventDefinition::class, 'nameFrom' );
+        $from = [ \OWA\Module\Base\Entity\GoalEventDefinition::class, 'nameFrom' ];
 
         $this->assertSame( 'Bookshop_com_Buy', $from( 'Bookshop.com-Buy' ) );
         $this->assertSame( 'Signup_Completed', $from( '  Signup  Completed! ' ) );
@@ -265,35 +265,35 @@ final class GoalEventDefinitionStorageTest extends TestCase
      */
     public function testTheNamesGoalEventDefinitionsAreGivenAreUniqueWithinTheirProperty(): void
     {
-        $rows = array(
-            array( 'id' => '11', 'property_id' => '1', 'name' => 'Contact form' ),
-            array( 'id' => '12', 'property_id' => '1', 'name' => 'contact_form' ),
-            array( 'id' => '13', 'property_id' => '1', 'name' => 'Contact-form' ),
-            array( 'id' => '14', 'property_id' => '1', 'name' => 'click' ),
-            array( 'id' => '15', 'property_id' => '1', 'name' => 'Fine_name' ),
-            array( 'id' => '21', 'property_id' => '2', 'name' => 'Contact form' ),
-        );
+        $rows = [
+            [ 'id' => '11', 'property_id' => '1', 'name' => 'Contact form' ],
+            [ 'id' => '12', 'property_id' => '1', 'name' => 'contact_form' ],
+            [ 'id' => '13', 'property_id' => '1', 'name' => 'Contact-form' ],
+            [ 'id' => '14', 'property_id' => '1', 'name' => 'click' ],
+            [ 'id' => '15', 'property_id' => '1', 'name' => 'Fine_name' ],
+            [ 'id' => '21', 'property_id' => '2', 'name' => 'Contact form' ],
+        ];
 
         $names = \OWA\Module\Base\Entity\GoalEventDefinition::eventNames( $rows );
 
-        $this->assertSame( array( 11 => 'Contact_form_2', 13 => 'Contact_form_3', 14 => 'click_2', 21 => 'Contact_form' ), $names,
+        $this->assertSame( [ 11 => 'Contact_form_2', 13 => 'Contact_form_3', 14 => 'click_2', 21 => 'Contact_form' ], $names,
             'a usable name keeps it; another Property is not a collision' );
 
-        $this->assertSame( array( 21 => 'Contact_form' ),
-            \OWA\Module\Base\Entity\GoalEventDefinition::eventNames( array( $rows[5] ) ) );
-        $this->assertSame( array_intersect_key( $names, array( 11 => 1, 13 => 1, 14 => 1 ) ),
+        $this->assertSame( [ 21 => 'Contact_form' ],
+            \OWA\Module\Base\Entity\GoalEventDefinition::eventNames( [ $rows[5] ] ) );
+        $this->assertSame( array_intersect_key( $names, [ 11 => 1, 13 => 1, 14 => 1 ] ),
             \OWA\Module\Base\Entity\GoalEventDefinition::eventNames( array_slice( $rows, 0, 5 ) ) );
 
         foreach ( $rows as $i => $row ) {
             $rows[ $i ]['name'] = $names[ $row['id'] ] ?? $row['name'];
         }
 
-        $this->assertSame( array(), \OWA\Module\Base\Entity\GoalEventDefinition::eventNames( $rows ), 'once renamed, nothing is' );
+        $this->assertSame( [], \OWA\Module\Base\Entity\GoalEventDefinition::eventNames( $rows ), 'once renamed, nothing is' );
     }
 
     public function testANameOWACollectsOrThatIsNotAnEventNameIsRefused(): void
     {
-        $problem = array( \OWA\Module\Base\Entity\GoalEventDefinition::class, 'nameProblem' );
+        $problem = [ \OWA\Module\Base\Entity\GoalEventDefinition::class, 'nameProblem' ];
 
         $this->assertSame( '', $problem( 'Signup_Completed' ) );
         $this->assertNotSame( '', $problem( 'click' ), 'its rows would count as clicks' );
@@ -312,8 +312,8 @@ final class GoalEventDefinitionStorageTest extends TestCase
             $s->setMapValue( 'event_processors', \OWA\Core\CoreAPI::trackingDispatchName( 'zz_module_event' ), null );
         }
 
-        $this->assertSame( array( 7 => 'Page_View_2' ), \OWA\Module\Base\Entity\GoalEventDefinition::eventNames(
-            array( array( 'id' => 7, 'property_id' => 1, 'name' => 'Page View' ) ) ), 'renamed from 1.x like click is' );
+        $this->assertSame( [ 7 => 'Page_View_2' ], \OWA\Module\Base\Entity\GoalEventDefinition::eventNames(
+            [ [ 'id' => 7, 'property_id' => 1, 'name' => 'Page View' ] ] ), 'renamed from 1.x like click is' );
         $this->assertNotSame( '', $problem( 'has-a-hyphen' ) );
         $this->assertNotSame( '', $problem( 'Signup completed' ) );
         $this->assertNotSame( '', $problem( str_repeat( 'a', 41 ) ) );
@@ -323,10 +323,10 @@ final class GoalEventDefinitionStorageTest extends TestCase
     public function testTheSaveRefusesANameThatIsNotAnEventNameOrThatOWACollects(): void
     {
         $this->assertContains( 'A name starts with a letter and has up to 40 letters, digits and underscores.',
-            $this->saveErrors( 'x', array( 'name' => 'Signup by email' ) ) );
-        $this->assertContains( 'click is an event OWA collects.', $this->saveErrors( 'x', array( 'name' => 'click' ) ) );
-        $this->assertContains( 'Page_View is an event OWA collects.', $this->saveErrors( 'x', array( 'name' => 'Page_View' ) ) );
-        $this->assertSame( array(), array_filter( $this->saveErrors( 'x', array( 'name' => 'Unused_name_75' ) ),
+            $this->saveErrors( 'x', [ 'name' => 'Signup by email' ] ) );
+        $this->assertContains( 'click is an event OWA collects.', $this->saveErrors( 'x', [ 'name' => 'click' ] ) );
+        $this->assertContains( 'Page_View is an event OWA collects.', $this->saveErrors( 'x', [ 'name' => 'Page_View' ] ) );
+        $this->assertSame( [], array_filter( $this->saveErrors( 'x', [ 'name' => 'Unused_name_75' ] ),
             static function ( $m ) { return strpos( $m, 'name' ) !== false; } ) );
     }
 
@@ -337,11 +337,11 @@ final class GoalEventDefinitionStorageTest extends TestCase
 
         try {
             $this->assertContains( 'Another goal event definition is called Taken_name_75.',
-                $this->saveErrors( 'x', array( 'name' => 'Taken_name_75' ) ) );
+                $this->saveErrors( 'x', [ 'name' => 'Taken_name_75' ] ) );
             $this->assertContains( 'Another goal event definition is called taken_NAME_75.',
-                $this->saveErrors( 'x', array( 'name' => 'taken_NAME_75' ) ) );
+                $this->saveErrors( 'x', [ 'name' => 'taken_NAME_75' ] ) );
             $this->assertNotContains( 'Another goal event definition is called Taken_name_75.',
-                $this->saveErrors( 'x', array( 'name' => 'Taken_name_75', 'goalEventDefinitionId' => $id ) ), 'itself' );
+                $this->saveErrors( 'x', [ 'name' => 'Taken_name_75', 'goalEventDefinitionId' => $id ] ), 'itself' );
         } finally {
             \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->delete( $id );
         }
@@ -353,15 +353,15 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $id = $this->storedGoal( 'Kept_name_75' );
 
         try {
-            $save = new \OWA\Module\Base\Controller\GoalEventDefinitionSave( array(
+            $save = new \OWA\Module\Base\Controller\GoalEventDefinitionSave( [
                 'propertyId' => $this->propertyId, 'goalEventDefinitionId' => $id, 'name' => 'Ignored_name_75',
                 'value' => '4.00', 'triggerEvent' => 'page_view',
-                'conditionProperty' => array( 'page_path' ), 'conditionOperator' => array( 'exact' ),
-                'conditionValue' => array( '/after' ) ) );
+                'conditionProperty' => [ 'page_path' ], 'conditionOperator' => [ 'exact' ],
+                'conditionValue' => [ '/after' ] ] );
             $save->action();
 
             $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-                'SELECT name, value FROM owa_goal_event_definition WHERE id = ?', array( $id ) );
+                'SELECT name, value FROM owa_goal_event_definition WHERE id = ?', [ $id ] );
 
             $this->assertSame( 'Kept_name_75', $row['name'] );
             $this->assertSame( 400, (int) $row['value'], 'the rest of the save went through' );
@@ -373,10 +373,10 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /** What may trigger a goal event: OWA's goal triggers, or a site's own event. */
     public function testATriggerIsAGoalTriggerOrAnEventOfTheSitesOwn(): void
     {
-        $problem = array( \OWA\Module\Base\Entity\GoalEventDefinition::class, 'triggerProblem' );
-        $custom  = array( \OWA\Module\Base\Entity\GoalEventDefinition::class, 'isCustomTrigger' );
+        $problem = [ \OWA\Module\Base\Entity\GoalEventDefinition::class, 'triggerProblem' ];
+        $custom  = [ \OWA\Module\Base\Entity\GoalEventDefinition::class, 'isCustomTrigger' ];
 
-        foreach ( array( 'page_view', 'click', 'first_visit' ) as $ok ) {
+        foreach ( [ 'page_view', 'click', 'first_visit' ] as $ok ) {
             $this->assertSame( '', $problem( $ok ), $ok );
             $this->assertFalse( $custom( $ok ), "$ok is OWA's" );
         }
@@ -388,8 +388,8 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $modules = array_values( array_diff( \OWA\Core\CoreAPI::trackingEventTypes(),
             \OWA\Module\Base\Classes\TrackingEventHelpers::eventNames() ) );
 
-        foreach ( array_merge( array( 'exception', 'owa_signup', 'Owa_signup', '9lives', 'two words',
-                \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM, str_repeat( 'a', 41 ) ), $modules ) as $refused ) {
+        foreach ( array_merge( [ 'exception', 'owa_signup', 'Owa_signup', '9lives', 'two words',
+                \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM, str_repeat( 'a', 41 ) ], $modules ) as $refused ) {
             $this->assertNotSame( '', $problem( $refused ), $refused );
             $this->assertFalse( $custom( $refused ), $refused );
         }
@@ -412,21 +412,21 @@ final class GoalEventDefinitionStorageTest extends TestCase
         $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
 
         $goal->set( 'trigger_event_type', 'newsletter_signup' );
-        $this->assertTrue( $goal->matchesRow( array( 'event_type' => 'newsletter_signup' ), array() ) );
-        $this->assertFalse( $goal->matchesRow( array( 'event_type' => 'page_view' ), array() ), 'the trigger still gates' );
+        $this->assertTrue( $goal->matchesRow( [ 'event_type' => 'newsletter_signup' ], [] ) );
+        $this->assertFalse( $goal->matchesRow( [ 'event_type' => 'page_view' ], [] ), 'the trigger still gates' );
 
         $goal->set( 'trigger_event_type', 'page_view' );
-        $this->assertFalse( $goal->matchesRow( array( 'event_type' => 'page_view' ), array() ),
+        $this->assertFalse( $goal->matchesRow( [ 'event_type' => 'page_view' ], [] ),
             'every page view is not a goal' );
     }
 
     /** The validation messages for a save with these params, over a valid base. */
     private function triggerErrors( array $params ): array
     {
-        $save = new \OWA\Module\Base\Controller\GoalEventDefinitionSave( $params + array(
+        $save = new \OWA\Module\Base\Controller\GoalEventDefinitionSave( $params + [
             'propertyId' => $this->propertyId,
             'name'       => 'Signed_up_75',
-        ) );
+        ] );
         $save->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
@@ -442,46 +442,46 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /** A custom event is chosen in the picker or typed beside it, and needs no condition. */
     public function testACustomEventTriggerIsSavedWithoutAConditionAndNothingElseIs(): void
     {
-        $this->assertSame( array(), $this->triggerErrors( array( 'triggerEvent' => 'newsletter_signup' ) ) );
-        $this->assertSame( array(), $this->triggerErrors( array(
+        $this->assertSame( [], $this->triggerErrors( [ 'triggerEvent' => 'newsletter_signup' ] ) );
+        $this->assertSame( [], $this->triggerErrors( [
             'triggerEvent' => \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM,
-            'customTriggerEvent' => ' newsletter_signup ' ) ) );
+            'customTriggerEvent' => ' newsletter_signup ' ] ) );
 
         $this->assertContains( 'Enter a value to compare against.',
-            $this->triggerErrors( array( 'triggerEvent' => 'page_view' ) ), 'OWA\'s events still need one' );
+            $this->triggerErrors( [ 'triggerEvent' => 'page_view' ] ), 'OWA\'s events still need one' );
 
-        $this->assertContains( 'Enter the name of the custom event.', $this->triggerErrors( array(
-            'triggerEvent' => \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM, 'customTriggerEvent' => '' ) ) );
+        $this->assertContains( 'Enter the name of the custom event.', $this->triggerErrors( [
+            'triggerEvent' => \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM, 'customTriggerEvent' => '' ] ) );
 
         $this->assertContains( 'A goal event definition cannot be triggered by exception.',
-            $this->triggerErrors( array( 'triggerEvent' => \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM,
-                'customTriggerEvent' => 'exception' ) ) );
+            $this->triggerErrors( [ 'triggerEvent' => \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM,
+                'customTriggerEvent' => 'exception' ] ) );
 
         $this->assertContains( 'A goal event definition cannot have the name of the event that triggers it, signed_up_75.',
-            $this->triggerErrors( array( 'triggerEvent' => 'signed_up_75' ) ) );
+            $this->triggerErrors( [ 'triggerEvent' => 'signed_up_75' ] ) );
     }
 
     /** The save stores the typed name as the trigger, and no conditions. */
     public function testATypedCustomEventIsStoredAsTheTrigger(): void
     {
-        $save = new \OWA\Module\Base\Controller\GoalEventDefinitionSave( array(
+        $save = new \OWA\Module\Base\Controller\GoalEventDefinitionSave( [
             'propertyId' => $this->propertyId, 'name' => 'Signed_up_typed_75', 'value' => '0',
             'triggerEvent' => \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM,
             'customTriggerEvent' => 'newsletter_signup',
-            'conditionProperty' => array( 'page_path' ), 'conditionOperator' => array( 'exact' ),
-            'conditionValue' => array( '' ) ) );
+            'conditionProperty' => [ 'page_path' ], 'conditionOperator' => [ 'exact' ],
+            'conditionValue' => [ '' ] ] );
         $save->action();
 
         $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
             'SELECT id, trigger_event_type FROM owa_goal_event_definition WHERE property_id = ? AND name = ?',
-            array( $this->propertyId, 'Signed_up_typed_75' ) );
+            [ $this->propertyId, 'Signed_up_typed_75' ] );
 
         try {
             $this->assertSame( 'newsletter_signup', $row['trigger_event_type'] );
 
             $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
             $goal->load( $row['id'] );
-            $this->assertSame( array(), (array) $goal->loadConditions(), 'the empty row is not a condition' );
+            $this->assertSame( [], (array) $goal->loadConditions(), 'the empty row is not a condition' );
         } finally {
             \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->delete( $row['id'] );
         }
@@ -492,23 +492,23 @@ final class GoalEventDefinitionStorageTest extends TestCase
     {
         $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
         $id   = $goal->generateId( 'goal_event:name-probe:' . uniqid( '', true ) );
-        $goal->setProperties( array( 'id' => $id, 'property_id' => $this->propertyId, 'name' => $name,
-            'trigger_event_type' => 'page_view', 'is_active' => 0 ) );
+        $goal->setProperties( [ 'id' => $id, 'property_id' => $this->propertyId, 'name' => $name,
+            'trigger_event_type' => 'page_view', 'is_active' => 0 ] );
         $goal->create();
 
         return $id;
     }
 
     /** The validation messages GoalEventDefinitionSave raises for one regex condition. */
-    private function saveErrors( string $pattern, array $params = array() ): array
+    private function saveErrors( string $pattern, array $params = [] ): array
     {
         // A real Property and a name, so validation reaches the conditions.
-        $save = new \OWA\Module\Base\Controller\GoalEventDefinitionSave( $params + array(
+        $save = new \OWA\Module\Base\Controller\GoalEventDefinitionSave( $params + [
             'propertyId'        => $this->propertyId,
             'name'              => 'Signup_by_email',
-            'conditionOperator' => array( 'regex' ),
-            'conditionValue'    => array( $pattern ),
-        ) );
+            'conditionOperator' => [ 'regex' ],
+            'conditionValue'    => [ $pattern ],
+        ] );
         $save->validate();
 
         $v = new \ReflectionProperty( \OWA\Core\Controller::class, 'v' );
@@ -524,13 +524,13 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /** Several conditions, combined with all or any. */
     public function testConditionsCombineWithAllOrAny(): void
     {
-        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( array(
-            array( 'page_path', 'begins', '/checkout' ),
-            array( 'revenue',   'gt',     '50' ),
-        ) );
+        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( [
+            [ 'page_path', 'begins', '/checkout' ],
+            [ 'revenue',   'gt',     '50' ],
+        ] );
 
-        $over  = $this->row( array( 'page_path' => '/checkout/done', 'revenue' => '60' ) );
-        $under = $this->row( array( 'page_path' => '/checkout/done', 'revenue' => '40' ) );
+        $over  = $this->row( [ 'page_path' => '/checkout/done', 'revenue' => '60' ] );
+        $under = $this->row( [ 'page_path' => '/checkout/done', 'revenue' => '40' ] );
 
         $this->assertTrue(  $goalEventDefinition->matchesRow( $over ) );
         $this->assertFalse( $goalEventDefinition->matchesRow( $under ),
@@ -551,10 +551,10 @@ final class GoalEventDefinitionStorageTest extends TestCase
      */
     public function testAGoalEventDefinitionWithNoConditionsMatchesNothing(): void
     {
-        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( array() );
+        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( [] );
 
         $this->assertFalse( $goalEventDefinition->matchesRow(
-            $this->row( array( 'page_path' => '/anything' ) ) ) );
+            $this->row( [ 'page_path' => '/anything' ] ) ) );
     }
 
     /**
@@ -569,17 +569,17 @@ final class GoalEventDefinitionStorageTest extends TestCase
      */
     public function testAGoalOnlyMatchesItsTriggerEventType(): void
     {
-        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( array(
-            array( 'host', 'exact', 'example.com' ),
-        ) );
+        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( [
+            [ 'host', 'exact', 'example.com' ],
+        ] );
 
         $goalEventDefinition->set( 'trigger_event_type', 'page_view' );
 
-        $this->assertTrue( $goalEventDefinition->matchesRow( $this->row( array(
-            'event_type' => 'page_view', 'host' => 'example.com' ) ) ) );
+        $this->assertTrue( $goalEventDefinition->matchesRow( $this->row( [
+            'event_type' => 'page_view', 'host' => 'example.com' ] ) ) );
 
-        $this->assertFalse( $goalEventDefinition->matchesRow( $this->row( array(
-            'event_type' => 'click', 'host' => 'example.com' ) ) ),
+        $this->assertFalse( $goalEventDefinition->matchesRow( $this->row( [
+            'event_type' => 'click', 'host' => 'example.com' ] ) ),
             'A goal triggered on a page view counted a click as a goal event.' );
     }
 
@@ -593,12 +593,12 @@ final class GoalEventDefinitionStorageTest extends TestCase
      */
     public function testAnEmptyTriggerMatchesNothing(): void
     {
-        $conditions = array( array( 'host', 'exact', 'example.com' ) );
+        $conditions = [ [ 'host', 'exact', 'example.com' ] ];
 
         $triggered = $this->makeGoalEventDefinitionWithConditions( $conditions );
 
-        $this->assertTrue( $triggered->matchesRow( $this->row( array(
-            'event_type' => 'page_view', 'host' => 'example.com' ) ) ),
+        $this->assertTrue( $triggered->matchesRow( $this->row( [
+            'event_type' => 'page_view', 'host' => 'example.com' ] ) ),
             'with a trigger the same conditions match, so the refusals below are the empty trigger' );
 
         // Never set, since an entity ignores '' on a string column.
@@ -606,10 +606,10 @@ final class GoalEventDefinitionStorageTest extends TestCase
 
         $this->assertSame( '', (string) $untriggered->get( 'trigger_event_type' ) );
 
-        foreach ( array( 'page_view', 'click', 'session_start' ) as $type ) {
+        foreach ( [ 'page_view', 'click', 'session_start' ] as $type ) {
 
-            $this->assertFalse( $untriggered->matchesRow( $this->row( array(
-                'event_type' => $type, 'host' => 'example.com' ) ) ),
+            $this->assertFalse( $untriggered->matchesRow( $this->row( [
+                'event_type' => $type, 'host' => 'example.com' ] ) ),
                 "An empty trigger matched $type." );
         }
     }
@@ -627,20 +627,20 @@ final class GoalEventDefinitionStorageTest extends TestCase
      */
     public function testAnAbsentOrNullColumnDoesNotMatchEvenUnderNot(): void
     {
-        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( array(
-            array( 'tagged_medium', 'not', 'organic' ),
-        ) );
+        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( [
+            [ 'tagged_medium', 'not', 'organic' ],
+        ] );
 
-        $this->assertFalse( $goalEventDefinition->matchesRow( $this->row( array(
-            'event_type' => 'page_view' ) ) ),
+        $this->assertFalse( $goalEventDefinition->matchesRow( $this->row( [
+            'event_type' => 'page_view' ] ) ),
             'A row with no tagged_medium key matched "medium is not organic".' );
 
-        $this->assertFalse( $goalEventDefinition->matchesRow( $this->row( array(
-            'event_type' => 'page_view', 'tagged_medium' => null ) ) ),
+        $this->assertFalse( $goalEventDefinition->matchesRow( $this->row( [
+            'event_type' => 'page_view', 'tagged_medium' => null ] ) ),
             'A row whose tagged_medium is NULL matched "medium is not organic".' );
 
-        $this->assertTrue( $goalEventDefinition->matchesRow( $this->row( array(
-            'event_type' => 'page_view', 'tagged_medium' => 'cpc' ) ) ),
+        $this->assertTrue( $goalEventDefinition->matchesRow( $this->row( [
+            'event_type' => 'page_view', 'tagged_medium' => 'cpc' ] ) ),
             'and a row that does carry a different medium must still match' );
     }
 
@@ -655,25 +655,25 @@ final class GoalEventDefinitionStorageTest extends TestCase
      */
     public function testAConditionCanTestAColumnThatOnlyExistsOnTheRow(): void
     {
-        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( array(
-            array( 'device_type',   'exact', 'mobile' ),
-            array( 'tagged_medium', 'exact', 'organic' ),
-        ) );
+        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( [
+            [ 'device_type',   'exact', 'mobile' ],
+            [ 'tagged_medium', 'exact', 'organic' ],
+        ] );
 
-        $this->assertTrue( $goalEventDefinition->matchesRow( $this->row( array(
-            'device_type' => 'mobile', 'tagged_medium' => 'organic' ) ) ) );
+        $this->assertTrue( $goalEventDefinition->matchesRow( $this->row( [
+            'device_type' => 'mobile', 'tagged_medium' => 'organic' ] ) ) );
 
-        $this->assertFalse( $goalEventDefinition->matchesRow( $this->row( array(
-            'device_type' => 'desktop', 'tagged_medium' => 'organic' ) ) ) );
+        $this->assertFalse( $goalEventDefinition->matchesRow( $this->row( [
+            'device_type' => 'desktop', 'tagged_medium' => 'organic' ] ) ) );
     }
 
     /** A raw row, with the keys a condition is allowed to name. */
     private function row( array $columns )
     {
-        return array_merge( array(
+        return array_merge( [
             'event_type' => 'page_view',
             'site_id'    => $this->siteId,
-        ), $columns );
+        ], $columns );
     }
 
     /** A goal event carrying the given conditions, cleaned up afterwards. */
@@ -740,10 +740,10 @@ final class GoalEventDefinitionStorageTest extends TestCase
      */
     public function testDeletingAGoalEventDefinitionDeletesItsConditions(): void
     {
-        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( array(
-            array( 'page_uri', 'begins', '/thanks' ),
-            array( 'medium', 'exact', 'organic-search' ),
-        ) );
+        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( [
+            [ 'page_uri', 'begins', '/thanks' ],
+            [ 'medium', 'exact', 'organic-search' ],
+        ] );
 
         $id = $goalEventDefinition->get( 'id' );
 
@@ -752,7 +752,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
 
         $goalEventDefinition->delete( $id );
 
-        $this->assertSame( array(), $this->conditionRowsFor( $id ),
+        $this->assertSame( [], $this->conditionRowsFor( $id ),
             'The goal event is gone and its conditions are still there -- unreachable, '
             . 'because nothing but the goal event points at them.' );
     }
@@ -767,9 +767,9 @@ final class GoalEventDefinitionStorageTest extends TestCase
      */
     public function testDeletingByPropertyIdCascades(): void
     {
-        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( array(
-            array( 'page_uri', 'exact', '/one' ),
-        ) );
+        $goalEventDefinition = $this->makeGoalEventDefinitionWithConditions( [
+            [ 'page_uri', 'exact', '/one' ],
+        ] );
 
         $id = $goalEventDefinition->get( 'id' );
 
@@ -781,7 +781,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
          */
         $goalEventDefinition->delete( $this->propertyId, 'property_id' );
 
-        $this->assertSame( array(), $this->conditionRowsFor( $id ),
+        $this->assertSame( [], $this->conditionRowsFor( $id ),
             'Deleting by property_id left the conditions behind.' );
     }
 
@@ -798,9 +798,9 @@ final class GoalEventDefinitionStorageTest extends TestCase
      */
     public function testTheCleanupTakesOrphansAndLeavesLiveConditions(): void
     {
-        $live = $this->makeGoalEventDefinitionWithConditions( array(
-            array( 'page_uri', 'exact', '/live' ),
-        ) );
+        $live = $this->makeGoalEventDefinitionWithConditions( [
+            [ 'page_uri', 'exact', '/live' ],
+        ] );
 
         $liveId = $live->get( 'id' );
 
@@ -836,7 +836,7 @@ final class GoalEventDefinitionStorageTest extends TestCase
             $db->selectColumn( 'id' );
             $db->where( 'id', $orphanId );
 
-            $this->assertSame( array(), (array) $db->getAllRows(),
+            $this->assertSame( [], (array) $db->getAllRows(),
                 'The orphan survived the cleanup.' );
 
             // Idempotent: a second run finds nothing left to do.
@@ -945,8 +945,8 @@ final class GoalEventDefinitionStorageTest extends TestCase
     /** ...and a definition saved with either one reads back as it. */
     public function testEitherCountModeIsStoredAndReadBack(): void
     {
-        foreach ( array( \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT,
-                         \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION ) as $mode ) {
+        foreach ( [ \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_EVENT,
+                         \OWA\Module\Base\Entity\GoalEventDefinition::COUNT_PER_SESSION ] as $mode ) {
 
             $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
             $id     = $entity->generateId( 'goal_event:count-mode-probe:' . uniqid( '', true ) );

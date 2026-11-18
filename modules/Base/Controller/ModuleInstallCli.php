@@ -36,12 +36,12 @@ class ModuleInstallCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Deprecated: does the same as activate.',
-            'arguments'   => array(
+            'arguments'   => [
                 'module=<name>' => 'Required. The module\'s name.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function __construct($params) {
@@ -81,5 +81,3 @@ class ModuleInstallCli extends \OWA\Core\Controller\Cli {
     }
 
 }
-
-?>

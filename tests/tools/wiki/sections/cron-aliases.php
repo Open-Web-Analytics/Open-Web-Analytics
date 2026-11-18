@@ -6,7 +6,7 @@
  */
 return static function () {
 
-    $rows = array(); // expression => aliases
+    $rows = []; // expression => aliases
 
     foreach ( \OWA\Core\Cron::ALIASES as $alias => $expr ) {
         $rows[ $expr ][] = $alias;

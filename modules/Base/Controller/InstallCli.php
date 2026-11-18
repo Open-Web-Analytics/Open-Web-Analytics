@@ -35,17 +35,17 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Installs OWA: applies the database schema, creates the admin user and adds the first tracked website. owa-config.php must exist first.',
-            'arguments'   => array(
+            'arguments'   => [
                 'user_id=<name>'        => 'Required. The admin account\'s user name.',
                 'password=<password>'   => 'Required. The admin account\'s password, at least ' . \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH . ' characters.',
                 'email_address=<email>' => 'Required. The admin account\'s email address, used for password recovery.',
                 'domain=<url>'          => 'Required. The domain of the first website to track.',
                 'description=<text>'    => 'A description of the first website.',
                 'site_family=<text>'    => 'A family name to group the first website under.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function __construct($params) {
@@ -72,7 +72,7 @@ class InstallCli extends \OWA\Core\Controller\Cli {
     /** A refused install prints why, and has done nothing. */
     public function errorAction() {
 
-        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
+        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? [] );
     }
 
     public function action() {
@@ -135,5 +135,3 @@ class InstallCli extends \OWA\Core\Controller\Cli {
         }
     }
 }
-
-?>

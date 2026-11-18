@@ -36,18 +36,18 @@ final class TemplateEscapeHelpersTest extends TestCase
 
     public function testScriptJsonCannotCloseTheScriptOrTheAttribute(): void
     {
-        $json = \OWA\Core\Template::scriptJson(array('v' => self::PAYLOAD));
+        $json = \OWA\Core\Template::scriptJson(['v' => self::PAYLOAD]);
 
-        foreach (array('<', '>', '&', "'", '"x') as $raw) {
+        foreach (['<', '>', '&', "'", '"x'] as $raw) {
             $this->assertStringNotContainsString($raw, substr($json, 6), $raw);
         }
 
-        $this->assertSame(array('v' => self::PAYLOAD), json_decode($json, true), 'the same value, once parsed');
+        $this->assertSame(['v' => self::PAYLOAD], json_decode($json, true), 'the same value, once parsed');
     }
 
     public function testScriptJsonTakesMoreFlags(): void
     {
-        $this->assertSame('{"0":"a"}', \OWA\Core\Template::scriptJson(array('a'), JSON_FORCE_OBJECT));
+        $this->assertSame('{"0":"a"}', \OWA\Core\Template::scriptJson(['a'], JSON_FORCE_OBJECT));
     }
 
     public function testATemplateWritesAStoredValueIntoItsScriptSafely(): void

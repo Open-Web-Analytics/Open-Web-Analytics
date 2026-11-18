@@ -231,12 +231,12 @@ class Module extends \OWA\Core\Module {
          * own queues, and that module's constant points this one at it
          * (TrackerIngest::backend()).
          */
-        $this->registerEventQueue( \OWA\Module\Base\Classes\TrackerIngest::QUEUE, array(
+        $this->registerEventQueue( \OWA\Module\Base\Classes\TrackerIngest::QUEUE, [
 
             'queue_type'   => 'file',
             'path'         => \OWA\Core\CoreAPI::getSetting( 'base', 'async_log_dir' ),
             'max_receives' => \OWA\Module\Base\Classes\TrackerIngest::MAX_RECEIVES,
-        ));
+        ]);
 
         $this->setupTrackingProperties();
 
@@ -265,10 +265,10 @@ class Module extends \OWA\Core\Module {
          * is before the maps are built by construction rather than by luck.
          */
         \OWA\Core\CoreAPI::registerFilter( 'tracking_properties_regular',
-            array( '\OWA\Module\Base\Classes\Beacon\Compat', 'contributeClientProperties' ) );
+            [ '\OWA\Module\Base\Classes\Beacon\Compat', 'contributeClientProperties' ] );
 
         \OWA\Core\CoreAPI::registerFilter( 'tracking_properties_derived',
-            array( '\OWA\Module\Base\Classes\Beacon\Compat', 'contributeDerivedProperties' ) );
+            [ '\OWA\Module\Base\Classes\Beacon\Compat', 'contributeDerivedProperties' ] );
 
         /*
          * Filtered as the maps are BUILT, not where they are used, so
@@ -319,19 +319,19 @@ class Module extends \OWA\Core\Module {
          */
         \OWA\Core\CoreAPI::registerFilter(
             \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,
-            array( '\OWA\Module\Base\Classes\MaterializedEvents', 'sessionStart' ), 10 );
+            [ '\OWA\Module\Base\Classes\MaterializedEvents', 'sessionStart' ], 10 );
 
         \OWA\Core\CoreAPI::registerFilter(
             \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,
-            array( '\OWA\Module\Base\Classes\MaterializedEvents', 'firstVisit' ), 10 );
+            [ '\OWA\Module\Base\Classes\MaterializedEvents', 'firstVisit' ], 10 );
 
         \OWA\Core\CoreAPI::registerFilter(
             \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,
-            array( '\OWA\Module\Base\Classes\PurchaseDeduplication', 'drop' ), 50 );
+            [ '\OWA\Module\Base\Classes\PurchaseDeduplication', 'drop' ], 50 );
 
         \OWA\Core\CoreAPI::registerFilter(
             \OWA\Module\Base\Classes\Ingest::TRACKING_EVENTS_PRE_SAVE,
-            array( '\OWA\Module\Base\Classes\GoalMarking', 'mark' ), 100 );
+            [ '\OWA\Module\Base\Classes\GoalMarking', 'mark' ], 100 );
     }
 
 
@@ -352,45 +352,45 @@ class Module extends \OWA\Core\Module {
          * group so its save controller (SitesEditSettings) and its template read
          * the same list.
          */
-        foreach ( array(
-            array( 'base.profileObservation', \OWA\Core\CoreAPI::t( 'Page URLs' ),
-                array( 'query_string_filters' ) ),
-            array( 'base.profileCampaigns', \OWA\Core\CoreAPI::t( 'Campaign parameters' ),
-                array( 'campaignKeys' ) ),
-            array( 'base.profilePrivacy', \OWA\Core\CoreAPI::t( 'Privacy and exclusions' ),
-                array( 'anonymize_ips', 'excluded_ips', 'log_named_users' ) ),
-            array( 'base.profileAnnouncements', \OWA\Core\CoreAPI::t( 'Visitor announcements' ),
-                array( 'announce_visitors', 'notice_email' ) ),
-        ) as $order => list( $id, $legend, $settings ) ) {
+        foreach ( [
+            [ 'base.profileObservation', \OWA\Core\CoreAPI::t( 'Page URLs' ),
+                [ 'query_string_filters' ] ],
+            [ 'base.profileCampaigns', \OWA\Core\CoreAPI::t( 'Campaign parameters' ),
+                [ 'campaignKeys' ] ],
+            [ 'base.profilePrivacy', \OWA\Core\CoreAPI::t( 'Privacy and exclusions' ),
+                [ 'anonymize_ips', 'excluded_ips', 'log_named_users' ] ],
+            [ 'base.profileAnnouncements', \OWA\Core\CoreAPI::t( 'Visitor announcements' ),
+                [ 'announce_visitors', 'notice_email' ] ],
+        ] as $order => list( $id, $legend, $settings ) ) {
 
-            $this->registerSettingsFieldSet( array(
+            $this->registerSettingsFieldSet( [
                 'id'       => $id,
                 'group'    => 'profile_observation',
                 'order'    => $order,
                 'legend'   => $legend,
                 'settings' => $settings,
-            ) );
+            ] );
         }
 
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'base.propertyAttribution',
-            'settings' => array( 'attribution_lookback_days', 'campaignUtmParams', 'campaignKeys' ),
-        ) );
+            'settings' => [ 'attribution_lookback_days', 'campaignUtmParams', 'campaignKeys' ],
+        ] );
 
         /*
          * What a Property's reports show. On the Property, not the Profile: a
          * report is of the Property and covers every Profile in it.
          */
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'base.propertyReporting',
-            'settings' => array( 'enableEcommerceReporting', 'currencyISO3' ),
-        ) );
+            'settings' => [ 'enableEcommerceReporting', 'currencyISO3' ],
+        ] );
 
         // The Property's Data Retention screen (Classes\Retention).
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'base.propertyRetention',
-            'settings' => array( 'cube_retention_months' ),
-        ) );
+            'settings' => [ 'cube_retention_months' ],
+        ] );
 
         /*
          * The tracking tag (PLAN 2.24.4), in the `tracking_tag` group so an active
@@ -400,41 +400,41 @@ class Module extends \OWA\Core\Module {
          * One per job, each with a description, so the Tracking Tag screen can
          * show them as collapsed groups a person opens only for the one they want.
          */
-        foreach ( array(
-            array( 'base.trackingPageViews', \OWA\Core\CoreAPI::t( 'Page views' ),
+        foreach ( [
+            [ 'base.trackingPageViews', \OWA\Core\CoreAPI::t( 'Page views' ),
                 \OWA\Core\CoreAPI::t( 'When the tracker sends a page view, and what identifies the page.' ),
-                array( 'tracker_page_views', 'tracker_route_changes', 'tracker_url_fragments' ) ),
-            array( 'base.trackingClicks', \OWA\Core\CoreAPI::t( 'Clicks and downloads' ),
+                [ 'tracker_page_views', 'tracker_route_changes', 'tracker_url_fragments' ] ],
+            [ 'base.trackingClicks', \OWA\Core\CoreAPI::t( 'Clicks and downloads' ),
                 \OWA\Core\CoreAPI::t( 'Clicks on links and other elements, and which links count as downloads.' ),
-                array( 'tracker_clicks', 'tracker_download_extensions' ) ),
-            array( 'base.trackingForms', \OWA\Core\CoreAPI::t( 'Forms' ),
+                [ 'tracker_clicks', 'tracker_download_extensions' ] ],
+            [ 'base.trackingForms', \OWA\Core\CoreAPI::t( 'Forms' ),
                 \OWA\Core\CoreAPI::t( 'A visitor starting and submitting a form.' ),
-                array( 'tracker_forms' ) ),
-            array( 'base.trackingScroll', \OWA\Core\CoreAPI::t( 'Scroll depth' ),
+                [ 'tracker_forms' ] ],
+            [ 'base.trackingScroll', \OWA\Core\CoreAPI::t( 'Scroll depth' ),
                 \OWA\Core\CoreAPI::t( 'How far down each page visitors get.' ),
-                array( 'tracker_scroll', 'tracker_scroll_thresholds' ) ),
-            array( 'base.trackingSearch', \OWA\Core\CoreAPI::t( 'Site search' ),
+                [ 'tracker_scroll', 'tracker_scroll_thresholds' ] ],
+            [ 'base.trackingSearch', \OWA\Core\CoreAPI::t( 'Site search' ),
                 \OWA\Core\CoreAPI::t( 'Searches made with your site’s own search box, read from the results page’s URL.' ),
-                array( 'tracker_site_search', 'tracker_site_search_params' ) ),
-            array( 'base.trackingErrors', \OWA\Core\CoreAPI::t( 'JavaScript errors' ),
+                [ 'tracker_site_search', 'tracker_site_search_params' ] ],
+            [ 'base.trackingErrors', \OWA\Core\CoreAPI::t( 'JavaScript errors' ),
                 \OWA\Core\CoreAPI::t( 'Uncaught errors in your pages’ scripts.' ),
-                array( 'tracker_exceptions' ) ),
-            array( 'base.trackingVisit', \OWA\Core\CoreAPI::t( 'Visits and cookies' ),
+                [ 'tracker_exceptions' ] ],
+            [ 'base.trackingVisit', \OWA\Core\CoreAPI::t( 'Visits and cookies' ),
                 \OWA\Core\CoreAPI::t( 'How long the tracker’s cookies hold a visit and a visitor together, and the domain they are set on.' ),
-                array( 'tracker_session_cookie_days', 'tracker_visitor_cookie_days', 'tracker_cookie_domain' ) ),
-            array( 'base.trackingPrivacy', \OWA\Core\CoreAPI::t( 'Privacy signals' ),
+                [ 'tracker_session_cookie_days', 'tracker_visitor_cookie_days', 'tracker_cookie_domain' ] ],
+            [ 'base.trackingPrivacy', \OWA\Core\CoreAPI::t( 'Privacy signals' ),
                 \OWA\Core\CoreAPI::t( 'Browsers that ask not to be tracked, with Do Not Track or Global Privacy Control.' ),
-                array( 'tracker_honor_privacy_signals' ) ),
-        ) as $order => list( $id, $legend, $description, $settings ) ) {
+                [ 'tracker_honor_privacy_signals' ] ],
+        ] as $order => list( $id, $legend, $description, $settings ) ) {
 
-            $this->registerSettingsFieldSet( array(
+            $this->registerSettingsFieldSet( [
                 'id'          => $id,
                 'group'       => 'tracking_tag',
                 'order'       => $order,
                 'legend'      => $legend,
                 'description' => $description,
                 'settings'    => $settings,
-            ) );
+            ] );
         }
     }
 
@@ -674,7 +674,7 @@ class Module extends \OWA\Core\Module {
         // local reason rather than a remote one.
         $this->registerJob(
             'rotate-partitions', 'partition-rotate',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), array(),
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'rotate-partitions' ) ), [],
             'Keeps the event and reporting tables partitioned ahead of the calendar, and merges old periods '
           . 'so the tables stay within the server\'s open-file limit. Deletes nothing unless told to keep '
           . 'less history (raw_retention_months, and cube_retention_months per Property).' );
@@ -684,7 +684,7 @@ class Module extends \OWA\Core\Module {
          * servers whose role runs the scheduler. A minute with nothing queued
          * costs a few stat() calls (isProbablyEmpty()).
          */
-        $this->registerJob( 'drain-tracker-ingest', 'drain-tracker-ingest', '* * * * *', array( 'scheduled' => 1 ),
+        $this->registerJob( 'drain-tracker-ingest', 'drain-tracker-ingest', '* * * * *', [ 'scheduled' => 1 ],
             'Ingests the beacons waiting in the tracker-ingest queue: every beacon when queueing is on, and '
           . 'any whose write failed and is waiting to be retried. First forwards any beacons the AWS SQS queue '
           . 'refused and the file queue kept. A minute with nothing waiting costs a few file checks.' );
@@ -698,7 +698,7 @@ class Module extends \OWA\Core\Module {
          * instead (TrackerIngest::replay()).
          */
         $this->registerJob( 'replay-tracker-ingest', 'tracker-ingest-replay',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'replay-tracker-ingest' ) ), array( 'scheduled' => 1 ),
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'replay-tracker-ingest' ) ), [ 'scheduled' => 1 ],
             'Gives each beacon in the tracker-ingest dead-letter queue one more try, once: one that failed '
           . 'during an outage longer than the retries gets ingested after all. One already replayed is kept '
           . 'for cmd=tracker-ingest-replay: in the file queue until it is replayed, in AWS SQS for the queue\'s '
@@ -711,14 +711,14 @@ class Module extends \OWA\Core\Module {
          * By hand, cmd=prune-event-queue-archives interval= prunes by age.
          */
         $this->registerJob( 'prune-tracker-ingest-archive', 'prune-event-queue-archives',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'prune-tracker-ingest-archive' ) ), array( 'scheduled' => 1 ),
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'prune-tracker-ingest-archive' ) ), [ 'scheduled' => 1 ],
             'Deletes the tracking intake\'s archived batch files older than raw_retention_months, the window '
           . 'event data is kept for. Deletes nothing when that is not set.' );
 
         // Finished one-off jobs (PLAN 2.30.5): done after 7 days, failed after 30.
         $this->registerJob(
             'prune-job-queue', 'jobs-prune',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'prune-job-queue' ) ), array(),
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'prune-job-queue' ) ), [],
             sprintf( 'Deletes finished one-off jobs from the job queue: done ones after %d days, failed ones after %d.',
                 \OWA\Module\Base\Classes\JobQueue::KEEP_DONE / 86400, \OWA\Module\Base\Classes\JobQueue::KEEP_FAILED / 86400 ) );
 
@@ -743,7 +743,7 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerJob(
             'rebuild-cube', 'cube-rebuild',
-            \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'rebuild-cube' ), 5 ), array(),
+            \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'rebuild-cube' ), 5 ), [],
             'Builds each Property\'s reporting cube from new events, so reports are at most a few minutes '
           . 'behind. Skips the days that have not changed.' );
 
@@ -774,7 +774,7 @@ class Module extends \OWA\Core\Module {
         $this->registerJob(
             'apply-custom-dimensions', 'custom-dimension-apply',
             \OWA\Core\Cron::minutelySpreadFor( $this->jobSeed( 'apply-custom-dimensions' ), 15 ),
-            array(),
+            [],
             'Adds the columns for newly registered custom dimensions to the reporting cubes. Adding one '
           . 'rebuilds the table, which is too slow for the request that registered it. With nothing pending '
           . 'it is one quick read.' );
@@ -800,7 +800,7 @@ class Module extends \OWA\Core\Module {
          */
         $this->registerJob(
             'fetch-notifications', 'fetch-notifications',
-            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'fetch-notifications' ) ), array(),
+            \OWA\Core\Cron::dailySpreadFor( $this->jobSeed( 'fetch-notifications' ) ), [],
             'Fetches OWA\'s release announcements for the notifications bell, once a day.' );
 
         // NOT registering update-ua-regexes here, deliberately.
@@ -823,18 +823,18 @@ class Module extends \OWA\Core\Module {
      */
     public function registerApiMethods() {
 
-    	$this->registerRestApiRoute( 'v1', 'sites', 'GET', 'OWA\\Module\\Base\\Controller\\SitesRest' );
+        $this->registerRestApiRoute( 'v1', 'sites', 'GET', 'OWA\\Module\\Base\\Controller\\SitesRest' );
         $this->registerRestApiRoute( 'v1', 'sites', 'POST', 'OWA\\Module\\Base\\Controller\\AddSiteRest' );
         $this->registerRestApiRoute( 'v1', 'users', 'GET', 'OWA\\Module\\Base\\Controller\\UsersRest' );
         $this->registerRestApiRoute( 'v1', 'users', 'POST', 'OWA\\Module\\Base\\Controller\\AddUserRest' );
-		$this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'OWA\\Module\\Base\\Controller\\DeleteUserRest', [ 'params_order' => ['user_id'] ] );
-		$this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest' );
-		$this->registerRestApiRoute( 'v1', 'notifications', 'GET', 'OWA\\Module\\Base\\Controller\\NotificationsRest' );
-		$this->registerRestApiRoute( 'v1', 'realtime', 'GET', 'OWA\\Module\\Base\\Controller\\RealtimeRest' );
-		$this->registerRestApiRoute( 'v1', 'notifications', 'POST', 'OWA\\Module\\Base\\Controller\\NotificationMarkReadRest', [ 'params_order' => ['notificationId'] ] );
-		$this->registerRestApiRoute( 'v1', 'notifications', 'DELETE', 'OWA\\Module\\Base\\Controller\\NotificationDismissRest', [ 'params_order' => ['notificationId'] ] );
-		$this->registerRestApiRoute( 'v1', 'reports', 'GET', 'OWA\\Module\\Base\\Controller\\ReportsRest', [ 'params_order' => ['report_name'] ] );
-		$this->registerRestApiRoute( 'v1', 'retentionPreview', 'GET', 'OWA\\Module\\Base\\Controller\\RetentionPreviewRest' );
+        $this->registerRestApiRoute( 'v1', 'users', 'DELETE', 'OWA\\Module\\Base\\Controller\\DeleteUserRest', [ 'params_order' => ['user_id'] ] );
+        $this->registerRestApiRoute( 'v1', 'siteUsers', 'POST', 'OWA\\Module\\Base\\Controller\\SiteAddAllowedUserRest' );
+        $this->registerRestApiRoute( 'v1', 'notifications', 'GET', 'OWA\\Module\\Base\\Controller\\NotificationsRest' );
+        $this->registerRestApiRoute( 'v1', 'realtime', 'GET', 'OWA\\Module\\Base\\Controller\\RealtimeRest' );
+        $this->registerRestApiRoute( 'v1', 'notifications', 'POST', 'OWA\\Module\\Base\\Controller\\NotificationMarkReadRest', [ 'params_order' => ['notificationId'] ] );
+        $this->registerRestApiRoute( 'v1', 'notifications', 'DELETE', 'OWA\\Module\\Base\\Controller\\NotificationDismissRest', [ 'params_order' => ['notificationId'] ] );
+        $this->registerRestApiRoute( 'v1', 'reports', 'GET', 'OWA\\Module\\Base\\Controller\\ReportsRest', [ 'params_order' => ['report_name'] ] );
+        $this->registerRestApiRoute( 'v1', 'retentionPreview', 'GET', 'OWA\\Module\\Base\\Controller\\RetentionPreviewRest' );
     }
 
     /**
@@ -843,14 +843,14 @@ class Module extends \OWA\Core\Module {
      */
     public function registerAdminPanels() {
 
-        $this->registerSettingsPage(array(
+        $this->registerSettingsPage([
                 'do'             => 'base.optionsGeneral',
                 'title'          => \OWA\Core\CoreAPI::t( 'General' ),
                 'group'          => 'General',
                 'order'          => 1,
-                'fieldsets'      => array(
-                    'base.tracking', 'base.announcements', 'base.reporting', 'base.restApi' ),
-                'fieldset_groups' => array( 'tracking_tag' ) )
+                'fieldsets'      => [
+                    'base.tracking', 'base.announcements', 'base.reporting', 'base.restApi' ],
+                'fieldset_groups' => [ 'tracking_tag' ] ]
         );
 
         /*
@@ -861,10 +861,10 @@ class Module extends \OWA\Core\Module {
          * so the screen no longer spells any of that out a second time. The
          * order here is the order they render in.
          */
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'base.tracking',
             'legend'   => \OWA\Core\CoreAPI::t( 'Tracking Request Processing' ),
-            'settings' => array(
+            'settings' => [
                 'spam_detection',
                 'spam_threshold',
                 'log_named_users',
@@ -872,47 +872,47 @@ class Module extends \OWA\Core\Module {
                 'anonymize_ips',
                 'query_string_filters',
                 'campaignUtmParams',
-            ),
-        ) );
+            ],
+        ] );
 
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'base.announcements',
             'legend'   => \OWA\Core\CoreAPI::t( 'Visitor Announcements' ),
-            'settings' => array( 'announce_visitors', 'notice_email' ),
-        ) );
+            'settings' => [ 'announce_visitors', 'notice_email' ],
+        ] );
 
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'base.reporting',
             'legend'   => \OWA\Core\CoreAPI::t( 'Reporting' ),
-            'settings' => array( 'timezone', 'attribution_lookback_days' ),
-        ) );
+            'settings' => [ 'timezone', 'attribution_lookback_days' ],
+        ] );
 
         // The group is what the wiki's Application Passwords page generates its
         // settings table from (settings-rest_api); no page renders it by group.
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'base.restApi',
             'group'    => 'rest_api',
             'legend'   => \OWA\Core\CoreAPI::t( 'REST API' ),
-            'settings' => array( 'app_passwords_enabled', 'app_passwords_require_https' ),
-        ) );
+            'settings' => [ 'app_passwords_enabled', 'app_passwords_require_https' ],
+        ] );
 
         // How long data is kept (Classes\Retention). Its own page: lowering the
         // first of these deletes data, and that should not sit among routine settings.
-        $this->registerSettingsPage( array(
+        $this->registerSettingsPage( [
                 'do'        => 'base.optionsRetention',
                 'title'     => \OWA\Core\CoreAPI::t( 'Data retention' ),
                 'group'     => 'General',
                 'order'     => 6,
-                'fieldsets' => array( 'base.retention' ) )
+                'fieldsets' => [ 'base.retention' ] ]
         );
 
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'base.retention',
             'legend'   => \OWA\Core\CoreAPI::t( 'Data Retention' ),
             'description' => \OWA\Core\CoreAPI::t( 'Each night\'s maintenance run (rotate-partitions) removes data outside these windows. '
                 . 'Every Property can set its own reporting window on its Data Retention page.' ),
-            'settings' => array( 'raw_retention_months', 'cube_retention_months' ),
-        ) );
+            'settings' => [ 'raw_retention_months', 'cube_retention_months' ],
+        ] );
 
 
 
@@ -944,11 +944,11 @@ class Module extends \OWA\Core\Module {
          * disagreeing about it would put rows of different meanings in one
          * table with nothing recording which.
          */
-        $this->registerSettingsPage(array(
+        $this->registerSettingsPage([
                 'do'             => 'base.optionsModules',
                 'title'          => \OWA\Core\CoreAPI::t( 'Modules' ),
                 'group'          => 'General',
-                'order'          => 3)
+                'order'          => 3]
         );
 
         /*
@@ -957,19 +957,19 @@ class Module extends \OWA\Core\Module {
          * beside Modules because it answers the same kind of question: is this
          * installation doing what it should.
          */
-        $this->registerSettingsPage(array(
+        $this->registerSettingsPage([
                 'do'             => 'base.cubeStatus',
                 'title'          => \OWA\Core\CoreAPI::t( 'Reporting cubes' ),
                 'group'          => 'General',
-                'order'          => 4)
+                'order'          => 4]
         );
 
         // Is the background work happening: the scheduler, its jobs, the job queue, the tracker intake.
-        $this->registerSettingsPage(array(
+        $this->registerSettingsPage([
                 'do'             => 'base.systemHealth',
                 'title'          => \OWA\Core\CoreAPI::t( 'System health' ),
                 'group'          => 'General',
-                'order'          => 5)
+                'order'          => 5]
         );
 
         /*
@@ -1013,10 +1013,10 @@ class Module extends \OWA\Core\Module {
         $this->registerReport( 'dashboard', 'reports/dashboard.json' );
         // Not configuration: it reads raw, not the cube (Classes\Realtime).
         $this->registerReport( 'model-comparison', 'reports/model-comparison.json' );
-        $this->registerReport( 'realtime', array(
+        $this->registerReport( 'realtime', [
             'controller'  => 'base.reportRealtime',
             'description' => 'Activity on the Property in the last thirty minutes, read from incoming events as they arrive and refreshed while the page is open.',
-        ) );
+        ] );
         $this->registerReport( 'document', 'reports/document.json' );
         /*
          * EVENTS, grouped by name, and it replaces the v1 action reports.
@@ -1093,7 +1093,7 @@ class Module extends \OWA\Core\Module {
          * edit_reports, because a reader who cannot author one can still be
          * sent one -- the roster is where they find what they have been given.
          */
-        $this->addNavigationSubGroup('Custom Reports', array( 'do' => 'base.customReports' ),
+        $this->addNavigationSubGroup('Custom Reports', [ 'do' => 'base.customReports' ],
             \OWA\Core\CoreAPI::t( 'Custom Reports' ), 9, 'view_site_list', 'Reports', 'fa fa-sliders-h');
 
         //Ecommerce
@@ -1293,7 +1293,7 @@ class Module extends \OWA\Core\Module {
         // Install-level tag settings saved: every Profile's bundle may change.
         $this->registerEventHandler('base.install_settings_saved', $this, 'tagSettingsSavedHandler');
         // User management
-        $this->registerEventHandler(array('base.set_password', 'base.reset_password', 'base.new_user_account'), 'userHandlers');
+        $this->registerEventHandler(['base.set_password', 'base.reset_password', 'base.new_user_account'], 'userHandlers');
     }
 
     public function _registerEventProcessors() {
@@ -1316,7 +1316,7 @@ class Module extends \OWA\Core\Module {
 
     public function _registerEntities() {
 
-        $this->registerEntity(array(
+        $this->registerEntity([
                 'site',
                 'organization',
                 'property',
@@ -1368,7 +1368,7 @@ class Module extends \OWA\Core\Module {
                 // (Classes\Migration).
                 'migration_progress',
                 'migration_tally',
-                'migration_day_visitor')
+                'migration_day_visitor']
             );
 
     }
@@ -1389,7 +1389,7 @@ class Module extends \OWA\Core\Module {
         foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
 
             if ( ( $set['module'] ?? '' ) === $module
-                 && array_intersect( $keys, (array) ( $set['settings'] ?? array() ) ) ) {
+                 && array_intersect( $keys, (array) ( $set['settings'] ?? [] ) ) ) {
 
                 \OWA\Module\Base\Classes\TrackerBundle::scheduleFullPublish();
 
@@ -1401,6 +1401,3 @@ class Module extends \OWA\Core\Module {
     }
 
 }
-
-
-?>

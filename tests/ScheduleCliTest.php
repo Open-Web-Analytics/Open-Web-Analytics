@@ -217,7 +217,7 @@ final class ScheduleCliTest extends CliControllerTestCase
         $s    = \OWA\Core\CoreAPI::serviceSingleton();
         $c    = \OWA\Core\CoreAPI::configSingleton();
         $base = $s->getModule('base');
-        $was  = array('version' => $c->get('base', 'tracker_build'), 'schema' => $c->get('base', 'schema_version'));
+        $was  = ['version' => $c->get('base', 'tracker_build'), 'schema' => $c->get('base', 'schema_version')];
 
         try {
             $c->set('base', 'tracker_build', 'an-older-build');
@@ -1802,10 +1802,10 @@ class OwaTestStateStubCli extends \OWA\Core\Controller\Cli {
 
     public static function usage() {
 
-        return array( 'description' => 'A test stub that reads its own state row.', 'arguments' => array(
+        return [ 'description' => 'A test stub that reads its own state row.', 'arguments' => [
             'job=<name>' => 'Its job name.',
             'fail=1'     => 'Fail.',
-        ) );
+        ] ];
     }
 
     function __construct( $params ) {
@@ -1819,7 +1819,7 @@ class OwaTestStateStubCli extends \OWA\Core\Controller\Cli {
 
         self::$seen = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
             'SELECT last_run_at, last_finished_at FROM owa_scheduled_job WHERE job_name = ?',
-            array( (string) $this->getParam( 'job' ) ) );
+            [ (string) $this->getParam( 'job' ) ] );
 
         if ( $this->getParam( 'fail' ) ) {
 

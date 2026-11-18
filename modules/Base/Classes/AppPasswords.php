@@ -38,7 +38,7 @@ class AppPasswords {
     const SCOPE_READ = 'read';
 
     /** The request methods a SCOPE_READ password is accepted on (Core\Auth). */
-    const READ_METHODS = array( 'GET', 'HEAD' );
+    const READ_METHODS = [ 'GET', 'HEAD' ];
 
     /** Whatever the user's role allows. */
     const SCOPE_FULL = 'full';
@@ -61,10 +61,10 @@ class AppPasswords {
     /** @return string[] scope => what a person is shown */
     public static function scopes() {
 
-        return array(
+        return [
             self::SCOPE_READ => 'Read only',
             self::SCOPE_FULL => 'Read and write',
-        );
+        ];
     }
 
     /**
@@ -100,18 +100,18 @@ class AppPasswords {
             $inserted = self::db()->query( sprintf(
                 'INSERT INTO %s (id, lookup_id, user_id, name, secret_hash, scope, created_at)'
               . ' VALUES (?, ?, ?, ?, ?, ?, ?)', self::table() ),
-                array( \OWA\Core\Lib::randomId(), $lookup, $user_id, $name,
-                       self::hash( $token ), $scope, $now ) );
+                [ \OWA\Core\Lib::randomId(), $lookup, $user_id, $name,
+                       self::hash( $token ), $scope, $now ] );
 
             if ( $inserted !== false ) {
 
-                return array(
+                return [
                     'token'      => $token,
                     'lookup_id'  => $lookup,
                     'name'       => $name,
                     'scope'      => $scope,
                     'created_at' => $now,
-                );
+                ];
             }
         }
 
@@ -135,7 +135,7 @@ class AppPasswords {
 
         $row = self::db()->get_row( sprintf(
             'SELECT %s, secret_hash FROM %s WHERE lookup_id = ?', self::PUBLIC_COLUMNS, self::table() ),
-            array( substr( $token, 0, self::LOOKUP_LENGTH ) ) );
+            [ substr( $token, 0, self::LOOKUP_LENGTH ) ] );
 
         if ( ! is_array( $row ) || ! hash_equals( (string) $row['secret_hash'], self::hash( $token ) ) ) {
 
@@ -169,12 +169,12 @@ class AppPasswords {
 
         if ( (string) $user_id === '' ) {
 
-            return array();
+            return [];
         }
 
         return (array) self::db()->get_results( sprintf(
             'SELECT %s FROM %s WHERE user_id = ? ORDER BY created_at DESC, lookup_id', self::PUBLIC_COLUMNS, self::table() ),
-            array( (string) $user_id ) );
+            [ (string) $user_id ] );
     }
 
     /**
@@ -195,7 +195,7 @@ class AppPasswords {
         }
 
         $db     = self::db();
-        $params = array( (string) $lookup_id, (string) $user_id );
+        $params = [ (string) $lookup_id, (string) $user_id ];
 
         if ( ! $db->get_row( sprintf( 'SELECT lookup_id FROM %s WHERE lookup_id = ? AND user_id = ?', self::table() ), $params ) ) {
 
@@ -219,7 +219,7 @@ class AppPasswords {
         }
 
         return self::db()->query( sprintf( 'DELETE FROM %s WHERE user_id = ?', self::table() ),
-            array( (string) $user_id ) ) !== false;
+            [ (string) $user_id ] ) !== false;
     }
 
     /**
@@ -240,7 +240,7 @@ class AppPasswords {
         self::db()->query( sprintf(
             'UPDATE %s SET last_used_at = ?, last_used_ip = ? WHERE lookup_id = ?'
           . ' AND (last_used_at IS NULL OR last_used_at <= ?)', self::table() ),
-            array( $now, substr( (string) $ip, 0, 45 ), (string) $lookup_id, $now - self::USE_THROTTLE ) );
+            [ $now, substr( (string) $ip, 0, 45 ), (string) $lookup_id, $now - self::USE_THROTTLE ] );
     }
 
     /**
@@ -302,5 +302,3 @@ class AppPasswords {
         return \OWA\Core\CoreAPI::dbSingleton();
     }
 }
-
-?>

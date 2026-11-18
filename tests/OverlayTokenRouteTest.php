@@ -16,7 +16,7 @@ require_once __DIR__ . '/RestControllerTestCase.php';
  */
 final class OverlayTokenRouteTest extends RestControllerTestCase
 {
-    private const PARAMS = array('overlayToken', 'rest_params', 'do', 'constraints', 'siteId', 'propertyId', 'metrics', 'dimensions');
+    private const PARAMS = ['overlayToken', 'rest_params', 'do', 'constraints', 'siteId', 'propertyId', 'metrics', 'dimensions'];
 
     protected function tearDown(): void
     {
@@ -43,10 +43,10 @@ final class OverlayTokenRouteTest extends RestControllerTestCase
 
     public function testTheRoutedActionIsTheOneThatRuns(): void
     {
-        $this->request(array('rest_params' => 'base/v1/users', 'do' => 'reports'));
+        $this->request(['rest_params' => 'base/v1/users', 'do' => 'reports']);
         $this->assertSame('users', Auth::routedAction());
 
-        $this->request(array('do' => 'reports'));
+        $this->request(['do' => 'reports']);
         $this->assertSame('reports', Auth::routedAction());
     }
 
@@ -55,28 +55,28 @@ final class OverlayTokenRouteTest extends RestControllerTestCase
         $user  = $this->makeUser('admin', 'overlay');
         $token = OverlayToken::mint($user['user_id'], 'reports', 'constraints', 'pagePath==/a');
         $auth  = Auth::get_instance();
-        $base  = array('overlayToken' => $token, 'constraints' => 'pagePath==/a');
+        $base  = ['overlayToken' => $token, 'constraints' => 'pagePath==/a'];
 
         // Its own route, on a controller that names the token.
-        $this->request($base + array('rest_params' => 'base/v1/reports'));
-        $this->assertTrue($auth->authenticateUser(array('overlay_token'))['auth_status']);
+        $this->request($base + ['rest_params' => 'base/v1/reports']);
+        $this->assertTrue($auth->authenticateUser(['overlay_token'])['auth_status']);
 
         // `do` names its route while rest_params routes elsewhere.
-        $this->request($base + array('rest_params' => 'base/v1/users', 'do' => 'reports'));
-        $this->assertNotTrue($auth->authenticateUser(array('overlay_token'))['auth_status']);
+        $this->request($base + ['rest_params' => 'base/v1/users', 'do' => 'reports']);
+        $this->assertNotTrue($auth->authenticateUser(['overlay_token'])['auth_status']);
 
         // A controller that accepts any credential does not take a token.
-        $this->request($base + array('rest_params' => 'base/v1/reports'));
+        $this->request($base + ['rest_params' => 'base/v1/reports']);
         $this->assertNotTrue($auth->authenticateUser(null)['auth_status']);
     }
 
     public function testOnlyTheOverlayRoutesNameTheToken(): void
     {
-        foreach (array(\OWA\Module\Base\Controller\ReportsRest::class, \OWA\Module\Domstream\Controller\DomstreamsRestController::class) as $class) {
-            $this->assertContains('overlay_token', (array) (new $class(array()))->acceptedAuthMethods(), $class);
+        foreach ([\OWA\Module\Base\Controller\ReportsRest::class, \OWA\Module\Domstream\Controller\DomstreamsRestController::class] as $class) {
+            $this->assertContains('overlay_token', (array) (new $class([]))->acceptedAuthMethods(), $class);
         }
 
-        $users = new \OWA\Module\Base\Controller\UsersRest(array());
+        $users = new \OWA\Module\Base\Controller\UsersRest([]);
         $this->assertNotContains('overlay_token', (array) $users->acceptedAuthMethods());
     }
 }

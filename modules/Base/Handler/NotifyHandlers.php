@@ -76,7 +76,7 @@ class NotifyHandlers extends \OWA\Core\Observer {
                  */
                 try {
 
-                    \OWA\Core\CoreAPI::performAction( 'base.notifyNewSession', array( 'site' => $s, 'event' => $event ) );
+                    \OWA\Core\CoreAPI::performAction( 'base.notifyNewSession', [ 'site' => $s, 'event' => $event ] );
 
                 } catch ( \Throwable $t ) {
 
@@ -104,5 +104,3 @@ class NotifyHandlers extends \OWA\Core\Observer {
         }
     }
 }
-
-?>

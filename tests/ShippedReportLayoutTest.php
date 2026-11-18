@@ -16,7 +16,7 @@ final class ShippedReportLayoutTest extends TestCase
     /** @return array<string, array> report id => definition */
     private static function definitions(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( (array) glob( \OWA\Core\Env::root() . '/modules/*/reports/*.json' ) as $file ) {
 
@@ -33,14 +33,14 @@ final class ShippedReportLayoutTest extends TestCase
      */
     public function testEveryRowOfAShippedReportIsFull(): void
     {
-        $ragged = array();
+        $ragged = [];
 
         foreach ( self::definitions() as $id => $definition ) {
 
             $row = 0;
-            $titles = array();
+            $titles = [];
 
-            foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+            foreach ( (array) ( $definition['widgets'] ?? [] ) as $widget ) {
 
                 $span = ReportGrid::colspan( $widget );
 
@@ -48,7 +48,7 @@ final class ShippedReportLayoutTest extends TestCase
 
                     $ragged[] = "$id: " . implode( ' + ', $titles ) . " ($row of " . ReportGrid::COLUMNS . ')';
                     $row = 0;
-                    $titles = array();
+                    $titles = [];
                 }
 
                 $row += $span;
@@ -57,7 +57,7 @@ final class ShippedReportLayoutTest extends TestCase
                 if ( $row === ReportGrid::COLUMNS ) {
 
                     $row = 0;
-                    $titles = array();
+                    $titles = [];
                 }
             }
 
@@ -67,7 +67,7 @@ final class ShippedReportLayoutTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $ragged, 'rows that end short: ' . implode( '; ', $ragged ) );
+        $this->assertSame( [], $ragged, 'rows that end short: ' . implode( '; ', $ragged ) );
     }
 
     /**
@@ -78,11 +78,11 @@ final class ShippedReportLayoutTest extends TestCase
      */
     public function testNoShippedGridIsNarrowed(): void
     {
-        $narrowed = array();
+        $narrowed = [];
 
         foreach ( self::definitions() as $id => $definition ) {
 
-            foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+            foreach ( (array) ( $definition['widgets'] ?? [] ) as $widget ) {
 
                 if ( ( $widget['type'] ?? '' ) === 'grid' && ReportGrid::colspan( $widget ) < ReportGrid::COLUMNS ) {
 
@@ -91,21 +91,21 @@ final class ShippedReportLayoutTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $narrowed );
+        $this->assertSame( [], $narrowed );
     }
 
     /** Dom Clicks drew "Name Attributes" from the same query as "Dom IDs". */
     public function testNoReportDrawsTheSameQueryTwice(): void
     {
-        $twice = array();
+        $twice = [];
 
         foreach ( self::definitions() as $id => $definition ) {
 
-            $seen = array();
+            $seen = [];
 
-            foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+            foreach ( (array) ( $definition['widgets'] ?? [] ) as $widget ) {
 
-                $key = json_encode( array( $widget['type'] ?? '', $widget['query'] ?? null, $widget['constraints'] ?? null ) );
+                $key = json_encode( [ $widget['type'] ?? '', $widget['query'] ?? null, $widget['constraints'] ?? null ] );
 
                 if ( isset( $seen[ $key ] ) ) {
 
@@ -116,19 +116,19 @@ final class ShippedReportLayoutTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $twice );
+        $this->assertSame( [], $twice );
     }
 
     /** Pages asked for pageViews twice. */
     public function testNoReportNamesAMetricTwice(): void
     {
-        $twice = array();
+        $twice = [];
 
         foreach ( self::definitions() as $id => $definition ) {
 
-            $lists = array( 'report' => $definition['metrics'] ?? '' );
+            $lists = [ 'report' => $definition['metrics'] ?? '' ];
 
-            foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+            foreach ( (array) ( $definition['widgets'] ?? [] ) as $widget ) {
 
                 $lists[ $widget['id'] ?? '?' ] = $widget['query']['metrics'] ?? '';
             }
@@ -144,7 +144,7 @@ final class ShippedReportLayoutTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $twice );
+        $this->assertSame( [], $twice );
     }
 
     /**
@@ -158,10 +158,10 @@ final class ShippedReportLayoutTest extends TestCase
     {
         $definitions = self::definitions();
 
-        $constraints = array(
+        $constraints = [
             'campaigns'      => $definitions['campaigns']['settings']['constraints'],
             'traffic.Campaigns' => null,
-        );
+        ];
 
         foreach ( $definitions['traffic']['widgets'] as $widget ) {
 
@@ -171,7 +171,7 @@ final class ShippedReportLayoutTest extends TestCase
             }
         }
 
-        $placeholders = array_merge( array_values( CampaignStep::PLACEHOLDERS ), array( CampaignStep::FALLBACK ) );
+        $placeholders = array_merge( array_values( CampaignStep::PLACEHOLDERS ), [ CampaignStep::FALLBACK ] );
 
         foreach ( $constraints as $where => $parts ) {
 

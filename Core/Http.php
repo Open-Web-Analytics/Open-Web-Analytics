@@ -62,12 +62,12 @@ class Http {
      */
     public $response;
     public function __construct() {
-	    
-	    $this->http = new Client( [
-		    
-		    'timeout'  => 5.0,
-		    'connect_timeout'  => 5.0
-	    ] );
+        
+        $this->http = new Client( [
+            
+            'timeout'  => 5.0,
+            'connect_timeout'  => 5.0
+        ] );
 
     }
     /**
@@ -77,50 +77,50 @@ class Http {
      *         the request failed
      */
    public function getRequest($url, $arguments = '') {
-		
-		$this->response = '';
-		
-		\OWA\Core\CoreAPI::debug("GET: $url");
-		
+        
+        $this->response = '';
+        
+        \OWA\Core\CoreAPI::debug("GET: $url");
+        
         try {
-	        
-	        $request = new Request('GET', trim( $url )  );
-	        $this->response = $this->http->send( $request, [
-		        
-		        'allow_redirects' => [
-				    'max'             => 5,
-				    'strict'          => false,
-				    'referer'         => false,
-				    'protocols'       => ['http', 'https'],
-				    'track_redirects' => false
-				],
-		        'headers' => [
-			        
-					'User-Agent' => \OWA\Core\CoreAPI::getSetting('base', 'owa_user_agent')
-				]
-	        ]);
-	        
-	        \OWA\Core\CoreAPI::debug("HTTP STATUS CODE:" . $this->getResponseStatusCode() );
+            
+            $request = new Request('GET', trim( $url )  );
+            $this->response = $this->http->send( $request, [
+                
+                'allow_redirects' => [
+                    'max'             => 5,
+                    'strict'          => false,
+                    'referer'         => false,
+                    'protocols'       => ['http', 'https'],
+                    'track_redirects' => false
+                ],
+                'headers' => [
+                    
+                    'User-Agent' => \OWA\Core\CoreAPI::getSetting('base', 'owa_user_agent')
+                ]
+            ]);
+            
+            \OWA\Core\CoreAPI::debug("HTTP STATUS CODE:" . $this->getResponseStatusCode() );
         }
         
         catch( \GuzzleHttp\Exception\RequestException | \GuzzleHttp\Exception\ConnectException | \GuzzleHttp\Exception\ClientException $e ) {
-		     
-		    $r = $e->getRequest();
-		  	$res = null;
-		  	
-		  	if ( method_exists( $e, 'hasResponse' ) && $e->hasResponse() ) {
-			  	
-			  	$res = $e->getResponse();
-		  	}
-		  	
-		  	\OWA\Core\CoreAPI::debug( 'HTTP request:', $r );
-			\OWA\Core\CoreAPI::debug( 'HTTP response:', $res );
-	    }
-	    
+             
+            $r = $e->getRequest();
+            $res = null;
+            
+            if ( method_exists( $e, 'hasResponse' ) && $e->hasResponse() ) {
+                
+                $res = $e->getResponse();
+            }
+            
+            \OWA\Core\CoreAPI::debug( 'HTTP request:', $r );
+            \OWA\Core\CoreAPI::debug( 'HTTP response:', $res );
+        }
+        
 
         if ( $this->response ) {
-	        
-	        return $this->getResponseBody();
+            
+            return $this->getResponseBody();
         }
 
         return null;
@@ -130,11 +130,11 @@ class Http {
      * @return int|null null before a response
      */
    public function getResponseStatusCode() {
-	    
-	    if ( $this->response ) {
-		 
-		    return $this->response->getStatusCode();
-		}
+        
+        if ( $this->response ) {
+         
+            return $this->response->getStatusCode();
+        }
 
         return null;
     }
@@ -144,16 +144,14 @@ class Http {
      */
    public function getResponseBody() {
 
-	      if ( $this->response ) {
+          if ( $this->response ) {
 
-		    return $this->response->getBody();
-		}
+            return $this->response->getBody();
+        }
 
-		// Always return a string. Callers feed this straight into preg_match(),
-		// preg_match_all() and trim(), which raise a PHP 8.x deprecation (and a
-		// fatal TypeError under PHP 9) when handed null.
-		return '';
+        // Always return a string. Callers feed this straight into preg_match(),
+        // preg_match_all() and trim(), which raise a PHP 8.x deprecation (and a
+        // fatal TypeError under PHP 9) when handed null.
+        return '';
     }
 }
-
-?>

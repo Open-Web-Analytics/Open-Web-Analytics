@@ -22,7 +22,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
      * Controller fails testEverySignedInScreenIsAnAdminController until it is
      * moved, or named here with its reason.
      */
-    private const PLAIN = array(
+    private const PLAIN = [
         // before sign-in
         'base.login', 'base.loginForm', 'base.logout',
         'base.passwordResetForm', 'base.passwordResetRequest', 'base.usersChangePassword',
@@ -35,20 +35,20 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         'base.corsPreflight',
         // opens on the tracked site and hands over to an overlay token
         'base.overlayLauncher',
-    );
+    ];
 
     /** @var array settings and server variables to put back */
-    private $saved = array();
+    private $saved = [];
 
     protected function setUp(): void
     {
         // Saved BEFORE parent::setUp(), which skips the test when there is no
         // database. tearDown() still runs then, and restoring a $_SERVER that
         // was never saved set it to null for every test after this one.
-        $this->saved = array(
+        $this->saved = [
             'mode'   => \OWA\Core\CoreAPI::getSetting('base', 'request_type'),
             'server' => $_SERVER,
-        );
+        ];
 
         parent::setUp();
 
@@ -65,7 +65,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         \OWA\Core\CoreAPI::setSetting('base', 'request_type', $this->saved['mode']);
         $_SERVER = $this->saved['server'];
 
-        foreach (array('apiKey', 'user_id', 'password') as $param) {
+        foreach (['apiKey', 'user_id', 'password'] as $param) {
             \OWA\Core\CoreAPI::setRequestParam($param, '');
         }
 
@@ -82,7 +82,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
     /** An admin screen: needs a signed-in user who can view the site list. */
     private function screen()
     {
-        return new class(array('do' => 'base.testScreen')) extends \OWA\Core\AdminController {
+        return new class(['do' => 'base.testScreen']) extends \OWA\Core\AdminController {
 
             public $ran = false;
 
@@ -161,7 +161,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
     {
         $this->postedPassword();
 
-        $plain = new class(array('do' => 'base.testPlain')) extends \OWA\Core\Controller {
+        $plain = new class(['do' => 'base.testPlain']) extends \OWA\Core\Controller {
 
             public $ran = false;
 
@@ -190,7 +190,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
         $this->mode('rest');
         $this->postedPassword();
 
-        $resp = $this->callEndpoint(\OWA\Module\Base\Controller\SitesRest::class, 'sitesRestController.php', array());
+        $resp = $this->callEndpoint(\OWA\Module\Base\Controller\SitesRest::class, 'sitesRestController.php', []);
 
         $this->assertNotAuthenticated($resp, 'GET /sites with user_id and password');
         $this->assertNotSame('login_form', \OWA\Core\Auth::get_instance()->getAuthMethod());
@@ -201,7 +201,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
     {
         $user = $this->postedPassword();
 
-        $login = new \OWA\Module\Base\Controller\Login(array());
+        $login = new \OWA\Module\Base\Controller\Login([]);
         $status = \OWA\Core\Auth::get_instance()->authenticateUser($login->acceptedAuthMethods());
 
         $this->assertTrue($status['auth_status']);
@@ -249,9 +249,9 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
 
     public function testLoginDeclaresTheFormThenTheSession(): void
     {
-        $login = new \OWA\Module\Base\Controller\Login(array());
+        $login = new \OWA\Module\Base\Controller\Login([]);
 
-        $this->assertSame(array('login_form', 'cookies'), $login->acceptedAuthMethods());
+        $this->assertSame(['login_form', 'cookies'], $login->acceptedAuthMethods());
     }
 
     public function testTheRestApiTakesItsOwnCredentials(): void
@@ -262,8 +262,8 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
 
         // The reports route names its credentials: the API's, and the overlay
         // token an overlay reads it with (no other route takes one).
-        $this->assertSame(array('overlay_token', 'app_password', 'cookies'),
-            (new \OWA\Module\Base\Controller\ReportsRest(array()))->acceptedAuthMethods());
+        $this->assertSame(['overlay_token', 'app_password', 'cookies'],
+            (new \OWA\Module\Base\Controller\ReportsRest([]))->acceptedAuthMethods());
     }
 
     /** A CLI command is an AdminController too, and runs as the user the CLI signs in. */
@@ -282,7 +282,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
     public function testEverySignedInScreenIsAnAdminController(): void
     {
         $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $rest    = array();
+        $rest    = [];
 
         foreach ((array) $service->getAllRestApiRoutes() as $versions) {
             foreach ((array) $versions as $names) {
@@ -294,7 +294,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
             }
         }
 
-        $plain = array();
+        $plain = [];
 
         foreach ((array) $service->getMap('actions') as $do => $action) {
 
@@ -319,7 +319,7 @@ final class WebAppAuthMethodsTest extends RestControllerTestCase
 
         // A subset, not equal: a module's actions are registered only while it
         // is active (domstream.processEvent on an install without Domstream).
-        $this->assertSame(array(), array_values(array_diff($plain, self::PLAIN)),
+        $this->assertSame([], array_values(array_diff($plain, self::PLAIN)),
             'A plain Controller accepts any credential. Make a signed-in screen an AdminController, '
             . 'or name it in PLAIN with its reason.');
     }

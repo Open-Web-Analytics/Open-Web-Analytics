@@ -41,45 +41,45 @@ final class ServerRole {
     const CONSOLE   = 'console';
     const API       = 'api';
 
-    const ALL = array( self::FULL, self::COLLECTOR, self::WORKER, self::CONSOLE, self::API );
+    const ALL = [ self::FULL, self::COLLECTOR, self::WORKER, self::CONSOLE, self::API ];
 
     /**
      * The request types each role serves. cli on collector, console and api
      * is limited to the commands marked for that role.
      */
-    const SERVES = array(
+    const SERVES = [
         self::FULL      => RequestType::ALL,
-        self::COLLECTOR => array( RequestType::TRACKING, RequestType::CLI ),
-        self::WORKER    => array( RequestType::CLI ),
-        self::CONSOLE   => array( RequestType::UI, RequestType::CLI ),
-        self::API       => array( RequestType::REST, RequestType::CLI ),
-    );
+        self::COLLECTOR => [ RequestType::TRACKING, RequestType::CLI ],
+        self::WORKER    => [ RequestType::CLI ],
+        self::CONSOLE   => [ RequestType::UI, RequestType::CLI ],
+        self::API       => [ RequestType::REST, RequestType::CLI ],
+    ];
 
     /** The roles that run the scheduler. */
-    const SCHEDULER = array( self::FULL, self::WORKER );
+    const SCHEDULER = [ self::FULL, self::WORKER ];
 
     /** The roles without a database. */
-    const WITHOUT_DATABASE = array( self::COLLECTOR );
+    const WITHOUT_DATABASE = [ self::COLLECTOR ];
 
     /** What a role with a database needs in owa-config.php. */
-    const DATABASE_CONSTANTS = array(
+    const DATABASE_CONSTANTS = [
         'OWA_DB_NAME', 'OWA_DB_HOST', 'OWA_DB_USER', 'OWA_DB_PASSWORD',
         'OWA_NONCE_KEY', 'OWA_NONCE_SALT', 'OWA_AUTH_KEY', 'OWA_AUTH_SALT',
-    );
+    ];
 
     /**
      * What a role with a database also needs, not empty: absolute links,
      * mail, the published tracking bundles and signed REST requests are built
      * from it. A collector builds none of them.
      */
-    const URL_CONSTANTS = array( 'OWA_PUBLIC_URL' );
+    const URL_CONSTANTS = [ 'OWA_PUBLIC_URL' ];
 
     /**
      * Constants that are no longer read, and what replaced them. The 1.x
      * names still have an effect (Settings::applyConfigConstants()); the
      * others were never released.
      */
-    const RETIRED_CONSTANTS = array(
+    const RETIRED_CONSTANTS = [
         'OWA_QUEUE_EVENTS'              => 'The 1.x name of OWA_QUEUE_TRACKING_EVENTS, still read while that is not set. Rename it.',
         'OWA_USE_STATIC_CONFIG_ONLY'    => 'The 1.x switch, still read: stored settings are not read at boot. Set OWA_SERVER_ROLE instead, collector for a server that only receives beacons.',
         'OWA_QUEUE_TRACKER_INGEST'      => 'No longer read. Use OWA_QUEUE_TRACKING_EVENTS.',
@@ -87,13 +87,13 @@ final class ServerRole {
         'OWA_TRACKER_INGEST_DRAIN'      => 'No longer read. The servers whose role runs the scheduler drain the queue.',
         'OWA_SCHEDULER_ENABLED'         => 'No longer read. The role decides: full and worker run the scheduler.',
         'OWA_ACTIVE_MODULES'            => 'No longer read. A module with a constant of its own is active while it is set, such as OWA_SQS_QUEUE_URL.',
-    );
+    ];
 
     /** @var string[] */
-    private $roles = array();
+    private $roles = [];
 
     /** @var string[] names that are not roles */
-    private $unknown = array();
+    private $unknown = [];
 
     /**
      * @param string|null $value a role, or a comma list of them; empty is full
@@ -121,7 +121,7 @@ final class ServerRole {
 
         if ( ! $this->roles || isset( $this->roles[ self::FULL ] ) ) {
 
-            $this->roles = array( self::FULL => self::FULL );
+            $this->roles = [ self::FULL => self::FULL ];
         }
 
         $this->roles   = array_values( $this->roles );
@@ -168,7 +168,7 @@ final class ServerRole {
     /** @return string[] the request types served, in RequestType::ALL order */
     public function requestTypes() {
 
-        $types = array();
+        $types = [];
 
         foreach ( $this->roles as $role ) {
 
@@ -245,9 +245,9 @@ final class ServerRole {
      */
     public static function definedConstants() {
 
-        $out = array();
+        $out = [];
 
-        foreach ( (array) ( get_defined_constants( true )['user'] ?? array() ) as $name => $value ) {
+        foreach ( (array) ( get_defined_constants( true )['user'] ?? [] ) as $name => $value ) {
 
             if ( strpos( $name, 'OWA_' ) === 0 ) {
 
@@ -268,9 +268,9 @@ final class ServerRole {
      *                                       (ModuleActivation::queueBackendConstants())
      * @return list<string> one sentence per problem
      */
-    public function configProblems( array $defined, array $backends, array $backend_constants = array() ) {
+    public function configProblems( array $defined, array $backends, array $backend_constants = [] ) {
 
-        $problems = array();
+        $problems = [];
 
         if ( count( $backends ) > 1 ) {
 
@@ -324,17 +324,17 @@ final class ServerRole {
 
         if ( $role->unknown() ) {
 
-            return array( 'status' => 503, 'message' => sprintf(
+            return [ 'status' => 503, 'message' => sprintf(
                 'OWA_SERVER_ROLE names %s, which %s not a role. The roles are %s.',
                 implode( ', ', $role->unknown() ), count( $role->unknown() ) === 1 ? 'is' : 'are',
-                implode( ', ', self::ALL ) ) );
+                implode( ', ', self::ALL ) ) ];
         }
 
         if ( ! $role->serves( $request_type ) ) {
 
-            return array( 'status' => 404, 'message' => sprintf(
+            return [ 'status' => 404, 'message' => sprintf(
                 'This server\'s role is %s, which serves %s, not %s requests.',
-                $role->name(), implode( ', ', $role->requestTypes() ), $request_type ) );
+                $role->name(), implode( ', ', $role->requestTypes() ), $request_type ) ];
         }
 
         $configured = $configured ?? CoreAPI::configSingleton()->isConfigFilePresent();
@@ -350,7 +350,7 @@ final class ServerRole {
             ModuleActivation::queueBackends( $defined ),
             ModuleActivation::queueBackendConstants() );
 
-        return $problems ? array( 'status' => 503, 'message' => implode( ' ', $problems ) ) : null;
+        return $problems ? [ 'status' => 503, 'message' => implode( ' ', $problems ) ] : null;
     }
 
     /**

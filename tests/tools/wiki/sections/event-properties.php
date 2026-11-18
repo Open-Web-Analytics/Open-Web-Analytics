@@ -39,15 +39,15 @@ return function ( $event = null ) {
     $config   = array_diff_key( $config, array_flip( $internal ) );
 
     $compat = (array) \OWA\Core\CoreAPI::loadConf( 'beacon_compat.php', 'beacon.compat' );
-    $legacy = array();
+    $legacy = [];
 
-    foreach ( (array) ( $compat['renames'] ?? array() ) as $r ) {
+    foreach ( (array) ( $compat['renames'] ?? [] ) as $r ) {
         if ( ( $r['role'] ?? '' ) === 'legacy' ) {
             $legacy[ $r['to'] ][] = $r['from'];
         }
     }
 
-    $cell = fn ( $v ) => str_replace( array( '|', "\r", "\n" ), array( '\\|', '', ' ' ), trim( (string) $v ) );
+    $cell = fn ( $v ) => str_replace( [ '|', "\r", "\n" ], [ '\\|', '', ' ' ], trim( (string) $v ) );
     $code = fn ( array $l ) => $l ? '`' . implode( '`, `', $l ) . '`' : '—';
 
     $stored = function ( array $p ) {
@@ -71,11 +71,11 @@ return function ( $event = null ) {
         return $e ? '`' . implode( '`, `', $e ) . '`' : 'none';
     };
 
-    $groups = array(
-        'client'  => array( 'Sent by the tracker', 'Wire key' ),
-        'request' => array( 'Read from the request', 'Request keys, in order' ),
-        'event'   => array( 'Derived at ingest', 'Derived from' ),
-    );
+    $groups = [
+        'client'  => [ 'Sent by the tracker', 'Wire key' ],
+        'request' => [ 'Read from the request', 'Request keys, in order' ],
+        'event'   => [ 'Derived at ingest', 'Derived from' ],
+    ];
 
     $out = '';
 
@@ -95,7 +95,7 @@ return function ( $event = null ) {
 
         foreach ( $rows as $name => $p ) {
 
-            $from = $code( array_values( array_diff( (array) ( $p['from'] ?? array() ), $internal ) ) );
+            $from = $code( array_values( array_diff( (array) ( $p['from'] ?? [] ), $internal ) ) );
 
             if ( isset( $legacy[ $name ] ) ) {
                 $from .= ' (older trackers: ' . $code( $legacy[ $name ] ) . ')';

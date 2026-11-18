@@ -57,5 +57,3 @@ class Update044 extends \OWA\Core\Update {
         return $this->dropCubeColumn( 'new_vs_returning' );
     }
 }
-
-?>

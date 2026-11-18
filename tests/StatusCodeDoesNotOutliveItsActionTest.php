@@ -37,7 +37,7 @@ final class StatusCodeDoesNotOutliveItsActionTest extends TestCase
         $this->requestType( $method );
 
         $controller = new \OWA\Module\Base\Controller\LoginForm(
-            array( 'status_code' => 3006 ) );
+            [ 'status_code' => 3006 ] );
 
         $controller->doAction();
 

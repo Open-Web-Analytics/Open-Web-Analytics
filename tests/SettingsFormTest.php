@@ -24,7 +24,7 @@ final class SettingsFormTest extends TestCase
     private const MODULE = 'zz_form_test';
 
     /** @var array<string,mixed> */
-    private array $snapshot = array();
+    private array $snapshot = [];
 
     /**
      * The probes below register into the SINGLETON, because that is what the
@@ -33,9 +33,9 @@ final class SettingsFormTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->snapshot = array();
+        $this->snapshot = [];
 
-        foreach (array('registry', 'fieldsets') as $property) {
+        foreach (['registry', 'fieldsets'] as $property) {
 
             $p = new ReflectionProperty(\OWA\Module\Base\Classes\Settings::class, $property);
             $this->snapshot[$property] = $p->getValue($this->config());
@@ -78,11 +78,11 @@ final class SettingsFormTest extends TestCase
         $html = $this->generalPage();
 
         // spam_detection and spam_threshold where log_robots was (Update084).
-        foreach (array(
+        foreach ([
             'spam_detection', 'spam_threshold', 'log_named_users', 'excluded_ips',
             'anonymize_ips', 'query_string_filters', 'announce_visitors',
             'notice_email', 'timezone',
-        ) as $key) {
+        ] as $key) {
 
             $this->assertStringContainsString('id="' . $key . '"', $html,
                 $key . ' lost its row in the conversion');
@@ -100,8 +100,8 @@ final class SettingsFormTest extends TestCase
         // The page's own, in order, then its group's: Base's tag fieldsets
         // first, then any an active module added.
         $this->assertSame(
-            array('Tracking Request Processing', 'Visitor Announcements', 'Reporting', 'REST API',
-                  'Page views', 'Clicks and downloads', 'Forms', 'Scroll depth', 'Site search', 'JavaScript errors', 'Visits and cookies'),
+            ['Tracking Request Processing', 'Visitor Announcements', 'Reporting', 'REST API',
+                  'Page views', 'Clicks and downloads', 'Forms', 'Scroll depth', 'Site search', 'JavaScript errors', 'Visits and cookies'],
             array_slice(array_column($sets, 'legend'), 0, 11),
             'the page renders its fieldsets in the order it registered them');
     }
@@ -111,7 +111,7 @@ final class SettingsFormTest extends TestCase
     {
         $sets = array_column(\OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral'), null, 'id');
 
-        $this->assertSame(array('spam_detection', 'spam_threshold'),
+        $this->assertSame(['spam_detection', 'spam_threshold'],
             array_slice((array) $sets['base.tracking']['settings'], 0, 2));
         $this->assertNotContains('log_robots', (array) $sets['base.tracking']['settings']);
 
@@ -129,11 +129,11 @@ final class SettingsFormTest extends TestCase
     {
         $c = $this->config();
 
-        foreach (array('5', '5.0', '0.1', '7.5', '12', '9999.9', '', ' 2.5 ') as $ok) {
+        foreach (['5', '5.0', '0.1', '7.5', '12', '9999.9', '', ' 2.5 '] as $ok) {
             $this->assertNull($c->valueProblem('base', 'spam_threshold', $ok), var_export($ok, true));
         }
 
-        foreach (array('0', '0.0', '-1', '7.55', 'five', '1e3', '.5', '10000') as $bad) {
+        foreach (['0', '0.0', '-1', '7.55', 'five', '1e3', '.5', '10000'] as $bad) {
             $this->assertNotNull($c->valueProblem('base', 'spam_threshold', $bad), var_export($bad, true));
         }
     }
@@ -142,11 +142,11 @@ final class SettingsFormTest extends TestCase
     public function testAGroupBringsAModulesFieldSetToAPage(): void
     {
         $this->config()->registerField(self::MODULE, 'grouped',
-            array('default' => 'x', 'storable' => true, 'type' => 'text', 'label' => 'Grouped'));
-        $this->config()->registerFieldSet(array(
+            ['default' => 'x', 'storable' => true, 'type' => 'text', 'label' => 'Grouped']);
+        $this->config()->registerFieldSet([
             'id' => self::MODULE . '.grouped', 'module' => self::MODULE, 'group' => 'tracking_tag',
-            'legend' => 'A Module\'s Tag Settings', 'settings' => array('grouped'),
-        ));
+            'legend' => 'A Module\'s Tag Settings', 'settings' => ['grouped'],
+        ]);
 
         $legends = array_column(
             \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral'), 'legend');
@@ -160,26 +160,26 @@ final class SettingsFormTest extends TestCase
     /** A group is ordered by its fieldsets' declared order, not by when they registered. */
     public function testAGroupIsOrderedByDeclaredOrder(): void
     {
-        foreach (array(array('late', 60), array('early', 10)) as [$id, $order]) {
-            $this->config()->registerFieldSet(array(
+        foreach ([['late', 60], ['early', 10]] as [$id, $order]) {
+            $this->config()->registerFieldSet([
                 'id' => self::MODULE . '.' . $id, 'module' => self::MODULE, 'group' => 'zz_group',
-                'order' => $order, 'legend' => $id, 'settings' => array(),
-            ));
+                'order' => $order, 'legend' => $id, 'settings' => [],
+            ]);
         }
 
-        $this->assertSame(array('early', 'late'),
+        $this->assertSame(['early', 'late'],
             array_column(\OWA\Module\Base\Classes\SettingsForm::groupFieldSets('zz_group'), 'legend'));
 
         $tag = \OWA\Module\Base\Classes\SettingsForm::groupFieldSets('tracking_tag');
-        $this->assertSame(array('base.trackingPageViews', 'base.trackingClicks', 'base.trackingForms', 'base.trackingScroll',
-                                'base.trackingSearch', 'base.trackingErrors', 'base.trackingVisit'),
+        $this->assertSame(['base.trackingPageViews', 'base.trackingClicks', 'base.trackingForms', 'base.trackingScroll',
+                                'base.trackingSearch', 'base.trackingErrors', 'base.trackingVisit'],
             array_slice(array_column($tag, 'id'), 0, 7), "Base's tag fieldsets lead their own screen");
     }
 
     /** A page that names a fieldset nobody registered renders what it can. */
     public function testAnUnregisteredFieldSetIsSkippedNotRendered(): void
     {
-        $this->assertSame(array(),
+        $this->assertSame([],
             \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.noSuchSettingsPage'));
     }
 
@@ -187,7 +187,7 @@ final class SettingsFormTest extends TestCase
     public function testABooleanRendersItsCurrentValue(): void
     {
         $this->config()->registerField(self::MODULE, 'flag',
-            array('default' => true, 'storable' => true, 'type' => 'boolean', 'label' => 'A Flag'));
+            ['default' => true, 'storable' => true, 'type' => 'boolean', 'label' => 'A Flag']);
 
         $html = \OWA\Module\Base\Classes\SettingsForm::field(self::MODULE, 'flag', 'owa_');
 
@@ -200,7 +200,7 @@ final class SettingsFormTest extends TestCase
     public function testTheTitleLabelsTheControl(): void
     {
         $this->config()->registerField(self::MODULE, 'words',
-            array('default' => 'abc', 'storable' => true, 'type' => 'text', 'label' => 'Some Words'));
+            ['default' => 'abc', 'storable' => true, 'type' => 'text', 'label' => 'Some Words']);
 
         $html = \OWA\Module\Base\Classes\SettingsForm::field(self::MODULE, 'words', 'owa_');
 
@@ -220,8 +220,8 @@ final class SettingsFormTest extends TestCase
     public function testAStoredValueIsEscaped(): void
     {
         $this->config()->registerField(self::MODULE, 'text_field',
-            array('default' => '" autofocus onfocus="alert(1)', 'storable' => true,
-                  'type' => 'text', 'label' => 'Text'));
+            ['default' => '" autofocus onfocus="alert(1)', 'storable' => true,
+                  'type' => 'text', 'label' => 'Text']);
 
         $html = \OWA\Module\Base\Classes\SettingsForm::field(self::MODULE, 'text_field', 'owa_');
 
@@ -243,7 +243,7 @@ final class SettingsFormTest extends TestCase
     public function testAConstantGovernedFieldIsDisabledAndSaysWhy(): void
     {
         $this->config()->registerField(self::MODULE, 'governed',
-            array('default' => 'x', 'storable' => true, 'type' => 'text', 'label' => 'Governed'));
+            ['default' => 'x', 'storable' => true, 'type' => 'text', 'label' => 'Governed']);
 
         $this->config()->noteConfigConstant(self::MODULE, 'governed', 'OWA_ZZ_GOVERNED');
 
@@ -278,13 +278,13 @@ final class SettingsFormTest extends TestCase
          * being tested is about the value, not about which settings appear, and
          * it has to hold in an install with no config file too.
          */
-        $c->registerField(self::MODULE, 'credential', array(
+        $c->registerField(self::MODULE, 'credential', [
             'default'  => 'hunter2-the-actual-secret',
             'storable' => true,
             'type'     => 'text',
             'label'    => 'A Credential',
             'secret'   => true,
-        ));
+        ]);
 
         $html = \OWA\Module\Base\Classes\SettingsForm::field(self::MODULE, 'credential', 'owa_');
 
@@ -321,15 +321,15 @@ final class SettingsFormTest extends TestCase
     {
         $c = $this->config();
 
-        $c->registerField(self::MODULE, 'static_listed', array('default' => 'x'));
+        $c->registerField(self::MODULE, 'static_listed', ['default' => 'x']);
         $c->registerField(self::MODULE, 'governed_listed',
-            array('default' => 'x', 'storable' => true, 'type' => 'text', 'label' => 'G'));
+            ['default' => 'x', 'storable' => true, 'type' => 'text', 'label' => 'G']);
 
-        $c->registerFieldSet(array(
+        $c->registerFieldSet([
             'id'       => self::MODULE . '.mixed',
             'module'   => self::MODULE,
-            'settings' => array('static_listed', 'governed_listed'),
-        ));
+            'settings' => ['static_listed', 'governed_listed'],
+        ]);
 
         $reported = fn($key) => (bool) array_filter(
             $c->fieldSetProblems(), fn($p) => str_contains($p, $key));
@@ -367,7 +367,7 @@ final class SettingsFormTest extends TestCase
      */
     public function testASettingThatCannotBeSavedRendersNothing(): void
     {
-        $this->config()->registerField(self::MODULE, 'static_one', array('default' => 'x'));
+        $this->config()->registerField(self::MODULE, 'static_one', ['default' => 'x']);
 
         $this->assertSame('',
             \OWA\Module\Base\Classes\SettingsForm::field(self::MODULE, 'static_one', 'owa_'),
@@ -381,7 +381,7 @@ final class SettingsFormTest extends TestCase
     public function testAnUnknownControlTypeRendersNothing(): void
     {
         $this->config()->registerField(self::MODULE, 'odd',
-            array('default' => 'x', 'storable' => true, 'type' => 'colour_wheel', 'label' => 'Odd'));
+            ['default' => 'x', 'storable' => true, 'type' => 'colour_wheel', 'label' => 'Odd']);
 
         $this->assertSame('',
             \OWA\Module\Base\Classes\SettingsForm::field(self::MODULE, 'odd', 'owa_'),
@@ -392,14 +392,14 @@ final class SettingsFormTest extends TestCase
     /** A fieldset with nothing renderable in it renders no empty box. */
     public function testAFieldSetWithNothingToShowRendersNothing(): void
     {
-        $this->config()->registerField(self::MODULE, 'static_two', array('default' => 'x'));
+        $this->config()->registerField(self::MODULE, 'static_two', ['default' => 'x']);
 
-        $this->assertSame('', \OWA\Module\Base\Classes\SettingsForm::fieldSet(array(
+        $this->assertSame('', \OWA\Module\Base\Classes\SettingsForm::fieldSet([
             'id'       => self::MODULE . '.empty',
             'module'   => self::MODULE,
             'legend'   => 'Nothing Here',
-            'settings' => array('static_two'),
-        ), 'owa_'));
+            'settings' => ['static_two'],
+        ], 'owa_'));
     }
 
     /** Options may be a list or a map, because a declaration should be able to
@@ -407,12 +407,12 @@ final class SettingsFormTest extends TestCase
     public function testSelectOptionsMayBeAListOrAMap(): void
     {
         $this->config()->registerField(self::MODULE, 'listed',
-            array('default' => 'b', 'storable' => true, 'type' => 'select',
-                  'label' => 'L', 'options' => array('a', 'b')));
+            ['default' => 'b', 'storable' => true, 'type' => 'select',
+                  'label' => 'L', 'options' => ['a', 'b']]);
 
         $this->config()->registerField(self::MODULE, 'mapped',
-            array('default' => 'b', 'storable' => true, 'type' => 'select',
-                  'label' => 'M', 'options' => array('a' => 'Alpha', 'b' => 'Bravo')));
+            ['default' => 'b', 'storable' => true, 'type' => 'select',
+                  'label' => 'M', 'options' => ['a' => 'Alpha', 'b' => 'Bravo']]);
 
         $this->assertStringContainsString('<option value="b" selected="selected">b</option>',
             \OWA\Module\Base\Classes\SettingsForm::field(self::MODULE, 'listed', 'owa_'));
@@ -499,10 +499,10 @@ final class SettingsFormTest extends TestCase
      */
     public function testTheConvertedTemplatesDoNotHandWriteControls(): void
     {
-        foreach (array(
+        foreach ([
             'modules/Base/templates/options_general.php',
             'modules/MaxmindGeoip/templates/options_geoip.php',
-        ) as $template) {
+        ] as $template) {
 
             /*
              * The CODE, not the prose. Both templates explain in a comment what

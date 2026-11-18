@@ -49,9 +49,9 @@ $owa_wraps_in_script = ! ( isset($view->options) && $view->getValue( 'no_script_
 $owa_public_url  = (string) \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' );
 $owa_assets_url  = \OWA\Module\Base\Classes\TrackerBundle::assetsUrl();
 $owa_assets_own  = $owa_assets_url !== rtrim( $owa_public_url, '/' ) . '/public/';
-$owa_origins     = array();
+$owa_origins     = [];
 
-foreach ( array( $owa_assets_url, \OWA\Module\Base\Classes\TrackerBundle::trackingUrl() ) as $owa_url ) {
+foreach ( [ $owa_assets_url, \OWA\Module\Base\Classes\TrackerBundle::trackingUrl() ] as $owa_url ) {
 
     $owa_host = parse_url( $owa_url, PHP_URL_HOST );
 
@@ -87,7 +87,7 @@ var owa_cmds = owa_cmds || [];
 <?php if ( isset($view->options) && $view->getValue('apiEndpoint', $view->options ) ) { ?>
 owa_cmds.push(['setApiEndpoint', '<?php echo $view->options['apiEndpoint'];?>']);
 <?php } ?>
-<?php foreach ( (array) ( $view->profile_cmds ?? array() ) as $line ) { $view->out( $line, false ); $view->out( "\n" ); } ?>
+<?php foreach ( (array) ( $view->profile_cmds ?? [] ) as $line ) { $view->out( $line, false ); $view->out( "\n" ); } ?>
 <?php 
     if ( isset($view->options) && $view->getValue( 'cmds', $view->options ) ) {
         $view->out($view->getValue( 'cmds', $view->options ), false );

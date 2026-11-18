@@ -37,13 +37,13 @@ class ServiceUser extends \OWA\Core\Base {
      */
     public $user;
     /** @var array<mixed> the role's capabilities */
-    public $capabilities = array();
+    public $capabilities = [];
     /** @var mixed getPreferences()'s answer, false */
-    public $preferences = array();
+    public $preferences = [];
     /** @var bool */
     public $is_authenticated = false;
     /** @var array<\OWA\Module\Base\Entity\Site> site_id => the Profile */
-    public $assignedSites = array();
+    public $assignedSites = [];
 
     public function __construct() {
         //parent::__construct();
@@ -73,7 +73,7 @@ class ServiceUser extends \OWA\Core\Base {
                 throw new \Exception('No valid userid given!');
             //}
         }
-		 
+         
         // if there is a user_id load the user object and other properties.
         $this->user->load($user_id, 'user_id');
         $this->initInternalProperties();
@@ -87,7 +87,7 @@ class ServiceUser extends \OWA\Core\Base {
      * @return void
      */
     public function loadNewUserByObject($user_obj) {
-	    
+        
         $this->user = $user_obj;
         $this->initInternalProperties();
     }
@@ -276,20 +276,20 @@ class ServiceUser extends \OWA\Core\Base {
         \OWA\Core\CoreAPI::debug('loading assigned sites');
         
         try {
-	        
-		    if ( ! $this->user->get( 'id' ) ) {
-	             throw new \Exception('no user object loaded!');
-	        }
-	        
+            
+            if ( ! $this->user->get( 'id' ) ) {
+                 throw new \Exception('no user object loaded!');
+            }
+            
         }
         
         catch( \Exception $e ) {
-			
-			\OWA\Core\CoreAPI::debug('Handled exception: '. $e->getMessage() );
-	        
+            
+            \OWA\Core\CoreAPI::debug('Handled exception: '. $e->getMessage() );
+            
         }
 
-        $site_ids = array();
+        $site_ids = [];
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->selectFrom( \OWA\Core\CoreAPI::entityFactory( 'base.site_user' )->getTableName() );
         $db->selectColumn( '*' );
@@ -309,7 +309,7 @@ class ServiceUser extends \OWA\Core\Base {
      */
     private function setAllowedSitesList($site_ids) {
 
-        $list = array();
+        $list = [];
 
         if ( ! empty($site_ids) ) {
             foreach ($site_ids as $row) {
@@ -352,7 +352,7 @@ class ServiceUser extends \OWA\Core\Base {
      */
     public static function withSiblingProfiles( array $list ) {
 
-        $property_ids = array();
+        $property_ids = [];
 
         foreach ( $list as $site ) {
 
@@ -465,13 +465,9 @@ class ServiceUser extends \OWA\Core\Base {
     public function isAnonymousUser() {
 
         if ( ! $this->user->get('user_id') || $this->getRole() === 'everyone') {
-	        
+            
             return true;
             
         }
     }
 }
-
-
-
-?>

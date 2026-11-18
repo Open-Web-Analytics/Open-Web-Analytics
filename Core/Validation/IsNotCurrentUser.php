@@ -41,20 +41,17 @@ class IsNotCurrentUser extends \OWA\Core\Validation\Validation {
          $cu = \OWA\Core\CoreAPI::getCurrentUser();
          $user_id = $cu->getUserData( 'user_id' );
          
-		 if ( $user_id === $value ) {
+         if ( $user_id === $value ) {
          
-         	$this->hasError();
+             $this->hasError();
          }
          
-		 // check to see if an error msg is passed from the controller
-		 if ( ! $this->getErrorMsg() ) {
+         // check to see if an error msg is passed from the controller
+         if ( ! $this->getErrorMsg() ) {
             // if not set this default msg.
             $this->setErrorMessage( sprintf( \OWA\Core\CoreAPI::t( '"%s" is the current user.' ), $value ) );
-    	}
+        }
        
-   	}
+    }
      
 }
- 
- 
-?>

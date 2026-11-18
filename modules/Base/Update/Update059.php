@@ -14,7 +14,7 @@ class Update059 extends \OWA\Core\Update {
 
     public $schema_version = 59;
 
-    const ENTITIES = array( 'base.migration_progress', 'base.migration_tally', 'base.migration_day_visitor' );
+    const ENTITIES = [ 'base.migration_progress', 'base.migration_tally', 'base.migration_day_visitor' ];
 
     /**
      * @param  bool $force
@@ -65,5 +65,3 @@ class Update059 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

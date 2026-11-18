@@ -52,7 +52,7 @@ final class DriverNativeResultLintTest extends TestCase
      * Methods that exist on PDOStatement and not on mysqli_result, or the
      * reverse. Calling one of these on a `query()` result is the bug.
      */
-    private const NATIVE_CALLS = array(
+    private const NATIVE_CALLS = [
         '->fetchAll('     => 'PDOStatement only; use $db->get_results( $sql, $params )',
         '->fetchColumn('  => 'PDOStatement only; use $db->get_row() and read the column',
         '->rowCount('     => 'PDOStatement only; count in SQL, or count the rows returned',
@@ -60,16 +60,16 @@ final class DriverNativeResultLintTest extends TestCase
         '->fetch_all('    => 'mysqli_result only; use $db->get_results()',
         'PDO::FETCH_'     => 'a PDO fetch mode outside the pdo driver',
         'instanceof \PDOStatement' => 'only the pdo driver knows what its result is',
-    );
+    ];
 
     /** @return string[] repo-relative paths of the PHP we ship */
     private function shippedPhpFiles(): array
     {
         $root = \OWA\Core\Env::root();
-        $out  = array();
+        $out  = [];
 
-        $skip = array('vendor', 'node_modules', 'tests', '.git', 'public', 'build',
-            '.claude'); // agent worktrees: whole other checkouts of OWA
+        $skip = ['vendor', 'node_modules', 'tests', '.git', 'public', 'build',
+            '.claude']; // agent worktrees: whole other checkouts of OWA
 
         $it = new RecursiveIteratorIterator(
             new RecursiveCallbackFilterIterator(
@@ -99,7 +99,7 @@ final class DriverNativeResultLintTest extends TestCase
         $this->assertGreaterThan(200, count($files),
             'the scan found almost no PHP, so it is not scanning the tree');
 
-        $offences = array();
+        $offences = [];
 
         foreach ($files as $relative) {
 
@@ -138,7 +138,7 @@ final class DriverNativeResultLintTest extends TestCase
             }
         }
 
-        $this->assertSame(array(), $offences,
+        $this->assertSame([], $offences,
             "A driver's own result object escaped its driver. Db::query() returns a\n"
             . "PDOStatement under pdo and a mysqli_result under mysqli, and they share\n"
             . "no interface -- so this works on one install and fatals on the other:\n\n"
@@ -153,11 +153,11 @@ final class DriverNativeResultLintTest extends TestCase
      */
     public function testBothDriversImplementThePortablePair(): void
     {
-        foreach (array('\OWA\Core\Db\Pdo', '\OWA\Core\Db\Mysql') as $driver) {
+        foreach (['\OWA\Core\Db\Pdo', '\OWA\Core\Db\Mysql'] as $driver) {
 
             $this->assertTrue(class_exists($driver), "$driver is not loadable");
 
-            foreach (array('get_results', 'get_row') as $method) {
+            foreach (['get_results', 'get_row'] as $method) {
 
                 $this->assertTrue(method_exists($driver, $method),
                     "$driver::$method() is what callers are told to use instead");

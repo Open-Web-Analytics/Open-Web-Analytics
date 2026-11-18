@@ -216,5 +216,5 @@ function owa_test_page_fieldsets( string $do, string $class ): array
     $module->registerAdminPanels();
 
     return \OWA\Module\Base\Classes\SettingsForm::pageFieldSets(
-        $do, array( $module->getAdminPanels() ) );
+        $do, [ $module->getAdminPanels() ] );
 }

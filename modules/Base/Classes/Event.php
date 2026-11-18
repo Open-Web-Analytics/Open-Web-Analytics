@@ -37,7 +37,7 @@ class Event {
      *
      * @var array<string, mixed>
      */
-    public $properties = array();
+    public $properties = [];
 
     /**
      * State
@@ -264,12 +264,12 @@ class Event {
      *
      * @var string[]
      */
-    private static $remote_settable = array(
+    private static $remote_settable = [
         'eventType',
         'properties',
         'guid',
         'timestamp',
-    );
+    ];
 
     /**
      * Loads Event class variables from an array.
@@ -448,5 +448,3 @@ class Event {
     }
 
 }
-
-?>

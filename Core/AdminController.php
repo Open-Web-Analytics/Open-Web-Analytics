@@ -67,7 +67,7 @@ class AdminController extends \OWA\Core\Controller {
             return parent::acceptedAuthMethods();
         }
 
-        return array( 'cookies' );
+        return [ 'cookies' ];
     }
     
     /**
@@ -93,5 +93,3 @@ class AdminController extends \OWA\Core\Controller {
         $this->setView( 'base.optionsHierarchy' );
     }
 }
-
-?>

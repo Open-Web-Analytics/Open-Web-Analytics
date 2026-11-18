@@ -25,47 +25,47 @@ final class EventPredicateTest extends TestCase
 
     /** @param array $conditions list of [property, operator, value] */
     private function compile( string $event, array $conditions, string $match = 'all',
-                              ?array $indexPages = null, array $custom = array() ): array
+                              ?array $indexPages = null, array $custom = [] ): array
     {
         $p = new EventPredicate( $indexPages, $custom );
 
         $rows = array_map( static function ( $c ) {
-            return array( 'property' => $c[0], 'operator' => $c[1], 'value' => $c[2] );
+            return [ 'property' => $c[0], 'operator' => $c[1], 'value' => $c[2] ];
         }, $conditions );
 
-        return array( $p->compile( $event, $match, $rows, self::ALIAS ), $p );
+        return [ $p->compile( $event, $match, $rows, self::ALIAS ), $p ];
     }
 
     /** No conditions matches every event of that name. */
     public function testAnEventWithNoConditionsMatchesEveryOneOfThatName(): void
     {
-        list( $out ) = $this->compile( 'click', array() );
+        list( $out ) = $this->compile( 'click', [] );
 
         $this->assertSame( '( e.event_type = ? )', $out['sql'] );
-        $this->assertSame( array( 'click' ), $out['params'] );
+        $this->assertSame( [ 'click' ], $out['params'] );
     }
 
     /** A site's own event, by its name, with conditions or without. */
     public function testACustomEventIsMatchedByItsName(): void
     {
-        list( $none ) = $this->compile( 'newsletter_signup', array() );
+        list( $none ) = $this->compile( 'newsletter_signup', [] );
 
-        $this->assertSame( array( 'newsletter_signup' ), $none['params'] );
+        $this->assertSame( [ 'newsletter_signup' ], $none['params'] );
 
-        list( $some ) = $this->compile( 'newsletter_signup', array(
-            array( 'page_path', GoalEventDefinition::MATCH_BEGINS, '/blog/' ) ) );
+        list( $some ) = $this->compile( 'newsletter_signup', [
+            [ 'page_path', GoalEventDefinition::MATCH_BEGINS, '/blog/' ] ] );
 
         $this->assertStringStartsWith( '( e.event_type = ? AND', $some['sql'] );
-        $this->assertSame( array( 'newsletter_signup', '/blog/' ), $some['params'] );
+        $this->assertSame( [ 'newsletter_signup', '/blog/' ], $some['params'] );
     }
 
     /** No event matches nothing. */
     public function testNoEventMatchesNothing(): void
     {
-        list( $out ) = $this->compile( '', array( array( 'page_path', GoalEventDefinition::MATCH_EXACT, '/a' ) ) );
+        list( $out ) = $this->compile( '', [ [ 'page_path', GoalEventDefinition::MATCH_EXACT, '/a' ] ] );
 
         $this->assertSame( '( 0 = 1 )', $out['sql'] );
-        $this->assertSame( array(), $out['params'] );
+        $this->assertSame( [], $out['params'] );
     }
 
     /**
@@ -77,26 +77,26 @@ final class EventPredicateTest extends TestCase
     {
         $E = GoalEventDefinition::class;
 
-        $cases = array(
+        $cases = [
             // operator => [ value, SQL fragment, a matching row value, a non-matching one ]
-            $E::MATCH_EXACT    => array( '/thanks', 'e.page_path = ?', '/thanks', '/other' ),
-            $E::MATCH_NOT      => array( '/thanks', 'e.page_path <> ?', '/other', '/thanks' ),
-            $E::MATCH_CONTAINS => array( 'than', 'LOCATE', '/thanks', '/other' ),
-            $E::MATCH_BEGINS   => array( '/th', '/th', '/thanks', '/other' ),
-            $E::MATCH_REGEX    => array( '^/th', 'REGEXP ?', '/thanks', '/other' ),
-            $E::MATCH_GT       => array( '5', ') > ?', '6', '4' ),
-            $E::MATCH_LT       => array( '5', ') < ?', '4', '6' ),
-        );
+            $E::MATCH_EXACT    => [ '/thanks', 'e.page_path = ?', '/thanks', '/other' ],
+            $E::MATCH_NOT      => [ '/thanks', 'e.page_path <> ?', '/other', '/thanks' ],
+            $E::MATCH_CONTAINS => [ 'than', 'LOCATE', '/thanks', '/other' ],
+            $E::MATCH_BEGINS   => [ '/th', '/th', '/thanks', '/other' ],
+            $E::MATCH_REGEX    => [ '^/th', 'REGEXP ?', '/thanks', '/other' ],
+            $E::MATCH_GT       => [ '5', ') > ?', '6', '4' ],
+            $E::MATCH_LT       => [ '5', ') < ?', '4', '6' ],
+        ];
 
         $this->assertEqualsCanonicalizing( array_keys( GoalEventDefinition::operators() ), array_keys( $cases ),
             'an operator the form offers has no case here' );
 
         foreach ( $cases as $operator => list( $value, $fragment, $yes, $no ) ) {
 
-            list( $out ) = $this->compile( 'page_view', array( array( 'page_path', $operator, $value ) ) );
+            list( $out ) = $this->compile( 'page_view', [ [ 'page_path', $operator, $value ] ] );
 
             $this->assertNotNull( $out, $operator );
-            $this->assertSame( array( 'page_view', $value ), $out['params'], $operator );
+            $this->assertSame( [ 'page_view', $value ], $out['params'], $operator );
 
             if ( $operator !== $E::MATCH_BEGINS ) {
                 $this->assertStringContainsString( $fragment, $out['sql'], $operator );
@@ -109,7 +109,7 @@ final class EventPredicateTest extends TestCase
             $this->assertFalse( GoalEventDefinition::compare( $no, $operator, $value ), $operator );
         }
 
-        list( $unknown ) = $this->compile( 'page_view', array( array( 'page_path', 'sideways', '/a' ) ) );
+        list( $unknown ) = $this->compile( 'page_view', [ [ 'page_path', 'sideways', '/a' ] ] );
 
         $this->assertStringContainsString( '0 = 1', $unknown['sql'], 'an unknown operator matches nothing' );
     }
@@ -117,7 +117,7 @@ final class EventPredicateTest extends TestCase
     /** A greater/less-than on a value that is not a number matches nothing, as compare() answers. */
     public function testANumericComparisonOnTextMatchesNothing(): void
     {
-        list( $out ) = $this->compile( 'purchase', array( array( 'revenue', GoalEventDefinition::MATCH_GT, 'lots' ) ) );
+        list( $out ) = $this->compile( 'purchase', [ [ 'revenue', GoalEventDefinition::MATCH_GT, 'lots' ] ] );
 
         $this->assertStringContainsString( '0 = 1', $out['sql'] );
     }
@@ -125,10 +125,10 @@ final class EventPredicateTest extends TestCase
     /** All and any are the step's combinator. */
     public function testAllAndAny(): void
     {
-        $two = array(
-            array( 'page_path', GoalEventDefinition::MATCH_EXACT, '/a' ),
-            array( 'page_title', GoalEventDefinition::MATCH_EXACT, 'A' ),
-        );
+        $two = [
+            [ 'page_path', GoalEventDefinition::MATCH_EXACT, '/a' ],
+            [ 'page_title', GoalEventDefinition::MATCH_EXACT, 'A' ],
+        ];
 
         list( $all ) = $this->compile( 'page_view', $two, 'all' );
         list( $any ) = $this->compile( 'page_view', $two, 'any' );
@@ -138,7 +138,7 @@ final class EventPredicateTest extends TestCase
         $this->assertStringNotContainsString( ' OR ', $all['sql'] );
         $this->assertStringContainsString( ') OR ( e.page_title', $any['sql'] );
         $this->assertSame( $all['sql'], $odd['sql'], 'anything but any reads as all' );
-        $this->assertSame( array( 'page_view', '/a', 'A' ), $any['params'] );
+        $this->assertSame( [ 'page_view', '/a', 'A' ], $any['params'] );
     }
 
     /**
@@ -148,11 +148,11 @@ final class EventPredicateTest extends TestCase
      */
     public function testAnUnknownPropertyIsRefusedByName(): void
     {
-        foreach ( array( 'page_type', 'params', 'plan', 'page_path; DROP TABLE x', 'cd_plan' ) as $property ) {
+        foreach ( [ 'page_type', 'params', 'plan', 'page_path; DROP TABLE x', 'cd_plan' ] as $property ) {
 
-            list( $out, $p ) = $this->compile( 'page_view', array(
-                array( 'page_path', GoalEventDefinition::MATCH_EXACT, '/a' ),
-                array( $property, GoalEventDefinition::MATCH_EXACT, 'x' ) ) );
+            list( $out, $p ) = $this->compile( 'page_view', [
+                [ 'page_path', GoalEventDefinition::MATCH_EXACT, '/a' ],
+                [ $property, GoalEventDefinition::MATCH_EXACT, 'x' ] ] );
 
             $this->assertNull( $out, $property );
             $this->assertSame( $property, $p->getError(), $property );
@@ -165,19 +165,19 @@ final class EventPredicateTest extends TestCase
      */
     public function testARegexAReportFilterWouldRefuseIsRefused(): void
     {
-        foreach ( array( '^/(a+)+$', '^/(a)\\1', '[[:<:]]shop', str_repeat( 'a', 257 ) ) as $pattern ) {
+        foreach ( [ '^/(a+)+$', '^/(a)\\1', '[[:<:]]shop', str_repeat( 'a', 257 ) ] as $pattern ) {
 
-            list( $out, $p ) = $this->compile( 'page_view', array(
-                array( 'page_path', GoalEventDefinition::MATCH_EXACT, '/a' ),
-                array( 'page_title', GoalEventDefinition::MATCH_REGEX, $pattern ) ) );
+            list( $out, $p ) = $this->compile( 'page_view', [
+                [ 'page_path', GoalEventDefinition::MATCH_EXACT, '/a' ],
+                [ 'page_title', GoalEventDefinition::MATCH_REGEX, $pattern ] ] );
 
             $this->assertNull( $out, $pattern );
             $this->assertSame( 'page_title', $p->getError(), $pattern );
             $this->assertSame( \OWA\Module\Base\Classes\ResultSetManager::regexProblem( $pattern ), $p->getProblem(), $pattern );
         }
 
-        list( $out, $p ) = $this->compile( 'page_view', array(
-            array( 'page_title', GoalEventDefinition::MATCH_REGEX, '^(Shop|Store) [0-9]{1,6}$' ) ) );
+        list( $out, $p ) = $this->compile( 'page_view', [
+            [ 'page_title', GoalEventDefinition::MATCH_REGEX, '^(Shop|Store) [0-9]{1,6}$' ] ] );
 
         $this->assertNotNull( $out );
         $this->assertSame( '', $p->getProblem(), 'cleared by the next compile' );
@@ -190,16 +190,16 @@ final class EventPredicateTest extends TestCase
      */
     public function testAnAppliedCustomDimensionOfThePropertyCompiles(): void
     {
-        $custom = array( 'cd_plan' => 'Plan' );
+        $custom = [ 'cd_plan' => 'Plan' ];
 
-        list( $out ) = $this->compile( 'purchase', array( array( 'cd_plan', GoalEventDefinition::MATCH_EXACT, 'gold' ) ),
+        list( $out ) = $this->compile( 'purchase', [ [ 'cd_plan', GoalEventDefinition::MATCH_EXACT, 'gold' ] ],
             'all', null, $custom );
 
         $this->assertNotNull( $out );
         $this->assertStringContainsString( 'e.cd_plan IS NOT NULL AND e.cd_plan = ?', $out['sql'] );
-        $this->assertSame( array( 'purchase', 'gold' ), $out['params'] );
+        $this->assertSame( [ 'purchase', 'gold' ], $out['params'] );
 
-        list( $other, $p ) = $this->compile( 'purchase', array( array( 'cd_tier', GoalEventDefinition::MATCH_EXACT, 'x' ) ),
+        list( $other, $p ) = $this->compile( 'purchase', [ [ 'cd_tier', GoalEventDefinition::MATCH_EXACT, 'x' ] ],
             'all', null, $custom );
 
         $this->assertNull( $other );
@@ -216,49 +216,49 @@ final class EventPredicateTest extends TestCase
         $E     = GoalEventDefinition::class;
         $index = \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES;
 
-        foreach ( array( '/store/' => '/store', '/store/index.php' => '/store', '/store/INDEX.HTML' => '/store',
-                         '/' => '/', '/store' => '/store', '/index.php/store' => '/index.php/store' )
+        foreach ( [ '/store/' => '/store', '/store/index.php' => '/store', '/store/INDEX.HTML' => '/store',
+                         '/' => '/', '/store' => '/store', '/index.php/store' => '/index.php/store' ]
                   as $typed => $stored ) {
 
-            foreach ( array( $E::MATCH_EXACT, $E::MATCH_NOT ) as $operator ) {
+            foreach ( [ $E::MATCH_EXACT, $E::MATCH_NOT ] as $operator ) {
 
-                list( $out ) = $this->compile( 'page_view', array( array( 'page_path', $operator, $typed ) ),
+                list( $out ) = $this->compile( 'page_view', [ [ 'page_path', $operator, $typed ] ],
                     'all', $index );
 
-                $this->assertSame( array( 'page_view', $stored ), $out['params'], "$operator $typed" );
+                $this->assertSame( [ 'page_view', $stored ], $out['params'], "$operator $typed" );
             }
         }
 
         // Other operators match part of the value, and keep it as typed.
-        list( $begins ) = $this->compile( 'page_view', array( array( 'page_path', $E::MATCH_BEGINS, '/store/' ) ),
+        list( $begins ) = $this->compile( 'page_view', [ [ 'page_path', $E::MATCH_BEGINS, '/store/' ] ],
             'all', $index );
-        $this->assertSame( array( 'page_view', '/store/' ), $begins['params'] );
+        $this->assertSame( [ 'page_view', '/store/' ], $begins['params'] );
 
         // Only page_path is a path.
-        list( $title ) = $this->compile( 'page_view', array( array( 'page_title', $E::MATCH_EXACT, 'Store/index.php' ) ),
+        list( $title ) = $this->compile( 'page_view', [ [ 'page_title', $E::MATCH_EXACT, 'Store/index.php' ] ],
             'all', $index );
-        $this->assertSame( array( 'page_view', 'Store/index.php' ), $title['params'] );
+        $this->assertSame( [ 'page_view', 'Store/index.php' ], $title['params'] );
 
         // With no index pages given -- a goal event definition's predicate -- the value is as typed.
-        list( $raw ) = $this->compile( 'page_view', array( array( 'page_path', $E::MATCH_EXACT, '/store/' ) ) );
-        $this->assertSame( array( 'page_view', '/store/' ), $raw['params'] );
+        list( $raw ) = $this->compile( 'page_view', [ [ 'page_path', $E::MATCH_EXACT, '/store/' ] ] );
+        $this->assertSame( [ 'page_view', '/store/' ], $raw['params'] );
 
         // An empty list still collapses the trailing slash, as the row's canonicalPath() does, and nothing else.
-        list( $empty ) = $this->compile( 'page_view', array( array( 'page_path', $E::MATCH_EXACT, '/store/' ) ), 'all', array() );
-        $this->assertSame( array( 'page_view', '/store' ), $empty['params'] );
+        list( $empty ) = $this->compile( 'page_view', [ [ 'page_path', $E::MATCH_EXACT, '/store/' ] ], 'all', [] );
+        $this->assertSame( [ 'page_view', '/store' ], $empty['params'] );
 
-        list( $kept ) = $this->compile( 'page_view', array( array( 'page_path', $E::MATCH_EXACT, '/store/index.php' ) ),
-            'all', array() );
-        $this->assertSame( array( 'page_view', '/store/index.php' ), $kept['params'] );
+        list( $kept ) = $this->compile( 'page_view', [ [ 'page_path', $E::MATCH_EXACT, '/store/index.php' ] ],
+            'all', [] );
+        $this->assertSame( [ 'page_view', '/store/index.php' ], $kept['params'] );
     }
 
     /** It works with no database connection: the SQL vocabulary loads with the driver class. */
     public function testItCompilesWithoutAConnection(): void
     {
-        list( $out ) = $this->compile( 'page_view', array( array( 'page_path', GoalEventDefinition::MATCH_CONTAINS, '/checkout' ) ) );
+        list( $out ) = $this->compile( 'page_view', [ [ 'page_path', GoalEventDefinition::MATCH_CONTAINS, '/checkout' ] ] );
 
         $this->assertNotNull( $out );
-        $this->assertSame( array( 'page_view', '/checkout' ), $out['params'] );
+        $this->assertSame( [ 'page_view', '/checkout' ], $out['params'] );
     }
 
     /**
@@ -279,11 +279,11 @@ final class EventPredicateTest extends TestCase
         $insert = function ( $id, $property, $key, $state ) use ( $db, $table ) {
             $db->query( sprintf( 'INSERT INTO %s (id, property_id, scope, dimension_key, column_name, data_type, max_length,'
                 . ' label, creation_date, state) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $table ),
-                array( $id, $property, 'event', $key, 'cd_' . $key, 'string', 64, ucfirst( $key ), time(), $state ) );
+                [ $id, $property, 'event', $key, 'cd_' . $key, 'string', 64, ucfirst( $key ), time(), $state ] );
         };
 
         $clean = function () use ( $db, $table, $mine, $theirs ) {
-            $db->query( sprintf( 'DELETE FROM %s WHERE property_id IN (?, ?)', $table ), array( $mine, $theirs ) );
+            $db->query( sprintf( 'DELETE FROM %s WHERE property_id IN (?, ?)', $table ), [ $mine, $theirs ] );
         };
 
         $clean();
@@ -295,9 +295,9 @@ final class EventPredicateTest extends TestCase
             // Written under the registry, so it reads them afresh.
             \OWA\Module\Base\Classes\DimensionRegistry::forget();
 
-            $this->assertSame( array( 'cd_plan' => 'Plan' ), EventPredicate::customColumnsFor( $mine ) );
-            $this->assertSame( array( 'cd_seat' => 'Seat' ), EventPredicate::customColumnsFor( $theirs ) );
-            $this->assertSame( array(), EventPredicate::customColumnsFor( '' ) );
+            $this->assertSame( [ 'cd_plan' => 'Plan' ], EventPredicate::customColumnsFor( $mine ) );
+            $this->assertSame( [ 'cd_seat' => 'Seat' ], EventPredicate::customColumnsFor( $theirs ) );
+            $this->assertSame( [], EventPredicate::customColumnsFor( '' ) );
 
             $p = new EventPredicate( null, EventPredicate::customColumnsFor( $mine ) );
 

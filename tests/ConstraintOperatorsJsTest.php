@@ -88,7 +88,7 @@ final class ConstraintOperatorsJsTest extends TestCase
     /** The Jest files stand in for config_dom.php, so their list is the server's. */
     public function testTheGridAndPillsTestsUseTheServersList(): void
     {
-        foreach ( array( 'tests/js/DataGrid.test.js', 'tests/js/FilterPills.test.js' ) as $file ) {
+        foreach ( [ 'tests/js/DataGrid.test.js', 'tests/js/FilterPills.test.js' ] as $file ) {
 
             $src = (string) file_get_contents( \OWA\Core\Env::root() . '/' . $file );
 

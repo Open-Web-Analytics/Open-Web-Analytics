@@ -24,7 +24,7 @@ final class RestResponseTest extends TestCase
 
     private function controller(): \OWA\Core\Controller
     {
-        return new class(array()) extends \OWA\Core\Controller {
+        return new class([]) extends \OWA\Core\Controller {
             public function answer($status, $key = '') {
                 $this->restResponse($status, $key);
                 return $this->data;

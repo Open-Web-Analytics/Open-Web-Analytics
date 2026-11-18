@@ -3,7 +3,7 @@
 <div id="panel">
 <div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'The top of the hierarchy. Every Property and every user account belongs to this Organization.' ) ); ?></div>
 
-    <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.organizationEdit' ) );?>">
+    <form method="POST" action="<?php echo $view->makeLink( [ 'do' => 'base.organizationEdit' ] );?>">
         <?php echo $view->createNonceFormField( 'base.organizationEdit' );?>
 
         <label class="inline_h3" for="owa_organizationName"><?php $view->out( \OWA\Core\CoreAPI::t( 'Name' ) ); ?></label>

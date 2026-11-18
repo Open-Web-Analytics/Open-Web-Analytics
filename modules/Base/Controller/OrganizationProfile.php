@@ -34,11 +34,9 @@ class OrganizationProfile extends \OWA\Core\AdminController {
          */
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
 
-        $this->settingsChrome( array( 'siteId' => $siteId ), '',
+        $this->settingsChrome( [ 'siteId' => $siteId ], '',
             $this->getParam( 'propertyId' ) ?: \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $siteId ) );
         $this->setSubview( 'base.organizationProfile', [
             'template' => 'organization_profile.php', 'vars' => [ 'organization' ] ] );
     }
 }
-
-?>

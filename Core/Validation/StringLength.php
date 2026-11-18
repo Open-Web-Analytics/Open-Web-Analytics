@@ -45,12 +45,12 @@ namespace OWA\Core\Validation;
          $errorMsg = $this->getErrorMsg();
          if (empty($errorMsg)) {
 
-             $templates = array(
+             $templates = [
                  '<'  => \OWA\Core\CoreAPI::t( 'Must be fewer than %d characters.' ),
                  '<=' => \OWA\Core\CoreAPI::t( 'Must be at most %d characters.' ),
                  '>'  => \OWA\Core\CoreAPI::t( 'Must be more than %d characters.' ),
                  '>=' => \OWA\Core\CoreAPI::t( 'Must be at least %d characters.' ),
-             );
+             ];
 
              $this->setErrorMessage( sprintf( $templates[ $operator ] ?? \OWA\Core\CoreAPI::t( 'Must be %d characters.' ), $length ) );
          }
@@ -87,6 +87,3 @@ namespace OWA\Core\Validation;
          }
      }
  }
- 
- 
-?>

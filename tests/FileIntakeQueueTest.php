@@ -40,12 +40,12 @@ final class FileIntakeQueueTest extends TestCase
 
     private function queue(): FileEventQueue
     {
-        return new FileEventQueue(array('path' => $this->dir, 'queue_name' => 'tracker-ingest'));
+        return new FileEventQueue(['path' => $this->dir, 'queue_name' => 'tracker-ingest']);
     }
 
     private static function envelope(string $n): array
     {
-        return array('v' => 1, 'type' => 'page_view', 'properties' => array('n' => $n), 'queued_at' => 1);
+        return ['v' => 1, 'type' => 'page_view', 'properties' => ['n' => $n], 'queued_at' => 1];
     }
 
     /** @return string[] the n property of each message */
@@ -57,7 +57,7 @@ final class FileIntakeQueueTest extends TestCase
     /** Pretend every delayed file's minute has come, in both queues. */
     private function timePasses(): void
     {
-        foreach (array($this->dir . 'delayed/', $this->dir . 'dead-letter/delayed/') as $dir) {
+        foreach ([$this->dir . 'delayed/', $this->dir . 'dead-letter/delayed/'] as $dir) {
             foreach ((array) glob($dir . '*.txt') as $i => $f) {
                 rename($f, $dir . $i . '.txt');
             }
@@ -75,15 +75,15 @@ final class FileIntakeQueueTest extends TestCase
 
         $got = $q->receive(10, 300);
 
-        $this->assertSame(array('a', 'b'), self::names($got));
-        $this->assertSame(array(1, 1), array_map(fn ($m) => $m->receive_count, $got));
+        $this->assertSame(['a', 'b'], self::names($got));
+        $this->assertSame([1, 1], array_map(fn ($m) => $m->receive_count, $got));
         $this->assertSame(self::envelope('a'), $got[0]->envelope);
 
         foreach ($got as $m) {
             $this->assertTrue($q->ack($m));
         }
 
-        $this->assertSame(array(), $q->receive(10, 300));
+        $this->assertSame([], $q->receive(10, 300));
         $this->assertTrue($q->isProbablyEmpty());
         $this->assertSame(0, $q->depth());
     }
@@ -92,14 +92,14 @@ final class FileIntakeQueueTest extends TestCase
     {
         $q = $this->queue();
 
-        foreach (array('a', 'b', 'c') as $n) {
+        foreach (['a', 'b', 'c'] as $n) {
             $q->send(self::envelope($n));
         }
 
         $first = $q->receive(2, 300);
-        $this->assertSame(array('a', 'b'), self::names($first));
+        $this->assertSame(['a', 'b'], self::names($first));
 
-        $this->assertSame(array('c'), self::names($q->receive(2, 300)));
+        $this->assertSame(['c'], self::names($q->receive(2, 300)));
     }
 
     /** A finished batch is archived when archive_old_events is on, and deleted when it is off. */
@@ -112,7 +112,7 @@ final class FileIntakeQueueTest extends TestCase
         $q->ack($q->receive(10, 300)[0]);
 
         $this->assertCount(1, glob($this->dir . 'archive/*.txt'));
-        $this->assertSame(array(), glob($this->dir . 'processing/*'));
+        $this->assertSame([], glob($this->dir . 'processing/*'));
     }
 
     /** A message sent with a delay waits for its minute. */
@@ -121,13 +121,13 @@ final class FileIntakeQueueTest extends TestCase
         $q = $this->queue();
         $q->send(self::envelope('later'), 120);
 
-        $this->assertSame(array(), $q->receive(10, 300));
+        $this->assertSame([], $q->receive(10, 300));
         $this->assertTrue($q->isProbablyEmpty(), 'nothing is due');
 
         $this->timePasses();
 
         $this->assertFalse($q->isProbablyEmpty());
-        $this->assertSame(array('later'), self::names($q->receive(10, 300)));
+        $this->assertSame(['later'], self::names($q->receive(10, 300)));
     }
 
     public function testAReleasedMessageComesBackWithItsCountAfterItsDelay(): void
@@ -138,12 +138,12 @@ final class FileIntakeQueueTest extends TestCase
         $first = $q->receive(10, 300)[0];
         $this->assertTrue($q->release($first, 60));
 
-        $this->assertSame(array(), $q->receive(10, 300), 'not before the delay');
+        $this->assertSame([], $q->receive(10, 300), 'not before the delay');
 
         $this->timePasses();
 
         $again = $q->receive(10, 300);
-        $this->assertSame(array('a'), self::names($again));
+        $this->assertSame(['a'], self::names($again));
         $this->assertSame(2, $again[0]->receive_count);
         $this->assertSame(self::envelope('a'), $again[0]->envelope, 'the envelope is unchanged');
     }
@@ -158,9 +158,9 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertTrue($q->release($first, 0));
 
         $again = $q->receive(10, 300);
-        $this->assertSame(array('a'), self::names($again));
+        $this->assertSame(['a'], self::names($again));
         $this->assertSame(2, $again[0]->receive_count);
-        $this->assertSame(array(), glob($this->dir . 'delayed/*.txt'), 'not put in a delayed file');
+        $this->assertSame([], glob($this->dir . 'delayed/*.txt'), 'not put in a delayed file');
     }
 
     /** The dead-letter queue is a queue like the main one: received from, with why and when. */
@@ -219,7 +219,7 @@ final class FileIntakeQueueTest extends TestCase
 
         $this->assertCount(3, $got);
         $this->assertNull($got[0]->envelope);
-        $this->assertSame(array('v' => 1), $got[1]->envelope, 'decoding the line is the queue\'s; reading the envelope is not');
+        $this->assertSame(['v' => 1], $got[1]->envelope, 'decoding the line is the queue\'s; reading the envelope is not');
         $this->assertNull($got[2]->envelope);
 
         foreach ($got as $m) {
@@ -244,21 +244,21 @@ final class FileIntakeQueueTest extends TestCase
     /** The queue's own redrive: past max_receives it goes to the dead-letter queue, not to a consumer. */
     public function testAMessagePastItsReceiveLimitIsMovedByTheQueue(): void
     {
-        $q = new FileEventQueue(array('path' => $this->dir, 'max_receives' => 2));
+        $q = new FileEventQueue(['path' => $this->dir, 'max_receives' => 2]);
         $q->send(self::envelope('a'));
 
-        foreach (array(1, 2) as $n) {
+        foreach ([1, 2] as $n) {
             $got = $q->receive(10, 300);
             $this->assertSame($n, $got[0]->receive_count);
             $q->release($got[0], 0);
             $this->timePasses();
         }
 
-        $this->assertSame(array(), $q->receive(10, 300), 'the third receive is the dead-letter queue\'s');
+        $this->assertSame([], $q->receive(10, 300), 'the third receive is the dead-letter queue\'s');
         $this->assertTrue($q->isProbablyEmpty());
 
         $dead = $this->deadLetters($q);
-        $this->assertSame(array('a'), self::names($dead));
+        $this->assertSame(['a'], self::names($dead));
         $this->assertSame('Received 2 times without being ingested.', $dead[0]->reason);
     }
 
@@ -274,7 +274,7 @@ final class FileIntakeQueueTest extends TestCase
             touch($f, time() - 365 * 86400);
         }
 
-        $this->assertSame(array('old'), self::names($this->queue()->receive(10, 300)));
+        $this->assertSame(['old'], self::names($this->queue()->receive(10, 300)));
     }
 
     /** Provisioning makes both queues; a send before it makes what it needs. */
@@ -285,8 +285,8 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertTrue($this->queue()->provision());
         $this->assertTrue($this->queue()->provision(), 'idempotent');
 
-        foreach (array('unprocessed', 'processing', 'delayed', 'archive',
-                       'dead-letter/unprocessed', 'dead-letter/delayed') as $d) {
+        foreach (['unprocessed', 'processing', 'delayed', 'archive',
+                       'dead-letter/unprocessed', 'dead-letter/delayed'] as $d) {
             $this->assertDirectoryExists($this->dir . $d);
         }
     }
@@ -295,10 +295,10 @@ final class FileIntakeQueueTest extends TestCase
     public function testStatsCountWhatWaitsAndAgeWhatIsDue(): void
     {
         $q = $this->queue();
-        $this->assertSame(array('messages' => 0, 'oldest_age' => null), $q->stats());
+        $this->assertSame(['messages' => 0, 'oldest_age' => null], $q->stats());
 
         $q->send(self::envelope('later'), 3600);
-        $this->assertSame(array('messages' => 1, 'oldest_age' => null), $q->stats());
+        $this->assertSame(['messages' => 1, 'oldest_age' => null], $q->stats());
 
         $q->send(self::envelope('now'));
         touch($this->dir . 'events.txt', time() - 900);
@@ -314,7 +314,7 @@ final class FileIntakeQueueTest extends TestCase
      */
     private function dies(FileEventQueue &$q): void
     {
-        $states = array();
+        $states = [];
         foreach ((array) glob($this->dir . 'processing/*.state') as $f) {
             $states[$f] = file_get_contents($f);
         }
@@ -330,7 +330,7 @@ final class FileIntakeQueueTest extends TestCase
     public function testABatchHeldByADeadConsumerResumesWhereItDied(): void
     {
         $q = $this->queue();
-        foreach (array('a', 'b', 'c') as $n) {
+        foreach (['a', 'b', 'c'] as $n) {
             $q->send(self::envelope($n));
         }
 
@@ -340,8 +340,8 @@ final class FileIntakeQueueTest extends TestCase
 
         $again = $this->queue()->receive(10, 300);
 
-        $this->assertSame(array('b', 'c'), self::names($again), 'what was acked is not delivered again');
-        $this->assertSame(array(2, 1), array_map(fn ($m) => $m->receive_count, $again),
+        $this->assertSame(['b', 'c'], self::names($again), 'what was acked is not delivered again');
+        $this->assertSame([2, 1], array_map(fn ($m) => $m->receive_count, $again),
             'the line it died on is counted; the line behind it is not');
     }
 
@@ -367,11 +367,11 @@ final class FileIntakeQueueTest extends TestCase
         $q   = $this->queue();
         $got = $q->receive(10, 300);
 
-        $this->assertSame(array('fine'), self::names($got), 'the poison line is not handed out again');
+        $this->assertSame(['fine'], self::names($got), 'the poison line is not handed out again');
         $this->assertSame(1, $got[0]->receive_count);
 
         $dead = $this->deadLetters($q);
-        $this->assertSame(array('poison'), self::names($dead));
+        $this->assertSame(['poison'], self::names($dead));
         $this->assertSame('Received 6 times without being ingested.', $dead[0]->reason);
     }
 
@@ -387,7 +387,7 @@ final class FileIntakeQueueTest extends TestCase
 
         $again = $this->queue()->receive(10, 300);
 
-        $this->assertSame(array('b'), self::names($again));
+        $this->assertSame(['b'], self::names($again));
         $this->assertSame(1, $again[0]->receive_count, 'b was never in the dead drain\'s hands');
     }
 
@@ -407,7 +407,7 @@ final class FileIntakeQueueTest extends TestCase
 
         unset($holder);
 
-        $this->assertSame(array(), $this->queue()->heldBatches(), 'a batch nobody holds is not reported');
+        $this->assertSame([], $this->queue()->heldBatches(), 'a batch nobody holds is not reported');
     }
 
     /** A dead drain's batch is waiting for the next drain, not held, so it is not reported as hung. */
@@ -418,7 +418,7 @@ final class FileIntakeQueueTest extends TestCase
         $q->receive(10, 300);
         $this->dies($q);
 
-        $this->assertSame(array(), $this->queue()->heldBatches());
+        $this->assertSame([], $this->queue()->heldBatches());
     }
 
     /** A drain that stops cleanly -- its budget spent -- charges nothing. */
@@ -431,7 +431,7 @@ final class FileIntakeQueueTest extends TestCase
         $q->ack($q->receive(1, 300)[0]);
         unset($q);
 
-        $this->assertSame(array(1), array_map(fn ($m) => $m->receive_count, $this->queue()->receive(10, 300)));
+        $this->assertSame([1], array_map(fn ($m) => $m->receive_count, $this->queue()->receive(10, 300)));
     }
 
     /** Two consumers never hold the same batch. */
@@ -442,10 +442,10 @@ final class FileIntakeQueueTest extends TestCase
         $this->assertCount(1, $a->receive(10, 300));
 
         $b = $this->queue();
-        $this->assertSame(array(), $b->receive(10, 300));
+        $this->assertSame([], $b->receive(10, 300));
 
         $b->send(self::envelope('b'));
-        $this->assertSame(array('b'), self::names($b->receive(10, 300)), 'a new batch is free');
+        $this->assertSame(['b'], self::names($b->receive(10, 300)), 'a new batch is free');
     }
 
     /** What arrives after a rotation goes to the next batch, not into the one being read. */
@@ -457,11 +457,11 @@ final class FileIntakeQueueTest extends TestCase
         $first = $q->receive(10, 300);
         $q->send(self::envelope('b'));
 
-        $this->assertSame(array(), $q->receive(10, 300), 'the held batch is not finished');
+        $this->assertSame([], $q->receive(10, 300), 'the held batch is not finished');
 
         $q->ack($first[0]);
 
-        $this->assertSame(array('b'), self::names($q->receive(10, 300)));
+        $this->assertSame(['b'], self::names($q->receive(10, 300)));
     }
 
     /** A settle for a message this consumer does not hold does nothing. */
@@ -471,7 +471,7 @@ final class FileIntakeQueueTest extends TestCase
         $q->send(self::envelope('a'));
         $q->receive(10, 300);
 
-        $this->assertFalse($q->ack(new IntakeMessage(array('batch' => '/elsewhere', 'offset' => 0), self::envelope('x'), 1)));
+        $this->assertFalse($q->ack(new IntakeMessage(['batch' => '/elsewhere', 'offset' => 0], self::envelope('x'), 1)));
     }
 
     public function testPruningRemovesOldArchivesOfBothQueues(): void
@@ -479,14 +479,14 @@ final class FileIntakeQueueTest extends TestCase
         $q = $this->queue();
         $q->provision();
 
-        foreach (array('archive/old.txt', 'dead-letter/archive/old.txt', 'archive/new.txt') as $f) {
+        foreach (['archive/old.txt', 'dead-letter/archive/old.txt', 'archive/new.txt'] as $f) {
             file_put_contents($this->dir . $f, "x\n");
         }
         touch($this->dir . 'archive/old.txt', time() - 7200);
         touch($this->dir . 'dead-letter/archive/old.txt', time() - 7200);
 
         $this->assertSame(2, $q->pruneArchive(3600));
-        $this->assertSame(array($this->dir . 'archive/new.txt'), glob($this->dir . 'archive/*'));
+        $this->assertSame([$this->dir . 'archive/new.txt'], glob($this->dir . 'archive/*'));
     }
 
     /** No vendor package on the tracking path (PLAN 2.30.3; the source-checkout boot constraint). */

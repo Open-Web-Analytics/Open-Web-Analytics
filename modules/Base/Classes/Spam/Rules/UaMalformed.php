@@ -35,7 +35,7 @@ class UaMalformed extends \OWA\Module\Base\Classes\Spam\Rule {
     const BROWSER_PREFIX = 'Mozilla/5.0 (';
 
     /** Quote characters an agent neither starts nor ends with. */
-    const QUOTES = array( '"', "'", '`' );
+    const QUOTES = [ '"', "'", '`' ];
 
     public function test( $event, array $headers ) {
 
@@ -59,5 +59,3 @@ class UaMalformed extends \OWA\Module\Base\Classes\Spam\Rule {
         return strpos( $ua, self::BROWSER_PREFIX ) !== 0 && $this->client( $headers )->claimsBrowser();
     }
 }
-
-?>

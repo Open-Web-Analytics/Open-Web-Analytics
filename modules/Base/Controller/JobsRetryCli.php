@@ -7,15 +7,13 @@ class JobsRetryCli extends JobsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Makes a failed one-off job due now, with its attempts cleared.',
-            'arguments'   => array(
+            'arguments'   => [
                 'id=<id|all>' => 'Required. The job to retry, or all for every failed job.',
-            ),
-        );
+            ],
+        ];
     }
 
     const MODE = 'retry';
 }
-
-?>

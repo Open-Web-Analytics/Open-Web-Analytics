@@ -18,25 +18,25 @@ use OWA\Module\Base\Controller\VisualizationFunnel;
  */
 final class FunnelEventStepTest extends TestCase
 {
-    private function predicate( array $step, array $params = array() )
+    private function predicate( array $step, array $params = [] )
     {
         $controller = new VisualizationFunnel( $params );
 
         $m = new ReflectionMethod( $controller, 'stepPredicate' );
 
-        return array( $m->invoke( $controller, $step, 1, VisualizationFunnel::ALIAS ), $controller );
+        return [ $m->invoke( $controller, $step, 1, VisualizationFunnel::ALIAS ), $controller ];
     }
 
     private static function page( string $path, string $query = '' ): array
     {
-        $conditions = array( array( 'property' => 'page_path', 'operator' => 'exact', 'value' => $path ) );
+        $conditions = [ [ 'property' => 'page_path', 'operator' => 'exact', 'value' => $path ] ];
 
         if ( $query !== '' ) {
-            $conditions[] = array( 'property' => 'page_query', 'operator' => 'exact', 'value' => $query );
+            $conditions[] = [ 'property' => 'page_query', 'operator' => 'exact', 'value' => $query ];
         }
 
-        return array( 'name' => $path, 'kind' => 'event', 'event' => 'page_view', 'match' => 'all',
-            'conditions' => $conditions, 'step_number' => 1 );
+        return [ 'name' => $path, 'kind' => 'event', 'event' => 'page_view', 'match' => 'all',
+            'conditions' => $conditions, 'step_number' => 1 ];
     }
 
     /** A page step is one bound comparison on page_path, on page views only. */
@@ -45,7 +45,7 @@ final class FunnelEventStepTest extends TestCase
         list( $out ) = $this->predicate( self::page( '/thanks' ) );
 
         $this->assertSame( '( e.event_type = ? AND ( ( e.page_path IS NOT NULL AND e.page_path = ? ) ) )', $out['sql'] );
-        $this->assertSame( array( 'page_view', '/thanks' ), $out['params'] );
+        $this->assertSame( [ 'page_view', '/thanks' ], $out['params'] );
         $this->assertStringNotContainsString( '/thanks', $out['sql'] );
     }
 
@@ -53,10 +53,10 @@ final class FunnelEventStepTest extends TestCase
     public function testAPagePathIsCanonicalisedTheWayTheRowWas(): void
     {
         list( $out ) = $this->predicate( self::page( '/store/' ) );
-        $this->assertSame( array( 'page_view', '/store' ), $out['params'] );
+        $this->assertSame( [ 'page_view', '/store' ], $out['params'] );
 
         list( $root ) = $this->predicate( self::page( '/' ) );
-        $this->assertSame( array( 'page_view', '/' ), $root['params'] );
+        $this->assertSame( [ 'page_view', '/' ], $root['params'] );
     }
 
     /** A query string is its own condition, on page_query. */
@@ -65,7 +65,7 @@ final class FunnelEventStepTest extends TestCase
         list( $out ) = $this->predicate( self::page( '/checkout', 'step=2' ) );
 
         $this->assertStringContainsString( 'e.page_query = ?', $out['sql'] );
-        $this->assertSame( array( 'page_view', '/checkout', 'step=2' ), $out['params'] );
+        $this->assertSame( [ 'page_view', '/checkout', 'step=2' ], $out['params'] );
     }
 
     /**
@@ -81,19 +81,19 @@ final class FunnelEventStepTest extends TestCase
             \OWA\Module\Base\Classes\V2Event::DIRECTORY_INDEX_PAGES );
 
         try {
-            foreach ( array( '/store/index.php', '/store/index.html', '/store/Default.aspx' ) as $path ) {
+            foreach ( [ '/store/index.php', '/store/index.html', '/store/Default.aspx' ] as $path ) {
 
                 list( $out ) = $this->predicate( self::page( $path ) );
 
-                $this->assertSame( array( 'page_view', '/store' ), $out['params'],
+                $this->assertSame( [ 'page_view', '/store' ], $out['params'],
                     "$path was not collapsed, so this step cannot match the path the row stored." );
             }
 
-            \OWA\Core\CoreAPI::setSetting( 'base', 'directory_index_pages', array( 'home.cfm' ) );
+            \OWA\Core\CoreAPI::setSetting( 'base', 'directory_index_pages', [ 'home.cfm' ] );
 
             list( $custom ) = $this->predicate( self::page( '/store/index.php' ) );
 
-            $this->assertSame( array( 'page_view', '/store/index.php' ), $custom['params'],
+            $this->assertSame( [ 'page_view', '/store/index.php' ], $custom['params'],
                 'the list is read, not the default' );
 
         } finally {
@@ -104,17 +104,17 @@ final class FunnelEventStepTest extends TestCase
     /** A site's own event, and conditions on another event, compile as they say. */
     public function testAnEventStepCompiles(): void
     {
-        list( $out ) = $this->predicate( array( 'kind' => 'event', 'event' => 'click', 'match' => 'any',
-            'conditions' => array(
-                array( 'property' => 'element_id', 'operator' => 'exact', 'value' => 'buy' ),
-                array( 'property' => 'element_id', 'operator' => 'exact', 'value' => 'buy-now' ),
-            ) ) );
+        list( $out ) = $this->predicate( [ 'kind' => 'event', 'event' => 'click', 'match' => 'any',
+            'conditions' => [
+                [ 'property' => 'element_id', 'operator' => 'exact', 'value' => 'buy' ],
+                [ 'property' => 'element_id', 'operator' => 'exact', 'value' => 'buy-now' ],
+            ] ] );
 
         $this->assertStringContainsString( ' OR ', $out['sql'] );
-        $this->assertSame( array( 'click', 'buy', 'buy-now' ), $out['params'] );
+        $this->assertSame( [ 'click', 'buy', 'buy-now' ], $out['params'] );
 
-        list( $custom ) = $this->predicate( array( 'kind' => 'event', 'event' => 'newsletter_signup',
-            'conditions' => array() ) );
+        list( $custom ) = $this->predicate( [ 'kind' => 'event', 'event' => 'newsletter_signup',
+            'conditions' => [] ] );
 
         $this->assertSame( '( e.event_type = ? )', $custom['sql'] );
     }
@@ -126,11 +126,11 @@ final class FunnelEventStepTest extends TestCase
      */
     public function testAStepThatIsNotAnEventStepIsRefused(): void
     {
-        foreach ( array(
-            array( 'name' => 'Signup', 'goal_event_definition_id' => '123', 'step_number' => 1 ),
-            array( 'name' => '/a', 'path' => '/a', 'step_number' => 1 ),
-            array( 'kind' => 'event', 'event' => '' ),
-        ) as $step ) {
+        foreach ( [
+            [ 'name' => 'Signup', 'goal_event_definition_id' => '123', 'step_number' => 1 ],
+            [ 'name' => '/a', 'path' => '/a', 'step_number' => 1 ],
+            [ 'kind' => 'event', 'event' => '' ],
+        ] as $step ) {
 
             list( $out, $controller ) = $this->predicate( $step );
 
@@ -143,8 +143,8 @@ final class FunnelEventStepTest extends TestCase
     /** A condition on something the vocabulary does not know is refused by name rather than dropped. */
     public function testAnUnknownPropertyIsRefusedByName(): void
     {
-        list( $out, $controller ) = $this->predicate( array( 'kind' => 'event', 'event' => 'page_view',
-            'conditions' => array( array( 'property' => 'cd_plan', 'operator' => 'exact', 'value' => 'gold' ) ) ) );
+        list( $out, $controller ) = $this->predicate( [ 'kind' => 'event', 'event' => 'page_view',
+            'conditions' => [ [ 'property' => 'cd_plan', 'operator' => 'exact', 'value' => 'gold' ] ] ] );
 
         $this->assertNull( $out );
         $this->assertStringContainsString( 'Step 1 tests cd_plan', (string) ( $controller->data['funnel_step_error'] ?? '' ) );
@@ -153,8 +153,8 @@ final class FunnelEventStepTest extends TestCase
     /** A stored regex a report filter would refuse is refused with its reason, not run. */
     public function testAStoredRegexAReportFilterWouldRefuseIsRefused(): void
     {
-        list( $out, $controller ) = $this->predicate( array( 'kind' => 'event', 'event' => 'page_view',
-            'conditions' => array( array( 'property' => 'page_path', 'operator' => 'regex', 'value' => '^/(a+)+$' ) ) ) );
+        list( $out, $controller ) = $this->predicate( [ 'kind' => 'event', 'event' => 'page_view',
+            'conditions' => [ [ 'property' => 'page_path', 'operator' => 'regex', 'value' => '^/(a+)+$' ] ] ] );
 
         $this->assertNull( $out );
         $this->assertSame( 'Step 1: the regular expression on page_path was refused: it repeats a group that itself '
@@ -166,16 +166,16 @@ final class FunnelEventStepTest extends TestCase
     {
         $this->assertSame( '/thanks', FunnelStep::summary( self::page( '/thanks' ) ) );
         $this->assertSame( '/checkout?step=2', FunnelStep::summary( self::page( '/checkout', 'step=2' ) ) );
-        $this->assertSame( 'newsletter_signup', FunnelStep::summary( array( 'event' => 'newsletter_signup' ) ) );
+        $this->assertSame( 'newsletter_signup', FunnelStep::summary( [ 'event' => 'newsletter_signup' ] ) );
 
         $this->assertSame( 'purchase where Revenue greater than 50 or Plan exactly matching gold', FunnelStep::summary(
-            array( 'event' => 'purchase', 'match' => 'any', 'conditions' => array(
-                array( 'property' => 'revenue', 'operator' => 'gt', 'value' => '50' ),
-                array( 'property' => 'cd_plan', 'operator' => 'exact', 'value' => 'gold' ),
-            ) ), array( 'cd_plan' => 'Plan' ) ) );
+            [ 'event' => 'purchase', 'match' => 'any', 'conditions' => [
+                [ 'property' => 'revenue', 'operator' => 'gt', 'value' => '50' ],
+                [ 'property' => 'cd_plan', 'operator' => 'exact', 'value' => 'gold' ],
+            ] ], [ 'cd_plan' => 'Plan' ] ) );
 
         // A page_view on something besides its path is not a page step.
-        $this->assertStringStartsWith( 'page_view where', FunnelStep::summary( array( 'event' => 'page_view',
-            'conditions' => array( array( 'property' => 'page_path', 'operator' => 'begins', 'value' => '/blog/' ) ) ) ) );
+        $this->assertStringStartsWith( 'page_view where', FunnelStep::summary( [ 'event' => 'page_view',
+            'conditions' => [ [ 'property' => 'page_path', 'operator' => 'begins', 'value' => '/blog/' ] ] ] ) );
     }
 }

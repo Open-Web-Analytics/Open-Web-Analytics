@@ -21,7 +21,7 @@ final class MailFailureTest extends TestCase
     use CapturesLog;
 
     /** @var array<string,mixed> */
-    private array $mail = array();
+    private array $mail = [];
 
     protected function setUp(): void
     {
@@ -98,7 +98,7 @@ final class MailFailureTest extends TestCase
         $view = new \OWA\Core\View\Mail();
 
         $this->assertSame(2, $view->addMailToAddress('one@owatest.example.com, two@owatest.example.org'));
-        $this->assertSame(array('one@owatest.example.com', 'two@owatest.example.org'),
+        $this->assertSame(['one@owatest.example.com', 'two@owatest.example.org'],
             array_column($view->po->mailer->getToAddresses(), 0));
 
         $other = new \OWA\Core\View\Mail();
@@ -115,13 +115,13 @@ final class MailFailureTest extends TestCase
     /** @return iterable<string, array{string, bool}> value, accepted */
     public static function noticeEmails(): iterable
     {
-        yield 'empty: announcements off'       => array('', true);
-        yield 'one address'                    => array('ops@example.com', true);
-        yield 'a list'                         => array('ops@example.com, owner@example.org', true);
-        yield 'dotless domains'                => array('a@x, b@y', false);
-        yield 'separated by a space'           => array('ops@example.com owner@example.org', false);
-        yield 'not an address'                 => array('ops', false);
-        yield 'a trailing comma'               => array('ops@example.com,', false);
+        yield 'empty: announcements off'       => ['', true];
+        yield 'one address'                    => ['ops@example.com', true];
+        yield 'a list'                         => ['ops@example.com, owner@example.org', true];
+        yield 'dotless domains'                => ['a@x, b@y', false];
+        yield 'separated by a space'           => ['ops@example.com owner@example.org', false];
+        yield 'not an address'                 => ['ops', false];
+        yield 'a trailing comma'               => ['ops@example.com,', false];
     }
 
     /** @dataProvider noticeEmails */
@@ -143,12 +143,12 @@ final class MailFailureTest extends TestCase
     {
         $d = \OWA\Core\CoreAPI::getEventDispatch();
         $event = $d->makeEvent('base.new_user_account');
-        $event->setProperties(array(
+        $event->setProperties([
             'user_id'       => 'owa-test-invitee',
             'email_address' => 'invitee@owatest.example.com',
             'real_name'     => 'Test Invitee',
             'temp_passkey'  => \OWA\Module\Base\Entity\User::newTempPasskey(60),
-        ));
+        ]);
 
         $this->logDuring(fn () => (new \OWA\Module\Base\Handler\UserHandlers())->notify($event));
 
@@ -157,7 +157,7 @@ final class MailFailureTest extends TestCase
 
     public function testTheUsersScreenSaysWhenTheInvitationWasNotSent(): void
     {
-        $message = (new \OWA\Module\Base\Controller\PasswordResetRequest(array()))->getMsg(3013);
+        $message = (new \OWA\Module\Base\Controller\PasswordResetRequest([]))->getMsg(3013);
 
         $this->assertStringContainsString('invitation email was not sent', $message['message']);
     }
@@ -182,7 +182,7 @@ final class MailFailureTest extends TestCase
                 ->createNewSite('owa-test-site', 'OWA ingestion test site', '', '', $site_id);
         }
 
-        foreach (array('announce_visitors' => true, 'notice_email' => $notice_email) as $k => $v) {
+        foreach (['announce_visitors' => true, 'notice_email' => $notice_email] as $k => $v) {
             $this->mail['@' . $k] = \OWA\Core\CoreAPI::getSetting('base', $k);
             \OWA\Core\CoreAPI::setSetting('base', $k, $v);
         }
@@ -193,10 +193,10 @@ final class MailFailureTest extends TestCase
     private function newSession(string $site_id)
     {
         $event = \OWA\Core\CoreAPI::getEventDispatch()->makeEvent('base.new_session');
-        $event->setProperties(array(
+        $event->setProperties([
             'site_id' => $site_id, 'visitor_id' => '1', 'user_name' => '', 'host' => '', 'city' => '',
             'country' => '', 'page_title' => 'Announce', 'page_url' => 'https://owa-test-site/announce',
-        ));
+        ]);
 
         return $event;
     }
@@ -235,7 +235,7 @@ final class MailFailureTest extends TestCase
         $s       = \OWA\Core\CoreAPI::serviceSingleton();
         $was     = $s->getMapValue('actions', 'base.notifyNewSession');
         $s->setMapValue('actions', 'base.notifyNewSession',
-            array('class_name' => ThrowingAnnouncement::class, 'file' => __FILE__));
+            ['class_name' => ThrowingAnnouncement::class, 'file' => __FILE__]);
 
         try {
             $log = $this->logDuring(function () use ($site_id, &$status) {

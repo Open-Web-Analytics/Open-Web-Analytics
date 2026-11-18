@@ -37,7 +37,7 @@ final class EventDispatchListenerShapeTest extends TestCase
     {
         $d = $this->dispatch();
 
-        $d->attach( 'shape.object', array( new EventDispatchShapeSpy(), 'handle' ) );
+        $d->attach( 'shape.object', [ new EventDispatchShapeSpy(), 'handle' ] );
         $d->notify( $this->event( 'shape.object' ) );
 
         $this->assertTrue( EventDispatchShapeSpy::$ran, 'the handler never ran' );
@@ -52,7 +52,7 @@ final class EventDispatchListenerShapeTest extends TestCase
 
         $d = $this->dispatch();
 
-        $d->attach( 'shape.static', array( 'EventDispatchShapeSpy', 'handleStatic' ) );
+        $d->attach( 'shape.static', [ 'EventDispatchShapeSpy', 'handleStatic' ] );
 
         $d->notify( $this->event( 'shape.static' ) );
 
@@ -74,8 +74,8 @@ final class EventDispatchListenerShapeTest extends TestCase
 
         $d = $this->dispatch();
 
-        $d->attach( 'shape.mixed', array( 'EventDispatchShapeSpy', 'handleStatic' ) );
-        $d->attach( 'shape.mixed', array( new EventDispatchShapeSpy(), 'handle' ) );
+        $d->attach( 'shape.mixed', [ 'EventDispatchShapeSpy', 'handleStatic' ] );
+        $d->attach( 'shape.mixed', [ new EventDispatchShapeSpy(), 'handle' ] );
 
         $d->notify( $this->event( 'shape.mixed' ) );
 

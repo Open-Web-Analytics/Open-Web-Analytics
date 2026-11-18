@@ -40,8 +40,8 @@ final class SqsNodeConfigTest extends TestCase
     /** @return iterable<string, array{string}> */
     public static function urlModes(): iterable
     {
-        yield 'full'      => array('url');
-        yield 'collector' => array('collector');
+        yield 'full'      => ['url'];
+        yield 'collector' => ['collector'];
     }
 
     /** @dataProvider urlModes */

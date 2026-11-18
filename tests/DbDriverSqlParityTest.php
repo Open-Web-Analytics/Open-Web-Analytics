@@ -394,15 +394,15 @@ final class DbDriverSqlParityTest extends TestCase
     {
         $sql = "SELECT 1 AS n, 'O''Brien' AS name UNION ALL SELECT 2, 'x'";
 
-        $streamed = array();
-        $whole    = array();
+        $streamed = [];
+        $whole    = [];
 
         foreach ($this->drivers() as $name => $db) {
 
             $this->assertTrue(method_exists($db, 'get_result_iterator'),
                 "$name: driver cannot hand rows over one at a time");
 
-            $rows = array();
+            $rows = [];
 
             foreach ($db->get_result_iterator($sql) as $row) {
                 $rows[] = $row;
@@ -421,7 +421,7 @@ final class DbDriverSqlParityTest extends TestCase
         // mysqli driver puts rows through stringifyRow() on the way out of
         // get_results(), so an iterator that skipped it would return native
         // ints where the rest of OWA expects strings.
-        foreach (array('mysqli', 'pdo') as $name) {
+        foreach (['mysqli', 'pdo'] as $name) {
             $this->assertSame($whole[$name], $streamed[$name],
                 "$name: streaming returned something different from get_results()");
         }

@@ -45,5 +45,3 @@ class QueryLong extends \OWA\Module\Base\Classes\Spam\Rule {
         return function_exists( 'mb_strlen' ) ? mb_strlen( $query, 'UTF-8' ) : strlen( $query );
     }
 }
-
-?>

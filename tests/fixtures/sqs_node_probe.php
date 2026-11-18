@@ -23,7 +23,7 @@ putenv( 'AWS_ACCESS_KEY_ID=AKIAPROBEEXAMPLE' );
 putenv( 'AWS_SECRET_ACCESS_KEY=probe-secret' );
 putenv( 'AWS_ACCOUNT_ID=123456789012' );
 
-if ( in_array( $mode, array( 'url', 'region', 'collector' ), true ) ) {
+if ( in_array( $mode, [ 'url', 'region', 'collector' ], true ) ) {
     define( 'OWA_SQS_QUEUE_URL', 'https://sqs.eu-west-2.amazonaws.com/210987654321/my-own-queue' );
     define( 'OWA_SQS_KEY', 'ASIAPROBEEXAMPLE' );
     define( 'OWA_SQS_SECRET', 'probe-secret' );
@@ -46,23 +46,23 @@ chdir( dirname( __DIR__, 2 ) );
 require 'owa.php';
 
 new owa( $mode === 'derived'
-    ? array( 'base' => array( 'request_type' => 'tracking' ), 'sqs' => array( 'is_active' => true ) )
-    : array( 'request_type' => 'tracking' ) );
+    ? [ 'base' => [ 'request_type' => 'tracking' ], 'sqs' => [ 'is_active' => true ] ]
+    : [ 'request_type' => 'tracking' ] );
 
 $active = \OWA\Core\CoreAPI::getActiveModules();
-$out    = array(
+$out    = [
     'active'    => $active,
     'governed'  => \OWA\Core\CoreAPI::configSingleton()->configFileConstantFor( 'sqs', 'is_active' ),
     'backend'   => \OWA\Module\Base\Classes\TrackerIngest::backend(),
     'queued'    => \OWA\Module\Base\Classes\TrackerIngest::isQueued(),
     'connected' => (bool) \OWA\Core\CoreAPI::dbSingleton()->isConnectionEstablished(),
-);
+];
 
 if ( in_array( 'sqs', $active, true ) ) {
 
     $queue = new \OWA\Module\Sqs\Classes\SqsQueue();
 
-    $out += array(
+    $out += [
         'sqs_type' => (bool) \OWA\Core\CoreAPI::serviceSingleton()->getMapValue( 'event_queue_types', 'sqs' ),
         'region'   => \OWA\Module\Sqs\Classes\Sqs::region(),
         'name'     => $queue->name(),
@@ -72,7 +72,7 @@ if ( in_array( 'sqs', $active, true ) ) {
         'dlq_url'  => $queue->deadLetterQueue()->url( false ),
         'token'    => \OWA\Module\Sqs\Classes\Sqs::clientArgs( 'eu-west-2' )['credentials']['token'] ?? null,
         'source'   => \OWA\Module\Sqs\Classes\Sqs::credentialSource(),
-    );
+    ];
 }
 
 echo 'PROBE ' . json_encode( $out ) . "\n";

@@ -23,15 +23,15 @@ class VisualizationPreview extends VisualizationFunnel {
     protected function visualization() {
 
         $posted = json_decode( (string) $this->getParam( 'steps' ), true );
-        $posted = is_array( $posted ) ? array_slice( array_values( $posted ), 0, VisualizationSave::MAX_STEPS ) : array();
+        $posted = is_array( $posted ) ? array_slice( array_values( $posted ), 0, VisualizationSave::MAX_STEPS ) : [];
 
-        return array(
+        return [
             'name'       => '',
-            'definition' => array(
+            'definition' => [
                 'steps'       => VisualizationSave::stepsFromForm( array_values( array_filter( $posted, 'is_array' ) ) ),
                 'constraints' => (string) $this->getParam( 'funnelFilter' ),
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
@@ -48,21 +48,21 @@ class VisualizationPreview extends VisualizationFunnel {
 
         parent::action();
 
-        $steps = array();
+        $steps = [];
 
-        foreach ( (array) ( $this->data['funnel'] ?? array() ) as $step ) {
+        foreach ( (array) ( $this->data['funnel'] ?? [] ) as $step ) {
 
-            $steps[] = array(
+            $steps[] = [
                 'name'    => (string) ( $step['name'] ?? '' ),
                 'reached' => (int) ( $step['visitors'] ?? 0 ),
-            );
+            ];
         }
 
         $this->set( 'ajax_error', $this->data['funnel_segment_error'] ?? $this->data['funnel_step_error'] ?? null );
-        $this->set( 'ajax_data', array(
+        $this->set( 'ajax_data', [
             'scope' => (string) ( $this->data['funnel_scope_label'] ?? '' ),
             'steps' => $steps,
-        ) );
+        ] );
     }
 
     public function post() {

@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class WikiDocsReportsTest extends TestCase
 {
-    private static array $out = array();
+    private static array $out = [];
 
     private static function section( string $name ): string
     {
@@ -41,7 +41,7 @@ final class WikiDocsReportsTest extends TestCase
      */
     private static function registeredReportIds(): array
     {
-        $ids = array();
+        $ids = [];
 
         foreach ( glob( \OWA\Core\Env::root() . '/modules/*/Module.php' ) as $path ) {
 

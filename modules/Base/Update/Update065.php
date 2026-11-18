@@ -33,7 +33,7 @@ class Update065 extends \OWA\Core\Update {
 
     public $schema_version = 65;
 
-    const COLUMNS = array( 'channel', 'acq_channel' );
+    const COLUMNS = [ 'channel', 'acq_channel' ];
 
     /**
      * @param  bool $force
@@ -66,5 +66,3 @@ class Update065 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

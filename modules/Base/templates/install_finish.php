@@ -11,7 +11,7 @@
     </div>
     <p>
         <a class="owa-button owa_publicSubmit"
-           href="<?php echo $view->makeLink(array("action" => "base.sitesInvocation", "siteId" => $view->site_id), false, \OWA\Core\CoreAPI::getSetting('base','public_url'));?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Log in and get the tracking tag' ) );?></a>
+           href="<?php echo $view->makeLink(["action" => "base.sitesInvocation", "siteId" => $view->site_id], false, \OWA\Core\CoreAPI::getSetting('base','public_url'));?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Log in and get the tracking tag' ) );?></a>
     </p>
 
     <div class="status owa-install-cron">

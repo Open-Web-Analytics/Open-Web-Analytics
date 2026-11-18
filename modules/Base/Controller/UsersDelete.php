@@ -41,9 +41,9 @@ class UsersDelete extends \OWA\Core\AdminController {
     }
     
     public function validate() {
-	    
-	    $this->addValidation('user_id', $this->getParam('user_id'), 'required', array('stopOnError'	=> true));
-	    $this->addValidation('user_id', $this->getParam('user_id'), 'isNotCurrentUser');
+        
+        $this->addValidation('user_id', $this->getParam('user_id'), 'required', ['stopOnError'	=> true]);
+        $this->addValidation('user_id', $this->getParam('user_id'), 'isNotCurrentUser');
     }
 
     public function action() {
@@ -55,10 +55,8 @@ class UsersDelete extends \OWA\Core\AdminController {
     }
     
     public function success() {
-	    
-	    $this->setRedirectAction('base.users');
+        
+        $this->setRedirectAction('base.users');
         $this->setStatusCode( 3004 );
     }
 }
-
-?>

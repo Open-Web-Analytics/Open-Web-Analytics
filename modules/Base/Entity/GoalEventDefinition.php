@@ -64,7 +64,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      */
     public static function operators() {
 
-        return array(
+        return [
             self::MATCH_EXACT    => 'Exactly matching',
             self::MATCH_NOT      => 'Not matching',
             self::MATCH_CONTAINS => 'Contains',
@@ -72,7 +72,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
             self::MATCH_REGEX    => 'Matches regex',
             self::MATCH_GT       => 'Greater than',
             self::MATCH_LT       => 'Less than',
-        );
+        ];
     }
 
     /**
@@ -385,7 +385,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
     public static function eventNames( array $rows ) {
 
         // Case-blind, like the column's collation: Contact and contact would group as one event.
-        $taken = array();
+        $taken = [];
 
         foreach ( $rows as $row ) {
 
@@ -395,7 +395,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
             }
         }
 
-        $renamed = array();
+        $renamed = [];
 
         foreach ( $rows as $row ) {
 
@@ -539,7 +539,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      */
     public static function propertyFor( $site_id ) {
 
-        static $cache = array();
+        static $cache = [];
 
         if ( ! $site_id ) {
 
@@ -611,10 +611,10 @@ class GoalEventDefinition extends \OWA\Core\Entity {
      */
     public static function countModes() {
 
-        return array(
+        return [
             self::COUNT_PER_EVENT   => \OWA\Core\CoreAPI::t( 'Once per event' ),
             self::COUNT_PER_SESSION => \OWA\Core\CoreAPI::t( 'Once per session' ),
-        );
+        ];
     }
 
     /**
@@ -637,7 +637,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
 
         if ( ! $this->get( 'id' ) ) {
 
-            return array();
+            return [];
         }
 
         $entity = $this->conditionEntity();
@@ -648,7 +648,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
         $db->where( $this->conditionColumn(), $this->get( 'id' ) );
         $db->orderBy( 'sort_order', OWA_SQL_ASCENDING );
 
-        $conditions = array();
+        $conditions = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
@@ -715,10 +715,10 @@ class GoalEventDefinition extends \OWA\Core\Entity {
 
         if ( empty( $value ) ) {
 
-            return array();
+            return [];
         }
 
-        $ids = array( $value );
+        $ids = [ $value ];
 
         if ( $col !== 'id' ) {
 
@@ -730,7 +730,7 @@ class GoalEventDefinition extends \OWA\Core\Entity {
             $ids = array_column( (array) $db->getAllRows(), 'id' );
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( $ids as $id ) {
 

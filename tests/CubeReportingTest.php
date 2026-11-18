@@ -379,7 +379,7 @@ final class CubeReportingTest extends TestCase
 
         $denormalized = (array) $p->getValue($registry);
 
-        foreach (array('date', 'siteId', 'eventName') as $name) {
+        foreach (['date', 'siteId', 'eventName'] as $name) {
 
             $this->assertArrayHasKey('base.event', (array) ($denormalized[$name] ?? []),
                 $name . ' must be registered against the cube');

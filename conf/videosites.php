@@ -6,13 +6,11 @@
  * the data directory.
  */
 return [
-	['domain' => 'youtube'],
-	['domain' => 'youtu.be'],
-	['domain' => 'vimeo'],
-	['domain' => 'dailymotion'],
-	['domain' => 'twitch.tv'],
-	['domain' => 'wistia'],
-	['domain' => 'ted.com'],
+    ['domain' => 'youtube'],
+    ['domain' => 'youtu.be'],
+    ['domain' => 'vimeo'],
+    ['domain' => 'dailymotion'],
+    ['domain' => 'twitch.tv'],
+    ['domain' => 'wistia'],
+    ['domain' => 'ted.com'],
 ];
-
-?>

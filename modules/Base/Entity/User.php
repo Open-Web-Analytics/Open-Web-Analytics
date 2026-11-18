@@ -254,5 +254,3 @@ class User extends \OWA\Core\Entity {
     }
     
 }
-
-?>

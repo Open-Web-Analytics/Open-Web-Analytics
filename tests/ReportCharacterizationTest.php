@@ -29,10 +29,10 @@ final class ReportCharacterizationTest extends TestCase
      */
     public static function reportProvider(): array
     {
-        $cases = array();
+        $cases = [];
 
         foreach ( Harness::reportNames() as $name ) {
-            $cases[ $name ] = array( $name );
+            $cases[ $name ] = [ $name ];
         }
 
         return $cases;
@@ -119,7 +119,7 @@ final class ReportCharacterizationTest extends TestCase
 
             $snap = Harness::snapshot( $name );
 
-            $this->assertSame( array(), $snap['diagnostics'],
+            $this->assertSame( [], $snap['diagnostics'],
                 "$name raised diagnostics while declaring itself: "
                 . implode( ' | ', $snap['diagnostics'] ) );
         }
@@ -136,7 +136,7 @@ final class ReportCharacterizationTest extends TestCase
     public function testTheDiagnosticsGuardActuallyCatchesSomething(): void
     {
         $noisy = new class {
-            public $data = array( 'subview' => 'test.noisy' );
+            public $data = [ 'subview' => 'test.noisy' ];
 
             public function action(): void
             {

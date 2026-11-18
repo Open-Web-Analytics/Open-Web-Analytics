@@ -28,7 +28,7 @@ class Update073 extends \OWA\Core\Update {
     public $schema_version = 73;
 
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
-    const COLUMNS = array( 'element_anchor', 'anchor_x', 'anchor_y' );
+    const COLUMNS = [ 'element_anchor', 'anchor_x', 'anchor_y' ];
 
     /**
      * @param  bool $force
@@ -74,5 +74,3 @@ class Update073 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

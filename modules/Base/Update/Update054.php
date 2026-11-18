@@ -52,7 +52,7 @@ class Update054 extends \OWA\Core\Update {
     public $down_does_not_restore = 'the values rows stored in the promoted columns: the columns are dropped and their values are not copied back into params.';
 
     /** The keys that stop reaching `params` in this release. */
-    const PROMOTED = array( 'file_name', 'file_extension' );
+    const PROMOTED = [ 'file_name', 'file_extension' ];
 
     /**
      * @param  bool $force
@@ -104,5 +104,3 @@ class Update054 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

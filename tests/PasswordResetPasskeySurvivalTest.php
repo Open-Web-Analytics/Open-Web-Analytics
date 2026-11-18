@@ -47,11 +47,11 @@ final class PasswordResetPasskeySurvivalTest extends TestCase
      */
     public function testTheRerenderedFormKeepsThePasskey(): void
     {
-        $data = $this->controllerData( array(
+        $data = $this->controllerData( [
             'k'         => self::PASSKEY,
             'password'  => 'abcdef1',
             'password2' => 'different2',
-        ) );
+        ] );
 
         $this->assertArrayHasKey(
             'key', $data,
@@ -67,7 +67,7 @@ final class PasswordResetPasskeySurvivalTest extends TestCase
      */
     public function testItRerendersThePasswordEntryForm(): void
     {
-        $data = $this->controllerData( array( 'k' => self::PASSKEY ) );
+        $data = $this->controllerData( [ 'k' => self::PASSKEY ] );
 
         $this->assertSame( 'base.usersPasswordEntry', $data['view'] ?? null );
     }
@@ -78,7 +78,7 @@ final class PasswordResetPasskeySurvivalTest extends TestCase
      */
     public function testAnAbsentPasskeyIsNotInvented(): void
     {
-        $data = $this->controllerData( array( 'password' => 'abcdef1' ) );
+        $data = $this->controllerData( [ 'password' => 'abcdef1' ] );
 
         $this->assertEmpty( $data['key'] ?? null );
     }

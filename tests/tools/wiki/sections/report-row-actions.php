@@ -18,15 +18,15 @@ use OWA\Core\CoreAPI;
 
 return function () {
 
-    $cell = fn ( $v ) => str_replace( array( '|', "\n" ), array( '\\|', ' ' ), trim( (string) $v ) );
+    $cell = fn ( $v ) => str_replace( [ '|', "\n" ], [ '\\|', ' ' ], trim( (string) $v ) );
 
     $actions = ConfiguredReport::rowActions();
 
     // Which module added each action that ROW_ACTIONS does not declare.
-    $added_by = array();
+    $added_by = [];
     $ed       = CoreAPI::getEventDispatch();
 
-    foreach ( (array) ( $ed->listenersByFilterType['report_row_actions'] ?? array() ) as $ids ) {
+    foreach ( (array) ( $ed->listenersByFilterType['report_row_actions'] ?? [] ) as $ids ) {
 
         foreach ( (array) $ids as $id ) {
 
@@ -36,14 +36,14 @@ return function () {
                 continue;
             }
 
-            foreach ( array_keys( (array) call_user_func( $listener, array() ) ) as $name ) {
+            foreach ( array_keys( (array) call_user_func( $listener, [] ) ) as $name ) {
                 $added_by[ $name ] = $listener[0]->display_name ?: $listener[0]->name;
             }
         }
     }
 
     // Which shipped widgets name each action.
-    $offered = array();
+    $offered = [];
 
     $registry = CoreAPI::getReportRegistry();
     ksort( $registry );
@@ -57,9 +57,9 @@ return function () {
         $d     = json_decode( (string) file_get_contents( $entry['json'] ), true );
         $title = rtrim( (string) ( $d['title'] ?? $id ), ': ' );
 
-        foreach ( (array) ( $d['widgets'] ?? array() ) as $widget ) {
+        foreach ( (array) ( $d['widgets'] ?? [] ) as $widget ) {
 
-            foreach ( (array) ( $widget['rowActions'] ?? array() ) as $name ) {
+            foreach ( (array) ( $widget['rowActions'] ?? [] ) as $name ) {
 
                 $where = '**' . $title . '**';
 

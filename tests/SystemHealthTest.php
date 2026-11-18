@@ -339,10 +339,10 @@ final class SystemHealthTest extends TestCase
     /** A queue backend with queueing off: said on a server that receives beacons, not on one that only drains. */
     public function testAQueueBackendWithQueueingOffIsSaid(): void
     {
-        $saved = array(
+        $saved = [
             'server_role'           => \OWA\Core\CoreAPI::getSetting('base', 'server_role'),
             'queue_tracking_events' => \OWA\Core\CoreAPI::getSetting('base', 'queue_tracking_events'),
-        );
+        ];
 
         try {
             TrackerIngest::$backend = 'sqs';

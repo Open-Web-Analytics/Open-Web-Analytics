@@ -40,12 +40,12 @@ final class UpdateAddColumnGuardTest extends TestCase
     /** @return array<string, array{0:string,1:string}> path => [path, source] */
     public static function updateFiles(): array
     {
-        $cases = array();
+        $cases = [];
 
         foreach ( (array) glob( self::root() . 'modules/*/Update/Update*.php' ) as $file ) {
 
             $cases[ basename( dirname( $file, 2 ) ) . '/' . basename( $file ) ]
-                = array( $file, (string) file_get_contents( $file ) );
+                = [ $file, (string) file_get_contents( $file ) ];
         }
 
         return $cases;
@@ -106,8 +106,8 @@ final class UpdateAddColumnGuardTest extends TestCase
      */
     public function testTheColumnAddingUpdatesUseTheHelper(): void
     {
-        foreach ( array( 'Update036', 'Update037', 'Update040', 'Update043', 'Update046', 'Update052',
-                'Update053', 'Update056', 'Update061' ) as $name ) {
+        foreach ( [ 'Update036', 'Update037', 'Update040', 'Update043', 'Update046', 'Update052',
+                'Update053', 'Update056', 'Update061' ] as $name ) {
 
             $source = (string) file_get_contents(
                 self::root() . 'modules/Base/Update/' . $name . '.php' );
@@ -132,9 +132,9 @@ final class UpdateAddColumnGuardTest extends TestCase
      */
     public function testTheUpgradeCycleIsReachableAndWiredIntoCi(): void
     {
-        foreach ( array( 'tests/tools/upgrade_cycle.php',
+        foreach ( [ 'tests/tools/upgrade_cycle.php',
                          'tests/tools/upgrade_cycle_run.sh',
-                         'tests/tools/scratch_guard.php' ) as $file ) {
+                         'tests/tools/scratch_guard.php' ] as $file ) {
 
             $this->assertFileExists( self::root() . $file,
                 "$file is gone. It is the only thing that runs the schema updates -- "

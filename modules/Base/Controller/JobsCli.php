@@ -20,13 +20,13 @@ class JobsCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Lists the one-off job queue.',
-            'arguments'   => array(
+            'arguments'   => [
                 'status=<pending|running|failed|done>' => 'List only jobs in this state.',
                 'limit=<n>'                            => 'How many to list. Defaults to 50.',
-            ),
-        );
+            ],
+        ];
     }
 
     /** Which of the four this command is; the thin subclasses set it. */
@@ -91,8 +91,8 @@ class JobsCli extends \OWA\Core\Controller\Cli {
         $rows   = $Q::listJobs( $status, (int) ( $this->getParam( 'limit' ) ?: 50 ) );
         $q      = $Q::stats();
 
-        $lines = array( sprintf( 'Queued jobs: due %d, delayed %d, running %d, failed %d, done %d.',
-            $q['due'], $q['delayed'], $q['running'], $q['failed'], $q['done'] ) );
+        $lines = [ sprintf( 'Queued jobs: due %d, delayed %d, running %d, failed %d, done %d.',
+            $q['due'], $q['delayed'], $q['running'], $q['failed'], $q['done'] ) ];
 
         foreach ( $rows as $row ) {
 
@@ -106,5 +106,3 @@ class JobsCli extends \OWA\Core\Controller\Cli {
         $this->write( $lines );
     }
 }
-
-?>

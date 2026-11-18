@@ -20,12 +20,12 @@ class AppPasswordListCli extends AppPasswordsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Lists a user\'s application passwords, with the id app-password-revoke takes.',
-            'arguments'   => array(
+            'arguments'   => [
                 'user=<user id>' => 'Required. The user whose passwords to list.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
@@ -41,13 +41,13 @@ class AppPasswordListCli extends AppPasswordsCli {
 
         if ( ! $rows ) {
 
-            $this->write( array( sprintf( '%s has no application passwords.', $user_id ) ) );
+            $this->write( [ sprintf( '%s has no application passwords.', $user_id ) ] );
 
             return;
         }
 
-        $lines = array( sprintf( '%-12s  %-5s  %-16s  %-16s  %-15s  %s',
-            'id', 'scope', 'created', 'last used', 'from', 'name' ) );
+        $lines = [ sprintf( '%-12s  %-5s  %-16s  %-16s  %-15s  %s',
+            'id', 'scope', 'created', 'last used', 'from', 'name' ) ];
 
         foreach ( $rows as $row ) {
 
@@ -63,5 +63,3 @@ class AppPasswordListCli extends AppPasswordsCli {
         $this->write( $lines );
     }
 }
-
-?>

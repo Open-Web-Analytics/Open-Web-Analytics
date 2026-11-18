@@ -37,7 +37,7 @@ final class ModuleActivation {
      */
     public static function declarations() {
 
-        return (array) ( Module::settingsRegistry()['activation'] ?? array() );
+        return (array) ( Module::settingsRegistry()['activation'] ?? [] );
     }
 
     /**
@@ -56,7 +56,7 @@ final class ModuleActivation {
                 ? ( defined( $constant ) ? constant( $constant ) : null )
                 : ( $defined[ $constant ] ?? null );
 
-            if ( $value !== null && $value !== '' && $value !== false && $value !== array() ) {
+            if ( $value !== null && $value !== '' && $value !== false && $value !== [] ) {
 
                 return (string) $constant;
             }
@@ -75,11 +75,11 @@ final class ModuleActivation {
      */
     public static function activeByConstant( $defined = null, $declarations = null ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( $declarations ?? self::declarations() as $module => $decl ) {
 
-            $constant = self::setConstant( (array) ( $decl['activated_by'] ?? array() ), $defined );
+            $constant = self::setConstant( (array) ( $decl['activated_by'] ?? [] ), $defined );
 
             if ( $constant !== null ) {
 
@@ -103,7 +103,7 @@ final class ModuleActivation {
     public static function queueBackends( $defined = null, $declarations = null ) {
 
         $declarations = $declarations ?? self::declarations();
-        $out          = array();
+        $out          = [];
 
         foreach ( self::activeByConstant( $defined, $declarations ) as $module => $constant ) {
 
@@ -127,13 +127,13 @@ final class ModuleActivation {
      */
     public static function queueBackendConstants( $declarations = null ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( $declarations ?? self::declarations() as $decl ) {
 
             if ( (string) ( $decl['intake_queue_type'] ?? '' ) !== '' ) {
 
-                $out = array_merge( $out, (array) ( $decl['activated_by'] ?? array() ) );
+                $out = array_merge( $out, (array) ( $decl['activated_by'] ?? [] ) );
             }
         }
 

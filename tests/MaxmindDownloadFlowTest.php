@@ -53,7 +53,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
     protected function tearDown(): void {
 
         // Dotfiles too: the download-attempt marker is one.
-        foreach ( array_diff( scandir( $this->dir ) ?: array(), array( '.', '..' ) ) as $name ) {
+        foreach ( array_diff( scandir( $this->dir ) ?: [], [ '.', '..' ] ) as $name ) {
 
             $path = $this->dir . $name;
             is_dir( $path ) ? $this->removeTree( $path ) : @unlink( $path );
@@ -104,7 +104,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
     /**
      * The controller with the network replaced and the destination redirected.
      */
-    private function controller( array $options = array() ) {
+    private function controller( array $options = [] ) {
 
         $fixture = $this->fixture;
         $dir     = $this->dir;
@@ -114,7 +114,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
             public $downloads = 0;
             public $head_requests = 0;
-            public $messages = array();
+            public $messages = [];
             private $fixture;
             private $dir;
             private $options;
@@ -124,8 +124,8 @@ final class MaxmindDownloadFlowTest extends TestCase {
                 $this->fixture = $fixture;
                 $this->dir     = $dir;
                 $this->options = $options;
-                $this->params  = isset( $options['params'] ) ? $options['params'] : array();
-                $this->data    = array();
+                $this->params  = isset( $options['params'] ) ? $options['params'] : [];
+                $this->data    = [];
             }
 
             protected function dataDir() { return $this->dir; }
@@ -193,14 +193,14 @@ final class MaxmindDownloadFlowTest extends TestCase {
         return $controller;
     }
 
-    private function withKey( array $params = array() ) {
+    private function withKey( array $params = [] ) {
 
-        return array_merge( array( 'license-key' => 'fixture-key-not-a-real-one' ), $params );
+        return array_merge( [ 'license-key' => 'fixture-key-not-a-real-one' ], $params );
     }
 
     public function testAFullRunWritesTheDatabaseWhereLookupsReadIt(): void {
 
-        $c = $this->controller( array( 'params' => $this->withKey() ) );
+        $c = $this->controller( [ 'params' => $this->withKey() ] );
         $c->action();
 
         $this->assertFileExists( $this->dir . 'GeoLite2-City.mmdb',
@@ -216,12 +216,12 @@ final class MaxmindDownloadFlowTest extends TestCase {
      */
     public function testItFindsTheDatabaseInsideADatedDirectory(): void {
 
-        $c = $this->controller( array( 'params' => $this->withKey() ) );
+        $c = $this->controller( [ 'params' => $this->withKey() ] );
         $c->action();
 
         $this->assertFileDoesNotExist( $this->dir . 'GeoLite2-City_20260814',
             'the wrapper directory must not be left behind' );
-        $this->assertSame( array(), glob( $this->dir . '.update-*' ) ?: array(),
+        $this->assertSame( [], glob( $this->dir . '.update-*' ) ?: [],
             'the working directory must be cleaned up' );
     }
 
@@ -231,7 +231,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
      */
     public function testADryRunMakesNoDownload(): void {
 
-        $c = $this->controller( array( 'params' => $this->withKey( array( 'dry-run' => 1 ) ) ) );
+        $c = $this->controller( [ 'params' => $this->withKey( [ 'dry-run' => 1 ] ) ] );
         $c->action();
 
         $this->assertSame( 0, $c->downloads, 'a dry run must not transfer the archive' );
@@ -244,10 +244,10 @@ final class MaxmindDownloadFlowTest extends TestCase {
         file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'EXISTING' );
         touch( $this->dir . 'GeoLite2-City.mmdb', time() );
 
-        $c = $this->controller( array(
+        $c = $this->controller( [
             'params'       => $this->withKey(),
             'remote_mtime' => time() - 86400,   // MaxMind's copy is older
-        ) );
+        ] );
         $c->action();
 
         $this->assertSame( 1, $c->head_requests, 'it must ask before deciding' );
@@ -263,10 +263,10 @@ final class MaxmindDownloadFlowTest extends TestCase {
         file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'EXISTING' );
         touch( $this->dir . 'GeoLite2-City.mmdb', time() - 86400 * 7 );
 
-        $c = $this->controller( array(
+        $c = $this->controller( [
             'params'       => $this->withKey(),
             'remote_mtime' => time(),
-        ) );
+        ] );
         $c->action();
 
         $this->assertSame( 1, $c->downloads );
@@ -280,7 +280,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'EXISTING' );
 
-        $c = $this->controller( array( 'params' => $this->withKey() ) );
+        $c = $this->controller( [ 'params' => $this->withKey() ] );
         $c->action();
 
         $this->assertSame( 1, $c->head_requests );
@@ -291,10 +291,10 @@ final class MaxmindDownloadFlowTest extends TestCase {
     // Scheduled runs (scheduled=1, the refresh-geoip-db job)
     // -----------------------------------------------------------------------
 
-    private function scheduled( array $options = array() ) {
+    private function scheduled( array $options = [] ) {
 
         return $this->controller( array_merge(
-            array( 'params' => $this->withKey( array( 'scheduled' => 1 ) ) ), $options ) );
+            [ 'params' => $this->withKey( [ 'scheduled' => 1 ] ) ], $options ) );
     }
 
     private function localCopy( $age ) {
@@ -313,7 +313,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         $this->localCopy( 0 );
 
-        $c = $this->scheduled( array( 'remote_mtime' => time() - 86400 ) );
+        $c = $this->scheduled( [ 'remote_mtime' => time() - 86400 ] );
         $c->action();
 
         $this->assertSame( 0, $c->downloads );
@@ -332,7 +332,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
         $config->set( 'maxmind_geoip', 'db_license_key', '' );
         $config->set( 'maxmind_geoip', 'ws_license_key', '' );
 
-        $c = $this->controller( array( 'params' => array( 'scheduled' => 1 ) ) );
+        $c = $this->controller( [ 'params' => [ 'scheduled' => 1 ] ] );
         $c->action();
 
         $config->set( 'maxmind_geoip', 'db_license_key', $previous_db );
@@ -349,7 +349,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         $this->localCopy( 86400 * 7 );
 
-        $c = $this->scheduled( array( 'remote_mtime' => time() - 3600 ) );
+        $c = $this->scheduled( [ 'remote_mtime' => time() - 3600 ] );
         $c->action();
 
         $this->assertSame( 1, $c->head_requests );
@@ -378,13 +378,13 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         $this->localCopy( 86400 );
 
-        foreach ( array(
+        foreach ( [
             0   => 'Could not reach MaxMind',
             200 => 'gave no Last-Modified date',
             401 => 'rejected the licence key',
-        ) as $status => $said ) {
+        ] as $status => $said ) {
 
-            $c = $this->scheduled( array( 'check_status' => $status ) );
+            $c = $this->scheduled( [ 'check_status' => $status ] );
             $c->action();
 
             $this->assertSame( 1, $c->head_requests );
@@ -401,7 +401,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
      */
     public function testAScheduledRunDoesNotRepeatADownloadThatDidNotInstall(): void {
 
-        $first = $this->scheduled( array( 'download_junk' => 1 ) );
+        $first = $this->scheduled( [ 'download_junk' => 1 ] );
         $first->action();
 
         $this->assertSame( 1, $first->downloads );
@@ -427,9 +427,9 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
     public function testByHandADownloadThatDidNotInstallCanBeRetriedAtOnce(): void {
 
-        $this->scheduled( array( 'download_junk' => 1 ) )->action();
+        $this->scheduled( [ 'download_junk' => 1 ] )->action();
 
-        $c = $this->controller( array( 'params' => $this->withKey() ) );
+        $c = $this->controller( [ 'params' => $this->withKey() ] );
         $c->action();
 
         $this->assertSame( 1, $c->downloads );
@@ -440,10 +440,10 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'EXISTING' );
 
-        $c = $this->controller( array(
-            'params'       => $this->withKey( array( 'force' => 1 ) ),
+        $c = $this->controller( [
+            'params'       => $this->withKey( [ 'force' => 1 ] ),
             'remote_mtime' => time() - 86400,
-        ) );
+        ] );
         $c->action();
 
         $this->assertSame( 1, $c->downloads );
@@ -459,10 +459,10 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'EXISTING' );
 
-        $c = $this->controller( array(
-            'params'         => $this->withKey( array( 'force' => 1 ) ),
+        $c = $this->controller( [
+            'params'         => $this->withKey( [ 'force' => 1 ] ),
             'download_fails' => 'MaxMind rejected the licence key.',
-        ) );
+        ] );
         $c->action();
 
         $this->assertSame( 'EXISTING', file_get_contents( $this->dir . 'GeoLite2-City.mmdb' ),
@@ -496,9 +496,9 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
     public function testAnEditionTheModuleCannotReadIsRefusedBeforeAnyRequest(): void {
 
-        $c = $this->controller( array(
-            'params' => $this->withKey( array( 'edition' => 'GeoLite2-ASN' ) ),
-        ) );
+        $c = $this->controller( [
+            'params' => $this->withKey( [ 'edition' => 'GeoLite2-ASN' ] ),
+        ] );
         $c->action();
 
         $this->assertSame( 0, $c->downloads );
@@ -530,7 +530,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'THE-OLD-DATABASE' );
 
-        $c = $this->controller( array( 'params' => $this->withKey( array( 'force' => 1 ) ) ) );
+        $c = $this->controller( [ 'params' => $this->withKey( [ 'force' => 1 ] ) ] );
         $c->action();
 
         $this->assertSame( 'FIXTURE-DATABASE-CONTENTS',
@@ -553,11 +553,11 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
         file_put_contents( $this->dir . 'GeoLite2-City.mmdb', 'GENERATION-1' );
 
-        $this->controller( array( 'params' => $this->withKey( array( 'force' => 1 ) ) ) )->action();
-        $this->controller( array( 'params' => $this->withKey( array( 'force' => 1 ) ) ) )->action();
-        $this->controller( array( 'params' => $this->withKey( array( 'force' => 1 ) ) ) )->action();
+        $this->controller( [ 'params' => $this->withKey( [ 'force' => 1 ] ) ] )->action();
+        $this->controller( [ 'params' => $this->withKey( [ 'force' => 1 ] ) ] )->action();
+        $this->controller( [ 'params' => $this->withKey( [ 'force' => 1 ] ) ] )->action();
 
-        $copies = glob( $this->dir . '*.previous*' ) ?: array();
+        $copies = glob( $this->dir . '*.previous*' ) ?: [];
 
         $this->assertCount( 1, $copies,
             'three runs must leave one previous copy, not three' );
@@ -565,7 +565,7 @@ final class MaxmindDownloadFlowTest extends TestCase {
 
     public function testAFirstInstallLeavesNoPreviousCopy(): void {
 
-        $this->controller( array( 'params' => $this->withKey() ) )->action();
+        $this->controller( [ 'params' => $this->withKey() ] )->action();
 
         $this->assertFileDoesNotExist( $this->dir . 'GeoLite2-City.mmdb.previous',
             'there was nothing to keep, so nothing should be kept' );

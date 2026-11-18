@@ -22,7 +22,7 @@ class PropertyGrants {
      */
     public static function userIds( $property_id ) {
 
-        $ids = array();
+        $ids = [];
 
         foreach ( self::sites( $property_id ) as $site ) {
 
@@ -67,7 +67,7 @@ class PropertyGrants {
      */
     private static function sites( $property_id ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( \OWA\Module\Base\Classes\Cube\Cubes::siteIds( $property_id ) as $site_id ) {
 

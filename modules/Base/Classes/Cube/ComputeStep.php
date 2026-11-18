@@ -44,7 +44,7 @@ namespace OWA\Module\Base\Classes\Cube;
 abstract class ComputeStep extends Step {
 
     /** @var array<string, string> "id:yyyymmdd" => value, filled by compute() during execute() */
-    private $values = array();
+    private $values = [];
 
     /**
      * Raw columns this step's callback needs. Projected into the shared
@@ -85,7 +85,7 @@ abstract class ComputeStep extends Step {
      */
     public function sessionReads() {
 
-        return array();
+        return [];
     }
 
     /**
@@ -100,7 +100,7 @@ abstract class ComputeStep extends Step {
 
     public function requires() {
 
-        return array( Context::COMPUTED );
+        return [ Context::COMPUTED ];
     }
 
     /**
@@ -110,7 +110,7 @@ abstract class ComputeStep extends Step {
      */
     public function reset() {
 
-        $this->values = array();
+        $this->values = [];
     }
 
     /**
@@ -146,5 +146,3 @@ abstract class ComputeStep extends Step {
             $this->fallback( $context ), Context::COMPUTED, $this->column );
     }
 }
-
-?>

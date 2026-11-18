@@ -69,5 +69,3 @@ abstract class CustomDimensionsCli extends \OWA\Core\Controller\Cli {
             empty( $row['state_message'] ) ? '' : '  [' . $row['state_message'] . ']' );
     }
 }
-
-?>

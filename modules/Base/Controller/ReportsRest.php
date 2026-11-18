@@ -27,195 +27,195 @@ namespace OWA\Module\Base\Controller;
  */
 class ReportsRest extends \OWA\Core\ReportController {
 
-	/** A siteId filters to that Profile, so a client asking for one site's numbers gets them. */
-	protected $filters_by_site = true;
-	
-	public function __construct($params) {
-		
+    /** A siteId filters to that Profile, so a client asking for one site's numbers gets them. */
+    protected $filters_by_site = true;
+    
+    public function __construct($params) {
+        
         parent::__construct($params);
         $this->setRequiredCapability('view_reports');
 
         // An overlay (heatmap, recording player) reads this route with its
         // scoped token; no other route accepts one.
-        $this->setAuthMethods( array( 'overlay_token', 'app_password', 'cookies' ) );
+        $this->setAuthMethods( [ 'overlay_token', 'app_password', 'cookies' ] );
     }
-	
-	public function validate() {
-		
-		/*
-		 * The same range rule the web path enforces, from the same place, so the
-		 * two cannot drift on what a date range is -- as they had drifted on
-		 * what a period is until both were pointed at getValidPeriods().
-		 *
-		 * Applied to every report this controller serves, not just the generic
-		 * resultset branch: the named reports below take the same startDate and
-		 * endDate parameters and had the same inverted-window behaviour.
-		 */
-		$range = new \OWA\Core\Validation\DateRange();
+    
+    public function validate() {
+        
+        /*
+         * The same range rule the web path enforces, from the same place, so the
+         * two cannot drift on what a date range is -- as they had drifted on
+         * what a period is until both were pointed at getValidPeriods().
+         *
+         * Applied to every report this controller serves, not just the generic
+         * resultset branch: the named reports below take the same startDate and
+         * endDate parameters and had the same inverted-window behaviour.
+         */
+        $range = new \OWA\Core\Validation\DateRange();
 
-		$range->setValues( array(
-			'period'    => $this->getParam('period'),
-			'startDate' => $this->getParam('startDate'),
-			'endDate'   => $this->getParam('endDate'),
-		) );
+        $range->setValues( [
+            'period'    => $this->getParam('period'),
+            'startDate' => $this->getParam('startDate'),
+            'endDate'   => $this->getParam('endDate'),
+        ] );
 
-		$this->setValidation( 'dateRange', $range );
+        $this->setValidation( 'dateRange', $range );
 
-		$compare = new \OWA\Core\Validation\CompareRange();
+        $compare = new \OWA\Core\Validation\CompareRange();
 
-		$compare->setValues( array(
-			'compare'          => $this->getParam('compare'),
-			'compareStartDate' => $this->getParam('compareStartDate'),
-			'compareEndDate'   => $this->getParam('compareEndDate'),
-		) );
+        $compare->setValues( [
+            'compare'          => $this->getParam('compare'),
+            'compareStartDate' => $this->getParam('compareStartDate'),
+            'compareEndDate'   => $this->getParam('compareEndDate'),
+        ] );
 
-		$this->setValidation( 'compareRange', $compare );
+        $this->setValidation( 'compareRange', $compare );
 
-		// if no report name is specified do these validations necesary for generic resultSet.
-		if ( ! $this->get('report_name') ) {
-			
-			// metrics are required for resultset queries		
-			$this->addValidation( 'metrics', $this->getParam('metrics'), 'required', array('stopOnError'	=> true) );
-			
-			// make sure period string is valid
-			if ( $this->get( 'period' ) ) {
-				
-				/*
-				 * The same list the web path validates against, rather than a
-				 * second one built here. These had drifted: this controller
-				 * used the dropdown's labels alone, so `period=date_range` --
-				 * accepted everywhere else -- was rejected over the API, and
-				 * the only way to ask for a custom range was to omit the
-				 * parameter and let it be inferred.
-				 *
-				 * That inference stays. Naming the period is now permitted, not
-				 * required; a caller sending two dates and nothing else is
-				 * still doing the normal thing.
-				 */
-				$period = new \OWA\Module\Base\Classes\TimePeriod();
-				$this->addValidation('period', $this->getParam('period'), 'inArray', array('possible_values' => $period->getValidPeriods(), 'stopOnError' => true) );
-			}
-		} else {
+        // if no report name is specified do these validations necesary for generic resultSet.
+        if ( ! $this->get('report_name') ) {
+            
+            // metrics are required for resultset queries		
+            $this->addValidation( 'metrics', $this->getParam('metrics'), 'required', ['stopOnError'	=> true] );
+            
+            // make sure period string is valid
+            if ( $this->get( 'period' ) ) {
+                
+                /*
+                 * The same list the web path validates against, rather than a
+                 * second one built here. These had drifted: this controller
+                 * used the dropdown's labels alone, so `period=date_range` --
+                 * accepted everywhere else -- was rejected over the API, and
+                 * the only way to ask for a custom range was to omit the
+                 * parameter and let it be inferred.
+                 *
+                 * That inference stays. Naming the period is now permitted, not
+                 * required; a caller sending two dates and nothing else is
+                 * still doing the normal thing.
+                 */
+                $period = new \OWA\Module\Base\Classes\TimePeriod();
+                $this->addValidation('period', $this->getParam('period'), 'inArray', ['possible_values' => $period->getValidPeriods(), 'stopOnError' => true] );
+            }
+        } else {
 
-			/*
-			 * The named reports -- visit, clickstream, latest visits and
-			 * actions, transactions -- read v1's tables and went with them in
-			 * 2.0. Nothing in the UI called them. A name is refused rather than
-			 * ignored, so a caller still using one learns it is gone instead of
-			 * receiving an unrelated result set.
-			 */
-			$this->addValidation( 'report_name', $this->get('report_name'), 'inArray',
-				array( 'possible_values' => array(), 'stopOnError' => true ) );
-		}
-	}
-	
-	/** What a request signed in by an overlay token may not ask for: its token does not bind them. */
-	const NOT_FOR_OVERLAY_TOKENS = array( 'segment', 'rowValues' );
+            /*
+             * The named reports -- visit, clickstream, latest visits and
+             * actions, transactions -- read v1's tables and went with them in
+             * 2.0. Nothing in the UI called them. A name is refused rather than
+             * ignored, so a caller still using one learns it is gone instead of
+             * receiving an unrelated result set.
+             */
+            $this->addValidation( 'report_name', $this->get('report_name'), 'inArray',
+                [ 'possible_values' => [], 'stopOnError' => true ] );
+        }
+    }
+    
+    /** What a request signed in by an overlay token may not ask for: its token does not bind them. */
+    const NOT_FOR_OVERLAY_TOKENS = [ 'segment', 'rowValues' ];
 
-	public function action() {
+    public function action() {
 
-		if ( \OWA\Core\Auth::get_instance()->getAuthMethod() === 'overlay_token' ) {
+        if ( \OWA\Core\Auth::get_instance()->getAuthMethod() === 'overlay_token' ) {
 
-			foreach ( self::NOT_FOR_OVERLAY_TOKENS as $key ) {
+            foreach ( self::NOT_FOR_OVERLAY_TOKENS as $key ) {
 
-				if ( ! in_array( $this->getParam( $key ), array( null, '' ), true ) ) {
+                if ( ! in_array( $this->getParam( $key ), [ null, '' ], true ) ) {
 
-					$response = new \OWA\Module\Base\Classes\PaginatedResultSet();
-					$response->request_errors = array(
-						sprintf( \OWA\Core\CoreAPI::t( 'An overlay link cannot ask for %s.' ), $key ) );
+                    $response = new \OWA\Module\Base\Classes\PaginatedResultSet();
+                    $response->request_errors = [
+                        sprintf( \OWA\Core\CoreAPI::t( 'An overlay link cannot ask for %s.' ), $key ) ];
 
-					$this->set( 'response', $response );
+                    $this->set( 'response', $response );
 
-					return;
-				}
-			}
-		}
+                    return;
+                }
+            }
+        }
 
-		/*
-		 * Reporting not ready for this Property: it has no cube yet.
-		 * Answered before any result set is built, so nothing queries a table
-		 * that does not exist, and with the reason rather than empty rows -- a
-		 * client reading rows alone could not tell "not built yet" from zero.
-		 */
-		$propertyId = $this->propertyOfRequest();
+        /*
+         * Reporting not ready for this Property: it has no cube yet.
+         * Answered before any result set is built, so nothing queries a table
+         * that does not exist, and with the reason rather than empty rows -- a
+         * client reading rows alone could not tell "not built yet" from zero.
+         */
+        $propertyId = $this->propertyOfRequest();
 
-		$readiness = $this->get( 'propertyId' ) || $this->get( 'siteId' )
-			? \OWA\Module\Base\Classes\Cube\Status::readinessOfProperty( $propertyId ) : null;
+        $readiness = $this->get( 'propertyId' ) || $this->get( 'siteId' )
+            ? \OWA\Module\Base\Classes\Cube\Status::readinessOfProperty( $propertyId ) : null;
 
-		if ( $readiness ) {
+        if ( $readiness ) {
 
-			$response = new \OWA\Module\Base\Classes\PaginatedResultSet();
-			$response->notReady = $readiness;
+            $response = new \OWA\Module\Base\Classes\PaginatedResultSet();
+            $response->notReady = $readiness;
 
-			$this->set( 'response', $response );
+            $this->set( 'response', $response );
 
-			return;
-		}
+            return;
+        }
 
-		$this->set( 'response', $this->getResultSet() );
-	}
-	
-	public function success() {
+        $this->set( 'response', $this->getResultSet() );
+    }
+    
+    public function success() {
 
-		/*
-		 * A malformed request is not a success, whatever the envelope contains.
-		 *
-		 * This answered 201 unconditionally, so a query refused for naming a
-		 * dimension that does not exist -- or for a constraint whose value went
-		 * missing -- came back as success carrying an `errors` array that a
-		 * client had no reason to read. The status is the only part most callers
-		 * check.
-		 *
-		 * 422 rather than 400: the request is well-formed HTTP and the
-		 * parameters are the right shape, they just cannot be honoured. It is
-		 * the code this controller already answers with for a failed validation.
-		 */
-		/*
-		 * $this->data, not $this->get().
-		 *
-		 * On a controller set() writes the data the VIEW is handed while get()
-		 * reads a REQUEST PARAMETER -- they are not a pair. Reading the response
-		 * back with get('response') returns null on every request, so this
-		 * answered 201 unconditionally and looked like it worked.
-		 */
-		$response = $this->data['response'] ?? null;
+        /*
+         * A malformed request is not a success, whatever the envelope contains.
+         *
+         * This answered 201 unconditionally, so a query refused for naming a
+         * dimension that does not exist -- or for a constraint whose value went
+         * missing -- came back as success carrying an `errors` array that a
+         * client had no reason to read. The status is the only part most callers
+         * check.
+         *
+         * 422 rather than 400: the request is well-formed HTTP and the
+         * parameters are the right shape, they just cannot be honoured. It is
+         * the code this controller already answers with for a failed validation.
+         */
+        /*
+         * $this->data, not $this->get().
+         *
+         * On a controller set() writes the data the VIEW is handed while get()
+         * reads a REQUEST PARAMETER -- they are not a pair. Reading the response
+         * back with get('response') returns null on every request, so this
+         * answered 201 unconditionally and looked like it worked.
+         */
+        $response = $this->data['response'] ?? null;
 
-		$status = 201;
+        $status = 201;
 
-		if ( is_object( $response ) && ! empty( $response->request_errors ) ) {
+        if ( is_object( $response ) && ! empty( $response->request_errors ) ) {
 
-			$status = 422;
+            $status = 422;
 
-		} elseif ( is_object( $response ) && ! empty( $response->notReady ) ) {
+        } elseif ( is_object( $response ) && ! empty( $response->notReady ) ) {
 
-			/*
-			 * 409, not 503: the server is fine, and the request is valid; what
-			 * it asks about is not in a state to answer yet. Not 201 with no
-			 * rows, which is how a real zero looks.
-			 */
-			$status = 409;
-		}
+            /*
+             * 409, not 503: the server is fine, and the request is valid; what
+             * it asks about is not in a state to answer yet. Not 201 with no
+             * rows, which is how a real zero looks.
+             */
+            $status = 409;
+        }
 
-		$this->restResponse( $status, 'response' );
-	}
-	
+        $this->restResponse( $status, 'response' );
+    }
+    
     public function errorAction() {
 
         $this->restResponse( 422 );
     }
-	
-	/**
-	 * The Property the request names, or else the one its siteId belongs to; '' for neither.
-	 *
-	 * @return string
-	 */
-	private function propertyOfRequest() {
+    
+    /**
+     * The Property the request names, or else the one its siteId belongs to; '' for neither.
+     *
+     * @return string
+     */
+    private function propertyOfRequest() {
 
-		return (string) ( $this->get( 'propertyId' )
-			?: \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( (string) $this->get( 'siteId' ) ) );
-	}
+        return (string) ( $this->get( 'propertyId' )
+            ?: \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( (string) $this->get( 'siteId' ) ) );
+    }
 
-	/**
+    /**
      * Generates a data result set using metrics and dimension
      *
      * @return object|false the result set, as withComparison() answers it; false without metrics
@@ -283,29 +283,29 @@ class ReportsRest extends \OWA\Core\ReportController {
             return $rs;
         }
 
-        $over = array(
+        $over = [
             'period'         => 'date_range',
             'startDate'      => $compare['startDate'],
             'endDate'        => $compare['endDate'],
             'resultsPerPage' => self::COMPARE_ROW_LIMIT,
             'page'           => 1,
             'offset'         => null,
-        );
+        ];
 
         $dims = (array) $rsm->dimensions;
-        $main = array( $rsm->timePeriod->getStartDate()->getYyyymmdd(), $rsm->timePeriod->getEndDate()->getYyyymmdd() );
-        $cmp  = array( $compare['startDate'], $compare['endDate'] );
+        $main = [ $rsm->timePeriod->getStartDate()->getYyyymmdd(), $rsm->timePeriod->getEndDate()->getYyyymmdd() ];
+        $cmp  = [ $compare['startDate'], $compare['endDate'] ];
 
         /*
          * The totals from a query of their own, with no dimensions and so no
          * restriction to the page: a total of the rows on the page is not the
          * period's total.
          */
-        $totals = $this->resultSetManager( $over + array( 'dimensions' => '', 'sort' => '' ) )->getResults();
+        $totals = $this->resultSetManager( $over + [ 'dimensions' => '', 'sort' => '' ] )->getResults();
 
         if ( ! $dims ) {
 
-            return \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $totals, array(), $main, $cmp, $compare['compare'] );
+            return \OWA\Module\Base\Classes\CompareMerger::merge( $rs, $totals, [], $main, $cmp, $compare['compare'] );
         }
 
         /*
@@ -318,7 +318,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
             foreach ( \OWA\Module\Base\Classes\CompareMerger::restrictable( $dims ) as $dim ) {
 
-                $values = array();
+                $values = [];
 
                 foreach ( (array) $rs->resultsRows as $row ) {
 
@@ -420,7 +420,7 @@ class ReportsRest extends \OWA\Core\ReportController {
             return $rsm->formatValue( $data_type, $value );
         };
 
-        $rows = array();
+        $rows = [];
 
         foreach ( (array) $ors->resultsRows as $row ) {
 
@@ -440,7 +440,7 @@ class ReportsRest extends \OWA\Core\ReportController {
      *                         the same query over other dates
      * @return \OWA\Module\Base\Classes\ResultSetManager|false  false without metrics
      */
-    public function resultSetManager( array $overrides = array() ) {
+    public function resultSetManager( array $overrides = [] ) {
 
         $get = function ( $name ) use ( $overrides ) {
             return array_key_exists( $name, $overrides ) ? $overrides[ $name ] : $this->get( $name );
@@ -449,11 +449,11 @@ class ReportsRest extends \OWA\Core\ReportController {
         $rsm = new \OWA\Module\Base\Classes\ResultSetManager;
 
         if ( $this->getParam('metrics') ) {
-	        
+            
             $rsm->metrics = $rsm->metricsStringToArray( $this->getParam('metrics') );
             
         } else {
-	        
+            
             return false;
         }
 
@@ -468,23 +468,23 @@ class ReportsRest extends \OWA\Core\ReportController {
 
         // set dimensions
         if ( $get('dimensions') ) {
-	        
+            
             $rsm->setDimensions($rsm->dimensionsStringToArray( $get('dimensions') ));
         }
 
         if ( $this->getParam('segment') ) {
-	        
+            
             $rsm->setSegment( $this->getParam('segment') );
         }
 
         // set period
         if ( ! $this->getParam('period') ) {
-	        
+            
             $this->setParam('period', 'today');
         }
 
         $rsm->setTimePeriod(
-        	$get( 'period' ),
+            $get( 'period' ),
             $get( 'startDate' ),
             $get( 'endDate' ),
             $get( 'startTime' ),
@@ -503,7 +503,7 @@ class ReportsRest extends \OWA\Core\ReportController {
         }
 
         if ( $this->get('siteId') ) {
-	
+    
             $rsm->setSiteId( $this->get('siteId' ) );
         }
 
@@ -518,7 +518,7 @@ class ReportsRest extends \OWA\Core\ReportController {
          */
         if ( ! $overrides ) {
 
-            foreach ( array( 'compare', 'compareStartDate', 'compareEndDate', 'rowValues' ) as $key ) {
+            foreach ( [ 'compare', 'compareStartDate', 'compareEndDate', 'rowValues' ] as $key ) {
 
                 $value = $this->get( $key );
 
@@ -604,7 +604,7 @@ class ReportsRest extends \OWA\Core\ReportController {
 
             $values = array_values( array_unique( array_filter( array_map( function ( $v ) {
                 return is_scalar( $v ) ? (string) $v : '';
-            }, is_array( $values ) ? $values : array() ), static fn ( $value ) => $value !== '' ) ) );
+            }, is_array( $values ) ? $values : [] ), static fn ( $value ) => $value !== '' ) ) );
 
             if ( ! $values || count( $values ) > self::ROW_VALUES_LIMIT ) {
 

@@ -28,7 +28,7 @@ final class CanonicalUrlHostTest extends TestCase
 
         \OWA\Core\CoreAPI::dbSingleton()->query( sprintf(
             "INSERT INTO owa_site (id, site_id, property_id, name, domain) VALUES (%s, ?, 0, 'Canonical host fixture', 'www.example.com')",
-            \OWA\Core\CoreAPI::entityFactory( 'base.site' )->generateId( self::SITE ) ), array( self::SITE ) );
+            \OWA\Core\CoreAPI::entityFactory( 'base.site' )->generateId( self::SITE ) ), [ self::SITE ] );
     }
 
     protected function tearDown(): void
@@ -41,7 +41,7 @@ final class CanonicalUrlHostTest extends TestCase
 
     private function dropSite(): void
     {
-        \OWA\Core\CoreAPI::dbSingleton()->query( 'DELETE FROM owa_site WHERE site_id = ?', array( self::SITE ) );
+        \OWA\Core\CoreAPI::dbSingleton()->query( 'DELETE FROM owa_site WHERE site_id = ?', [ self::SITE ] );
     }
 
     private function canonical( string $url ): string

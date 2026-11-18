@@ -10,7 +10,7 @@ use OWA\Module\Base\Classes\TimePeriod;
 
 return function () {
 
-    $cell = fn ( $v ) => str_replace( array( '|', "\n" ), array( '\\|', ' ' ), trim( (string) $v ) );
+    $cell = fn ( $v ) => str_replace( [ '|', "\n" ], [ '\\|', ' ' ], trim( (string) $v ) );
 
     $out = "| Predefined period | `owa_period` | Covers |\n|---|---|---|\n";
 

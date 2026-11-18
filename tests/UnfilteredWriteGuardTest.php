@@ -57,7 +57,7 @@ final class UnfilteredWriteGuardTest extends RestControllerTestCase
 
         $this->assertFalse($db->executeQuery());
 
-        $row = $db->get_row("SELECT real_name FROM $table WHERE id = ?", array($user['id']));
+        $row = $db->get_row("SELECT real_name FROM $table WHERE id = ?", [$user['id']]);
         $this->assertNotSame('Overwritten', $row['real_name']);
     }
 

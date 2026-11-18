@@ -48,7 +48,7 @@ final class Update068Test extends TestCase
     {
         \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
             'INSERT INTO %s (id, event_type, status) VALUES (?, ?, ?)', self::TABLE),
-            array((string) random_int(1, PHP_INT_MAX), 'page_view', $status));
+            [(string) random_int(1, PHP_INT_MAX), 'page_view', $status]);
     }
 
     public function testTheModuleRequiresItAndNoLongerDeclaresTheEntity(): void
@@ -81,8 +81,8 @@ final class Update068Test extends TestCase
         $create = (string) \OWA\Core\CoreAPI::dbSingleton()->get_row('SHOW CREATE TABLE ' . self::TABLE)['Create Table'];
 
         // MariaDB prints display widths (int(11), bigint(20)); MySQL 8 does not.
-        foreach (array('/`id` bigint(\(\d+\))? NOT NULL/', '/`event` blob/', '/`insertion_datestamp` timestamp NULL/',
-                       '/`not_before_timestamp` int(\(\d+\))?/', '/`is_assigned` tinyint\(1\)/', '/PRIMARY KEY \(`id`\)/') as $piece) {
+        foreach (['/`id` bigint(\(\d+\))? NOT NULL/', '/`event` blob/', '/`insertion_datestamp` timestamp NULL/',
+                       '/`not_before_timestamp` int(\(\d+\))?/', '/`is_assigned` tinyint\(1\)/', '/PRIMARY KEY \(`id`\)/'] as $piece) {
             $this->assertMatchesRegularExpression($piece, $create);
         }
 

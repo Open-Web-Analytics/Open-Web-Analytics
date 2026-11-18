@@ -78,5 +78,3 @@ class SitesDelete extends \OWA\Core\AdminController {
         $this->setStatusCode( 3204 );
     }
 }
-
-?>

@@ -82,7 +82,7 @@ class Update extends \OWA\Core\Base {
      *
      * @var array<string,string>
      */
-    public $tables = array();
+    public $tables = [];
 
     /**
      * @return bool
@@ -408,5 +408,3 @@ class Update extends \OWA\Core\Base {
     }
 
 }
-
-?>

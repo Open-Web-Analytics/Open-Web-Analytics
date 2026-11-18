@@ -177,7 +177,7 @@ foreach ( $owa_steps as $owa_s ) {
 <div class="owa_reportSectionContent">
     <?php $view->out( \OWA\Core\CoreAPI::t( 'This visualization has no steps yet.' ) ); ?>
     <?php $view->outMarkup( \OWA\Core\CoreAPI::t( '%1$sAdd some%2$s.' ),
-        '<a href="' . $view->makeLink( array( 'do' => 'base.visualizationEdit', 'visualizationId' => $view->visualization_id ), true ) . '">', '</a>' ); ?>
+        '<a href="' . $view->makeLink( [ 'do' => 'base.visualizationEdit', 'visualizationId' => $view->visualization_id ], true ) . '">', '</a>' ); ?>
 </div>
 <?php endif;?>
 
@@ -189,14 +189,14 @@ foreach ( $owa_steps as $owa_s ) {
      * people, and the funnel is then counted over all of their pages.
      */
 ?>
-<script type="application/json" data-ui="rows-report:config"><?php echo $view->scriptJson( array(
+<script type="application/json" data-ui="rows-report:config"><?php echo $view->scriptJson( [
     'grid'     => 'funnel-steps-grid',
     'item'     => 'funnelSteps',
     'table'    => $view->get( 'funnel_table' ),
-    'filter'   => array( 'ids' => 'funnel', 'item' => 'funnelConstraints', 'firstPage' => false )
+    'filter'   => [ 'ids' => 'funnel', 'item' => 'funnelConstraints', 'firstPage' => false ]
         + (array) $view->get( 'funnel_filter' ),
-    'reloadOn' => array(
-        array( 'input' => 'funnel-scope-visitor', 'params' => array( 'owa_funnelScope' => 'visitor' ) ),
-        array( 'input' => 'funnel-scope-session', 'params' => array( 'owa_funnelScope' => 'session' ) ),
-    ),
-) ); ?></script>
+    'reloadOn' => [
+        [ 'input' => 'funnel-scope-visitor', 'params' => [ 'owa_funnelScope' => 'visitor' ] ],
+        [ 'input' => 'funnel-scope-session', 'params' => [ 'owa_funnelScope' => 'session' ] ],
+    ],
+] ); ?></script>

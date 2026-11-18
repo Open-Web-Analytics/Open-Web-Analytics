@@ -44,7 +44,7 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
      * @param array<string, mixed> $submitted what was typed, when a refused form comes back
      * @return void
      */
-    public static function prepare( $controller, $property_id, array $submitted = array() ) {
+    public static function prepare( $controller, $property_id, array $submitted = [] ) {
 
         $property_id = (string) $property_id;
 
@@ -54,15 +54,13 @@ class CustomDimensionEdit extends \OWA\Core\AdminController {
             \OWA\Module\Base\Classes\Cube\Dimensions::forProperty( $property_id ) ) );
         $controller->set( 'scopes', \OWA\Module\Base\Entity\CustomDimension::scopes() );
         $controller->set( 'types', \OWA\Module\Base\Entity\CustomDimension::types() );
-        $controller->set( 'submitted', array_merge( array(
+        $controller->set( 'submitted', array_merge( [
             'dimensionKey' => '', 'scope' => '', 'dataType' => '', 'label' => '',
-        ), $submitted ) );
+        ], $submitted ) );
 
-        $controller->settingsChrome( array( 'propertyId' => $property_id ), '', $property_id );
+        $controller->settingsChrome( [ 'propertyId' => $property_id ], '', $property_id );
         $controller->setSubview( 'base.customDimensionEdit', [
             'template' => 'custom_dimension_edit.php',
             'vars'     => [ 'propertyId', 'cube', 'scopes', 'types', 'submitted', 'used' ] ] );
     }
 }
-
-?>

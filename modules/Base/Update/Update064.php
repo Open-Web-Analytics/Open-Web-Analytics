@@ -61,5 +61,3 @@ class Update064 extends \OWA\Core\Update {
             $this->tableFor( 'base.event_raw' ), self::INDEX ) );
     }
 }
-
-?>

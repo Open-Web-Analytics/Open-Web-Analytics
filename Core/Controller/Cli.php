@@ -70,7 +70,7 @@ class Cli extends \OWA\Core\AdminController {
      */
     public static function serverRoles() {
 
-        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER );
+        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER ];
     }
 
     /**
@@ -90,7 +90,7 @@ class Cli extends \OWA\Core\AdminController {
      */
     public static function usage() {
 
-        return array( 'description' => '', 'arguments' => array() );
+        return [ 'description' => '', 'arguments' => [] ];
     }
 
     /**
@@ -121,7 +121,7 @@ class Cli extends \OWA\Core\AdminController {
     const EXIT_USAGE = 2;
 
     /** Arguments every command accepts, beside those its usage() declares. */
-    const GLOBAL_ARGUMENTS = array( 'cmd' );
+    const GLOBAL_ARGUMENTS = [ 'cmd' ];
 
     /** @var bool whether a failure of this command sets cli.php's exit code */
     protected $exit_on_failure = true;
@@ -279,7 +279,7 @@ class Cli extends \OWA\Core\AdminController {
         $usage = $class::usage();
         $names = self::GLOBAL_ARGUMENTS;
 
-        foreach ( array_keys( (array) ( $usage['arguments'] ?? array() ) ) as $arg ) {
+        foreach ( array_keys( (array) ( $usage['arguments'] ?? [] ) ) as $arg ) {
 
             $names[] = ltrim( explode( '=', (string) $arg, 2 )[0], '-' );
         }
@@ -316,7 +316,7 @@ class Cli extends \OWA\Core\AdminController {
 
         if ( $accepted === null ) {
 
-            return array();
+            return [];
         }
 
         return array_values( array_diff( array_map( 'strval', array_keys( $params ) ), $accepted ) );
@@ -330,10 +330,10 @@ class Cli extends \OWA\Core\AdminController {
      */
     public function getCliOutcome() {
 
-        return array(
+        return [
             'outcome' => $this->cli_outcome,
             'message' => $this->cli_message,
-        );
+        ];
     }
 
     /**
@@ -450,8 +450,6 @@ class Cli extends \OWA\Core\AdminController {
     public static function reportInvalidArguments( $errors ) {
 
         \OWA\Core\CoreAPI::notice( "Command failed. There were some errors:\n"
-            . json_encode( array( $errors ), JSON_PRETTY_PRINT ) );
+            . json_encode( [ $errors ], JSON_PRETTY_PRINT ) );
     }
 }
-
-?>

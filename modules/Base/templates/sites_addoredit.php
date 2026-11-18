@@ -63,7 +63,7 @@
             <TD>
                 <select name="propertyId" id="owa_profilePropertyId" class="owa_largeFormField">
                     <option value=""><?php $view->out( \OWA\Core\CoreAPI::t( '— a new Property —' ) ); ?></option>
-                    <?php foreach ( (array) ( $view->properties ?? array() ) as $owa_prop ):?>
+                    <?php foreach ( (array) ( $view->properties ?? [] ) as $owa_prop ):?>
                     <option value="<?php $view->out( $owa_prop['id'] );?>"
                         <?php echo ( ( $view->propertyId ?? '' ) === (string) $owa_prop['id'] ) ? 'selected' : '';?>>
                         <?php $view->out( $owa_prop['name'] );?><?php if ( $owa_prop['domain'] ):?> (<?php $view->out( $owa_prop['domain'] );?>)<?php endif;?>

@@ -35,5 +35,3 @@ class ChMobileMismatch extends \OWA\Module\Base\Classes\Spam\Rule {
         return ( $mobile === '?1' ) !== $this->client( $headers )->hasMobileToken();
     }
 }
-
-?>

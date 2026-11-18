@@ -748,12 +748,12 @@ final class EventRawIngestionTest extends IngestionTestCase
 
         $this->assertTrue($store->wasPersisted(), 'no visitor record was written');
 
-        $properties = json_decode((string) $store->get('properties'), true) ?: array();
+        $properties = json_decode((string) $store->get('properties'), true) ?: [];
 
         $this->assertSame('Alice', $properties['user_name']['v'] ?? null,
             'a user property must reach the visitor store under its bare name');
 
-        $this->assertArrayHasKey('ts', (array) ($properties['user_name'] ?? array()),
+        $this->assertArrayHasKey('ts', (array) ($properties['user_name'] ?? []),
             'and carry when it was set, which is what makes a temporal value answerable');
     }
 
@@ -777,7 +777,7 @@ final class EventRawIngestionTest extends IngestionTestCase
         $store = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $store->load($visitor, 'visitor_id');
 
-        $properties = json_decode((string) $store->get('properties'), true) ?: array();
+        $properties = json_decode((string) $store->get('properties'), true) ?: [];
 
         $this->assertSame('Bob', $properties['user_name']['v'] ?? null,
             'the compat rename did not reach the visitor store');
@@ -839,7 +839,7 @@ final class EventRawIngestionTest extends IngestionTestCase
         $store = \OWA\Core\CoreAPI::entityFactory('base.visitor_acquisition');
         $store->load($visitor, 'visitor_id');
 
-        $properties = json_decode((string) $store->get('properties'), true) ?: array();
+        $properties = json_decode((string) $store->get('properties'), true) ?: [];
 
         $this->assertArrayNotHasKey('user_name', $properties);
         $this->assertArrayNotHasKey('user_email', $properties);
@@ -863,10 +863,10 @@ final class EventRawIngestionTest extends IngestionTestCase
     {
         $order = 'items-' . $this->uniqueGuid();
 
-        $items = array(
-            array( 'sku' => 'SKU-A', 'name' => 'Widget', 'price' => 10.20, 'quantity' => 2 ),
-            array( 'sku' => 'SKU-B', 'name' => 'Gadget', 'price' => 5.50,  'quantity' => 1 ),
-        );
+        $items = [
+            [ 'sku' => 'SKU-A', 'name' => 'Widget', 'price' => 10.20, 'quantity' => 2 ],
+            [ 'sku' => 'SKU-B', 'name' => 'Gadget', 'price' => 5.50,  'quantity' => 1 ],
+        ];
 
         $visitor = $this->uniqueGuid();
         $session = $this->uniqueSessionId();

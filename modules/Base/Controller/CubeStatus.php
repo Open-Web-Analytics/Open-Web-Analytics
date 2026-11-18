@@ -47,8 +47,6 @@ class CubeStatus extends \OWA\Core\AdminController {
 
         $site_id = $controller->resolveCurrentSiteId();
 
-        $controller->settingsChrome( array( 'siteId' => $site_id ), '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id ) );
+        $controller->settingsChrome( [ 'siteId' => $site_id ], '', \OWA\Module\Base\Classes\Cube\Cubes::propertyIdForSite( $site_id ) );
     }
 }
-
-?>

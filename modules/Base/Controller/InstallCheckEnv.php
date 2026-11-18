@@ -104,5 +104,3 @@ class InstallCheckEnv extends \OWA\Core\Controller\Install {
     }
 
 }
-
-?>

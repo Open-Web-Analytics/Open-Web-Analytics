@@ -40,12 +40,12 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
     private function jobStatus(string $id): string
     {
         return (string) (((array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            'SELECT status FROM ' . self::TABLE . ' WHERE id = ?', array($id)))['status'] ?? '');
+            'SELECT status FROM ' . self::TABLE . ' WHERE id = ?', [$id]))['status'] ?? '');
     }
 
     private function drain(): void
     {
-        $runner = new \OWA\Module\Base\Controller\ScheduleRunCli(array());
+        $runner = new \OWA\Module\Base\Controller\ScheduleRunCli([]);
         $m      = new ReflectionMethod($runner, 'drainQueue');
 
         ob_start();
@@ -69,7 +69,7 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
     public function testARefusedCommandIsDoneNotRetried(): void
     {
         // custom-dimension-apply for a Property with no cube refuses.
-        $id = JobQueue::enqueue('custom-dimension-apply', array('property' => '999999999999'));
+        $id = JobQueue::enqueue('custom-dimension-apply', ['property' => '999999999999']);
 
         $this->drain();
 
@@ -97,12 +97,12 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
     {
         $id = JobQueue::enqueue('jobs-prune');
         \OWA\Core\CoreAPI::dbSingleton()->query(
-            'UPDATE ' . self::TABLE . " SET status = 'failed' WHERE id = ?", array($id));
+            'UPDATE ' . self::TABLE . " SET status = 'failed' WHERE id = ?", [$id]);
 
-        $this->runCli('jobs-retry', array('id' => $id));
+        $this->runCli('jobs-retry', ['id' => $id]);
         $this->assertSame('pending', $this->jobStatus($id));
 
-        $this->runCli('jobs-forget', array('id' => $id));
+        $this->runCli('jobs-forget', ['id' => $id]);
         $this->assertSame('', $this->jobStatus($id));
     }
 
@@ -110,10 +110,10 @@ final class ScheduleRunDrainTest extends CliControllerTestCase
     {
         $this->assertNotNull($this->commandClass($command), "$command is registered");
 
-        $class = array(
+        $class = [
             'jobs-retry'  => \OWA\Module\Base\Controller\JobsRetryCli::class,
             'jobs-forget' => \OWA\Module\Base\Controller\JobsForgetCli::class,
-        )[$command];
+        ][$command];
 
         ob_start();
         try {

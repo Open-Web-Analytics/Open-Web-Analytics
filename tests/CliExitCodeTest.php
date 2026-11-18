@@ -24,13 +24,13 @@ final class CliExitCodeTest extends CliControllerTestCase
             $cmd .= ' ' . escapeshellarg($arg);
         }
 
-        $proc = proc_open($cmd, array(1 => array('pipe', 'w'), 2 => array('pipe', 'w')), $pipes, dirname(__DIR__));
+        $proc = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, dirname(__DIR__));
         stream_get_contents($pipes[1]);
         $stderr = (string) stream_get_contents($pipes[2]);
         fclose($pipes[1]);
         fclose($pipes[2]);
 
-        return array('code' => proc_close($proc), 'stderr' => $stderr);
+        return ['code' => proc_close($proc), 'stderr' => $stderr];
     }
 
     public function testNoCommandExits2(): void
@@ -68,7 +68,7 @@ final class CliExitCodeTest extends CliControllerTestCase
     /** fail() sets the exit code without a command opting in. */
     public function testAFailureSetsTheExitCodeByDefault(): void
     {
-        $cli = new \OWA\Module\Base\Controller\PartitionStatusCli(array());
+        $cli = new \OWA\Module\Base\Controller\PartitionStatusCli([]);
         $m   = new ReflectionMethod($cli, 'fail');
         $m->invoke($cli, 'it broke');
 
@@ -79,14 +79,14 @@ final class CliExitCodeTest extends CliControllerTestCase
     {
         $drop = \OWA\Module\Base\Controller\PartitionDropCli::class;
 
-        $this->assertSame(array('dryrun'), Cli::undeclaredArguments($drop, array('cmd' => 'partition-drop', 'dryrun' => true)));
-        $this->assertSame(array(), Cli::undeclaredArguments($drop, array('cmd' => 'partition-drop', 'dry-run' => true, 'older-than' => '2years')));
+        $this->assertSame(['dryrun'], Cli::undeclaredArguments($drop, ['cmd' => 'partition-drop', 'dryrun' => true]));
+        $this->assertSame([], Cli::undeclaredArguments($drop, ['cmd' => 'partition-drop', 'dry-run' => true, 'older-than' => '2years']));
 
         // Read only to say what replaced it.
-        $this->assertSame(array(), Cli::undeclaredArguments(\OWA\Module\Base\Controller\PartitionRotateCli::class, array('keep' => '24')));
+        $this->assertSame([], Cli::undeclaredArguments(\OWA\Module\Base\Controller\PartitionRotateCli::class, ['keep' => '24']));
 
         // A command that does not declare its own usage() is not checked.
-        $this->assertSame(array(), Cli::undeclaredArguments(\OWA\Module\Base\Controller\SchedulerCli::class, array('anything' => 1)));
+        $this->assertSame([], Cli::undeclaredArguments(\OWA\Module\Base\Controller\SchedulerCli::class, ['anything' => 1]));
     }
 
     /**
@@ -96,16 +96,16 @@ final class CliExitCodeTest extends CliControllerTestCase
     public function testEveryArgumentACommandReadsIsAccepted(): void
     {
         // Set by Controller::doAction() from validation, not typed.
-        $internal = array('validation_errors');
+        $internal = ['validation_errors'];
         // Read in code these commands never reach: PartitionsCli's budget
         // checks, and the JobsCli modes other than their own.
-        $unreached = array(
-            'partition-status' => array('force'),
-            'jobs'             => array('id'),
-            'jobs-retry'       => array('status', 'limit'),
-            'jobs-forget'      => array('status', 'limit'),
-            'jobs-prune'       => array('id', 'status', 'limit'),
-        );
+        $unreached = [
+            'partition-status' => ['force'],
+            'jobs'             => ['id'],
+            'jobs-retry'       => ['status', 'limit'],
+            'jobs-forget'      => ['status', 'limit'],
+            'jobs-prune'       => ['id', 'status', 'limit'],
+        ];
         $s        = \OWA\Core\CoreAPI::serviceSingleton();
 
         foreach ((array) $s->getMap('cli_commands') as $command => $action) {
@@ -125,7 +125,7 @@ final class CliExitCodeTest extends CliControllerTestCase
 
             preg_match_all('/(?:getParam|isParam)\(\s*[\'"]([^\'"]+)[\'"]/', $src, $m);
 
-            $this->assertSame(array(), array_values(array_diff(array_unique($m[1]), $accepted, $internal, $unreached[$command] ?? array())),
+            $this->assertSame([], array_values(array_diff(array_unique($m[1]), $accepted, $internal, $unreached[$command] ?? [])),
                 "cmd=$command reads arguments its usage() does not declare");
         }
     }
@@ -135,19 +135,19 @@ final class CliExitCodeTest extends CliControllerTestCase
     {
         $C = '\\OWA\\Module\\Base\\Controller\\';
 
-        yield 'activate, no module'         => array($C . 'ModuleActivateCli', array());
-        yield 'deactivate, no module'       => array($C . 'ModuleDeactivateCli', array());
-        yield 'install-module, no module'   => array($C . 'ModuleInstallCli', array());
-        yield 'jobs-retry, no id'           => array($C . 'JobsRetryCli', array());
-        yield 'jobs-forget, no id'          => array($C . 'JobsForgetCli', array());
-        yield 'schedule-run, unknown job'   => array($C . 'ScheduleRunCli', array('job' => 'owa-no-such-job'));
-        yield 'custom-dimension-list'       => array($C . 'CustomDimensionListCli', array('property' => 'abc'));
-        yield 'cube-rebuild, bad range'     => array($C . 'CubeRebuildCli', array('from' => 'garbage'));
-        yield 'partition-drop, no cutoff'   => array($C . 'PartitionDropCli', array());
-        yield 'partition-drop, bad table'   => array($C . 'PartitionDropCli', array('older-than' => '20years', 'table' => 'owa_no_such_table'));
-        yield 'partition-reorganize, none'  => array($C . 'PartitionReorganizeCli', array());
-        yield 'partition-reorganize, 31 Feb'=> array($C . 'PartitionReorganizeCli', array('granularity' => 'monthly', 'from' => '20260231'));
-        yield 'prune interval 7days'        => array($C . 'PruneEventQueueArchivesCli', array('interval' => '7days', 'queues' => 'owa-no-such-queue'));
+        yield 'activate, no module'         => [$C . 'ModuleActivateCli', []];
+        yield 'deactivate, no module'       => [$C . 'ModuleDeactivateCli', []];
+        yield 'install-module, no module'   => [$C . 'ModuleInstallCli', []];
+        yield 'jobs-retry, no id'           => [$C . 'JobsRetryCli', []];
+        yield 'jobs-forget, no id'          => [$C . 'JobsForgetCli', []];
+        yield 'schedule-run, unknown job'   => [$C . 'ScheduleRunCli', ['job' => 'owa-no-such-job']];
+        yield 'custom-dimension-list'       => [$C . 'CustomDimensionListCli', ['property' => 'abc']];
+        yield 'cube-rebuild, bad range'     => [$C . 'CubeRebuildCli', ['from' => 'garbage']];
+        yield 'partition-drop, no cutoff'   => [$C . 'PartitionDropCli', []];
+        yield 'partition-drop, bad table'   => [$C . 'PartitionDropCli', ['older-than' => '20years', 'table' => 'owa_no_such_table']];
+        yield 'partition-reorganize, none'  => [$C . 'PartitionReorganizeCli', []];
+        yield 'partition-reorganize, 31 Feb'=> [$C . 'PartitionReorganizeCli', ['granularity' => 'monthly', 'from' => '20260231']];
+        yield 'prune interval 7days'        => [$C . 'PruneEventQueueArchivesCli', ['interval' => '7days', 'queues' => 'owa-no-such-queue']];
     }
 
     /** @dataProvider usageErrors */
@@ -181,7 +181,7 @@ final class CliExitCodeTest extends CliControllerTestCase
     {
         $U = \OWA\Module\Base\Controller\UpdatesApplyCli::class;
 
-        $this->assertSame(array('base', '86'), $U::parseUpdateName('base.86'));
+        $this->assertSame(['base', '86'], $U::parseUpdateName('base.86'));
         $this->assertNull($U::parseUpdateName('base'));
         $this->assertNull($U::parseUpdateName('base.'));
         $this->assertNull($U::parseUpdateName(true));
@@ -300,10 +300,10 @@ PHP;
     /** @return iterable<string, array{array, string}> */
     public static function refusedInstalls(): iterable
     {
-        $base = array('user_id' => 'owa-test-admin', 'email_address' => 'owa-test-admin@example.test', 'domain' => 'https://example.test');
+        $base = ['user_id' => 'owa-test-admin', 'email_address' => 'owa-test-admin@example.test', 'domain' => 'https://example.test'];
 
-        yield 'no password'    => array($base, 'password for the admin account is required');
-        yield 'short password' => array($base + array('password' => 'short'), 'at least');
+        yield 'no password'    => [$base, 'password for the admin account is required'];
+        yield 'short password' => [$base + ['password' => 'short'], 'at least'];
     }
 
     /** A capability refused before action() is a failure. */
@@ -311,7 +311,7 @@ PHP;
     {
         $this->authenticateAs('viewer');
 
-        $result = $this->runCommand(\OWA\Module\Base\Controller\JobsPruneCli::class, '', array());
+        $result = $this->runCommand(\OWA\Module\Base\Controller\JobsPruneCli::class, '', []);
 
         $this->assertNotCapable($result);
         $this->assertSame(Cli::EXIT_FAILED, Cli::$exit_code);
@@ -322,7 +322,7 @@ PHP;
     {
         ob_start();
         try {
-            $result = $this->runCommand(\OWA\Module\Base\Controller\ChangeUserPasswordCli::class, '', array('user' => 'nobody', 'password' => 'short'));
+            $result = $this->runCommand(\OWA\Module\Base\Controller\ChangeUserPasswordCli::class, '', ['user' => 'nobody', 'password' => 'short']);
         } finally {
             ob_end_clean();
         }
@@ -333,7 +333,7 @@ PHP;
 
     public function testAddSiteWithInvalidArgumentsExits2(): void
     {
-        $result = $this->runCommand(\OWA\Module\Base\Controller\SitesAddCli::class, '', array('name' => 'no domain ' . $this->tok));
+        $result = $this->runCommand(\OWA\Module\Base\Controller\SitesAddCli::class, '', ['name' => 'no domain ' . $this->tok]);
 
         $this->assertArrayHasKey('validation_errors', $result['data']);
         $this->assertSame(Cli::EXIT_USAGE, Cli::$exit_code);

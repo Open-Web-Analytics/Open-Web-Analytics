@@ -16,15 +16,15 @@ final class NotificationManagerTest extends TestCase
 {
     public function testAReleaseBecomesANotification(): void
     {
-        $items = NM::fromGithubReleases( array(
-            (object) array(
+        $items = NM::fromGithubReleases( [
+            (object) [
                 'id'           => 42,
                 'name'         => '1.12.0',
                 'body'         => 'notes',
                 'html_url'     => 'https://example.test/r/42',
                 'published_at' => '2026-08-21T10:00:00Z',
-            ),
-        ) );
+            ],
+        ] );
 
         $this->assertCount( 1, $items );
         $this->assertSame( '42', $items[0]['source_key'] );
@@ -41,15 +41,15 @@ final class NotificationManagerTest extends TestCase
      */
     public function testAnErrorPayloadProducesNothing(): void
     {
-        $this->assertSame( array(), NM::fromGithubReleases(
-            (object) array( 'message' => 'API rate limit exceeded' ) ) );
+        $this->assertSame( [], NM::fromGithubReleases(
+            (object) [ 'message' => 'API rate limit exceeded' ] ) );
     }
 
     /** A draft is not an announcement yet. */
     public function testADraftIsSkipped(): void
     {
-        $this->assertSame( array(), NM::fromGithubReleases( array(
-            (object) array( 'id' => 7, 'name' => 'wip', 'draft' => true ) ) ) );
+        $this->assertSame( [], NM::fromGithubReleases( [
+            (object) [ 'id' => 7, 'name' => 'wip', 'draft' => true ] ] ) );
     }
 
     /**
@@ -58,15 +58,15 @@ final class NotificationManagerTest extends TestCase
      */
     public function testAReleaseWithNoIdIsSkipped(): void
     {
-        $this->assertSame( array(), NM::fromGithubReleases( array(
-            (object) array( 'name' => 'nameless' ) ) ) );
+        $this->assertSame( [], NM::fromGithubReleases( [
+            (object) [ 'name' => 'nameless' ] ] ) );
     }
 
     /** A release can be published with no name; the tag is what people call it. */
     public function testTheTagStandsInForAMissingName(): void
     {
-        $items = NM::fromGithubReleases( array(
-            (object) array( 'id' => 9, 'tag_name' => 'v1.2.3' ) ) );
+        $items = NM::fromGithubReleases( [
+            (object) [ 'id' => 9, 'tag_name' => 'v1.2.3' ] ] );
 
         $this->assertSame( 'v1.2.3', $items[0]['title'] );
     }
@@ -135,11 +135,11 @@ final class NotificationManagerTest extends TestCase
     /** Over-long fields are cut to their columns, so a long release is stored rather than refused. */
     public function testFieldsAreCutToTheirColumns(): void
     {
-        $long = NM::storable( array(
+        $long = NM::storable( [
             'title' => str_repeat( "\u{00E9}", 300 ),
             'body'  => str_repeat( "\u{20AC}", 30000 ),
             'url'   => 'https://github.com/' . str_repeat( 'a', 300 ),
-        ) );
+        ] );
 
         $this->assertSame( 255, mb_strlen( $long['title'] ), 'characters, as VARCHAR(255) counts' );
         $this->assertLessThanOrEqual( 65535, strlen( $long['body'] ), 'bytes, as TEXT counts' );
@@ -147,27 +147,27 @@ final class NotificationManagerTest extends TestCase
         $this->assertTrue( mb_check_encoding( $long['body'], 'UTF-8' ), 'not cut inside a character' );
         $this->assertSame( '', $long['url'], 'a cut URL would point somewhere else' );
 
-        $short = array( 'title' => 'v2.0', 'body' => 'Notes', 'url' => 'https://github.com/x/y' );
+        $short = [ 'title' => 'v2.0', 'body' => 'Notes', 'url' => 'https://github.com/x/y' ];
         $this->assertSame( $short, NM::storable( $short ) );
     }
 
     /** @return iterable<string, array{string, bool}> */
     public static function urls(): iterable
     {
-        yield 'https'           => array( 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/2.0.0', true );
-        yield 'http'            => array( 'http://github.com/x', false );
-        yield 'javascript'      => array( 'javascript:alert(1)', false );
-        yield 'data'            => array( 'data:text/html,x', false );
-        yield 'protocol-relative' => array( '//github.com/x', false );
-        yield 'no host'         => array( 'https:///x', false );
-        yield 'empty'           => array( '', false );
+        yield 'https'           => [ 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/releases/tag/2.0.0', true ];
+        yield 'http'            => [ 'http://github.com/x', false ];
+        yield 'javascript'      => [ 'javascript:alert(1)', false ];
+        yield 'data'            => [ 'data:text/html,x', false ];
+        yield 'protocol-relative' => [ '//github.com/x', false ];
+        yield 'no host'         => [ 'https:///x', false ];
+        yield 'empty'           => [ '', false ];
     }
 
     /** @dataProvider urls */
     public function testOnlyHttpsUrlsAreLinked( string $url, bool $linked ): void
     {
         $this->assertSame( $linked, NM::isLinkable( $url ) );
-        $this->assertSame( $linked ? $url : '', NM::storable( array( 'url' => $url ) )['url'] );
+        $this->assertSame( $linked ? $url : '', NM::storable( [ 'url' => $url ] )['url'] );
     }
 
     /**
@@ -185,8 +185,8 @@ final class NotificationManagerTest extends TestCase
 
     private function item( string $key, string $title = 'T' ): array
     {
-        return array( array( 'source_key' => $key, 'title' => $title,
-                             'body' => '', 'url' => '', 'published_at' => 1000 ) );
+        return [ [ 'source_key' => $key, 'title' => $title,
+                             'body' => '', 'url' => '', 'published_at' => 1000 ] ];
     }
 
     /** Every source this class writes under starts with this. */
@@ -218,7 +218,7 @@ final class NotificationManagerTest extends TestCase
         $db->selectFrom( 'owa_notification' );
         $db->selectColumn( '*' );
 
-        $ids = array();
+        $ids = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
@@ -269,11 +269,11 @@ final class NotificationManagerTest extends TestCase
 
         $source = $this->source() . '_first';
 
-        $five = array();
+        $five = [];
 
         for ( $i = 1; $i <= 5; $i++ ) {
-            $five[] = array( 'source_key' => "k$i", 'title' => "R$i",
-                             'body' => '', 'url' => '', 'published_at' => 1000 + $i );
+            $five[] = [ 'source_key' => "k$i", 'title' => "R$i",
+                             'body' => '', 'url' => '', 'published_at' => 1000 + $i ];
         }
 
         $this->assertSame( \OWA\Module\Base\Classes\NotificationManager::INITIAL_LIMIT,
@@ -292,11 +292,11 @@ final class NotificationManagerTest extends TestCase
 
         $source = $this->source() . '_hist';
 
-        $five = array();
+        $five = [];
 
         for ( $i = 1; $i <= 5; $i++ ) {
-            $five[] = array( 'source_key' => "k$i", 'title' => "R$i",
-                             'body' => '', 'url' => '', 'published_at' => 1000 + $i );
+            $five[] = [ 'source_key' => "k$i", 'title' => "R$i",
+                             'body' => '', 'url' => '', 'published_at' => 1000 + $i ];
         }
 
         NM::record( $five, $source );
@@ -312,13 +312,13 @@ final class NotificationManagerTest extends TestCase
 
         $source = $this->source() . '_new';
 
-        NM::record( array( array( 'source_key' => 'old', 'title' => 'old',
-                                  'body' => '', 'url' => '', 'published_at' => 1000 ) ), $source );
+        NM::record( [ [ 'source_key' => 'old', 'title' => 'old',
+                                  'body' => '', 'url' => '', 'published_at' => 1000 ] ], $source );
 
-        $this->assertSame( 1, NM::record( array(
-            array( 'source_key' => 'old', 'title' => 'old', 'body' => '', 'url' => '', 'published_at' => 1000 ),
-            array( 'source_key' => 'new', 'title' => 'new', 'body' => '', 'url' => '', 'published_at' => 5000 ),
-        ), $source ) );
+        $this->assertSame( 1, NM::record( [
+            [ 'source_key' => 'old', 'title' => 'old', 'body' => '', 'url' => '', 'published_at' => 1000 ],
+            [ 'source_key' => 'new', 'title' => 'new', 'body' => '', 'url' => '', 'published_at' => 5000 ],
+        ], $source ) );
     }
 
     public function testTheSameThingCanBeAddressedToDifferentPeople(): void
@@ -544,10 +544,10 @@ final class NotificationManagerTest extends TestCase
         $this->requireDb();
 
         $source = $this->source() . '_oversize';
-        $item   = array( 'source_key' => 'big', 'title' => str_repeat( 't', 400 ),
-                         'body' => str_repeat( 'b', 70000 ), 'url' => 'javascript:alert(1)', 'published_at' => 1000 );
+        $item   = [ 'source_key' => 'big', 'title' => str_repeat( 't', 400 ),
+                         'body' => str_repeat( 'b', 70000 ), 'url' => 'javascript:alert(1)', 'published_at' => 1000 ];
 
-        $this->assertSame( 1, NM::record( array( $item ), $source ) );
+        $this->assertSame( 1, NM::record( [ $item ], $source ) );
 
         $n = \OWA\Core\CoreAPI::entityFactory( 'base.notification' );
         $n->load( $n->generateId( $source . 'big' ) );
@@ -563,8 +563,8 @@ final class NotificationManagerTest extends TestCase
         $this->requireDb();
 
         $source = $this->source() . '_oldrow';
-        NM::record( array( array( 'source_key' => 'old', 'title' => 'Old', 'body' => '',
-                                  'url' => 'https://example.com/ok', 'published_at' => 1000 ) ), $source );
+        NM::record( [ [ 'source_key' => 'old', 'title' => 'Old', 'body' => '',
+                                  'url' => 'https://example.com/ok', 'published_at' => 1000 ] ], $source );
 
         $n = \OWA\Core\CoreAPI::entityFactory( 'base.notification' );
         $n->load( $n->generateId( $source . 'old' ) );

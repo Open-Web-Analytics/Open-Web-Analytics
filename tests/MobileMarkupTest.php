@@ -59,7 +59,7 @@ final class MobileMarkupTest extends TestCase
         $found = $xp->query( $query );
         $this->assertSame( 1, $found->length, "one element for $query" );
 
-        $out = array();
+        $out = [];
 
         foreach ( $names as $name ) {
             $out[ $name ] = $found->item( 0 )->getAttribute( $name );
@@ -70,60 +70,60 @@ final class MobileMarkupTest extends TestCase
 
     public function testAddingAUserTypesTheEmailAndLeavesTheUserNameAsTyped(): void
     {
-        $xp = $this->render( 'users_addoredit.php', array(
+        $xp = $this->render( 'users_addoredit.php', [
             'headline' => 'Add user', 'action' => 'base.usersAdd', 'edit' => false,
-            'isAdmin' => false, 'roles' => array( 'admin', 'viewer' ), 'user' => array(),
-        ) );
+            'isAdmin' => false, 'roles' => [ 'admin', 'viewer' ], 'user' => [],
+        ] );
 
         $this->assertSame(
-            array( 'type' => 'text', 'autocomplete' => 'off', 'autocapitalize' => 'none', 'autocorrect' => 'off', 'spellcheck' => 'false' ),
-            $this->attrs( $xp, '//input[@name="user_id"]', array( 'type', 'autocomplete', 'autocapitalize', 'autocorrect', 'spellcheck' ) ) );
+            [ 'type' => 'text', 'autocomplete' => 'off', 'autocapitalize' => 'none', 'autocorrect' => 'off', 'spellcheck' => 'false' ],
+            $this->attrs( $xp, '//input[@name="user_id"]', [ 'type', 'autocomplete', 'autocapitalize', 'autocorrect', 'spellcheck' ] ) );
 
         $this->assertSame(
-            array( 'type' => 'email', 'autocomplete' => 'email', 'autocapitalize' => 'none' ),
-            $this->attrs( $xp, '//input[@name="email_address"]', array( 'type', 'autocomplete', 'autocapitalize' ) ) );
+            [ 'type' => 'email', 'autocomplete' => 'email', 'autocapitalize' => 'none' ],
+            $this->attrs( $xp, '//input[@name="email_address"]', [ 'type', 'autocomplete', 'autocapitalize' ] ) );
 
         // Someone else's name: the browser does not offer the admin's own.
-        $this->assertSame( array( 'autocomplete' => 'off' ),
-            $this->attrs( $xp, '//input[@name="real_name"]', array( 'autocomplete' ) ) );
+        $this->assertSame( [ 'autocomplete' => 'off' ],
+            $this->attrs( $xp, '//input[@name="real_name"]', [ 'autocomplete' ] ) );
     }
 
     public function testTheLoginFormNamesWhatAPasswordManagerFills(): void
     {
-        $xp = $this->render( 'login_form.php', array( 'user_id' => '', 'go' => '' ) );
+        $xp = $this->render( 'login_form.php', [ 'user_id' => '', 'go' => '' ] );
 
         $this->assertSame(
-            array( 'autocomplete' => 'username', 'autocapitalize' => 'none', 'autocorrect' => 'off' ),
-            $this->attrs( $xp, '//input[@name="user_id"]', array( 'autocomplete', 'autocapitalize', 'autocorrect' ) ) );
+            [ 'autocomplete' => 'username', 'autocapitalize' => 'none', 'autocorrect' => 'off' ],
+            $this->attrs( $xp, '//input[@name="user_id"]', [ 'autocomplete', 'autocapitalize', 'autocorrect' ] ) );
 
-        $this->assertSame( array( 'type' => 'password', 'autocomplete' => 'current-password' ),
-            $this->attrs( $xp, '//input[@name="password"]', array( 'type', 'autocomplete' ) ) );
+        $this->assertSame( [ 'type' => 'password', 'autocomplete' => 'current-password' ],
+            $this->attrs( $xp, '//input[@name="password"]', [ 'type', 'autocomplete' ] ) );
     }
 
     public function testTheInstallersAccountIsANewLoginWithAnEmail(): void
     {
-        $xp = $this->render( 'install_defaults_entry.php', array(
-            'defaults' => array(), 'config' => array(), 'db_server' => 'localhost', 'db_name' => 'owa', 'create' => false,
-        ) );
+        $xp = $this->render( 'install_defaults_entry.php', [
+            'defaults' => [], 'config' => [], 'db_server' => 'localhost', 'db_name' => 'owa', 'create' => false,
+        ] );
 
-        $this->assertSame( array( 'autocomplete' => 'username', 'autocapitalize' => 'none' ),
-            $this->attrs( $xp, '//input[@name="user_id"]', array( 'autocomplete', 'autocapitalize' ) ) );
-        $this->assertSame( array( 'type' => 'email', 'autocomplete' => 'email' ),
-            $this->attrs( $xp, '//input[@name="email_address"]', array( 'type', 'autocomplete' ) ) );
-        $this->assertSame( array( 'autocomplete' => 'new-password' ),
-            $this->attrs( $xp, '//input[@name="password"]', array( 'autocomplete' ) ) );
+        $this->assertSame( [ 'autocomplete' => 'username', 'autocapitalize' => 'none' ],
+            $this->attrs( $xp, '//input[@name="user_id"]', [ 'autocomplete', 'autocapitalize' ] ) );
+        $this->assertSame( [ 'type' => 'email', 'autocomplete' => 'email' ],
+            $this->attrs( $xp, '//input[@name="email_address"]', [ 'type', 'autocomplete' ] ) );
+        $this->assertSame( [ 'autocomplete' => 'new-password' ],
+            $this->attrs( $xp, '//input[@name="password"]', [ 'autocomplete' ] ) );
     }
 
     public function testMyProfileEmailIsAnEmailField(): void
     {
-        $xp = $this->render( 'my_profile.php', array(
+        $xp = $this->render( 'my_profile.php', [
             'user_id' => 'u', 'real_name' => '', 'email_address' => 'u@example.test', 'role' => 'viewer',
             'may_edit_email' => true, 'my_profile_error' => '', 'my_profile_saved' => false,
             'siteId' => '', 'min_password_length' => 6,
-        ) );
+        ] );
 
-        $this->assertSame( array( 'type' => 'email', 'autocomplete' => 'email' ),
-            $this->attrs( $xp, '//input[@name="email_address"]', array( 'type', 'autocomplete' ) ) );
+        $this->assertSame( [ 'type' => 'email', 'autocomplete' => 'email' ],
+            $this->attrs( $xp, '//input[@name="email_address"]', [ 'type', 'autocomplete' ] ) );
     }
 
     /**
@@ -134,13 +134,13 @@ final class MobileMarkupTest extends TestCase
      */
     public function testTheUserRosterIsReadyToBeCards(): void
     {
-        $xp = $this->render( 'users.php', array(
+        $xp = $this->render( 'users.php', [
             'headline' => 'Users',
-            'users' => array(
-                array( 'id' => 1, 'user_id' => 'owner@example.test', 'real_name' => 'Owner', 'role' => 'admin' ),
-                array( 'id' => 2, 'user_id' => 'analyst@example.test', 'real_name' => 'Analyst', 'role' => 'analyst' ),
-            ),
-        ) );
+            'users' => [
+                [ 'id' => 1, 'user_id' => 'owner@example.test', 'real_name' => 'Owner', 'role' => 'admin' ],
+                [ 'id' => 2, 'user_id' => 'analyst@example.test', 'real_name' => 'Analyst', 'role' => 'analyst' ],
+            ],
+        ] );
 
         $this->assertSame( 1, $xp->query( '//table[contains(@class, "owa_cardTable") and @data-ui="users-table"]' )->length );
 
@@ -155,11 +155,11 @@ final class MobileMarkupTest extends TestCase
             $cells = $xp->query( './td', $row );
             $this->assertSame( 4, $cells->length, "row $i has a cell per column" );
 
-            $this->assertSame( array_slice( $headings, 0, 3 ), array(
+            $this->assertSame( array_slice( $headings, 0, 3 ), [
                 $cells->item( 0 )->getAttribute( 'data-label' ),
                 $cells->item( 1 )->getAttribute( 'data-label' ),
                 $cells->item( 2 )->getAttribute( 'data-label' ),
-            ) );
+            ] );
 
             $this->assertStringContainsString( 'owa_rowActions', $cells->item( 3 )->getAttribute( 'class' ) );
         }
@@ -170,13 +170,13 @@ final class MobileMarkupTest extends TestCase
 
     public function testTheGoalEventRosterIsReadyToBeCards(): void
     {
-        $xp = $this->render( 'goal_event_definitions.php', array(
+        $xp = $this->render( 'goal_event_definitions.php', [
             'headline' => 'Goal events', 'propertyId' => 'p1',
-            'goalEventDefinitions' => array( array(
-                'id' => 7, 'name' => 'Signup', 'trigger_event_type' => 'signup', 'conditions' => array(),
+            'goalEventDefinitions' => [ [
+                'id' => 7, 'name' => 'Signup', 'trigger_event_type' => 'signup', 'conditions' => [],
                 'condition_match' => 'all', 'count_mode' => '', 'value' => 0, 'is_active' => 1,
-            ) ),
-        ) );
+            ] ],
+        ] );
 
         $row = $xp->query( '//tbody/tr[@data-ui="goal-event-row"]' );
         $this->assertSame( 1, $row->length );
@@ -184,21 +184,21 @@ final class MobileMarkupTest extends TestCase
         $labels = array_map( function ( $td ) { return $td->getAttribute( 'data-label' ); },
             iterator_to_array( $xp->query( './td', $row->item( 0 ) ) ) );
 
-        $this->assertSame( array( 'Name', 'Counts', 'How often', 'Value', 'Status', '' ), $labels );
+        $this->assertSame( [ 'Name', 'Counts', 'How often', 'Value', 'Status', '' ], $labels );
         $this->assertSame( 1, $xp->query( '//tbody/tr/td[last()][contains(@class, "owa_rowActions")]' )->length );
     }
 
     /** What was refused is a line of its own under the message, not run on after it. */
     public function testTheBannerShowsTheDetailOnItsOwnLine(): void
     {
-        $msg = \OWA\Module\Base\View\Error::bannerMessage( array(
+        $msg = \OWA\Module\Base\View\Error::bannerMessage( [
             'headline' => 'Error', 'message' => 'Your account does not have access to this page.',
             'detail' => 'Profile: 123',
-        ) );
+        ] );
 
         $this->assertSame( 'Profile: 123', $msg['detail'] );
 
-        $xp = $this->render( 'msgs.php', array( 'error_msg' => $msg ) );
+        $xp = $this->render( 'msgs.php', [ 'error_msg' => $msg ] );
 
         $this->assertSame( 'Profile: 123', trim( $xp->query( '//div[@class="error"]/span[@class="owa_errorDetail"]' )->item( 0 )->textContent ) );
         $this->assertStringNotContainsString( 'page.Profile', $xp->query( '//div[@class="error"]' )->item( 0 )->textContent );
@@ -206,7 +206,7 @@ final class MobileMarkupTest extends TestCase
 
     public function testABannerWithNoDetailDrawsNone(): void
     {
-        $xp = $this->render( 'msgs.php', array( 'error_msg' => \OWA\Module\Base\View\Error::bannerMessage( 'Gone.' ) ) );
+        $xp = $this->render( 'msgs.php', [ 'error_msg' => \OWA\Module\Base\View\Error::bannerMessage( 'Gone.' ) ] );
 
         $this->assertSame( 0, $xp->query( '//*[@class="owa_errorDetail"]' )->length );
     }
@@ -218,16 +218,16 @@ final class MobileMarkupTest extends TestCase
      */
     public function testTheAccessDeniedPageHasTheMenu(): void
     {
-        $nav = array(
-            'Dashboard' => array(
-                'ref' => array( 'do' => 'base.report', 'reportId' => 'dashboard' ),
+        $nav = [
+            'Dashboard' => [
+                'ref' => [ 'do' => 'base.report', 'reportId' => 'dashboard' ],
                 'anchortext' => 'Dashboard', 'priviledge' => 'view_reports', 'icon_class' => 'fa fa-tachometer-alt',
-            ),
-        );
+            ],
+        ];
 
-        $xp = $this->render( 'generic_error.php', array(
+        $xp = $this->render( 'generic_error.php', [
             'report_nav' => $nav, 'nav_property_id' => 'p1', 'nav_access_site' => '', 'back_url' => '',
-        ) );
+        ] );
 
         $this->assertSame( 1, $xp->query( '//*[@id="owa_reportNavRail"]//*[@data-ui="nav:Dashboard"]' )->length );
         $this->assertSame( 1, $xp->query( '//main[@id="owa_main"]' )->length );
@@ -235,7 +235,7 @@ final class MobileMarkupTest extends TestCase
 
     public function testAnErrorWithNoMenuIsTheWayBackAlone(): void
     {
-        $xp = $this->render( 'generic_error.php', array( 'back_url' => 'https://owa.test/back' ) );
+        $xp = $this->render( 'generic_error.php', [ 'back_url' => 'https://owa.test/back' ] );
 
         $this->assertSame( 0, $xp->query( '//*[@id="owa_reportNavRail"]' )->length );
         $this->assertSame( 1, $xp->query( '//p[@class="owa_errorBack"]/a' )->length );

@@ -26,7 +26,7 @@
 
     <div class="owa_installActions">
         <?php // No nonce: base.updatesApply takes none, see UpdatesApply (#979). ?>
-        <a class="owa-button" href="<?php echo $view->makeLink(array('do' => 'base.updatesApply'));?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Apply updates' ) ); ?></a>
+        <a class="owa-button" href="<?php echo $view->makeLink(['do' => 'base.updatesApply']);?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Apply updates' ) ); ?></a>
     </div>
 
 </div>

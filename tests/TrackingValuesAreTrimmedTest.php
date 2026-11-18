@@ -49,7 +49,7 @@ final class TrackingValuesAreTrimmedTest extends TestCase
         $event->set( $property, $value );
 
         ( new Helpers() )->setTrackerProperties(
-            $event, array( $property => $definitions[ $property ] ) );
+            $event, [ $property => $definitions[ $property ] ] );
 
         return $event->get( $property );
     }
@@ -62,16 +62,16 @@ final class TrackingValuesAreTrimmedTest extends TestCase
 
     public static function paddedValues(): array
     {
-        return array(
-            'spaces'          => array( 'page_title', '  Spaced Title  ', 'Spaced Title' ),
-            'trailing break'  => array( 'page_title', "Title\n",          'Title' ),
-            'tabs'            => array( 'page_title', "\tTitle\t",        'Title' ),
+        return [
+            'spaces'          => [ 'page_title', '  Spaced Title  ', 'Spaced Title' ],
+            'trailing break'  => [ 'page_title', "Title\n",          'Title' ],
+            'tabs'            => [ 'page_title', "\tTitle\t",        'Title' ],
             /*
              * cv1_value was here. The cv{n} slots are not part of the current
              * vocabulary -- the tracker emits no cv key -- so an example drawn
              * from them tests the compat layer, not this one.
              */
-            'content group'   => array( 'content_group', '  Docs  ',      'Docs' ),
+            'content group'   => [ 'content_group', '  Docs  ',      'Docs' ],
             /*
              * user_name was here, and it is no longer a declared property: it is a
              * custom USER property now (PLAN.html §2.26.1), so it arrives as
@@ -79,9 +79,9 @@ final class TrackingValuesAreTrimmedTest extends TestCase
              * example drawn from it would test the custom path, not this one --
              * the same reason cv1_value came out above.
              */
-            'consent state'   => array( 'consent_state', '  granted  ', 'granted' ),
-            'a url'           => array( 'target_url', '  https://x.test/a  ', 'https://x.test/a' ),
-        );
+            'consent state'   => [ 'consent_state', '  granted  ', 'granted' ],
+            'a url'           => [ 'target_url', '  https://x.test/a  ', 'https://x.test/a' ],
+        ];
     }
 
     /**
@@ -148,13 +148,13 @@ final class TrackingValuesAreTrimmedTest extends TestCase
 
         $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
 
-        ( new Helpers() )->setTrackerProperties( $event, array(
-            $property => array(
+        ( new Helpers() )->setTrackerProperties( $event, [
+            $property => [
                 'required'  => false,
                 'data_type' => 'string',
-                'callbacks' => array( array( PaddingResolver::class, 'pad' ) ),
-            ),
-        ) );
+                'callbacks' => [ [ PaddingResolver::class, 'pad' ] ],
+            ],
+        ] );
 
         $this->assertSame( 'resolved with padding', $event->get( $property ),
             'a value produced by a callback reached the event with padding' );
@@ -182,10 +182,10 @@ final class TrackingValuesAreTrimmedTest extends TestCase
          * read time. What this asserts is that whitespace does not survive as a
          * value -- which is the part that matters and is unchanged.
          */
-        foreach ( array( '   ', "\t", '', null, false ) as $nothing ) {
+        foreach ( [ '   ', "\t", '', null, false ] as $nothing ) {
 
             $row = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' );
-            $row->setProperties( array( 'page_title' => $nothing ) );
+            $row->setProperties( [ 'page_title' => $nothing ] );
 
             $stored = $row->get( 'page_title' );
 
@@ -198,9 +198,9 @@ final class TrackingValuesAreTrimmedTest extends TestCase
     /** Non-text declared types are left alone. */
     public function testNonTextTypesAreUntouched(): void
     {
-        $this->assertSame( array( 'string', 'url', '' ), Helpers::TRIMMED_TYPES );
+        $this->assertSame( [ 'string', 'url', '' ], Helpers::TRIMMED_TYPES );
 
-        foreach ( array( 'json', 'boolean', 'integer' ) as $type ) {
+        foreach ( [ 'json', 'boolean', 'integer' ] as $type ) {
             $this->assertNotContains( $type, Helpers::TRIMMED_TYPES );
         }
     }

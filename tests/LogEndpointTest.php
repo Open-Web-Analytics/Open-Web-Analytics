@@ -50,7 +50,7 @@ final class LogEndpointTest extends TestCase
     public function testTheTrackingBootDoesNotCheckForUpdates(): void
     {
         $c    = \OWA\Core\CoreAPI::configSingleton();
-        $was  = array($c->get('base', 'tracker_build'), $c->get('base', 'tracking_mode'));
+        $was  = [$c->get('base', 'tracker_build'), $c->get('base', 'tracking_mode')];
 
         try {
             $c->set('base', 'tracker_build', 'an-older-build');

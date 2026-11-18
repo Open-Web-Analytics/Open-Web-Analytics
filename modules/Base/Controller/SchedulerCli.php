@@ -130,7 +130,7 @@ abstract class SchedulerCli extends \OWA\Core\Controller\Cli {
             return '-';
         }
 
-        $pairs = array();
+        $pairs = [];
 
         foreach ( (array) $params as $k => $v ) {
 

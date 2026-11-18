@@ -44,5 +44,3 @@ class Update071 extends \OWA\Core\Update {
         return $this->dropCubeColumn( self::COLUMN );
     }
 }
-
-?>

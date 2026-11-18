@@ -48,19 +48,19 @@ class RequestContainer {
      *
      * @var array<mixed> a string, or an array PHP decoded; setParam() stores anything
      */
-    public $owa_params = array();
+    public $owa_params = [];
 
     /** @var array<list<string>> name => each value a cookie of that name carried */
-    public $cookies = array();
+    public $cookies = [];
 
     /** @var array<list<string>> the cookies in OWA's namespace, the prefix removed */
-    public $owa_cookies = array();
+    public $owa_cookies = [];
 
     /** @var array<mixed> the PHP session's values */
-    public $session = array();
+    public $session = [];
 
     /** @var array<mixed> the request's params, cleaned, as named on the request */
-    public $request = array();
+    public $request = [];
 
     /** @var array<mixed> the request's server variables */
     public $server;
@@ -124,7 +124,7 @@ class RequestContainer {
         $this->server = $_SERVER;
       
         // setup cookies
-        $this->cookies = array();
+        $this->cookies = [];
 
         // look for access to the raw HTTP cookie string. This is needed becuause OWA can set settings cookies
         // with the same name under different subdomains. Multiple cookies with the same name are not
@@ -186,64 +186,64 @@ class RequestContainer {
         }
 
         // create request params and type
-        $params = array();
-		if ( array_key_exists('REQUEST_METHOD', $_SERVER) ) {
-				
-				$this->request_type = $_SERVER['REQUEST_METHOD'];
-				
-			if ( $_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'DELETE' ) {
-			
-				parse_str( trim(file_get_contents("php://input") ), $post_vars );
-				$params = array_merge( $_GET, $post_vars);
-				
-			} else if ( $_SERVER['REQUEST_METHOD'] === 'GET' ) {
-				
-				$params = $_GET;
-				
-			} else if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
-				
-				// merge in POST vars. GET and POST can occure on the same request.		
-				$params = array_merge( $_GET, $_POST);
-			}
-			
-			$this->current_url = \OWA\Core\Lib::get_current_url();
-			
-			// Names only. The values include whatever a form posted, a
-			// password among them, and this is written to a file.
-			\OWA\Core\CoreAPI::debug( 'Request params: ' . implode( ', ', array_keys( (array) $params ) ) );
-			
-		} else {
-			
-			// CLI Request
-			if (array_key_exists( 'argv', $_SERVER ) ) {
-				
-				$this->cli_args = $_SERVER['argv'];
+        $params = [];
+        if ( array_key_exists('REQUEST_METHOD', $_SERVER) ) {
+                
+                $this->request_type = $_SERVER['REQUEST_METHOD'];
+                
+            if ( $_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'DELETE' ) {
+            
+                parse_str( trim(file_get_contents("php://input") ), $post_vars );
+                $params = array_merge( $_GET, $post_vars);
+                
+            } else if ( $_SERVER['REQUEST_METHOD'] === 'GET' ) {
+                
+                $params = $_GET;
+                
+            } else if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
+                
+                // merge in POST vars. GET and POST can occure on the same request.		
+                $params = array_merge( $_GET, $_POST);
+            }
+            
+            $this->current_url = \OWA\Core\Lib::get_current_url();
+            
+            // Names only. The values include whatever a form posted, a
+            // password among them, and this is written to a file.
+            \OWA\Core\CoreAPI::debug( 'Request params: ' . implode( ', ', array_keys( (array) $params ) ) );
+            
+        } else {
+            
+            // CLI Request
+            if (array_key_exists( 'argv', $_SERVER ) ) {
+                
+                $this->cli_args = $_SERVER['argv'];
 
-	            // parse arguments into key value pairs
-	            for ( $i=1; $i < count( $this->cli_args ); $i++ ) {
-	                
-	                $it = explode( "=", $this->cli_args[$i] );
-	
-	                if ( isset( $it[1] ) ) {
-	                    
-	                    $params[ $it[0] ] = $it[1];
-	                
-	                } else {
-	                       
-	                    $params[ $it[0] ] = '';
-	                }
-	            }
-	
-	            $this->request_type = 'cli';
-			}
-		}
-		
+                // parse arguments into key value pairs
+                for ( $i=1; $i < count( $this->cli_args ); $i++ ) {
+                    
+                    $it = explode( "=", $this->cli_args[$i] );
+    
+                    if ( isset( $it[1] ) ) {
+                        
+                        $params[ $it[0] ] = $it[1];
+                    
+                    } else {
+                           
+                        $params[ $it[0] ] = '';
+                    }
+                }
+    
+                $this->request_type = 'cli';
+            }
+        }
+        
         // Clean Input arrays
         if ( $params ) {
 
             if ( ! \OWA\Core\CoreAPI::getSetting('base', 'tracking_mode') ) {
 
-                $params = \OWA\Module\Base\Classes\Sanitize::cleanInput( $params, array( 'remove_html' => true, 'escape_html' => false ) );
+                $params = \OWA\Module\Base\Classes\Sanitize::cleanInput( $params, [ 'remove_html' => true, 'escape_html' => false ] );
 
             }
             if ( is_array( $params ) && ! empty( $params ) ) {
@@ -261,7 +261,7 @@ class RequestContainer {
         // runs, so the un-namespaced forms have to be sanitized the moment they
         // become readable -- filtering only the prefixed spelling would leave
         // the bare one an unfiltered path into the same dispatch.
-        foreach ( array( $ns . 'action', $ns . 'do', 'action', 'do' ) as $exploitable ) {
+        foreach ( [ $ns . 'action', $ns . 'do', 'action', 'do' ] as $exploitable ) {
 
             if ( array_key_exists( $exploitable, $this->request ) ) {
 
@@ -301,9 +301,9 @@ class RequestContainer {
          */
         $ns_len = strlen( (string) $ns );
 
-        $from_ns      = array();
+        $from_ns      = [];
 
-        $this->owa_params = array();
+        $this->owa_params = [];
 
         foreach ( $this->request as $n => $v ) {
 
@@ -417,7 +417,7 @@ class RequestContainer {
      */
     public function decodeRequestParams() {
 
-        $params = array();
+        $params = [];
         // Apply caller specific params
         foreach ($this->owa_params as $k => $v) {
             // An array's values are kept as PHP decoded them.
@@ -501,5 +501,3 @@ class RequestContainer {
     }
 
 }
-
-?>

@@ -271,11 +271,11 @@ final class OverlayLauncherTest extends TestCase
 
     private function launchPage(string $value): string
     {
-        $launcher = new \OWA\Module\Base\Controller\OverlayLauncher(array(
+        $launcher = new \OWA\Module\Base\Controller\OverlayLauncher([
             'propertyId'        => (string) self::PROPERTY,
             'period'            => 'last_thirty_days',
             'pagePathPlusQuery' => $value,
-        ));
+        ]);
 
         $launcher->action();
 
@@ -284,11 +284,11 @@ final class OverlayLauncherTest extends TestCase
 
     private function launchPath(string $path): string
     {
-        $launcher = new \OWA\Module\Base\Controller\OverlayLauncher(array(
+        $launcher = new \OWA\Module\Base\Controller\OverlayLauncher([
             'propertyId' => (string) self::PROPERTY,
             'period'     => 'last_thirty_days',
             'pagePath'   => $path,
-        ));
+        ]);
 
         $launcher->action();
 

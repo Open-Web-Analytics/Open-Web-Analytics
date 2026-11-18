@@ -23,7 +23,7 @@ register_shutdown_function( static function () {
 
     $body = (string) ob_get_clean();
 
-    echo 'PROBE ' . json_encode( array( 'status' => http_response_code(), 'body' => $body ) ) . "\n";
+    echo 'PROBE ' . json_encode( [ 'status' => http_response_code(), 'body' => $body ] ) . "\n";
 } );
 
 chdir( dirname( $root . $entry ) );

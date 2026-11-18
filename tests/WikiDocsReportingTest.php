@@ -22,7 +22,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class WikiDocsReportingTest extends TestCase
 {
-    private static array $out = array();
+    private static array $out = [];
 
     private static function section( string $name ): string
     {
@@ -78,7 +78,7 @@ final class WikiDocsReportingTest extends TestCase
         $period = new TimePeriod();
         $period->set( 'today' );
 
-        $config = \OWA\Core\ReportController::periodPickerConfig( $period, array() );
+        $config = \OWA\Core\ReportController::periodPickerConfig( $period, [] );
 
         $this->assertSame( array_keys( ( new TimePeriod() )->getPeriodLabels() ), array_column( $config['presets'], 'key' ) );
     }
@@ -123,9 +123,9 @@ final class WikiDocsReportingTest extends TestCase
 
             $d = json_decode( (string) file_get_contents( $path ), true );
 
-            foreach ( (array) ( $d['widgets'] ?? array() ) as $widget ) {
+            foreach ( (array) ( $d['widgets'] ?? [] ) as $widget ) {
 
-                foreach ( (array) ( $widget['rowActions'] ?? array() ) as $name ) {
+                foreach ( (array) ( $widget['rowActions'] ?? [] ) as $name ) {
 
                     $named++;
                     $this->assertMatchesRegularExpression(
@@ -186,15 +186,15 @@ final class WikiDocsReportingTest extends TestCase
         $this->assertStringContainsString( 'more than ' . ResultSetManager::MAX_REGEX_BOUND, $md );
         $this->assertStringContainsString( 'more than ' . ResultSetManager::QUERY_SECONDS . ' seconds', $md );
 
-        foreach ( array( '`[[:<:]]`', '`(?\\|`', '`\\K`', '`(?R)`', '`(?1)`', '`(?&name)`', '`(?(`', '`(*FAIL)`',
-                         '`(?P`', "`(?'name'`", '`\\g`', '`\\k`', '`\\C`', '`\\N`', '`\\o`', '`&&`' ) as $named ) {
+        foreach ( [ '`[[:<:]]`', '`(?\\|`', '`\\K`', '`(?R)`', '`(?1)`', '`(?&name)`', '`(?(`', '`(*FAIL)`',
+                         '`(?P`', "`(?'name'`", '`\\g`', '`\\k`', '`\\C`', '`\\N`', '`\\o`', '`&&`' ] as $named ) {
             $this->assertStringContainsString( $named, $md, "the page names $named" );
         }
 
-        foreach ( array( '(a+)+', '(a)\\1', 'a{' . ( ResultSetManager::MAX_REGEX_BOUND + 1 ) . '}',
+        foreach ( [ '(a+)+', '(a)\\1', 'a{' . ( ResultSetManager::MAX_REGEX_BOUND + 1 ) . '}',
                          '[[:<:]]a', '(?|a)', 'a\\Kb', '(a(?R)?b)', '(a)(?1)', '(?<n>a)(?&n)', '(a)(?(1)b)',
                          '(*FAIL)', '(?P<n>a)', "(?'n'a)", '(a)\\g1', '(?<n>a)\\k<n>', '\\C', '\\N', '\\o{101}',
-                         '(?U)a', '[a[b]', '[a&&b]' ) as $refused ) {
+                         '(?U)a', '[a[b]', '[a&&b]' ] as $refused ) {
             $this->assertNotNull( ResultSetManager::regexProblem( $refused ),
                 "the page names $refused as refused, and the code refuses it" );
         }

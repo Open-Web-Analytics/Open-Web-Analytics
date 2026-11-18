@@ -40,7 +40,7 @@ final class AppPasswordsTest extends TestCase
     private function storedRow(string $lookup): array
     {
         return (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            sprintf('SELECT * FROM %s WHERE lookup_id = ?', AppPasswords::table()), array($lookup));
+            sprintf('SELECT * FROM %s WHERE lookup_id = ?', AppPasswords::table()), [$lookup]);
     }
 
     public function testATokenIsOpaqueAndNeverShapedLikeALegacyKey(): void
@@ -127,15 +127,15 @@ final class AppPasswordsTest extends TestCase
         AppPasswords::create(self::USER, 'Older');
         \OWA\Core\CoreAPI::dbSingleton()->query(
             sprintf('UPDATE %s SET created_at = created_at - 100 WHERE user_id = ?', AppPasswords::table()),
-            array(self::USER));
+            [self::USER]);
         AppPasswords::create(self::USER, 'Newer');
         AppPasswords::create(self::OTHER, 'Not theirs');
 
         $list = AppPasswords::forUser(self::USER);
 
-        $this->assertSame(array('Newer', 'Older'), array_column($list, 'name'));
+        $this->assertSame(['Newer', 'Older'], array_column($list, 'name'));
         $this->assertArrayNotHasKey('secret_hash', $list[0]);
-        $this->assertSame(array(), AppPasswords::forUser(''));
+        $this->assertSame([], AppPasswords::forUser(''));
     }
 
     public function testRevokingAllOfAUsersPasswordsLeavesOthers(): void
@@ -155,7 +155,7 @@ final class AppPasswordsTest extends TestCase
         $this->assertFalse(AppPasswords::create('', 'Name'));
         $this->assertFalse(AppPasswords::create(self::USER, '   '));
         $this->assertFalse(AppPasswords::create(self::USER, 'Name', 'admin'));
-        $this->assertSame(array(), AppPasswords::forUser(self::USER));
+        $this->assertSame([], AppPasswords::forUser(self::USER));
 
         $long = AppPasswords::create(self::USER, str_repeat('n', 300));
         $this->assertSame(255, strlen($long['name']));

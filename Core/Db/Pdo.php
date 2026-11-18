@@ -108,7 +108,7 @@ abstract class Pdo extends \OWA\Core\Db
 
             $dsn = $this->dsn();
 
-            $options = array(
+            $options = [
                 // Failures surface as exceptions and are converted to the falsy
                 // returns callers already handle -- see query(). Silent mode
                 // would mean checking errorInfo() after every call and is easier
@@ -130,7 +130,7 @@ abstract class Pdo extends \OWA\Core\Db
                 // contract change smuggled in by a transport swap. Caught by
                 // DbDriverSqlParityTest::testBothDriversReturnTheSameRows.
                 \PDO::ATTR_STRINGIFY_FETCHES  => true,
-            );
+            ];
 
             try {
 
@@ -180,7 +180,7 @@ abstract class Pdo extends \OWA\Core\Db
      * @param Bindings $params
      * @return \PDOStatement|bool  true for a statement with no result set
      */
-    public function query( $sql, array $params = array() ) {
+    public function query( $sql, array $params = [] ) {
 
         if ( $this->connection_status == false ) {
 
@@ -198,7 +198,7 @@ abstract class Pdo extends \OWA\Core\Db
 
         $this->num_queries++;
 
-        $this->result     = array();
+        $this->result     = [];
         $this->new_result = false;
 
         try {
@@ -327,7 +327,7 @@ abstract class Pdo extends \OWA\Core\Db
      * @param Bindings $params
      * @return list<Row>|null
      */
-    public function get_results( $sql, array $params = array() ) {
+    public function get_results( $sql, array $params = [] ) {
 
         if ( $sql ) {
 
@@ -373,7 +373,7 @@ abstract class Pdo extends \OWA\Core\Db
      * @param  Bindings $params
      * @return \Generator<int, Row, mixed, void>
      */
-    public function get_result_iterator( $sql, array $params = array() ) {
+    public function get_result_iterator( $sql, array $params = [] ) {
 
         if ( $sql ) {
 
@@ -399,7 +399,7 @@ abstract class Pdo extends \OWA\Core\Db
      * @param Bindings $params
      * @return Row|null
      */
-    public function get_row( $sql, array $params = array() ) {
+    public function get_row( $sql, array $params = [] ) {
 
         $result = $this->query( $sql, $params );
 

@@ -53,8 +53,8 @@ class SitesProfile extends \OWA\Core\AdminController {
             $site_data = $this->defaultsForProperty( $this->getParam( 'propertyId' ) );
             // Pre-selects the Property on the form and in the site control.
             $this->set( 'propertyId', isset( $site_data['property_id'] ) ? $site_data['property_id'] : '' );
-            $this->set( 'params', array_merge( (array) $this->params, array(
-                'propertyId' => isset( $site_data['property_id'] ) ? $site_data['property_id'] : '' ) ) );
+            $this->set( 'params', array_merge( (array) $this->params, [
+                'propertyId' => isset( $site_data['property_id'] ) ? $site_data['property_id'] : '' ] ) );
         }
 
 
@@ -63,7 +63,7 @@ class SitesProfile extends \OWA\Core\AdminController {
         $this->set('siteId', $site_id);
         // The settings chrome: a Profile is a tier of the tree, not a
         // settings page. See OptionsHierarchy.
-        $this->settingsChrome( array(), $site_id, $site_id ? '' : (string) $this->getParam( 'propertyId' ) );
+        $this->settingsChrome( [], $site_id, $site_id ? '' : (string) $this->getParam( 'propertyId' ) );
         $this->setSubview('base.sitesProfile');
     }
 
@@ -82,7 +82,7 @@ class SitesProfile extends \OWA\Core\AdminController {
 
         if ( ! $propertyId ) {
 
-            return array();
+            return [];
         }
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
@@ -90,29 +90,22 @@ class SitesProfile extends \OWA\Core\AdminController {
 
         if ( ! $property->wasPersisted() || $property->isArchived() ) {
 
-            return array();
+            return [];
         }
 
         if ( ! $property->isWebProperty() ) {
 
-            return array(
+            return [
                 'property_id' => (string) $property->get( 'id' ),
                 'stream_type' => \OWA\Module\Base\Entity\Site::STREAM_APP,
-            );
+            ];
         }
 
-        return array(
+        return [
             'property_id' => (string) $property->get( 'id' ),
             'stream_type' => \OWA\Module\Base\Entity\Site::STREAM_WEB,
             'domain'      => (string) $property->get( 'domain' ),
-        );
+        ];
     }
 
 }
-
-
-
-
-
-
-?>

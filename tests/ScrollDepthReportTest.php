@@ -33,10 +33,10 @@ final class ScrollDepthReportTest extends TestCase
     const SESSION = 8885100000000091;
 
     /** page => depth each visitor reached (0 = viewed, never scrolled) */
-    const READING = array(
-        '/a' => array( 90, 50, 50, 25, 25, 25, 0 ),
-        '/b' => array( 75, 75, 75, 75, 0 ),
-    );
+    const READING = [
+        '/a' => [ 90, 50, 50, 25, 25, 25, 0 ],
+        '/b' => [ 75, 75, 75, 75, 0 ],
+    ];
 
     public static function setUpBeforeClass(): void
     {
@@ -47,26 +47,26 @@ final class ScrollDepthReportTest extends TestCase
         self::dropFixture();
 
         $property = \OWA\Core\CoreAPI::entityFactory( 'base.property' );
-        $property->setProperties( array(
+        $property->setProperties( [
             'id'            => self::PROPERTY,
             'name'          => 'Scroll depth report fixture',
             'domain'        => 'example.test',
             'property_type' => \OWA\Module\Base\Entity\Property::TYPE_WEB,
             'creation_date' => time(),
-        ) );
+        ] );
 
         if ( ! $property->create() ) {
             throw new \RuntimeException( 'seeding owa_property failed' );
         }
 
         $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
-        $site->setProperties( array(
+        $site->setProperties( [
             'id'          => self::PROPERTY * 10,
             'site_id'     => self::SITE,
             'property_id' => self::PROPERTY,
             'name'        => 'Scroll depth report fixture profile',
             'domain'      => 'example.test',
-        ) );
+        ] );
 
         if ( ! $site->create() ) {
             throw new \RuntimeException( 'seeding owa_site failed' );
@@ -114,17 +114,17 @@ final class ScrollDepthReportTest extends TestCase
                 $session = self::SESSION + $who;
                 $who++;
 
-                $rows = array( array( 'page_view', null ) );
+                $rows = [ [ 'page_view', null ] ];
 
                 if ( $reached ) {
-                    $rows[] = array( 'scroll', $reached );
+                    $rows[] = [ 'scroll', $reached ];
                 }
 
                 foreach ( $rows as $row ) {
 
                     $event = Cubes::entityFor( self::PROPERTY );
 
-                    $event->setProperties( array(
+                    $event->setProperties( [
                         'id'             => 910000 + $n,
                         'event_type'     => $row[0],
                         'site_id'        => self::SITE,
@@ -135,7 +135,7 @@ final class ScrollDepthReportTest extends TestCase
                         'yyyymmdd'       => $day,
                         'page_path'      => $page,
                         'scroll_depth'   => $row[1],
-                    ) );
+                    ] );
 
                     if ( ! $event->create() ) {
                         throw new \RuntimeException( sprintf(
@@ -159,7 +159,7 @@ final class ScrollDepthReportTest extends TestCase
         $db->query( sprintf( 'DELETE FROM %s WHERE id = %d',
             \OWA\Core\CoreAPI::entityFactory( 'base.property' )->getTableName(), self::PROPERTY ) );
 
-        foreach ( array( '', '_rebuild', '_computed' ) as $suffix ) {
+        foreach ( [ '', '_rebuild', '_computed' ] as $suffix ) {
             $db->query( sprintf( 'DROP TABLE IF EXISTS %s%s', Cubes::tableFor( self::PROPERTY ), $suffix ) );
         }
     }
@@ -189,9 +189,9 @@ final class ScrollDepthReportTest extends TestCase
 
         $this->assertNotNull( $query, "the report has no widget '$widgetId'" );
 
-        $constraints = array();
+        $constraints = [];
 
-        foreach ( (array) ( $report['settings']['constraints'] ?? array() ) as $c ) {
+        foreach ( (array) ( $report['settings']['constraints'] ?? [] ) as $c ) {
             if ( isset( $c['value'] ) ) {
                 $constraints[] = $c['dimension'] . '==' . $c['value'];
             }
@@ -212,7 +212,7 @@ final class ScrollDepthReportTest extends TestCase
 
         $rs = $rsm->getResults();
 
-        $this->assertSame( array(), (array) $rs->errors, "the '$widgetId' query did not resolve" );
+        $this->assertSame( [], (array) $rs->errors, "the '$widgetId' query did not resolve" );
 
         return (array) $rs->resultsRows;
     }
@@ -226,15 +226,15 @@ final class ScrollDepthReportTest extends TestCase
      */
     public function testDeepestPointReachedInThresholdOrder(): void
     {
-        $events = array();
-        $users  = array();
+        $events = [];
+        $users  = [];
 
         foreach ( $this->runWidget( 'depth' ) as $row ) {
             $events[ (int) $row['scrollDepth']['value'] ] = (int) $row['eventCount']['value'];
             $users[ (int) $row['scrollDepth']['value'] ]  = (int) $row['scrolledUsers']['value'];
         }
 
-        $this->assertSame( array( 25 => 3, 50 => 2, 75 => 4, 90 => 1 ), $events,
+        $this->assertSame( [ 25 => 3, 50 => 2, 75 => 4, 90 => 1 ], $events,
             'each level counts the page views whose deepest point it was, shallowest first' );
 
         $this->assertSame( $events, $users,
@@ -247,7 +247,7 @@ final class ScrollDepthReportTest extends TestCase
      */
     public function testDepthByPageSplitsTheFunnelPerPage(): void
     {
-        $got = array();
+        $got = [];
 
         foreach ( $this->runWidget( 'pages' ) as $row ) {
             $got[ $row['pagePath']['value'] ][ (int) $row['scrollDepth']['value'] ]
@@ -260,10 +260,10 @@ final class ScrollDepthReportTest extends TestCase
 
         ksort( $got );
 
-        $this->assertSame( array(
-            '/a' => array( 25 => 3, 50 => 2, 90 => 1 ),
-            '/b' => array( 75 => 4 ),
-        ), $got );
+        $this->assertSame( [
+            '/a' => [ 25 => 3, 50 => 2, 90 => 1 ],
+            '/b' => [ 75 => 4 ],
+        ], $got );
     }
 
     /** The trend counts scroll events, not every event on the site. */

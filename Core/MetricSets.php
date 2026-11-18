@@ -58,30 +58,30 @@ class MetricSets {
      *
      * Each is: label, metrics, chartMetric.
      */
-    const SETS = array(
-        self::DEFAULT_KEY => array(
+    const SETS = [
+        self::DEFAULT_KEY => [
             'label'       => 'Site Usage',
             'metrics'     => 'sessions,engagementRate,pageViewsPerSession,averageEngagementTimePerSession,totalUsers',
             'chartMetric' => 'sessions',
-        ),
-        'goals' => array(
+        ],
+        'goals' => [
             'label'       => 'Goals',
             'metrics'     => 'sessions,goalEvents,goalValue,goalEventsPerSession',
             'chartMetric' => 'goalEvents',
-        ),
-        'ecommerce' => array(
+        ],
+        'ecommerce' => [
             'label'       => 'e-commerce',
             'metrics'     => 'sessions,transactions,transactionRevenue,revenuePerSession,revenuePerTransaction,ecommerceConversionRate',
             'chartMetric' => 'transactions',
-        ),
-    );
+        ],
+    ];
 
     /** When a Property has each set: the conditions forProperty() tests. */
-    const SHOWN_WHEN = array(
+    const SHOWN_WHEN = [
         self::DEFAULT_KEY => 'Always',
         'goals'           => 'The Property has an active goal event definition',
         'ecommerce'       => '`enableEcommerceReporting` is on for the Property',
-    );
+    ];
 
     /**
      * One of SETS with its label in the locale in use. The labels are a
@@ -115,7 +115,7 @@ class MetricSets {
      */
     public static function forProperty( $propertyId ) {
 
-        $sets = array();
+        $sets = [];
 
         if ( ! $propertyId ) {
 
@@ -153,7 +153,7 @@ class MetricSets {
         $row = \OWA\Core\CoreAPI::dbSingleton()->get_row(
             sprintf( 'SELECT 1 AS present FROM %s WHERE property_id = ? AND is_active = 1 LIMIT 1',
                 \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->getTableName() ),
-            array( (string) $propertyId ) );
+            [ (string) $propertyId ] );
 
         return ! empty( $row['present'] );
     }

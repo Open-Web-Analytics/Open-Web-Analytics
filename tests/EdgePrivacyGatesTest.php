@@ -23,7 +23,7 @@ final class EdgePrivacyGatesTest extends TestCase
     private string $dir;
 
     /** @var array<string,mixed> */
-    private array $saved = array();
+    private array $saved = [];
 
     /** @var mixed the request container's server params before this test */
     private $savedServer;
@@ -36,12 +36,12 @@ final class EdgePrivacyGatesTest extends TestCase
         // runner's own environment holds (none, under CLI in CI).
         $request = \OWA\Core\CoreAPI::requestContainerSingleton();
         $this->savedServer = $request->server;
-        $request->server = array(
+        $request->server = [
             'HTTP_USER_AGENT' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
             'REMOTE_ADDR'     => '203.0.113.77',
-        );
+        ];
 
-        foreach (array('queue_tracking_events', 'log_visitor_pii', 'anonymize_ips', 'excluded_ips', 'log_named_users') as $key) {
+        foreach (['queue_tracking_events', 'log_visitor_pii', 'anonymize_ips', 'excluded_ips', 'log_named_users'] as $key) {
             $this->saved[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
@@ -52,7 +52,7 @@ final class EdgePrivacyGatesTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'excluded_ips', '');
 
         $this->dir = sys_get_temp_dir() . '/owa-edge-gates-' . bin2hex(random_bytes(4)) . '/';
-        TrackerIngest::$queue = new FileEventQueue(array('path' => $this->dir));
+        TrackerIngest::$queue = new FileEventQueue(['path' => $this->dir]);
     }
 
     protected function tearDown(): void
@@ -70,27 +70,27 @@ final class EdgePrivacyGatesTest extends TestCase
     }
 
     /** Log a page view and return the envelopes the intake now holds. */
-    private function logPageView(array $properties = array()): array
+    private function logPageView(array $properties = []): array
     {
         $event = \OWA\Core\CoreAPI::supportClassFactory('base', 'event');
         $event->setEventType('page_view');
-        $event->setProperties($properties + array(
+        $event->setProperties($properties + [
             'site_id'       => self::SITE,
             'page_location' => 'https://edge.test/a',
-        ));
+        ]);
 
         \OWA\Core\CoreAPI::logEvent('page_view', $event);
 
-        $lines = is_file($this->dir . 'events.txt') ? file($this->dir . 'events.txt', FILE_IGNORE_NEW_LINES) : array();
+        $lines = is_file($this->dir . 'events.txt') ? file($this->dir . 'events.txt', FILE_IGNORE_NEW_LINES) : [];
 
         return array_map(fn ($line) => json_decode($line, true)['e'], array_values(array_filter($lines)));
     }
 
-    private const IDENTITY = array(
+    private const IDENTITY = [
         'user_id'        => 'person-42',
         'vps_user_name'  => 'Display Name',
         'vps_user_email' => 'person@example.test',
-    );
+    ];
 
     // ---------------------------------------------------------------------
     // log_visitor_pii
@@ -127,7 +127,7 @@ final class EdgePrivacyGatesTest extends TestCase
     {
         \OWA\Core\CoreAPI::setSetting('base', 'log_visitor_pii', false);
 
-        $queued = $this->logPageView(array('user_name' => 'Old Name', 'email_address' => 'old@example.test'));
+        $queued = $this->logPageView(['user_name' => 'Old Name', 'email_address' => 'old@example.test']);
 
         $this->assertCount(1, $queued);
         $this->assertStringNotContainsString('Old Name', json_encode($queued[0]));
@@ -158,17 +158,17 @@ final class EdgePrivacyGatesTest extends TestCase
         $migrator = new class extends \OWA\Module\Base\Classes\Migration\FactMigrator {
             protected function events(array $r, array $refs)
             {
-                return array($this->baseEvent($r, $refs, 'page_view'));
+                return [$this->baseEvent($r, $refs, 'page_view')];
             }
 
             public function one(array $r)
             {
-                return $this->events($r, array());
+                return $this->events($r, []);
             }
         };
 
-        $row = array('id' => 1, 'site_id' => self::SITE, 'visitor_id' => '11', 'session_id' => '12',
-                     'timestamp' => 1700000000, 'yyyymmdd' => 20231114, 'user_name' => 'person-7');
+        $row = ['id' => 1, 'site_id' => self::SITE, 'visitor_id' => '11', 'session_id' => '12',
+                     'timestamp' => 1700000000, 'yyyymmdd' => 20231114, 'user_name' => 'person-7'];
 
         $this->assertSame('person-7', $migrator->one($row)[0]->get('user_id'));
 
@@ -200,7 +200,7 @@ final class EdgePrivacyGatesTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'anonymize_ips', true);
         \OWA\Core\CoreAPI::setSetting('base', 'excluded_ips', '198.51.100.1, ' . $ip);
 
-        $this->assertSame(array(), $this->logPageView());
+        $this->assertSame([], $this->logPageView());
     }
 
     /** A list written with the masked address still matches. */
@@ -211,7 +211,7 @@ final class EdgePrivacyGatesTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'anonymize_ips', true);
         \OWA\Core\CoreAPI::setSetting('base', 'excluded_ips', \OWA\Core\Lib::anonymizeIp($ip));
 
-        $this->assertSame(array(), $this->logPageView());
+        $this->assertSame([], $this->logPageView());
     }
 
     /** Not excluded: queued, carrying only the masked address. */

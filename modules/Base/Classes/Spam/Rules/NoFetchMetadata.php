@@ -86,5 +86,3 @@ class NoFetchMetadata extends \OWA\Module\Base\Classes\Spam\Rule {
         return false;
     }
 }
-
-?>

@@ -23,7 +23,7 @@ class CubeStatusDetail extends \OWA\Core\AdminController {
     public function validate() {
 
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Choose a Property.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Choose a Property.' ) ] );
     }
 
     public function action() {
@@ -45,5 +45,3 @@ class CubeStatusDetail extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.cubeStatus' );
     }
 }
-
-?>

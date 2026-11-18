@@ -19,7 +19,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     use AjaxRequestTrait;
 
     /** @var string[] users whose passwords to delete */
-    private $users = array();
+    private $users = [];
 
     protected function tearDown(): void
     {
@@ -55,7 +55,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         return (array) $property->getValue($controller);
     }
 
-    private function run_(string $class, array $params = array()): array
+    private function run_(string $class, array $params = []): array
     {
         $controller = new $class($params);
         $controller->action();
@@ -86,7 +86,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
 
         $data = $this->run_(\OWA\Module\Base\Controller\MyAppPasswords::class);
 
-        $this->assertSame(array('Mine'), array_column($data['app_passwords'], 'name'));
+        $this->assertSame(['Mine'], array_column($data['app_passwords'], 'name'));
         $this->assertSame('base.myAppPasswords', $data['subview']);
         $this->assertArrayNotHasKey('secret_hash', $data['app_passwords'][0]);
     }
@@ -96,7 +96,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     {
         $this->signedInBy('cookies');
 
-        $params += array('do' => 'base.myAppPasswordCreateAjax');
+        $params += ['do' => 'base.myAppPasswordCreateAjax'];
 
         if ($nonce) {
             $params['nonce'] = self::nonceFor('base.myAppPasswordCreateAjax');
@@ -110,7 +110,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     {
         $me = $this->signIn();
 
-        $r = $this->create(array('name' => 'Export script', 'scope' => 'read'));
+        $r = $this->create(['name' => 'Export script', 'scope' => 'read']);
         $made = $r['json']['data'];
 
         $this->assertSame(201, $r['status']);
@@ -136,49 +136,49 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     {
         $me = $this->signIn();
 
-        foreach (array('app_password', 'overlay_token') as $method) {
+        foreach (['app_password', 'overlay_token'] as $method) {
 
             $this->signedInBy($method);
-            $c = new \OWA\Module\Base\Controller\MyAppPasswordCreateAjax(array(
+            $c = new \OWA\Module\Base\Controller\MyAppPasswordCreateAjax([
                 'do' => 'base.myAppPasswordCreateAjax', 'name' => 'Successor', 'scope' => 'full',
-                'nonce' => self::nonceFor('base.myAppPasswordCreateAjax')));
+                'nonce' => self::nonceFor('base.myAppPasswordCreateAjax')]);
 
             $this->assertSame(401, $this->ajax($c)['status'], $method);
         }
 
-        $this->assertSame(array(), AppPasswords::forUser($me['user_id']));
+        $this->assertSame([], AppPasswords::forUser($me['user_id']));
     }
 
     public function testWithoutTheNonceNothingIsCreated(): void
     {
         $me = $this->signIn();
 
-        $r = $this->create(array('name' => 'Export script', 'scope' => 'read'), false);
+        $r = $this->create(['name' => 'Export script', 'scope' => 'read'], false);
 
         $this->assertSame(403, $r['status']);
-        $this->assertSame(array(), AppPasswords::forUser($me['user_id']));
+        $this->assertSame([], AppPasswords::forUser($me['user_id']));
     }
 
     public function testANameIsRequired(): void
     {
         $me = $this->signIn();
 
-        $r = $this->create(array('name' => '   ', 'scope' => 'read'));
+        $r = $this->create(['name' => '   ', 'scope' => 'read']);
 
         $this->assertSame(422, $r['status']);
         $this->assertSame('Give the application password a name.', $r['json']['error']);
-        $this->assertSame(array(), AppPasswords::forUser($me['user_id']));
+        $this->assertSame([], AppPasswords::forUser($me['user_id']));
     }
 
     public function testAnUnknownScopeIsRefused(): void
     {
         $me = $this->signIn();
 
-        $r = $this->create(array('name' => 'Admin script', 'scope' => 'admin'));
+        $r = $this->create(['name' => 'Admin script', 'scope' => 'admin']);
 
         $this->assertSame(422, $r['status']);
         $this->assertSame('The application password could not be created.', $r['json']['error']);
-        $this->assertSame(array(), AppPasswords::forUser($me['user_id']));
+        $this->assertSame([], AppPasswords::forUser($me['user_id']));
     }
 
     /** Not a REST route: an application password cannot reach it at all. */
@@ -201,7 +201,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         $made = AppPasswords::create($me['user_id'], 'Old', AppPasswords::SCOPE_FULL);
 
         $data = $this->run_(\OWA\Module\Base\Controller\MyAppPasswordRevoke::class,
-            array('lookup_id' => $made['lookup_id']));
+            ['lookup_id' => $made['lookup_id']]);
 
         $this->assertSame(3213, $data['status_code']);
         $this->assertSame('base.myAppPasswords', $data['do']);
@@ -216,7 +216,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         $theirs = AppPasswords::create($other['user_id'], 'Theirs', AppPasswords::SCOPE_FULL);
 
         $data = $this->run_(\OWA\Module\Base\Controller\MyAppPasswordRevoke::class,
-            array('lookup_id' => $theirs['lookup_id'], 'user_id' => $other['user_id']));
+            ['lookup_id' => $theirs['lookup_id'], 'user_id' => $other['user_id']]);
 
         $this->assertSame(3214, $data['error_code']);
         $this->assertNotNull(AppPasswords::verify($theirs['token']));
@@ -229,7 +229,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         $theirs = AppPasswords::create($other['user_id'], 'Theirs', AppPasswords::SCOPE_FULL);
 
         $data = $this->run_(\OWA\Module\Base\Controller\UserAppPasswordRevoke::class,
-            array('lookup_id' => $theirs['lookup_id'], 'user_id' => $other['user_id']));
+            ['lookup_id' => $theirs['lookup_id'], 'user_id' => $other['user_id']]);
 
         $this->assertSame(3213, $data['status_code']);
         $this->assertSame('base.usersProfile', $data['do']);
@@ -245,7 +245,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         $third  = $this->makeUser('viewer', 'third');
 
         $data = $this->run_(\OWA\Module\Base\Controller\UserAppPasswordRevoke::class,
-            array('lookup_id' => $theirs['lookup_id'], 'user_id' => $third['user_id']));
+            ['lookup_id' => $theirs['lookup_id'], 'user_id' => $third['user_id']]);
 
         $this->assertSame(3214, $data['error_code']);
         $this->assertNotNull(AppPasswords::verify($theirs['token']));
@@ -254,7 +254,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
     /** @dataProvider controllers */
     public function testEachControllerIsGatedAndNonced(string $class, string $capability, bool $nonce): void
     {
-        $controller = new $class(array());
+        $controller = new $class([]);
 
         $this->assertSame($capability, $controller->getRequiredCapability());
         $this->assertSame($nonce, (bool) $controller->is_nonce_required);
@@ -262,20 +262,20 @@ final class AppPasswordScreensTest extends RestControllerTestCase
 
     public static function controllers(): array
     {
-        return array(
-            'the list'     => array(\OWA\Module\Base\Controller\MyAppPasswords::class, 'view_site_list', false),
-            'create'       => array(\OWA\Module\Base\Controller\MyAppPasswordCreateAjax::class, 'view_site_list', true),
-            'revoke own'   => array(\OWA\Module\Base\Controller\MyAppPasswordRevoke::class, 'view_site_list', true),
-            'admin revoke' => array(\OWA\Module\Base\Controller\UserAppPasswordRevoke::class, 'edit_users', true),
-        );
+        return [
+            'the list'     => [\OWA\Module\Base\Controller\MyAppPasswords::class, 'view_site_list', false],
+            'create'       => [\OWA\Module\Base\Controller\MyAppPasswordCreateAjax::class, 'view_site_list', true],
+            'revoke own'   => [\OWA\Module\Base\Controller\MyAppPasswordRevoke::class, 'view_site_list', true],
+            'admin revoke' => [\OWA\Module\Base\Controller\UserAppPasswordRevoke::class, 'edit_users', true],
+        ];
     }
 
     public function testEveryActionIsRegistered(): void
     {
         $actions = (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap('actions');
 
-        foreach (array('base.myAppPasswords', 'base.myAppPasswordCreateAjax',
-                       'base.myAppPasswordRevoke', 'base.userAppPasswordRevoke') as $action) {
+        foreach (['base.myAppPasswords', 'base.myAppPasswordCreateAjax',
+                       'base.myAppPasswordRevoke', 'base.userAppPasswordRevoke'] as $action) {
 
             $this->assertArrayHasKey($action, $actions);
             $this->assertTrue(class_exists($actions[$action]['class_name']), $action);
@@ -284,7 +284,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
 
     public function testTheScreenIsInMyPreferences(): void
     {
-        $controller = new \OWA\Module\Base\Controller\MyAppPasswords(array());
+        $controller = new \OWA\Module\Base\Controller\MyAppPasswords([]);
 
         $method = new \ReflectionMethod(\OWA\Core\Controller::class, 'getHierarchyNav');
 
@@ -305,7 +305,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
 
     public static function templates(): array
     {
-        return array('my screen' => array('my_app_passwords.php'));
+        return ['my screen' => ['my_app_passwords.php']];
     }
 
     /**
@@ -315,15 +315,15 @@ final class AppPasswordScreensTest extends RestControllerTestCase
      */
     public function testTheScreenAddsThroughTheDialog(): void
     {
-        $vars = array(
-            'app_passwords' => array(array('lookup_id' => 'abcdefghijkl', 'name' => 'Export script',
-                'scope' => 'read', 'created_at' => time(), 'last_used_at' => null, 'last_used_ip' => null)),
+        $vars = [
+            'app_passwords' => [['lookup_id' => 'abcdefghijkl', 'name' => 'Export script',
+                'scope' => 'read', 'created_at' => time(), 'last_used_at' => null, 'last_used_ip' => null]],
             'scopes'        => AppPasswords::scopes(),
             'enabled'       => true,
             'require_https' => true,
             'api_url'       => 'https://owa.example.com/api/index.php',
             'siteId'        => '',
-        );
+        ];
 
         $html = $this->render('my_app_passwords.php', $vars);
 
@@ -348,7 +348,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
 
         $this->assertMatchesRegularExpression('/<p class="owa_appPasswordsNone" hidden>/', $html);
 
-        $vars['app_passwords'] = array();
+        $vars['app_passwords'] = [];
         $empty = $this->render('my_app_passwords.php', $vars);
         $this->assertMatchesRegularExpression('/<table class="management owa_appPasswords" hidden>/', $empty);
         $this->assertMatchesRegularExpression('/<p class="owa_appPasswordsNone">/', $empty);
@@ -356,10 +356,10 @@ final class AppPasswordScreensTest extends RestControllerTestCase
 
     public function testTheScreenSaysWhenTheyAreTurnedOff(): void
     {
-        $html = $this->render('my_app_passwords.php', array(
-            'app_passwords' => array(), 'scopes' => AppPasswords::scopes(), 'enabled' => false,
+        $html = $this->render('my_app_passwords.php', [
+            'app_passwords' => [], 'scopes' => AppPasswords::scopes(), 'enabled' => false,
             'require_https' => false, 'api_url' => '', 'siteId' => '',
-        ));
+        ]);
 
         $this->assertStringContainsString('turned off on this', $html);
     }
@@ -376,8 +376,8 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         $view = new \OWA\Module\Base\View\UsersProfile();
         $view->body = new \OWA\Core\Template('base');
         $view->t    = new \OWA\Core\Template('base');
-        $view->data = array('profile' => $profile->_getProperties(), 'edit' => true);
-        $view->render(array());
+        $view->data = ['profile' => $profile->_getProperties(), 'edit' => true];
+        $view->render([]);
 
         $html = $view->body->fetch();
 
@@ -395,7 +395,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
 
         \OWA\Core\CoreAPI::supportClassFactory('base', 'userManager')->deleteUser($other['user_id']);
 
-        $this->assertSame(array(), AppPasswords::forUser($other['user_id']));
+        $this->assertSame([], AppPasswords::forUser($other['user_id']));
         $this->assertNull(AppPasswords::verify($made['token']));
     }
 
@@ -404,7 +404,7 @@ final class AppPasswordScreensTest extends RestControllerTestCase
         $sets = array_column(
             \OWA\Module\Base\Classes\SettingsForm::pageFieldSets('base.optionsGeneral'), null, 'id');
 
-        $this->assertSame(array('app_passwords_enabled', 'app_passwords_require_https'),
+        $this->assertSame(['app_passwords_enabled', 'app_passwords_require_https'],
             $sets['base.restApi']['settings'] ?? null);
     }
 }

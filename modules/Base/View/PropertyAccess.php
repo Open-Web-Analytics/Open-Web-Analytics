@@ -48,5 +48,3 @@ class PropertyAccess extends \OWA\Core\View {
         return $db->getAllRows();
     }
 }
-
-?>

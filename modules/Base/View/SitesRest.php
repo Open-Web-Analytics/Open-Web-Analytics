@@ -68,14 +68,14 @@ class SitesRest extends \OWA\Core\View\RestApi {
         $db->selectFrom( $property->getTableName() );
         $db->selectColumn( 'id, name' );
 
-        $names = array();
+        $names = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
             $names[ $row['id'] ] = $row['name'];
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( $sites as $key => $site ) {
 
@@ -94,5 +94,3 @@ class SitesRest extends \OWA\Core\View\RestApi {
         return $out;
     }
 }
-
-?>

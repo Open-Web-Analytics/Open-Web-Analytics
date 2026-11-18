@@ -31,7 +31,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
  */
 final class CapabilitiesConfigFileOnlyTest extends TestCase
 {
-    private const KEYS = array( 'capabilities', 'capabilitiesThatRequireSiteAccess' );
+    private const KEYS = [ 'capabilities', 'capabilitiesThatRequireSiteAccess' ];
 
     private function settings()
     {
@@ -40,7 +40,7 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
 
     private function staticBaseSettings(): array
     {
-        return \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? array();
+        return \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? [];
     }
 
     public function testBothHalvesOfTheModelAreStatic(): void
@@ -73,7 +73,7 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
     /** Neither is fetched at boot. */
     public function testNeitherIsInTheBootQuery(): void
     {
-        $eager = (array) ( $this->settings()->eagerSettings()['base'] ?? array() );
+        $eager = (array) ( $this->settings()->eagerSettings()['base'] ?? [] );
 
         foreach ( self::KEYS as $key ) {
 
@@ -105,7 +105,7 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
             "INSERT INTO %s (id, scope_type, scope_id, module, name, value, autoload, creation_date)"
           . " VALUES ('%s', 'install', '1', 'base', 'capabilities', '%s', 1, '0')",
             $table, $id,
-            $db->prepare( serialize( array( 'everyone' => array( 'edit_users', 'edit_settings' ) ) ) ) ) );
+            $db->prepare( serialize( [ 'everyone' => [ 'edit_users', 'edit_settings' ] ] ) ) ) );
 
         $this->settings()->load( 1 );
 
@@ -122,10 +122,10 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
          * would pass against a total leak. What must not survive is the
          * stored map's contents.
          */
-        $this->assertNotContains( 'edit_users', $live['everyone'] ?? array(),
+        $this->assertNotContains( 'edit_users', $live['everyone'] ?? [],
             'a stored role map reached the running config: it would grant '
           . 'edit_users to every visitor' );
-        $this->assertSame( array( 'install_schema' ), $live['everyone'] ?? null,
+        $this->assertSame( [ 'install_schema' ], $live['everyone'] ?? null,
             'the shipped grant for everyone stands unchanged' );
         $this->assertArrayHasKey( 'admin', $live, 'the shipped policy still stands' );
     }
@@ -160,7 +160,7 @@ final class CapabilitiesConfigFileOnlyTest extends TestCase
     {
         $d = $this->staticBaseSettings();
 
-        foreach ( array( 'timezone', 'spam_detection', 'anonymize_ips' ) as $editable ) {
+        foreach ( [ 'timezone', 'spam_detection', 'anonymize_ips' ] as $editable ) {
 
             $this->assertArrayNotHasKey( $editable, $d,
                 sprintf( 'base.%s is meant to be editable from the admin UI', $editable ) );

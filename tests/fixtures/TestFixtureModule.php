@@ -65,7 +65,7 @@ namespace OWA\Module\TestFixture {
             if ( function_exists( 'owa_test_db_available' ) && owa_test_db_available() ) {
 
                 $db->query( sprintf( 'DELETE FROM %s WHERE module = ?',
-                    \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName() ), array( self::NAME ) );
+                    \OWA\Core\CoreAPI::entityFactory( 'base.setting' )->getTableName() ), [ self::NAME ] );
             }
         }
     }

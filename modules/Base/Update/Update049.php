@@ -138,7 +138,7 @@ class Update049 extends \OWA\Core\Update {
         $db->selectFrom( $entity->getTableName() );
         $db->selectColumn( 'id, goal_event_id, condition_property' );
 
-        $unmappable = array();
+        $unmappable = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
@@ -248,10 +248,8 @@ class Update049 extends \OWA\Core\Update {
             }
         }
 
-        \OWA\Core\CoreAPI::persistSetting( 'base', self::SWITCHED_OFF, array() );
+        \OWA\Core\CoreAPI::persistSetting( 'base', self::SWITCHED_OFF, [] );
 
         return true;
     }
 }
-
-?>

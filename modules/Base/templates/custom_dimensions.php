@@ -34,8 +34,8 @@
     <legend>
         <?php $view->out( \OWA\Core\CoreAPI::t( 'Registered' ) ); ?>
         <?php if ( count( $view->dimensions ) < $view->cube['capacity'] ): ?>
-        <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
-            'do' => 'base.customDimensionEdit', 'propertyId' => $view->propertyId ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Register New Custom Dimension' ) ); ?></a>)</span>
+        <span class="legend_link">(<a href="<?php echo $view->makeLink( [
+            'do' => 'base.customDimensionEdit', 'propertyId' => $view->propertyId ] ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Register New Custom Dimension' ) ); ?></a>)</span>
         <?php endif; ?>
     </legend>
 

@@ -126,7 +126,7 @@ class Ajax extends \OWA\Core\AdminController {
     public function errorAction() {
 
         // Controller::get() reads request params, not data.
-        $messages = array_values( array_filter( (array) ( $this->data['validation_errors'] ?? array() ), 'is_string' ) );
+        $messages = array_values( array_filter( (array) ( $this->data['validation_errors'] ?? [] ), 'is_string' ) );
 
         return $this->answer( 422, $messages[0] ?? \OWA\Core\CoreAPI::t( 'The request was not valid.' ) );
     }

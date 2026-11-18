@@ -37,7 +37,7 @@ final class CubeColumnsTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('no definition for');
 
-        (new Columns(array()))->steps(array('source'));
+        (new Columns([]))->steps(['source']);
     }
 
     public function testADefinitionForAColumnTheCubeLacksIsFatal(): void
@@ -45,7 +45,7 @@ final class CubeColumnsTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('which the cube does not have');
 
-        (new Columns(array('not_a_column' => array('kind' => 'is_exit'))))->steps(array());
+        (new Columns(['not_a_column' => ['kind' => 'is_exit']]))->steps([]);
     }
 
     public function testAnUnknownKindIsFatal(): void
@@ -53,7 +53,7 @@ final class CubeColumnsTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('does not exist');
 
-        (new Columns(array('is_exit' => array('kind' => 'invented'))))->steps(array('is_exit'));
+        (new Columns(['is_exit' => ['kind' => 'invented']]))->steps(['is_exit']);
     }
 
     public function testADefinitionMayNotNameAJoinAliasOrSql(): void
@@ -63,9 +63,9 @@ final class CubeColumnsTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('is not a cube source');
 
-        (new Columns(array(
-            'campaign' => array('kind' => 'copy', 'from' => 's.s_tagged_campaign'),
-        )))->steps(array('campaign'));
+        (new Columns([
+            'campaign' => ['kind' => 'copy', 'from' => 's.s_tagged_campaign'],
+        ]))->steps(['campaign']);
     }
 
     public function testAnUnknownSessionValueIsFatal(): void
@@ -73,22 +73,22 @@ final class CubeColumnsTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('is not a value the cube carries');
 
-        (new Columns(array(
-            'campaign' => array('kind' => 'copy', 'from' => 'session.invented'),
-        )))->steps(array('campaign'));
+        (new Columns([
+            'campaign' => ['kind' => 'copy', 'from' => 'session.invented'],
+        ]))->steps(['campaign']);
     }
 
     public function testTheWindowProjectsOnlyWhatDefinitionsReference(): void
     {
         // Demand-driven: the sort is the build's whole cost, so a value nothing
         // reads should not be in it.
-        $columns = new Columns(array(
-            'campaign' => array('kind' => 'copy', 'from' => 'session.tagged_campaign'),
-        ));
+        $columns = new Columns([
+            'campaign' => ['kind' => 'copy', 'from' => 'session.tagged_campaign'],
+        ]);
 
-        $columns->steps(array('campaign'));
+        $columns->steps(['campaign']);
 
-        $this->assertSame(array('tagged_campaign' => 's_tagged_campaign'),
+        $this->assertSame(['tagged_campaign' => 's_tagged_campaign'],
             $columns->sessionSources());
     }
 

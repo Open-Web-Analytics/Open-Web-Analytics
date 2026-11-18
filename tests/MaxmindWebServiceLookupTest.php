@@ -36,7 +36,7 @@ final class MaxmindWebServiceLookupTest extends TestCase
 
         $maxmind = new \OWA\Module\MaxmindGeoip\Classes\Maxmind;
 
-        $map = array( 'ip_address' => '203.0.113.7', 'city' => '(not set)' );
+        $map = [ 'ip_address' => '203.0.113.7', 'city' => '(not set)' ];
 
         $this->assertSame( $map, $maxmind->getLocationFromWebService( $map ),
             'a lookup that cannot happen must hand the map back, not throw' );
@@ -47,7 +47,7 @@ final class MaxmindWebServiceLookupTest extends TestCase
     {
         $maxmind = new \OWA\Module\MaxmindGeoip\Classes\Maxmind;
 
-        $map = array( 'city' => '(not set)' );
+        $map = [ 'city' => '(not set)' ];
 
         $this->assertSame( $map, $maxmind->getLocationFromWebService( $map ) );
     }
@@ -57,7 +57,7 @@ final class MaxmindWebServiceLookupTest extends TestCase
     {
         $maxmind = new MaxmindWebServiceLookupTestMaxmind;
 
-        $map = $maxmind->getLocationFromWebService( array( 'ip_address' => ' 203.0.113.7 ', 'city' => '(not set)' ) );
+        $map = $maxmind->getLocationFromWebService( [ 'ip_address' => ' 203.0.113.7 ', 'city' => '(not set)' ] );
 
         $this->assertSame( '203.0.113.7', MaxmindWebServiceLookupTestClient::$asked );
         $this->assertSame( 'münchen', $map['city'] );
@@ -90,12 +90,12 @@ class MaxmindWebServiceLookupTestClient
 
             public function jsonSerialize(): array {
 
-                return array(
-                    'city'         => array( 'names' => array( 'en' => 'München' ) ),
-                    'country'      => array( 'iso_code' => 'DE', 'names' => array( 'en' => 'Germany' ) ),
-                    'subdivisions' => array( array( 'iso_code' => 'BY', 'names' => array( 'en' => 'Bavaria' ) ) ),
-                    'location'     => array( 'latitude' => 48.1, 'longitude' => 11.6 ),
-                );
+                return [
+                    'city'         => [ 'names' => [ 'en' => 'München' ] ],
+                    'country'      => [ 'iso_code' => 'DE', 'names' => [ 'en' => 'Germany' ] ],
+                    'subdivisions' => [ [ 'iso_code' => 'BY', 'names' => [ 'en' => 'Bavaria' ] ] ],
+                    'location'     => [ 'latitude' => 48.1, 'longitude' => 11.6 ],
+                ];
             }
         };
     }

@@ -47,7 +47,7 @@ class Update046 extends \OWA\Core\Update {
      */
     private function added() {
 
-        return array( 'session_start_ts', 'prior_session_start_ts' );
+        return [ 'session_start_ts', 'prior_session_start_ts' ];
     }
 
     /**
@@ -57,7 +57,7 @@ class Update046 extends \OWA\Core\Update {
      */
     private function removed() {
 
-        return array( 'prev_event_ts', 'clock_offset_usec' );
+        return [ 'prev_event_ts', 'clock_offset_usec' ];
     }
 
     /**
@@ -101,8 +101,8 @@ class Update046 extends \OWA\Core\Update {
          * live in the update. Update039 spells its types out for the same
          * reason.
          */
-        foreach ( array( 'prev_event_ts' => OWA_DTD_BIGINT,
-                         'clock_offset_usec' => OWA_DTD_BIGINT ) as $column => $type ) {
+        foreach ( [ 'prev_event_ts' => OWA_DTD_BIGINT,
+                         'clock_offset_usec' => OWA_DTD_BIGINT ] as $column => $type ) {
 
             if ( ! $this->restoreColumn( $column, $type ) ) {
 
@@ -115,5 +115,3 @@ class Update046 extends \OWA\Core\Update {
         return $this->dropColumns( $this->added() );
     }
 }
-
-?>

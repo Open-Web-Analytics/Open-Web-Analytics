@@ -75,5 +75,3 @@ class MaterializedEvents {
         return $events;
     }
 }
-
-?>

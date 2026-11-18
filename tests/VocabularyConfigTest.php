@@ -220,12 +220,12 @@ final class VocabularyConfigTest extends TestCase
     {
         $module = $this->module();
 
-        $module->registerMetricDefinition(array(
+        $module->registerMetricDefinition([
             'name' => 'zzCubeCount', 'label' => 'C', 'entity' => 'base.event',
-            'metric_type' => 'count', 'data_type' => 'integer', 'column' => 'id' ));
-        $module->registerMetricDefinition(array(
+            'metric_type' => 'count', 'data_type' => 'integer', 'column' => 'id' ]);
+        $module->registerMetricDefinition([
             'name' => 'zzCubeRatio', 'label' => 'R', 'metric_type' => 'calculated',
-            'data_type' => 'decimal', 'numerator' => 'zzCubeCount', 'denominator' => 'sessions' ));
+            'data_type' => 'decimal', 'numerator' => 'zzCubeCount', 'denominator' => 'sessions' ]);
 
         $this->assertSame('base.event', $module->metrics['zzCubeCount'][0]['params']['entity'] ?? null);
         $this->assertArrayHasKey('zzCubeRatio', $module->metrics ?? []);

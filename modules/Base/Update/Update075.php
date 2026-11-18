@@ -55,7 +55,7 @@ class Update075 extends \OWA\Core\Update {
      */
     public function up( $force = false ) {
 
-        $this->goals = array();
+        $this->goals = [];
 
         if ( ! $this->renameGoalEvents() ) {
 
@@ -78,18 +78,18 @@ class Update075 extends \OWA\Core\Update {
      */
     public function down() {
 
-        $this->goals = array();
+        $this->goals = [];
 
         $db  = \OWA\Core\CoreAPI::dbSingleton();
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
 
-        $after = array( 0, 0 );
+        $after = [ 0, 0 ];
 
         while ( $rows = $this->batch( 'NOT IN', $after ) ) {
 
             foreach ( $rows as $row ) {
 
-                $after = array( (int) $row['yyyymmdd'], $row['id'] );
+                $after = [ (int) $row['yyyymmdd'], $row['id'] ];
                 $goal  = $this->goalNamed( (string) $row['site_id'], (string) $row['event_type'] );
 
                 if ( $goal && $goal->get( 'trigger_event_type' ) ) {
@@ -97,15 +97,15 @@ class Update075 extends \OWA\Core\Update {
                     if ( $db->query( sprintf(
                             'UPDATE %s SET is_goal_event = 1 WHERE yyyymmdd = ? AND site_id = ? AND visitor_id = ?'
                           . ' AND session_id = ? AND ts = ? AND event_type = ?', $raw ),
-                            array( (int) $row['yyyymmdd'], $row['site_id'], $row['visitor_id'], $row['session_id'],
-                                $row['ts'], $goal->get( 'trigger_event_type' ) ) ) === false ) {
+                            [ (int) $row['yyyymmdd'], $row['site_id'], $row['visitor_id'], $row['session_id'],
+                                $row['ts'], $goal->get( 'trigger_event_type' ) ] ) === false ) {
 
                         return false;
                     }
                 }
 
                 if ( $db->query( sprintf( 'DELETE FROM %s WHERE id = ? AND yyyymmdd = ?', $raw ),
-                        array( $row['id'], (int) $row['yyyymmdd'] ) ) === false ) {
+                        [ $row['id'], (int) $row['yyyymmdd'] ] ) === false ) {
 
                     return false;
                 }
@@ -118,13 +118,13 @@ class Update075 extends \OWA\Core\Update {
 
             // Matched on the name it was given, so a goal event made since is left alone.
             if ( $db->query( sprintf( 'UPDATE %s SET name = ? WHERE id = ? AND name = ?', $table ),
-                    array( $names['was'], $id, $names['now'] ) ) === false ) {
+                    [ $names['was'], $id, $names['now'] ] ) === false ) {
 
                 return false;
             }
         }
 
-        \OWA\Core\CoreAPI::persistSetting( 'base', self::BEFORE, array() );
+        \OWA\Core\CoreAPI::persistSetting( 'base', self::BEFORE, [] );
         \OWA\Module\Base\Classes\GoalMarking::forget();
 
         return true;
@@ -149,12 +149,12 @@ class Update075 extends \OWA\Core\Update {
 
         foreach ( \OWA\Module\Base\Entity\GoalEventDefinition::eventNames( $rows ) as $id => $name ) {
 
-            $before[ $id ] = array( 'was' => (string) $was[ $id ], 'now' => $name );
+            $before[ $id ] = [ 'was' => (string) $was[ $id ], 'now' => $name ];
 
             // Kept before the rename, so a run that stops between the two can still be undone.
             \OWA\Core\CoreAPI::persistSetting( 'base', self::BEFORE, $before );
 
-            if ( $db->query( sprintf( 'UPDATE %s SET name = ? WHERE id = ?', $table ), array( $name, $id ) ) === false ) {
+            if ( $db->query( sprintf( 'UPDATE %s SET name = ? WHERE id = ?', $table ), [ $name, $id ] ) === false ) {
 
                 $this->e->notice( sprintf( 'Renaming goal event %s failed', $id ) );
 
@@ -180,7 +180,7 @@ class Update075 extends \OWA\Core\Update {
         $db  = \OWA\Core\CoreAPI::dbSingleton();
         $raw = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
 
-        $after     = array( 0, 0 );
+        $after     = [ 0, 0 ];
         $converted = 0;
         $unmatched = 0;
         $first     = null;
@@ -189,8 +189,8 @@ class Update075 extends \OWA\Core\Update {
 
             foreach ( $rows as $row ) {
 
-                $after = array( (int) $row['yyyymmdd'], $row['id'] );
-                $names = array();
+                $after = [ (int) $row['yyyymmdd'], $row['id'] ];
+                $names = [];
 
                 foreach ( $this->goalEventsOf( (string) $row['site_id'] ) as $goal ) {
 
@@ -216,7 +216,7 @@ class Update075 extends \OWA\Core\Update {
                 }
 
                 if ( $db->query( sprintf( 'UPDATE %s SET is_goal_event = 0 WHERE id = ? AND yyyymmdd = ?', $raw ),
-                        array( $row['id'], (int) $row['yyyymmdd'] ) ) === false ) {
+                        [ $row['id'], (int) $row['yyyymmdd'] ] ) === false ) {
 
                     return false;
                 }
@@ -256,11 +256,11 @@ class Update075 extends \OWA\Core\Update {
             'SELECT r.* FROM %s r WHERE r.is_goal_event = 1 AND r.event_type %s (%s)'
           . ' AND (r.yyyymmdd > ? OR (r.yyyymmdd = ? AND r.id > ?)) ORDER BY r.yyyymmdd, r.id LIMIT %d',
             $raw, $in === 'NOT IN' ? 'NOT IN' : 'IN', \OWA\Core\Db::placeholders( count( $names ) ), self::BATCH ),
-            array_merge( $names, array( $after[0], $after[0], $after[1] ) ) ) );
+            array_merge( $names, [ $after[0], $after[0], $after[1] ] ) ) );
     }
 
     /** @var array<string, list<array{event: \OWA\Module\Base\Entity\GoalEventDefinition, conditions: list<\OWA\Module\Base\Entity\GoalEventDefinitionCondition>}>> site_id => its goal events */
-    private $goals = array();
+    private $goals = [];
 
     /**
      * Every goal event of a Profile's Property, active or not, with its
@@ -276,7 +276,7 @@ class Update075 extends \OWA\Core\Update {
             return $this->goals[ $site_id ];
         }
 
-        $this->goals[ $site_id ] = array();
+        $this->goals[ $site_id ] = [];
 
         $property_id = \OWA\Module\Base\Entity\GoalEventDefinition::propertyFor( $site_id );
 
@@ -289,7 +289,7 @@ class Update075 extends \OWA\Core\Update {
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076()->getTableName();
 
         foreach ( (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
-                'SELECT * FROM %s WHERE property_id = ? ORDER BY id', $table ), array( (string) $property_id ) ) as $row ) {
+                'SELECT * FROM %s WHERE property_id = ? ORDER BY id', $table ), [ (string) $property_id ] ) as $row ) {
 
             $goal = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' )->namedBefore076();
             $goal->setProperties( (array) $row );
@@ -298,7 +298,7 @@ class Update075 extends \OWA\Core\Update {
 
             if ( $conditions ) {
 
-                $this->goals[ $site_id ][] = array( 'event' => $goal, 'conditions' => $conditions );
+                $this->goals[ $site_id ][] = [ 'event' => $goal, 'conditions' => $conditions ];
             }
         }
 
@@ -325,5 +325,3 @@ class Update075 extends \OWA\Core\Update {
         return null;
     }
 }
-
-?>

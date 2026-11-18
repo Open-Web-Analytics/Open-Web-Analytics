@@ -62,7 +62,7 @@
 
     <legend><?php $view->out( \OWA\Core\CoreAPI::t( 'Change Password' ) );?></legend>
     <div style="padding:10px">
-    <a href="<?php echo $view->makeLink(array('do' => 'base.passwordResetForm'))?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Change password for this user' ) );?></a>
+    <a href="<?php echo $view->makeLink(['do' => 'base.passwordResetForm'])?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Change password for this user' ) );?></a>
     </div>
 </fieldset>
 <P>
@@ -91,7 +91,7 @@
                 <TD><?php $view->out( $owa_row['last_used_at'] ? date( 'Y-m-d H:i', (int) $owa_row['last_used_at'] ) : \OWA\Core\CoreAPI::t( 'Never' ) );?></TD>
                 <TD><?php $view->out( (string) $owa_row['last_used_ip'] );?></TD>
                 <TD>
-                    <form method="post" style="margin:0" action="<?php echo $view->makeLink( array( 'do' => 'base.userAppPasswordRevoke' ) );?>">
+                    <form method="post" style="margin:0" action="<?php echo $view->makeLink( [ 'do' => 'base.userAppPasswordRevoke' ] );?>">
                         <?php echo $view->createNonceFormField( 'base.userAppPasswordRevoke' );?>
                         <input type="hidden" name="user_id" value="<?php $view->out( $view->user['user_id'] );?>">
                         <input type="hidden" name="lookup_id" value="<?php $view->out( $owa_row['lookup_id'] );?>">

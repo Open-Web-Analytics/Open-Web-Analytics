@@ -29,7 +29,7 @@ final class ReportRenderHarness
      * API link without one is refused -- so it is normalised rather than
      * dropped, and asserted separately.
      */
-    private const VOLATILE = array( 'nonce' );
+    private const VOLATILE = [ 'nonce' ];
 
     /**
      * The widget descriptions the report hands owa.reportWidgets.js, in
@@ -43,7 +43,7 @@ final class ReportRenderHarness
     {
         preg_match_all( '~<script type="application/json" data-ui="report-widget:config">(.*?)</script>~s', $html, $m );
 
-        $out = array();
+        $out = [];
 
         foreach ( $m[1] as $json ) {
 
@@ -61,7 +61,7 @@ final class ReportRenderHarness
      */
     private static function explorerDescriptions( string $html ): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( self::widgetsIn( $html ) as $widget ) {
 
@@ -88,7 +88,7 @@ final class ReportRenderHarness
      */
     public static function queriesIn( string $html ): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( self::explorerDescriptions( $html ) as $explorer ) {
 
@@ -103,7 +103,7 @@ final class ReportRenderHarness
 
             ksort( $query );
 
-            $out[] = array( 'var' => $explorer['name'] . 'url', 'query' => $query );
+            $out[] = [ 'var' => $explorer['name'] . 'url', 'query' => $query ];
         }
 
         return $out;
@@ -121,11 +121,11 @@ final class ReportRenderHarness
      */
     public static function explorersIn( string $html ): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( self::explorerDescriptions( $html ) as $explorer ) {
 
-            $out[] = array( 'var' => $explorer['name'], 'container' => $explorer['container'] );
+            $out[] = [ 'var' => $explorer['name'], 'container' => $explorer['container'] ];
         }
 
         return $out;
@@ -135,7 +135,7 @@ final class ReportRenderHarness
      * Where a command's target element is among its arguments: the commands
      * that draw into an element they are given.
      */
-    private const TARGET_ARGUMENT = array( 'makeAreaChart' => 2, 'makeMetricBoxes' => 1 );
+    private const TARGET_ARGUMENT = [ 'makeAreaChart' => 2, 'makeMetricBoxes' => 1 ];
 
     /**
      * The render commands queued against the result sets, in order, with what
@@ -154,11 +154,11 @@ final class ReportRenderHarness
      */
     public static function commandsIn( string $html ): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( self::explorerDescriptions( $html ) as $explorer ) {
 
-            foreach ( (array) ( $explorer['queue'] ?? array() ) as $command ) {
+            foreach ( (array) ( $explorer['queue'] ?? [] ) as $command ) {
 
                 $name   = (string) $command[0];
                 $at     = self::TARGET_ARGUMENT[ $name ] ?? null;

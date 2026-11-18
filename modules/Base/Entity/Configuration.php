@@ -44,5 +44,3 @@ class Configuration extends \OWA\Core\Entity {
         $this->setCachable();
     }
 }
-
-?>

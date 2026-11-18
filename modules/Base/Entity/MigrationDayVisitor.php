@@ -41,8 +41,6 @@ class MigrationDayVisitor extends \OWA\Core\Entity {
      */
     public static function idFor( $source, $site_id, $yyyymmdd, $visitor_id ) {
 
-        return \OWA\Core\Lib::wideStringGuid( implode( '|', array( $source, $site_id, (int) $yyyymmdd, $visitor_id ) ) );
+        return \OWA\Core\Lib::wideStringGuid( implode( '|', [ $source, $site_id, (int) $yyyymmdd, $visitor_id ] ) );
     }
 }
-
-?>

@@ -19,9 +19,9 @@ class UsersRest extends \OWA\Module\Base\Controller\Users {
     
 
     public function success() {
-	    
-	    http_response_code(200);
-	    
+        
+        http_response_code(200);
+        
         $this->setView( 'base.usersRest' );
     }
 }

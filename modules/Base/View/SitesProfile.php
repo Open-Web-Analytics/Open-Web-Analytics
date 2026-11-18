@@ -98,7 +98,7 @@ class SitesProfile extends \OWA\Core\View {
         // ASC explicitly: orderBy() with no direction is DESC.
         $db->orderBy( 'name', OWA_SQL_ASCENDING );
 
-        $rows = array();
+        $rows = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 

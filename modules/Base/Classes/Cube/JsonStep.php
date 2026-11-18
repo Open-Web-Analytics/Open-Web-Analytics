@@ -68,7 +68,7 @@ class JsonStep extends Step {
 
     public function requires() {
 
-        return $this->join === '' ? array() : array( $this->join );
+        return $this->join === '' ? [] : [ $this->join ];
     }
 
     public function execute( Context $context ) {
@@ -87,5 +87,3 @@ class JsonStep extends Step {
             $this->max_length > 0 ? $this->max_length : Dimensions::DIMENSION_LENGTH );
     }
 }
-
-?>

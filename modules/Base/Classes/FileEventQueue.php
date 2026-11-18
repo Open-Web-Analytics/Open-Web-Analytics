@@ -118,7 +118,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     private $resumed_at = 0;
 
     /** @var array<int,int> offset => end of each message received and not yet settled */
-    private $outstanding = array();
+    private $outstanding = [];
 
     /** @var bool the batch has been read to its end */
     private $at_end = false;
@@ -127,7 +127,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      * @param array<string, mixed> $map  the queue's registration: queue_name,
      *   path (async_log_dir when empty), is_dead_letter, max_receives; values as configured, so cast
      */
-    public function __construct( $map = array() ) {
+    public function __construct( $map = [] ) {
 
         if ( isset( $map['queue_name'] ) ) {
 
@@ -160,8 +160,8 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
     public function provision() {
 
-        foreach ( array( $this->queue_dir, $this->unprocessed_path, $this->processing_path,
-                         $this->delayed_path, $this->archive_path ) as $d ) {
+        foreach ( [ $this->queue_dir, $this->unprocessed_path, $this->processing_path,
+                         $this->delayed_path, $this->archive_path ] as $d ) {
 
             if ( ! is_dir( $d ) && ! @mkdir( $d, 0755, true ) && ! is_dir( $d ) ) {
 
@@ -180,7 +180,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
     public function send( array $envelope, $delay = 0, $replayed = false ) {
 
-        $row = array( 'r' => 0, 'e' => $envelope );
+        $row = [ 'r' => 0, 'e' => $envelope ];
 
         if ( $replayed ) {
 
@@ -194,11 +194,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         if ( ! $this->provisioned && ! $this->provision() ) {
 
-            return array();
+            return [];
         }
 
         $max      = max( 1, (int) $max );
-        $messages = array();
+        $messages = [];
 
         $this->promoteDue();
         $this->rotate();
@@ -243,7 +243,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             $this->outstanding[ $offset ] = $end;
 
             $message = new \OWA\Core\IntakeMessage(
-                array( 'batch' => $this->batch, 'offset' => $offset, 'end' => $end ),
+                [ 'batch' => $this->batch, 'offset' => $offset, 'end' => $end ],
                 $row['e'], $count, isset( $row['raw'] ) ? (string) $row['raw'] : rtrim( $line, "\n" ), ! empty( $row['p'] ),
                 $row['why'] ?? null, $row['at'] ?? null );
 
@@ -297,8 +297,8 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         }
 
         $row = $message->envelope !== null
-            ? array( 'r' => $message->receive_count, 'e' => $message->envelope )
-            : array( 'r' => $message->receive_count, 'raw' => $message->raw );
+            ? [ 'r' => $message->receive_count, 'e' => $message->envelope ]
+            : [ 'r' => $message->receive_count, 'raw' => $message->raw ];
 
         if ( $message->replayed ) {
 
@@ -326,11 +326,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         if ( ! $this->dlq ) {
 
-            $this->dlq = new self( array(
+            $this->dlq = new self( [
                 'path'           => $this->queue_dir . 'dead-letter/',
                 'queue_name'     => $this->queue_name . '-dlq',
                 'is_dead_letter' => true,
-            ) );
+            ] );
         }
 
         return $this->dlq;
@@ -383,11 +383,11 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             }
         }
 
-        return array(
+        return [
             'messages'   => $this->depth(),
             // Of what is due. A batch's mtime is its last line's: an underestimate for its first.
             'oldest_age' => $oldest === null ? null : max( 0, time() - $oldest ),
-        );
+        ];
     }
 
     // ---------------------------------------------------------------------
@@ -451,7 +451,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      */
     public function heldBatches() {
 
-        $held = array();
+        $held = [];
 
         foreach ( self::files( $this->processing_path, '.txt' ) as $name ) {
 
@@ -480,15 +480,15 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             fclose( $fh );
 
             $state = json_decode( (string) @file_get_contents( $path . '.state' ), true );
-            $state = is_array( $state ) ? $state : array();
+            $state = is_array( $state ) ? $state : [];
 
-            $held[] = array(
+            $held[] = [
                 'batch'      => $name,
                 'pid'        => isset( $state['pid'] ) ? (int) $state['pid'] : null,
                 'host'       => (string) ( $state['host'] ?? '' ),
                 'held_since' => isset( $state['held_since'] ) ? (int) $state['held_since'] : null,
                 'settled'    => (int) ( $state['settled'] ?? 0 ),
-            );
+            ];
         }
 
         return $held;
@@ -509,7 +509,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         if ( ! is_array( $row ) || ! ( ( isset( $row['e'] ) && is_array( $row['e'] ) ) || isset( $row['raw'] ) ) ) {
 
             // Not a line this queue wrote: half-written, or a 1.x serialized event.
-            return array( 'r' => 0, 'e' => null );
+            return [ 'r' => 0, 'e' => null ];
         }
 
         $row['r'] = max( 0, (int) ( $row['r'] ?? 0 ) );
@@ -527,12 +527,12 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         if ( $message->envelope !== null ) {
 
-            $row = array( 'r' => $message->receive_count, 'e' => $message->envelope );
+            $row = [ 'r' => $message->receive_count, 'e' => $message->envelope ];
 
         } elseif ( $message->raw !== '' ) {
 
             // A dead letter that never decoded, kept as it was.
-            $row = array( 'r' => $message->receive_count, 'raw' => $message->raw );
+            $row = [ 'r' => $message->receive_count, 'raw' => $message->raw ];
 
         } else {
 
@@ -544,7 +544,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             $row['p'] = 1;
         }
 
-        foreach ( array( 'why' => $message->reason, 'at' => $message->dead_at ) as $k => $v ) {
+        foreach ( [ 'why' => $message->reason, 'at' => $message->dead_at ] as $k => $v ) {
 
             if ( $v !== null ) {
 
@@ -652,7 +652,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
     private function waitingFiles() {
 
         return array_values( array_filter( array_merge(
-            array( $this->event_file ),
+            [ $this->event_file ],
             array_map( fn ( $f ) => $this->unprocessed_path . $f, self::files( $this->unprocessed_path ) ),
             array_map( fn ( $f ) => $this->processing_path . $f, self::files( $this->processing_path, '.txt' ) ),
             array_map( fn ( $f ) => $this->delayed_path . $f, self::files( $this->delayed_path ) )
@@ -774,7 +774,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         }
 
         $state = is_file( $path . '.state' ) ? json_decode( (string) file_get_contents( $path . '.state' ), true ) : null;
-        $state = is_array( $state ) ? $state : array();
+        $state = is_array( $state ) ? $state : [];
 
         /*
          * A .state not marked clean belonged to a drain that died. It is
@@ -792,9 +792,9 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
 
         $this->handle      = $fh;
         $this->batch       = $path;
-        $this->outstanding = array();
+        $this->outstanding = [];
         $this->at_end      = false;
-        $this->state       = array(
+        $this->state       = [
             'settled'    => $settled,
             'in_hand'    => null,
             'stuck'      => (int) ( $state['stuck'] ?? 0 ) + ( $died ? 1 : 0 ),
@@ -802,7 +802,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
             'pid'        => getmypid(),
             'host'       => (string) gethostname(),
             'held_since' => time(),
-        );
+        ];
         $this->resumed_at  = $this->state['settled'];
 
         fseek( $fh, $this->state['settled'] );
@@ -917,7 +917,7 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
      */
     private static function files( $dir, $suffix = null ) {
 
-        $names = array();
+        $names = [];
 
         foreach ( (array) @scandir( $dir ) as $name ) {
 
@@ -939,5 +939,3 @@ class FileEventQueue implements \OWA\Core\IntakeQueue {
         return $names;
     }
 }
-
-?>

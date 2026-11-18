@@ -45,22 +45,22 @@ class JobQueue extends \OWA\Core\Entity {
 
         // Unique while pending; released when the job is claimed.
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'dedupe_key', OWA_DTD_VARCHAR255 ) );
-        $this->addUniqueIndex( self::KEY_INDEX, array( 'dedupe_key' ) );
+        $this->addUniqueIndex( self::KEY_INDEX, [ 'dedupe_key' ] );
 
         // pending | running | done | failed
         $status = new \OWA\Module\Base\Classes\DbColumn( 'status', OWA_DTD_VARCHAR16 );
         $status->setNotNull();
         $this->setProperty( $status );
 
-        foreach ( array( 'run_after', 'lease_until' ) as $name ) {
+        foreach ( [ 'run_after', 'lease_until' ] as $name ) {
             $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( $name, OWA_DTD_INT ) );
         }
 
-        $this->addCompositeIndex( self::DUE_INDEX, array( 'status', 'run_after' ) );
-        $this->addCompositeIndex( self::LEASE_INDEX, array( 'status', 'lease_until' ) );
+        $this->addCompositeIndex( self::DUE_INDEX, [ 'status', 'run_after' ] );
+        $this->addCompositeIndex( self::LEASE_INDEX, [ 'status', 'lease_until' ] );
 
         // The policy, snapshotted from the command's declaration at enqueue.
-        foreach ( array( 'attempts', 'max_attempts', 'lease_seconds' ) as $name ) {
+        foreach ( [ 'attempts', 'max_attempts', 'lease_seconds' ] as $name ) {
             $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( $name, OWA_DTD_INT ) );
         }
 
@@ -70,10 +70,8 @@ class JobQueue extends \OWA\Core\Entity {
         // Bounded by JobQueue::ERROR_LENGTH: STRICT mode refuses longer.
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'last_error', OWA_DTD_VARCHAR1024 ) );
 
-        foreach ( array( 'created_at', 'started_at', 'finished_at' ) as $name ) {
+        foreach ( [ 'created_at', 'started_at', 'finished_at' ] as $name ) {
             $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( $name, OWA_DTD_INT ) );
         }
     }
 }
-
-?>

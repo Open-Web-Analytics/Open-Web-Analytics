@@ -11,8 +11,8 @@
 <fieldset>
 
     <legend>
-        <?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Profiles' ) );?> <span class="legend_link">(<a href="<?php echo $view->makeLink( array(
-            'do' => 'base.sitesProfile', 'propertyId' => $view->propertyId ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add New Observation Profile' ) );?></a>)</span>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Profiles' ) );?> <span class="legend_link">(<a href="<?php echo $view->makeLink( [
+            'do' => 'base.sitesProfile', 'propertyId' => $view->propertyId ] );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Add New Observation Profile' ) );?></a>)</span>
     </legend>
 
 <?php if ( empty( $view->profiles ) ):?>
@@ -37,8 +37,8 @@
             <?php $owa_is_app = ( $owa_prof['stream_type'] ?? '' ) === \OWA\Module\Base\Entity\Site::STREAM_APP;?>
             <tr>
                 <td>
-                    <a href="<?php echo $view->makeLink( array( 'do' => 'base.sitesProfile',
-                        'siteId' => $owa_prof['site_id'], 'edit' => true ) );?>"><?php $view->out( $owa_prof['name'] );?></a>
+                    <a href="<?php echo $view->makeLink( [ 'do' => 'base.sitesProfile',
+                        'siteId' => $owa_prof['site_id'], 'edit' => true ] );?>"><?php $view->out( $owa_prof['name'] );?></a>
                 </td>
                 <td><code><?php $view->out( $owa_prof['site_id'] );?></code></td>
                 <td>
@@ -47,12 +47,12 @@
                         ? ( $owa_prof['app_id'] ?? '' ) : ( $owa_prof['domain'] ?? '' ) );?></span>
                 </td>
                 <td class="owa_propertyProfilesActions">
-                    <a href="<?php echo $view->makeLink( array( 'do' => 'base.sitesProfile',
-                        'siteId' => $owa_prof['site_id'], 'edit' => true ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Details' ) );?></a>
-                    <a href="<?php echo $view->makeLink( array( 'do' => 'base.profileSettings',
-                        'siteId' => $owa_prof['site_id'] ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Settings' ) );?></a>
-                    <a href="<?php echo $view->makeLink( array( 'do' => 'base.sitesInvocation',
-                        'siteId' => $owa_prof['site_id'] ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Tracking Tag' ) );?></a>
+                    <a href="<?php echo $view->makeLink( [ 'do' => 'base.sitesProfile',
+                        'siteId' => $owa_prof['site_id'], 'edit' => true ] );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Details' ) );?></a>
+                    <a href="<?php echo $view->makeLink( [ 'do' => 'base.profileSettings',
+                        'siteId' => $owa_prof['site_id'] ] );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Observation Settings' ) );?></a>
+                    <a href="<?php echo $view->makeLink( [ 'do' => 'base.sitesInvocation',
+                        'siteId' => $owa_prof['site_id'] ] );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Tracking Tag' ) );?></a>
                 </td>
             </tr>
         <?php endforeach;?>

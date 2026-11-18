@@ -24,10 +24,10 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     private $authMethod;
 
     /** @var array settings a test changed, to put back */
-    private $settings = array();
+    private $settings = [];
 
     /** @var array the users whose passwords to delete */
-    private $users = array();
+    private $users = [];
 
     protected function setUp(): void
     {
@@ -85,7 +85,7 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $made = AppPasswords::create($user['user_id'], 'Test client', $scope);
         $this->assertIsArray($made);
 
-        return array($user, $made);
+        return [$user, $made];
     }
 
     /**
@@ -109,21 +109,21 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $status = $auth->authenticateUser();
         $cu     = \OWA\Core\CoreAPI::getCurrentUser();
 
-        return array(
+        return [
             'auth_status' => (bool) $status['auth_status'],
             'method'      => $auth->getAuthMethod(),
             'user_id'     => $cu->isAuthenticated() ? (string) $cu->getUserData('user_id') : '',
-        );
+        ];
     }
 
     private static function bearer(string $token): array
     {
-        return array('HTTP_AUTHORIZATION' => 'Bearer ' . $token);
+        return ['HTTP_AUTHORIZATION' => 'Bearer ' . $token];
     }
 
     private static function basic(string $user, string $token): array
     {
-        return array('HTTP_AUTHORIZATION' => 'Basic ' . base64_encode($user . ':' . $token));
+        return ['HTTP_AUTHORIZATION' => 'Basic ' . base64_encode($user . ':' . $token)];
     }
 
     public function testABearerTokenAuthenticatesAsItsUser(): void
@@ -146,11 +146,11 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     {
         list($user, $made) = $this->userWithPassword();
 
-        $bearer = array('REDIRECT_HTTP_AUTHORIZATION' => 'Bearer ' . $made['token']);
-        $basic  = array('REDIRECT_HTTP_AUTHORIZATION'
-            => 'Basic ' . base64_encode($user['user_id'] . ':' . $made['token']));
+        $bearer = ['REDIRECT_HTTP_AUTHORIZATION' => 'Bearer ' . $made['token']];
+        $basic  = ['REDIRECT_HTTP_AUTHORIZATION'
+            => 'Basic ' . base64_encode($user['user_id'] . ':' . $made['token'])];
 
-        foreach (array('Bearer' => $bearer, 'Basic' => $basic) as $form => $server) {
+        foreach (['Bearer' => $bearer, 'Basic' => $basic] as $form => $server) {
             $result = $this->authenticate($server);
 
             $this->assertTrue($result['auth_status'], "$form in REDIRECT_HTTP_AUTHORIZATION did not authenticate.");
@@ -193,12 +193,12 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     /** @return array<string, array{array<string, string>, array<string, string>}> params, server variables */
     public static function legacyCredentials(): array
     {
-        return array(
-            'apiKey parameter'     => array(array('apiKey' => str_repeat('a', 32)), array()),
-            'signature parameter'  => array(array('signature' => 'c2ln'), array()),
-            'X-API-Key header'     => array(array(), array('HTTP_X_API_KEY' => str_repeat('a', 32))),
-            'X-Signature header'   => array(array(), array('HTTP_X_SIGNATURE' => 'c2ln')),
-        );
+        return [
+            'apiKey parameter'     => [['apiKey' => str_repeat('a', 32)], []],
+            'signature parameter'  => [['signature' => 'c2ln'], []],
+            'X-API-Key header'     => [[], ['HTTP_X_API_KEY' => str_repeat('a', 32)]],
+            'X-Signature header'   => [[], ['HTTP_X_SIGNATURE' => 'c2ln']],
+        ];
     }
 
     /**
@@ -218,7 +218,7 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         }
 
         try {
-            foreach (array(array(), self::bearer($made['token'])) as $also) {
+            foreach ([[], self::bearer($made['token'])] as $also) {
                 $result = $this->authenticate($server + $also);
 
                 $this->assertFalse($result['auth_status']);
@@ -245,7 +245,7 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'rest');
 
         try {
-            $this->authenticate(array());
+            $this->authenticate([]);
 
             $msg = self::refusal()['msg'] ?? null;
 
@@ -258,14 +258,14 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         }
 
         // Any other failure keeps the general message.
-        $this->authenticate(array());
+        $this->authenticate([]);
         $this->assertNotSame(\OWA\Core\Controller::legacyApiKeyMessage(), self::refusal()['msg'] ?? null);
     }
 
     /** The error a REST controller answers a request it could not authenticate with. */
     private static function refusal(): array
     {
-        $c = new \OWA\Core\Controller(array());
+        $c = new \OWA\Core\Controller([]);
         $c->notAuthenticatedAction();
 
         return (array) ((array) (new \ReflectionProperty(\OWA\Core\Controller::class, 'data'))->getValue($c))['error_msg'];
@@ -278,7 +278,7 @@ final class AuthAppPasswordTest extends RestControllerTestCase
         $this->assertTrue($this->authenticate(self::bearer($made['token']), 'GET')['auth_status']);
         $this->assertTrue($this->authenticate(self::bearer($made['token']), 'HEAD')['auth_status']);
 
-        foreach (array('POST', 'PUT', 'DELETE') as $method) {
+        foreach (['POST', 'PUT', 'DELETE'] as $method) {
             $this->assertFalse($this->authenticate(self::bearer($made['token']), $method)['auth_status'], $method);
         }
     }
@@ -336,9 +336,9 @@ final class AuthAppPasswordTest extends RestControllerTestCase
     {
         list($user, $made) = $this->userWithPassword();
 
-        $this->authenticate(self::bearer($made['token']) + array(
+        $this->authenticate(self::bearer($made['token']) + [
             'HTTP_X_FORWARDED_FOR' => '198.51.100.9, 203.0.113.5, 10.0.0.2',
-        ));
+        ]);
 
         $row = AppPasswords::forUser($user['user_id'])[0];
 

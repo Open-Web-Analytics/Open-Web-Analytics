@@ -24,11 +24,11 @@ class SitesEditTagSettings extends \OWA\Core\AdminController {
 
         $this->addValidation( 'siteId', $this->getParam( 'siteId' ), 'required' );
 
-        $this->addValidation( 'siteId', $this->getParam( 'siteId' ), 'entityExists', array(
+        $this->addValidation( 'siteId', $this->getParam( 'siteId' ), 'entityExists', [
             'entity'   => 'base.site',
             'column'   => 'site_id',
             'errorMsg' => $this->getMsg( 3208 ),
-        ) );
+        ] );
 
         // Each setting the screen would store, checked against its declaration.
         foreach ( \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) as $set ) {
@@ -73,5 +73,3 @@ class SitesEditTagSettings extends \OWA\Core\AdminController {
         $this->set( 'error_msg', implode( ' ', (array) $this->getValidationErrorMsgs() ) );
     }
 }
-
-?>

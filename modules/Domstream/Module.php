@@ -36,9 +36,9 @@ class Module extends \OWA\Core\Module {
      * The setting that turns on each feature this module adds to a Profile's
      * tracking bundle, as TrackerBundle::FEATURE_SETTINGS does for Base's.
      */
-    const FEATURE_SETTINGS = array(
+    const FEATURE_SETTINGS = [
         'record' => 'trackDomStream',
-    );
+    ];
 
     public function __construct() {
 
@@ -68,9 +68,9 @@ class Module extends \OWA\Core\Module {
      */
     public static function trackingProperties() {
 
-        $properties = array();
+        $properties = [];
 
-        foreach ( array(
+        foreach ( [
             'recording_id'  => 'string',
             'seq'           => 'integer',
             'page_view_seq' => 'integer',
@@ -79,16 +79,16 @@ class Module extends \OWA\Core\Module {
             'viewport_w'    => 'integer',
             'viewport_h'    => 'integer',
             'samples'       => 'json',
-        ) as $name => $type ) {
+        ] as $name => $type ) {
 
-            $properties[ $name ] = array(
+            $properties[ $name ] = [
                 'set_by'    => 'client',
-                'from'      => array( $name ),
-                'events'    => array( self::EVENT_NAME ),
+                'from'      => [ $name ],
+                'events'    => [ self::EVENT_NAME ],
                 'data_type' => $type,
                 'required'  => false,
-                'callbacks' => array(),
-            );
+                'callbacks' => [],
+            ];
         }
 
         return $properties;
@@ -97,13 +97,13 @@ class Module extends \OWA\Core\Module {
     public function registerActions() {
 
         // Its tag settings, beside Base's on every Tracking Tag screen (PLAN 2.24.4).
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'trackingTag',
             'group'    => 'tracking_tag',
             'legend'   => \OWA\Core\CoreAPI::t( 'Page interaction recording' ),
             'description' => \OWA\Core\CoreAPI::t( 'Pointer movement, clicks and key presses, recorded so a visit can be played back.' ),
-            'settings' => array( 'record', 'sample_rate' ),
-        ) );
+            'settings' => [ 'record', 'sample_rate' ],
+        ] );
 
         $this->registerAction( 'domstream.processEvent',
             'OWA\\Module\\Domstream\\Controller\\ProcessEvent' );
@@ -115,7 +115,7 @@ class Module extends \OWA\Core\Module {
 
     public function _registerEntities() {
 
-        $this->registerEntity( array( 'domstream_chunk', 'domstream_payload' ) );
+        $this->registerEntity( [ 'domstream_chunk', 'domstream_payload' ] );
     }
 
     /** A chunk goes to this module's processor, never to Base's. */
@@ -157,11 +157,11 @@ class Module extends \OWA\Core\Module {
             return $config;
         }
 
-        $config['options'][] = array( 'setDomstreamSampleRate', (int) $setting( 'sample_rate' ) );
+        $config['options'][] = [ 'setDomstreamSampleRate', (int) $setting( 'sample_rate' ) ];
 
         foreach ( $on as $command ) {
 
-            $config['features'][] = array( $command );
+            $config['features'][] = [ $command ];
         }
 
         $config['plugins'][] = 'domstream';
@@ -191,22 +191,22 @@ class Module extends \OWA\Core\Module {
      */
     public function addRowActions( $actions ) {
 
-        $actions['recordings'] = array(
+        $actions['recordings'] = [
             'label'    => \OWA\Core\CoreAPI::t( 'Recordings' ),
             'description' => "Recordings, filtered to the page's path.",
             'reportId' => 'domstreams',
-            'params'   => array( 'pagePath' => 'pagePath' ),
-        );
+            'params'   => [ 'pagePath' => 'pagePath' ],
+        ];
 
         return $actions;
     }
 
     public function registerReports() {
 
-        $this->registerReport( 'domstreams', array(
+        $this->registerReport( 'domstreams', [
             'controller'  => 'domstream.reportDomstreams',
             'description' => 'Session recordings, one row per recording and newest first, with its length and its counts of clicks and key presses.',
-        ) );
+        ] );
     }
 
     public function registerNavigation() {
@@ -220,5 +220,3 @@ class Module extends \OWA\Core\Module {
             'OWA\\Module\\Domstream\\Controller\\DomstreamsRestController' );
     }
 }
-
-?>

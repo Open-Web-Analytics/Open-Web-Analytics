@@ -111,7 +111,7 @@ final class MetricSqlTest extends TestCase
 
                     // Sorted, because the recording sorts children so that a
                     // reordering is not a diff.
-                    $sides = array( $implementation['numerator'], $implementation['denominator'] );
+                    $sides = [ $implementation['numerator'], $implementation['denominator'] ];
                     sort( $sides );
 
                     $this->assertSame(

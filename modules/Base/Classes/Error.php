@@ -38,7 +38,7 @@ namespace OWA\Module\Base\Classes;
 class Error {
 
     /** Each priority logMsg() writes, by rank; a message below the threshold is not written. */
-    const LEVELS = array(
+    const LEVELS = [
         'debug'     => 100,
         'info'      => 200,
         'notice'    => 250,
@@ -47,7 +47,7 @@ class Error {
         'critical'  => 500,
         'alert'     => 550,
         'emergency' => 600,
-    );
+    ];
 
     /**
      * Where messages go once the handler is set: file paths and, under the
@@ -101,7 +101,7 @@ class Error {
             return $this->sinks;
         }
 
-        $this->sinks = array();
+        $this->sinks = [];
 
         $path = \OWA\Core\CoreAPI::getSetting( 'base', 'error_log_file' );
 
@@ -112,12 +112,12 @@ class Error {
 
         } else {
 
-            $this->sinks[] = array( 'path' => (string) $path, 'stream' => null );
+            $this->sinks[] = [ 'path' => (string) $path, 'stream' => null ];
         }
 
         if ( defined( 'OWA_CLI' ) ) {
 
-            $this->sinks[] = array( 'path' => null, 'stream' => defined( 'STDOUT' ) ? STDOUT : fopen( 'php://stdout', 'w' ) );
+            $this->sinks[] = [ 'path' => null, 'stream' => defined( 'STDOUT' ) ? STDOUT : fopen( 'php://stdout', 'w' ) ];
         }
 
         return $this->sinks;
@@ -341,7 +341,7 @@ class Error {
      */
     public function bufferMsg($err, $priority) {
 
-        $this->bmsgs[] = array('error' => $err, 'priority' => $priority);
+        $this->bmsgs[] = ['error' => $err, 'priority' => $priority];
         return true;
     }
 
@@ -357,7 +357,7 @@ class Error {
                 $this->log($msg['error'], $msg['priority']);
             }
 
-            $this->bmsgs = array();
+            $this->bmsgs = [];
         }
     }
 
@@ -419,7 +419,7 @@ class Error {
      */
     public static function phpErrorSettings() {
 
-	    error_reporting( -1 );
+        error_reporting( -1 );
         ini_set('display_errors', 'On');
         ini_set("log_errors", 1);
 
@@ -468,5 +468,3 @@ class Error {
         $this->log( $msg );
     }
 }
-
-?>

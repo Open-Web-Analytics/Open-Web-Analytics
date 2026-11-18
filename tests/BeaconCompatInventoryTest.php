@@ -49,7 +49,7 @@ final class BeaconCompatInventoryTest extends TestCase
     /** @return array<string,string> the renames the layer applies, old => new */
     private function renames(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( (array) $this->index()['renames'] as $entry ) {
 
@@ -74,7 +74,7 @@ final class BeaconCompatInventoryTest extends TestCase
      */
     public function testTheRegistryDeclaresNoRenames(): void
     {
-        $offenders = array();
+        $offenders = [];
 
         foreach ( $this->properties() as $name => $property ) {
 
@@ -84,7 +84,7 @@ final class BeaconCompatInventoryTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $offenders,
+        $this->assertSame( [], $offenders,
             'alternative_key is gone; a rename belongs in conf/beacon_compat.php '
           . 'so that every one of them is in a single place.' );
     }
@@ -251,7 +251,7 @@ final class BeaconCompatInventoryTest extends TestCase
      */
     public function testACustomPrefixBridgeIsAdmitted(): void
     {
-        $bridged = array();
+        $bridged = [];
 
         foreach ( $this->renames() as $from => $to ) {
 
@@ -286,23 +286,23 @@ final class BeaconCompatInventoryTest extends TestCase
 
         $this->assertGreaterThan( 0, $max, 'maxCustomVars is what bounds the loop.' );
 
-        $generated = Compat::contributeDerivedProperties( array() );
+        $generated = Compat::contributeDerivedProperties( [] );
 
         $this->assertCount(
             $max * 2, $generated,
             'Each slot needs a name and a value property.' );
 
         /* The config is authoritative: a declared slot is left exactly alone. */
-        $declared = array( 'cv1_name' => array( 'required' => 'untouched' ) );
+        $declared = [ 'cv1_name' => [ 'required' => 'untouched' ] ];
 
         $this->assertSame(
-            array( 'required' => 'untouched' ),
+            [ 'required' => 'untouched' ],
             Compat::contributeDerivedProperties( $declared )['cv1_name'],
             'The top-up overwrote a definition the config had already made.' );
 
         for ( $slot = 1; $slot <= $max; $slot++ ) {
 
-            foreach ( array( 'name', 'value' ) as $half ) {
+            foreach ( [ 'name', 'value' ] as $half ) {
 
                 $property = $generated[ "cv{$slot}_{$half}" ] ?? null;
 
@@ -322,7 +322,7 @@ final class BeaconCompatInventoryTest extends TestCase
                     'a contributed property must not invent a storage label either' );
 
                 $this->assertSame( 'client', $property['set_by'] );
-                $this->assertSame( array( "cv{$slot}_{$half}" ), $property['from'] );
+                $this->assertSame( [ "cv{$slot}_{$half}" ], $property['from'] );
                 $this->assertContains(
                     'OWA\\Module\\Base\\Classes\\TrackingEventHelpers::lowercaseString', $property['callbacks'],
                     "cv{$slot}_{$half} is lowercased so the same variable does not "

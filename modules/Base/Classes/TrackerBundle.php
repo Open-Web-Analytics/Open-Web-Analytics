@@ -163,55 +163,55 @@ class TrackerBundle {
             return \OWA\Core\CoreAPI::getSetting( 'base', $key, 'profile', (string) $site_id );
         };
 
-        $options = array(
-            array( 'setSiteId', (string) $site_id ),
-        );
+        $options = [
+            [ 'setSiteId', (string) $site_id ],
+        ];
 
         // Beacons go to log.php under the public URL unless OWA_TRACKING_URL says where.
         if ( self::trackingUrl() !== self::publicUrl() ) {
 
-            $options[] = array( 'setLoggerEndpoint', self::trackingUrl() );
+            $options[] = [ 'setLoggerEndpoint', self::trackingUrl() ];
         }
 
-        $options = array_merge( $options, array(
+        $options = array_merge( $options, [
             // The install's, so the tracker's session window is the cube's.
-            array( 'setOption', 'sessionLength', (int) \OWA\Core\CoreAPI::getSetting( 'base', 'session_length' ) ),
-            array( 'setOption', 'stateStoreExpirations', array(
+            [ 'setOption', 'sessionLength', (int) \OWA\Core\CoreAPI::getSetting( 'base', 'session_length' ) ],
+            [ 'setOption', 'stateStoreExpirations', [
                 'v' => (int) $get( 'tracker_visitor_cookie_days' ),
                 's' => (int) $get( 'tracker_session_cookie_days' ),
-            ) ),
-            array( 'setSearchQueryParams', self::listOf( $get( 'tracker_site_search_params' ) ) ),
-            array( 'setOption', 'scrollThresholds', array_map( 'intval', self::listOf( $get( 'tracker_scroll_thresholds' ) ) ) ),
-            array( 'setOption', 'downloadExtensions', array_map( 'strtolower', self::listOf( $get( 'tracker_download_extensions' ) ) ) ),
-        ) );
+            ] ],
+            [ 'setSearchQueryParams', self::listOf( $get( 'tracker_site_search_params' ) ) ],
+            [ 'setOption', 'scrollThresholds', array_map( 'intval', self::listOf( $get( 'tracker_scroll_thresholds' ) ) ) ],
+            [ 'setOption', 'downloadExtensions', array_map( 'strtolower', self::listOf( $get( 'tracker_download_extensions' ) ) ) ],
+        ] );
 
         $domain = trim( (string) $get( 'tracker_cookie_domain' ) );
 
         if ( $domain !== '' ) {
 
-            $options[] = array( 'setCookieDomain', $domain );
+            $options[] = [ 'setCookieDomain', $domain ];
         }
 
         if ( $get( 'tracker_url_fragments' ) ) {
 
-            $options[] = array( 'setTrackUrlFragments', true );
+            $options[] = [ 'setTrackUrlFragments', true ];
         }
 
         // Honoring is the tracker's default, so only turning it off is a command.
         // tracker-dom.js reads it from the queue before any command runs.
         if ( ! $get( 'tracker_honor_privacy_signals' ) ) {
 
-            $options[] = array( 'setOption', 'honorPrivacySignals', false );
+            $options[] = [ 'setOption', 'honorPrivacySignals', false ];
         }
 
         if ( \OWA\Core\Lib::inDebug() ) {
 
-            $options[] = array( 'setDebug', true );
+            $options[] = [ 'setDebug', true ];
         }
 
         // The tracker starts its features option by itself (Tracker.startFeatures());
         // the Profile says which. A page can still disable one or replace the list.
-        $started = array();
+        $started = [];
 
         foreach ( self::FEATURE_SETTINGS as $setting => $command ) {
 
@@ -221,51 +221,51 @@ class TrackerBundle {
             }
         }
 
-        $options[] = array( 'setOption', 'features', $started );
+        $options[] = [ 'setOption', 'features', $started ];
 
         // The page view is the hit, not a feature the tracker starts: a command,
         // and the preamble drops it when the page queues its own.
-        $features = array();
+        $features = [];
 
         foreach ( self::HIT_SETTINGS as $setting => $command ) {
 
             if ( $get( $setting ) ) {
 
-                $features[] = array( $command );
+                $features[] = [ $command ];
             }
         }
 
         $config = \OWA\Core\CoreAPI::filter( 'tracker_bundle_config',
-            array( 'options' => $options, 'features' => $features, 'plugins' => array() ),
+            [ 'options' => $options, 'features' => $features, 'plugins' => [] ],
             (string) $site_id );
 
-        return array(
-            'options'  => array_values( (array) ( $config['options'] ?? array() ) ),
-            'features' => array_values( (array) ( $config['features'] ?? array() ) ),
-            'plugins'  => array_values( array_unique( (array) ( $config['plugins'] ?? array() ) ) ),
-        );
+        return [
+            'options'  => array_values( (array) ( $config['options'] ?? [] ) ),
+            'features' => array_values( (array) ( $config['features'] ?? [] ) ),
+            'plugins'  => array_values( array_unique( (array) ( $config['plugins'] ?? [] ) ) ),
+        ];
     }
 
     /**
      * The Profile setting that queues each hit command: sent by the bundle,
      * not started by the tracker from its features option.
      */
-    const HIT_SETTINGS = array(
+    const HIT_SETTINGS = [
         'tracker_page_views' => 'trackPageView',
-    );
+    ];
 
     /** The Profile setting that turns each of the tracker's features on. */
-    const FEATURE_SETTINGS = array(
+    const FEATURE_SETTINGS = [
         'tracker_clicks'        => 'trackClicks',
         'tracker_forms'         => 'trackForms',
         'tracker_scroll'        => 'trackScroll',
         'tracker_site_search'   => 'trackSiteSearch',
         'tracker_exceptions'    => 'trackExceptions',
         'tracker_route_changes' => 'trackRouteChanges',
-    );
+    ];
 
     /** What each of Base's feature commands records, as the Tracking Tag screen names it. */
-    const FEATURE_LABELS = array(
+    const FEATURE_LABELS = [
         'trackPageView'     => 'Page views',
         'trackClicks'       => 'Clicks',
         'trackForms'        => 'Forms',
@@ -273,7 +273,7 @@ class TrackerBundle {
         'trackSiteSearch'   => 'Site search',
         'trackExceptions'   => 'JavaScript errors',
         'trackRouteChanges' => 'Route changes',
-    );
+    ];
 
     /**
      * What this Profile's tracker records, from its saved settings: a label for
@@ -289,10 +289,10 @@ class TrackerBundle {
     public static function trackedEvents( $site_id ) {
 
         $labels = (array) \OWA\Core\CoreAPI::filter( 'tracker_feature_labels', self::FEATURE_LABELS );
-        $out    = array();
+        $out    = [];
 
         $config   = self::config( $site_id );
-        $commands = array();
+        $commands = [];
 
         foreach ( $config['features'] as $feature ) {
 
@@ -303,7 +303,7 @@ class TrackerBundle {
 
             if ( ( $option[0] ?? '' ) === 'setOption' && ( $option[1] ?? '' ) === 'features' ) {
 
-                $commands = array_merge( $commands, array_map( 'strval', (array) ( $option[2] ?? array() ) ) );
+                $commands = array_merge( $commands, array_map( 'strval', (array) ( $option[2] ?? [] ) ) );
             }
         }
 
@@ -330,7 +330,7 @@ class TrackerBundle {
         return sprintf( '/* owa-bundle %d config=%s build=%s */',
             self::FORMAT,
             // The URLs it was made for: a changed public, tracking or assets URL republishes it.
-            hash( 'sha256', json_encode( array( $config, self::publicUrl(), self::trackingUrl(), self::assetsUrl() ) ) ),
+            hash( 'sha256', json_encode( [ $config, self::publicUrl(), self::trackingUrl(), self::assetsUrl() ] ) ),
             self::manifestHash( $manifest ) );
     }
 
@@ -382,7 +382,7 @@ class TrackerBundle {
         }
 
         $config = self::config( $site_id );
-        $parts  = array();
+        $parts  = [];
 
         foreach ( $config['plugins'] as $plugin ) {
 
@@ -398,7 +398,7 @@ class TrackerBundle {
 
         $parts[] = $manifest['core'];
 
-        $files = array();
+        $files = [];
 
         foreach ( $parts as $part ) {
 
@@ -490,7 +490,7 @@ class TrackerBundle {
     public static function commandLines( $site_id ) {
 
         $config = self::config( $site_id );
-        $lines  = array();
+        $lines  = [];
 
         foreach ( array_merge( $config['options'], $config['features'] ) as $command ) {
 
@@ -591,7 +591,7 @@ class TrackerBundle {
      */
     public static function siteIds() {
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) \OWA\Core\CoreAPI::getSitesList() as $row ) {
 
@@ -622,7 +622,7 @@ class TrackerBundle {
      */
     public static function publishStale( $force = false, $site_ids = null ) {
 
-        $out  = array();
+        $out  = [];
         $live = $site_ids === null ? self::siteIds() : (array) $site_ids;
 
         foreach ( $live as $site_id ) {
@@ -660,7 +660,7 @@ class TrackerBundle {
      */
     public static function removeOrphans( array $live ) {
 
-        $removed = array();
+        $removed = [];
         $keep    = array_flip( $live );
 
         foreach ( (array) glob( self::outDir() . '*.js' ) as $file ) {
@@ -714,7 +714,7 @@ class TrackerBundle {
             return true;
         }
 
-        \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', array( 'site' => (string) $site_id ),
+        \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', [ 'site' => (string) $site_id ],
             'publish-trackers:' . $site_id );
 
         return false;
@@ -743,7 +743,7 @@ class TrackerBundle {
                 return false;
             }
 
-            return \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', array(), 'publish-trackers:all' );
+            return \OWA\Core\CoreAPI::enqueueJob( 'publish-trackers', [], 'publish-trackers:all' );
 
         } catch ( \Throwable $t ) {
 
@@ -763,15 +763,15 @@ class TrackerBundle {
 
         if ( ! self::buildManifest() ) {
 
-            return array( 'state' => 'unbuilt', 'published_at' => null );
+            return [ 'state' => 'unbuilt', 'published_at' => null ];
         }
 
         $at = $path && is_file( $path ) ? (int) filemtime( $path ) : null;
 
-        return array(
+        return [
             'state'        => self::isCurrent( $site_id ) ? 'published' : 'waiting',
             'published_at' => $at,
-        );
+        ];
     }
 
     /**
@@ -788,13 +788,13 @@ class TrackerBundle {
     public static function checkCacheHeaders( $site_id ) {
 
         $url     = self::url( $site_id );
-        $context = stream_context_create( array( 'http' => array(
+        $context = stream_context_create( [ 'http' => [
             'method' => 'HEAD', 'timeout' => 5, 'ignore_errors' => true,
             'header' => "User-Agent: Open Web Analytics tracker bundle check\r\n",
-        ) ) );
+        ] ] );
 
         $headers = @get_headers( $url, true, $context );
-        $result  = array( 'checked_at' => time(), 'url' => $url, 'status' => 0, 'ok' => null, 'cache_control' => '' );
+        $result  = [ 'checked_at' => time(), 'url' => $url, 'status' => 0, 'ok' => null, 'cache_control' => '' ];
 
         if ( is_array( $headers ) ) {
 
@@ -850,5 +850,3 @@ class TrackerBundle {
         return array_values( array_filter( array_map( 'trim', explode( ',', (string) $value ) ), static fn ( $item ) => $item !== '' ) );
     }
 }
-
-?>

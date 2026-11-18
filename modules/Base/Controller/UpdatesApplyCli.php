@@ -35,17 +35,17 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Applies pending schema updates for every module, in order. When an update needs a choice from the operator, it stops and says what to run.',
-            'arguments'   => array(
+            'arguments'   => [
                 'listpending'                  => 'List the modules with pending updates, and apply nothing.',
                 'apply=<module>.<sequence>'    => 'Apply one update.',
                 'rollback=<module>.<sequence>' => 'Roll back one update.',
                 '--force'                      => 'With apply=: apply out of sequence.',
                 'since=<cutoff>'               => 'For the 1.x history migration: migrate events newer than a date (yyyymmdd) or a period such as 2years.',
                 '--all'                        => 'For the 1.x history migration: migrate everything.',
-            ),
-        );
+            ],
+        ];
     }
     
     public function __construct($params) {
@@ -137,7 +137,7 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
     public static function parseUpdateName( $update ) {
 
         return is_string( $update ) && preg_match( '/^([A-Za-z0-9_]+)\.(\d+)$/', $update, $m )
-            ? array( $m[1], $m[2] )
+            ? [ $m[1], $m[2] ]
             : null;
     }
 
@@ -233,5 +233,3 @@ class UpdatesApplyCli extends \OWA\Core\Controller\Cli {
     }
     
 }
-
-?>

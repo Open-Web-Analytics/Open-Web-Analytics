@@ -65,7 +65,7 @@ class DomstreamChunk extends \OWA\Core\Entity {
         $this->setProperty( $this->column( 'bytes', OWA_DTD_INT, false ) );
 
         // A recording's chunks, for playback and the roster.
-        $this->addCompositeIndex( 'site_recording', array( 'site_id', 'recording_id' ) );
+        $this->addCompositeIndex( 'site_recording', [ 'site_id', 'recording_id' ] );
     }
 
     /**
@@ -86,5 +86,3 @@ class DomstreamChunk extends \OWA\Core\Entity {
         return $column;
     }
 }
-
-?>

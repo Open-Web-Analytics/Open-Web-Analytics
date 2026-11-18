@@ -27,7 +27,7 @@ final class GeoEncodingRepairTest extends TestCase
 
     public function testDoubleEncodedGermanNamesAreRecognisedAndUndone(): void
     {
-        $cases = array(
+        $cases = [
             'MÃ¼nchen'           => 'München',
             'KÃ¶ln'              => 'Köln',
             'NÃ¼rnberg'          => 'Nürnberg',
@@ -36,7 +36,7 @@ final class GeoEncodingRepairTest extends TestCase
             'SaarbrÃ¼cken'       => 'Saarbrücken',
             'ThÃ¼ringen'         => 'Thüringen',
             'OsnabrÃ¼ck'         => 'Osnabrück',
-        );
+        ];
 
         foreach ( $cases as $stored => $intended ) {
 
@@ -49,7 +49,7 @@ final class GeoEncodingRepairTest extends TestCase
     {
         // Any name in the Latin-1 range was mangled the same way, which is why
         // the fix is not umlaut-specific.
-        $cases = array(
+        $cases = [
             'ZÃ¼rich'    => 'Zürich',
             'MÃ¡laga'    => 'Málaga',
             'OrlÃ©ans'   => 'Orléans',
@@ -58,7 +58,7 @@ final class GeoEncodingRepairTest extends TestCase
             'ReykjavÃ­k' => 'Reykjavík',
             'SÃ£o Paulo' => 'São Paulo',
             'CuraÃ§ao'   => 'Curaçao',
-        );
+        ];
 
         foreach ( $cases as $stored => $intended ) {
 
@@ -76,8 +76,8 @@ final class GeoEncodingRepairTest extends TestCase
     {
         // Written after the fix, or repaired by an earlier run of the command.
         // Rewriting these is how a repair turns into a second round of damage.
-        foreach ( array( 'münchen', 'köln', 'Zürich', 'São Paulo', 'Curaçao',
-                         'Malmö', 'Tromsø', 'Reykjavík' ) as $correct ) {
+        foreach ( [ 'münchen', 'köln', 'Zürich', 'São Paulo', 'Curaçao',
+                         'Malmö', 'Tromsø', 'Reykjavík' ] as $correct ) {
 
             $this->assertNull( GeoEncodingRepair::repair( $correct ),
                 sprintf( '%s is already correct and must not be rewritten', $correct ) );
@@ -106,8 +106,8 @@ final class GeoEncodingRepairTest extends TestCase
      */
     public function testNamesOutsideTheLatin1RangeAreNeverTouched(): void
     {
-        foreach ( array( '東京', '北京', 'москва', 'αθήνα', 'תל אביב',
-                         'القاهرة', 'ソウル', 'บางกอก', 'İstanbul' ) as $name ) {
+        foreach ( [ '東京', '北京', 'москва', 'αθήνα', 'תל אביב',
+                         'القاهرة', 'ソウル', 'บางกอก', 'İstanbul' ] as $name ) {
 
             $this->assertNull( GeoEncodingRepair::repair( $name ),
                 sprintf( '%s is outside Latin-1 and cannot be double-encoded', $name ) );
@@ -116,8 +116,8 @@ final class GeoEncodingRepairTest extends TestCase
 
     public function testAsciiAndEmptyValuesAreLeftAlone(): void
     {
-        foreach ( array( 'london', 'new york', 'san francisco', 'us', 'de',
-                         'europe', '', ' ' ) as $value ) {
+        foreach ( [ 'london', 'new york', 'san francisco', 'us', 'de',
+                         'europe', '', ' ' ] as $value ) {
 
             $this->assertNull( GeoEncodingRepair::repair( $value ) );
         }
@@ -129,7 +129,7 @@ final class GeoEncodingRepairTest extends TestCase
         // guessing, which is what produced this bug in the first place.
         $this->assertNull( GeoEncodingRepair::repair( null ) );
         $this->assertNull( GeoEncodingRepair::repair( 123 ) );
-        $this->assertNull( GeoEncodingRepair::repair( array() ) );
+        $this->assertNull( GeoEncodingRepair::repair( [] ) );
         $this->assertNull( GeoEncodingRepair::repair( "\xFF\xFE invalid" ) );
         $this->assertNull( GeoEncodingRepair::repair( "M\xFCnchen" ) ); // raw latin-1
     }
@@ -157,17 +157,17 @@ final class GeoEncodingRepairTest extends TestCase
     /** The v1 migration repairs a location's names as it copies them. */
     public function testTheMigrationRepairsALocationOnTheWayThrough(): void
     {
-        $location = \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( array(
+        $location = \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( [
             'country'      => 'Germany',
             'country_code' => 'DE',
             'state'        => 'Baden-WÃ¼rttemberg',
             'city'         => 'MÃ¼nchen',
-        ) );
+        ] );
 
         $this->assertSame( 'Baden-Württemberg', $location['state'] );
         $this->assertSame( 'München', $location['city'] );
         $this->assertSame( 'Germany', $location['country'], 'a correct name is left alone' );
-        $this->assertSame( array(), \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( array() ),
+        $this->assertSame( [], \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( [] ),
             'a row with no location stays empty' );
     }
 
@@ -179,14 +179,14 @@ final class GeoEncodingRepairTest extends TestCase
     public function testTheMigrationKeepsOnlyACountryCode(): void
     {
         $code = static function ( $v ) {
-            return \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( array( 'country_code' => $v ) )['country_code'];
+            return \OWA\Module\Base\Classes\Migration\FactMigrator::repairedLocation( [ 'country_code' => $v ] )['country_code'];
         };
 
         $this->assertSame( 'DE', $code( 'DE' ) );
         $this->assertSame( 'DE', $code( 'de' ), 'upper-cased' );
         $this->assertSame( 'DE', $code( ' DE ' ) );
 
-        foreach ( array( '(NOT SET)', '(not set)', 'VATICAN CITY STATE)', 'DEU', 'D', '', null, 'D1' ) as $bad ) {
+        foreach ( [ '(NOT SET)', '(not set)', 'VATICAN CITY STATE)', 'DEU', 'D', '', null, 'D1' ] as $bad ) {
             $this->assertNull( $code( $bad ), var_export( $bad, true ) );
         }
     }

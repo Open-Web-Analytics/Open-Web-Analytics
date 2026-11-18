@@ -17,7 +17,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class ReportNavigationLinkTest extends TestCase
 {
     /** Base nav entries that are not reports, and so route to their own action. */
-    private const NOT_REPORTS = array( 'base.customReports' );
+    private const NOT_REPORTS = [ 'base.customReports' ];
 
     private function template(): object
     {
@@ -27,24 +27,24 @@ final class ReportNavigationLinkTest extends TestCase
     public function testAReportRefCarriesItsId(): void
     {
         $params = $this->template()->navLinkParams(
-            array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'pages' ) ) );
+            [ 'ref' => [ 'do' => 'base.report', 'reportId' => 'pages' ] ] );
 
         $this->assertSame(
-            array( 'do' => 'base.report', 'reportId' => 'pages' ), $params );
+            [ 'do' => 'base.report', 'reportId' => 'pages' ], $params );
     }
 
     /** A plain action ref still means what it always meant. */
     public function testAPlainRefIsStillAnAction(): void
     {
-        $this->assertSame( array( 'do' => 'base.optionsGeneral' ),
-            $this->template()->navLinkParams( array( 'ref' => 'base.optionsGeneral' ) ) );
+        $this->assertSame( [ 'do' => 'base.optionsGeneral' ],
+            $this->template()->navLinkParams( [ 'ref' => 'base.optionsGeneral' ] ) );
     }
 
     public function testTheCurrentReportIsCurrent(): void
     {
         $this->assertTrue( $this->template()->navLinkIsCurrent(
-            array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'pages' ) ),
-            array( 'do' => 'base.report', 'reportId' => 'pages' ) ) );
+            [ 'ref' => [ 'do' => 'base.report', 'reportId' => 'pages' ] ],
+            [ 'do' => 'base.report', 'reportId' => 'pages' ] ) );
     }
 
     /**
@@ -54,23 +54,23 @@ final class ReportNavigationLinkTest extends TestCase
     public function testADifferentReportIsNotCurrent(): void
     {
         $this->assertFalse( $this->template()->navLinkIsCurrent(
-            array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'entry-pages' ) ),
-            array( 'do' => 'base.report', 'reportId' => 'pages' ) ),
+            [ 'ref' => [ 'do' => 'base.report', 'reportId' => 'entry-pages' ] ],
+            [ 'do' => 'base.report', 'reportId' => 'pages' ] ),
             'matching on the action alone makes every report link current at once' );
     }
 
     /** Only one entry in a realistic menu is current, not several. */
     public function testExactlyOneLinkInAMenuIsCurrent(): void
     {
-        $menu = array(
-            array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'pages' ) ),
-            array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'entry-pages' ) ),
-            array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'exit-pages' ) ),
-            array( 'ref' => 'base.optionsGeneral' ),
-        );
+        $menu = [
+            [ 'ref' => [ 'do' => 'base.report', 'reportId' => 'pages' ] ],
+            [ 'ref' => [ 'do' => 'base.report', 'reportId' => 'entry-pages' ] ],
+            [ 'ref' => [ 'do' => 'base.report', 'reportId' => 'exit-pages' ] ],
+            [ 'ref' => 'base.optionsGeneral' ],
+        ];
 
         $t = $this->template();
-        $here = array( 'do' => 'base.report', 'reportId' => 'entry-pages' );
+        $here = [ 'do' => 'base.report', 'reportId' => 'entry-pages' ];
 
         $current = array_filter( $menu, function ( $l ) use ( $t, $here ) {
             return $t->navLinkIsCurrent( $l, $here );
@@ -86,10 +86,10 @@ final class ReportNavigationLinkTest extends TestCase
         $t = $this->template();
 
         $this->assertFalse( $t->navLinkIsCurrent(
-            array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'pages' ) ),
-            array( 'do' => 'base.optionsGeneral' ) ) );
+            [ 'ref' => [ 'do' => 'base.report', 'reportId' => 'pages' ] ],
+            [ 'do' => 'base.optionsGeneral' ] ) );
 
-        $this->assertFalse( $t->navLinkIsCurrent( array( 'ref' => '' ), array( 'do' => '' ) ),
+        $this->assertFalse( $t->navLinkIsCurrent( [ 'ref' => '' ], [ 'do' => '' ] ),
             'an empty ref must not match an empty request' );
     }
 
@@ -109,7 +109,7 @@ final class ReportNavigationLinkTest extends TestCase
 
         $this->assertNotEmpty( $registered, 'no reports registered, so this proves nothing' );
 
-        $offenders = array();
+        $offenders = [];
 
         $files = array_merge(
             (array) glob( \OWA\Core\Env::root() . '/modules/*/templates/*.php' ),
@@ -149,7 +149,7 @@ final class ReportNavigationLinkTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $offenders,
+        $this->assertSame( [], $offenders,
             "these links still point at a report controller action instead of a report id:\n"
             . implode( "\n", $offenders ) );
     }
@@ -200,7 +200,7 @@ final class ReportNavigationLinkTest extends TestCase
         $user->setAuthStatus( true );
 
         $template = $this->template();
-        $offenders = array();
+        $offenders = [];
         $count = 0;
 
         foreach ( $this->flattenNav() as $link ) {
@@ -241,7 +241,7 @@ final class ReportNavigationLinkTest extends TestCase
         $this->assertGreaterThan( 20, $count,
             'too few Base nav links found for this to be checking anything' );
 
-        $this->assertSame( array(), $offenders,
+        $this->assertSame( [], $offenders,
             "these nav links still name a report controller action:\n" . implode( "\n", $offenders ) );
     }
 
@@ -260,9 +260,9 @@ final class ReportNavigationLinkTest extends TestCase
 
         $template = $this->template();
 
-        foreach ( array( 'entry-pages', 'pages', 'browsers' ) as $id ) {
+        foreach ( [ 'entry-pages', 'pages', 'browsers' ] as $id ) {
 
-            $here    = array( 'do' => 'base.report', 'reportId' => $id );
+            $here    = [ 'do' => 'base.report', 'reportId' => $id ];
             $current = 0;
 
             foreach ( $this->flattenNav() as $link ) {
@@ -294,7 +294,7 @@ final class ReportNavigationLinkTest extends TestCase
 
     private function flattenNav(): array
     {
-        $flat = array();
+        $flat = [];
 
         foreach ( (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' ) as $link ) {
 
@@ -304,7 +304,7 @@ final class ReportNavigationLinkTest extends TestCase
 
             $flat[] = $link;
 
-            foreach ( (array) ( $link['subgroup'] ?? array() ) as $sub ) {
+            foreach ( (array) ( $link['subgroup'] ?? [] ) as $sub ) {
 
                 if ( isset( $sub['ref'] ) ) {
                     $flat[] = $sub;
@@ -348,7 +348,7 @@ final class ReportNavigationLinkTest extends TestCase
         }
 
         $rail = $this->template()->navRail(
-            $nav, 'some-property', array( 'do' => 'base.report', 'reportId' => 'pages' ), $siteId );
+            $nav, 'some-property', [ 'do' => 'base.report', 'reportId' => 'pages' ], $siteId );
 
         $current = array_values( array_filter( $rail, function ( $s ) { return $s['current']; } ) );
 
@@ -372,20 +372,20 @@ final class ReportNavigationLinkTest extends TestCase
     {
         $template = $this->template();
 
-        $link = array( 'ref' => array( 'do' => 'base.report', 'reportId' => 'pages' ) );
+        $link = [ 'ref' => [ 'do' => 'base.report', 'reportId' => 'pages' ] ];
 
         $this->assertFalse(
-            $template->navLinkIsCurrent( $link, array( 'do' => 'base.report' ) ),
+            $template->navLinkIsCurrent( $link, [ 'do' => 'base.report' ] ),
             'the action alone must not make a report link current -- every report shares it' );
 
         $this->assertTrue(
             $template->navLinkIsCurrent( $link,
-                array( 'do' => 'base.report', 'reportId' => 'pages' ) ),
+                [ 'do' => 'base.report', 'reportId' => 'pages' ] ),
             'the full request must' );
 
         $this->assertFalse(
             $template->navLinkIsCurrent( $link,
-                array( 'do' => 'base.report', 'reportId' => 'entry-pages' ) ),
+                [ 'do' => 'base.report', 'reportId' => 'entry-pages' ] ),
             'a different report must not' );
     }
 
@@ -400,7 +400,7 @@ final class ReportNavigationLinkTest extends TestCase
      * GONE -- reading it would make the test pass by finding nothing. This is
      * the list that has to remain reachable, so this is where it is recorded.
      */
-    private const ECOMMERCE_REPORTS = array(
+    private const ECOMMERCE_REPORTS = [
         /*
          * products, product-skus, product-categories, visits-to-purchase and
          * days-to-purchase were here. All five are gone: the first three need
@@ -411,12 +411,12 @@ final class ReportNavigationLinkTest extends TestCase
         'avg-order-value',
         'revenue',
         'ecommerce-conversion-rate',
-    );
+    ];
 
     /** @return array reportId => anchortext, for the Ecommerce subgroup */
     private function ecommerceNav(): array
     {
-        $out = array();
+        $out = [];
 
         foreach ( (array) \OWA\Core\CoreAPI::getGroupNavigation( 'Reports' ) as $link ) {
 
@@ -424,7 +424,7 @@ final class ReportNavigationLinkTest extends TestCase
                 continue;
             }
 
-            foreach ( (array) ( $link['subgroup'] ?? array() ) as $sub ) {
+            foreach ( (array) ( $link['subgroup'] ?? [] ) as $sub ) {
 
                 $params = $this->template()->navLinkParams( $sub );
 
@@ -460,7 +460,7 @@ final class ReportNavigationLinkTest extends TestCase
 
         $missing = array_diff( self::ECOMMERCE_REPORTS, array_keys( $nav ) );
 
-        $this->assertSame( array(), $missing,
+        $this->assertSame( [], $missing,
             "These e-commerce reports are no longer reachable from the nav:\n  "
             . implode( "\n  ", $missing ) );
     }
@@ -506,7 +506,7 @@ final class ReportNavigationLinkTest extends TestCase
          * and products after both were retired: each read compared null with
          * null, passed, and raised a warning about the missing file.
          */
-        foreach ( array( 'ecommerce-conversion-rate' ) as $id ) {
+        foreach ( [ 'ecommerce-conversion-rate' ] as $id ) {
 
             $file = \OWA\Core\Env::root() . '/modules/Base/reports/' . $id . '.json';
 

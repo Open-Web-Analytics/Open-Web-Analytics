@@ -15,7 +15,7 @@
  */
 return static function ( $arg = null ) {
 
-    $cell = static fn ( $v ) => str_replace( array( '|', "\r", "\n" ), array( '\\|', ' ', ' ' ), trim( (string) $v ) );
+    $cell = static fn ( $v ) => str_replace( [ '|', "\r", "\n" ], [ '\\|', ' ', ' ' ], trim( (string) $v ) );
 
     $raw  = new \OWA\Module\Base\Entity\EventRaw();
     $cube = new \OWA\Module\Base\Entity\Event();
@@ -29,11 +29,11 @@ return static function ( $arg = null ) {
 
     $inputs = static function ( $definition ) use ( &$inputs ) {
 
-        $found = array();
+        $found = [];
 
         foreach ( (array) $definition as $key => $value ) {
 
-            if ( in_array( $key, array( 'kind', 'text', 'absent', 'description' ), true ) ) {
+            if ( in_array( $key, [ 'kind', 'text', 'absent', 'description' ], true ) ) {
                 continue;
             }
 

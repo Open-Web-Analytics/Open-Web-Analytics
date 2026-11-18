@@ -52,7 +52,7 @@ class SitesInvocation extends \OWA\Core\AdminController {
          * out that has nothing to do with where you are.
          */
         $owa_site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
-        $this->settingsChrome( array( 'siteId' => $owa_site_id ), $owa_site_id );
+        $this->settingsChrome( [ 'siteId' => $owa_site_id ], $owa_site_id );
 
         /*
          * Is the tag set up? Answered here, where the tag is, rather than on
@@ -99,9 +99,3 @@ class SitesInvocation extends \OWA\Core\AdminController {
         return $ts > 0 ? intdiv( $ts, 1000000 ) : null;
     }
 }
-
-
-
-
-
-?>

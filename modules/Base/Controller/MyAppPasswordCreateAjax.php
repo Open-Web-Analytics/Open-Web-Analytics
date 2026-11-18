@@ -30,7 +30,7 @@ class MyAppPasswordCreateAjax extends \OWA\Core\Controller\Ajax {
     public function validate() {
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'stopOnError' => true, 'errorMsg' => $this->getMsg( 3215 )['message'] ) );
+            [ 'stopOnError' => true, 'errorMsg' => $this->getMsg( 3215 )['message'] ] );
     }
 
     public function action() {

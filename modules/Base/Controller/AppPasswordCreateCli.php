@@ -22,14 +22,14 @@ class AppPasswordCreateCli extends AppPasswordsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Makes an application password for a user and prints it. It is shown once and cannot be retrieved later.',
-            'arguments'   => array(
+            'arguments'   => [
                 'user=<user id>'   => 'Required. The user the password authenticates as.',
                 'name=<name>'      => 'Required. What will use it, so it can be told apart from the user\'s others.',
                 'scope=read|full'  => 'read allows GET and HEAD requests only; full allows everything the user\'s role can do. Defaults to read.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
@@ -64,11 +64,9 @@ class AppPasswordCreateCli extends AppPasswordsCli {
         \OWA\Core\CoreAPI::notice( sprintf( 'Application password %s (%s, %s) created for %s.',
             $made['lookup_id'], $made['name'], $made['scope'], $user_id ) );
 
-        $this->write( array(
+        $this->write( [
             'Copy it now; it cannot be shown again:',
             $made['token'],
-        ) );
+        ] );
     }
 }
-
-?>

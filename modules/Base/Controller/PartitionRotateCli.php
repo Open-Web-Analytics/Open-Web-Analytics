@@ -52,9 +52,9 @@ class PartitionRotateCli extends PartitionsCli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Adds the partitions ahead, merges old periods, and drops what the retention settings say not to keep. Runs on the scheduler daily as rotate-partitions. How much is kept comes from the retention settings, not from an argument.',
-            'arguments'   => array(
+            'arguments'   => [
                 'months-ahead=<n>'                               => 'How many months of future partitions to keep. Defaults to 12.',
                 'granularity=<monthly|half-month|quarter-month>' => 'Granularity for new lead partitions. Defaults to what each table is on.',
                 'table=<name>'                                   => 'Rotate only this table.',
@@ -63,8 +63,8 @@ class PartitionRotateCli extends PartitionsCli {
                 'raw-months=<n>'                                 => 'With --dry-run: what keeping n months of raw events would do.',
                 'cube-months=<n>'                                => 'With --dry-run: what keeping n months in the cubes would do.',
                 'property=<id>'                                  => 'With --dry-run and cube-months=: try the window on this Property\'s cube.',
-            ),
-        );
+            ],
+        ];
     }
 
     /**
@@ -78,7 +78,7 @@ class PartitionRotateCli extends PartitionsCli {
 
         $names = parent::acceptedArguments( $class );
 
-        return $names === null ? null : array_merge( $names, array( 'keep' ) );
+        return $names === null ? null : array_merge( $names, [ 'keep' ] );
     }
 
     /**
@@ -131,7 +131,7 @@ class PartitionRotateCli extends PartitionsCli {
                 }
 
                 $granularity = $db->inferPartitionGranularity( $table ) ?: 'monthly';
-                $sizes       = array();
+                $sizes       = [];
                 $catch_all   = 0;
 
                 foreach ( $db->listPartitions( $table ) as $p ) {
@@ -158,11 +158,11 @@ class PartitionRotateCli extends PartitionsCli {
                 // One statement per merge, over the partitions it combines.
                 $compact = $db->planPartitionCompaction( $table, $budget['limit'] );
 
-                foreach ( (array) ( $compact['merges'] ?? array() ) as $merge ) {
+                foreach ( (array) ( $compact['merges'] ?? [] ) as $merge ) {
 
                     $statements++;
 
-                    foreach ( (array) ( $merge['names'] ?? array() ) as $name ) {
+                    foreach ( (array) ( $merge['names'] ?? [] ) as $name ) {
 
                         $rows += isset( $sizes[ $name ] ) ? $sizes[ $name ] : 0;
                     }
@@ -356,7 +356,7 @@ class PartitionRotateCli extends PartitionsCli {
      */
     protected function whatIf( $dry_run ) {
 
-        $out = array();
+        $out = [];
 
         if ( $this->getParam( 'keep' ) !== null && $this->getParam( 'keep' ) !== '' ) {
 
@@ -367,7 +367,7 @@ class PartitionRotateCli extends PartitionsCli {
             return false;
         }
 
-        foreach ( array( 'raw-months' => 'raw', 'cube-months' => 'cube' ) as $param => $key ) {
+        foreach ( [ 'raw-months' => 'raw', 'cube-months' => 'cube' ] as $param => $key ) {
 
             $value = $this->getParam( $param );
 
@@ -455,7 +455,7 @@ class PartitionRotateCli extends PartitionsCli {
      */
     protected function queueBackfills( array $whatif, $dry_run ) {
 
-        $cubes = array();
+        $cubes = [];
 
         if ( array_key_exists( 'cube', $whatif ) ) {
 

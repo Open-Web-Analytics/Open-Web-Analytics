@@ -36,17 +36,17 @@ class PurchaseMigrator extends FactMigrator {
 
     protected function events( array $r, array $refs ) {
 
-        $event = $this->baseEvent( $r, $refs, 'purchase', array(
+        $event = $this->baseEvent( $r, $refs, 'purchase', [
             'ct_order_id'      => $r['order_id'] ?? null,
             'eps_order_source' => $r['order_source'] ?? null,
             'eps_gateway'      => $r['gateway'] ?? null,
-        ) );
+        ] );
 
         $currency = \OWA\Module\Base\Classes\TrackingEventHelpers::purchaseCurrency( $event );
 
         $event->set( 'currency', $currency );
 
-        foreach ( array( 'revenue' => 'total_revenue', 'ct_tax' => 'tax_revenue', 'ct_shipping' => 'shipping_revenue' ) as $to => $from ) {
+        foreach ( [ 'revenue' => 'total_revenue', 'ct_tax' => 'tax_revenue', 'ct_shipping' => 'shipping_revenue' ] as $to => $from ) {
 
             $v1 = $r[ $from ] ?? null;
 
@@ -56,14 +56,14 @@ class PurchaseMigrator extends FactMigrator {
         }
 
         $order = (string) ( $r['order_id'] ?? '' );
-        $items = $order !== '' ? ( $refs['line_items'][ $order ] ?? array() ) : array();
+        $items = $order !== '' ? ( $refs['line_items'][ $order ] ?? [] ) : [];
 
         if ( $items ) {
 
             $event->set( 'ct_line_items', $items );
         }
 
-        return array( $event );
+        return [ $event ];
     }
 
     /**
@@ -77,7 +77,7 @@ class PurchaseMigrator extends FactMigrator {
 
         $refs = parent::resolve( $rows );
 
-        $refs['line_items'] = array();
+        $refs['line_items'] = [];
 
         $orders = array_values( array_unique( array_filter(
             array_map( 'strval', array_column( $rows, 'order_id' ) ), static fn ( $id ) => $id !== '' ) ) );
@@ -95,7 +95,7 @@ class PurchaseMigrator extends FactMigrator {
             'SELECT order_id, sku, product_name, category, unit_price, quantity FROM %s'
           . ' WHERE site_id = ? AND order_id IN (%s) ORDER BY id',
             $table, implode( ',', array_fill( 0, count( $orders ), '?' ) ) ),
-            array_merge( array( $site ), $orders ) );
+            array_merge( [ $site ], $orders ) );
 
         foreach ( $found as $li ) {
 
@@ -121,9 +121,9 @@ class PurchaseMigrator extends FactMigrator {
      */
     public static function item( array $li ) {
 
-        $out = array();
+        $out = [];
 
-        foreach ( array( 'item_id' => 'sku', 'item_name' => 'product_name', 'item_category' => 'category' ) as $to => $from ) {
+        foreach ( [ 'item_id' => 'sku', 'item_name' => 'product_name', 'item_category' => 'category' ] as $to => $from ) {
 
             $v = trim( (string) ( $li[ $from ] ?? '' ) );
 
@@ -154,5 +154,3 @@ class PurchaseMigrator extends FactMigrator {
         return $out;
     }
 }
-
-?>

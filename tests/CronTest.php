@@ -492,7 +492,7 @@ final class CronTest extends TestCase
     /** The two fields must not be correlated, or the times collapse. */
     public function testTheSpreadActuallySpreads(): void
     {
-        $seen = array();
+        $seen = [];
 
         for ( $i = 0; $i < 500; $i++ ) {
             $seen[ \OWA\Core\Cron::dailySpreadFor( "install-$i" ) ] = true;
@@ -517,8 +517,8 @@ final class CronTest extends TestCase
 
     public function testTheWeeklySpreadActuallySpreads(): void
     {
-        $seen = array();
-        $days = array();
+        $seen = [];
+        $days = [];
 
         for ( $i = 0; $i < 500; $i++ ) {
             $expr          = \OWA\Core\Cron::weeklySpreadFor( "install-$i" );

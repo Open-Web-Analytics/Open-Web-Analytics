@@ -43,7 +43,7 @@ class Blocks {
 
         if ( self::$batch === null ) {
 
-            self::$batch = array();
+            self::$batch = [];
         }
     }
 
@@ -98,7 +98,7 @@ class Blocks {
      */
     public static function record( $yyyymmdd, $site_id, array $rules ) {
 
-        $keys = array_unique( array_merge( array( \OWA\Module\Base\Entity\SpamBlock::TOTAL ),
+        $keys = array_unique( array_merge( [ \OWA\Module\Base\Entity\SpamBlock::TOTAL ],
             array_map( 'strval', $rules ) ) );
 
         foreach ( $keys as $rule ) {
@@ -127,9 +127,9 @@ class Blocks {
 
         $rows = (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf(
             'SELECT rule, SUM(blocked) AS blocked FROM %s WHERE yyyymmdd >= ? GROUP BY rule', self::table() ),
-            array( (int) $since ) );
+            [ (int) $since ] );
 
-        $out = array();
+        $out = [];
 
         foreach ( $rows as $row ) {
 
@@ -150,7 +150,7 @@ class Blocks {
             return $out[ $b ] <=> $out[ $a ] ?: strcmp( (string) $a, (string) $b );
         } );
 
-        return $all ? array( $total => $all ) + $out : $out;
+        return $all ? [ $total => $all ] + $out : $out;
     }
 
     /**
@@ -171,7 +171,7 @@ class Blocks {
 
         $ok = $db->query( sprintf( OWA_SQL_INSERT_OR_ADD, self::table(),
                 'yyyymmdd, site_id, rule, blocked', '?, ?, ?, ?', 'yyyymmdd, site_id, rule', 'blocked' ),
-            array( $yyyymmdd, $site_id, $rule, $count, $count ) ) !== false;
+            [ $yyyymmdd, $site_id, $rule, $count, $count ] ) !== false;
 
         if ( ! $ok ) {
 
@@ -188,5 +188,3 @@ class Blocks {
         return self::$table ?: \OWA\Core\CoreAPI::entityFactory( 'base.spam_block' )->getTableName();
     }
 }
-
-?>

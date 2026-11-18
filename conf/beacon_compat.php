@@ -43,7 +43,7 @@
  * sends reaches these four lines.
  */
 
-return array(
+return [
 
     /*
      * ---- APPLIED FROM HERE ------------------------------------------------
@@ -56,7 +56,7 @@ return array(
      * the current tracker sends. Any other v1 spelling (dom.stream,
      * base.feed_request, track.action) is not a legal event name and is refused.
      */
-    'event_names' => array(
+    'event_names' => [
         'base.page_request'     => 'page_view',
         'dom.click'             => 'click',
         'ecommerce.transaction' => 'purchase',
@@ -74,7 +74,7 @@ return array(
          * first-class, so it is refused rather than stored under a name that means
          * nothing. Decided: no compat for it.
          */
-    ),
+    ],
 
     /*
      * ---- APPLIED FROM HERE ------------------------------------------------
@@ -101,7 +101,7 @@ return array(
      * two to each other in both directions. The convention behind the codes is
      * documented there.
      */
-    'renames' => array(
+    'renames' => [
 
         /*
          * THE CURRENT TRACKER'S SHORT KEYS, one per property it sends. A beacon
@@ -109,70 +109,70 @@ return array(
          * is_new_visitor_created, and the server keeps the long names because
          * the registry, the columns and every reader already use them.
          */
-        array( 'role' => 'wire',   'from' => '_v',      'to' => 'beacon_version' ),
-        array( 'role' => 'wire',   'from' => 'e_t',     'to' => 'event_type' ),
-        array( 'role' => 'wire',   'from' => 'e_sq',    'to' => 'event_seq' ),
-        array( 'role' => 'wire',   'from' => 'e_ems',   'to' => 'engagement_msec' ),
-        array( 'role' => 'wire',   'from' => 'site',    'to' => 'site_id' ),
-        array( 'role' => 'wire',   'from' => 'v_id',    'to' => 'visitor_id' ),
-        array( 'role' => 'wire',   'from' => 'v_fts',   'to' => 'fsts' ),
-        array( 'role' => 'wire',   'from' => 'v_nps',   'to' => 'num_prior_sessions' ),
-        array( 'role' => 'wire',   'from' => 'v_new',   'to' => 'is_new_visitor_created' ),
-        array( 'role' => 'wire',   'from' => 'v_cs',    'to' => 'consent_state' ),
-        array( 'role' => 'wire',   'from' => 'u_id',    'to' => 'user_id' ),
-        array( 'role' => 'wire',   'from' => 's_id',    'to' => 'session_id' ),
-        array( 'role' => 'wire',   'from' => 's_sts',   'to' => 'sts' ),
-        array( 'role' => 'wire',   'from' => 's_pts',   'to' => 'psts' ),
-        array( 'role' => 'wire',   'from' => 's_new',   'to' => 'is_new_session_start' ),
-        array( 'role' => 'wire',   'from' => 'p_l',     'to' => 'page_location' ),
-        array( 'role' => 'wire',   'from' => 'p_t',     'to' => 'page_title' ),
-        array( 'role' => 'wire',   'from' => 'p_r',     'to' => 'HTTP_REFERER' ),
-        array( 'role' => 'wire',   'from' => 'p_cg',    'to' => 'content_group' ),
-        array( 'role' => 'wire',   'from' => 'p_w',     'to' => 'page_width' ),
-        array( 'role' => 'wire',   'from' => 'p_h',     'to' => 'page_height' ),
-        array( 'role' => 'wire',   'from' => 'p_q',     'to' => 'search_term' ),
-        array( 'role' => 'wire',   'from' => 'd_sr',    'to' => 'screen_resolution' ),
-        array( 'role' => 'wire',   'from' => 'el_tg',   'to' => 'dom_element_tag' ),
-        array( 'role' => 'wire',   'from' => 'el_id',   'to' => 'dom_element_id' ),
-        array( 'role' => 'wire',   'from' => 'el_cl',   'to' => 'dom_element_class' ),
-        array( 'role' => 'wire',   'from' => 'el_nm',   'to' => 'dom_element_name' ),
-        array( 'role' => 'wire',   'from' => 'el_tx',   'to' => 'dom_element_text' ),
-        array( 'role' => 'wire',   'from' => 'el_lu',   'to' => 'target_url' ),
-        array( 'role' => 'wire',   'from' => 'el_lo',   'to' => 'is_outbound' ),
-        array( 'role' => 'wire',   'from' => 'el_a',    'to' => 'element_anchor' ),
-        array( 'role' => 'wire',   'from' => 'el_ax',   'to' => 'anchor_x' ),
-        array( 'role' => 'wire',   'from' => 'el_ay',   'to' => 'anchor_y' ),
-        array( 'role' => 'wire',   'from' => 'c_x',     'to' => 'click_x' ),
-        array( 'role' => 'wire',   'from' => 'c_y',     'to' => 'click_y' ),
-        array( 'role' => 'wire',   'from' => 'sc_d',    'to' => 'scroll_depth' ),
-        array( 'role' => 'wire',   'from' => 'f_nm',    'to' => 'file_name' ),
-        array( 'role' => 'wire',   'from' => 'f_ext',   'to' => 'file_extension' ),
-        array( 'role' => 'wire',   'from' => 'fm_id',   'to' => 'form_id' ),
-        array( 'role' => 'wire',   'from' => 'fm_nm',   'to' => 'form_name' ),
-        array( 'role' => 'wire',   'from' => 'fm_len',  'to' => 'form_length' ),
-        array( 'role' => 'wire',   'from' => 'fm_dst',  'to' => 'form_destination' ),
-        array( 'role' => 'wire',   'from' => 'fm_stx',  'to' => 'form_submit_text' ),
-        array( 'role' => 'wire',   'from' => 'fm_ffid', 'to' => 'first_field_id' ),
-        array( 'role' => 'wire',   'from' => 'fm_ffnm', 'to' => 'first_field_name' ),
-        array( 'role' => 'wire',   'from' => 'fm_fft',  'to' => 'first_field_type' ),
-        array( 'role' => 'wire',   'from' => 'fm_ffp',  'to' => 'first_field_position' ),
-        array( 'role' => 'wire',   'from' => 'o_id',    'to' => 'ct_order_id' ),
-        array( 'role' => 'wire',   'from' => 'o_tot',   'to' => 'ct_total' ),
-        array( 'role' => 'wire',   'from' => 'o_tax',   'to' => 'ct_tax' ),
-        array( 'role' => 'wire',   'from' => 'o_shp',   'to' => 'ct_shipping' ),
-        array( 'role' => 'wire',   'from' => 'o_val',   'to' => 'ct_value' ),
-        array( 'role' => 'wire',   'from' => 'o_cur',   'to' => 'currency' ),
-        array( 'role' => 'wire',   'from' => 'o_cpn',   'to' => 'coupon' ),
-        array( 'role' => 'wire',   'from' => 'o_gw',    'to' => 'ct_gateway' ),
-        array( 'role' => 'wire',   'from' => 'o_src',   'to' => 'ct_order_source' ),
-        array( 'role' => 'wire',   'from' => 'o_items', 'to' => 'ct_line_items' ),
+        [ 'role' => 'wire',   'from' => '_v',      'to' => 'beacon_version' ],
+        [ 'role' => 'wire',   'from' => 'e_t',     'to' => 'event_type' ],
+        [ 'role' => 'wire',   'from' => 'e_sq',    'to' => 'event_seq' ],
+        [ 'role' => 'wire',   'from' => 'e_ems',   'to' => 'engagement_msec' ],
+        [ 'role' => 'wire',   'from' => 'site',    'to' => 'site_id' ],
+        [ 'role' => 'wire',   'from' => 'v_id',    'to' => 'visitor_id' ],
+        [ 'role' => 'wire',   'from' => 'v_fts',   'to' => 'fsts' ],
+        [ 'role' => 'wire',   'from' => 'v_nps',   'to' => 'num_prior_sessions' ],
+        [ 'role' => 'wire',   'from' => 'v_new',   'to' => 'is_new_visitor_created' ],
+        [ 'role' => 'wire',   'from' => 'v_cs',    'to' => 'consent_state' ],
+        [ 'role' => 'wire',   'from' => 'u_id',    'to' => 'user_id' ],
+        [ 'role' => 'wire',   'from' => 's_id',    'to' => 'session_id' ],
+        [ 'role' => 'wire',   'from' => 's_sts',   'to' => 'sts' ],
+        [ 'role' => 'wire',   'from' => 's_pts',   'to' => 'psts' ],
+        [ 'role' => 'wire',   'from' => 's_new',   'to' => 'is_new_session_start' ],
+        [ 'role' => 'wire',   'from' => 'p_l',     'to' => 'page_location' ],
+        [ 'role' => 'wire',   'from' => 'p_t',     'to' => 'page_title' ],
+        [ 'role' => 'wire',   'from' => 'p_r',     'to' => 'HTTP_REFERER' ],
+        [ 'role' => 'wire',   'from' => 'p_cg',    'to' => 'content_group' ],
+        [ 'role' => 'wire',   'from' => 'p_w',     'to' => 'page_width' ],
+        [ 'role' => 'wire',   'from' => 'p_h',     'to' => 'page_height' ],
+        [ 'role' => 'wire',   'from' => 'p_q',     'to' => 'search_term' ],
+        [ 'role' => 'wire',   'from' => 'd_sr',    'to' => 'screen_resolution' ],
+        [ 'role' => 'wire',   'from' => 'el_tg',   'to' => 'dom_element_tag' ],
+        [ 'role' => 'wire',   'from' => 'el_id',   'to' => 'dom_element_id' ],
+        [ 'role' => 'wire',   'from' => 'el_cl',   'to' => 'dom_element_class' ],
+        [ 'role' => 'wire',   'from' => 'el_nm',   'to' => 'dom_element_name' ],
+        [ 'role' => 'wire',   'from' => 'el_tx',   'to' => 'dom_element_text' ],
+        [ 'role' => 'wire',   'from' => 'el_lu',   'to' => 'target_url' ],
+        [ 'role' => 'wire',   'from' => 'el_lo',   'to' => 'is_outbound' ],
+        [ 'role' => 'wire',   'from' => 'el_a',    'to' => 'element_anchor' ],
+        [ 'role' => 'wire',   'from' => 'el_ax',   'to' => 'anchor_x' ],
+        [ 'role' => 'wire',   'from' => 'el_ay',   'to' => 'anchor_y' ],
+        [ 'role' => 'wire',   'from' => 'c_x',     'to' => 'click_x' ],
+        [ 'role' => 'wire',   'from' => 'c_y',     'to' => 'click_y' ],
+        [ 'role' => 'wire',   'from' => 'sc_d',    'to' => 'scroll_depth' ],
+        [ 'role' => 'wire',   'from' => 'f_nm',    'to' => 'file_name' ],
+        [ 'role' => 'wire',   'from' => 'f_ext',   'to' => 'file_extension' ],
+        [ 'role' => 'wire',   'from' => 'fm_id',   'to' => 'form_id' ],
+        [ 'role' => 'wire',   'from' => 'fm_nm',   'to' => 'form_name' ],
+        [ 'role' => 'wire',   'from' => 'fm_len',  'to' => 'form_length' ],
+        [ 'role' => 'wire',   'from' => 'fm_dst',  'to' => 'form_destination' ],
+        [ 'role' => 'wire',   'from' => 'fm_stx',  'to' => 'form_submit_text' ],
+        [ 'role' => 'wire',   'from' => 'fm_ffid', 'to' => 'first_field_id' ],
+        [ 'role' => 'wire',   'from' => 'fm_ffnm', 'to' => 'first_field_name' ],
+        [ 'role' => 'wire',   'from' => 'fm_fft',  'to' => 'first_field_type' ],
+        [ 'role' => 'wire',   'from' => 'fm_ffp',  'to' => 'first_field_position' ],
+        [ 'role' => 'wire',   'from' => 'o_id',    'to' => 'ct_order_id' ],
+        [ 'role' => 'wire',   'from' => 'o_tot',   'to' => 'ct_total' ],
+        [ 'role' => 'wire',   'from' => 'o_tax',   'to' => 'ct_tax' ],
+        [ 'role' => 'wire',   'from' => 'o_shp',   'to' => 'ct_shipping' ],
+        [ 'role' => 'wire',   'from' => 'o_val',   'to' => 'ct_value' ],
+        [ 'role' => 'wire',   'from' => 'o_cur',   'to' => 'currency' ],
+        [ 'role' => 'wire',   'from' => 'o_cpn',   'to' => 'coupon' ],
+        [ 'role' => 'wire',   'from' => 'o_gw',    'to' => 'ct_gateway' ],
+        [ 'role' => 'wire',   'from' => 'o_src',   'to' => 'ct_order_source' ],
+        [ 'role' => 'wire',   'from' => 'o_items', 'to' => 'ct_line_items' ],
 
         /*
          * `nps` is what 1.x and the v2 tracker before the scoped keys sent for
          * num_prior_sessions. Every other property they sent went on the wire
          * under its own name, which the gate admits as it is.
          */
-        array( 'role' => 'legacy', 'from' => 'nps',  'to' => 'num_prior_sessions' ),
+        [ 'role' => 'legacy', 'from' => 'nps',  'to' => 'num_prior_sessions' ],
 
         /*
          * page_url is v1's name for the page's URL, and v1's server CANONICALISED
@@ -192,7 +192,7 @@ return array(
          * has claimed happens since the property registry stopped declaring
          * page_url.
          */
-        array( 'role' => 'legacy', 'from' => 'page_url', 'to' => 'page_location' ),
+        [ 'role' => 'legacy', 'from' => 'page_url', 'to' => 'page_location' ],
 
         /*
          * The two identity fields that became CUSTOM USER PROPERTIES.
@@ -212,8 +212,8 @@ return array(
          * to point at the declared user_email property and now points at the
          * prefix.
          */
-        array( 'role' => 'legacy', 'from' => 'user_name',     'to' => 'vps_user_name' ),
-        array( 'role' => 'legacy', 'from' => 'email_address', 'to' => 'vps_user_email' ),
+        [ 'role' => 'legacy', 'from' => 'user_name',     'to' => 'vps_user_name' ],
+        [ 'role' => 'legacy', 'from' => 'email_address', 'to' => 'vps_user_email' ],
 
         /*
          * dsfs -> days_since_first_session and dsps -> days_since_prior_session
@@ -252,12 +252,12 @@ return array(
          * handler still exists and is still unregistered on v2 -- removing it is
          * its own decision, not a side effect of tidying the compat layer.
          */
-    ),
+    ],
 
     /*
      * ---- APPLIED ELSEWHERE, INDEXED HERE ----------------------------------
      */
-    'indexed' => array(
+    'indexed' => [
 
         /*
          * THE FLAG FALLBACK IS GONE, and it is worth saying why rather than
@@ -285,10 +285,10 @@ return array(
          * is a test that has to accept both spellings; each is a place where
          * `! $value` alone would read a legitimate zero as an absence.
          */
-        array( 'kind' => 'coercion', 'from' => '"0"', 'to' => '0',
-               'in' => 'modules/Base/Classes/TrackingEventHelpers.php', 'needle' => '$value !== 0 && $value !== "0"' ),
-        array( 'kind' => 'coercion', 'from' => '"0"', 'to' => '0',
-               'in' => 'modules/Base/Handler/EventRawHandlers.php', 'needle' => "num_prior_sessions' ) === '0'" ),
+        [ 'kind' => 'coercion', 'from' => '"0"', 'to' => '0',
+               'in' => 'modules/Base/Classes/TrackingEventHelpers.php', 'needle' => '$value !== 0 && $value !== "0"' ],
+        [ 'kind' => 'coercion', 'from' => '"0"', 'to' => '0',
+               'in' => 'modules/Base/Handler/EventRawHandlers.php', 'needle' => "num_prior_sessions' ) === '0'" ],
 
         /*
          * The two callback_passthrough entries for dsps and dsfs were here.
@@ -300,7 +300,5 @@ return array(
          * against the code in BOTH directions, which is what makes leaving a
          * stale entry here a failure rather than a comment.
          */
-    ),
-);
-
-?>
+    ],
+];

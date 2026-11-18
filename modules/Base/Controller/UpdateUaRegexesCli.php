@@ -50,12 +50,12 @@ class UpdateUaRegexesCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Downloads the latest user-agent patterns OWA identifies browsers and crawlers with, into owa-data/ua-parser/.',
-            'arguments'   => array(
+            'arguments'   => [
                 '--dry-run' => 'Report what would be downloaded, and write nothing.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function __construct( $params ) {

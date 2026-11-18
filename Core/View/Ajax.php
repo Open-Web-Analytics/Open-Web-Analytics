@@ -17,10 +17,10 @@ class Ajax extends \OWA\Core\View {
         $this->t->set_template( 'wrapper_blank.php' );
         $this->body->set_template( 'json.php' );
 
-        $this->body->set( 'json', json_encode( array(
+        $this->body->set( 'json', json_encode( [
             'data'  => $this->get( 'ajax_data' ) ?: null,
             'error' => $this->get( 'ajax_error' ) ?: null,
-        ) ) );
+        ] ) );
 
         if ( ! headers_sent() ) {
 

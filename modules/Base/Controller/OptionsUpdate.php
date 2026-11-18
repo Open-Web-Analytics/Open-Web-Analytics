@@ -78,7 +78,7 @@ class OptionsUpdate extends \OWA\Core\AdminController {
         $c = \OWA\Core\CoreAPI::configSingleton();
 
         $config_values = $this->get('config');
-        $saved = array();
+        $saved = [];
 
         if (!empty($config_values)) {
 
@@ -274,7 +274,7 @@ class OptionsUpdate extends \OWA\Core\AdminController {
 
         if ( $denylist === null ) {
 
-            $denylist = array();
+            $denylist = [];
 
             foreach ( \OWA\Module\Base\Classes\Settings::databaseStateSettings() as $m => $keys ) {
 
@@ -288,6 +288,3 @@ class OptionsUpdate extends \OWA\Core\AdminController {
     }
 
 }
-
-
-?>

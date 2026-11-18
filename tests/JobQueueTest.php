@@ -53,7 +53,7 @@ final class JobQueueTest extends TestCase
     private function row(string $id): array
     {
         return (array) \OWA\Core\CoreAPI::dbSingleton()->get_row(
-            'SELECT * FROM ' . self::TABLE . ' WHERE id = ?', array($id));
+            'SELECT * FROM ' . self::TABLE . ' WHERE id = ?', [$id]);
     }
 
     private function set(string $id, array $cols): void
@@ -61,7 +61,7 @@ final class JobQueueTest extends TestCase
         $sets = implode(', ', array_map(fn ($c) => "$c = ?", array_keys($cols)));
 
         \OWA\Core\CoreAPI::dbSingleton()->query(
-            'UPDATE ' . self::TABLE . " SET $sets WHERE id = ?", array_merge(array_values($cols), array($id)));
+            'UPDATE ' . self::TABLE . " SET $sets WHERE id = ?", array_merge(array_values($cols), [$id]));
     }
 
     private function later(int $seconds): void
@@ -72,10 +72,10 @@ final class JobQueueTest extends TestCase
     /** Drain with a runner that answers $outcome and records what it was given. */
     private function drainWith(array $outcome, array &$ran = null, int $budget = 60): array
     {
-        $ran = array();
+        $ran = [];
 
         return JobQueue::drain(JobQueue::now() + $budget, function ($command, $params, $job) use ($outcome, &$ran) {
-            $ran[] = array($command, $params, (string) $job['id']);
+            $ran[] = [$command, $params, (string) $job['id']];
 
             return $outcome;
         });
@@ -83,12 +83,12 @@ final class JobQueueTest extends TestCase
 
     public function testAJobIsQueuedPendingWithItsArgumentsAndTheDefaultPolicy(): void
     {
-        $id  = JobQueue::enqueue(self::CMD, array('site' => 'abc'));
+        $id  = JobQueue::enqueue(self::CMD, ['site' => 'abc']);
         $row = $this->row($id);
 
         $this->assertSame('pending', $row['status']);
         $this->assertSame(self::CMD, $row['command']);
-        $this->assertSame(array('site' => 'abc'), json_decode($row['params'], true));
+        $this->assertSame(['site' => 'abc'], json_decode($row['params'], true));
         $this->assertSame(3, (int) $row['max_attempts']);
         $this->assertSame(300, (int) $row['lease_seconds']);
         $this->assertSame('60,300,900', $row['backoff']);
@@ -105,15 +105,15 @@ final class JobQueueTest extends TestCase
     /** Ten saves in a minute leave one job, with the last arguments, due at the soonest. */
     public function testAPendingKeyIsUpdatedNotDuplicated(): void
     {
-        $first  = JobQueue::enqueue(self::CMD, array('n' => 1), 'k', 600);
-        $second = JobQueue::enqueue(self::CMD, array('n' => 2), 'k', 0);
-        $third  = JobQueue::enqueue(self::CMD, array('n' => 3), 'k', 900);
+        $first  = JobQueue::enqueue(self::CMD, ['n' => 1], 'k', 600);
+        $second = JobQueue::enqueue(self::CMD, ['n' => 2], 'k', 0);
+        $third  = JobQueue::enqueue(self::CMD, ['n' => 3], 'k', 900);
 
         $this->assertSame($first, $second);
         $this->assertSame($first, $third);
 
         $row = $this->row($first);
-        $this->assertSame(array('n' => 3), json_decode($row['params'], true));
+        $this->assertSame(['n' => 3], json_decode($row['params'], true));
         $this->assertLessThanOrEqual(JobQueue::now(), (int) $row['run_after'], 'a later enqueue never pushes it back');
         $this->assertSame(1, JobQueue::stats()['due']);
     }
@@ -121,7 +121,7 @@ final class JobQueueTest extends TestCase
     /** Claiming releases the key: a change made while a job runs queues one that sees it. */
     public function testAClaimedJobReleasesItsKey(): void
     {
-        $first = JobQueue::enqueue(self::CMD, array(), 'k');
+        $first = JobQueue::enqueue(self::CMD, [], 'k');
 
         $this->assertTrue(JobQueue::isQueued(self::CMD, 'k'));
 
@@ -129,7 +129,7 @@ final class JobQueueTest extends TestCase
         $this->assertSame($first, (string) $claimed['id']);
         $this->assertNull($this->row($first)['dedupe_key']);
 
-        $second = JobQueue::enqueue(self::CMD, array(), 'k');
+        $second = JobQueue::enqueue(self::CMD, [], 'k');
 
         $this->assertNotSame($first, $second);
         $this->assertSame('pending', $this->row($second)['status']);
@@ -137,7 +137,7 @@ final class JobQueueTest extends TestCase
 
     public function testADelayedJobWaitsUntilItIsDue(): void
     {
-        $id = JobQueue::enqueue(self::CMD, array(), null, 120);
+        $id = JobQueue::enqueue(self::CMD, [], null, 120);
 
         $this->assertNull(JobQueue::claim());
         $this->assertSame(1, JobQueue::stats()['delayed']);
@@ -181,16 +181,16 @@ final class JobQueueTest extends TestCase
     public function testAJobThatNeverRecordsAnOutcomeFailsAfterItsAttempts(): void
     {
         $id = JobQueue::enqueue(self::CMD);
-        $this->set($id, array('last_error' => 'the previous try said this'));
+        $this->set($id, ['last_error' => 'the previous try said this']);
 
         for ($i = 0; $i < 3; $i++) {
             $this->assertNotNull(JobQueue::claim());
             $this->later(301);
         }
 
-        $counts = $this->drainWith(array('outcome' => 'ok'), $ran);
+        $counts = $this->drainWith(['outcome' => 'ok'], $ran);
 
-        $this->assertSame(array(), $ran, 'the fourth claim does not run it');
+        $this->assertSame([], $ran, 'the fourth claim does not run it');
         $this->assertSame(1, $counts['exhausted']);
 
         $row = $this->row($id);
@@ -201,18 +201,18 @@ final class JobQueueTest extends TestCase
 
     public function testOkAndRefusedAreBothDone(): void
     {
-        $ok      = JobQueue::enqueue(self::CMD, array('a' => 1));
-        $refused = JobQueue::enqueue(self::CMD, array('a' => 2));
+        $ok      = JobQueue::enqueue(self::CMD, ['a' => 1]);
+        $refused = JobQueue::enqueue(self::CMD, ['a' => 2]);
 
-        $ran    = array();
+        $ran    = [];
         $counts = JobQueue::drain(JobQueue::now() + 600, function ($c, $params) use (&$ran) {
             $ran[] = $params['a'];
 
-            return array('outcome' => $params['a'] === 1 ? 'ok' : 'refused');
+            return ['outcome' => $params['a'] === 1 ? 'ok' : 'refused'];
         });
 
         $this->assertSame(2, $counts['done']);
-        $this->assertEqualsCanonicalizing(array(1, 2), $ran);
+        $this->assertEqualsCanonicalizing([1, 2], $ran);
         $this->assertSame('done', $this->row($ok)['status']);
         $this->assertSame('done', $this->row($refused)['status']);
         $this->assertNotNull($this->row($ok)['finished_at']);
@@ -223,7 +223,7 @@ final class JobQueueTest extends TestCase
     {
         $id = JobQueue::enqueue(self::CMD);
 
-        $counts = $this->drainWith(array('outcome' => 'failed', 'message' => 'first'));
+        $counts = $this->drainWith(['outcome' => 'failed', 'message' => 'first']);
         $row    = $this->row($id);
 
         $this->assertSame(1, $counts['retried']);
@@ -233,11 +233,11 @@ final class JobQueueTest extends TestCase
         $this->assertNull($row['lease_until']);
 
         $this->later(60);
-        $this->drainWith(array('outcome' => 'failed', 'message' => 'second'));
+        $this->drainWith(['outcome' => 'failed', 'message' => 'second']);
         $this->assertSame(JobQueue::now() + 300, (int) $this->row($id)['run_after']);
 
         $this->later(300);
-        $counts = $this->drainWith(array('outcome' => 'failed', 'message' => 'third'));
+        $counts = $this->drainWith(['outcome' => 'failed', 'message' => 'third']);
         $row    = $this->row($id);
 
         $this->assertSame(1, $counts['failed']);
@@ -250,10 +250,10 @@ final class JobQueueTest extends TestCase
     public function testTheLastBackOffStepIsReused(): void
     {
         $id = JobQueue::enqueue(self::CMD);
-        $this->set($id, array('max_attempts' => 5, 'backoff' => '10,20'));
+        $this->set($id, ['max_attempts' => 5, 'backoff' => '10,20']);
 
-        foreach (array(10, 20, 20) as $expected) {
-            $this->drainWith(array('outcome' => 'failed'));
+        foreach ([10, 20, 20] as $expected) {
+            $this->drainWith(['outcome' => 'failed']);
             $this->assertSame(JobQueue::now() + $expected, (int) $this->row($id)['run_after']);
             $this->later($expected);
         }
@@ -274,11 +274,11 @@ final class JobQueueTest extends TestCase
     public function testArgumentsThatAreNotJsonFailWithoutRunning(): void
     {
         $id = JobQueue::enqueue(self::CMD);
-        $this->set($id, array('params' => '{not json'));
+        $this->set($id, ['params' => '{not json']);
 
-        $counts = $this->drainWith(array('outcome' => 'ok'), $ran);
+        $counts = $this->drainWith(['outcome' => 'ok'], $ran);
 
-        $this->assertSame(array(), $ran);
+        $this->assertSame([], $ran);
         $this->assertSame(1, $counts['failed']);
         $this->assertSame('failed', $this->row($id)['status']);
     }
@@ -288,7 +288,7 @@ final class JobQueueTest extends TestCase
     {
         $id = JobQueue::enqueue(self::CMD);
 
-        $this->drainWith(array('outcome' => 'failed', 'message' => str_repeat('é', 5000)));
+        $this->drainWith(['outcome' => 'failed', 'message' => str_repeat('é', 5000)]);
 
         $this->assertSame(JobQueue::ERROR_LENGTH, mb_strlen($this->row($id)['last_error']));
     }
@@ -299,17 +299,17 @@ final class JobQueueTest extends TestCase
      */
     public function testOnlyAJobWhoseLeaseFitsTheRestOfTheBudgetIsClaimedAfterTheFirst(): void
     {
-        $long  = JobQueue::enqueue(self::CMD, array('n' => 'long'));
-        $short = JobQueue::enqueue(self::CMD, array('n' => 'short'));
-        $big   = JobQueue::enqueue(self::CMD, array('n' => 'big'));
+        $long  = JobQueue::enqueue(self::CMD, ['n' => 'long']);
+        $short = JobQueue::enqueue(self::CMD, ['n' => 'short']);
+        $big   = JobQueue::enqueue(self::CMD, ['n' => 'big']);
 
-        $this->set($long, array('lease_seconds' => 1000, 'run_after' => JobQueue::now() - 3));
-        $this->set($short, array('lease_seconds' => 30, 'run_after' => JobQueue::now() - 2));
-        $this->set($big, array('lease_seconds' => 100, 'run_after' => JobQueue::now() - 1));
+        $this->set($long, ['lease_seconds' => 1000, 'run_after' => JobQueue::now() - 3]);
+        $this->set($short, ['lease_seconds' => 30, 'run_after' => JobQueue::now() - 2]);
+        $this->set($big, ['lease_seconds' => 100, 'run_after' => JobQueue::now() - 1]);
 
-        $this->drainWith(array('outcome' => 'ok'), $ran, 60);
+        $this->drainWith(['outcome' => 'ok'], $ran, 60);
 
-        $this->assertSame(array('long', 'short'), array_map(fn ($r) => $r[1]['n'], $ran));
+        $this->assertSame(['long', 'short'], array_map(fn ($r) => $r[1]['n'], $ran));
         $this->assertSame('pending', $this->row($big)['status'], 'left for a run with room for it');
     }
 
@@ -318,7 +318,7 @@ final class JobQueueTest extends TestCase
         JobQueue::enqueue(self::CMD);
 
         $counts = JobQueue::drain(JobQueue::now(), function () {
-            return array('outcome' => 'ok');
+            return ['outcome' => 'ok'];
         });
 
         $this->assertSame(0, array_sum($counts));
@@ -328,9 +328,9 @@ final class JobQueueTest extends TestCase
     /** Two overlapping ticks take different jobs: the row one holds is skipped, not waited on. */
     public function testAJobLockedByAnotherConnectionIsSkipped(): void
     {
-        $a = JobQueue::enqueue(self::CMD, array('n' => 'a'));
-        $b = JobQueue::enqueue(self::CMD, array('n' => 'b'));
-        $this->set($a, array('run_after' => JobQueue::now() - 10));
+        $a = JobQueue::enqueue(self::CMD, ['n' => 'a']);
+        $b = JobQueue::enqueue(self::CMD, ['n' => 'b']);
+        $this->set($a, ['run_after' => JobQueue::now() - 10]);
 
         $other = mysqli_init();
         if (!@mysqli_real_connect($other, OWA_DB_HOST, OWA_DB_USER, OWA_DB_PASSWORD, OWA_DB_NAME, (int) OWA_DB_PORT)) {
@@ -369,10 +369,10 @@ final class JobQueueTest extends TestCase
 
     public function testAFailedJobCanBeRetriedOneOrAll(): void
     {
-        $one = JobQueue::enqueue(self::CMD, array('n' => 1));
-        $two = JobQueue::enqueue(self::CMD, array('n' => 2));
-        $this->set($one, array('status' => 'failed', 'attempts' => 3, 'last_error' => 'x', 'run_after' => 0));
-        $this->set($two, array('status' => 'failed', 'attempts' => 3, 'last_error' => 'y', 'run_after' => 0));
+        $one = JobQueue::enqueue(self::CMD, ['n' => 1]);
+        $two = JobQueue::enqueue(self::CMD, ['n' => 2]);
+        $this->set($one, ['status' => 'failed', 'attempts' => 3, 'last_error' => 'x', 'run_after' => 0]);
+        $this->set($two, ['status' => 'failed', 'attempts' => 3, 'last_error' => 'y', 'run_after' => 0]);
 
         $this->assertSame(1, JobQueue::retry($one));
 
@@ -393,41 +393,41 @@ final class JobQueueTest extends TestCase
 
         $this->assertTrue(JobQueue::forget($id));
         $this->assertFalse(JobQueue::forget($id));
-        $this->assertSame(array(), $this->row($id));
+        $this->assertSame([], $this->row($id));
     }
 
     public function testPruningKeepsDoneAWeekAndFailedAMonth(): void
     {
         $now = JobQueue::now();
-        $ids = array();
+        $ids = [];
 
-        foreach (array(
-            'old-done'    => array('done', $now - JobQueue::KEEP_DONE - 1),
-            'new-done'    => array('done', $now - JobQueue::KEEP_DONE + 60),
-            'old-failed'  => array('failed', $now - JobQueue::KEEP_FAILED - 1),
-            'new-failed'  => array('failed', $now - JobQueue::KEEP_DONE - 1),
-            'old-pending' => array('pending', null),
-        ) as $name => [$status, $finished]) {
-            $ids[$name] = JobQueue::enqueue(self::CMD, array('n' => $name));
-            $this->set($ids[$name], array('status' => $status, 'finished_at' => $finished, 'created_at' => 0));
+        foreach ([
+            'old-done'    => ['done', $now - JobQueue::KEEP_DONE - 1],
+            'new-done'    => ['done', $now - JobQueue::KEEP_DONE + 60],
+            'old-failed'  => ['failed', $now - JobQueue::KEEP_FAILED - 1],
+            'new-failed'  => ['failed', $now - JobQueue::KEEP_DONE - 1],
+            'old-pending' => ['pending', null],
+        ] as $name => [$status, $finished]) {
+            $ids[$name] = JobQueue::enqueue(self::CMD, ['n' => $name]);
+            $this->set($ids[$name], ['status' => $status, 'finished_at' => $finished, 'created_at' => 0]);
         }
 
         $this->assertSame(2, JobQueue::prune());
 
-        $this->assertSame(array(), $this->row($ids['old-done']));
-        $this->assertSame(array(), $this->row($ids['old-failed']));
-        foreach (array('new-done', 'new-failed', 'old-pending') as $kept) {
-            $this->assertNotSame(array(), $this->row($ids[$kept]), $kept);
+        $this->assertSame([], $this->row($ids['old-done']));
+        $this->assertSame([], $this->row($ids['old-failed']));
+        foreach (['new-done', 'new-failed', 'old-pending'] as $kept) {
+            $this->assertNotSame([], $this->row($ids[$kept]), $kept);
         }
     }
 
     public function testStatsCountEachStateAndTheOldestDueAge(): void
     {
-        $due     = JobQueue::enqueue(self::CMD, array('n' => 1));
-        $delayed = JobQueue::enqueue(self::CMD, array('n' => 2), null, 600);
-        $failed  = JobQueue::enqueue(self::CMD, array('n' => 3));
-        $this->set($due, array('run_after' => JobQueue::now() - 90));
-        $this->set($failed, array('status' => 'failed'));
+        $due     = JobQueue::enqueue(self::CMD, ['n' => 1]);
+        $delayed = JobQueue::enqueue(self::CMD, ['n' => 2], null, 600);
+        $failed  = JobQueue::enqueue(self::CMD, ['n' => 3]);
+        $this->set($due, ['run_after' => JobQueue::now() - 90]);
+        $this->set($failed, ['status' => 'failed']);
 
         $stats = JobQueue::stats();
 
@@ -437,7 +437,7 @@ final class JobQueueTest extends TestCase
         $this->assertSame(0, $stats['running']);
         $this->assertSame(90, $stats['oldest_due_age']);
 
-        $this->assertSame(array((string) $failed), array_map(fn ($r) => (string) $r['id'], JobQueue::listJobs('failed')));
+        $this->assertSame([(string) $failed], array_map(fn ($r) => (string) $r['id'], JobQueue::listJobs('failed')));
         $this->assertCount(3, JobQueue::listJobs());
     }
 
@@ -450,7 +450,7 @@ final class JobQueueTest extends TestCase
     /** A running job is queued for its command; its key it has released. */
     public function testIsQueuedSeesARunningJobByCommand(): void
     {
-        JobQueue::enqueue(self::CMD, array(), 'k');
+        JobQueue::enqueue(self::CMD, [], 'k');
         JobQueue::claim();
 
         $this->assertTrue(JobQueue::isQueued(self::CMD));
@@ -470,7 +470,7 @@ final class JobQueueTest extends TestCase
         (new JobQueueLease($id, 300))->refresh(900);
         $this->assertSame(JobQueue::now() + 900, (int) $this->row($id)['lease_until']);
 
-        $this->set($id, array('status' => 'done', 'lease_until' => null));
+        $this->set($id, ['status' => 'done', 'lease_until' => null]);
         (new JobQueueLease($id, 300))->refresh(900);
         $this->assertNull($this->row($id)['lease_until'], 'a finished job is not revived');
     }

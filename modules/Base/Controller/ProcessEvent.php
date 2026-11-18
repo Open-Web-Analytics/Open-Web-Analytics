@@ -211,5 +211,3 @@ class ProcessEvent extends \OWA\Core\Controller {
         return \OWA\Core\CoreAPI::isTrackingEventType( $this->event->getEventType() );
     }
 }
-
-?>

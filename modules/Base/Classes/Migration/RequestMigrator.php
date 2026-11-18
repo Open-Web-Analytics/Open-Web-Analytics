@@ -59,11 +59,11 @@ class RequestMigrator extends FactMigrator {
      */
     protected function entries( array $session_ids ) {
 
-        $ids = array_values( array_unique( array_filter( array_map( 'strval', $session_ids ), array( __CLASS__, 'isId' ) ) ) );
+        $ids = array_values( array_unique( array_filter( array_map( 'strval', $session_ids ), [ __CLASS__, 'isId' ] ) ) );
 
         if ( ! $ids ) {
 
-            return array();
+            return [];
         }
 
         $integer = $this->integerColumn( self::SOURCE, 'session_id' );
@@ -72,9 +72,9 @@ class RequestMigrator extends FactMigrator {
             'SELECT session_id, id, timestamp, visitor_id, yyyymmdd FROM %s WHERE session_id IN (%s)',
             $this->v1Table( self::SOURCE ),
             $integer ? implode( ',', $ids ) : implode( ',', array_fill( 0, count( $ids ), '?' ) ) ),
-            $integer ? array() : $ids );
+            $integer ? [] : $ids );
 
-        $first = array();
+        $first = [];
 
         foreach ( $rows as $row ) {
 
@@ -86,15 +86,15 @@ class RequestMigrator extends FactMigrator {
             }
 
             $sid = (string) $row['session_id'];
-            $key = array( (int) $row['timestamp'], (int) $row['id'] );
+            $key = [ (int) $row['timestamp'], (int) $row['id'] ];
 
             if ( ! isset( $first[ $sid ] ) || $key < $first[ $sid ]['key'] ) {
 
-                $first[ $sid ] = array( 'key' => $key, 'id' => (string) $row['id'] );
+                $first[ $sid ] = [ 'key' => $key, 'id' => (string) $row['id'] ];
             }
         }
 
-        return array_map( function ( $f ) { return array( 'id' => $f['id'], 'ts' => $f['key'][0] ); }, $first );
+        return array_map( function ( $f ) { return [ 'id' => $f['id'], 'ts' => $f['key'][0] ]; }, $first );
     }
 
     protected function events( array $r, array $refs ) {
@@ -106,15 +106,13 @@ class RequestMigrator extends FactMigrator {
         // is_new_visitor is not read.
         $new_visitor = ( $refs['prior_sessions'][ $sid ] ?? null ) === 0;
 
-        $event = $this->baseEvent( $r, $refs, 'page_view', array(
+        $event = $this->baseEvent( $r, $refs, 'page_view', [
             'is_new_session_start'   => $is_entry,
             'is_new_visitor_created' => $is_entry && $new_visitor,
-        ) );
+        ] );
 
-        $events = \OWA\Module\Base\Classes\MaterializedEvents::sessionStart( array( $event ) );
+        $events = \OWA\Module\Base\Classes\MaterializedEvents::sessionStart( [ $event ] );
 
         return \OWA\Module\Base\Classes\MaterializedEvents::firstVisit( $events );
     }
 }
-
-?>

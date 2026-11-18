@@ -78,7 +78,7 @@ class Update081 extends \OWA\Core\Update {
         $funnels = $this->v1FunnelProperties();
         $live    = $this->liveProperties();
         $first   = $this->firstProperty();
-        $seen    = array();
+        $seen    = [];
 
         foreach ( $rows as $row ) {
 
@@ -103,7 +103,7 @@ class Update081 extends \OWA\Core\Update {
             }
 
             $ok = $db->query( sprintf( 'UPDATE %s SET property_id = ? WHERE id = ? AND ( property_id IS NULL OR property_id = 0 )',
-                $table ), array( $assignment['property_id'], $id ) );
+                $table ), [ $assignment['property_id'], $id ] );
 
             if ( $ok === false ) {
 
@@ -148,20 +148,20 @@ class Update081 extends \OWA\Core\Update {
 
         if ( isset( $funnels[ (string) $id ] ) && (string) $funnels[ (string) $id ] !== '' ) {
 
-            return array( 'property_id' => (string) $funnels[ (string) $id ],
-                'reason' => 'the Property of the Profile its 1.x funnel was of' );
+            return [ 'property_id' => (string) $funnels[ (string) $id ],
+                'reason' => 'the Property of the Profile its 1.x funnel was of' ];
         }
 
         $owners = array_values( array_unique( array_map( 'strval', $owners ) ) );
 
         if ( count( $owners ) === 1 ) {
 
-            return array( 'property_id' => $owners[0], 'reason' => 'the one Property its creator may see' );
+            return [ 'property_id' => $owners[0], 'reason' => 'the one Property its creator may see' ];
         }
 
-        return array( 'property_id' => (string) $first, 'reason' => count( $owners )
+        return [ 'property_id' => (string) $first, 'reason' => count( $owners )
             ? sprintf( "the install's first Property, as its creator may see %d", count( $owners ) )
-            : "the install's first Property, as its creator may see none" );
+            : "the install's first Property, as its creator may see none" ];
     }
 
     /**
@@ -173,7 +173,7 @@ class Update081 extends \OWA\Core\Update {
     private function v1FunnelProperties() {
 
         $db  = \OWA\Core\CoreAPI::dbSingleton();
-        $out = array();
+        $out = [];
 
         $rows = (array) $db->get_results( sprintf(
             "SELECT g.scope_id, g.value, s.property_id FROM %s g JOIN %s s ON s.site_id = g.scope_id"
@@ -190,7 +190,7 @@ class Update081 extends \OWA\Core\Update {
                 continue;
             }
 
-            $goals = @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+            $goals = @unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
 
             if ( ! is_array( $goals ) ) {
 
@@ -231,7 +231,7 @@ class Update081 extends \OWA\Core\Update {
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        foreach ( array( 'WHERE archived_date IS NULL OR archived_date = 0', '' ) as $where ) {
+        foreach ( [ 'WHERE archived_date IS NULL OR archived_date = 0', '' ] as $where ) {
 
             $row = (array) $db->get_row( sprintf( 'SELECT id FROM %s %s ORDER BY COALESCE(creation_date, 0), id LIMIT 1',
                 $this->tableFor( 'property' ), $where ) );
@@ -259,11 +259,11 @@ class Update081 extends \OWA\Core\Update {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $user = (array) $db->get_row( sprintf( 'SELECT id, role FROM %s WHERE user_id = ?', $this->tableFor( 'user' ) ),
-            array( (string) $user_id ) );
+            [ (string) $user_id ] );
 
         if ( empty( $user['id'] ) ) {
 
-            return array();
+            return [];
         }
 
         if ( (string) $user['role'] === 'admin' ) {
@@ -274,9 +274,9 @@ class Update081 extends \OWA\Core\Update {
         $rows = (array) $db->get_results( sprintf(
             'SELECT DISTINCT s.property_id FROM %s su JOIN %s s ON s.id = su.site_id'
             . ' WHERE su.user_id = ? AND ( s.archived_date IS NULL OR s.archived_date = 0 )',
-            $this->tableFor( 'site_user' ), $this->tableFor( 'site' ) ), array( $user['id'] ) );
+            $this->tableFor( 'site_user' ), $this->tableFor( 'site' ) ), [ $user['id'] ] );
 
-        $out = array();
+        $out = [];
 
         foreach ( $rows as $row ) {
 
@@ -291,5 +291,3 @@ class Update081 extends \OWA\Core\Update {
         return $out;
     }
 }
-
-?>

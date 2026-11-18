@@ -59,5 +59,3 @@ class owa extends \OWA\Core\Caller {
         return self::$instance;
     }
 }
-
-?>

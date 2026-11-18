@@ -92,7 +92,7 @@ class EventPredicate {
      * @param array<string, string> $customColumns the Property's applied custom dimensions,
      *                                       column => label (customColumnsFor())
      */
-    public function __construct( $indexPages = null, array $customColumns = array() ) {
+    public function __construct( $indexPages = null, array $customColumns = [] ) {
 
         $this->indexPages    = $indexPages === null ? null : \OWA\Module\Base\Classes\V2Event::indexPageNames( $indexPages );
         $this->customColumns = $customColumns;
@@ -162,18 +162,18 @@ class EventPredicate {
 
         if ( $event === '' ) {
 
-            return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+            return [ 'sql' => '( 0 = 1 )', 'params' => [] ];
         }
 
         if ( ! $conditions ) {
 
-            return array( 'sql' => '( ' . $alias . '.event_type = ? )', 'params' => array( $event ) );
+            return [ 'sql' => '( ' . $alias . '.event_type = ? )', 'params' => [ $event ] ];
         }
 
         $any = (string) $match === \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_ANY;
 
-        $parts  = array();
-        $params = array();
+        $parts  = [];
+        $params = [];
 
         foreach ( $conditions as $condition ) {
 
@@ -216,11 +216,11 @@ class EventPredicate {
             $params   = array_merge( $params, $compiled['params'] );
         }
 
-        return array(
+        return [
             'sql'    => '( ' . $alias . '.event_type = ? AND ( '
                         . implode( $any ? ' OR ' : ' AND ', $parts ) . ' ) )',
-            'params' => array_merge( array( $event ), $params ),
-        );
+            'params' => array_merge( [ $event ], $params ),
+        ];
     }
 
     /**
@@ -236,7 +236,7 @@ class EventPredicate {
         $E = \OWA\Module\Base\Entity\GoalEventDefinition::class;
 
         if ( $this->indexPages === null || $property !== 'page_path'
-             || ! in_array( $operator, array( constant( $E . '::MATCH_EXACT' ), constant( $E . '::MATCH_NOT' ) ), true ) ) {
+             || ! in_array( $operator, [ constant( $E . '::MATCH_EXACT' ), constant( $E . '::MATCH_NOT' ) ], true ) ) {
 
             return $value;
         }
@@ -308,7 +308,7 @@ class EventPredicate {
         switch ( $operator ) {
 
             case constant( $E . '::MATCH_NOT' ):
-                return array( 'sql' => $col . ' <> ?', 'params' => array( $value ) );
+                return [ 'sql' => $col . ' <> ?', 'params' => [ $value ] ];
 
             case constant( $E . '::MATCH_CONTAINS' ):
 
@@ -325,31 +325,31 @@ class EventPredicate {
                  */
                 if ( $value === '' ) {
 
-                    return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+                    return [ 'sql' => '( 0 = 1 )', 'params' => [] ];
                 }
 
-                return array( 'sql' => sprintf( OWA_SQL_CONTAINS, '?', $col ),
-                              'params' => array( $value ) );
+                return [ 'sql' => sprintf( OWA_SQL_CONTAINS, '?', $col ),
+                              'params' => [ $value ] ];
 
             case constant( $E . '::MATCH_BEGINS' ):
 
                 if ( $value === '' ) {
 
-                    return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+                    return [ 'sql' => '( 0 = 1 )', 'params' => [] ];
                 }
 
-                return array( 'sql' => sprintf( OWA_SQL_STARTS_WITH, '?', $col ),
-                              'params' => array( $value ) );
+                return [ 'sql' => sprintf( OWA_SQL_STARTS_WITH, '?', $col ),
+                              'params' => [ $value ] ];
 
             case constant( $E . '::MATCH_REGEX' ):
 
                 if ( $value === '' ) {
 
-                    return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+                    return [ 'sql' => '( 0 = 1 )', 'params' => [] ];
                 }
 
-                return array( 'sql' => $col . ' ' . OWA_SQL_REGEXP . ' ?',
-                              'params' => array( $value ) );
+                return [ 'sql' => $col . ' ' . OWA_SQL_REGEXP . ' ?',
+                              'params' => [ $value ] ];
 
             case constant( $E . '::MATCH_GT' ):
             case constant( $E . '::MATCH_LT' ):
@@ -367,18 +367,18 @@ class EventPredicate {
                  */
                 if ( ! is_numeric( $value ) ) {
 
-                    return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+                    return [ 'sql' => '( 0 = 1 )', 'params' => [] ];
                 }
 
-                return array(
+                return [
                     'sql' => sprintf(
                         '( %s REGEXP \'^[-+]?[0-9]*\\\\.?[0-9]+$\' AND CAST( %s AS DECIMAL(30,10) ) %s ? )',
                         $col, $col,
                         $operator === constant( $E . '::MATCH_GT' ) ? '>' : '<' ),
-                    'params' => array( $value ) );
+                    'params' => [ $value ] ];
 
             case constant( $E . '::MATCH_EXACT' ):
-                return array( 'sql' => $col . ' = ?', 'params' => array( $value ) );
+                return [ 'sql' => $col . ' = ?', 'params' => [ $value ] ];
 
             default:
                 /*
@@ -388,7 +388,7 @@ class EventPredicate {
                  * make a definition-backed predicate disagree with the goal
                  * event count on exactly the definitions already malformed.
                  */
-                return array( 'sql' => '( 0 = 1 )', 'params' => array() );
+                return [ 'sql' => '( 0 = 1 )', 'params' => [] ];
         }
     }
 }

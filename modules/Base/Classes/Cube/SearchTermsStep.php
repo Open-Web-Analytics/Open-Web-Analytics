@@ -38,7 +38,7 @@ class SearchTermsStep extends ComputeStep {
 
     public function reads() {
 
-        return array( 'referer_host', 'referer_query', 'tagged_search_terms' );
+        return [ 'referer_host', 'referer_query', 'tagged_search_terms' ];
     }
 
     public function when() {
@@ -48,16 +48,16 @@ class SearchTermsStep extends ComputeStep {
          * would stream the partition through PHP, having moved the problem
          * rather than solved it.
          */
-        return array(
-            array( 'tagged_search_terms', 'is null' ),
-            array( 'referer_query', 'is not null' ),
-            array( 'referer_host', 'is not null' ),
-        );
+        return [
+            [ 'tagged_search_terms', 'is null' ],
+            [ 'referer_query', 'is not null' ],
+            [ 'referer_host', 'is not null' ],
+        ];
     }
 
     public function sessionReads() {
 
-        return array( 'tagged_search_terms' );
+        return [ 'tagged_search_terms' ];
     }
 
     public function fallback( Context $context ) {
@@ -110,7 +110,7 @@ class SearchTermsStep extends ComputeStep {
         if ( $this->engines === null ) {
 
             $this->engines = (array) call_user_func(
-                array( '\OWA\Module\Base\Classes\TrackingEventHelpers', 'getSearchEngineList' ) );
+                [ '\OWA\Module\Base\Classes\TrackingEventHelpers', 'getSearchEngineList' ] );
         }
 
         foreach ( $this->engines as $engine ) {
@@ -129,5 +129,3 @@ class SearchTermsStep extends ComputeStep {
         return null;
     }
 }
-
-?>

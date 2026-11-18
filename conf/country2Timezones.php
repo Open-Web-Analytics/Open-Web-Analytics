@@ -1,5 +1,5 @@
 <?php
-return array(
+return [
 
     /*
      * UTC is not a country, so it has no place in a country-keyed list -- and
@@ -12,10 +12,10 @@ return array(
      * under whichever country happens to sort first. Only the two timezone
      * pickers read this file, so a non-country key affects nothing else.
      */
-    "UTC"   => array(
-        0       => "UTC"),
+    "UTC"   => [
+        0       => "UTC"],
 
-    "US"    => array(
+    "US"    => [
         "AL"    => "America/Chicago",
         "AK"    => "America/Anchorage",
         "AZ"    => "America/Phoenix",
@@ -23,9 +23,9 @@ return array(
           "CO"    => "America/Denver",
           "CT"    => "America/New_York",
           "HI"    => "Pacific/Honolulu",
-          "IN"    => "America/Indianapolis"),
+          "IN"    => "America/Indianapolis"],
 
-    "CA"    => array(
+    "CA"    => [
         "AB"    => "America/Edmonton",
         "BC"    => "America/Vancouver",
         "MB"    => "America/Winnipeg",
@@ -36,9 +36,9 @@ return array(
         "ON"    => "America/Rainy_River",
         "QC"    => "America/Montreal",
         "SK"    => "America/Regina",
-        "YT"    => "America/Whitehorse"),
+        "YT"    => "America/Whitehorse"],
 
-    "AU"    => array(
+    "AU"    => [
         "01"    => "Australia/Canberra",
         "02"    => "Australia/NSW",
         "03"    => "Australia/North",
@@ -46,615 +46,615 @@ return array(
         "05"    => "Australia/South",
         "06"    => "Australia/Tasmania",
         "07"    => "Australia/Victoria",
-        "08"    => "Australia/West"),
+        "08"    => "Australia/West"],
 
-    "AS"    => array(
-        0         => "US/Samoa"),
-    "CI"    => array(
-        0         => "Africa/Abidjan"),
-    "GH"    => array(
-        0         =>    "Africa/Accra"),
-    "DZ"    => array(
-        0        => "Africa/Algiers"),
-    "ER"    => array(
-        0        => "Africa/Asmera"),
-    "ML"    => array(
-        0        => "Africa/Bamako"),
-    "CF"    => array(
-        0        => "Africa/Bangui"),
-    "GM"    => array(
-        0        => "Africa/Banjul"),
-    "GW"    => array(
-        0        => "Africa/Bissau"),
-    "CG"    => array(
-        0        => "Africa/Brazzaville"),
-    "BI"    => array(
-        0        => "Africa/Bujumbura"),
-    "EG"    => array(
-        0        => "Africa/Cairo"),
-    "MA"    => array(
-        0        => "Africa/Casablanca"),
-    "GN"    =>    array(
-        0        => "Africa/Conakry"),
-    "SN"    =>    array(
-        0        => "Africa/Dakar"),
-    "DJ"    =>    array(
-        0        => "Africa/Djibouti"),
-    "SL"    =>    array(
-        0        => "Africa/Freetown"),
-    "BW"    =>    array(
-        0        => "Africa/Gaborone"),
-    "ZW"    => array(
-        0        => "Africa/Harare"),
-    "ZA"    => array(
-        0        => "Africa/Johannesburg"),
-    "UG"    => array(
-        0        => "Africa/Kampala"),
-    "SD"    => array(
-        0        => "Africa/Khartoum"),
-    "RW"    => array(
-        0        => "Africa/Kigali"),
-    "NG"    =>    array(
-        0        => "Africa/Lagos"),
-    "GA"    => array(
-        0         => "Africa/Libreville"),
-    "TG"    => array(
-        0        => "Africa/Lome"),
-    "AO"    => array(
-        0        => "Africa/Luanda"),
-    "ZM"    => array(
-        0        => "Africa/Lusaka"),
-    "GQ"    => array(
-        0        => "Africa/Malabo"),
-    "LS"    =>    array(
-        0        => "Africa/Maseru"),
-    "SZ"    => array(
-        0        => "Africa/Mbabane"),
-    "SO"    => array(
-        0        =>    "Africa/Mogadishu"),
-    "KE"    =>    array(
-        0        => "Africa/Nairobi"),
-    "TD"    => array(
-        0        => "Africa/Ndjamena"),
-    "MR"    => array(
-        0        => "Africa/Nouakchott"),
-    "BF"    => array(
-        0        => "Africa/Ouagadougou"),
-    "ST"    => array(
-        0        => "Africa/Sao_Tome"),
-    "LY"    => array(
-        0        => "Africa/Tripoli"),
-    "TN"    => array(
-        0        => "Africa/Tunis"),
-    "AI"    => array(
-        0        => "America/Anguilla"),
-    "AG"    => array(
-        0        => "America/Antigua"),
-    "AW"    => array(
-        0        => "America/Aruba"),
-    "BB"    => array(
-        0        => "America/Barbados"),
-     
-     "BZ"    => array(
-        0       => "America/Belize"),
-     
-    "CO"   => array(
-        0       => "America/Bogota"),
-     
-     "VE"   => array(
-        0       => "America/Caracas"),
-     
-     "KY"   => array(
-        0       => "America/Cayman"),
-     
-     "CR"   => array(
-        0       => "America/Costa_Rica"),
+    "AS"    => [
+        0         => "US/Samoa"],
+    "CI"    => [
+        0         => "Africa/Abidjan"],
+    "GH"    => [
+        0         =>    "Africa/Accra"],
+    "DZ"    => [
+        0        => "Africa/Algiers"],
+    "ER"    => [
+        0        => "Africa/Asmera"],
+    "ML"    => [
+        0        => "Africa/Bamako"],
+    "CF"    => [
+        0        => "Africa/Bangui"],
+    "GM"    => [
+        0        => "Africa/Banjul"],
+    "GW"    => [
+        0        => "Africa/Bissau"],
+    "CG"    => [
+        0        => "Africa/Brazzaville"],
+    "BI"    => [
+        0        => "Africa/Bujumbura"],
+    "EG"    => [
+        0        => "Africa/Cairo"],
+    "MA"    => [
+        0        => "Africa/Casablanca"],
+    "GN"    =>    [
+        0        => "Africa/Conakry"],
+    "SN"    =>    [
+        0        => "Africa/Dakar"],
+    "DJ"    =>    [
+        0        => "Africa/Djibouti"],
+    "SL"    =>    [
+        0        => "Africa/Freetown"],
+    "BW"    =>    [
+        0        => "Africa/Gaborone"],
+    "ZW"    => [
+        0        => "Africa/Harare"],
+    "ZA"    => [
+        0        => "Africa/Johannesburg"],
+    "UG"    => [
+        0        => "Africa/Kampala"],
+    "SD"    => [
+        0        => "Africa/Khartoum"],
+    "RW"    => [
+        0        => "Africa/Kigali"],
+    "NG"    =>    [
+        0        => "Africa/Lagos"],
+    "GA"    => [
+        0         => "Africa/Libreville"],
+    "TG"    => [
+        0        => "Africa/Lome"],
+    "AO"    => [
+        0        => "Africa/Luanda"],
+    "ZM"    => [
+        0        => "Africa/Lusaka"],
+    "GQ"    => [
+        0        => "Africa/Malabo"],
+    "LS"    =>    [
+        0        => "Africa/Maseru"],
+    "SZ"    => [
+        0        => "Africa/Mbabane"],
+    "SO"    => [
+        0        =>    "Africa/Mogadishu"],
+    "KE"    =>    [
+        0        => "Africa/Nairobi"],
+    "TD"    => [
+        0        => "Africa/Ndjamena"],
+    "MR"    => [
+        0        => "Africa/Nouakchott"],
+    "BF"    => [
+        0        => "Africa/Ouagadougou"],
+    "ST"    => [
+        0        => "Africa/Sao_Tome"],
+    "LY"    => [
+        0        => "Africa/Tripoli"],
+    "TN"    => [
+        0        => "Africa/Tunis"],
+    "AI"    => [
+        0        => "America/Anguilla"],
+    "AG"    => [
+        0        => "America/Antigua"],
+    "AW"    => [
+        0        => "America/Aruba"],
+    "BB"    => [
+        0        => "America/Barbados"],
+     
+     "BZ"    => [
+        0       => "America/Belize"],
+     
+    "CO"   => [
+        0       => "America/Bogota"],
+     
+     "VE"   => [
+        0       => "America/Caracas"],
+     
+     "KY"   => [
+        0       => "America/Cayman"],
+     
+     "CR"   => [
+        0       => "America/Costa_Rica"],
      
-     "DM"   => array(
-            0           => "America/Dominica"),
+     "DM"   => [
+            0           => "America/Dominica"],
      
-     "SV"   => array(
-        0           => "America/El_Salvador"),
+     "SV"   => [
+        0           => "America/El_Salvador"],
      
-     "GD"   => array(
-        0           => "America/Grenada"),
+     "GD"   => [
+        0           => "America/Grenada"],
      
-     "FR"   => array(
-        0           => "Europe/Paris"),
+     "FR"   => [
+        0           => "Europe/Paris"],
      
-     "GP"   => array(
-        0           => "America/Guadeloupe"),
+     "GP"   => [
+        0           => "America/Guadeloupe"],
      
-     "GT"   => array(
-        0           => "America/Guatemala"),
+     "GT"   => [
+        0           => "America/Guatemala"],
      
-     "GY"   => array(
-        0           => "America/Guyana"),
+     "GY"   => [
+        0           => "America/Guyana"],
      
-     "CU"   => array(
-        0           => "America/Havana"),
+     "CU"   => [
+        0           => "America/Havana"],
      
-     "JM"   => array(
-        0           => "America/Jamaica"),
+     "JM"   => [
+        0           => "America/Jamaica"],
      
-     "BO"   => array(
-        0           => "America/La_Paz"),
+     "BO"   => [
+        0           => "America/La_Paz"],
      
-     "PE"   => array(
-        0           => "America/Lima"),
+     "PE"   => [
+        0           => "America/Lima"],
      
-     "NI"   => array(
-        0           => "America/Managua"),
+     "NI"   => [
+        0           => "America/Managua"],
      
-     "MQ"   => array(
-        0           => "America/Martinique"),
+     "MQ"   => [
+        0           => "America/Martinique"],
      
-     "UY"   => array(
-        0           => "America/Montevideo"),
+     "UY"   => [
+        0           => "America/Montevideo"],
      
-     "MS"   => array(
-        0           => "America/Montserrat"),
+     "MS"   => [
+        0           => "America/Montserrat"],
      
-    "BS"   => array(
-        0           => "America/Nassau"),
+    "BS"   => [
+        0           => "America/Nassau"],
      
-     "PA"   => array(
-        0           => "America/Panama"),
+     "PA"   => [
+        0           => "America/Panama"],
      
-     "SR"   => array(
-        0           => "America/Paramaribo"),
+     "SR"   => [
+        0           => "America/Paramaribo"],
      
-     "PR"   => array(
-        0           => "America/Puerto_Rico"),
+     "PR"   => [
+        0           => "America/Puerto_Rico"],
      
-     "KN"   => array(
-        0           => "America/St_Kitts"),
+     "KN"   => [
+        0           => "America/St_Kitts"],
      
-     "LC"   => array(
-        0           => "America/St_Lucia"),
+     "LC"   => [
+        0           => "America/St_Lucia"],
      
-     "VC"   => array(
-        0           => "America/St_Vincent"),
+     "VC"   => [
+        0           => "America/St_Vincent"],
      
-     "HN"   => array(
-        0           => "America/Tegucigalpa"),
+     "HN"   => [
+        0           => "America/Tegucigalpa"],
      
-     "YE"   => array(
-        0           => "Asia/Aden"),
+     "YE"   => [
+        0           => "Asia/Aden"],
      
-     "JO"   => array(
-        0           => "Asia/Amman"),
+     "JO"   => [
+        0           => "Asia/Amman"],
      
-     "TM"   => array(
-        0           => "Asia/Ashgabat"),
+     "TM"   => [
+        0           => "Asia/Ashgabat"],
      
-     "IQ"   => array(
-        0           => "Asia/Baghdad"),
+     "IQ"   => [
+        0           => "Asia/Baghdad"],
      
-     "BH"   => array(
-        0           => "Asia/Bahrain"),
+     "BH"   => [
+        0           => "Asia/Bahrain"],
      
-     "AZ"   => array(
-        0           => "Asia/Baku"),
+     "AZ"   => [
+        0           => "Asia/Baku"],
      
-     "TH"   => array(
-        0           => "Asia/Bangkok"),
+     "TH"   => [
+        0           => "Asia/Bangkok"],
      
-     "LB"   => array(
-        0           => "Asia/Beirut"),
+     "LB"   => [
+        0           => "Asia/Beirut"],
      
-     "KG"   => array(
-        0           => "Asia/Bishkek"),
+     "KG"   => [
+        0           => "Asia/Bishkek"],
      
-     "BN"   => array(
-        0           => "Asia/Brunei"),
+     "BN"   => [
+        0           => "Asia/Brunei"],
      
-     "IN"   => array(
-        0           => "Asia/Calcutta"),
+     "IN"   => [
+        0           => "Asia/Calcutta"],
      
-     "MN"   => array(
-        0           => "Asia/Choibalsan"),
+     "MN"   => [
+        0           => "Asia/Choibalsan"],
      
-     "LK"   => array(
-        0           => "Asia/Colombo"),
+     "LK"   => [
+        0           => "Asia/Colombo"],
      
-     "BD"   => array(
-        0           => "Asia/Dhaka"),
+     "BD"   => [
+        0           => "Asia/Dhaka"],
      
-     "AE"   => array(
-        0           => "Asia/Dubai"),
+     "AE"   => [
+        0           => "Asia/Dubai"],
      
-     "TJ"   => array(
-        0           => "Asia/Dushanbe"),
+     "TJ"   => [
+        0           => "Asia/Dushanbe"],
      
-     "HK"   => array(
-        0           => "Asia/Hong_Kong"),
+     "HK"   => [
+        0           => "Asia/Hong_Kong"],
      
-     "TR"   => array(
-        0           => "Europe/Istanbul"),
+     "TR"   => [
+        0           => "Europe/Istanbul"],
      
-     "IL"   => array(
-        0           => "Asia/Jerusalem"),
+     "IL"   => [
+        0           => "Asia/Jerusalem"],
      
-     "AF"   => array(
-        0           => "Asia/Kabul"),
+     "AF"   => [
+        0           => "Asia/Kabul"],
      
-     "PK"   => array(
-        0           => "Asia/Karachi"),
+     "PK"   => [
+        0           => "Asia/Karachi"],
      
-     "NP"   => array(
-        0           => "Asia/Katmandu"),
+     "NP"   => [
+        0           => "Asia/Katmandu"],
      
-     "KW"   => array(
-        0           => "Asia/Kuwait"),
+     "KW"   => [
+        0           => "Asia/Kuwait"],
      
-     "MO"   => array(
-        0           => "Asia/Macao"),
+     "MO"   => [
+        0           => "Asia/Macao"],
      
-     "PH"   => array(
-        0           => "Asia/Manila"),
+     "PH"   => [
+        0           => "Asia/Manila"],
      
-     "OM"   => array(
-        0           => "Asia/Muscat"),
+     "OM"   => [
+        0           => "Asia/Muscat"],
      
-     "CY"   => array(
-        0           => "Asia/Nicosia"),
+     "CY"   => [
+        0           => "Asia/Nicosia"],
      
-     "KP"   => array(
-        0           => "Asia/Pyongyang"),
+     "KP"   => [
+        0           => "Asia/Pyongyang"],
      
-     "QA"   => array(
-        0           => "Asia/Qatar"),
+     "QA"   => [
+        0           => "Asia/Qatar"],
      
-     "MM"   => array(
-        0           => "Asia/Rangoon"),
+     "MM"   => [
+        0           => "Asia/Rangoon"],
      
-     "SA"   => array(
-        0           => "Asia/Riyadh"),
+     "SA"   => [
+        0           => "Asia/Riyadh"],
      
-     "KR"   => array(
-        0           => "Asia/Seoul"),
+     "KR"   => [
+        0           => "Asia/Seoul"],
      
-     "SG"   => array(
-        0           => "Asia/Singapore"),
+     "SG"   => [
+        0           => "Asia/Singapore"],
      
-     "TW"   => array(
-        0           => "Asia/Taipei"),
+     "TW"   => [
+        0           => "Asia/Taipei"],
      
-     "GE"   => array(
-        0           => "Asia/Tbilisi"),
+     "GE"   => [
+        0           => "Asia/Tbilisi"],
      
-    "BT"   => array(
-        0           => "Asia/Thimphu"),
+    "BT"   => [
+        0           => "Asia/Thimphu"],
      
-     "JP"   => array(
-        0           => "Asia/Tokyo"),
+     "JP"   => [
+        0           => "Asia/Tokyo"],
      
-     "LA"   => array(
-        0           => "Asia/Vientiane"),
+     "LA"   => [
+        0           => "Asia/Vientiane"],
      
-     "AM"   => array(
-        0           => "Asia/Yerevan"),
+     "AM"   => [
+        0           => "Asia/Yerevan"],
      
-     "BM"   => array(
-        0           => "Atlantic/Bermuda"),
+     "BM"   => [
+        0           => "Atlantic/Bermuda"],
      
-     "CV"   => array(
-        0           => "Atlantic/Cape_Verde"),
+     "CV"   => [
+        0           => "Atlantic/Cape_Verde"],
      
-     "FO"   => array(
-        0           => "Atlantic/Faeroe"),
+     "FO"   => [
+        0           => "Atlantic/Faeroe"],
      
-     "IS"   => array(
-        0           => "Atlantic/Reykjavik"),
+     "IS"   => [
+        0           => "Atlantic/Reykjavik"],
      
-     "GS"   => array(
-        0           => "Atlantic/South_Georgia"),
+     "GS"   => [
+        0           => "Atlantic/South_Georgia"],
      
-     "SH"   => array(
-        0           => "Atlantic/St_Helena"),
+     "SH"   => [
+        0           => "Atlantic/St_Helena"],
      
-     "CL"   => array(
-        0           => "Chile/Continental"),
+     "CL"   => [
+        0           => "Chile/Continental"],
      
-     "NL"   => array(
-        0           => "Europe/Amsterdam"),
+     "NL"   => [
+        0           => "Europe/Amsterdam"],
      
-     "AD"   => array(
-        0           => "Europe/Andorra"),
+     "AD"   => [
+        0           => "Europe/Andorra"],
      
-     "GR"   => array(
-        0           => "Europe/Athens"),
+     "GR"   => [
+        0           => "Europe/Athens"],
      
-     "YU"   => array(
-        0           => "Europe/Belgrade"),
+     "YU"   => [
+        0           => "Europe/Belgrade"],
      
-     "DE"   => array(
-        0           => "Europe/Berlin"),
+     "DE"   => [
+        0           => "Europe/Berlin"],
      
-     "SK"   => array(
-        0           => "Europe/Bratislava"),
+     "SK"   => [
+        0           => "Europe/Bratislava"],
      
-     "BE"   => array(
-        0           => "Europe/Brussels"),
+     "BE"   => [
+        0           => "Europe/Brussels"],
      
-     "RO"   => array(
-        0           => "Europe/Bucharest"),
+     "RO"   => [
+        0           => "Europe/Bucharest"],
      
-     "HU"   => array(
-        0           => "Europe/Budapest"),
+     "HU"   => [
+        0           => "Europe/Budapest"],
      
-     "DK"   => array(
-        0           => "Europe/Copenhagen"),
+     "DK"   => [
+        0           => "Europe/Copenhagen"],
      
-     "IE"   => array(
-        0           => "Europe/Dublin"),
+     "IE"   => [
+        0           => "Europe/Dublin"],
      
-     "GI"   => array(
-        0           => "Europe/Gibraltar"),
+     "GI"   => [
+        0           => "Europe/Gibraltar"],
      
-     "FI"   => array(
-        0           => "Europe/Helsinki"),
+     "FI"   => [
+        0           => "Europe/Helsinki"],
      
-     "SI"   => array(
-        0           => "Europe/Ljubljana"),
+     "SI"   => [
+        0           => "Europe/Ljubljana"],
      
-     "GB"   => array(
-        0           => "Europe/London"),
+     "GB"   => [
+        0           => "Europe/London"],
      
-     "LU"   => array(
-        0           => "Europe/Luxembourg"),
+     "LU"   => [
+        0           => "Europe/Luxembourg"],
      
-     "MT"   => array(
-        0           => "Europe/Malta"),
+     "MT"   => [
+        0           => "Europe/Malta"],
      
-     "BY"   => array(
-        0           => "Europe/Minsk"),
+     "BY"   => [
+        0           => "Europe/Minsk"],
      
-     "MC"   => array(
-        0           => "Europe/Monaco"),
+     "MC"   => [
+        0           => "Europe/Monaco"],
      
-     "NO"   => array(
-        0           => "Europe/Oslo"),
+     "NO"   => [
+        0           => "Europe/Oslo"],
      
-     "CZ"   => array(
-        0           => "Europe/Prague"),
+     "CZ"   => [
+        0           => "Europe/Prague"],
      
-     "LV"   => array(
-        0           => "Europe/Riga"),
+     "LV"   => [
+        0           => "Europe/Riga"],
      
-     "IT"   => array(
-        0           => "Europe/Rome"),
+     "IT"   => [
+        0           => "Europe/Rome"],
      
-     "SM"   => array(
-        0           => "Europe/San_Marino"),
+     "SM"   => [
+        0           => "Europe/San_Marino"],
      
-     "BA"   => array(
-        0           => "Europe/Sarajevo"),
+     "BA"   => [
+        0           => "Europe/Sarajevo"],
      
-     "MK"   => array(
-        0           => "Europe/Skopje"),
+     "MK"   => [
+        0           => "Europe/Skopje"],
      
-     "BG"   => array(
-        0           => "Europe/Sofia"),
+     "BG"   => [
+        0           => "Europe/Sofia"],
      
-     "SE"   => array(
-        0           => "Europe/Stockholm"),
+     "SE"   => [
+        0           => "Europe/Stockholm"],
      
-     "EE"   => array(
-        0           => "Europe/Tallinn"),
+     "EE"   => [
+        0           => "Europe/Tallinn"],
      
-     "AL"   => array(
-        0           => "Europe/Tirane"),
+     "AL"   => [
+        0           => "Europe/Tirane"],
      
-     "LI"   => array(
-        0           => "Europe/Vaduz"),
+     "LI"   => [
+        0           => "Europe/Vaduz"],
      
-     "VA"   => array(
-        0           => "Europe/Vatican"),
+     "VA"   => [
+        0           => "Europe/Vatican"],
      
-     "AT"   => array(
-        0           => "Europe/Vienna"),
+     "AT"   => [
+        0           => "Europe/Vienna"],
      
-     "LT"   => array(
-        0           => "Europe/Vilnius"),
+     "LT"   => [
+        0           => "Europe/Vilnius"],
      
-     "PL"   => array(
-        0           => "Europe/Warsaw"),
+     "PL"   => [
+        0           => "Europe/Warsaw"],
      
-     "HR"   => array(
-        0           => "Europe/Zagreb"),
+     "HR"   => [
+        0           => "Europe/Zagreb"],
      
-     "IR"   => array(
-        0           => "Asia/Tehran"),
+     "IR"   => [
+        0           => "Asia/Tehran"],
      
-     "MG"   => array(
-        0           => "Indian/Antananarivo"),
+     "MG"   => [
+        0           => "Indian/Antananarivo"],
      
-     "CX"   => array(
-        0           => "Indian/Christmas"),
+     "CX"   => [
+        0           => "Indian/Christmas"],
      
-     "CC"   => array(
-        0           => "Indian/Cocos"),
+     "CC"   => [
+        0           => "Indian/Cocos"],
      
-     "KM"   => array(
-        0           => "Indian/Comoro"),
+     "KM"   => [
+        0           => "Indian/Comoro"],
      
-     "MV"   => array(
-        0           => "Indian/Maldives"),
+     "MV"   => [
+        0           => "Indian/Maldives"],
      
-     "MU"   => array(
-        0           => "Indian/Mauritius"),
+     "MU"   => [
+        0           => "Indian/Mauritius"],
      
-     "YT"   => array(
-        0           => "Indian/Mayotte"),
+     "YT"   => [
+        0           => "Indian/Mayotte"],
      
-     "RE"   => array(
-        0           => "Indian/Reunion"),
+     "RE"   => [
+        0           => "Indian/Reunion"],
      
-     "FJ"   => array(
-        0           => "Pacific/Fiji"),
+     "FJ"   => [
+        0           => "Pacific/Fiji"],
      
-     "TV"   => array(
-        0           => "Pacific/Funafuti"),
+     "TV"   => [
+        0           => "Pacific/Funafuti"],
      
-     "GU"   => array(
-        0           => "Pacific/Guam"),
+     "GU"   => [
+        0           => "Pacific/Guam"],
      
-     "NR"   => array(
-        0           => "Pacific/Nauru"),
+     "NR"   => [
+        0           => "Pacific/Nauru"],
      
-     "NU"   => array(
-        0           => "Pacific/Niue"),
+     "NU"   => [
+        0           => "Pacific/Niue"],
      
-     "NF"   => array(
-        0           => "Pacific/Norfolk"),
+     "NF"   => [
+        0           => "Pacific/Norfolk"],
      
-     "PW"   => array(
-        0           => "Pacific/Palau"),
+     "PW"   => [
+        0           => "Pacific/Palau"],
      
-     "PN"   => array(
-        0           => "Pacific/Pitcairn"),
+     "PN"   => [
+        0           => "Pacific/Pitcairn"],
      
-     "CK"   => array(
-        0           => "Pacific/Rarotonga"),
+     "CK"   => [
+        0           => "Pacific/Rarotonga"],
      
-     "WS"   => array(
-        0           => "Pacific/Samoa"),
+     "WS"   => [
+        0           => "Pacific/Samoa"],
      
-    "KI"   => array(
-        0           => "Pacific/Tarawa"),
+    "KI"   => [
+        0           => "Pacific/Tarawa"],
      
-     "TO"   => array(
-        0           => "Pacific/Tongatapu"),
+     "TO"   => [
+        0           => "Pacific/Tongatapu"],
      
-     "WF"   => array(
-        0           => "Pacific/Wallis"),
+     "WF"   => [
+        0           => "Pacific/Wallis"],
      
-     "TZ"   => array(
-        0           => "Africa/Dar_es_Salaam"),
+     "TZ"   => [
+        0           => "Africa/Dar_es_Salaam"],
      
-     "VN"   => array(
-        0           => "Asia/Phnom_Penh"),
+     "VN"   => [
+        0           => "Asia/Phnom_Penh"],
      
-     "KH"   => array(
-        0           => "Asia/Phnom_Penh"),
+     "KH"   => [
+        0           => "Asia/Phnom_Penh"],
      
-     "CM"   => array(
-        0           => "Africa/Lagos"),
+     "CM"   => [
+        0           => "Africa/Lagos"],
      
-     "DO"   => array(
-        0           => "America/Santo_Domingo"),
+     "DO"   => [
+        0           => "America/Santo_Domingo"],
      
-     "ET"   => array(
-        0           => "Africa/Addis_Ababa"),
+     "ET"   => [
+        0           => "Africa/Addis_Ababa"],
      
-     "FX"   => array(
-        0           => "Europe/Paris"),
+     "FX"   => [
+        0           => "Europe/Paris"],
 
-     "HT"   => array(
-        0           => "America/Port-au-Prince"),
+     "HT"   => [
+        0           => "America/Port-au-Prince"],
      
-     "CH"   => array(
-        0           => "Europe/Zurich"),
+     "CH"   => [
+        0           => "Europe/Zurich"],
      
-     "AN"   => array(
-        0           => "America/Curacao"),
+     "AN"   => [
+        0           => "America/Curacao"],
      
-     "BJ"   => array(
-        0           => "Africa/Porto-Novo"),
+     "BJ"   => [
+        0           => "Africa/Porto-Novo"],
      
-     "EH"   => array(
-        0           => "Africa/El_Aaiun"),
+     "EH"   => [
+        0           => "Africa/El_Aaiun"],
      
-     "FK"   => array(
-        0           => "Atlantic/Stanley"),
+     "FK"   => [
+        0           => "Atlantic/Stanley"],
      
-     "GF"   => array(
-        0           => "America/Cayenne"),
+     "GF"   => [
+        0           => "America/Cayenne"],
      
-    "IO"   => array(
-        0           => "Indian/Chagos"),
+    "IO"   => [
+        0           => "Indian/Chagos"],
      
-     "MD"   => array(
-        0           => "Europe/Chisinau"),
+     "MD"   => [
+        0           => "Europe/Chisinau"],
      
-     "MP"   => array(
-        0           => "Pacific/Saipan"),
+     "MP"   => [
+        0           => "Pacific/Saipan"],
      
-     "MW"   => array(
-        0           => "Africa/Blantyre"),
+     "MW"   => [
+        0           => "Africa/Blantyre"],
      
-     "NA"   => array(
-        0           => "Africa/Windhoek"),
+     "NA"   => [
+        0           => "Africa/Windhoek"],
      
-     "NC"   => array(
-        0           => "Pacific/Noumea"),
+     "NC"   => [
+        0           => "Pacific/Noumea"],
      
-     "PG"   => array(
-        0           => "Pacific/Port_Moresby"),
+     "PG"   => [
+        0           => "Pacific/Port_Moresby"],
      
-     "PM"   => array(
-        0           => "America/Miquelon"),
+     "PM"   => [
+        0           => "America/Miquelon"],
      
-     "PS"   => array(
-        0           => "Asia/Gaza"),
+     "PS"   => [
+        0           => "Asia/Gaza"],
      
-     "PY"   => array(
-        0           => "America/Asuncion"),
+     "PY"   => [
+        0           => "America/Asuncion"],
      
-     "SB"   => array(
-        0           => "Pacific/Guadalcanal"),
+     "SB"   => [
+        0           => "Pacific/Guadalcanal"],
      
-     "SC"   => array(
-        0           => "Indian/Mahe"),
+     "SC"   => [
+        0           => "Indian/Mahe"],
      
-     "SJ"   => array(
-        0           => "Arctic/Longyearbyen"),
+     "SJ"   => [
+        0           => "Arctic/Longyearbyen"],
      
-     "SY"   => array(
-        0           => "Asia/Damascus"),
+     "SY"   => [
+        0           => "Asia/Damascus"],
      
-     "TC"   => array(
-        0           => "America/Grand_Turk"),
+     "TC"   => [
+        0           => "America/Grand_Turk"],
      
-     "TF"   => array(
-        0           => "Indian/Kerguelen"),
+     "TF"   => [
+        0           => "Indian/Kerguelen"],
      
-     "TK"   => array(
-        0           => "Pacific/Fakaofo"),
+     "TK"   => [
+        0           => "Pacific/Fakaofo"],
      
-     "TT"   => array(
-        0           => "America/Port_of_Spain"),
+     "TT"   => [
+        0           => "America/Port_of_Spain"],
      
-     "VG"   => array(
-        0           => "America/Tortola"),
+     "VG"   => [
+        0           => "America/Tortola"],
      
-    "VI"   => array(
-        0           => "America/St_Thomas"),
+    "VI"   => [
+        0           => "America/St_Thomas"],
      
-     "VU"   => array(
-        0           => "Pacific/Efate"),
+     "VU"   => [
+        0           => "Pacific/Efate"],
      
-     "RS"   => array(
-        0           => "Europe/Belgrade"),
+     "RS"   => [
+        0           => "Europe/Belgrade"],
      
-     "ME"   => array(
-        0           => "Europe/Podgorica"),
+     "ME"   => [
+        0           => "Europe/Podgorica"],
      
-     "AX"   => array(
-        0           => "Europe/Mariehamn"),
+     "AX"   => [
+        0           => "Europe/Mariehamn"],
      
-     "IM"   => array(
-        0           => "Europe/Isle_of_Man"),
+     "IM"   => [
+        0           => "Europe/Isle_of_Man"],
      
-     "JE"   => array(
-        0           => "Europe/Jersey"),
+     "JE"   => [
+        0           => "Europe/Jersey"],
      
-     "MF"   => array(
-        0           => "America/Marigot"),
+     "MF"   => [
+        0           => "America/Marigot"],
      
-    "AR"    => array(
+    "AR"    => [
         "01"    =>     "America/Argentina/Buenos_Aires",
         "02"    =>     "America/Argentina/Catamarca",
         "03"    =>    "America/Argentina/Tucuman",
@@ -666,9 +666,9 @@ return array(
         "13"    =>     "America/Argentina/Mendoza",
         "17"    =>     "America/Argentina/Salta",
           "18"    =>     "America/Argentina/San_Juan",
-        "23"    =>     "America/Argentina/Ushuaia"),
+        "23"    =>     "America/Argentina/Ushuaia"],
         
-    "BR"    => array(
+    "BR"    => [
 
         "01"    =>  "America/Rio_Branco",
            "02"    =>  "America/Maceio",
@@ -683,9 +683,9 @@ return array(
            "24"    =>  "America/Porto_Velho",
            "25"    =>  "America/Boa_Vista",
            "28"    =>  "America/Maceio",
-           "31"    =>  "America/Araguaina"),
+           "31"    =>  "America/Araguaina"],
        
-    "CD"    => array(
+    "CD"    => [
 
         "02"    =>  "Africa/Kinshasa",
         "05"    =>  "Africa/Lubumbashi",
@@ -693,38 +693,38 @@ return array(
         "08"    =>  "Africa/Kinshasa",
         "10"    =>  "Africa/Lubumbashi",
         "11"    =>  "Africa/Lubumbashi",
-        "12"    =>  "Africa/Lubumbashi"),
+        "12"    =>  "Africa/Lubumbashi"],
 
-    "CN"    => array(
+    "CN"    => [
 
         "01"    =>  "Asia/Shanghai",
         "05"    =>  "Asia/Harbin",
         "06"    =>  "Asia/Chongqing",
-        "13"    =>  "Asia/Urumqi"),
+        "13"    =>  "Asia/Urumqi"],
    
-    "EC"   => array(
+    "EC"   => [
 
         "01"    =>  "Pacific/Galapagos",
-        "02"    =>  "America/Guayaquil"),
+        "02"    =>  "America/Guayaquil"],
 
-    "ES"   => array(
+    "ES"   => [
         "07"    =>  "Europe/Madrid",
         "51"    =>  "Africa/Ceuta",
-        "53"    =>  "Atlantic/Canary"),
+        "53"    =>  "Atlantic/Canary"],
 
-    "GL"   => array(
+    "GL"   => [
 
         "01"    =>  "America/Thule",
-        "02"    =>  "America/Godthab"),
+        "02"    =>  "America/Godthab"],
 
-    "ID"   => array(
+    "ID"   => [
 
         "01"    =>  "Asia/Pontianak",
         "02"    =>  "Asia/Makassar",
         "03"    =>  "Asia/Jakarta",
-        "09"    =>  "Asia/Jayapura"),
+        "09"    =>  "Asia/Jayapura"],
        
-    "KZ"   => array(
+    "KZ"   => [
 
         "01"    =>  "Asia/Almaty",
         "03"    =>  "Asia/Qyzylorda",
@@ -732,9 +732,9 @@ return array(
         "05"    =>  "Asia/Qyzylorda",
         "06"    =>  "Asia/Aqtau",
         "07"    =>  "Asia/Oral",
-        "08"    =>  "Asia/Qyzylorda"),
+        "08"    =>  "Asia/Qyzylorda"],
        
-    "MX"   => array(
+    "MX"   => [
 
         "01"    =>  "America/Mexico_City",
         "02"    =>  "America/Tijuana",
@@ -743,24 +743,24 @@ return array(
         "06"    =>  "America/Chihuahua",
         "07"    =>  "America/Monterrey",
         "10"    =>  "America/Mazatlan",
-        "23"    =>  "America/Cancun"),
+        "23"    =>  "America/Cancun"],
      
-    "MY"   => array(
+    "MY"   => [
 
         "01"    =>  "Asia/Kuala_Lumpur",
-        "11"    =>  "Asia/Kuching"),
+        "11"    =>  "Asia/Kuching"],
        
-    "NZ"   => array(
+    "NZ"   => [
 
         "85"    =>  "Pacific/Auckland",
-        "F7"    =>  "Pacific/Chatham"),
+        "F7"    =>  "Pacific/Chatham"],
 
-    "PT"   => array(
+    "PT"   => [
      
         "02"    =>  "Europe/Lisbon",
-        "10"    =>  "Atlantic/Madeira"),
+        "10"    =>  "Atlantic/Madeira"],
        
-    "RU"   => array(
+    "RU"   => [
      
         "01"    =>  "Europe/Volgograd",
         "02"    =>  "Asia/Irkutsk",
@@ -780,25 +780,24 @@ return array(
            "44"    =>  "Asia/Magadan",
            "53"    =>  "Asia/Novosibirsk",
            "63"    =>  "Asia/Yakutsk",
-           "64"    =>  "Asia/Sakhalin"),
+           "64"    =>  "Asia/Sakhalin"],
        
-    "UA"   => array(
+    "UA"   => [
 
         "01"    =>  "Europe/Kiev",
            "03"    =>  "Europe/Uzhgorod",
            "04"    =>  "Europe/Zaporozhye",
            "08"    =>  "Europe/Simferopol",
-           "09"    =>  "Europe/Kiev"),
+           "09"    =>  "Europe/Kiev"],
    
-    "UZ"   => array(
+    "UZ"   => [
         "01"    =>  "Asia/Tashkent",
            "02"    =>  "Asia/Samarkand",
-           "03"    =>  "Asia/Tashkent"),
+           "03"    =>  "Asia/Tashkent"],
 
-    "TL"   => array(
-        0        => "Asia/Dili"),
+    "TL"   => [
+        0        => "Asia/Dili"],
      
-    "PF"   => array(
-        0        => "Pacific/Marquesas")
-);
-?>
+    "PF"   => [
+        0        => "Pacific/Marquesas"]
+];

@@ -51,7 +51,7 @@ final class Chunk {
 
         $site_id = (string) $event->get( 'site_id' );
 
-        foreach ( array( 'recording_id', 'visitor_id', 'session_id' ) as $key ) {
+        foreach ( [ 'recording_id', 'visitor_id', 'session_id' ] as $key ) {
 
             if ( ! self::isId( $event->get( $key ) ) ) {
 
@@ -101,8 +101,8 @@ final class Chunk {
         $location = (string) \OWA\Module\Base\Classes\V2Event::removeUrlParams( $location,
             \OWA\Module\Base\Classes\TrackingEventHelpers::queryStringFilters( $site_id ) );
 
-        return array(
-            'chunk' => array(
+        return [
+            'chunk' => [
                 'id'             => $id,
                 'yyyymmdd'       => $yyyymmdd,
                 'site_id'        => $site_id,
@@ -122,13 +122,13 @@ final class Chunk {
                 'viewport_w'     => self::isInt( $event->get( 'viewport_w' ), 0, 100000 ) ? (int) $event->get( 'viewport_w' ) : null,
                 'viewport_h'     => self::isInt( $event->get( 'viewport_h' ), 0, 100000 ) ? (int) $event->get( 'viewport_h' ) : null,
                 'bytes'          => strlen( $compressed ),
-            ),
-            'payload' => array(
+            ],
+            'payload' => [
                 'id'       => $id,
                 'yyyymmdd' => $yyyymmdd,
                 'payload'  => $compressed,
-            ),
-        );
+            ],
+        ];
     }
 
     /**
@@ -318,5 +318,3 @@ final class Chunk {
         return null;
     }
 }
-
-?>

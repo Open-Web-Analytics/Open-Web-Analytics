@@ -16,7 +16,7 @@
         <?php if ( $view->back_url ):?>
         <a href="<?php $view->out( $view->back_url );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Return to the previous screen' ) );?></a>
         <?php else:?>
-        <a href="<?php echo $view->makeLink( array( 'do' => \OWA\Core\CoreAPI::getSetting( 'base', 'start_page' ) ) );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Stay signed in' ) );?></a>
+        <a href="<?php echo $view->makeLink( [ 'do' => \OWA\Core\CoreAPI::getSetting( 'base', 'start_page' ) ] );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Stay signed in' ) );?></a>
         <?php endif;?>
     </div>
 </div>

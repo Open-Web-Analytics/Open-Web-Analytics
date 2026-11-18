@@ -15,15 +15,15 @@ function owa_test_mail_to_nowhere(): array
     $port   = (int) substr(strrchr((string) stream_socket_get_name($server, false), ':'), 1);
     fclose($server);
 
-    $values = array(
+    $values = [
         'mailer-use-smtp' => true,
         'mailer-host'     => '127.0.0.1',
         'mailer-port'     => $port,
         'mailer-smtpAuth' => false,
         'mailer-from'     => 'owa@owatest.example.com',
-    );
+    ];
 
-    $was = array();
+    $was = [];
 
     foreach ($values as $key => $value) {
         $was[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);

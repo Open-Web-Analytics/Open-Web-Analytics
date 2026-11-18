@@ -30,7 +30,7 @@ final class MetricSetsTest extends TestCase
 
         $default = $sets[ \OWA\Core\MetricSets::DEFAULT_KEY ];
 
-        foreach ( array( 'label', 'metrics', 'chartMetric' ) as $key ) {
+        foreach ( [ 'label', 'metrics', 'chartMetric' ] as $key ) {
             $this->assertNotEmpty( $default[ $key ], "the default set has no $key" );
         }
 
@@ -43,8 +43,8 @@ final class MetricSetsTest extends TestCase
      */
     public function testNoPropertyOffersNoSets(): void
     {
-        $this->assertSame( array(), \OWA\Core\MetricSets::forProperty( '' ) );
-        $this->assertSame( array(), \OWA\Core\MetricSets::forProperty( 0 ) );
+        $this->assertSame( [], \OWA\Core\MetricSets::forProperty( '' ) );
+        $this->assertSame( [], \OWA\Core\MetricSets::forProperty( 0 ) );
     }
 
     /**
@@ -66,7 +66,7 @@ final class MetricSetsTest extends TestCase
 
         foreach ( $sets as $key => $set ) {
 
-            $this->assertSame( array( 'label', 'metrics', 'chartMetric' ), array_keys( $set ),
+            $this->assertSame( [ 'label', 'metrics', 'chartMetric' ], array_keys( $set ),
                 "set '$key' is not the shape the renderer expects" );
 
             foreach ( $set as $field => $value ) {
@@ -115,7 +115,7 @@ final class MetricSetsTest extends TestCase
         $user->setAuthStatus( true );
 
         $data = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages', 'propertyId' => $property, 'period' => 'last_thirty_days' ) ) )->doAction();
+            [ 'reportId' => 'pages', 'propertyId' => $property, 'period' => 'last_thirty_days' ] ) )->doAction();
 
         $this->assertArrayHasKey( 'metricSets', $data );
         $this->assertArrayHasKey( \OWA\Core\MetricSets::DEFAULT_KEY, $data['metricSets'] );
@@ -136,7 +136,7 @@ final class MetricSetsTest extends TestCase
             $this->markTestSkipped( 'OWA database not reachable.' );
         }
 
-        $site = array( 'property_id' => $this->aPropertyWithAProfile() );
+        $site = [ 'property_id' => $this->aPropertyWithAProfile() ];
 
         // Another active goal event on this Property already offers the set.
         $before = in_array( 'goals', array_keys( \OWA\Core\MetricSets::forProperty( $site['property_id'] ) ), true );
@@ -160,7 +160,7 @@ final class MetricSetsTest extends TestCase
         }
 
         $this->assertContains( 'goals', $keys );
-        $this->assertSame( array(), array_diff( $keys, array( 'site_usage', 'goals', 'ecommerce' ) ),
+        $this->assertSame( [], array_diff( $keys, [ 'site_usage', 'goals', 'ecommerce' ] ),
             'a set other than site usage, goals and e-commerce appeared' );
 
         $this->assertSame( $before,

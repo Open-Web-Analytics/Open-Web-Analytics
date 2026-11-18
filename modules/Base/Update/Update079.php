@@ -88,7 +88,7 @@ class Update079 extends \OWA\Core\Update {
         $before = (array) \OWA\Core\CoreAPI::getSetting( 'base', self::BEFORE );
 
         $rows = (array) $db->get_results( sprintf( 'SELECT id, name, definition FROM %s WHERE definition LIKE ?', $table ),
-            array( '%steps%' ) );
+            [ '%steps%' ] );
 
         $converted = 0;
 
@@ -123,7 +123,7 @@ class Update079 extends \OWA\Core\Update {
             $text = json_encode( $result['definition'] );
 
             $record = isset( $before[ $id ] ) && is_array( $before[ $id ] )
-                ? $before[ $id ] : array( 'was' => $stored, 'steps' => array() );
+                ? $before[ $id ] : [ 'was' => $stored, 'steps' => [] ];
 
             $record['now']   = $text;
             $record['steps'] = (array) $record['steps'] + $result['steps'];
@@ -134,7 +134,7 @@ class Update079 extends \OWA\Core\Update {
             \OWA\Core\CoreAPI::persistSetting( 'base', self::BEFORE, $before );
 
             if ( $db->query( sprintf( 'UPDATE %s SET definition = ? WHERE id = ?', $table ),
-                    array( $text, $id ) ) === false ) {
+                    [ $text, $id ] ) === false ) {
 
                 $this->e->notice( sprintf( 'Converting the steps of funnel %s failed.', $id ) );
 
@@ -162,7 +162,7 @@ class Update079 extends \OWA\Core\Update {
 
             $record = (array) $record;
 
-            $row = (array) $db->get_row( sprintf( 'SELECT definition FROM %s WHERE id = ?', $table ), array( (string) $id ) );
+            $row = (array) $db->get_row( sprintf( 'SELECT definition FROM %s WHERE id = ?', $table ), [ (string) $id ] );
 
             if ( ! array_key_exists( 'definition', $row ) ) {
 
@@ -183,7 +183,7 @@ class Update079 extends \OWA\Core\Update {
 
                 if ( is_array( $definition ) && isset( $definition['steps'] ) && is_array( $definition['steps'] ) ) {
 
-                    foreach ( (array) ( $record['steps'] ?? array() ) as $index => $step ) {
+                    foreach ( (array) ( $record['steps'] ?? [] ) as $index => $step ) {
 
                         if ( isset( $definition['steps'][ $index ] ) && $definition['steps'][ $index ] == $step['now'] ) {
 
@@ -194,8 +194,8 @@ class Update079 extends \OWA\Core\Update {
                 }
 
                 $this->e->notice( sprintf( 'Funnel %s was edited after Update079; %d of its %d converted %s put back.',
-                    $id, $restored, count( (array) ( $record['steps'] ?? array() ) ),
-                    \OWA\Core\Lib::plural( count( (array) ( $record['steps'] ?? array() ) ), 'step was', 'steps were' ) ) );
+                    $id, $restored, count( (array) ( $record['steps'] ?? [] ) ),
+                    \OWA\Core\Lib::plural( count( (array) ( $record['steps'] ?? [] ) ), 'step was', 'steps were' ) ) );
 
                 if ( $restored ) {
 
@@ -204,7 +204,7 @@ class Update079 extends \OWA\Core\Update {
             }
 
             if ( $text !== null && $db->query( sprintf( 'UPDATE %s SET definition = ? WHERE id = ?', $table ),
-                    array( $text, (string) $id ) ) === false ) {
+                    [ $text, (string) $id ] ) === false ) {
 
                 $this->e->notice( sprintf( 'Restoring the steps of funnel %s failed.', $id ) );
 
@@ -212,7 +212,7 @@ class Update079 extends \OWA\Core\Update {
             }
         }
 
-        \OWA\Core\CoreAPI::persistSetting( 'base', self::BEFORE, array() );
+        \OWA\Core\CoreAPI::persistSetting( 'base', self::BEFORE, [] );
 
         return true;
     }
@@ -230,7 +230,7 @@ class Update079 extends \OWA\Core\Update {
      */
     public static function convert( array $definition, array $goals ) {
 
-        $out = array( 'definition' => $definition, 'steps' => array(), 'left' => array() );
+        $out = [ 'definition' => $definition, 'steps' => [], 'left' => [] ];
 
         if ( ! isset( $definition['steps'] ) || ! is_array( $definition['steps'] ) ) {
 
@@ -266,12 +266,12 @@ class Update079 extends \OWA\Core\Update {
                     continue;
                 }
 
-                $now = self::replaceKey( $step, self::DEFINITION_KEY, array(
+                $now = self::replaceKey( $step, self::DEFINITION_KEY, [
                     'kind'       => 'event',
                     'event'      => $trigger,
                     'match'      => $goal['match'] === 'any' ? 'any' : 'all',
                     'conditions' => array_values( $goal['conditions'] ),
-                ) );
+                ] );
 
             } else {
 
@@ -279,7 +279,7 @@ class Update079 extends \OWA\Core\Update {
             }
 
             $out['definition']['steps'][ $index ] = $now;
-            $out['steps'][ $index ] = array( 'was' => $step, 'now' => $now );
+            $out['steps'][ $index ] = [ 'was' => $step, 'now' => $now ];
         }
 
         return $out;
@@ -303,14 +303,14 @@ class Update079 extends \OWA\Core\Update {
             $path  = substr( $path, 0, $mark );
         }
 
-        $conditions = array( array( 'property' => 'page_path', 'operator' => 'exact', 'value' => $path ) );
+        $conditions = [ [ 'property' => 'page_path', 'operator' => 'exact', 'value' => $path ] ];
 
         if ( $query !== '' ) {
 
-            $conditions[] = array( 'property' => 'page_query', 'operator' => 'exact', 'value' => $query );
+            $conditions[] = [ 'property' => 'page_query', 'operator' => 'exact', 'value' => $query ];
         }
 
-        return array( 'kind' => 'event', 'event' => 'page_view', 'match' => 'all', 'conditions' => $conditions );
+        return [ 'kind' => 'event', 'event' => 'page_view', 'match' => 'all', 'conditions' => $conditions ];
     }
 
     /**
@@ -323,7 +323,7 @@ class Update079 extends \OWA\Core\Update {
      */
     private static function replaceKey( array $step, $key, array $fields ) {
 
-        $out = array();
+        $out = [];
 
         if ( ! array_key_exists( $key, $step ) ) {
 
@@ -362,9 +362,9 @@ class Update079 extends \OWA\Core\Update {
      */
     private function goalDefinitions( array $definition ) {
 
-        $ids = array();
+        $ids = [];
 
-        foreach ( (array) ( $definition['steps'] ?? array() ) as $step ) {
+        foreach ( (array) ( $definition['steps'] ?? [] ) as $step ) {
 
             if ( is_array( $step ) && ( $step['kind'] ?? '' ) !== 'event' && isset( $step[ self::DEFINITION_KEY ] ) ) {
 
@@ -378,44 +378,44 @@ class Update079 extends \OWA\Core\Update {
 
         if ( ! $ids || ! $db->tableExists( $definitions ) ) {
 
-            return array();
+            return [];
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( array_unique( $ids ) as $id ) {
 
             $row = (array) $db->get_row( sprintf( 'SELECT trigger_event_type, condition_match FROM %s WHERE id = ?',
-                $definitions ), array( $id ) );
+                $definitions ), [ $id ] );
 
             if ( ! array_key_exists( 'trigger_event_type', $row ) ) {
 
                 continue;
             }
 
-            $list = array();
+            $list = [];
 
             if ( $db->tableExists( $conditions ) ) {
 
                 foreach ( (array) $db->get_results( sprintf( 'SELECT condition_property, condition_operator, condition_value'
                         . ' FROM %s WHERE goal_event_definition_id = ? ORDER BY sort_order, id', $conditions ),
-                        array( $id ) ) as $condition ) {
+                        [ $id ] ) as $condition ) {
 
                     $condition = (array) $condition;
 
-                    $list[] = array(
+                    $list[] = [
                         'property' => (string) $condition['condition_property'],
                         'operator' => (string) $condition['condition_operator'],
                         'value'    => (string) $condition['condition_value'],
-                    );
+                    ];
                 }
             }
 
-            $out[ $id ] = array(
+            $out[ $id ] = [
                 'trigger'    => (string) $row['trigger_event_type'],
                 'match'      => (string) $row['condition_match'],
                 'conditions' => $list,
-            );
+            ];
         }
 
         return $out;
@@ -432,5 +432,3 @@ class Update079 extends \OWA\Core\Update {
         return json_decode( html_entity_decode( (string) $stored, ENT_QUOTES ), true );
     }
 }
-
-?>

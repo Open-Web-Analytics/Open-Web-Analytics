@@ -16,7 +16,7 @@
  */
 return static function ( $arg = null ) {
 
-    $cell = static fn ( $v ) => str_replace( array( '|', "\r", "\n" ), array( '\\|', ' ', ' ' ), trim( (string) $v ) );
+    $cell = static fn ( $v ) => str_replace( [ '|', "\r", "\n" ], [ '\\|', ' ', ' ' ], trim( (string) $v ) );
 
     $raw  = new \OWA\Module\Base\Entity\EventRaw();
     $cube = new \OWA\Module\Base\Entity\Event();
@@ -26,8 +26,8 @@ return static function ( $arg = null ) {
     $write = new ReflectionMethod( $raw, 'writeValue' );
 
     $helpers = '\OWA\Module\Base\Classes\TrackingEventHelpers';
-    $filled  = array();
-    $about   = array();
+    $filled  = [];
+    $about   = [];
 
     foreach ( $helpers::allProperties() as $property => $definition ) {
 
@@ -78,12 +78,12 @@ return static function ( $arg = null ) {
             $absent = $v === null ? '`NULL`' : '`' . var_export( $v, true ) . '`';
         }
 
-        $from = $filled[ $name ] ?? array();
+        $from = $filled[ $name ] ?? [];
 
         $description = (string) $col->get( 'description' );
 
         if ( $description === '' ) {
-            $description = implode( ' ', array_unique( array_filter( $about[ $name ] ?? array() ) ) );
+            $description = implode( ' ', array_unique( array_filter( $about[ $name ] ?? [] ) ) );
         }
 
         $out .= sprintf( "| `%s` | %s | `%s` | %s | %s | %s |\n",

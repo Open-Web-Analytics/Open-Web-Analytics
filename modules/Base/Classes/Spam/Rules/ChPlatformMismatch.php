@@ -29,7 +29,7 @@ class ChPlatformMismatch extends \OWA\Module\Base\Classes\Spam\Rule {
     const POINTS = 3.0;
 
     /** Every value Chromium sends, and the system each names; '' names none. */
-    const PLATFORMS = array(
+    const PLATFORMS = [
         'Windows'     => 'windows',
         'macOS'       => 'mac',
         'Linux'       => 'linux',
@@ -38,7 +38,7 @@ class ChPlatformMismatch extends \OWA\Module\Base\Classes\Spam\Rule {
         'Chromium OS' => 'chromeos',
         'iOS'         => 'ios',
         'Unknown'     => '',
-    );
+    ];
 
     public function test( $event, array $headers ) {
 
@@ -57,10 +57,10 @@ class ChPlatformMismatch extends \OWA\Module\Base\Classes\Spam\Rule {
             return false;
         }
 
-        $pair = array( $claimed, $agent );
+        $pair = [ $claimed, $agent ];
         sort( $pair );
 
-        return $pair !== array( 'android', 'linux' );
+        return $pair !== [ 'android', 'linux' ];
     }
 
     /**
@@ -81,5 +81,3 @@ class ChPlatformMismatch extends \OWA\Module\Base\Classes\Spam\Rule {
         return $value;
     }
 }
-
-?>

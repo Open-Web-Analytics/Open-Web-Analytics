@@ -75,7 +75,7 @@ abstract class Step {
      */
     public function requires() {
 
-        return array();
+        return [];
     }
 
     /**
@@ -107,5 +107,3 @@ abstract class Step {
         return null;
     }
 }
-
-?>

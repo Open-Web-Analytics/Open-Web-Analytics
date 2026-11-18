@@ -31,7 +31,7 @@ class RealtimeRest extends \OWA\Core\ReportController {
     public function validate() {
 
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ) ?: $this->getParam( 'siteId' ),
-            'required', array( 'stopOnError' => true ) );
+            'required', [ 'stopOnError' => true ] );
     }
 
     public function action() {
@@ -40,7 +40,7 @@ class RealtimeRest extends \OWA\Core\ReportController {
         $visitor  = trim( (string) $this->getParam( 'visitorId' ) );
 
         $this->set( 'realtime', (array) ( $visitor !== ''
-            ? array( 'visitor' => $visitor, 'events' => $realtime->visitor( $visitor ) )
+            ? [ 'visitor' => $visitor, 'events' => $realtime->visitor( $visitor ) ]
             : $realtime->summary() ) );
     }
 
@@ -54,5 +54,3 @@ class RealtimeRest extends \OWA\Core\ReportController {
         $this->restResponse( 422 );
     }
 }
-
-?>

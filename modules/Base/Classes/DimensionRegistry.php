@@ -48,7 +48,7 @@ namespace OWA\Module\Base\Classes;
 class DimensionRegistry {
 
     /** @var self[] property id ('' for none) => its registry */
-    private static $byProperty = array();
+    private static $byProperty = [];
 
     /** @var string the Property, or '' */
     private $propertyId;
@@ -78,7 +78,7 @@ class DimensionRegistry {
 
         if ( ! isset( self::$byProperty[ $key ] ) ) {
 
-            self::$byProperty[ $key ] = new self( $key, $key === '' ? array() : self::customOf( $key ) );
+            self::$byProperty[ $key ] = new self( $key, $key === '' ? [] : self::customOf( $key ) );
         }
 
         return self::$byProperty[ $key ];
@@ -94,7 +94,7 @@ class DimensionRegistry {
 
         if ( $property_id === null ) {
 
-            self::$byProperty = array();
+            self::$byProperty = [];
 
             return;
         }
@@ -114,7 +114,7 @@ class DimensionRegistry {
     private static function customOf( $property_id ) {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $out     = array();
+        $out     = [];
 
         foreach ( Cube\Dimensions::forProperty( $property_id ) as $row ) {
 
@@ -162,16 +162,16 @@ class DimensionRegistry {
     public function all( $entities = null ) {
 
         $service = \OWA\Core\CoreAPI::serviceSingleton();
-        $custom  = array();
+        $custom  = [];
 
         foreach ( $this->custom as $name => $dimension ) {
 
             $custom[ $name ][ $dimension['entity'] ] = $dimension;
         }
 
-        $dims = array();
+        $dims = [];
 
-        foreach ( array( $service->denormalizedDimensions, $custom ) as $registry ) {
+        foreach ( [ $service->denormalizedDimensions, $custom ] as $registry ) {
 
             foreach ( $registry as $name => $entity_dims ) {
 
@@ -234,7 +234,7 @@ class DimensionRegistry {
      */
     public function onEntity( $entity ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( \OWA\Core\CoreAPI::serviceSingleton()->denormalizedDimensions as $name => $by_entity ) {
 

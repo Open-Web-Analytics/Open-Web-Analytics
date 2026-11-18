@@ -93,5 +93,3 @@ SQL;
         return true;
     }
 }
-
-?>

@@ -18,7 +18,7 @@ final class FactoryResolutionOrderTest extends TestCase
     public function testAnActionResolvesToItsModulesController(): void
     {
         $this->assertInstanceOf(\OWA\Module\Base\Controller\Report::class,
-            \OWA\Core\CoreAPI::moduleFactory( 'base.report', 'Controller', array() ) );
+            \OWA\Core\CoreAPI::moduleFactory( 'base.report', 'Controller', [] ) );
     }
 
     /** A name with no PSR-4 class is refused; no file is required in by name. */
@@ -27,7 +27,7 @@ final class FactoryResolutionOrderTest extends TestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessageMatches('/pre-PSR-4/');
 
-        \OWA\Core\CoreAPI::moduleFactory( 'base.noSuchThing', 'Controller', array() );
+        \OWA\Core\CoreAPI::moduleFactory( 'base.noSuchThing', 'Controller', [] );
     }
 
     public function testLibFactoryRefusesAClassThatIsNotThere(): void

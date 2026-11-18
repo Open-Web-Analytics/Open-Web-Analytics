@@ -21,10 +21,10 @@ require_once __DIR__ . '/IngestionTestCase.php';
 final class IngestAnnouncementsTest extends IngestionTestCase
 {
     /** @var array<string,int> announcement type => times seen */
-    private $seen = array();
+    private $seen = [];
 
     /** @var array<string,array> announcement type => the properties it carried */
-    private $carried = array();
+    private $carried = [];
 
     /** @var string */
     private $site;
@@ -39,7 +39,7 @@ final class IngestAnnouncementsTest extends IngestionTestCase
 
     private function listen(array $types): void
     {
-        \OWA\Core\CoreAPI::getEventDispatch()->attach($types, array($this, 'record'));
+        \OWA\Core\CoreAPI::getEventDispatch()->attach($types, [$this, 'record']);
     }
 
     /** @param object $event */
@@ -54,9 +54,9 @@ final class IngestAnnouncementsTest extends IngestionTestCase
     }
 
     /** One page view through the real ingest path. */
-    private function firePageView(array $override = array()): void
+    private function firePageView(array $override = []): void
     {
-        $this->fireEvent('base.page_request', $override + array(
+        $this->fireEvent('base.page_request', $override + [
             'site_id'                => $this->site,
             'visitor_id'             => $this->uniqueGuid(),
             'session_id'             => $this->uniqueSessionId(),
@@ -66,7 +66,7 @@ final class IngestAnnouncementsTest extends IngestionTestCase
             'is_new_session_start'   => true,
             'is_new_visitor_created' => true,
             'num_prior_sessions'     => 0,
-        ));
+        ]);
     }
 
     /**
@@ -78,7 +78,7 @@ final class IngestAnnouncementsTest extends IngestionTestCase
      */
     public function testAFirstVisitAnnouncesSessionVisitorAndPageView(): void
     {
-        $this->listen(array('base.new_session', 'base.new_visitor', 'base.new_page_view'));
+        $this->listen(['base.new_session', 'base.new_visitor', 'base.new_page_view']);
 
         $this->firePageView();
 
@@ -96,13 +96,13 @@ final class IngestAnnouncementsTest extends IngestionTestCase
      */
     public function testTheAnnouncementCarriesWhatTheEmailReads(): void
     {
-        $this->listen(array('base.new_session'));
+        $this->listen(['base.new_session']);
 
         $this->firePageView();
 
-        $carried = $this->carried['base.new_session'] ?? array();
+        $carried = $this->carried['base.new_session'] ?? [];
 
-        foreach (array('visitor_id', 'page_url', 'page_title') as $field) {
+        foreach (['visitor_id', 'page_url', 'page_title'] as $field) {
             $this->assertArrayHasKey($field, $carried,
                 'new_session_email reads ' . $field . ' off the event');
         }
@@ -117,12 +117,12 @@ final class IngestAnnouncementsTest extends IngestionTestCase
      */
     public function testAnOrdinaryPageViewAnnouncesOnlyItself(): void
     {
-        $this->listen(array('base.new_session', 'base.new_visitor', 'base.new_page_view'));
+        $this->listen(['base.new_session', 'base.new_visitor', 'base.new_page_view']);
 
-        $this->firePageView(array(
+        $this->firePageView([
             'is_new_session_start'   => false,
             'is_new_visitor_created' => false,
-        ));
+        ]);
 
         $this->assertSame(0, $this->seen['base.new_session'] ?? 0);
         $this->assertSame(0, $this->seen['base.new_visitor'] ?? 0);

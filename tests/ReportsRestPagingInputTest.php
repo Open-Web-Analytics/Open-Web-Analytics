@@ -19,15 +19,15 @@ final class ReportsRestPagingInputTest extends TestCase
     {
         $max = \OWA\Module\Base\Controller\ReportsRest::MAX_RESULTS_PER_PAGE;
 
-        return array(
-            'a number'          => array( '25', $max, 25 ),
-            'past the ceiling'  => array( '1000000', $max, $max ),
-            'text'              => array( 'abc', $max, 1 ),
-            'zero'              => array( '0', $max, 1 ),
-            'negative'          => array( '-5', $max, 1 ),
-            'a fraction'        => array( '2.9', $max, 2 ),
-            'a page, uncapped'  => array( '1000000', PHP_INT_MAX, 1000000 ),
-        );
+        return [
+            'a number'          => [ '25', $max, 25 ],
+            'past the ceiling'  => [ '1000000', $max, $max ],
+            'text'              => [ 'abc', $max, 1 ],
+            'zero'              => [ '0', $max, 1 ],
+            'negative'          => [ '-5', $max, 1 ],
+            'a fraction'        => [ '2.9', $max, 2 ],
+            'a page, uncapped'  => [ '1000000', PHP_INT_MAX, 1000000 ],
+        ];
     }
 
     /**

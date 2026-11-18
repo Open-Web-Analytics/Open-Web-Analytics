@@ -28,5 +28,3 @@ class QueryVeryLong extends \OWA\Module\Base\Classes\Spam\Rule {
         return QueryLong::queryLength( $event ) > self::LONGER_THAN;
     }
 }
-
-?>

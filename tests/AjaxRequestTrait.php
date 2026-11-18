@@ -29,11 +29,11 @@ trait AjaxRequestTrait
             $returned = \OWA\Core\CoreAPI::displayView($data);
             $printed  = ob_get_clean();
 
-            return array(
+            return [
                 'status' => http_response_code(),
                 'json'   => json_decode((string) ($returned ?: $printed), true),
                 'data'   => $data,
-            );
+            ];
         } finally {
             \OWA\Core\CoreAPI::setSetting('base', 'request_type', $mode);
             $request->request_type = $type;
@@ -45,7 +45,7 @@ trait AjaxRequestTrait
     {
         $auth = \OWA\Core\Auth::get_instance();
 
-        foreach (array('auth_method' => $method, '_is_user' => false) as $name => $value) {
+        foreach (['auth_method' => $method, '_is_user' => false] as $name => $value) {
             $p = new \ReflectionProperty($auth, $name);
             $p->setValue($auth, $value);
         }

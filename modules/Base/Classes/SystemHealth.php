@@ -48,7 +48,7 @@ class SystemHealth {
      */
     public static function sections() {
 
-        return array(
+        return [
             'scheduler' => self::scheduler(),
             'jobs'      => self::recurringJobs(),
             'queue'     => self::queue(),
@@ -56,7 +56,7 @@ class SystemHealth {
             'bundles'   => self::bundles(),
             'data'      => self::data(),
             'install'   => self::installation(),
-        );
+        ];
     }
 
     /**
@@ -67,7 +67,7 @@ class SystemHealth {
      */
     public static function worst( array $levels ) {
 
-        foreach ( array( 'red', 'yellow' ) as $level ) {
+        foreach ( [ 'red', 'yellow' ] as $level ) {
 
             if ( in_array( $level, $levels, true ) ) {
 
@@ -84,13 +84,13 @@ class SystemHealth {
      * @param  array<string, mixed> $extra    the section's own data
      * @return Section title, level, findings, and $extra
      */
-    private static function section( $title, array $findings, array $extra = array() ) {
+    private static function section( $title, array $findings, array $extra = [] ) {
 
-        return array_merge( array(
+        return array_merge( [
             'title'    => $title,
             'level'    => self::worst( array_column( $findings, 'level' ) ),
             'findings' => $findings,
-        ), $extra );
+        ], $extra );
     }
 
     /**
@@ -102,7 +102,7 @@ class SystemHealth {
      */
     private static function finding( $level, $label, $detail, $command = null ) {
 
-        return array( 'level' => $level, 'label' => $label, 'detail' => $detail, 'command' => $command );
+        return [ 'level' => $level, 'label' => $label, 'detail' => $detail, 'command' => $command ];
     }
 
     // ---------------------------------------------------------------------
@@ -116,7 +116,7 @@ class SystemHealth {
      */
     public static function scheduler() {
 
-        $findings = array();
+        $findings = [];
 
         $problem = SchedulerHealth::problem();
 
@@ -147,7 +147,7 @@ class SystemHealth {
      */
     public static function recurringJobs() {
 
-        $rows = array();
+        $rows = [];
 
         foreach ( array_keys( JobStatus::jobs() ) as $name ) {
 
@@ -162,7 +162,7 @@ class SystemHealth {
                 $level = 'red';
             }
 
-            $rows[] = array(
+            $rows[] = [
                 'name'     => $name,
                 'description' => (string) ( $s['job']['description'] ?? '' ),
                 'level'    => $level,
@@ -173,16 +173,16 @@ class SystemHealth {
                 'message'  => (string) ( $row['last_message'] ?? '' ),
                 'next'     => $s['next'] ? JobStatus::readable( (int) $s['next'] ) : '',
                 'reason'   => (string) ( $s['reason'] ?? '' ),
-            );
+            ];
         }
 
         $findings = array_map( fn ( $r ) => self::finding( $r['level'], $r['name'],
             $r['reason'] ?: ( $r['outcome'] === 'failed' ? sprintf( \OWA\Core\CoreAPI::t( 'Its last run failed: %s' ), $r['message'] ) : '' ) ), $rows );
 
         $findings = array_values( array_filter( $findings, fn ( $f ) => $f['level'] !== 'green' ) )
-            ?: array( self::finding( 'green', \OWA\Core\CoreAPI::t( 'Up to date' ), \OWA\Core\CoreAPI::t( 'Every job ran when it was due.' ) ) );
+            ?: [ self::finding( 'green', \OWA\Core\CoreAPI::t( 'Up to date' ), \OWA\Core\CoreAPI::t( 'Every job ran when it was due.' ) ) ];
 
-        return self::section( \OWA\Core\CoreAPI::t( 'Recurring jobs' ), $findings, array( 'rows' => $rows ) );
+        return self::section( \OWA\Core\CoreAPI::t( 'Recurring jobs' ), $findings, [ 'rows' => $rows ] );
     }
 
     /**
@@ -221,7 +221,7 @@ class SystemHealth {
     public static function queue() {
 
         $stats    = JobQueue::stats();
-        $findings = array();
+        $findings = [];
 
         if ( $stats['oldest_due_age'] !== null && $stats['oldest_due_age'] > self::QUEUE_DUE_TOO_LONG ) {
 
@@ -244,10 +244,10 @@ class SystemHealth {
             $findings[] = self::finding( 'green', \OWA\Core\CoreAPI::t( 'Draining' ), \OWA\Core\CoreAPI::t( 'Nothing is waiting longer than it should.' ) );
         }
 
-        return self::section( \OWA\Core\CoreAPI::t( 'Job queue' ), $findings, array(
+        return self::section( \OWA\Core\CoreAPI::t( 'Job queue' ), $findings, [
             'stats'  => $stats,
-            'failed' => $stats['failed'] ? JobQueue::listJobs( 'failed', self::FAILED_SHOWN ) : array(),
-        ) );
+            'failed' => $stats['failed'] ? JobQueue::listJobs( 'failed', self::FAILED_SHOWN ) : [],
+        ] );
     }
 
     /**
@@ -262,17 +262,17 @@ class SystemHealth {
             $intake   = TrackerIngest::queue();
             $main     = $intake->stats();
             $dlq      = $intake->deadLetterQueue() ? $intake->deadLetterQueue()->stats() : null;
-            $held     = method_exists( $intake, 'heldBatches' ) ? $intake->heldBatches() : array();
+            $held     = method_exists( $intake, 'heldBatches' ) ? $intake->heldBatches() : [];
             $fallback = TrackerIngest::fallback();
             $kept     = $fallback ? $fallback->stats() : null;
 
         } catch ( \Throwable $t ) {
 
             return self::section( \OWA\Core\CoreAPI::t( 'Tracker ingest' ),
-                array( self::finding( 'red', \OWA\Core\CoreAPI::t( 'Unavailable' ), $t->getMessage() ) ) );
+                [ self::finding( 'red', \OWA\Core\CoreAPI::t( 'Unavailable' ), $t->getMessage() ) ] );
         }
 
-        $findings = array();
+        $findings = [];
 
         // A queue that cannot be read cannot be drained either, and says nothing about a backlog.
         if ( $main['messages'] === null ) {
@@ -368,13 +368,13 @@ class SystemHealth {
             $findings[] = $blocked;
         }
 
-        return self::section( \OWA\Core\CoreAPI::t( 'Tracker ingest' ), $findings, array(
+        return self::section( \OWA\Core\CoreAPI::t( 'Tracker ingest' ), $findings, [
             'type'     => $backend,
             'queued'   => TrackerIngest::isQueued(),
             'waiting'  => $main['messages'],
             'dead'     => $dlq ? $dlq['messages'] : null,
             'kept'     => $kept ? $kept['messages'] : null,
-        ) );
+        ] );
     }
 
     /**
@@ -401,7 +401,7 @@ class SystemHealth {
 
         unset( $counts[ \OWA\Module\Base\Entity\SpamBlock::TOTAL ] );
 
-        $rules = array();
+        $rules = [];
 
         foreach ( $counts as $rule => $n ) {
 
@@ -422,20 +422,20 @@ class SystemHealth {
      */
     public static function bundles() {
 
-        $findings = array();
-        $rows     = array();
+        $findings = [];
+        $rows     = [];
 
         if ( ! TrackerBundle::buildManifest() ) {
 
-            return self::section( \OWA\Core\CoreAPI::t( 'Tracker bundles' ), array( self::finding( 'red', \OWA\Core\CoreAPI::t( 'Not built' ),
+            return self::section( \OWA\Core\CoreAPI::t( 'Tracker bundles' ), [ self::finding( 'red', \OWA\Core\CoreAPI::t( 'Not built' ),
                 \OWA\Core\CoreAPI::t( 'The tracker has not been built on this installation, so no bundle can be published.' ),
-                'npm run build' ) ) );
+                'npm run build' ) ] );
         }
 
         // A Profile's own name is numbered within its Property ("Observation
         // Profile 1"), so the Property's name is what tells them apart.
-        $names      = array();
-        $properties = array();
+        $names      = [];
+        $properties = [];
 
         foreach ( (array) \OWA\Core\CoreAPI::getSitesList() as $site ) {
 
@@ -459,13 +459,13 @@ class SystemHealth {
             $status = TrackerBundle::status( $site_id );
             $stale += $status['state'] === 'published' ? 0 : 1;
 
-            $rows[] = array(
+            $rows[] = [
                 'site_id'      => $site_id,
                 'name'         => $names[ $site_id ] ?? '',
                 'level'        => $status['state'] === 'published' ? 'green' : 'yellow',
                 'state'        => $status['state'] === 'published' ? 'current' : ( $status['published_at'] ? 'stale' : 'not published' ),
                 'published_at' => $status['published_at'] ? JobStatus::readable( (int) $status['published_at'] ) : '',
-            );
+            ];
         }
 
         /*
@@ -509,7 +509,7 @@ class SystemHealth {
                 : 'No web Profile yet.' );
         }
 
-        return self::section( \OWA\Core\CoreAPI::t( 'Tracker bundles' ), $findings, array( 'rows' => $rows ) );
+        return self::section( \OWA\Core\CoreAPI::t( 'Tracker bundles' ), $findings, [ 'rows' => $rows ] );
     }
 
     /**
@@ -532,11 +532,11 @@ class SystemHealth {
             return (int) ( $row['n'] ?? 0 );
         };
 
-        $facts = array(
+        $facts = [
             \OWA\Core\CoreAPI::t( 'Organizations' ) => (string) $count( 'base.organization', false ),
             \OWA\Core\CoreAPI::t( 'Properties' )    => (string) $count( 'base.property', true ),
             \OWA\Core\CoreAPI::t( 'Profiles' )      => (string) $count( 'base.site', true ),
-        );
+        ];
 
         // Raw: the estimate and size, and the oldest partition holding rows.
         $raw   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
@@ -570,7 +570,7 @@ class SystemHealth {
         $facts[ \OWA\Core\CoreAPI::t( 'Fine partitions' ) ] = sprintf( \OWA\Core\CoreAPI::tn( 'the last %d month by month, older years by year',
             'the last %d months by month, older years by year', $detail ), $detail );
 
-        $findings = array();
+        $findings = [];
 
         if ( ! $rotate || JobStatus::isDisabled( $rotate ) ) {
 
@@ -583,7 +583,7 @@ class SystemHealth {
             $findings[] = self::finding( 'green', \OWA\Core\CoreAPI::t( 'Rotated' ), \OWA\Core\CoreAPI::t( 'rotate-partitions is running.' ) );
         }
 
-        return self::section( \OWA\Core\CoreAPI::t( 'Data' ), $findings, array( 'facts' => $facts ) );
+        return self::section( \OWA\Core\CoreAPI::t( 'Data' ), $findings, [ 'facts' => $facts ] );
     }
 
     /**
@@ -592,7 +592,7 @@ class SystemHealth {
      */
     private static function bytes( $n ) {
 
-        foreach ( array( 'GB' => 1073741824, 'MB' => 1048576, 'KB' => 1024 ) as $unit => $size ) {
+        foreach ( [ 'GB' => 1073741824, 'MB' => 1048576, 'KB' => 1024 ] as $unit => $size ) {
 
             if ( $n >= $size ) {
 
@@ -625,7 +625,7 @@ class SystemHealth {
         $base = \OWA\Core\CoreAPI::serviceSingleton()->getModule( 'base' );
         $role = \OWA\Core\ServerRole::current();
 
-        $facts = array(
+        $facts = [
             'OWA'     => \OWA\Core\Env::version(),
             \OWA\Core\CoreAPI::t( 'Server role' ) => sprintf( $role->runsScheduler()
                     ? \OWA\Core\CoreAPI::t( '%1$s (serves %2$s; runs the scheduler)' ) : \OWA\Core\CoreAPI::t( '%1$s (serves %2$s)' ),
@@ -636,9 +636,9 @@ class SystemHealth {
             \OWA\Core\CoreAPI::t( 'Tracker' ) => sprintf( \OWA\Core\CoreAPI::t( 'build %s (built here: %s)' ),
                 self::shortBuild( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'tracker_build' ) ),
                 self::shortBuild( \OWA\Module\Base\Module::requiredTrackerBuild() ) ),
-        );
+        ];
 
-        $findings = array();
+        $findings = [];
 
         foreach ( EnvironmentCheck::all( (string) \OWA\Core\CoreAPI::getSetting( 'base', 'config_file' ) ) as $check ) {
 
@@ -652,8 +652,6 @@ class SystemHealth {
             $findings[] = self::finding( 'yellow', $constant, \OWA\Core\Strings::translate( $notice ) );
         }
 
-        return self::section( \OWA\Core\CoreAPI::t( 'Installation' ), $findings, array( 'facts' => $facts ) );
+        return self::section( \OWA\Core\CoreAPI::t( 'Installation' ), $findings, [ 'facts' => $facts ] );
     }
 }
-
-?>

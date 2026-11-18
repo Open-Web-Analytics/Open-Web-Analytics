@@ -85,5 +85,3 @@ class Logout extends \OWA\Core\Controller {
         $this->setRedirectAction('base.loginForm');
     }
 }
-
-?>

@@ -30,7 +30,7 @@ final class AttributionLookbackCapTest extends TestCase
         $v = (new ReflectionProperty(\OWA\Core\Controller::class, 'v'))->getValue($c);
 
         if (!$v) {
-            return array();
+            return [];
         }
 
         $v->doValidations();
@@ -54,7 +54,7 @@ final class AttributionLookbackCapTest extends TestCase
 
     public function testValuesInsideTheLimitPass(): void
     {
-        foreach (array(0, 1, 90, 365, '30', ' 45 ') as $value) {
+        foreach ([0, 1, 90, 365, '30', ' 45 '] as $value) {
             $this->assertNull($this->config()->valueProblem('base', 'attribution_lookback_days', $value),
                 var_export($value, true));
         }
@@ -62,7 +62,7 @@ final class AttributionLookbackCapTest extends TestCase
 
     public function testValuesOutsideItAreRefusedWithTheRule(): void
     {
-        foreach (array(366, 1000, -1, '12.5', 'abc', '') as $value) {
+        foreach ([366, 1000, -1, '12.5', 'abc', ''] as $value) {
             $this->assertSame('Attribution lookback (days) is a whole number from 0 to 365.',
                 $this->config()->valueProblem('base', 'attribution_lookback_days', $value),
                 var_export($value, true));
@@ -109,12 +109,12 @@ final class AttributionLookbackCapTest extends TestCase
     /** The Property save reports the refusal on the form. */
     public function testThePropertyFormReportsIt(): void
     {
-        $c = new \OWA\Module\Base\Controller\PropertyEdit(array(
+        $c = new \OWA\Module\Base\Controller\PropertyEdit([
             'name'       => 'Lookback cap',
             'domain'     => 'example.test',
-            'config'     => array('base.attribution_lookback_days' => '400'),
-            'override'   => array('base.attribution_lookback_days' => '1'),
-        ));
+            'config'     => ['base.attribution_lookback_days' => '400'],
+            'override'   => ['base.attribution_lookback_days' => '1'],
+        ]);
 
         $this->assertContains('Attribution lookback (days) is a whole number from 0 to 365.', $this->errors($c));
     }
@@ -122,9 +122,9 @@ final class AttributionLookbackCapTest extends TestCase
     /** ...and the install's form does too. */
     public function testTheInstallFormReportsIt(): void
     {
-        $c = new \OWA\Module\Base\Controller\OptionsUpdate(array(
-            'config' => array('base.attribution_lookback_days' => '400'),
-        ));
+        $c = new \OWA\Module\Base\Controller\OptionsUpdate([
+            'config' => ['base.attribution_lookback_days' => '400'],
+        ]);
 
         $this->assertContains('Attribution lookback (days) is a whole number from 0 to 365.', $this->errors($c));
     }

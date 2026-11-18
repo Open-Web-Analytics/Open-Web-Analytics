@@ -28,12 +28,12 @@ final class SqlJoinConstantsTest extends TestCase
     /** @return array<string, array{string, string}> */
     public static function joinConstants(): array
     {
-        $cases = array();
+        $cases = [];
 
         foreach ( get_defined_constants() as $name => $value ) {
 
             if ( strpos( $name, 'OWA_SQL_JOIN' ) === 0 ) {
-                $cases[ $name ] = array( $name, (string) $value );
+                $cases[ $name ] = [ $name, (string) $value ];
             }
         }
 

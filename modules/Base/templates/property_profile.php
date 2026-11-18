@@ -3,7 +3,7 @@
 <div id="panel">
 <div class="owa_panelIntro"><?php $view->out( \OWA\Core\CoreAPI::t( 'A Property is what reports are about. Its Observation Profiles collect its data, each under its own tracking id.' ) );?></div>
 
-    <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.propertyEdit' ) );?>">
+    <form method="POST" action="<?php echo $view->makeLink( [ 'do' => 'base.propertyEdit' ] );?>">
         <?php echo $view->createNonceFormField( 'base.propertyEdit' );?>
         <input type="hidden" name="propertyId" value="<?php $view->out( $view->property['id'] ?? '' );?>">
 
@@ -88,7 +88,7 @@
              * inherits until its Override switch is on. See
              * SettingsForm::scopedField().
              */
-            foreach ( array( 'base.propertyAttribution', 'base.propertyReporting' ) as $owa_set ) {
+            foreach ( [ 'base.propertyAttribution', 'base.propertyReporting' ] as $owa_set ) {
 
                 echo \OWA\Module\Base\Classes\SettingsForm::scopedFieldSet(
                     \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( $owa_set ),

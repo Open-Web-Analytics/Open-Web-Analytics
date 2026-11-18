@@ -50,5 +50,3 @@ class NoPageLocation extends \OWA\Module\Base\Classes\Spam\Rule {
             && in_array( 'page_location', $helpers::propertiesForEvent( $event_type ), true );
     }
 }
-
-?>

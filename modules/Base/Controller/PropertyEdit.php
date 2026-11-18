@@ -37,7 +37,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
          * deleted.
          */
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ] );
 
         /*
          * A web Property needs a domain.
@@ -56,7 +56,7 @@ class PropertyEdit extends \OWA\Core\AdminController {
              === \OWA\Module\Base\Entity\Property::TYPE_WEB ) {
 
             $this->addValidation( 'domain', \OWA\Module\Base\Classes\SiteManager::domainOnly( $this->getParam( 'domain' ) ), 'required',
-                array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ) );
+                [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Domain is required.' ) ] );
         }
 
         // Each setting the screen would store, checked against its declaration.
@@ -77,11 +77,11 @@ class PropertyEdit extends \OWA\Core\AdminController {
         if ( $this->getParam( 'propertyId' ) ) {
 
             $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists',
-                array(
+                [
                     'entity'   => 'base.property',
                     'column'   => 'id',
                     'errorMsg' => \OWA\Core\CoreAPI::t( 'That Property does not exist.' ),
-                ) );
+                ] );
         }
     }
 
@@ -182,10 +182,10 @@ class PropertyEdit extends \OWA\Core\AdminController {
     private static function scopedFieldSets() {
 
         return array_merge(
-            array(
+            [
                 \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyAttribution' ),
                 \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyReporting' ),
-            ),
+            ],
             \OWA\Module\Base\Classes\SettingsForm::groupFieldSets( 'tracking_tag' ) );
     }
 
@@ -252,8 +252,8 @@ class PropertyEdit extends \OWA\Core\AdminController {
 
         $shown = $property->_getProperties();
 
-        foreach ( array( 'name' => 'name', 'domain' => 'domain', 'description' => 'description',
-                         'propertyType' => 'property_type' ) as $param => $column ) {
+        foreach ( [ 'name' => 'name', 'domain' => 'domain', 'description' => 'description',
+                         'propertyType' => 'property_type' ] as $param => $column ) {
 
             if ( $this->getParam( $param ) !== null ) {
 
@@ -270,17 +270,15 @@ class PropertyEdit extends \OWA\Core\AdminController {
         $this->set( 'property', $shown );
         $this->set( 'propertyId', $propertyId );
         $this->set( 'profileCount', \OWA\Module\Base\Controller\PropertyProfile::countLiveProfiles( $propertyId ) );
-        $this->set( 'posted', array(
+        $this->set( 'posted', [
             'config'   => (array) $this->getParam( 'config' ),
             'override' => (array) $this->getParam( 'override' ),
-        ) );
+        ] );
 
         $siteId = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ), $propertyId );
 
         $this->set( 'error_code', 3002 );
-        $this->settingsChrome( array( 'siteId' => $siteId ), '', $propertyId );
+        $this->settingsChrome( [ 'siteId' => $siteId ], '', $propertyId );
         $this->setSubview( 'base.propertyProfile', PropertyProfile::screen( $propertyId ) );
     }
 }
-
-?>

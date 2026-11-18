@@ -42,10 +42,10 @@ class Update039 extends \OWA\Core\Update {
      */
     private function columns() {
 
-        return array(
+        return [
             'acq_campaign' => OWA_DTD_VARCHAR255,
             'acq_ad'       => OWA_DTD_VARCHAR255,
-        );
+        ];
     }
 
     /**
@@ -108,5 +108,3 @@ class Update039 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

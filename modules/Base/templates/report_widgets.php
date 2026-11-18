@@ -51,7 +51,7 @@ $owa_widgets = (array) $view->widgets;
 $owa_authored = (bool) $view->get( 'custom_report_id' );
 
 $owa_sets = ( $view->metrics || $owa_authored )
-    ? array( '' => array() )
+    ? [ '' => [] ]
     : (array) $view->metricSets;
 
 $owa_setKeysReal = (bool) array_filter( array_keys( $owa_sets ), function ( $k ) { return $k !== ''; } );
@@ -59,7 +59,7 @@ $owa_setKeysReal = (bool) array_filter( array_keys( $owa_sets ), function ( $k )
 if ( ! $owa_sets ) {
 
     // No site, so no sets -- render once with whatever the report has.
-    $owa_sets = array( '' => array() );
+    $owa_sets = [ '' => [] ];
 }
 
 /*
@@ -128,7 +128,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
     $owa_panelId = $owa_setKey === '' ? '' : 'tab_' . $owa_setVar;
 ?>
 <div<?php if ( $owa_panelId ): ?> id="<?php $view->out( $owa_panelId ); ?>"<?php endif; ?> class="owa_reportGrid" data-metric-set="<?php $view->out( $owa_setKey ); ?>">
-<?php $owa_rses = array(); ?>
+<?php $owa_rses = []; ?>
 <?php
     /*
      * The trend and the grid of this set that are linked: the trend draws a
@@ -184,14 +184,14 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      */
     $owa_ownMetrics = ( $owa_w['type'] ?? '' ) === 'trend-card';
 
-    $owa_query     = (array) ( $owa_w['query'] ?? array() ) + array(
+    $owa_query     = (array) ( $owa_w['query'] ?? [] ) + [
         'metrics'     => $owa_ownMetrics ? '' : ( $owa_set['metrics'] ?? $view->metrics ),
         'do'          => 'reports',
         'module'      => 'base',
         'version'     => 'v1',
         'format'      => 'json',
         'constraints' => $view->constraints,
-    );
+    ];
 
     /*
      * The metric a chart draws: the widget's own, or the metric set's.
@@ -234,7 +234,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * Built HERE, while $owa_query is still being assembled, because a
      * broken-out trend has to change it -- see resultsPerPage below.
      */
-    if ( in_array( ( $owa_w['type'] ?? '' ), array( 'trend', 'trend-card' ), true ) ) {
+    if ( in_array( ( $owa_w['type'] ?? '' ), [ 'trend', 'trend-card' ], true ) ) {
 
         $owa_query = \OWA\Core\ConfiguredReport::trendQuery( $owa_query, $view->period_obj ?? null );
     }
@@ -242,13 +242,13 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
     $owa_trendDims = array_values( array_filter( array_map( 'trim',
         explode( ',', (string) ( $owa_query['dimensions'] ?? '' ) ) ) ) );
 
-    $owa_chartSeries = array( array(
+    $owa_chartSeries = [ [
         'x' => $owa_trendDims[0] ?? 'date',
         'y' => $owa_chartMetric,
-    ) );
+    ] ];
 
     $owa_breakdown     = '';
-    $owa_breakdownQuery = array();
+    $owa_breakdownQuery = [];
 
     if ( ( $owa_w['type'] ?? '' ) === 'trend' && isset( $owa_trendDims[1] ) ) {
 
@@ -334,7 +334,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      */
     if ( array_key_exists( 'showBreakdownGrid', $owa_w ) && ! $owa_w['showBreakdownGrid'] ) {
 
-        $owa_breakdownQuery = array();
+        $owa_breakdownQuery = [];
     }
 ?>
     <div class="<?php echo \OWA\Core\ReportGrid::classesFor( $owa_w ); ?> owa_reportSectionContent" data-ui="widget:<?php $view->out( (string) ( $owa_w['id'] ?? 'widget' ) ); ?>">
@@ -397,12 +397,12 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 ?>
 <?php if ( $owa_showTitle ): ?>
         <div class="owa_reportSectionHeader"><h2 class="owa_reportSectionTitle"><?php $view->out( $owa_w['title'] ); ?></h2><?php
-            if ( $owa_more && ! $owa_moreAtFoot ): ?><span class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
-                'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
+            if ( $owa_more && ! $owa_moreAtFoot ): ?><span class="owa_moreLinks"><a href="<?php echo $view->makeLink( [
+                'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ], true ); ?>"><?php
                 $view->out( isset( $owa_w['more']['label'] ) ? \OWA\Module\Base\Classes\CustomReports::shownMoreLabel( $owa_w['more']['label'] ) : \OWA\Core\CoreAPI::t( 'View Full Report' ) ); ?></a></span><?php endif; ?></div>
 <?php endif; ?>
 
-<?php if ( in_array( ( $owa_w['type'] ?? '' ), array( 'trend', 'trend-card' ), true ) ): ?>
+<?php if ( in_array( ( $owa_w['type'] ?? '' ), [ 'trend', 'trend-card' ], true ) ): ?>
 <?php
     /*
      * The boxes, one per metric in the query.
@@ -466,14 +466,14 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * `$owa_id` with its URL as `$owa_id`url, the options it is given and the
      * commands it runs on its rows. In a multi-set report the tab loads it.
      */
-    $owa_desc = array(
+    $owa_desc = [
         'name'      => $owa_id,
         'container' => $owa_container,
         'url'       => $view->makeApiLink( $owa_query, true ),
-        'options'   => array( 'sparkline' => array( 'metric' => 'sessions' ) ),
-        'queue'     => array(),
+        'options'   => [ 'sparkline' => [ 'metric' => 'sessions' ] ],
+        'queue'     => [],
         'load'      => ! $owa_multiSet,
-    );
+    ];
 
     if ( $owa_showTitle || $owa_isTrendCard ) {
 
@@ -489,7 +489,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
     if ( $owa_chartMetric !== '' ) {
 
-        $owa_desc['queue'][] = array( 'makeAreaChart', $owa_chartSeries, $owa_container );
+        $owa_desc['queue'][] = [ 'makeAreaChart', $owa_chartSeries, $owa_container ];
     }
 
     if ( $owa_showMetricBoxes ) {
@@ -517,7 +517,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
             $owa_desc['options']['metricBoxes']['width'] = '150px';
         }
 
-        $owa_desc['queue'][] = array( 'makeMetricBoxes', $owa_id . '-metrics' );
+        $owa_desc['queue'][] = [ 'makeMetricBoxes', $owa_id . '-metrics' ];
     }
 
     if ( $owa_breakdownQuery ) {
@@ -528,12 +528,12 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
          * surface: OWA.linkTrendToBreakdownGrid, called once both exist. See
          * it for what each control means.
          */
-        $owa_desc['breakdown'] = array(
+        $owa_desc['breakdown'] = [
             'name'      => $owa_id . 'Breakdown',
             'container' => $owa_id . '-breakdown',
             'url'       => $view->makeApiLink( $owa_breakdownQuery, true ),
-            'queue'     => array( array( 'refreshGrid' ) ),
-        );
+            'queue'     => [ [ 'refreshGrid' ] ],
+        ];
     }
 ?>
         <script type="application/json" data-ui="report-widget:config"><?php echo $view->scriptJson( $owa_desc ); ?></script>
@@ -571,18 +571,18 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <div id="<?php $view->out( $owa_container ); ?>"></div>
 
 <?php
-    $owa_desc = array(
+    $owa_desc = [
         'name'      => $owa_id,
         'container' => $owa_container,
         'url'       => $view->makeApiLink( $owa_query, true ),
-        'options'   => array(),
+        'options'   => [],
         /*
          * The label sits inside the box; see $owa_ownsTitle above. Only a
          * single-metric widget lends its title to the box.
          */
-        'queue'     => array( array( 'makeMetricBoxes', '', $owa_ownsTitle ? (string) ( $owa_w['title'] ?? '' ) : '' ) ),
+        'queue'     => [ [ 'makeMetricBoxes', '', $owa_ownsTitle ? (string) ( $owa_w['title'] ?? '' ) : '' ] ],
         'load'      => ! $owa_multiSet,
-    );
+    ];
 
     if ( ! empty( $owa_w['boxWidth'] ) ) {
 
@@ -609,22 +609,22 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * queries for numbers it would not draw.
      */
     $owa_shareState = array_values( array_diff( \OWA\Core\View::LINK_STATE_KEYS,
-        array( 'compare', 'compareStartDate', 'compareEndDate' ) ) );
+        [ 'compare', 'compareStartDate', 'compareEndDate' ] ) );
 ?>
         <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody owa_shareBody"></div>
 
 <?php
-    $owa_desc = array(
+    $owa_desc = [
         'name'      => $owa_id,
         'container' => $owa_container,
         'url'       => $view->makeApiLink( $owa_query, $owa_shareState ),
-        'options'   => array( 'shareChart' => array(
+        'options'   => [ 'shareChart' => [
             'metric'    => (string) $owa_chartMetric,
             'dimension' => (string) ( $owa_query['dimensions'] ?? '' ),
-        ) ),
-        'queue'     => array( array( 'makeShareChart' ) ),
+        ] ],
+        'queue'     => [ [ 'makeShareChart' ] ],
         'load'      => ! $owa_multiSet,
-    );
+    ];
 
     if ( ! empty( $owa_w['valueLabels'] ) ) {
 
@@ -661,7 +661,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 ?>
         <div class="relatedReports">
             <ul>
-<?php foreach ( (array) ( $owa_w['links'] ?? array() ) as $owa_link ): ?>
+<?php foreach ( (array) ( $owa_w['links'] ?? [] ) as $owa_link ): ?>
                 <li>
                     <?php
                         /*
@@ -670,9 +670,9 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
                          * say what. Merged UNDER do/reportId so a declared
                          * param cannot rewrite the target.
                          */
-                        $owa_link_params = array( 'do' => 'base.report',
-                                                  'reportId' => $owa_link['reportId'] )
-                            + (array) ( $owa_link['params'] ?? array() );
+                        $owa_link_params = [ 'do' => 'base.report',
+                                                  'reportId' => $owa_link['reportId'] ]
+                            + (array) ( $owa_link['params'] ?? [] );
                     ?>
                     <a href="<?php echo $view->makeLink( $owa_link_params, true ); ?>"><?php
                         $view->out( $owa_link['label'] ); ?></a><?php
@@ -723,7 +723,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         $owa_hm_constraints = 'pagePath==' . urlencode( \OWA\Module\Base\Classes\ResultSetManager::constraintValue( $owa_hm_path ) )
             . ',eventName==click';
 
-        $owa_hm_api = $view->makeOverlayApiLink( array(
+        $owa_hm_api = $view->makeOverlayApiLink( [
             'do'             => 'reports',
             'module'         => 'base',
             'version'        => 'v1',
@@ -732,16 +732,16 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
             'constraints'    => $owa_hm_constraints,
             'resultsPerPage' => 1000,
             'format'         => 'json',
-        ), 'constraints' );
+        ], 'constraints' );
 
-        $owa_hm_url = $view->makeLink( array(
+        $owa_hm_url = $view->makeLink( [
             'do'             => 'base.overlayLauncher',
             'pagePath'       => $owa_hm_path,
-            'overlay_params' => base64_encode( $view->makeParamString( array(
+            'overlay_params' => base64_encode( $view->makeParamString( [
                 'action'  => 'loadHeatmap',
                 'api_url' => $owa_hm_api,
-            ), false, 'json' ) ),
-        ), true );
+            ], false, 'json' ) ),
+        ], true );
 ?>
         <div class="relatedReports">
             <ul>
@@ -753,7 +753,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         </div>
 <?php endif; ?>
 
-<?php elseif ( in_array( ( $owa_w['type'] ?? '' ), array( 'grid', 'grid-card' ), true ) ): ?>
+<?php elseif ( in_array( ( $owa_w['type'] ?? '' ), [ 'grid', 'grid-card' ], true ) ): ?>
         <?php
             /*
              * The BODY of the widget, named so the panel can push its footer
@@ -771,19 +771,19 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * single visits has no compare period to match its rows against.
      */
     $owa_gridState = ( $owa_w['compare'] ?? true ) === false
-        ? array_values( array_diff( \OWA\Core\View::LINK_STATE_KEYS, array( 'compare', 'compareStartDate', 'compareEndDate' ) ) )
+        ? array_values( array_diff( \OWA\Core\View::LINK_STATE_KEYS, [ 'compare', 'compareStartDate', 'compareEndDate' ] ) )
         : true;
 ?>
 
 <?php
-    $owa_desc = array(
+    $owa_desc = [
         'name'      => $owa_id,
         'container' => $owa_container,
         'url'       => $view->makeApiLink( $owa_query, $owa_gridState ),
-        'options'   => array(),
-        'queue'     => array( array( 'refreshGrid' ) ),
+        'options'   => [],
+        'queue'     => [ [ 'refreshGrid' ] ],
         'load'      => ! $owa_multiSet,
-    );
+    ];
 
     if ( ( $owa_w['type'] ?? '' ) === 'grid-card' ) {
 
@@ -812,12 +812,12 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
          * strings, entities decoded, reserved names mapped -- read back so
          * they travel inside this description; `except` is a list.
          */
-        $owa_desc['columnLink'] = array(
+        $owa_desc['columnLink'] = [
             'column' => (string) $owa_w['link']['linkColumn'],
             'url'    => $view->makeLink( $owa_w['link']['template'], true ),
             'values' => json_decode( $view->makeJson( (array) $owa_w['link']['valueColumns'] ) ),
-            'except' => array_values( array_map( 'strval', (array) ( $owa_w['link']['except'] ?? array() ) ) ),
-        );
+            'except' => array_values( array_map( 'strval', (array) ( $owa_w['link']['except'] ?? [] ) ) ),
+        ];
     }
 
     if ( ! empty( $owa_w['excludeColumns'] ) ) {
@@ -855,20 +855,20 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * placeholder per parameter the grid fills from the row. See
      * ConfiguredReport::ROW_ACTIONS for what may be named.
      */
-    $owa_rowActions = array();
+    $owa_rowActions = [];
 
     foreach ( \OWA\Core\ConfiguredReport::resolveRowActions( $owa_w ) as $owa_ra ) {
 
         $owa_ra_params = isset( $owa_ra['reportId'] )
-            ? array( 'do' => 'base.report', 'reportId' => $owa_ra['reportId'] )
-            : array( 'do' => (string) $owa_ra['action'] );
+            ? [ 'do' => 'base.report', 'reportId' => $owa_ra['reportId'] ]
+            : [ 'do' => (string) $owa_ra['action'] ];
 
         foreach ( array_keys( (array) $owa_ra['params'] ) as $owa_ra_param ) {
 
             $owa_ra_params[ $owa_ra_param ] = '__OWA_ROW_' . $owa_ra_param . '__';
         }
 
-        $owa_rowActions[] = array(
+        $owa_rowActions[] = [
             'id'        => $owa_ra['id'],
             // Translated where it is drawn (OWA.translate()).
             'label'     => (string) $owa_ra['label'],
@@ -876,7 +876,7 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
             'params'    => (object) $owa_ra['params'],
             'first'     => (string) ( $owa_ra['first'] ?? '' ),
             'newWindow' => ! empty( $owa_ra['newWindow'] ),
-        );
+        ];
     }
 
     if ( $owa_rowActions ) {
@@ -893,12 +893,12 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endif; ?>
 
 <?php if ( $owa_moreAtFoot && ( $owa_w['type'] ?? '' ) === 'grid-card' ): ?>
-        <div class="owa_moreLinks owa_cardFoot"><a data-ui="card-full-report" href="<?php echo $view->makeLink( array(
-            'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
+        <div class="owa_moreLinks owa_cardFoot"><a data-ui="card-full-report" href="<?php echo $view->makeLink( [
+            'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ], true ); ?>"><?php
             $view->out( isset( $owa_w['more']['label'] ) ? \OWA\Module\Base\Classes\CustomReports::shownMoreLabel( $owa_w['more']['label'] ) : \OWA\Core\CoreAPI::t( 'Full report' ) ); ?></a></div>
 <?php elseif ( $owa_moreAtFoot ): ?>
-        <div class="owa_moreLinks"><a href="<?php echo $view->makeLink( array(
-            'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ), true ); ?>"><?php
+        <div class="owa_moreLinks"><a href="<?php echo $view->makeLink( [
+            'do' => 'base.report', 'reportId' => $owa_w['more']['reportId'] ], true ); ?>"><?php
             $view->out( isset( $owa_w['more']['label'] ) ? \OWA\Module\Base\Classes\CustomReports::shownMoreLabel( $owa_w['more']['label'] ) : \OWA\Core\CoreAPI::t( 'View Full Report' ) ); ?></a></div>
 <?php endif; ?>
 
@@ -913,21 +913,21 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      * result sets it loads when it becomes the one being looked at. The result
      * sets are pairs, in order: a widget id may be numeric.
      */
-    $owa_setDesc = array( 'report' => (string) $view->dom_id );
+    $owa_setDesc = [ 'report' => (string) $view->dom_id ];
 
     if ( $owa_plotTrend !== '' && $owa_plotGrid !== '' ) {
 
-        $owa_setDesc['link'] = array( $owa_plotTrend, $owa_plotGrid );
+        $owa_setDesc['link'] = [ $owa_plotTrend, $owa_plotGrid ];
     }
 
     if ( $owa_multiSet ) {
 
-        $owa_setDesc['tab'] = array(
+        $owa_setDesc['tab'] = [
             'name'  => 'owaSet_' . $owa_setVar,
             'panel' => $owa_panelId,
             'label' => (string) ( $owa_set['label'] ?? $owa_setKey ),
             'rses'  => array_map( null, array_map( 'strval', array_keys( $owa_rses ) ), array_values( $owa_rses ) ),
-        );
+        ];
     }
 ?>
 <?php if ( isset( $owa_setDesc['link'] ) || isset( $owa_setDesc['tab'] ) ): ?>
@@ -937,5 +937,5 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 
 <?php if ( $owa_multiSet ): ?>
 </div>
-<script type="application/json" data-ui="report-widgets:tabs"><?php echo $view->scriptJson( array( 'report' => (string) $view->dom_id ) ); ?></script>
+<script type="application/json" data-ui="report-widgets:tabs"><?php echo $view->scriptJson( [ 'report' => (string) $view->dom_id ] ); ?></script>
 <?php endif; ?>

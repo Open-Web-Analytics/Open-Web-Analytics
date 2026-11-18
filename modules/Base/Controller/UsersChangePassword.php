@@ -60,7 +60,7 @@ class UsersChangePassword extends \OWA\Core\Controller {
         // log to event queue
         if ($status === true) {
             $ed = \OWA\Core\CoreAPI::getEventDispatch();
-            $new_password = array('key' => $this->getParam('k'), 'password' => $this->getParam('password'), 'ip' => $_SERVER['REMOTE_ADDR'], 'user_id' => $auth->u->get('user_id'));
+            $new_password = ['key' => $this->getParam('k'), 'password' => $this->getParam('password'), 'ip' => $_SERVER['REMOTE_ADDR'], 'user_id' => $auth->u->get('user_id')];
             $ed->log($new_password, 'base.set_password');
             $auth->deleteCredentials();
             $this->setRedirectAction('base.loginForm');
@@ -94,5 +94,3 @@ class UsersChangePassword extends \OWA\Core\Controller {
         $this->set('key', $this->getParam('k'));
     }
 }
-
-?>

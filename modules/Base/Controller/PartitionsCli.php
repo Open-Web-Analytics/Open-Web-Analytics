@@ -38,7 +38,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
     protected function factTables( $only = null ) {
 
         $s      = \OWA\Core\CoreAPI::serviceSingleton();
-        $tables = array();
+        $tables = [];
 
         /*
          * EVERY ACTIVE MODULE'S partitioned entities, not only Base's: a module
@@ -183,16 +183,16 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         if ( $stated > 0 ) {
 
-            return array(
+            return [
                 'limit'  => $stated,
                 'reason' => 'set by OWA_PARTITION_MAX_PARTITIONS',
-            );
+            ];
         }
 
-        return array(
+        return [
             'limit'  => \OWA\Core\Db::PARTITION_COUNT_LIMIT,
             'reason' => 'the default ceiling; raise it with OWA_PARTITION_MAX_PARTITIONS',
-        );
+        ];
     }
 
     /**
@@ -700,7 +700,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         $cutoff = date( 'Ymd', strtotime( $this->today() . ' -' . $this->windowDays() . ' days' ) );
 
-        $mergeable = array();
+        $mergeable = [];
 
         foreach ( $this->dailyByPeriod( $spans, $granularity ) as $start => $group ) {
 
@@ -833,7 +833,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
                 continue;
             }
 
-            if ( ! $db->reorganizePartitions( $table, array( $span['name'] ), $span['ranges'] ) ) {
+            if ( ! $db->reorganizePartitions( $table, [ $span['name'] ], $span['ranges'] ) ) {
 
                 $this->fail( sprintf( '%s: carving %s failed.', $table, $span['name'] ) );
 
@@ -881,7 +881,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         usort( $spans, function ( $a, $b ) { return strcmp( $a['start'], $b['start'] ); } );
 
         $last       = count( $spans ) - 1;
-        $candidates = array();
+        $candidates = [];
 
         foreach ( $spans as $i => $span ) {
 
@@ -929,7 +929,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $candidates ) {
 
-            return array();
+            return [];
         }
 
         $coverage = $this->dailyCoverage( $spans );
@@ -937,13 +937,13 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
         // Nothing daily yet, so it starts where the first carve will.
         if ( ! $coverage ) {
 
-            $coverage = array( 'start' => $candidates[0]['start'], 'end' => $candidates[0]['start'] );
+            $coverage = [ 'start' => $candidates[0]['start'], 'end' => $candidates[0]['start'] ];
         }
 
         $enough = date( 'Ymd', strtotime(
             $coverage['start'] . ' +' . \OWA\Core\Db::CUBE_DAILY_MONTHS . ' months' ) );
 
-        $plan = array();
+        $plan = [];
 
         foreach ( $candidates as $span ) {
 
@@ -1001,7 +1001,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
             }
         }
 
-        return $start === null ? null : array( 'start' => $start, 'end' => $end );
+        return $start === null ? null : [ 'start' => $start, 'end' => $end ];
     }
 
     /**
@@ -1013,7 +1013,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
      */
     protected function dailyByPeriod( array $spans, $granularity = 'monthly' ) {
 
-        $periods = array();
+        $periods = [];
 
         foreach ( $spans as $span ) {
 
@@ -1031,7 +1031,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
             if ( ! isset( $periods[ $period['start'] ] ) ) {
 
-                $period['names'] = array();
+                $period['names'] = [];
 
                 $periods[ $period['start'] ] = $period;
             }
@@ -1069,7 +1069,7 @@ abstract class PartitionsCli extends \OWA\Core\Controller\Cli {
 
             if ( $date >= $start && $date < $less_than ) {
 
-                return array( 'start' => $start, 'less_than' => $less_than );
+                return [ 'start' => $start, 'less_than' => $less_than ];
             }
         }
 

@@ -33,7 +33,7 @@ class OptionsHierarchy extends \OWA\Core\View {
          */
         $params = (array) $this->get( 'params' );
 
-        foreach ( array( 'siteId', 'propertyId' ) as $key ) {
+        foreach ( [ 'siteId', 'propertyId' ] as $key ) {
 
             if ( empty( $params[ $key ] ) && $this->get( $key ) ) {
 
@@ -67,7 +67,7 @@ class OptionsHierarchy extends \OWA\Core\View {
 
         // The settings column, the gear and the rail's report links link with
         // it and the period the reader came with (makeLink()'s add_state).
-        $state = array();
+        $state = [];
 
         foreach ( \OWA\Core\Controller::reportState() as $key ) {
 
@@ -125,7 +125,7 @@ class OptionsHierarchy extends \OWA\Core\View {
             return (string) $params['propertyId'];
         }
 
-        foreach ( (array) ( $hierarchyNav['Property'] ?? array() ) as $entry ) {
+        foreach ( (array) ( $hierarchyNav['Property'] ?? [] ) as $entry ) {
 
             if ( ! empty( $entry['params']['propertyId'] ) ) {
 
@@ -153,7 +153,7 @@ class OptionsHierarchy extends \OWA\Core\View {
             return $siteId;
         }
 
-        foreach ( (array) ( $siteHierarchy['properties'] ?? array() ) as $property ) {
+        foreach ( (array) ( $siteHierarchy['properties'] ?? [] ) as $property ) {
 
             if ( (string) $property['id'] === (string) $propertyId && ! empty( $property['profiles'] ) ) {
 
@@ -164,5 +164,3 @@ class OptionsHierarchy extends \OWA\Core\View {
         return '';
     }
 }
-
-?>

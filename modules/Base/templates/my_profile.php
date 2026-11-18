@@ -23,7 +23,7 @@ $owa_minPassword  = (int) $view->min_password_length;
 <?php endif; ?>
 
 <form method="post" name="owa_myProfile"
-      action="<?php echo $view->makeLink( array( 'do' => 'base.myProfileSave' ) ); ?>">
+      action="<?php echo $view->makeLink( [ 'do' => 'base.myProfileSave' ] ); ?>">
 
     <fieldset name="owa-options" class="options">
 

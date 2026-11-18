@@ -54,7 +54,7 @@ abstract class FactMigrator {
      * The mediums v1 assigned itself rather than read from a link: its
      * default, and its three readings of the referrer (resolveMedium()).
      */
-    const GENERATED_MEDIUMS = array( 'direct', 'organic-search', 'social-network', 'referral' );
+    const GENERATED_MEDIUMS = [ 'direct', 'organic-search', 'social-network', 'referral' ];
 
     /** The v1 table, unprefixed; each subclass names its own. */
     const SOURCE = '';
@@ -91,7 +91,7 @@ abstract class FactMigrator {
     protected $since;
 
     /** @var array<string, bool> "table.column" => bool, whether that v1 column is an integer type */
-    private $integer_keys = array();
+    private $integer_keys = [];
 
     /**
      * @param string $prefix the prefix the v1 tables are read under
@@ -119,8 +119,8 @@ abstract class FactMigrator {
 
             $r = (array) $r;
 
-            return array( 'site_id' => (string) $r['site_id'], 'year' => (int) $r['year'], 'rows' => (int) $r['n'],
-                'known' => isset( $known[ (string) $r['site_id'] ] ) );
+            return [ 'site_id' => (string) $r['site_id'], 'year' => (int) $r['year'], 'rows' => (int) $r['n'],
+                'known' => isset( $known[ (string) $r['site_id'] ] ) ];
 
         }, (array) $this->db()->get_results( sprintf(
             'SELECT site_id, FLOOR(yyyymmdd / 10000) AS year, COUNT(*) AS n FROM %s'
@@ -175,7 +175,7 @@ abstract class FactMigrator {
 
         $table = \OWA\Core\CoreAPI::entityFactory( 'base.site' )->getTableName();
 
-        $known = array();
+        $known = [];
 
         foreach ( (array) $this->db()->get_results( sprintf( 'SELECT site_id FROM %s', $table ) ) as $r ) {
 
@@ -272,7 +272,7 @@ abstract class FactMigrator {
      */
     protected function apply( array $rows, array &$progress ) {
 
-        $tally   = array();
+        $tally   = [];
         $written = $this->write( $this->build( $rows, $progress, $tally ) );
 
         if ( $written === false || ! $this->recordTally( (string) $rows[0]['site_id'], $tally ) ) {
@@ -295,26 +295,26 @@ abstract class FactMigrator {
 
         $source  = static::progressKey();
         $table   = \OWA\Core\CoreAPI::entityFactory( 'base.migration_tally' )->getTableName();
-        $entries = array();
+        $entries = [];
 
-        foreach ( $tally['read'] ?? array() as $d => $n ) {
+        foreach ( $tally['read'] ?? [] as $d => $n ) {
 
-            $entries[] = array( $d, 'read', '', $n, 0, 0, null );
+            $entries[] = [ $d, 'read', '', $n, 0, 0, null ];
         }
 
-        foreach ( $tally['refused'] ?? array() as $d => $reasons ) {
+        foreach ( $tally['refused'] ?? [] as $d => $reasons ) {
 
             foreach ( $reasons as $reason => $n ) {
 
-                $entries[] = array( $d, 'refused', $reason, $n, 0, 0, null );
+                $entries[] = [ $d, 'refused', $reason, $n, 0, 0, null ];
             }
         }
 
-        foreach ( $tally['events'] ?? array() as $d => $types ) {
+        foreach ( $tally['events'] ?? [] as $d => $types ) {
 
             foreach ( $types as $type => $t ) {
 
-                $entries[] = array( $d, 'event', $type, $t['n'], $t['revenue'], $t['items'], $t['max_ts'] );
+                $entries[] = [ $d, 'event', $type, $t['n'], $t['revenue'], $t['items'], $t['max_ts'] ];
             }
         }
 
@@ -325,9 +325,9 @@ abstract class FactMigrator {
                 'INSERT INTO %s (id, source, site_id, yyyymmdd, kind, name, n, revenue, items, max_ts)'
               . ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE n = n + ?, revenue = revenue + ?,'
               . ' items = items + ?, max_ts = GREATEST(COALESCE(max_ts, 0), COALESCE(?, 0))', $table ),
-                array( \OWA\Module\Base\Entity\MigrationTally::idFor( $source, $site_id, $d, $kind, $name ),
+                [ \OWA\Module\Base\Entity\MigrationTally::idFor( $source, $site_id, $d, $kind, $name ),
                     $source, $site_id, (int) $d, $kind, $name, (int) $n, (int) $revenue, (int) $items, $max_ts,
-                    (int) $n, (int) $revenue, (int) $items, $max_ts ) );
+                    (int) $n, (int) $revenue, (int) $items, $max_ts ] );
 
             if ( $ok === false ) {
 
@@ -335,14 +335,14 @@ abstract class FactMigrator {
             }
         }
 
-        $visitors = array();
+        $visitors = [];
 
-        foreach ( $tally['visitors'] ?? array() as $d => $ids ) {
+        foreach ( $tally['visitors'] ?? [] as $d => $ids ) {
 
             foreach ( array_keys( $ids ) as $visitor_id ) {
 
-                $visitors[] = array( \OWA\Module\Base\Entity\MigrationDayVisitor::idFor( $source, $site_id, $d, $visitor_id ),
-                    $source, $site_id, (int) $d, (string) $visitor_id );
+                $visitors[] = [ \OWA\Module\Base\Entity\MigrationDayVisitor::idFor( $source, $site_id, $d, $visitor_id ),
+                    $source, $site_id, (int) $d, (string) $visitor_id ];
             }
         }
 
@@ -371,11 +371,11 @@ abstract class FactMigrator {
      */
     protected function forgetTally( $site_id ) {
 
-        foreach ( array( 'base.migration_tally', 'base.migration_day_visitor' ) as $entity ) {
+        foreach ( [ 'base.migration_tally', 'base.migration_day_visitor' ] as $entity ) {
 
             $this->db()->query( sprintf( 'DELETE FROM %s WHERE source = ? AND site_id = ?',
                 \OWA\Core\CoreAPI::entityFactory( $entity )->getTableName() ),
-                array( static::progressKey(), (string) $site_id ) );
+                [ static::progressKey(), (string) $site_id ] );
         }
     }
 
@@ -391,7 +391,7 @@ abstract class FactMigrator {
 
         $refs = $this->resolve( $rows );
 
-        $out = array();
+        $out = [];
 
         foreach ( $rows as $r ) {
 
@@ -441,7 +441,7 @@ abstract class FactMigrator {
 
                     $d    = (int) $row['yyyymmdd'];
                     $type = (string) $row['event_type'];
-                    $t    = $tally['events'][ $d ][ $type ] ?? array( 'n' => 0, 'revenue' => 0, 'items' => 0, 'max_ts' => 0 );
+                    $t    = $tally['events'][ $d ][ $type ] ?? [ 'n' => 0, 'revenue' => 0, 'items' => 0, 'max_ts' => 0 ];
 
                     $t['n']++;
                     $t['revenue'] += (int) ( $row['revenue'] ?? 0 );
@@ -484,7 +484,7 @@ abstract class FactMigrator {
         $table   = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
         $deleted = 0;
         $after   = null;
-        $scratch = array( 'rows_read' => 0, 'rows_refused' => 0, 'refusals' => array() );
+        $scratch = [ 'rows_read' => 0, 'rows_refused' => 0, 'refusals' => [] ];
 
         while ( $rows = $this->read( $site_id, $after ) ) {
 
@@ -536,23 +536,23 @@ abstract class FactMigrator {
         $source  = static::progressKey();
         $site_id = (string) $site_id;
         $raw     = \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName();
-        $days    = array();
-        $types   = array();
+        $days    = [];
+        $types   = [];
         $bound   = 0;
 
         $day = function ( $d ) use ( &$days ) {
 
             if ( ! isset( $days[ $d ] ) ) {
 
-                $days[ $d ] = array( 'read' => 0, 'refused' => array(), 'types' => array(),
-                    'visitors_expected' => 0, 'visitors_present' => 0 );
+                $days[ $d ] = [ 'read' => 0, 'refused' => [], 'types' => [],
+                    'visitors_expected' => 0, 'visitors_present' => 0 ];
             }
         };
 
         foreach ( (array) $this->db()->get_results( sprintf(
                 'SELECT yyyymmdd, kind, name, n, revenue, items, max_ts FROM %s WHERE source = ? AND site_id = ?',
                 \OWA\Core\CoreAPI::entityFactory( 'base.migration_tally' )->getTableName() ),
-                array( $source, $site_id ) ) as $row ) {
+                [ $source, $site_id ] ) as $row ) {
 
             $row = (array) $row;
             $d   = (int) $row['yyyymmdd'];
@@ -580,7 +580,7 @@ abstract class FactMigrator {
         foreach ( (array) $this->db()->get_results( sprintf(
                 'SELECT yyyymmdd, COUNT(*) AS n FROM %s WHERE source = ? AND site_id = ? GROUP BY yyyymmdd',
                 \OWA\Core\CoreAPI::entityFactory( 'base.migration_day_visitor' )->getTableName() ),
-                array( $source, $site_id ) ) as $row ) {
+                [ $source, $site_id ] ) as $row ) {
 
             $row = (array) $row;
             $day( (int) $row['yyyymmdd'] );
@@ -593,7 +593,7 @@ abstract class FactMigrator {
             $span  = array_keys( $days );
             $where = sprintf( 'site_id = ? AND event_type IN (%s) AND ts <= %d AND yyyymmdd BETWEEN %d AND %d',
                 $in, $bound, min( $span ), max( $span ) );
-            $args  = array_merge( array( $site_id ), array_keys( $types ) );
+            $args  = array_merge( [ $site_id ], array_keys( $types ) );
 
             foreach ( (array) $this->db()->get_results( sprintf(
                     "SELECT yyyymmdd, event_type, COUNT(*) AS n, SUM(COALESCE(revenue, 0)) AS revenue,"
@@ -633,7 +633,7 @@ abstract class FactMigrator {
      */
     public static function discrepancies( array $days ) {
 
-        $lines = array();
+        $lines = [];
 
         foreach ( $days as $d => $day ) {
 
@@ -679,7 +679,7 @@ abstract class FactMigrator {
     public static function summary( array $days ) {
 
         $read = $present = 0;
-        $refused = array();
+        $refused = [];
 
         foreach ( $days as $day ) {
 
@@ -696,7 +696,7 @@ abstract class FactMigrator {
             }
         }
 
-        $reasons = array();
+        $reasons = [];
 
         foreach ( $refused as $reason => $n ) {
 
@@ -797,24 +797,24 @@ abstract class FactMigrator {
      * @param  array<string, mixed> $extra  properties of this event type
      * @return \OWA\Module\Base\Classes\Event
      */
-    protected function baseEvent( array $r, array $refs, $type, array $extra = array() ) {
+    protected function baseEvent( array $r, array $refs, $type, array $extra = [] ) {
 
-        $doc      = $refs['document'][ (string) ( $r['document_id'] ?? '' ) ] ?? array();
-        $referer  = $refs['referer'][ (string) ( $r['referer_id'] ?? '' ) ] ?? array();
-        $ua       = $refs['ua'][ (string) ( $r['ua_id'] ?? '' ) ] ?? array();
-        $os       = $refs['os'][ (string) ( $r['os_id'] ?? '' ) ] ?? array();
+        $doc      = $refs['document'][ (string) ( $r['document_id'] ?? '' ) ] ?? [];
+        $referer  = $refs['referer'][ (string) ( $r['referer_id'] ?? '' ) ] ?? [];
+        $ua       = $refs['ua'][ (string) ( $r['ua_id'] ?? '' ) ] ?? [];
+        $os       = $refs['os'][ (string) ( $r['os_id'] ?? '' ) ] ?? [];
         $location = self::repairedLocation(
-            $refs['location_dim'][ (string) ( $r['location_id'] ?? '' ) ] ?? array() );
-        $session  = $refs['session'][ (string) $r['session_id'] ] ?? array();
-        $visitor  = $refs['visitor'][ (string) $r['visitor_id'] ] ?? array();
+            $refs['location_dim'][ (string) ( $r['location_id'] ?? '' ) ] ?? [] );
+        $session  = $refs['session'][ (string) $r['session_id'] ] ?? [];
+        $visitor  = $refs['visitor'][ (string) $r['visitor_id'] ] ?? [];
         $prior    = isset( $session['prior_session_id'] )
-            ? ( $refs['prior_session'][ (string) $session['prior_session_id'] ] ?? array() )
-            : array();
+            ? ( $refs['prior_session'][ (string) $session['prior_session_id'] ] ?? [] )
+            : [];
 
         $event = new \OWA\Module\Base\Classes\Event;
         $event->setEventType( $type );
 
-        $properties = array(
+        $properties = [
             'site_id'    => (string) $r['site_id'],
             'visitor_id' => (string) $r['visitor_id'],
             'session_id' => (string) $r['session_id'],
@@ -844,7 +844,7 @@ abstract class FactMigrator {
             'fsts' => $visitor['first_session_timestamp'] ?? null,
             'sts'  => $session['timestamp'] ?? null,
             'psts' => $prior['timestamp'] ?? null,
-        ) + $extra;
+        ] + $extra;
 
         $properties += $this->attribution( $r, $refs );
 
@@ -910,7 +910,7 @@ abstract class FactMigrator {
 
         if ( ! self::present( $campaign ) && ! self::present( $ad ) ) {
 
-            return array();
+            return [];
         }
 
         $medium = strtolower( trim( (string) ( $r['medium'] ?? '' ) ) );
@@ -920,18 +920,18 @@ abstract class FactMigrator {
         $referer = $refs['referer'][ (string) ( $r['referer_id'] ?? '' ) ]['url'] ?? null;
         $host    = strtolower( (string) ( \OWA\Module\Base\Classes\V2Event::parseUrl( $referer )['host'] ?? '' ) );
 
-        if ( $source === '(direct)' || ( $host !== '' && in_array( $source, array( $host, preg_replace( '/^www\./', '', $host ) ), true ) ) ) {
+        if ( $source === '(direct)' || ( $host !== '' && in_array( $source, [ $host, preg_replace( '/^www\./', '', $host ) ], true ) ) ) {
 
             $source = '';
         }
 
-        return array(
+        return [
             'tagged_source'   => $source !== '' ? $source : null,
             'tagged_medium'   => $medium !== '' && ! in_array( $medium, self::GENERATED_MEDIUMS, true ) ? $medium : null,
             'tagged_campaign' => $campaign,
             'tagged_ad'       => $ad,
             'tagged_terms'    => $refs['search_term_dim'][ (string) ( $r['referring_search_term_id'] ?? '' ) ]['terms'] ?? null,
-        );
+        ];
     }
 
     /**
@@ -954,7 +954,7 @@ abstract class FactMigrator {
      */
     public static function repairedLocation( array $location ) {
 
-        foreach ( array( 'country', 'state', 'city' ) as $column ) {
+        foreach ( [ 'country', 'state', 'city' ] as $column ) {
 
             $fixed = \OWA\Module\Base\Classes\GeoEncodingRepair::repair( $location[ $column ] ?? null );
 
@@ -1085,7 +1085,7 @@ abstract class FactMigrator {
      */
     protected function resolve( array $rows ) {
 
-        $refs = array(
+        $refs = [
             'document'     => $this->lookup( 'document', array_column( $rows, 'document_id' ), 'id, url, page_title, page_type' ),
             'referer'      => $this->lookup( 'referer', array_column( $rows, 'referer_id' ), 'id, url' ),
             'ua'           => $this->lookup( 'ua', array_column( $rows, 'ua_id' ), 'id, ua, browser_type' ),
@@ -1101,7 +1101,7 @@ abstract class FactMigrator {
                                   array_column( $rows, 'referring_search_term_id' ), 'id, terms' ),
             'visitor'      => $this->lookup( 'visitor', array_column( $rows, 'visitor_id' ),
                                   'id, first_session_timestamp' ),
-        );
+        ];
 
         $refs['prior_session'] = $this->lookup( 'session',
             array_column( $refs['session'], 'prior_session_id' ), 'id, timestamp' );
@@ -1122,7 +1122,7 @@ abstract class FactMigrator {
      */
     protected function sessionStarts( array $rows, array &$refs ) {
 
-        $starts = array();
+        $starts = [];
 
         foreach ( $rows as $r ) {
 
@@ -1166,7 +1166,7 @@ abstract class FactMigrator {
      */
     protected function priorSessions( array $rows, array $starts ) {
 
-        $visitors = array();
+        $visitors = [];
 
         foreach ( $rows as $r ) {
 
@@ -1178,7 +1178,7 @@ abstract class FactMigrator {
 
         if ( ! $visitors ) {
 
-            return array();
+            return [];
         }
 
         $ids     = array_keys( $visitors );
@@ -1188,7 +1188,7 @@ abstract class FactMigrator {
             'SELECT id, site_id, visitor_id, timestamp FROM %s WHERE visitor_id IN (%s)',
             $this->v1Table( 'session' ),
             $integer ? implode( ',', $ids ) : implode( ',', array_fill( 0, count( $ids ), '?' ) ) ),
-            $integer ? array() : array_map( 'strval', $ids ) );
+            $integer ? [] : array_map( 'strval', $ids ) );
 
         $integer = $this->integerColumn( self::REQUESTS, 'visitor_id' );
 
@@ -1197,12 +1197,12 @@ abstract class FactMigrator {
             . ' WHERE visitor_id IN (%s) AND timestamp > 0 GROUP BY site_id, visitor_id, session_id',
             $this->v1Table( self::REQUESTS ),
             $integer ? implode( ',', $ids ) : implode( ',', array_fill( 0, count( $ids ), '?' ) ) ),
-            $integer ? array() : array_map( 'strval', $ids ) );
+            $integer ? [] : array_map( 'strval', $ids ) );
 
         // site|visitor => session id => [ start, id ]; a session row's start wins.
-        $by = array();
+        $by = [];
 
-        foreach ( array( $sessions, $viewed ) as $source ) {
+        foreach ( [ $sessions, $viewed ] as $source ) {
 
             foreach ( $source as $row ) {
 
@@ -1217,12 +1217,12 @@ abstract class FactMigrator {
 
                 if ( ! isset( $by[ $key ][ (string) $row['id'] ] ) ) {
 
-                    $by[ $key ][ (string) $row['id'] ] = array( (int) $row['timestamp'], (int) $row['id'] );
+                    $by[ $key ][ (string) $row['id'] ] = [ (int) $row['timestamp'], (int) $row['id'] ];
                 }
             }
         }
 
-        $counts = array();
+        $counts = [];
 
         foreach ( $rows as $r ) {
 
@@ -1234,10 +1234,10 @@ abstract class FactMigrator {
             }
 
             // Earlier by time, then by id, as entries() orders a session's requests.
-            $mine = array( $starts[ $sid ], (int) $sid );
+            $mine = [ $starts[ $sid ], (int) $sid ];
             $n    = 0;
 
-            foreach ( $by[ $r['site_id'] . '|' . $r['visitor_id'] ] ?? array() as $other ) {
+            foreach ( $by[ $r['site_id'] . '|' . $r['visitor_id'] ] ?? [] as $other ) {
 
                 if ( $other[1] !== $mine[1] && $other < $mine ) {
 
@@ -1261,11 +1261,11 @@ abstract class FactMigrator {
      */
     protected function lookup( $table, array $ids, $columns ) {
 
-        $ids = array_values( array_unique( array_filter( array_map( 'strval', $ids ), array( __CLASS__, 'isId' ) ) ) );
+        $ids = array_values( array_unique( array_filter( array_map( 'strval', $ids ), [ __CLASS__, 'isId' ] ) ) );
 
         if ( ! $ids ) {
 
-            return array();
+            return [];
         }
 
         $name = V1Tables::name( $table, $this->prefix );
@@ -1275,7 +1275,7 @@ abstract class FactMigrator {
             // Validated as integers above, so inlined as integer literals: an
             // integer compared with an integer, exactly.
             $sql    = sprintf( 'SELECT %s FROM %s WHERE id IN (%s)', $columns, $name, implode( ',', $ids ) );
-            $params = array();
+            $params = [];
 
         } else {
 
@@ -1284,7 +1284,7 @@ abstract class FactMigrator {
             $params = $ids;
         }
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) $this->db()->get_results( $sql, $params ) as $row ) {
 
@@ -1395,7 +1395,7 @@ abstract class FactMigrator {
 
         return array_map( function ( $r ) { return (array) $r; }, (array) $this->db()->get_results(
             sprintf( 'SELECT * FROM %s WHERE %s ORDER BY %s LIMIT %d', $name, $where, $order, $this->batch ),
-            array( (string) $site_id ) ) );
+            [ (string) $site_id ] ) );
     }
 
     /**
@@ -1434,7 +1434,7 @@ abstract class FactMigrator {
 
         $placeholders = '(' . implode( ',', array_fill( 0, count( $columns ), '?' ) ) . ')';
 
-        $params = array();
+        $params = [];
 
         foreach ( $rows as $row ) {
 
@@ -1496,7 +1496,7 @@ abstract class FactMigrator {
             $p['refusals'] = (array) json_decode( (string) $p['refusals'], true );
             $p['persisted'] = true;
 
-            foreach ( array( 'rows_read', 'rows_written', 'rows_refused' ) as $k ) {
+            foreach ( [ 'rows_read', 'rows_written', 'rows_refused' ] as $k ) {
 
                 $p[ $k ] = (int) $p[ $k ];
             }
@@ -1504,7 +1504,7 @@ abstract class FactMigrator {
             return $p;
         }
 
-        return array(
+        return [
             'id'           => $id,
             'source'       => static::progressKey(),
             'site_id'      => (string) $site_id,
@@ -1513,11 +1513,11 @@ abstract class FactMigrator {
             'rows_read'    => 0,
             'rows_written' => 0,
             'rows_refused' => 0,
-            'refusals'     => array(),
+            'refusals'     => [],
             'started_at'   => time(),
             'completed_at' => null,
             'persisted'    => false,
-        );
+        ];
     }
 
     /**
@@ -1554,5 +1554,3 @@ abstract class FactMigrator {
         return \OWA\Core\CoreAPI::dbSingleton();
     }
 }
-
-?>

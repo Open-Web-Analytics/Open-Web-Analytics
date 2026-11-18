@@ -49,7 +49,7 @@ final class EventDispatchObserverIdTest extends TestCase
 
         for ( $i = 0; $i < 2000; $i++ ) {
 
-            $dispatch->attach( 'test.event.' . $i, array( 'SomeClass', 'method' . $i ) );
+            $dispatch->attach( 'test.event.' . $i, [ 'SomeClass', 'method' . $i ] );
         }
 
         $ids = $this->ids( $dispatch );
@@ -71,9 +71,9 @@ final class EventDispatchObserverIdTest extends TestCase
 
         for ( $i = 0; $i < 1000; $i++ ) {
 
-            $dispatch->attach( 'test.event.' . $i, array( 'SomeClass', 'listener' . $i ) );
+            $dispatch->attach( 'test.event.' . $i, [ 'SomeClass', 'listener' . $i ] );
             $dispatch->attachFilter( 'test.property.' . $i,
-                array( 'SomeClass', 'filter' . $i ), 0 );
+                [ 'SomeClass', 'filter' . $i ], 0 );
         }
 
         $ids = $this->ids( $dispatch );
@@ -94,7 +94,7 @@ final class EventDispatchObserverIdTest extends TestCase
         $dispatch = $this->dispatch();
 
         $dispatch->attachFilter( 'cv1_name',
-            array( 'OWA\\Module\\Base\\Classes\\TrackingEventHelpers', 'lowercaseString' ), 0 );
+            [ 'OWA\\Module\\Base\\Classes\\TrackingEventHelpers', 'lowercaseString' ], 0 );
 
         $byEventType = new \ReflectionProperty( $dispatch, 'listenersByEventType' );
 

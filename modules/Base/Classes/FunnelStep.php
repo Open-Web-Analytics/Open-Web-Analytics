@@ -66,14 +66,14 @@ class FunnelStep {
         $conditions = self::conditionsOf( $row );
         $name       = trim( (string) ( $row['name'] ?? '' ) );
 
-        $step = array(
+        $step = [
             'name'       => '',
             'kind'       => self::KIND_EVENT,
             'event'      => $event,
             'match'      => self::matchOf( $row ),
             'conditions' => $conditions,
             'step_number' => (int) $number,
-        );
+        ];
 
         $step['name'] = $name !== '' ? $name : self::defaultName( $step );
 
@@ -81,7 +81,7 @@ class FunnelStep {
     }
 
     /** The kinds a step had before Update079, which are no longer saved. */
-    const OLD_KINDS = array( 'path', 'goal_event' );
+    const OLD_KINDS = [ 'path', 'goal_event' ];
 
     /**
      * A row of a kind no longer saved, with something in it: a path, a goal
@@ -100,7 +100,7 @@ class FunnelStep {
 
         $kind = (string) ( $row['kind'] ?? '' );
 
-        return ! in_array( $kind, array_merge( array( '', self::KIND_EVENT ), self::OLD_KINDS ), true );
+        return ! in_array( $kind, array_merge( [ '', self::KIND_EVENT ], self::OLD_KINDS ), true );
     }
 
     /**
@@ -164,9 +164,9 @@ class FunnelStep {
      */
     public static function conditionsOf( array $step, $dropEmpty = true ) {
 
-        $out = array();
+        $out = [];
 
-        foreach ( (array) ( $step['conditions'] ?? array() ) as $condition ) {
+        foreach ( (array) ( $step['conditions'] ?? [] ) as $condition ) {
 
             if ( ! is_array( $condition ) ) {
 
@@ -182,11 +182,11 @@ class FunnelStep {
                 continue;
             }
 
-            $out[] = array(
+            $out[] = [
                 'property' => trim( (string) ( is_scalar( $condition['property'] ?? '' ) ? ( $condition['property'] ?? '' ) : '' ) ),
                 'operator' => trim( (string) ( is_scalar( $condition['operator'] ?? '' ) ? ( $condition['operator'] ?? '' ) : '' ) ),
                 'value'    => $value,
-            );
+            ];
         }
 
         return $out;
@@ -204,21 +204,21 @@ class FunnelStep {
      *                                               column => label (EventPredicate::customColumnsFor())
      * @return array<string, string>
      */
-    public static function problems( array $row, $number, array $customColumns = array() ) {
+    public static function problems( array $row, $number, array $customColumns = [] ) {
 
         if ( self::isOldKind( $row ) ) {
 
-            return array( 'stepEvent' . $number => sprintf(
+            return [ 'stepEvent' . $number => sprintf(
                 \OWA\Core\CoreAPI::t( 'Step %s: a funnel step is an event. Page and goal event definition steps are no longer saved.' ),
-                $number ) );
+                $number ) ];
         }
 
         if ( self::isBlank( $row ) ) {
 
-            return array();
+            return [];
         }
 
-        $out   = array();
+        $out   = [];
         $event = self::eventOf( $row );
 
         if ( $event === '' ) {
@@ -299,7 +299,7 @@ class FunnelStep {
             }
 
             if ( $property === 'page_path'
-                 && in_array( $operator, array( $E::MATCH_EXACT, $E::MATCH_NOT, $E::MATCH_BEGINS ), true ) ) {
+                 && in_array( $operator, [ $E::MATCH_EXACT, $E::MATCH_NOT, $E::MATCH_BEGINS ], true ) ) {
 
                 /*
                  * A path, not a URL. page_path never holds a scheme or a host,
@@ -428,7 +428,7 @@ class FunnelStep {
      * @param  array<string, string> $customColumns  column => label, for a custom dimension's label
      * @return string
      */
-    public static function summary( array $step, array $customColumns = array() ) {
+    public static function summary( array $step, array $customColumns = [] ) {
 
         $page = self::pageOf( $step );
 
@@ -446,7 +446,7 @@ class FunnelStep {
         }
 
         $operators = \OWA\Module\Base\Entity\GoalEventDefinition::operators();
-        $parts     = array();
+        $parts     = [];
 
         foreach ( $conditions as $condition ) {
 

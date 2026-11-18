@@ -440,7 +440,7 @@ final class SettingsPersistenceTest extends TestCase
         $c = $this->settings();
 
         foreach ( array_keys(
-            (array) ( \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? array() ) )
+            (array) ( \OWA\Module\Base\Classes\Settings::staticSettings()['base'] ?? [] ) )
             as $key ) {
 
             $this->assertFalse( $c->mayPersistInstallWide( 'base', $key ),

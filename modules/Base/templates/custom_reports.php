@@ -11,7 +11,7 @@
  */
 $owa_reports   = (array) $view->get('custom_reports');
 $owa_count     = (int) $view->get('roster_count');
-$owa_kinds     = (array) ( $view->get('new_kinds') ?: array() );
+$owa_kinds     = (array) ( $view->get('new_kinds') ?: [] );
 $owa_author    = (bool) $view->get('may_author');
 $owa_mine      = (bool) $view->get('roster_mine');
 $owa_favs      = (bool) $view->get('roster_favorites');
@@ -26,15 +26,15 @@ $owa_active    = $owa_favs ? 'favorites' : ( $owa_mine ? 'mine' : 'all' );
  * each, or propertyId is dropped and the Property the report links open for is
  * lost.
  */
-$owa_state = array(
+$owa_state = [
     'rosterSort'      => $owa_sort,
     'rosterDesc'      => $owa_desc ? '1' : '0',
     'rosterMine'      => $owa_mine ? '1' : '0',
     'rosterFavorites' => $owa_favs ? '1' : '0',
-);
+];
 
-$owa_typeLabels = array( 'report' => \OWA\Core\CoreAPI::t( 'Report' ) );
-$owa_typeIcons  = array( 'report' => 'fas fa-th-large' );
+$owa_typeLabels = [ 'report' => \OWA\Core\CoreAPI::t( 'Report' ) ];
+$owa_typeIcons  = [ 'report' => 'fas fa-th-large' ];
 
 foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as $owa_key => $owa_kind ) {
     $owa_typeLabels[ $owa_key ] = $owa_kind['label'];
@@ -53,16 +53,16 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
      * to "Favorites" with nothing starred would remove the only way back.
      */
     $owa_filterLink = function ( $which ) use ( $view ) {
-        return $view->makeLink( array(
+        return $view->makeLink( [
             'do'              => 'base.customReports',
             'rosterMine'      => $which === 'mine' ? '1' : '0',
             'rosterFavorites' => $which === 'favorites' ? '1' : '0',
-        ), true );
+        ], true );
     };
 ?>
 <div class="owa_rosterBar">
     <div class="owa_rosterFilter" role="group" aria-label="<?php $view->out( \OWA\Core\CoreAPI::t( 'Show' ) ); ?>">
-        <?php foreach ( array( 'all' => \OWA\Core\CoreAPI::t( 'All' ), 'mine' => \OWA\Core\CoreAPI::t( 'Just mine' ), 'favorites' => \OWA\Core\CoreAPI::t( 'Favorites' ) ) as $owa_which => $owa_label ): ?>
+        <?php foreach ( [ 'all' => \OWA\Core\CoreAPI::t( 'All' ), 'mine' => \OWA\Core\CoreAPI::t( 'Just mine' ), 'favorites' => \OWA\Core\CoreAPI::t( 'Favorites' ) ] as $owa_which => $owa_label ): ?>
         <a class="<?php echo $owa_active === $owa_which ? 'owa_rosterFilterActive' : ''; ?>"
            <?php echo $owa_active === $owa_which ? 'aria-current="true"' : ''; ?>
            href="<?php echo $owa_filterLink( $owa_which ); ?>"><?php
@@ -94,11 +94,11 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
                     // starts that column in its own natural direction.
                     $next = $active ? ! $owa_desc : ( $key === 'updated' );
 
-                    $url = $view->makeLink( array_merge( $owa_state, array(
+                    $url = $view->makeLink( array_merge( $owa_state, [
                         'do'         => 'base.customReports',
                         'rosterSort' => $key,
                         'rosterDesc' => $next ? '1' : '0',
-                    ) ), true );
+                    ] ), true );
 
                     printf(
                         '<th class="%s"%s><a href="%s">%s%s</a></th>',
@@ -126,11 +126,11 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
             $owa_starred = ! empty( $owa_report['is_favorite'] );
             $owa_kind    = (string) ( $owa_report['kind'] ?? 'report' );
             // add_nonce: the toggle writes, and demands one.
-            $owa_starUrl = $view->makeLink( array_merge( $owa_state, array(
+            $owa_starUrl = $view->makeLink( array_merge( $owa_state, [
                 'do'             => 'base.customReportMarkFavorite',
                 'customReportId' => $owa_report['id'],
                 'returnTo'       => 'roster',
-            ) ), true, '', false, true );
+            ] ), true, '', false, true );
         ?>
         <tr>
             <td class="owa_rosterStarCell">
@@ -141,10 +141,10 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
                    class="<?php echo $owa_starred ? 'fas' : 'far'; ?> fa-star" aria-hidden="true"></i></a>
             </td>
             <td class="owa_rosterName">
-                <a href="<?php echo $view->makeLink( array(
+                <a href="<?php echo $view->makeLink( [
                     'do'       => 'base.report',
                     'reportId' => 'custom-' . $owa_report['id'],
-                ), true ); ?>"><?php $view->out( $owa_report['name'] ); ?></a>
+                ], true ); ?>"><?php $view->out( $owa_report['name'] ); ?></a>
                 <?php if ( ! empty( $owa_report['is_shared'] ) ): ?>
                     <span class="owa_rosterTag" title="<?php $view->out( \OWA\Core\CoreAPI::t( 'In everyone\'s list' ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Shared' ) ); ?></span>
                 <?php endif; ?>
@@ -187,7 +187,7 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
         <?php $view->out( $owa_active === 'mine' ? \OWA\Core\CoreAPI::t( 'No reports of your own.' ) : \OWA\Core\CoreAPI::t( 'No favorites yet. Star a report to add it here.' ) ); ?>
     <?php elseif ( $owa_author ): ?>
         <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'No custom reports yet. %s.' ),
-            '<a class="owa_newCustomReport" href="' . $view->makeLink( array( 'do' => 'base.customReportEdit' ), true ) . '">'
+            '<a class="owa_newCustomReport" href="' . $view->makeLink( [ 'do' => 'base.customReportEdit' ], true ) . '">'
             . $view->escape( \OWA\Core\CoreAPI::t( 'Make one' ) ) . '</a>' ); ?>
     <?php else: ?>
         <?php $view->out( \OWA\Core\CoreAPI::t( 'No custom reports have been shared with you yet.' ) ); ?>

@@ -26,5 +26,3 @@ class NoAcceptLanguage extends \OWA\Module\Base\Classes\Spam\Rule {
             && $this->client( $headers )->claimsBrowser();
     }
 }
-
-?>

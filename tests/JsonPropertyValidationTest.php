@@ -24,17 +24,17 @@ final class JsonPropertyValidationTest extends TestCase
 
     public static function valid(): array
     {
-        return array(
-            'object'  => array( '{"a":1}', '{"a":1}' ),
-            'array'   => array( '[1,2]',   '[1,2]' ),
-            'string'  => array( '"str"',   '"str"' ),
+        return [
+            'object'  => [ '{"a":1}', '{"a":1}' ],
+            'array'   => [ '[1,2]',   '[1,2]' ],
+            'string'  => [ '"str"',   '"str"' ],
             // The literal "null" IS valid JSON, which is why the rejection test
             // cannot simply be "did this decode to null".
-            'null'    => array( 'null',    'null' ),
+            'null'    => [ 'null',    'null' ],
             // Valid JSON, and falsy in PHP. A truthiness guard rejected these.
-            'zero'    => array( '0',       '0' ),
-            'false'   => array( 'false',   'false' ),
-        );
+            'zero'    => [ '0',       '0' ],
+            'false'   => [ 'false',   'false' ],
+        ];
     }
 
     /** @dataProvider malformed */
@@ -49,12 +49,12 @@ final class JsonPropertyValidationTest extends TestCase
 
     public static function malformed(): array
     {
-        return array(
-            'prose'      => array( 'not json at all' ),
-            'truncated'  => array( '{"a":' ),
-            'bare word'  => array( 'undefined' ),
-            'html'       => array( '<script>alert(1)</script>' ),
-        );
+        return [
+            'prose'      => [ 'not json at all' ],
+            'truncated'  => [ '{"a":' ],
+            'bare word'  => [ 'undefined' ],
+            'html'       => [ '<script>alert(1)</script>' ],
+        ];
     }
 
     /** Absence stays absence. */

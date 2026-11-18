@@ -1089,7 +1089,7 @@ final class CubeBuildTest extends TestCase
     {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
-        $found = array();
+        $found = [];
 
         foreach ((array) $db->get_results(sprintf(
                 'SELECT DISTINCT new_vs_returning AS v FROM %s', $this->cube())) as $row) {
@@ -1099,7 +1099,7 @@ final class CubeBuildTest extends TestCase
 
         sort($found);
 
-        $expected = array('New', 'Returning', \OWA\Module\Base\Classes\V2Event::UNRESOLVED);
+        $expected = ['New', 'Returning', \OWA\Module\Base\Classes\V2Event::UNRESOLVED];
         sort($expected);
 
         $this->assertSame($expected, $found);

@@ -35,7 +35,7 @@ final class MetricFactoryNameTest extends TestCase
     /** $params given are applied over the registered ones. */
     public function testParamsGivenWin(): void
     {
-        $m = \OWA\Core\CoreAPI::metricFactory('pageViews', array('label' => 'Probe label'));
+        $m = \OWA\Core\CoreAPI::metricFactory('pageViews', ['label' => 'Probe label']);
 
         $this->assertSame('Probe label', $m->getLabel());
     }

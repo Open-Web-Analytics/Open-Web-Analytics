@@ -249,15 +249,15 @@ function provision(): array
         'heatmap_dimensions' => \OWA\Module\Base\Controller\OverlayLauncher::HEATMAP_DIMENSIONS,
         'heatmap_token'  => \OWA\Core\OverlayToken::mint(
             $user_id, 'reports', 'constraints', OVERLAY_CONSTRAINTS, 600,
-            array(
+            [
                 'siteId'     => $site_id,
                 'metrics'    => OVERLAY_HEATMAP_METRICS,
                 'dimensions' => \OWA\Module\Base\Controller\OverlayLauncher::HEATMAP_DIMENSIONS,
-            )
+            ]
         ),
         'player_token'   => \OWA\Core\OverlayToken::mint(
             $user_id, 'domstreams', 'recording_id', $recording_id, 600,
-            array( 'siteId' => $site_id )
+            [ 'siteId' => $site_id ]
         ),
     ];
 }

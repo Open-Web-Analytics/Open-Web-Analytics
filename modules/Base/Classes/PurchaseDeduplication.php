@@ -87,5 +87,3 @@ class PurchaseDeduplication {
         return (bool) $found;
     }
 }
-
-?>

@@ -20,7 +20,7 @@ if ( ! function_exists( 'owa_looks_like_scratch_db' ) ) {
      */
     function owa_looks_like_scratch_db( $dbName ) {
 
-        foreach ( array( 'scratch', 'owa_test', 'selfhost', 'tmp' ) as $marker ) {
+        foreach ( [ 'scratch', 'owa_test', 'selfhost', 'tmp' ] as $marker ) {
 
             if ( stripos( (string) $dbName, $marker ) !== false ) {
 

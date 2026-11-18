@@ -35,7 +35,7 @@
          * (nav_shell.php), and Documentation, Report a Bug and Donate are in
          * the help menu on the right, since each leaves the application.
          */
-        $owa_header_links = \OWA\Core\Navigation::links( 'nav_header', array() );
+        $owa_header_links = \OWA\Core\Navigation::links( 'nav_header', [] );
     ?>
     <?php if ( $owa_header_links ):?>
     <span class="owa_navigation">
@@ -79,12 +79,12 @@
         <div id="owa_userMenuPanel" class="owa_userMenuPanel" role="menu" hidden>
             <?php
                 /* nav_user_menu. */
-                $owa_user_links = array(
-                    array( 'id' => 'profile', 'label' => \OWA\Core\CoreAPI::t( 'Profile' ), 'class' => 'owa_myProfileLink',
-                           'href' => $view->makeLink( array( 'do' => 'base.myProfile' ), false ) ),
-                    array( 'id' => 'logout', 'label' => \OWA\Core\CoreAPI::t( 'Logout' ), 'class' => 'owa_userMenuLogout',
-                           'href' => $view->makeLink( array( 'do' => 'base.logout' ), false, '', false, true ) ),
-                );
+                $owa_user_links = [
+                    [ 'id' => 'profile', 'label' => \OWA\Core\CoreAPI::t( 'Profile' ), 'class' => 'owa_myProfileLink',
+                           'href' => $view->makeLink( [ 'do' => 'base.myProfile' ], false ) ],
+                    [ 'id' => 'logout', 'label' => \OWA\Core\CoreAPI::t( 'Logout' ), 'class' => 'owa_userMenuLogout',
+                           'href' => $view->makeLink( [ 'do' => 'base.logout' ], false, '', false, true ) ],
+                ];
             ?>
             <?php foreach ( \OWA\Core\Navigation::links( 'nav_user_menu', $owa_user_links ) as $owa_link ):?>
             <a role="menuitem" class="owa_userMenuItem <?php $view->out( $owa_link['class'] ?? '' );?>"
@@ -103,11 +103,11 @@
      * minted for one method: a URL each for the read, the mark-read and the
      * dismiss.
      */
-    $owa_notificationRoute = array(
+    $owa_notificationRoute = [
         'do'      => 'notifications',
         'module'  => 'base',
         'version' => 'v1',
-    );
+    ];
     $owa_apiUrl      = $view->makeApiLink( $owa_notificationRoute );
     $owa_markReadUrl = $view->makeApiLink( $owa_notificationRoute, false, 'POST' );
     $owa_dismissUrl  = $view->makeApiLink( $owa_notificationRoute, false, 'DELETE' );
@@ -153,7 +153,7 @@
          */
     ?>
     <span class="owa_userMenu">
-        <a class="owa_userMenuSignIn" href="<?php echo $view->makeLink(array('do' => 'base.loginForm'), false);?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Login' ) ); ?></a>
+        <a class="owa_userMenuSignIn" href="<?php echo $view->makeLink(['do' => 'base.loginForm'], false);?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Login' ) ); ?></a>
     </span>
 <?php endif; ?>
     <?php
@@ -178,16 +178,16 @@
             <i class="fas fa-question" aria-hidden="true"></i>
         </button>
         <div id="owa_helpMenuPanel" class="owa_helpMenuPanel owa_headerMenuPanel" role="menu" hidden>
-            <?php foreach ( \OWA\Core\Navigation::links( 'nav_help_menu', array(
-                array( 'id' => 'documentation', 'label' => \OWA\Core\CoreAPI::t( 'Documentation' ),
-                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki' ),
-                array( 'id' => 'bugs', 'label' => \OWA\Core\CoreAPI::t( 'Report a Bug' ),
-                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues' ),
-                array( 'id' => 'github', 'label' => 'GitHub',
-                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics' ),
-                array( 'id' => 'donate', 'label' => \OWA\Core\CoreAPI::t( 'Donate' ),
-                       'href' => 'https://github.com/sponsors/padams' ),
-            ) ) as $owa_link ):?>
+            <?php foreach ( \OWA\Core\Navigation::links( 'nav_help_menu', [
+                [ 'id' => 'documentation', 'label' => \OWA\Core\CoreAPI::t( 'Documentation' ),
+                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/wiki' ],
+                [ 'id' => 'bugs', 'label' => \OWA\Core\CoreAPI::t( 'Report a Bug' ),
+                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics/issues' ],
+                [ 'id' => 'github', 'label' => 'GitHub',
+                       'href' => 'https://github.com/Open-Web-Analytics/Open-Web-Analytics' ],
+                [ 'id' => 'donate', 'label' => \OWA\Core\CoreAPI::t( 'Donate' ),
+                       'href' => 'https://github.com/sponsors/padams' ],
+            ] ) as $owa_link ):?>
             <a role="menuitem" class="owa_headerMenuItem" target="_blank" rel="noopener"
                href="<?php $view->safeHref( $owa_link['href'] );?>"><?php $view->out( $owa_link['label'] );?></a>
             <?php endforeach;?>

@@ -45,7 +45,7 @@ class ReportingHome extends \OWA\Core\AdminController {
 
     public function action() {
 
-        $allowed = array();
+        $allowed = [];
 
         foreach ( (array) $this->getSitesAllowedForCurrentUser() as $site ) {
 
@@ -88,5 +88,3 @@ class ReportingHome extends \OWA\Core\AdminController {
         $this->setRedirectAction( 'base.report' );
     }
 }
-
-?>

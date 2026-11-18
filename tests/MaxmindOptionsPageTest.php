@@ -24,7 +24,7 @@ final class MaxmindOptionsPageTest extends TestCase {
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
-    private function render( array $overrides = array() ): string {
+    private function render( array $overrides = [] ): string {
 
         $template = new \OWA\Core\Template( 'maxmind_geoip' );
 
@@ -34,7 +34,7 @@ final class MaxmindOptionsPageTest extends TestCase {
         // directory and find nothing. A module template must name its module.
         $template->setTemplateFile( 'maxmind_geoip', 'options_geoip.php' );
 
-        $data = array_merge( array(
+        $data = array_merge( [
             /*
              * The two editable settings are NOT passed in any more. They are
              * built from the registry -- what they are called, what the edition
@@ -56,7 +56,7 @@ final class MaxmindOptionsPageTest extends TestCase {
              * what the nav shows.
              */
             'settings_page_title' => 'GeoIP',
-        ), $overrides );
+        ], $overrides );
 
         foreach ( $data as $key => $value ) {
             $template->set( $key, $value );
@@ -148,7 +148,7 @@ final class MaxmindOptionsPageTest extends TestCase {
      */
     public function testItSaysWhenGeolocationCannotWork(): void {
 
-        $html = $this->render( array( 'has_key' => false, 'db_present' => false ) );
+        $html = $this->render( [ 'has_key' => false, 'db_present' => false ] );
 
         /*
          * Both of these are STATUS, and they stayed hand-written when the
@@ -161,10 +161,10 @@ final class MaxmindOptionsPageTest extends TestCase {
 
     public function testItReportsTheDatabaseAgeWhenOneIsInstalled(): void {
 
-        $html = $this->render( array(
+        $html = $this->render( [
             'db_present' => true,
             'db_updated' => mktime( 0, 0, 0, 3, 14, 2026 ),
-        ) );
+        ] );
 
         $this->assertStringContainsString( '14 Mar 2026', $html,
             'a database that is present should say how old it is -- staleness is the failure mode' );

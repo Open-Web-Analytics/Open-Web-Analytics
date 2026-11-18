@@ -22,76 +22,74 @@
  */
 
 // A paid medium: cpc, ppc, cpm, retargeting, paid-anything.
-$paid = array( 'medium', 'regex', '^(.*cp.*|ppc|retargeting|paid.*)$' );
+$paid = [ 'medium', 'regex', '^(.*cp.*|ppc|retargeting|paid.*)$' ];
 
 // A shopping campaign: shop or shopping in its name.
-$shop_campaign = array( 'campaign', 'regex', '^(.*(([^a-df-z]|^)shop|shopping).*)$' );
+$shop_campaign = [ 'campaign', 'regex', '^(.*(([^a-df-z]|^)shop|shopping).*)$' ];
 
-$email = array( 'email', 'e-mail', 'e_mail', 'e mail' );
+$email = [ 'email', 'e-mail', 'e_mail', 'e mail' ];
 
 // A social source: a site on the social list, or a tag a network adds to its
 // own links -- Instagram's utm_source=ig, and Threads' ig_text_<where>.
-$social = array( 'any' => array(
-	array( 'source', 'in_list', 'social' ),
-	array( 'source', 'equals', 'ig' ),
-	array( 'source', 'starts_with', 'ig_text_' ),
-) );
+$social = [ 'any' => [
+    [ 'source', 'in_list', 'social' ],
+    [ 'source', 'equals', 'ig' ],
+    [ 'source', 'starts_with', 'ig_text_' ],
+] ];
 
-return array(
-	array( 'channel' => 'Direct', 'all' => array(
-		array( 'source', 'equals', '(direct)' ),
-		array( 'medium', 'one_of', array( '(not set)', '(none)' ) ),
-	) ),
-	array( 'channel' => 'Cross-network', 'any' => array(
-		array( 'campaign', 'contains', 'cross-network' ),
-	) ),
-	array( 'channel' => 'Paid Shopping', 'all' => array(
-		array( 'any' => array( array( 'source', 'in_list', 'shopping' ), $shop_campaign ) ),
-		$paid,
-	) ),
-	array( 'channel' => 'Paid Search', 'all' => array( array( 'source', 'in_list', 'search' ), $paid ) ),
-	array( 'channel' => 'Paid Social', 'all' => array( $social, $paid ) ),
-	array( 'channel' => 'Paid Video', 'all' => array( array( 'source', 'in_list', 'video' ), $paid ) ),
-	array( 'channel' => 'Display', 'any' => array(
-		array( 'medium', 'one_of', array( 'display', 'banner', 'expandable', 'interstitial', 'cpm' ) ),
-	) ),
-	array( 'channel' => 'Paid Other', 'any' => array( $paid ) ),
-	array( 'channel' => 'AI Agent', 'any' => array(
-		array( 'medium', 'one_of', array( 'ai-agent', 'ai-assistant' ) ),
-		array( 'source', 'in_list', 'ai' ),
-	) ),
-	array( 'channel' => 'Organic Shopping', 'any' => array( array( 'source', 'in_list', 'shopping' ), $shop_campaign ) ),
-	array( 'channel' => 'Organic Social', 'any' => array(
-		$social,
-		array( 'medium', 'one_of', array( 'social', 'social-network', 'social-media', 'sm', 'social network', 'social media' ) ),
-	) ),
-	array( 'channel' => 'Organic Video', 'any' => array(
-		array( 'source', 'in_list', 'video' ),
-		array( 'medium', 'contains', 'video' ),
-	) ),
-	array( 'channel' => 'Organic Search', 'any' => array(
-		array( 'source', 'in_list', 'search' ),
-		array( 'medium', 'equals', 'organic' ),
-	) ),
-	array( 'channel' => 'Referral', 'any' => array(
-		array( 'medium', 'one_of', array( 'referral', 'app', 'link' ) ),
-	) ),
-	array( 'channel' => 'Email', 'any' => array(
-		array( 'source', 'one_of', $email ),
-		array( 'medium', 'one_of', $email ),
-	) ),
-	array( 'channel' => 'Affiliates', 'any' => array( array( 'medium', 'equals', 'affiliate' ) ) ),
-	array( 'channel' => 'Audio', 'any' => array( array( 'medium', 'equals', 'audio' ) ) ),
-	array( 'channel' => 'SMS', 'any' => array(
-		array( 'source', 'equals', 'sms' ),
-		array( 'medium', 'equals', 'sms' ),
-	) ),
-	array( 'channel' => 'Mobile Push Notifications', 'any' => array(
-		array( 'medium', 'ends_with', 'push' ),
-		array( 'medium', 'contains', 'mobile' ),
-		array( 'medium', 'contains', 'notification' ),
-		array( 'source', 'equals', 'firebase' ),
-	) ),
-);
-
-?>
+return [
+    [ 'channel' => 'Direct', 'all' => [
+        [ 'source', 'equals', '(direct)' ],
+        [ 'medium', 'one_of', [ '(not set)', '(none)' ] ],
+    ] ],
+    [ 'channel' => 'Cross-network', 'any' => [
+        [ 'campaign', 'contains', 'cross-network' ],
+    ] ],
+    [ 'channel' => 'Paid Shopping', 'all' => [
+        [ 'any' => [ [ 'source', 'in_list', 'shopping' ], $shop_campaign ] ],
+        $paid,
+    ] ],
+    [ 'channel' => 'Paid Search', 'all' => [ [ 'source', 'in_list', 'search' ], $paid ] ],
+    [ 'channel' => 'Paid Social', 'all' => [ $social, $paid ] ],
+    [ 'channel' => 'Paid Video', 'all' => [ [ 'source', 'in_list', 'video' ], $paid ] ],
+    [ 'channel' => 'Display', 'any' => [
+        [ 'medium', 'one_of', [ 'display', 'banner', 'expandable', 'interstitial', 'cpm' ] ],
+    ] ],
+    [ 'channel' => 'Paid Other', 'any' => [ $paid ] ],
+    [ 'channel' => 'AI Agent', 'any' => [
+        [ 'medium', 'one_of', [ 'ai-agent', 'ai-assistant' ] ],
+        [ 'source', 'in_list', 'ai' ],
+    ] ],
+    [ 'channel' => 'Organic Shopping', 'any' => [ [ 'source', 'in_list', 'shopping' ], $shop_campaign ] ],
+    [ 'channel' => 'Organic Social', 'any' => [
+        $social,
+        [ 'medium', 'one_of', [ 'social', 'social-network', 'social-media', 'sm', 'social network', 'social media' ] ],
+    ] ],
+    [ 'channel' => 'Organic Video', 'any' => [
+        [ 'source', 'in_list', 'video' ],
+        [ 'medium', 'contains', 'video' ],
+    ] ],
+    [ 'channel' => 'Organic Search', 'any' => [
+        [ 'source', 'in_list', 'search' ],
+        [ 'medium', 'equals', 'organic' ],
+    ] ],
+    [ 'channel' => 'Referral', 'any' => [
+        [ 'medium', 'one_of', [ 'referral', 'app', 'link' ] ],
+    ] ],
+    [ 'channel' => 'Email', 'any' => [
+        [ 'source', 'one_of', $email ],
+        [ 'medium', 'one_of', $email ],
+    ] ],
+    [ 'channel' => 'Affiliates', 'any' => [ [ 'medium', 'equals', 'affiliate' ] ] ],
+    [ 'channel' => 'Audio', 'any' => [ [ 'medium', 'equals', 'audio' ] ] ],
+    [ 'channel' => 'SMS', 'any' => [
+        [ 'source', 'equals', 'sms' ],
+        [ 'medium', 'equals', 'sms' ],
+    ] ],
+    [ 'channel' => 'Mobile Push Notifications', 'any' => [
+        [ 'medium', 'ends_with', 'push' ],
+        [ 'medium', 'contains', 'mobile' ],
+        [ 'medium', 'contains', 'notification' ],
+        [ 'source', 'equals', 'firebase' ],
+    ] ],
+];

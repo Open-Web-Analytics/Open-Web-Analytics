@@ -213,7 +213,7 @@ final class CubeRebuildRangeTest extends TestCase
     {
         $range = $this->range(['from' => '20260901', 'to' => '20260930']);
 
-        $this->assertSame(array('from' => 20260901, 'to' => 20260930), $range);
+        $this->assertSame(['from' => 20260901, 'to' => 20260930], $range);
     }
 
     public function testAnUnreadableRangeIsRefusedRatherThanGuessed(): void

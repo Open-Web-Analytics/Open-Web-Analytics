@@ -423,7 +423,7 @@ final class Update062Test extends TestCase
         \OWA\Core\CoreAPI::dbSingleton()->query(sprintf(
             "INSERT INTO %s (id, status) VALUES (1, 'unhandled'), (2, 'unhandled'), (3, 'broken')", $q->tableFor('queue_item')));
 
-        $this->assertSame(array('file_lines' => 0, 'queue_rows' => 2), $this->update->undrainedV1Queue(),
+        $this->assertSame(['file_lines' => 0, 'queue_rows' => 2], $this->update->undrainedV1Queue(),
             'only rows still awaiting a retry are counted');
 
         \OWA\Core\CoreAPI::setRequestParam('all', true);
@@ -448,7 +448,7 @@ final class Update062Test extends TestCase
     {
         $dir = $this->queueDir();
 
-        $this->assertSame(array('file_lines' => 0, 'queue_rows' => 0), $this->update->undrainedV1Queue());
+        $this->assertSame(['file_lines' => 0, 'queue_rows' => 0], $this->update->undrainedV1Queue());
 
         \OWA\Core\CoreAPI::setRequestParam('all', true);
         $this->assertTrue($this->update->up());

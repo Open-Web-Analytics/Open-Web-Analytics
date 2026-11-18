@@ -28,5 +28,3 @@ class OptionsRetentionUpdate extends OptionsUpdate {
         return 'base.optionsRetention';
     }
 }
-
-?>

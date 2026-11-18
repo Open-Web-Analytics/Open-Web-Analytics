@@ -70,8 +70,8 @@ class Update055 extends \OWA\Core\Update {
      */
     private function tables() {
 
-        $tables = array(
-            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() );
+        $tables = [
+            \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ];
 
         foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 
@@ -112,5 +112,3 @@ class Update055 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

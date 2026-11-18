@@ -31,11 +31,11 @@ use OWA\Module\Base\Classes\TrackingEventHelpers as Helpers;
  */
 final class AbsentValueIsStorageOnlyTest extends TestCase
 {
-    private const SENTINELS = array( '(not set)', '(unknown)' );
+    private const SENTINELS = [ '(not set)', '(unknown)' ];
 
     public function testNoPropertyDeclaresAStorageSentinel(): void
     {
-        $declared = array();
+        $declared = [];
 
         foreach ( Helpers::allProperties() as $name => $definition ) {
 
@@ -50,7 +50,7 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $declared,
+        $this->assertSame( [], $declared,
             "These declare a label as their default. A label is what the reporting layer "
             . "renders for absence; on the event and in a v2 column, absence is absence:\n  "
             . implode( "\n  ", $declared ) );
@@ -94,7 +94,7 @@ final class AbsentValueIsStorageOnlyTest extends TestCase
 
             $event = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'event' );
 
-            ( new Helpers() )->setTrackerProperties( $event, array( $name => $definition ) );
+            ( new Helpers() )->setTrackerProperties( $event, [ $name => $definition ] );
 
             $this->assertFalse( $event->get( $name ),
                 "$name should carry its own false default" );

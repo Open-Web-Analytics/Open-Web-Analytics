@@ -40,7 +40,7 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
      */
     public static function serverRoles() {
 
-        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE );
+        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE ];
     }
 
     /**
@@ -50,9 +50,9 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
      */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Adds a tracked website or app as a Profile, under an existing Property or a new one.',
-            'arguments'   => array(
+            'arguments'   => [
                 'domain=<url>'         => 'Required for a website. Its domain.',
                 'name=<text>'          => 'Required unless propertyId= is given. Names the new Property.',
                 'propertyId=<id>'      => 'Add the Profile to this existing Property instead of creating one.',
@@ -60,13 +60,13 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
                 'appId=<id>'           => 'Required for an app. Its bundle ID or package name.',
                 'description=<text>'   => 'A description.',
                 'site_family=<text>'   => 'A family name to group it under.',
-            ),
-        );
+            ],
+        ];
     }
     
     public function errorAction() {
 
-        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
+        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? [] );
     }
 
     /**
@@ -100,7 +100,7 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
     
     public function success() {
 
-        $site = (array) ( $this->data['site'] ?? array() );
+        $site = (array) ( $this->data['site'] ?? [] );
 
         if ( $site ) {
 
@@ -109,9 +109,3 @@ class SitesAddCli extends \OWA\Module\Base\Controller\SitesAdd {
         }
     }
 }
-
-
-
-
-
-?>

@@ -175,7 +175,7 @@ final class FreshInstallHierarchyTest extends TestCase
 
     private function askInAFreshProcess(): string
     {
-        $descriptors = array( 1 => array( 'pipe', 'w' ), 2 => array( 'pipe', 'w' ) );
+        $descriptors = [ 1 => [ 'pipe', 'w' ], 2 => [ 'pipe', 'w' ] ];
 
         $proc = proc_open(
             escapeshellarg( PHP_BINARY ) . ' '
@@ -228,7 +228,7 @@ final class FreshInstallHierarchyTest extends TestCase
 
         $this->assertNotEmpty( $first );
 
-        $created = array( $first );
+        $created = [ $first ];
 
         try {
             /* Move it, exactly as the Property Details screen does. */
@@ -273,13 +273,13 @@ final class FreshInstallHierarchyTest extends TestCase
 
         $sm = \OWA\Core\CoreAPI::supportClassFactory( 'base', 'siteManager' );
 
-        $created = array();
+        $created = [];
 
         try {
             $first  = $sm->ensurePropertyFor( '', 'App One' );
             $second = $sm->ensurePropertyFor( '', 'App Two' );
 
-            $created = array_filter( array( $first, $second ) );
+            $created = array_filter( [ $first, $second ] );
 
             $this->assertNotEmpty( $first );
             $this->assertNotEmpty( $second );

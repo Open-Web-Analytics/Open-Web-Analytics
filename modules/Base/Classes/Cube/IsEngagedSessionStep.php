@@ -39,7 +39,7 @@ class IsEngagedSessionStep extends Step {
 
     public function requires() {
 
-        return array( Context::SESSION );
+        return [ Context::SESSION ];
     }
 
     public function execute( Context $context ) {
@@ -51,5 +51,3 @@ class IsEngagedSessionStep extends Step {
             Context::SESSION, self::ENGAGED_MSEC, self::ENGAGED_PAGE_VIEWS );
     }
 }
-
-?>

@@ -140,8 +140,8 @@ final class GoalVocabularyTest extends TestCase
 
             $columns = Vocab::columnsForEvent( $event );
 
-            foreach ( array( 'device_type', 'device_brand', 'browser_version',
-                             'os_version', 'raw_ua' ) as $column ) {
+            foreach ( [ 'device_type', 'device_brand', 'browser_version',
+                             'os_version', 'raw_ua' ] as $column ) {
 
                 $this->assertArrayHasKey( $column, $columns,
                     "$column is not offered for $event, though the request carries "
@@ -155,7 +155,7 @@ final class GoalVocabularyTest extends TestCase
     {
         $columns = Vocab::columnsForEvent( 'page_view' );
 
-        foreach ( array( 'page_location', 'page_path', 'page_query' ) as $column ) {
+        foreach ( [ 'page_location', 'page_path', 'page_query' ] as $column ) {
             $this->assertArrayHasKey( $column, $columns );
         }
     }
@@ -180,7 +180,7 @@ final class GoalVocabularyTest extends TestCase
             $this->assertFalse( Vocab::has( $column ),
                 "$column is excluded and still offered" );
 
-            foreach ( array( 'page_view', 'click', 'purchase' ) as $event ) {
+            foreach ( [ 'page_view', 'click', 'purchase' ] as $event ) {
 
                 $this->assertArrayNotHasKey( $column, Vocab::columnsForEvent( $event ) );
             }
@@ -199,7 +199,7 @@ final class GoalVocabularyTest extends TestCase
      */
     public function testEveryOfferedPropertyIsDescribedOnEveryEvent(): void
     {
-        $blank = array();
+        $blank = [];
 
         foreach ( Helpers::eventNames() as $event ) {
 
@@ -212,7 +212,7 @@ final class GoalVocabularyTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $blank, 'offered with no description (column => an event offering it)' );
+        $this->assertSame( [], $blank, 'offered with no description (column => an event offering it)' );
     }
 
     /** A dimension's description is the column's, said once for reports and goals. */
@@ -286,7 +286,7 @@ final class GoalVocabularyTest extends TestCase
     /** Idempotent: a column maps to itself, so the migration can run twice. */
     public function testAColumnMapsToItself(): void
     {
-        foreach ( array( 'page_path', 'tagged_medium', 'device_type', 'host' ) as $column ) {
+        foreach ( [ 'page_path', 'tagged_medium', 'device_type', 'host' ] as $column ) {
             $this->assertSame( $column, Vocab::columnFor( $column ) );
         }
     }
@@ -305,13 +305,13 @@ final class GoalVocabularyTest extends TestCase
     {
         $names = Helpers::eventNames();
 
-        foreach ( array( 'page_view', 'click', 'purchase', 'session_start',
-                         'first_visit', 'scroll' ) as $expected ) {
+        foreach ( [ 'page_view', 'click', 'purchase', 'session_start',
+                         'first_visit', 'scroll' ] as $expected ) {
 
             $this->assertContains( $expected, $names );
         }
 
-        foreach ( array( 'dom.stream', 'base.page_request', 'base.feed_request' ) as $v1 ) {
+        foreach ( [ 'dom.stream', 'base.page_request', 'base.feed_request' ] as $v1 ) {
 
             $this->assertNotContains( $v1, $names,
                 "$v1 is a v1 event type and must not be offered as a trigger" );
@@ -323,8 +323,8 @@ final class GoalVocabularyTest extends TestCase
     {
         $out = [];
 
-        foreach ( array( Helpers::requestProperties(), Helpers::clientProperties(),
-                         Helpers::serverProperties() ) as $group ) {
+        foreach ( [ Helpers::requestProperties(), Helpers::clientProperties(),
+                         Helpers::serverProperties() ] as $group ) {
 
             foreach ( array_keys( (array) $group ) as $name ) {
                 $out[ $name ] = true;

@@ -98,18 +98,16 @@ class Error extends \OWA\Core\View {
 
         if ( is_array( $msg ) ) {
 
-            return array(
+            return [
                 'headline' => (string) ( $msg['headline'] ?? \OWA\Core\CoreAPI::t( 'Error' ) ),
                 'message'  => (string) ( $msg['message'] ?? $msg['msg'] ?? '' ),
                 'detail'   => (string) ( $msg['detail'] ?? '' ),
-            );
+            ];
         }
 
-        return array(
+        return [
             'headline' => \OWA\Core\CoreAPI::t( 'Error' ),
             'message'  => $msg !== null && $msg !== '' ? (string) $msg : \OWA\Core\CoreAPI::t( 'Something went wrong.' ),
-        );
+        ];
     }
 }
-
-?>

@@ -51,5 +51,3 @@ class ModuleDeactivate extends \OWA\Core\AdminController {
     }
 
 }
-
-?>

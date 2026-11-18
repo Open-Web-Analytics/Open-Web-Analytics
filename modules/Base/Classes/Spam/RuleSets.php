@@ -29,14 +29,14 @@ class RuleSets {
     const DEFAULT_LEVEL = 'normal';
 
     /** Every shipped set and its rules. One file per rule, under Rules\. */
-    const SETS = array(
+    const SETS = [
 
-        'user_agent' => array(
+        'user_agent' => [
             Rules\UaRobotToken::class,
             Rules\UaParserSpider::class,
-        ),
+        ],
 
-        'request_headers' => array(
+        'request_headers' => [
             Rules\NoFetchMetadata::class,
             Rules\NoClientHints::class,
             Rules\ChPlatformMismatch::class,
@@ -45,32 +45,32 @@ class RuleSets {
             Rules\UaMalformed::class,
             Rules\AcceptEncodingNotBrowser::class,
             Rules\NoAcceptLanguage::class,
-        ),
+        ],
 
-        'page_origin' => array(
+        'page_origin' => [
             Rules\GhostPageHost::class,
             Rules\RefererMismatch::class,
             Rules\NoPageLocation::class,
             Rules\NoReferer::class,
-        ),
+        ],
 
-        'query_string' => array(
+        'query_string' => [
             Rules\QueryEncodingLoop::class,
             Rules\QueryLong::class,
             Rules\QueryVeryLong::class,
             Rules\QueryAttackPayload::class,
-        ),
-    );
+        ],
+    ];
 
     /**
      * Each level and the sets it runs.
      *
      * normal is what robot detection did before this: the user agent alone.
      */
-    const LEVELS = array(
-        'normal' => array( 'user_agent' ),
-        'strict' => array( 'user_agent', 'request_headers', 'page_origin', 'query_string' ),
-    );
+    const LEVELS = [
+        'normal' => [ 'user_agent' ],
+        'strict' => [ 'user_agent', 'request_headers', 'page_origin', 'query_string' ],
+    ];
 
     /**
      * The level spam_detection names, or normal when it names none of them.
@@ -112,7 +112,7 @@ class RuleSets {
      */
     public static function rules( $level ) {
 
-        $rules = array();
+        $rules = [];
 
         foreach ( self::forLevel( $level ) as $set => $classes ) {
 
@@ -152,5 +152,3 @@ class RuleSets {
         return array_values( $rules );
     }
 }
-
-?>

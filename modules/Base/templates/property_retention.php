@@ -4,11 +4,11 @@
 <div class="owa_panelIntro"><?php $view->out( sprintf( \OWA\Core\CoreAPI::t( 'How many months of reporting data “%s” keeps. Event data is kept for the whole installation, on the instance’s Data Retention page; reports can never reach further back than it.' ),
     $view->property['name'] ?? '' ) );?></div>
 
-    <form method="POST" action="<?php echo $view->makeLink( array( 'do' => 'base.propertyRetentionUpdate' ) );?>"
+    <form method="POST" action="<?php echo $view->makeLink( [ 'do' => 'base.propertyRetentionUpdate' ] );?>"
           data-owa-retention-form="property"
           data-owa-retention-property="<?php $view->out( $view->property['id'] ?? '' );?>"
-          data-owa-retention-preview="<?php $view->out( $view->makeApiLink( array(
-              'do' => 'retentionPreview', 'module' => 'base', 'version' => 'v1' ) ) ); ?>">
+          data-owa-retention-preview="<?php $view->out( $view->makeApiLink( [
+              'do' => 'retentionPreview', 'module' => 'base', 'version' => 'v1' ] ) ); ?>">
         <?php echo $view->createNonceFormField( 'base.propertyRetentionUpdate' );?>
         <input type="hidden" name="propertyId" value="<?php $view->out( $view->property['id'] ?? '' );?>">
         <?php

@@ -44,7 +44,7 @@ final class TrackingPropertyConfigTest extends TestCase
     {
         $config = $this->raw();
 
-        $counts = array();
+        $counts = [];
 
         foreach ( $config as $name => $definition ) {
 
@@ -56,7 +56,7 @@ final class TrackingPropertyConfigTest extends TestCase
 
         ksort( $counts );
 
-        $this->assertSame( array( 'client', 'event', 'request' ), array_keys( $counts ),
+        $this->assertSame( [ 'client', 'event', 'request' ], array_keys( $counts ),
             'All three setters must be in use, or the vocabulary has lost one.' );
 
         /*
@@ -75,7 +75,7 @@ final class TrackingPropertyConfigTest extends TestCase
          * they arrived, which spam detection reads (Classes\Spam) and nothing
          * stores. The floor stays at the four that reach a column.
          */
-        $floors = array( 'client' => 30, 'event' => 15, 'request' => 4 );
+        $floors = [ 'client' => 30, 'event' => 15, 'request' => 4 ];
 
         foreach ( $floors as $set_by => $least ) {
 
@@ -86,7 +86,7 @@ final class TrackingPropertyConfigTest extends TestCase
 
     public function testEveryCallbackNamedInTheConfigExists(): void
     {
-        $missing = array();
+        $missing = [];
         $checked = 0;
 
         foreach ( $this->raw() as $name => $definition ) {
@@ -122,7 +122,7 @@ final class TrackingPropertyConfigTest extends TestCase
              * carries, one reaching no column and the other nothing at all.
              */ );
 
-        $this->assertSame( array(), $missing, implode( "\n  ", $missing ) );
+        $this->assertSame( [], $missing, implode( "\n  ", $missing ) );
     }
 
 
@@ -141,7 +141,7 @@ final class TrackingPropertyConfigTest extends TestCase
         $this->assertGreaterThan(
             0, $noted, 'No notes in the config, so this test proves nothing about stripping them.' );
 
-        foreach ( array( 'requestProperties', 'clientProperties', 'serverProperties' ) as $method ) {
+        foreach ( [ 'requestProperties', 'clientProperties', 'serverProperties' ] as $method ) {
 
             foreach ( Helpers::$method() as $name => $definition ) {
 
@@ -167,13 +167,13 @@ final class TrackingPropertyConfigTest extends TestCase
     {
         $config = $this->raw();
 
-        $map = array( 'request' => 'requestProperties',
+        $map = [ 'request' => 'requestProperties',
                       'client'  => 'clientProperties',
-                      'event'   => 'serverProperties' );
+                      'event'   => 'serverProperties' ];
 
         foreach ( $map as $set_by => $method ) {
 
-            $declared = array();
+            $declared = [];
 
             foreach ( $config as $name => $definition ) {
 

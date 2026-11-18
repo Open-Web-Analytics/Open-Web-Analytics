@@ -17,13 +17,13 @@ final class SanitizeOptionsTest extends TestCase
     public function testTheValueSurvivesWithHiddenSpacesOff(): void
     {
         $this->assertSame( 'a b', Sanitize::cleanInput( '<b>a</b> b',
-            array( 'hidden_spaces' => false, 'remove_html' => true, 'escape_html' => false ) ) );
+            [ 'hidden_spaces' => false, 'remove_html' => true, 'escape_html' => false ] ) );
     }
 
     public function testTheValueSurvivesWithEveryStepOff(): void
     {
-        $this->assertSame( 'a<b', Sanitize::cleanInput( 'a<b', array(
+        $this->assertSame( 'a<b', Sanitize::cleanInput( 'a<b', [
             'hidden_spaces' => false, 'dollar' => false, 'carriage' => false,
-            'unicode' => false, 'escape_html' => false, 'backslash' => false ) ) );
+            'unicode' => false, 'escape_html' => false, 'backslash' => false ] ) );
     }
 }

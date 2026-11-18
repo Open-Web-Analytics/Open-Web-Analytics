@@ -36,14 +36,14 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Deletes archived files of the file-based event queues.',
-            'arguments'   => array(
+            'arguments'   => [
                 'queues=<name>[,<name>...]' => 'The queues to prune. Defaults to every registered queue.',
                 'interval=<seconds>'        => 'Age beyond which an archive is deleted. Defaults to 86400.',
                 'scheduled=1'               => 'Set by the scheduler. Deletes only archives older than raw_retention_months, and none when it is not set; interval= is ignored.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function __construct($params) {
@@ -105,7 +105,7 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
             $fallback = $queue_name === \OWA\Module\Base\Classes\TrackerIngest::QUEUE
                 ? \OWA\Module\Base\Classes\TrackerIngest::fallback() : null;
 
-            foreach ( array( $q, $fallback ) as $each ) {
+            foreach ( [ $q, $fallback ] as $each ) {
 
                 if ( $each && method_exists( $each, 'pruneArchive' ) ) {
 
@@ -118,5 +118,3 @@ class PruneEventQueueArchivesCli extends \OWA\Core\Controller\Cli {
         }
     }
 }
-
-?>

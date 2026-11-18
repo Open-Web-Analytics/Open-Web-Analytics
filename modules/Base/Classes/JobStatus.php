@@ -50,7 +50,7 @@ class JobStatus {
         $job   = $jobs[ $name ] ?? null;
         $row   = $state[ $name ] ?? null;
 
-        $out = array( 'job' => $job, 'row' => $row, 'next' => null, 'running' => false, 'reason' => null );
+        $out = [ 'job' => $job, 'row' => $row, 'next' => null, 'running' => false, 'reason' => null ];
 
         if ( ! $job ) {
 
@@ -153,7 +153,7 @@ class JobStatus {
         $db     = \OWA\Core\CoreAPI::dbSingleton();
 
         $rows = $db->get_results( sprintf( 'SELECT * FROM %s', $entity->getTableName() ) );
-        $out  = array();
+        $out  = [];
 
         foreach ( (array) $rows as $row ) {
 
@@ -364,5 +364,3 @@ class JobStatus {
         return sprintf( \OWA\Core\CoreAPI::tn( '%d minute', '%d minutes', $n ), $n );
     }
 }
-
-?>

@@ -67,7 +67,7 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
 
         if ( $owed ) {
 
-            \OWA\Module\Base\Classes\Retention::enqueueBackfills( array( $owed ) );
+            \OWA\Module\Base\Classes\Retention::enqueueBackfills( [ $owed ] );
         }
 
         $this->setRedirectAction( 'base.propertyRetention' );
@@ -88,5 +88,3 @@ class PropertyRetentionUpdate extends \OWA\Core\AdminController {
         return \OWA\Module\Base\Classes\SettingsForm::registeredFieldSet( 'base.propertyRetention' );
     }
 }
-
-?>

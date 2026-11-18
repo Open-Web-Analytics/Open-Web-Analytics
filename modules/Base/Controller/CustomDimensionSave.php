@@ -37,12 +37,12 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
     public function validate() {
 
         $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Property is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Property is required.' ) ] );
 
         $key = trim( (string) $this->getParam( 'dimensionKey' ) );
 
         $this->addValidation( 'dimensionKey', $key, 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Dimension key is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Dimension key is required.' ) ] );
 
         if ( $key === '' || ! $this->getParam( 'propertyId' ) ) {
 
@@ -63,11 +63,11 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
          */
         $refusal = \OWA\Module\Base\Classes\Cube\Dimensions::refusalFor(
             (string) $this->getParam( 'propertyId' ),
-            array(
+            [
                 'key'   => $key,
                 'scope' => (string) $this->getParam( 'scope' ),
                 'type'  => (string) $this->getParam( 'dataType' ),
-            ) );
+            ] );
 
         if ( $refusal !== '' ) {
 
@@ -82,26 +82,26 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
 
         CustomDimensionEdit::prepare( $this,
             $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) ),
-            array(
+            [
                 'dimensionKey' => trim( (string) $this->getParam( 'dimensionKey' ) ),
                 'scope'        => (string) $this->getParam( 'scope' ),
                 'dataType'     => (string) $this->getParam( 'dataType' ),
                 'label'        => trim( (string) $this->getParam( 'label' ) ),
-            ) );
+            ] );
     }
 
     public function action() {
 
         $property_id = (string) $this->getParam( 'propertyId' );
 
-        $result = \OWA\Module\Base\Classes\Cube\Dimensions::register( $property_id, array(
-            array(
+        $result = \OWA\Module\Base\Classes\Cube\Dimensions::register( $property_id, [
+            [
                 'key'   => trim( (string) $this->getParam( 'dimensionKey' ) ),
                 'scope' => (string) $this->getParam( 'scope' ),
                 'type'  => (string) $this->getParam( 'dataType' ),
                 'label' => trim( (string) $this->getParam( 'label' ) ),
-            ),
-        ) );
+            ],
+        ] );
 
         $this->set( 'propertyId', $property_id );
         $this->setRedirectAction( 'base.customDimensions' );
@@ -126,5 +126,3 @@ class CustomDimensionSave extends \OWA\Core\AdminController {
         $this->setStatusCode( 3210 );
     }
 }
-
-?>

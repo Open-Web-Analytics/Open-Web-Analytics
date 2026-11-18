@@ -125,12 +125,12 @@ class Ingest {
      */
     public static function points() {
 
-        return array(
+        return [
             self::REQUEST_PRE,  self::REQUEST_POST,
             self::EDGE_PRE,     self::EDGE_POST,
             self::PROPERTY_PRE, self::PROPERTY_POST,
             self::TRACKING_EVENTS_PRE_SAVE,
-        );
+        ];
     }
 
     /**
@@ -151,5 +151,3 @@ class Ingest {
     }
 
 }
-
-?>

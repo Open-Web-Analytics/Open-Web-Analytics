@@ -28,7 +28,7 @@ class Update082 extends \OWA\Core\Update {
     public $schema_version = 82;
 
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
-    const COLUMNS = array( 'spam_score', 'spam_rules' );
+    const COLUMNS = [ 'spam_score', 'spam_rules' ];
 
     /**
      * @param  bool $force
@@ -69,5 +69,3 @@ class Update082 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

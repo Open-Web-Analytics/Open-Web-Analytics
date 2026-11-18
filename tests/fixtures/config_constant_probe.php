@@ -32,7 +32,7 @@ printf( "PROBE persistable=%s\n", $c->mayPersistInstallWide( 'base', 'timezone' 
 
 // A module declaring this key at module-load time, i.e. after the constants ran.
 $c->registerField( 'base', 'timezone',
-    array( 'default' => 'UTC', 'storable' => true, 'type' => 'select' ) );
+    [ 'default' => 'UTC', 'storable' => true, 'type' => 'select' ] );
 
 printf( "PROBE persistable_after_late_registration=%s\n",
     $c->mayPersistInstallWide( 'base', 'timezone' ) ? 'yes' : 'no' );

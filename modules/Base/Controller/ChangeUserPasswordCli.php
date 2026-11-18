@@ -36,19 +36,19 @@ class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
     /** See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer. */
     public static function serverRoles() {
 
-        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE );
+        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE ];
     }
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Sets a user\'s password.',
-            'arguments'   => array(
+            'arguments'   => [
                 'user=<user id>'      => 'Required. The user name of the account.',
                 'password=<password>' => 'Required. The new password, at least 6 characters.',
-            ),
-        );
+            ],
+        ];
     }
     /**
      * @var \OWA\Module\Base\Classes\UserManager
@@ -108,10 +108,6 @@ class ChangeUserPasswordCli extends \OWA\Core\Controller\Cli
 
     public function errorAction()
     {
-        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
+        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? [] );
     }
 }
-
-
-
-?>

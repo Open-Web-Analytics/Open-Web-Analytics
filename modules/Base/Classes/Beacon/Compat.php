@@ -64,7 +64,7 @@ class Compat {
 
             self::$event_names = isset( $conf['event_names'] )
                 ? (array) $conf['event_names']
-                : array();
+                : [];
         }
 
         return self::$event_names;
@@ -102,9 +102,9 @@ class Compat {
             $conf = (array) \OWA\Core\CoreAPI::loadConf(
                 'beacon_compat.php', 'beacon.compat' );
 
-            self::$renames = array();
+            self::$renames = [];
 
-            foreach ( (array) ( isset( $conf['renames'] ) ? $conf['renames'] : array() )
+            foreach ( (array) ( isset( $conf['renames'] ) ? $conf['renames'] : [] )
                       as $entry ) {
 
                 self::$renames[ $entry['from'] ] = $entry['to'];
@@ -153,11 +153,11 @@ class Compat {
 
             if ( ! array_key_exists( 'cv' . $i, $properties ) ) {
 
-                $properties[ 'cv' . $i ] = array(
+                $properties[ 'cv' . $i ] = [
                     'required'      => false,
                     'data_type'     => 'string',
                     'default_value' => '',
-                );
+                ];
             }
         }
 
@@ -178,7 +178,7 @@ class Compat {
 
         for ( $i = 1; $i <= self::slotCount(); $i++ ) {
 
-            foreach ( array( 'name', 'value' ) as $half ) {
+            foreach ( [ 'name', 'value' ] as $half ) {
 
                 $key = 'cv' . $i . '_' . $half;
 
@@ -194,14 +194,14 @@ class Compat {
                  * received it, and the reporting layer renders absence as that
                  * same label at read time.
                  */
-                $properties[ $key ] = array(
+                $properties[ $key ] = [
                     'set_by'    => 'client',
-                    'from'      => array( $key ),
-                    'events'    => array( \OWA\Module\Base\Classes\TrackingEventHelpers::EVERY_EVENT ),
+                    'from'      => [ $key ],
+                    'events'    => [ \OWA\Module\Base\Classes\TrackingEventHelpers::EVERY_EVENT ],
                     'required'  => true,
                     'data_type' => 'string',
-                    'callbacks' => array( 'OWA\\Module\\Base\\Classes\\TrackingEventHelpers::lowercaseString' ),
-                );
+                    'callbacks' => [ 'OWA\\Module\\Base\\Classes\\TrackingEventHelpers::lowercaseString' ],
+                ];
             }
         }
 
@@ -322,5 +322,3 @@ class Compat {
         return $applied;
     }
 }
-
-?>

@@ -13,7 +13,7 @@ use OWA\Module\Base\Classes\ResultSetManager;
 
 return function () {
 
-    $rows = array(
+    $rows = [
         sprintf( 'Longer than %d characters', ResultSetManager::MAX_REGEX_LENGTH ),
         'Not a valid regular expression',
         'A backreference, such as `\\1`',
@@ -24,7 +24,7 @@ return function () {
             . '`\\K`, recursion such as `(?R)`, `(?1)` or `(?&name)`, a conditional `(?(`, a verb such as `(*FAIL)`, '
             . '`(?P` or `(?\'name\'` groups, `\\g` or `\\k` references, `\\C`, `\\N`, `\\o`, inline flags other '
             . 'than `i`, `m`, `s` and `x`, or an unescaped `[` or `&&` inside a character class',
-    );
+    ];
 
     $out = "| A pattern is refused when it is |\n|---|\n";
 

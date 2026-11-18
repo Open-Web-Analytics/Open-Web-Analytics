@@ -114,13 +114,13 @@ class Builder {
     protected $db;
 
     /** @var array<string, string> table name by role: target, raw, visitors, staging, computed */
-    protected $tables = array();
+    protected $tables = [];
 
     /** @var Step[] keyed by column */
-    protected $steps = array();
+    protected $steps = [];
 
     /** @var list<StepAccount> per-step accounting from the last build */
-    protected $accounting = array();
+    protected $accounting = [];
 
     /** @var Columns */
     protected $columns;
@@ -142,10 +142,10 @@ class Builder {
 
         $this->tables['target'] = Cubes::tableFor( $this->property_id );
 
-        foreach ( array(
+        foreach ( [
             'raw'      => 'base.event_raw',
             'visitors' => 'base.visitor_acquisition',
-        ) as $role => $entity ) {
+        ] as $role => $entity ) {
 
             $this->tables[ $role ] =
                 \OWA\Core\CoreAPI::entityFactory( $entity )->getTableName();
@@ -177,7 +177,7 @@ class Builder {
      */
     protected function dimensionSteps() {
 
-        $steps = array();
+        $steps = [];
 
         /*
          * THE TABLE IS THE AUTHORITY, NOT THE REGISTRY.
@@ -270,7 +270,7 @@ class Builder {
             return ' AND 1 = 0';
         }
 
-        $quoted = array();
+        $quoted = [];
 
         foreach ( $this->site_ids as $site_id ) {
 
@@ -293,7 +293,7 @@ class Builder {
      */
     public function partitions( $from, $to ) {
 
-        $spans = array();
+        $spans = [];
 
         foreach ( $this->db->getPartitionSpans( $this->tables['target'] ) as $span ) {
 
@@ -583,7 +583,7 @@ class Builder {
      */
     protected function readCommitted() {
 
-        $variables = array();
+        $variables = [];
 
         foreach ( (array) $this->db->get_results( 'SHOW SESSION VARIABLES WHERE Variable_name IN '
             . "('transaction_isolation', 'tx_isolation', 'log_bin', 'binlog_format')" ) as $row ) {
@@ -654,7 +654,7 @@ class Builder {
 
         $built_at = (int) round( microtime( true ) * 1000000 );
 
-        $result = array(
+        $result = [
             'ok'        => false,
             'partition' => $span['name'],
             'rows'      => 0,
@@ -664,7 +664,7 @@ class Builder {
             'failed'    => 0,
             // Why it failed, short enough to survive the scheduler's 250 characters.
             'error'     => '',
-        );
+        ];
 
         $context = new Context( $span, $built_at, $this->closedBefore( $built_at ),
             self::lookbackDays( $this->property_id ) );
@@ -683,7 +683,7 @@ class Builder {
                 }
             }
 
-            $context->candidates = array();
+            $context->candidates = [];
 
             if ( ! $dry_run ) {
 
@@ -700,7 +700,7 @@ class Builder {
                     }
                 }
 
-                $context->candidates = array();
+                $context->candidates = [];
             }
 
             $expressions = $this->runSteps( $context );
@@ -849,15 +849,15 @@ class Builder {
      */
     protected function runSteps( Context $context ) {
 
-        $this->accounting = array();
+        $this->accounting = [];
 
-        $expressions = array();
+        $expressions = [];
 
         foreach ( $this->steps as $column => $step ) {
 
             $compute = $step instanceof ComputeStep;
 
-            $entry = array(
+            $entry = [
                 'step'     => $step->name(),
                 'column'   => $column,
                 'kind'     => $compute ? 'compute' : 'sql',
@@ -865,7 +865,7 @@ class Builder {
                 'msec'     => 0.0,
                 'ok'       => false,
                 'error'    => '',
-            );
+            ];
 
             /*
              * Timed because a compute step is the one place a build spends time
@@ -935,8 +935,8 @@ class Builder {
      */
     protected function candidatePages( array $span ) {
 
-        $reads = array();
-        $where = array();
+        $reads = [];
+        $where = [];
 
         foreach ( $this->steps as $step ) {
 
@@ -957,7 +957,7 @@ class Builder {
                 $reads[ $column ] = true;
             }
 
-            $rendered = array();
+            $rendered = [];
 
             foreach ( $step->when() as $clause ) {
 
@@ -972,10 +972,10 @@ class Builder {
 
         if ( ! $where ) {
 
-            return array();
+            return [];
         }
 
-        $columns = 'r.' . implode( ', r.', array_merge( array( 'id', 'yyyymmdd' ), array_keys( $reads ) ) );
+        $columns = 'r.' . implode( ', r.', array_merge( [ 'id', 'yyyymmdd' ], array_keys( $reads ) ) );
         $after   = null;
 
         // Keyed on (yyyymmdd, id), the partition key first, so each page is a
@@ -1001,7 +1001,7 @@ class Builder {
             if ( $rows ) {
 
                 $last  = (array) end( $rows );
-                $after = array( (int) $last['yyyymmdd'], (int) $last['id'] );
+                $after = [ (int) $last['yyyymmdd'], (int) $last['id'] ];
 
                 yield $rows;
             }
@@ -1058,7 +1058,7 @@ class Builder {
      */
     protected function writeComputed( Context $context ) {
 
-        $steps = array();
+        $steps = [];
 
         foreach ( $this->steps as $column => $step ) {
 
@@ -1073,7 +1073,7 @@ class Builder {
             return true;
         }
 
-        $definitions = array( 'c_id BIGINT NOT NULL', 'c_yyyymmdd INT NOT NULL' );
+        $definitions = [ 'c_id BIGINT NOT NULL', 'c_yyyymmdd INT NOT NULL' ];
 
         foreach ( array_keys( $steps ) as $column ) {
 
@@ -1096,7 +1096,7 @@ class Builder {
         }
 
         // Collect by row, so one row carries every step's answer for it.
-        $rows = array();
+        $rows = [];
 
         foreach ( $steps as $column => $step ) {
 
@@ -1111,14 +1111,14 @@ class Builder {
             return true;
         }
 
-        $columns = array_merge( array( 'c_id', 'c_yyyymmdd' ), array_keys( $steps ) );
-        $tuples  = array();
+        $columns = array_merge( [ 'c_id', 'c_yyyymmdd' ], array_keys( $steps ) );
+        $tuples  = [];
 
         foreach ( $rows as $key => $values ) {
 
             list( $id, $yyyymmdd ) = explode( ':', $key );
 
-            $tuple  = array( (int) $id, (int) $yyyymmdd );
+            $tuple  = [ (int) $id, (int) $yyyymmdd ];
             $params = [];
 
             foreach ( array_keys( $steps ) as $column ) {
@@ -1162,7 +1162,7 @@ class Builder {
      */
     protected function requiredJoins() {
 
-        $required = array();
+        $required = [];
 
         foreach ( $this->steps as $step ) {
 
@@ -1192,7 +1192,7 @@ class Builder {
             strtotime( $start . ' -' . self::LOOKBACK_DAYS . ' day' ) );
         $ahead    = $this->lookahead( $end );
 
-        $select = array();
+        $select = [];
 
         foreach ( $raw_columns as $column ) {
 
@@ -1283,7 +1283,7 @@ class Builder {
      */
     protected function windowedRaw( $from, $to ) {
 
-        $columns = array( 'w.id AS w_id', 'w.yyyymmdd AS w_yyyymmdd' );
+        $columns = [ 'w.id AS w_id', 'w.yyyymmdd AS w_yyyymmdd' ];
 
         // Only what a column definition actually references. Removing the last
         // definition that reads a value removes it from the sort too.
@@ -1328,7 +1328,7 @@ class Builder {
          * test leaves out materialized events: a goal event triggered by
          * session_start or first_visit is not the visitor engaging.
          */
-        $materialized = array();
+        $materialized = [];
 
         foreach ( \OWA\Module\Base\Classes\TrackingEventHelpers::materializedEventNames() as $name ) {
 
@@ -1484,7 +1484,7 @@ class Builder {
      */
     public function afterStatements( Context $context ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( $this->steps as $column => $step ) {
 
@@ -1502,7 +1502,7 @@ class Builder {
     /** @return void */
     protected function dropWorkingTables() {
 
-        foreach ( array( 'staging', 'computed' ) as $role ) {
+        foreach ( [ 'staging', 'computed' ] as $role ) {
 
             $this->db->query( sprintf( OWA_SQL_DROP_TABLE, $this->tables[ $role ] ) );
         }
@@ -1687,5 +1687,3 @@ class Builder {
         return $row ? (int) $row['n'] : 0;
     }
 }
-
-?>

@@ -299,7 +299,7 @@ class DbColumn {
             return false;
         }
 
-        return in_array( strtolower( $declared ), array( 'utf8', 'utf8mb3' ), true );
+        return in_array( strtolower( $declared ), [ 'utf8', 'utf8mb3' ], true );
     }
 
     /**
@@ -351,9 +351,9 @@ class DbColumn {
      */
     public function maxLength() {
 
-        $lengths = array();
+        $lengths = [];
 
-        $declared = array(
+        $declared = [
             'OWA_DTD_VARCHAR10'   => 10,
             'OWA_DTD_VARCHAR16'   => 16,
             'OWA_DTD_VARCHAR24'   => 24,
@@ -366,7 +366,7 @@ class DbColumn {
             'OWA_DTD_VARCHAR1024' => 1024,
             'OWA_DTD_CHAR2'       => 2,
             'OWA_DTD_CHAR3'       => 3,
-        );
+        ];
 
         foreach ( $declared as $constant => $length ) {
 
@@ -558,5 +558,3 @@ class DbColumn {
      }
 
  }
-
-?>

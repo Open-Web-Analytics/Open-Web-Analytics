@@ -26,13 +26,13 @@ final class PasswordResetThrottleTest extends TestCase
         $hex   = str_repeat('ab', 16);
         $reset = fn (int $minted_ago) => $hex . '.' . (time() - $minted_ago + User::RESET_TTL);
 
-        yield 'a reset key minted just now'        => array(fn () => $reset(0), true);
-        yield 'one minted 14 minutes ago'           => array(fn () => $reset(14 * 60), true);
-        yield 'one minted 16 minutes ago'           => array(fn () => $reset(16 * 60), false);
-        yield 'an invitation key minted just now'   => array(fn () => $hex . '.' . (time() + User::INVITE_TTL), false);
-        yield 'a spent key'                         => array(fn () => $hex . '.0', false);
-        yield 'an expired key'                      => array(fn () => $hex . '.' . (time() - 1), false);
-        yield 'no key'                              => array(fn () => '', false);
+        yield 'a reset key minted just now'        => [fn () => $reset(0), true];
+        yield 'one minted 14 minutes ago'           => [fn () => $reset(14 * 60), true];
+        yield 'one minted 16 minutes ago'           => [fn () => $reset(16 * 60), false];
+        yield 'an invitation key minted just now'   => [fn () => $hex . '.' . (time() + User::INVITE_TTL), false];
+        yield 'a spent key'                         => [fn () => $hex . '.0', false];
+        yield 'an expired key'                      => [fn () => $hex . '.' . (time() - 1), false];
+        yield 'no key'                              => [fn () => '', false];
     }
 
     /** @dataProvider keys */
@@ -48,7 +48,7 @@ final class PasswordResetThrottleTest extends TestCase
     private string $user_id = '';
 
     /** @var array<string,mixed> */
-    private array $mail = array();
+    private array $mail = [];
 
     private function account(string $key): User
     {
@@ -87,7 +87,7 @@ final class PasswordResetThrottleTest extends TestCase
         $event->set('email_address', $this->user_id . '@owatest.example.com');
 
         $this->logDuring(function () use ($event, &$result) {
-            $result = \OWA\Core\CoreAPI::performAction('base.usersResetPassword', array('event' => $event));
+            $result = \OWA\Core\CoreAPI::performAction('base.usersResetPassword', ['event' => $event]);
         });
 
         return $result;

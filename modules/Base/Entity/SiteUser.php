@@ -42,5 +42,3 @@ class SiteUser extends \OWA\Core\Entity {
 
 
 }
-
-?>

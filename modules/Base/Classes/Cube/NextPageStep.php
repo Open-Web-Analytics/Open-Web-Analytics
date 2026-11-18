@@ -23,7 +23,7 @@ class NextPageStep extends Step {
 
     public function requires() {
 
-        return array( Context::SESSION, Context::PAGES );
+        return [ Context::SESSION, Context::PAGES ];
     }
 
     public function execute( Context $context ) {
@@ -35,5 +35,3 @@ class NextPageStep extends Step {
             $context->literal( self::EXIT ) );
     }
 }
-
-?>

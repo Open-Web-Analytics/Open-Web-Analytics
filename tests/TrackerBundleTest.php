@@ -49,7 +49,7 @@ final class TrackerBundleTest extends TestCase
         // The whole tree, dotfiles and subdirectories too, even when clearing a setting throws.
         try {
             if (owa_test_db_available()) {
-                foreach (array('tracker_clicks', 'tracker_session_cookie_days', 'tracker_url_fragments', 'tracker_honor_privacy_signals') as $key) {
+                foreach (['tracker_clicks', 'tracker_session_cookie_days', 'tracker_url_fragments', 'tracker_honor_privacy_signals'] as $key) {
                     \OWA\Core\CoreAPI::clearScopedSetting('profile', self::SITE, 'base', $key);
                 }
             }
@@ -79,10 +79,10 @@ final class TrackerBundleTest extends TestCase
     {
         file_put_contents($this->dist . 'owa.tracker.js', $core);
         file_put_contents($this->dist . 'owa.domstream.js', $chunk);
-        file_put_contents($this->dist . 'owa.tracker.manifest.json', json_encode(array(
-            'core'    => array('file' => 'owa.tracker.js', 'sha256' => hash('sha256', $core)),
-            'plugins' => array('domstream' => array('file' => 'owa.domstream.js', 'sha256' => $chunkSha ?? hash('sha256', $chunk))),
-        )));
+        file_put_contents($this->dist . 'owa.tracker.manifest.json', json_encode([
+            'core'    => ['file' => 'owa.tracker.js', 'sha256' => hash('sha256', $core)],
+            'plugins' => ['domstream' => ['file' => 'owa.domstream.js', 'sha256' => $chunkSha ?? hash('sha256', $chunk)]],
+        ]));
     }
 
     private function requireDb(): void
@@ -102,16 +102,16 @@ final class TrackerBundleTest extends TestCase
     {
         $config = TrackerBundle::config(self::SITE);
 
-        $this->assertSame(array('setSiteId', self::SITE), $config['options'][0]);
-        $this->assertContains(array('setOption', 'stateStoreExpirations', array('v' => 364, 's' => 364)), $config['options']);
-        $this->assertContains(array('setOption', 'scrollThresholds', array(25, 50, 75, 90)), $config['options']);
-        $this->assertContains(array('setSearchQueryParams', array('q', 's', 'search', 'query', 'keyword')), $config['options']);
+        $this->assertSame(['setSiteId', self::SITE], $config['options'][0]);
+        $this->assertContains(['setOption', 'stateStoreExpirations', ['v' => 364, 's' => 364]], $config['options']);
+        $this->assertContains(['setOption', 'scrollThresholds', [25, 50, 75, 90]], $config['options']);
+        $this->assertContains(['setSearchQueryParams', ['q', 's', 'search', 'query', 'keyword']], $config['options']);
 
-        $this->assertSame(array('trackPageView'),
-            array_values(array_diff(self::names($config['features']), array('trackDomStream'))),
+        $this->assertSame(['trackPageView'],
+            array_values(array_diff(self::names($config['features']), ['trackDomStream'])),
             'the page view is the one command; the tracker starts the rest');
-        $this->assertContains(array('setOption', 'features', array(
-            'trackClicks', 'trackForms', 'trackScroll', 'trackSiteSearch', 'trackExceptions')),
+        $this->assertContains(['setOption', 'features', [
+            'trackClicks', 'trackForms', 'trackScroll', 'trackSiteSearch', 'trackExceptions']],
             $config['options'], 'every feature but Domstream and route changes, on by default');
     }
 
@@ -136,7 +136,7 @@ final class TrackerBundleTest extends TestCase
     public function testTheSessionLengthIsTheInstalls(): void
     {
         $this->assertContains(
-            array('setOption', 'sessionLength', (int) \OWA\Core\CoreAPI::getSetting('base', 'session_length')),
+            ['setOption', 'sessionLength', (int) \OWA\Core\CoreAPI::getSetting('base', 'session_length')],
             TrackerBundle::config(self::SITE)['options']);
     }
 
@@ -155,8 +155,8 @@ final class TrackerBundleTest extends TestCase
         $this->assertCount(1, $features);
         $this->assertNotContains('trackClicks', $features[0][2]);
         $this->assertContains('trackScroll', $features[0][2]);
-        $this->assertContains(array('setOption', 'stateStoreExpirations', array('v' => 364, 's' => 0)), $config['options']);
-        $this->assertContains(array('setTrackUrlFragments', true), $config['options']);
+        $this->assertContains(['setOption', 'stateStoreExpirations', ['v' => 364, 's' => 0]], $config['options']);
+        $this->assertContains(['setTrackUrlFragments', true], $config['options']);
     }
 
     /**
@@ -173,7 +173,7 @@ final class TrackerBundleTest extends TestCase
         $this->requireDb();
 
         $module = new \OWA\Module\Domstream\Module();
-        $empty  = array('options' => array(), 'features' => array(), 'plugins' => array());
+        $empty  = ['options' => [], 'features' => [], 'plugins' => []];
 
         try {
             \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'domstream', 'record', true);
@@ -181,9 +181,9 @@ final class TrackerBundleTest extends TestCase
 
             $on = $module->addToBundle($empty, self::SITE);
 
-            $this->assertSame(array('domstream'), $on['plugins']);
-            $this->assertSame(array(array('trackDomStream')), $on['features']);
-            $this->assertSame(array(array('setDomstreamSampleRate', 40)), $on['options']);
+            $this->assertSame(['domstream'], $on['plugins']);
+            $this->assertSame([['trackDomStream']], $on['features']);
+            $this->assertSame([['setDomstreamSampleRate', 40]], $on['options']);
 
             \OWA\Core\CoreAPI::setScopedSetting('profile', self::SITE, 'domstream', 'record', false);
 
@@ -226,12 +226,12 @@ final class TrackerBundleTest extends TestCase
         $this->assertCount(count($events) - 1, TrackerBundle::trackedEvents(self::SITE), 'and nothing else changes');
 
         $this->assertSame('Page interaction recording',
-            (new \OWA\Module\Domstream\Module())->labelFeatures(array())['trackDomStream'],
+            (new \OWA\Module\Domstream\Module())->labelFeatures([])['trackDomStream'],
             'a module labels the feature it adds');
 
         static $registered = false;
         if (!$registered) {
-            \OWA\Core\CoreAPI::registerFilter('tracker_bundle_config', array(self::class, 'addUnlabelledFeatureForTest'), 999);
+            \OWA\Core\CoreAPI::registerFilter('tracker_bundle_config', [self::class, 'addUnlabelledFeatureForTest'], 999);
             $registered = true;
         }
 
@@ -249,7 +249,7 @@ final class TrackerBundleTest extends TestCase
     public static function addUnlabelledFeatureForTest($config)
     {
         if (self::$withUnlabelled) {
-            $config['features'][] = array('trackSomethingNew');
+            $config['features'][] = ['trackSomethingNew'];
         }
 
         return $config;
@@ -260,7 +260,7 @@ final class TrackerBundleTest extends TestCase
     {
         static $registered = false;
         if (!$registered) {
-            \OWA\Core\CoreAPI::registerFilter('tracker_bundle_config', array(self::class, 'addPluginForTest'), 999);
+            \OWA\Core\CoreAPI::registerFilter('tracker_bundle_config', [self::class, 'addPluginForTest'], 999);
             $registered = true;
         }
 
@@ -345,7 +345,7 @@ final class TrackerBundleTest extends TestCase
         $this->assertSame(TrackerBundle::compose(self::SITE), file_get_contents($this->out . self::SITE . '.js'));
         $this->assertTrue(TrackerBundle::isCurrent(self::SITE));
         $this->assertSame('published', TrackerBundle::status(self::SITE)['state']);
-        $this->assertSame(array(), glob($this->out . '*.tmp'), 'no temporary file is left behind');
+        $this->assertSame([], glob($this->out . '*.tmp'), 'no temporary file is left behind');
     }
 
     /** A new build is a new header, so every bundle is republished. */
@@ -356,8 +356,8 @@ final class TrackerBundleTest extends TestCase
         $this->build('/*core v2*/', '/*chunk*/');
 
         $this->assertFalse(TrackerBundle::isCurrent(self::SITE));
-        $this->assertSame(array(self::SITE => 'published'), TrackerBundle::publishStale(false, array(self::SITE)));
-        $this->assertSame(array(self::SITE => 'current'), TrackerBundle::publishStale(false, array(self::SITE)));
+        $this->assertSame([self::SITE => 'published'], TrackerBundle::publishStale(false, [self::SITE]));
+        $this->assertSame([self::SITE => 'current'], TrackerBundle::publishStale(false, [self::SITE]));
     }
 
     /** A saved setting is a new header too. */
@@ -376,9 +376,9 @@ final class TrackerBundleTest extends TestCase
     /** @return array<string,mixed> the URL settings, to put back */
     private static function urls(): array
     {
-        $out = array();
+        $out = [];
 
-        foreach (array('public_url', 'tracking_url', 'assets_url') as $key) {
+        foreach (['public_url', 'tracking_url', 'assets_url'] as $key) {
             $out[$key] = \OWA\Core\CoreAPI::getSetting('base', $key);
         }
 
@@ -427,7 +427,7 @@ final class TrackerBundleTest extends TestCase
             \OWA\Core\CoreAPI::setSetting('base', 'tracking_url', 'https://t.example.test/');
             $options = TrackerBundle::config(self::SITE)['options'];
 
-            $this->assertSame(array('setLoggerEndpoint', 'https://t.example.test/'), $options[1], 'before any command that could send');
+            $this->assertSame(['setLoggerEndpoint', 'https://t.example.test/'], $options[1], 'before any command that could send');
             $this->assertContains('owa_cmds.push(["setLoggerEndpoint","https://t.example.test/"]);',
                 TrackerBundle::commandLines(self::SITE));
         } finally {
@@ -461,7 +461,7 @@ final class TrackerBundleTest extends TestCase
         file_put_contents($this->out . 'notes.txt', 'not ours');
         TrackerBundle::publish(self::SITE);
 
-        $this->assertSame(array('gone-profile'), TrackerBundle::removeOrphans(array(self::SITE)));
+        $this->assertSame(['gone-profile'], TrackerBundle::removeOrphans([self::SITE]));
 
         $this->assertFileDoesNotExist($this->out . 'gone-profile.js');
         $this->assertFileExists($this->out . self::SITE . '.js');
@@ -470,7 +470,7 @@ final class TrackerBundleTest extends TestCase
 
     public function testASiteIdThatCannotBeAFileNameIsRefused(): void
     {
-        foreach (array('../escape', 'a/b', '', str_repeat('x', 65)) as $id) {
+        foreach (['../escape', 'a/b', '', str_repeat('x', 65)] as $id) {
             $this->assertNull(TrackerBundle::path($id), var_export($id, true));
             $this->assertFalse(TrackerBundle::publish($id));
         }
@@ -483,7 +483,7 @@ final class TrackerBundleTest extends TestCase
             TrackerBundle::url(self::SITE));
     }
 
-    private const NOT_HONORED = array('setOption', 'honorPrivacySignals', false);
+    private const NOT_HONORED = ['setOption', 'honorPrivacySignals', false];
 
     /**
      * Honoring privacy signals is the tracker's own default, so the bundle says
@@ -537,10 +537,10 @@ final class TrackerBundleTest extends TestCase
         }
 
         $key  = 'tracker_honor_privacy_signals';
-        $held = array(
-            'property' => array($property_id, \OWA\Core\CoreAPI::getScopedSettingRow('property', $property_id, 'base', $key)),
-            'profile'  => array($site_id, \OWA\Core\CoreAPI::getScopedSettingRow('profile', $site_id, 'base', $key)),
-        );
+        $held = [
+            'property' => [$property_id, \OWA\Core\CoreAPI::getScopedSettingRow('property', $property_id, 'base', $key)],
+            'profile'  => [$site_id, \OWA\Core\CoreAPI::getScopedSettingRow('profile', $site_id, 'base', $key)],
+        ];
 
         try {
             \OWA\Core\CoreAPI::clearScopedSetting('profile', $site_id, 'base', $key);
@@ -565,8 +565,8 @@ final class TrackerBundleTest extends TestCase
 
     public function testAListSettingIsSplitOnCommas(): void
     {
-        $this->assertSame(array('q', 's', 'term'), TrackerBundle::listOf(' q, s,, term ,'));
-        $this->assertSame(array(), TrackerBundle::listOf(''));
+        $this->assertSame(['q', 's', 'term'], TrackerBundle::listOf(' q, s,, term ,'));
+        $this->assertSame([], TrackerBundle::listOf(''));
     }
 
     // ---------------------------------------------------------------------
@@ -732,7 +732,7 @@ final class TrackerBundleTest extends TestCase
             $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:' . self::SITE));
 
             $job = \OWA\Module\Base\Classes\JobQueue::listJobs('pending')[0];
-            $this->assertSame(array('site' => self::SITE), json_decode($job['params'], true));
+            $this->assertSame(['site' => self::SITE], json_decode($job['params'], true));
         } finally {
             $this->dropScratchJobQueue($table);
         }
@@ -767,12 +767,12 @@ final class TrackerBundleTest extends TestCase
         };
 
         try {
-            $base->tagSettingsSavedHandler($saved('base', array('announce_visitors')));
-            $base->tagSettingsSavedHandler($saved('domstream', array('tracker_clicks')));
+            $base->tagSettingsSavedHandler($saved('base', ['announce_visitors']));
+            $base->tagSettingsSavedHandler($saved('domstream', ['tracker_clicks']));
             $this->assertFalse(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers'),
                 'not a tag setting, or not that module\'s');
 
-            $base->tagSettingsSavedHandler($saved('base', array('announce_visitors', 'tracker_clicks')));
+            $base->tagSettingsSavedHandler($saved('base', ['announce_visitors', 'tracker_clicks']));
             $this->assertTrue(\OWA\Module\Base\Classes\JobQueue::isQueued('publish-trackers', 'publish-trackers:all'));
         } finally {
             $this->dropScratchJobQueue($table);

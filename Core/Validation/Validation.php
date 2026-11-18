@@ -31,9 +31,9 @@ namespace OWA\Core\Validation;
  */
  
  class Validation {
- 	 
- 	 /** @var string|null name of param being validated */
- 	 public $name;
+     
+     /** @var string|null name of param being validated */
+     public $name;
 
      /** @var array<string, mixed> errorMsg, stopOnError and each validation's own keys */
      public $conf;
@@ -57,7 +57,7 @@ namespace OWA\Core\Validation;
      /**
       * @param array<string, mixed> $conf
       */
-     public function __construct($conf = array()) {
+     public function __construct($conf = []) {
 
          if (array_key_exists('errorMsgTemplate', $conf)) {
              $this->errorMsgTemplate = $conf['errorMsgTemplate'];
@@ -70,24 +70,24 @@ namespace OWA\Core\Validation;
          $this->conf = $conf;
 
      }
-	 
-	 /**
-	  * @param  string $name
-	  * @return void
-	  */
-	 public function setName( $name ) {
-		 
-	 	$this->name = $name;	
-	 }
-	 
-	 /**
-	  * @return string|null
-	  */
-	 public function getName() {
-		 
-		 return $this->name;
-	 }
-	 
+     
+     /**
+      * @param  string $name
+      * @return void
+      */
+     public function setName( $name ) {
+         
+        $this->name = $name;	
+     }
+     
+     /**
+      * @return string|null
+      */
+     public function getName() {
+         
+         return $this->name;
+     }
+     
      /**
       * Sets $hasError through hasError() when the value fails. Validator reads
       * that, not the return value.
@@ -180,5 +180,3 @@ namespace OWA\Core\Validation;
 
 
  }
- 
-?>

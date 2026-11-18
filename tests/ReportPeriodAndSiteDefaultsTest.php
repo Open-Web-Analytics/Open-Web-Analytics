@@ -40,27 +40,27 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
      */
     public static function everyPeriodProvider(): array
     {
-        $extra = array(
-            'date_range' => array( 'startDate' => '20260801', 'endDate' => '20260815' ),
-            'time_range' => array( 'startTime' => 1787000000, 'endTime' => 1787200000 ),
+        $extra = [
+            'date_range' => [ 'startDate' => '20260801', 'endDate' => '20260815' ],
+            'time_range' => [ 'startTime' => 1787000000, 'endTime' => 1787200000 ],
             // 'day' reads startDate, not separate parts -- an easy thing to get
             // wrong, and getting it wrong here is what surfaced the missing
             // guard on that read.
-            'day'        => array( 'startDate' => '20260815' ),
-        );
+            'day'        => [ 'startDate' => '20260815' ],
+        ];
 
-        $types = array(
+        $types = [
             'today', 'yesterday', 'this_week', 'this_month', 'this_year',
             'last_week', 'last_month', 'last_year', 'last_seven_days',
             'last_28_days', 'last_thirty_days', 'last_90_days', 'quarter_to_date',
             'last_24_hours', 'last_hour',
             'last_half_hour', 'date_range', 'time_range', 'day',
-        );
+        ];
 
-        $cases = array();
+        $cases = [];
 
         foreach ( $types as $t ) {
-            $cases[ $t ] = array( $t, $extra[ $t ] ?? array() );
+            $cases[ $t ] = [ $t, $extra[ $t ] ?? [] ];
         }
 
         return $cases;
@@ -120,8 +120,8 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
      */
     public function testImplementedButUnofferedPeriodsSilentlyBecomeTheDefault(): void
     {
-        $refused = array( 'last_24_hours', 'last_hour', 'last_half_hour',
-                          'time_range', 'day' );
+        $refused = [ 'last_24_hours', 'last_hour', 'last_half_hour',
+                          'time_range', 'day' ];
 
         $default = $this->period()->getDefaultReportingPeriod();
 
@@ -130,7 +130,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
             $this->assertFalse( $this->period()->isValid( $type ),
                 "$type is now accepted -- if that is intended, this test should say so" );
 
-            $p = $this->fromMap( array( 'period' => $type ) );
+            $p = $this->fromMap( [ 'period' => $type ] );
 
             $this->assertSame( $default, $p->get(),
                 "$type should currently fall back to the default period" );
@@ -207,7 +207,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
      */
     public function testTwoDatesAloneAreStillEnough(): void
     {
-        $p = $this->fromMap( array( 'startDate' => '20260801', 'endDate' => '20260815' ) );
+        $p = $this->fromMap( [ 'startDate' => '20260801', 'endDate' => '20260815' ] );
 
         $this->assertSame( 'date_range', $p->get() );
         $this->assertSame( 20260801, (int) $p->getStartDate()->get( 'yyyymmdd' ) );
@@ -215,7 +215,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
 
     public function testAnArbitraryValueFallsBackRatherThanReachingTheDateArithmetic(): void
     {
-        $p = $this->fromMap( array( 'period' => 'nonsense; drop table' ) );
+        $p = $this->fromMap( [ 'period' => 'nonsense; drop table' ] );
 
         $this->assertSame( $this->period()->getDefaultReportingPeriod(), $p->get() );
         $this->assertIsObject( $p->getStartDate() );
@@ -240,10 +240,10 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );
 
-        foreach ( array( 'garbage', 'all_time', 'last_hour' ) as $bad ) {
+        foreach ( [ 'garbage', 'all_time', 'last_hour' ] as $bad ) {
 
             $data = (array) ( new \OWA\Module\Base\Controller\Report(
-                array( 'reportId' => 'pages', 'period' => $bad ) ) )->doAction();
+                [ 'reportId' => 'pages', 'period' => $bad ] ) )->doAction();
 
             $this->assertSame( 'base.error', $data['view'] ?? null,
                 "period=$bad was accepted and quietly replaced" );
@@ -274,7 +274,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         foreach ( \OWA\Module\Base\Classes\TimePeriod::RETIRED_PERIODS as $retired ) {
 
             $data = (array) ( new \OWA\Module\Base\Controller\Report(
-                array( 'reportId' => 'pages', 'period' => $retired ) ) )->doAction();
+                [ 'reportId' => 'pages', 'period' => $retired ] ) )->doAction();
 
             $this->assertSame( 'base.report', $data['view'] ?? null, "period=$retired was refused" );
             $this->assertSame( $this->period()->getDefaultReportingPeriod(), $data['period_picker']['period'] ?? null,
@@ -298,7 +298,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $user->setAuthStatus( true );
 
         $html = (string) \OWA\Core\CoreAPI::displayView( (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages', 'period' => 'last_28_days', 'compare' => 'previous_year' ) ) )->doAction() );
+            [ 'reportId' => 'pages', 'period' => 'last_28_days', 'compare' => 'previous_year' ] ) )->doAction() );
 
         $this->assertSame( 1, preg_match( '~<script type="application/json" data-ui="report:controls">(.*?)</script>~s', $html, $m ),
             'the report hands over no controls' );
@@ -309,7 +309,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
 
         $this->assertSame( 'last_28_days', $config['period'] ?? null, 'the picker was handed no config' );
         $this->assertSame( 'previous_year', $config['compare'] ?? null );
-        $this->assertCount( count( $this->period()->getPeriodLabels() ), $config['presets'] ?? array() );
+        $this->assertCount( count( $this->period()->getPeriodLabels() ), $config['presets'] ?? [] );
     }
 
     public function testAnInvalidComparisonIsRefused(): void
@@ -323,13 +323,13 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $user->setAuthStatus( true );
 
         $data = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages', 'compare' => 'same_month_last_year' ) ) )->doAction();
+            [ 'reportId' => 'pages', 'compare' => 'same_month_last_year' ] ) )->doAction();
 
         $this->assertSame( 'base.error', $data['view'] ?? null );
         $this->assertStringContainsString( 'same_month_last_year', (string) ( $data['error_msg'] ?? '' ) );
 
         $data = (array) ( new \OWA\Module\Base\Controller\Report(
-            array( 'reportId' => 'pages', 'compare' => 'previous_year' ) ) )->doAction();
+            [ 'reportId' => 'pages', 'compare' => 'previous_year' ] ) )->doAction();
 
         $this->assertSame( 'base.report', $data['view'] ?? null );
         $this->assertSame( 'previous_year', $data['period_picker']['compare'] ?? null );
@@ -346,12 +346,12 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $user->setRole( 'admin' );
         $user->setAuthStatus( true );
 
-        foreach ( array( array(), array( 'period' => 'today' ),
-                         array( 'period' => 'date_range', 'startDate' => '20260801',
-                                'endDate' => '20260815' ) ) as $params ) {
+        foreach ( [ [], [ 'period' => 'today' ],
+                         [ 'period' => 'date_range', 'startDate' => '20260801',
+                                'endDate' => '20260815' ] ] as $params ) {
 
             $data = (array) ( new \OWA\Module\Base\Controller\Report(
-                $params + array( 'reportId' => 'pages' ) ) )->doAction();
+                $params + [ 'reportId' => 'pages' ] ) )->doAction();
 
             $this->assertSame( 'base.report', $data['view'] ?? null,
                 'a legitimate request must still render: ' . json_encode( $params ) );
@@ -360,7 +360,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
 
     public function testNoPeriodAtAllYieldsTheConfiguredDefault(): void
     {
-        $p = $this->fromMap( array() );
+        $p = $this->fromMap( [] );
 
         $this->assertSame(
             \OWA\Core\CoreAPI::getSetting( 'base', 'default_reporting_period' ),
@@ -377,17 +377,17 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
      */
     public function testAChosenPeriodIsNotMarkedAsDefault(): void
     {
-        $this->assertFalse( $this->fromMap( array( 'period' => 'today' ) )->isDefaultPeriod() );
+        $this->assertFalse( $this->fromMap( [ 'period' => 'today' ] )->isDefaultPeriod() );
 
         // ...and an invalid choice, which falls back to the default VALUE,
         // still counts as chosen. Recorded because it is surprising: the value
         // is the default but the flag says otherwise.
-        $this->assertFalse( $this->fromMap( array( 'period' => 'garbage' ) )->isDefaultPeriod() );
+        $this->assertFalse( $this->fromMap( [ 'period' => 'garbage' ] )->isDefaultPeriod() );
     }
 
     public function testDatesWithoutAPeriodBecomeACustomRange(): void
     {
-        $p = $this->fromMap( array( 'startDate' => '20260801', 'endDate' => '20260815' ) );
+        $p = $this->fromMap( [ 'startDate' => '20260801', 'endDate' => '20260815' ] );
 
         $this->assertSame( 'date_range', $p->get(),
             'the custom range the calendar produces is how two dates arrive' );
@@ -398,11 +398,11 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
 
     public function testAnExplicitPeriodBeatsSuppliedDates(): void
     {
-        $p = $this->fromMap( array(
+        $p = $this->fromMap( [
             'period'    => 'today',
             'startDate' => '20200101',
             'endDate'   => '20200102',
-        ) );
+        ] );
 
         $this->assertSame( 'today', $p->get(),
             'a named period and a date range both present -- the named one wins' );
@@ -414,7 +414,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
      */
     public function testAStartDateAloneDoesNotSilentlyBecomeARange(): void
     {
-        $p = $this->fromMap( array( 'startDate' => '20260801' ) );
+        $p = $this->fromMap( [ 'startDate' => '20260801' ] );
 
         $this->assertIsObject( $p->getStartDate() );
         $this->assertIsObject( $p->getEndDate() );
@@ -435,7 +435,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
     {
         // Any ReportController would do; this is the one every configured
         // report now runs on, and ReportPages is no longer a class.
-        $controller = new \OWA\Core\ConfiguredReport( array() );
+        $controller = new \OWA\Core\ConfiguredReport( [] );
 
         $this->assertEmpty( $controller->getParam( 'siteId' ),
             'a report with no siteId must not choose a site before the user is loaded' );
@@ -448,8 +448,8 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         // Links in the wild carry both. Reports read siteId; the tracker and
         // some older links use site_id, and a report reached from one of those
         // must still know which site it is showing.
-        $camel = new \OWA\Core\ConfiguredReport( array( 'siteId' => 'abc' ) );
-        $snake = new \OWA\Core\ConfiguredReport( array( 'site_id' => 'abc' ) );
+        $camel = new \OWA\Core\ConfiguredReport( [ 'siteId' => 'abc' ] );
+        $snake = new \OWA\Core\ConfiguredReport( [ 'site_id' => 'abc' ] );
 
         $this->assertSame( 'abc', $camel->getParam( 'siteId' ) );
         $this->assertSame( 'abc', $snake->getParam( 'siteId' ) );
@@ -476,7 +476,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $user->setAuthStatus( true );
 
         $data = (array) ( new \OWA\Module\Base\Controller\Report(
-                $params + array( 'reportId' => 'pages' ) ) )->doAction();
+                $params + [ 'reportId' => 'pages' ] ) )->doAction();
 
         $this->assertSame( 'base.error', $data['view'] ?? null,
             'an unusable range was accepted: ' . json_encode( $params ) );
@@ -490,13 +490,13 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
 
     public static function unusableWebRangeProvider(): array
     {
-        return array(
-            'end date alone'      => array( array( 'endDate' => '20260810' ), 'needs a start date' ),
-            'start date alone'    => array( array( 'startDate' => '20260801' ), 'needs an end date' ),
-            'range with no dates' => array( array( 'period' => 'date_range' ), 'needs a start date and an end date' ),
-            'inverted range'      => array( array( 'startDate' => '20260810', 'endDate' => '20260801' ), 'is after the end date' ),
-            'malformed bound'     => array( array( 'startDate' => 'yesterday', 'endDate' => '20260810' ), 'is not a date' ),
-        );
+        return [
+            'end date alone'      => [ [ 'endDate' => '20260810' ], 'needs a start date' ],
+            'start date alone'    => [ [ 'startDate' => '20260801' ], 'needs an end date' ],
+            'range with no dates' => [ [ 'period' => 'date_range' ], 'needs a start date and an end date' ],
+            'inverted range'      => [ [ 'startDate' => '20260810', 'endDate' => '20260801' ], 'is after the end date' ],
+            'malformed bound'     => [ [ 'startDate' => 'yesterday', 'endDate' => '20260810' ], 'is not a date' ],
+        ];
     }
 
     /**
@@ -516,7 +516,7 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
         $user->setAuthStatus( true );
 
         $data = (array) ( new \OWA\Module\Base\Controller\Report(
-                $params + array( 'reportId' => 'pages' ) ) )->doAction();
+                $params + [ 'reportId' => 'pages' ] ) )->doAction();
 
         $this->assertNotSame( 'base.error', $data['view'] ?? null,
             'a legitimate range was refused: ' . json_encode( $params ) );
@@ -524,12 +524,12 @@ final class ReportPeriodAndSiteDefaultsTest extends TestCase
 
     public static function usableWebRangeProvider(): array
     {
-        return array(
-            'ordered range'      => array( array( 'startDate' => '20260801', 'endDate' => '20260810' ) ),
-            'named date_range'   => array( array( 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260810' ) ),
-            'single day'         => array( array( 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260801' ) ),
-            'a relative period'  => array( array( 'period' => 'today' ) ),
-            'nothing at all'     => array( array() ),
-        );
+        return [
+            'ordered range'      => [ [ 'startDate' => '20260801', 'endDate' => '20260810' ] ],
+            'named date_range'   => [ [ 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260810' ] ],
+            'single day'         => [ [ 'period' => 'date_range', 'startDate' => '20260801', 'endDate' => '20260801' ] ],
+            'a relative period'  => [ [ 'period' => 'today' ] ],
+            'nothing at all'     => [ [] ],
+        ];
     }
 }

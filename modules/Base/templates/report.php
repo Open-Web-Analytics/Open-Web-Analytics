@@ -47,7 +47,7 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
                         // Without a Property there is nothing for its links to be of.
                         if ( (string) $view->currentPropertyId !== '' ):
                         $owa_rail   = $view->navRail( $view->top_level_report_nav, (string) $view->currentPropertyId,
-                            $view->params ?? array(), (string) $view->currentSiteId );
+                            $view->params ?? [], (string) $view->currentSiteId );
                         $owa_column = \OWA\Core\Template::reportColumn( $owa_rail );
                         include( 'nav_shell.php' );
                         endif;
@@ -91,7 +91,7 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
                          * for the split -- an icon needs a subject and the
                          * title is it.
                          */
-                        $owa_titleActions  = (array) ( $view->get( 'title_actions' ) ?: array() );
+                        $owa_titleActions  = (array) ( $view->get( 'title_actions' ) ?: [] );
 
                         $owa_titleMarks = array_values( array_filter( $owa_titleActions,
                             function ( $a ) { return ! empty( $a['iconOnly'] ); } ) );
@@ -151,7 +151,7 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
                             $view->out( $owa_mark['icon'] ); ?>"></i></a><?php
                         endforeach;
                         // Words about the report, such as Shared, after its controls.
-                        foreach ( (array) ( $view->get( 'title_tags' ) ?: array() ) as $owa_tag ): ?><span
+                        foreach ( (array) ( $view->get( 'title_tags' ) ?: [] ) as $owa_tag ): ?><span
                             class="owa_titleTag"><?php $view->out( $owa_tag ); ?></span><?php
                         endforeach; ?></h1>
                     <?php if ( ! $view->get( 'hideTimeControls' ) ):?>
@@ -170,8 +170,8 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
                         <?php $view->outMarkup( \OWA\Core\CoreAPI::t( 'Data as of %s' ), '<span class="owa_reportAsOfTime">&hellip;</span>' ); ?>
                         <?php if ( $owa_asOf['warning'] ): ?>
                             &mdash; <?php $view->out( $owa_asOf['warning'] ); ?><?php if ( $owa_asOf['can_view'] ): ?>
-                            (<a href="<?php echo $view->makeLink( array( 'do' => 'base.cubeStatusDetail',
-                                'propertyId' => $owa_asOf['property_id'] ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'details' ) ); ?></a>)<?php endif; ?>
+                            (<a href="<?php echo $view->makeLink( [ 'do' => 'base.cubeStatusDetail',
+                                'propertyId' => $owa_asOf['property_id'] ] ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'details' ) ); ?></a>)<?php endif; ?>
                         <?php endif; ?>
                     </div>
                     <?php endif; ?>
@@ -224,10 +224,10 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
      * owa.reportWidgets.js, which starts them after the widgets. The picker's
      * config is absent when the time controls are hidden.
      */
-    $owa_controls = array(
+    $owa_controls = [
         'report'     => (string) $view->dom_id,
         'siteFilter' => ! $view->get( 'hideSitesFilter' ),
-    );
+    ];
 
     if ( ! $view->get( 'hideTimeControls' ) ) {
 

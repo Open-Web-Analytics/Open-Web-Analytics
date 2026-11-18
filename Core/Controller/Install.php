@@ -77,7 +77,7 @@ class Install extends \OWA\Core\Controller {
             $this->redirectBrowserToUrl( \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) );
 
             // No view: the redirect is the whole response.
-            return array();
+            return [];
         }
 
         return parent::doAction();
@@ -128,9 +128,7 @@ class Install extends \OWA\Core\Controller {
      * @return bool
      */
     public function isInstallComplete() {
-	    
-	    return $this->im->isInstallComplete();
+        
+        return $this->im->isInstallComplete();
     }
 }
-
-?>

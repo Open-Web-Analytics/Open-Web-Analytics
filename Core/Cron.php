@@ -38,19 +38,19 @@ namespace OWA\Core;
 class Cron {
 
     /** Minute, hour, day-of-month, month, day-of-week. */
-    const FIELDS = array(
-        array( 0, 59 ),   // minute
-        array( 0, 23 ),   // hour
-        array( 1, 31 ),   // day of month
-        array( 1, 12 ),   // month
-        array( 0, 6 ),    // day of week, 0 = Sunday
-    );
+    const FIELDS = [
+        [ 0, 59 ],   // minute
+        [ 0, 23 ],   // hour
+        [ 1, 31 ],   // day of month
+        [ 1, 12 ],   // month
+        [ 0, 6 ],    // day of week, 0 = Sunday
+    ];
 
     /**
      * The standard vixie-cron shorthands, so the readable forms are not an
      * invention of ours that operators have to learn.
      */
-    const ALIASES = array(
+    const ALIASES = [
         '@yearly'   => '0 0 1 1 *',
         '@annually' => '0 0 1 1 *',
         '@monthly'  => '0 0 1 * *',
@@ -58,7 +58,7 @@ class Cron {
         '@daily'    => '0 0 * * *',
         '@midnight' => '0 0 * * *',
         '@hourly'   => '0 * * * *',
-    );
+    ];
 
     /**
      * A daily expression at a minute and hour derived from `$seed`.
@@ -144,7 +144,7 @@ class Cron {
         }
 
         $offset  = hexdec( substr( md5( (string) $seed ), 0, 6 ) ) % $interval;
-        $minutes = array();
+        $minutes = [];
 
         for ( $minute = $offset; $minute < 60; $minute += $interval ) {
 
@@ -201,7 +201,7 @@ class Cron {
             return null;
         }
 
-        $parsed = array();
+        $parsed = [];
 
         foreach ( $fields as $i => $field ) {
 
@@ -230,7 +230,7 @@ class Cron {
      */
     protected static function parseField( $field, $min, $max ) {
 
-        $values = array();
+        $values = [];
 
         foreach ( explode( ',', $field ) as $part ) {
 
@@ -520,7 +520,7 @@ class Cron {
 
         $expr = strtolower( trim( (string) $expr ) );
 
-        $words = array(
+        $words = [
             '@yearly'   => 'yearly, on 1 January at 00:00',
             '@annually' => 'yearly, on 1 January at 00:00',
             '@monthly'  => 'monthly, on the 1st at 00:00',
@@ -528,7 +528,7 @@ class Cron {
             '@daily'    => 'daily at 00:00',
             '@midnight' => 'daily at 00:00',
             '@hourly'   => 'hourly, on the hour',
-        );
+        ];
 
         if ( isset( $words[ $expr ] ) ) {
 
@@ -579,7 +579,7 @@ class Cron {
 
         if ( preg_match( '#^(\d+) (\d+) \* \* ([0-6])$#', $expr, $m ) ) {
 
-            $days = array( 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' );
+            $days = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ];
 
             return sprintf( 'weekly, on %s at %02d:%02d', $days[ (int) $m[3] ], (int) $m[2], (int) $m[1] );
         }

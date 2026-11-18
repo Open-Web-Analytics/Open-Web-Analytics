@@ -33,7 +33,7 @@ final class CustomReportsTest extends TestCase
     private const PROPERTY = '7781000000000101';
 
     /** @var string[] ids to clean up */
-    private static $created = array();
+    private static $created = [];
 
     protected function setUp(): void
     {
@@ -52,7 +52,7 @@ final class CustomReportsTest extends TestCase
             CustomReports::delete($id);
         }
 
-        self::$created = array();
+        self::$created = [];
 
         self::deleteFixtureOwnersReports();
     }
@@ -71,7 +71,7 @@ final class CustomReportsTest extends TestCase
 
     private static function deleteFixtureOwnersReports(): void
     {
-        foreach (array(self::AUTHOR, self::OTHER) as $owner) {
+        foreach ([self::AUTHOR, self::OTHER] as $owner) {
 
             $db = \OWA\Core\CoreAPI::dbSingleton();
             $db->selectFrom(\OWA\Core\CoreAPI::entityFactory('base.custom_report')->getTableName());
@@ -94,40 +94,40 @@ final class CustomReportsTest extends TestCase
     /** A definition that is valid, so a test can break exactly one thing about it. */
     private function definition(): array
     {
-        return array(
+        return [
             'title'   => 'A Custom Report',
             'metrics' => 'sessions,totalUsers',
-            'widgets' => array(
-                array(
+            'widgets' => [
+                [
                     'type'        => 'trend',
                     'id'          => 'trend',
                     'container'   => 'trend-chart',
                     'chartMetric' => 'sessions',
-                    'query'       => array('dimensions' => 'date', 'sort' => 'date'),
-                ),
-                array(
+                    'query'       => ['dimensions' => 'date', 'sort' => 'date'],
+                ],
+                [
                     'type'      => 'grid',
                     'id'        => 'pages',
                     'container' => 'pages',
                     'title'     => 'Pages',
-                    'query'     => array(
+                    'query'     => [
                         'metrics'        => 'pageViews',
                         'dimensions'     => 'pagePath',
                         'sort'           => 'pageViews-',
                         'resultsPerPage' => 10,
-                    ),
-                ),
-            ),
-        );
+                    ],
+                ],
+            ],
+        ];
     }
 
     /** Store one and remember it for cleanup. */
-    private function store(array $overrides = array(), string $author = self::AUTHOR): array
+    private function store(array $overrides = [], string $author = self::AUTHOR): array
     {
-        $result = CustomReports::save(array(
+        $result = CustomReports::save([
             'name'       => $overrides['name'] ?? 'A Custom Report',
             'definition' => $overrides['definition'] ?? $this->definition(),
-        ) + $overrides, $author, self::PROPERTY);
+        ] + $overrides, $author, self::PROPERTY);
 
         if (!empty($result['id'])) {
             self::$created[] = $result['id'];
@@ -170,28 +170,28 @@ final class CustomReportsTest extends TestCase
 
     public static function unresolvableNameProvider(): array
     {
-        return array(
-            'unknown dimension' => array(
+        return [
+            'unknown dimension' => [
                 function (array &$d) { $d['widgets'][1]['query']['dimensions'] = 'notADimension'; },
                 'notADimension',
-            ),
-            'unknown metric' => array(
+            ],
+            'unknown metric' => [
                 function (array &$d) { $d['widgets'][1]['query']['metrics'] = 'notAMetric'; },
                 'notAMetric',
-            ),
-            'unknown sort' => array(
+            ],
+            'unknown sort' => [
                 function (array &$d) { $d['widgets'][1]['query']['sort'] = 'notASort-'; },
                 'notASort',
-            ),
-            'unknown name in the report metric set' => array(
+            ],
+            'unknown name in the report metric set' => [
                 function (array &$d) { $d['metrics'] = 'sessions,notAMetric'; },
                 'notAMetric',
-            ),
-            'one bad name among good ones' => array(
+            ],
+            'one bad name among good ones' => [
                 function (array &$d) { $d['widgets'][1]['query']['metrics'] = 'pageViews,notAMetric'; },
                 'notAMetric',
-            ),
-        );
+            ],
+        ];
     }
 
     /**
@@ -221,13 +221,13 @@ final class CustomReportsTest extends TestCase
         foreach (array_keys(CustomReports::WIDGET_TYPES) as $type) {
 
             $definition = $this->definition();
-            $definition['widgets'] = array(array(
+            $definition['widgets'] = [[
                 'type'        => $type,
                 'id'          => 'w',
                 'container'   => 'w',
                 'chartMetric' => 'sessions',
-                'query'       => array('metrics' => 'sessions', 'dimensions' => 'date'),
-            ));
+                'query'       => ['metrics' => 'sessions', 'dimensions' => 'date'],
+            ]];
 
             $this->assertSame('', CustomReports::validate($definition),
                 "$type is offered by the builder and must be accepted");
@@ -254,7 +254,7 @@ final class CustomReportsTest extends TestCase
     /** Every metric is computed from the cube, so any set of them is askable. */
     public function testAnySetOfMetricsIsAccepted(): void
     {
-        foreach (array('sessions,totalUsers,goalEvents', 'sessions,totalUsers,pageViews') as $metrics) {
+        foreach (['sessions,totalUsers,goalEvents', 'sessions,totalUsers,pageViews'] as $metrics) {
 
             $definition = $this->definition();
             $definition['widgets'][1]['query']['metrics'] = $metrics;
@@ -336,12 +336,12 @@ final class CustomReportsTest extends TestCase
         $this->assertArrayHasKey('grid', CustomReports::WIDGET_TYPES);
         $this->assertArrayHasKey('grid-card', CustomReports::WIDGET_TYPES);
 
-        $this->assertSame(array('grid'), CustomReports::FULL_WIDTH_TYPES);
+        $this->assertSame(['grid'], CustomReports::FULL_WIDTH_TYPES);
 
         // A pie is here for the other half of the same rule: it draws one
         // metric and has to be told which, so it cannot inherit a metric set
         // either. See testAPieMustNameItsOwnMetric.
-        $this->assertSame(array('grid-card', 'pie'), CustomReports::SINGLE_FIELD_TYPES);
+        $this->assertSame(['grid-card', 'pie'], CustomReports::SINGLE_FIELD_TYPES);
     }
 
     public function testACardTakesOneMetricAgainstOneDimension(): void
@@ -381,24 +381,24 @@ final class CustomReportsTest extends TestCase
 
     public static function badCardProvider(): array
     {
-        return array(
-            'two metrics' => array(
-                array('metrics' => 'pageViews,pageViews', 'dimensions' => 'pagePath'),
+        return [
+            'two metrics' => [
+                ['metrics' => 'pageViews,pageViews', 'dimensions' => 'pagePath'],
                 '2 metrics',
-            ),
-            'no metric' => array(
-                array('dimensions' => 'pagePath'),
+            ],
+            'no metric' => [
+                ['dimensions' => 'pagePath'],
                 '0 metrics',
-            ),
-            'two dimensions' => array(
-                array('metrics' => 'pageViews', 'dimensions' => 'pagePath,pageTitle'),
+            ],
+            'two dimensions' => [
+                ['metrics' => 'pageViews', 'dimensions' => 'pagePath,pageTitle'],
                 '2 dimensions',
-            ),
-            'no dimension' => array(
-                array('metrics' => 'pageViews'),
+            ],
+            'no dimension' => [
+                ['metrics' => 'pageViews'],
                 '0 dimensions',
-            ),
-        );
+            ],
+        ];
     }
 
     /**
@@ -408,10 +408,10 @@ final class CustomReportsTest extends TestCase
     public function testTheSameQueryIsAcceptedOnAFullWidthGrid(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['query'] = array(
+        $definition['widgets'][1]['query'] = [
             'metrics'    => 'pageViews,pageViews',
             'dimensions' => 'pagePath,pageTitle',
-        );
+        ];
 
         $this->assertSame('', CustomReports::validate($definition));
     }
@@ -464,7 +464,7 @@ final class CustomReportsTest extends TestCase
         $definition = $this->definition();
         $definition['widgets'][1]['colspan'] = 6;
 
-        $result = $this->store(array('definition' => $definition));
+        $result = $this->store(['definition' => $definition]);
 
         $this->assertTrue($result['ok'], $result['error']);
 
@@ -522,7 +522,7 @@ final class CustomReportsTest extends TestCase
     {
         $targets = CustomReports::linkTargetsByDimension();
 
-        $flat = array();
+        $flat = [];
 
         foreach ($targets as $list) {
             $flat = array_merge($flat, array_column($list, 'id'));
@@ -582,7 +582,7 @@ final class CustomReportsTest extends TestCase
     {
         $definition = $this->definition();
         $definition['widgets'][1]['type']  = 'grid-card';
-        $definition['widgets'][1]['query'] = array('metrics' => 'pageViews', 'dimensions' => 'pagePath');
+        $definition['widgets'][1]['query'] = ['metrics' => 'pageViews', 'dimensions' => 'pagePath'];
         $definition['widgets'][1]['link']  = $link;
 
         $this->assertStringContainsString($says, CustomReports::validate($definition));
@@ -590,61 +590,61 @@ final class CustomReportsTest extends TestCase
 
     public static function badLinkProvider(): array
     {
-        $good = array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '%s');
+        $good = ['do' => 'base.report', 'reportId' => 'document', 'pagePath' => '%s'];
 
-        return array(
-            'another action' => array(
-                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
-                      'template' => array('do' => 'base.optionsGeneral', 'reportId' => 'document', 'pagePath' => '%s')),
+        return [
+            'another action' => [
+                ['linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
+                      'template' => ['do' => 'base.optionsGeneral', 'reportId' => 'document', 'pagePath' => '%s']],
                 'something other than a report',
-            ),
-            'a report that is not registered' => array(
-                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
-                      'template' => array('do' => 'base.report', 'reportId' => 'no-such-report', 'pagePath' => '%s')),
+            ],
+            'a report that is not registered' => [
+                ['linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
+                      'template' => ['do' => 'base.report', 'reportId' => 'no-such-report', 'pagePath' => '%s']],
                 'not registered',
-            ),
-            'a column the widget does not show' => array(
-                array('linkColumn' => 'browserType', 'valueColumns' => 'pagePath', 'template' => $good),
+            ],
+            'a column the widget does not show' => [
+                ['linkColumn' => 'browserType', 'valueColumns' => 'pagePath', 'template' => $good],
                 'which it does not show',
-            ),
-            'extra parameters' => array(
-                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
-                      'template' => $good + array('siteId' => 'somebody-elses-site')),
+            ],
+            'extra parameters' => [
+                ['linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
+                      'template' => $good + ['siteId' => 'somebody-elses-site']],
                 'with 2 parameters',
-            ),
-            'a literal value rather than the row' => array(
-                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
-                      'template' => array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '/admin')),
+            ],
+            'a literal value rather than the row' => [
+                ['linkColumn' => 'pagePath', 'valueColumns' => 'pagePath',
+                      'template' => ['do' => 'base.report', 'reportId' => 'document', 'pagePath' => '/admin']],
                 'it must be %s',
-            ),
-            'except as one value rather than a list' => array(
-                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath', 'template' => $good,
-                      'except' => '(exit)'),
+            ],
+            'except as one value rather than a list' => [
+                ['linkColumn' => 'pagePath', 'valueColumns' => 'pagePath', 'template' => $good,
+                      'except' => '(exit)'],
                 'except is not a list',
-            ),
-            'except holding something other than text' => array(
-                array('linkColumn' => 'pagePath', 'valueColumns' => 'pagePath', 'template' => $good,
-                      'except' => array('(exit)', array('nested'))),
+            ],
+            'except holding something other than text' => [
+                ['linkColumn' => 'pagePath', 'valueColumns' => 'pagePath', 'template' => $good,
+                      'except' => ['(exit)', ['nested']]],
                 'except is not a list',
-            ),
-        );
+            ],
+        ];
     }
 
     public function testAWellFormedLinkIsAccepted(): void
     {
         $definition = $this->definition();
         $definition['widgets'][1]['type']  = 'grid-card';
-        $definition['widgets'][1]['query'] = array('metrics' => 'pageViews', 'dimensions' => 'pagePath');
-        $definition['widgets'][1]['link']  = array(
+        $definition['widgets'][1]['query'] = ['metrics' => 'pageViews', 'dimensions' => 'pagePath'];
+        $definition['widgets'][1]['link']  = [
             'linkColumn'   => 'pagePath',
             'valueColumns' => 'pagePath',
-            'template'     => array('do' => 'base.report', 'reportId' => 'document', 'pagePath' => '%s'),
-        );
+            'template'     => ['do' => 'base.report', 'reportId' => 'document', 'pagePath' => '%s'],
+        ];
 
         $this->assertSame('', CustomReports::validate($definition));
 
         // ...and with values it does not link.
-        $definition['widgets'][1]['link']['except'] = array('(exit)', '(entrance)');
+        $definition['widgets'][1]['link']['except'] = ['(exit)', '(entrance)'];
 
         $this->assertSame('', CustomReports::validate($definition));
     }
@@ -676,7 +676,7 @@ final class CustomReportsTest extends TestCase
 
         $this->assertContains('pages', $ids, 'the full report about a page path is Pages');
 
-        $this->assertNotContains('pages', array_column($targets['pagePathPlusQuery'] ?? array(), 'id'),
+        $this->assertNotContains('pages', array_column($targets['pagePathPlusQuery'] ?? [], 'id'),
             'Pages is not the full report of a card of paths and query strings');
 
         // Reads a pagePath, so it belongs to the ROW link, not this one.
@@ -699,26 +699,26 @@ final class CustomReportsTest extends TestCase
     public function testTheDerivationReproducesTheShippedFullReportLinks(): void
     {
         $targets = CustomReports::moreTargetsByDimension();
-        $missed  = array();
+        $missed  = [];
 
         foreach (glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json') as $file) {
 
             $definition = json_decode((string) file_get_contents($file), true);
 
-            foreach ((array) ($definition['widgets'] ?? array()) as $widget) {
+            foreach ((array) ($definition['widgets'] ?? []) as $widget) {
 
                 if (empty($widget['more']['reportId'])) {
                     continue;
                 }
 
-                $offered = array();
+                $offered = [];
 
-                foreach (explode(',', (string) (($widget['query'] ?? array())['dimensions'] ?? '')) as $dimension) {
+                foreach (explode(',', (string) (($widget['query'] ?? [])['dimensions'] ?? '')) as $dimension) {
 
                     $dimension = trim($dimension);
 
                     $offered = array_merge($offered,
-                        array_column($targets[$dimension] ?? array(), 'id'));
+                        array_column($targets[$dimension] ?? [], 'id'));
                 }
 
                 if (!in_array($widget['more']['reportId'], $offered, true)) {
@@ -729,7 +729,7 @@ final class CustomReportsTest extends TestCase
             }
         }
 
-        $this->assertSame(array(), $missed,
+        $this->assertSame([], $missed,
             "The builder would not offer these links, which shipped reports already make:\n  "
             . implode("\n  ", $missed));
     }
@@ -748,14 +748,14 @@ final class CustomReportsTest extends TestCase
     public function testTheShippedInRowLinksPointAtReportsThatExist(): void
     {
         $registry = (array) \OWA\Core\CoreAPI::getReportRegistry();
-        $dangling = array();
+        $dangling = [];
         $checked  = 0;
 
         foreach (glob(\OWA\Core\Env::root() . '/modules/*/reports/*.json') as $file) {
 
             $definition = json_decode((string) file_get_contents($file), true);
 
-            foreach ((array) ($definition['widgets'] ?? array()) as $widget) {
+            foreach ((array) ($definition['widgets'] ?? []) as $widget) {
 
                 $destination = $widget['link']['template']['reportId'] ?? '';
 
@@ -778,7 +778,7 @@ final class CustomReportsTest extends TestCase
         $this->assertGreaterThan(0, $checked,
             'no in-row links found in the shipped definitions');
 
-        $this->assertSame(array(), $dangling,
+        $this->assertSame([], $dangling,
             "These row links point at reports that are not registered:\n  "
             . implode("\n  ", $dangling));
     }
@@ -787,10 +787,10 @@ final class CustomReportsTest extends TestCase
     {
         $definition = $this->definition();
         $definition['widgets'][1]['query']['dimensions'] = 'pagePath';
-        $definition['widgets'][1]['more'] = array(
+        $definition['widgets'][1]['more'] = [
             'reportId' => 'pages',
             'label'    => 'View Full Report »',
-        );
+        ];
 
         $this->assertSame('', CustomReports::validate($definition));
 
@@ -809,7 +809,7 @@ final class CustomReportsTest extends TestCase
     public function testAFullReportLinkToADetailReportIsRefused(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['more'] = array( 'reportId' => 'dom-clicks' );
+        $definition['widgets'][1]['more'] = [ 'reportId' => 'dom-clicks' ];
 
         $error = CustomReports::validate($definition);
 
@@ -820,10 +820,10 @@ final class CustomReportsTest extends TestCase
     public function testAFullReportLinkCannotCarryAnythingElse(): void
     {
         $definition = $this->definition();
-        $definition['widgets'][1]['more'] = array(
+        $definition['widgets'][1]['more'] = [
             'reportId' => 'pages',
             'do'       => 'base.optionsGeneral',
-        );
+        ];
 
         $this->assertStringContainsString('unknown key', CustomReports::validate($definition));
     }
@@ -870,33 +870,33 @@ final class CustomReportsTest extends TestCase
 
     public static function badConstraintProvider(): array
     {
-        return array(
+        return [
             // Parseable, but the name resolves to nothing. Refused at query
             // time already; refused here so the author hears it first.
-            'unknown name' => array(
-                'notADimension==direct', 'not a dimension or a metric'),
+            'unknown name' => [
+                'notADimension==direct', 'not a dimension or a metric'],
 
-            'unknown name beside a good one' => array(
-                'sessionMedium==organic-search,notADimension==x', 'notADimension'),
+            'unknown name beside a good one' => [
+                'sessionMedium==organic-search,notADimension==x', 'notADimension'],
 
             // Parseable, but no value. "A missing value is not a request for
             // everything" -- ResultSetManager's own words.
-            'no value' => array(
-                'sessionMedium==', 'gives no value'),
+            'no value' => [
+                'sessionMedium==', 'gives no value'],
 
             /*
              * NOT PARSEABLE AT ALL. Each of these contributes no constraint and
              * raises no error, so the widget silently answers unfiltered.
              */
-            'no operator' => array(
-                'sessionMedium', 'names no operator'),
+            'no operator' => [
+                'sessionMedium', 'names no operator'],
 
-            'operator but no name' => array(
-                '==direct', 'names nothing to constrain on'),
+            'operator but no name' => [
+                '==direct', 'names nothing to constrain on'],
 
-            'an operator that does not exist' => array(
-                'medium~~x', 'names no operator'),
-        );
+            'an operator that does not exist' => [
+                'medium~~x', 'names no operator'],
+        ];
     }
 
     /**
@@ -922,14 +922,14 @@ final class CustomReportsTest extends TestCase
 
     public static function goodConstraintProvider(): array
     {
-        return array(
-            'equality'                 => array('sessionMedium==organic-search'),
-            'a metric'                 => array('pageViews>5'),
-            'contains, not in the UI'  => array('sessionMedium=@news'),
-            'gte, not in the UI'       => array('pageViews>=5'),
-            'two of them'              => array('sessionMedium==organic-search,browserType=@Chrome'),
-            'a trailing comma'         => array('sessionMedium==organic-search,'),
-        );
+        return [
+            'equality'                 => ['sessionMedium==organic-search'],
+            'a metric'                 => ['pageViews>5'],
+            'contains, not in the UI'  => ['sessionMedium=@news'],
+            'gte, not in the UI'       => ['pageViews>=5'],
+            'two of them'              => ['sessionMedium==organic-search,browserType=@Chrome'],
+            'a trailing comma'         => ['sessionMedium==organic-search,'],
+        ];
     }
 
     /**
@@ -1061,10 +1061,10 @@ final class CustomReportsTest extends TestCase
 
         $definition = $this->definition();
         $definition['metrics'] = 'sessions,totalUsers';
-        $definition['widgets'][1] = array(
+        $definition['widgets'][1] = [
             'type' => 'pie', 'id' => 'p', 'container' => 'p',
-            'query' => array('dimensions' => 'sessionMedium'),
-        );
+            'query' => ['dimensions' => 'sessionMedium'],
+        ];
 
         $this->assertStringContainsString('0 metrics', CustomReports::validate($definition));
 
@@ -1097,10 +1097,10 @@ final class CustomReportsTest extends TestCase
 
         $definition = $this->definition();
         $definition['metrics'] = 'sessions,totalUsers';
-        $definition['widgets'][1] = array(
+        $definition['widgets'][1] = [
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
-            'query' => array('dimensions' => 'date'),
-        );
+            'query' => ['dimensions' => 'date'],
+        ];
 
         $says = CustomReports::validate($definition);
 
@@ -1124,11 +1124,11 @@ final class CustomReportsTest extends TestCase
         $this->assertNotContains('trend-card', CustomReports::SINGLE_METRIC_TYPES);
 
         $definition = $this->definition();
-        $definition['widgets'][1] = array(
+        $definition['widgets'][1] = [
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
             'chartMetric' => 'sessions',
-            'query' => array('metrics' => 'sessions,totalUsers', 'dimensions' => 'date'),
-        );
+            'query' => ['metrics' => 'sessions,totalUsers', 'dimensions' => 'date'],
+        ];
 
         $this->assertSame('', CustomReports::validate($definition));
     }
@@ -1147,11 +1147,11 @@ final class CustomReportsTest extends TestCase
         $this->assertSame(1, CustomReports::FIXED_DIMENSION_EXTRA['trend']);
 
         $definition = $this->definition();
-        $definition['widgets'][1] = array(
+        $definition['widgets'][1] = [
             'type' => 'trend-card', 'id' => 'c', 'container' => 'c',
             'chartMetric' => 'sessions',
-            'query' => array('metrics' => 'sessions', 'dimensions' => 'date,sessionMedium'),
-        );
+            'query' => ['metrics' => 'sessions', 'dimensions' => 'date,sessionMedium'],
+        ];
 
         $this->assertStringContainsString('Trend card',
             CustomReports::validate($definition));
@@ -1174,8 +1174,8 @@ final class CustomReportsTest extends TestCase
     {
         $time = CustomReports::timeDimensions();
 
-        foreach (array('date', 'year', 'month', 'yearMonth', 'day', 'dayOfWeek',
-                'dayOfYear', 'weekOfYear', 'hour', 'minute', 'dateHour') as $name) {
+        foreach (['date', 'year', 'month', 'yearMonth', 'day', 'dayOfWeek',
+                'dayOfYear', 'weekOfYear', 'hour', 'minute', 'dateHour'] as $name) {
 
             $this->assertContains($name, $time);
             $this->assertTrue(CustomReports::isDimension($name), "$name is not a registered dimension");
@@ -1190,11 +1190,11 @@ final class CustomReportsTest extends TestCase
             }
 
             $definition = $this->definition();
-            $definition['widgets'][1] = array(
+            $definition['widgets'][1] = [
                 'type' => 'trend', 'id' => 'c', 'container' => 'c',
                 'chartMetric' => 'sessions',
-                'query' => array('metrics' => 'sessions', 'dimensions' => 'date,' . $name),
-            );
+                'query' => ['metrics' => 'sessions', 'dimensions' => 'date,' . $name],
+            ];
 
             $this->assertStringContainsString('time is already its axis',
                 CustomReports::validate($definition), "a trend broken out by $name was accepted");
@@ -1211,7 +1211,7 @@ final class CustomReportsTest extends TestCase
     public function testTheChartTypesAreOfferedAChartMetric(): void
     {
         $this->assertSame(
-            array('trend', 'trend-card', 'pie'),
+            ['trend', 'trend-card', 'pie'],
             CustomReports::CHART_TYPES);
 
         foreach (CustomReports::CHART_TYPES as $type) {
@@ -1263,12 +1263,12 @@ final class CustomReportsTest extends TestCase
          *   title -- the PAGE title, read by the outer report view rather than
          *   by the body.
          */
-        $exempt = array( 'custom_report', 'title' );
+        $exempt = [ 'custom_report', 'title' ];
 
         $missing = array_values( array_diff(
             array_unique( $set[1] ), \OWA\Module\Base\Controller\CustomReportEdit::SCREEN_VARS, $exempt ) );
 
-        $this->assertSame( array(), $missing,
+        $this->assertSame( [], $missing,
             'the builder controller sets these and does not hand them to its template, so the '
           . 'template reads false for each: ' . implode( ', ', $missing ) );
     }
@@ -1292,7 +1292,7 @@ final class CustomReportsTest extends TestCase
     public function testAReportNeedsAtLeastOneWidget(): void
     {
         $definition = $this->definition();
-        $definition['widgets'] = array();
+        $definition['widgets'] = [];
 
         $this->assertNotSame('', CustomReports::validate($definition));
     }
@@ -1318,7 +1318,7 @@ final class CustomReportsTest extends TestCase
     public function testAnUnknownTopLevelKeyIsRefused(): void
     {
         $definition = $this->definition();
-        $definition['setings'] = array('foo' => 'bar');
+        $definition['setings'] = ['foo' => 'bar'];
 
         $this->assertStringContainsString('setings', CustomReports::validate($definition));
     }
@@ -1331,7 +1331,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Round Trip'));
+        $saved = $this->store(['name' => 'Round Trip']);
 
         $this->assertTrue($saved['ok'], $saved['error']);
 
@@ -1361,7 +1361,7 @@ final class CustomReportsTest extends TestCase
         $definition = $this->definition();
         $definition['title'] = 'something else entirely';
 
-        $saved  = $this->store(array('name' => 'The Real Name', 'definition' => $definition));
+        $saved  = $this->store(['name' => 'The Real Name', 'definition' => $definition]);
         $loaded = CustomReports::load($saved['id']);
 
         $this->assertSame('The Real Name', $loaded['definition']['title']);
@@ -1375,7 +1375,7 @@ final class CustomReportsTest extends TestCase
         $definition['widgets'][1]['query']['dimensions'] = 'notADimension';
 
         $before = count(CustomReports::roster('', true));
-        $saved  = $this->store(array('name' => 'Should Not Store', 'definition' => $definition));
+        $saved  = $this->store(['name' => 'Should Not Store', 'definition' => $definition]);
 
         $this->assertFalse($saved['ok']);
         $this->assertStringContainsString('notADimension', $saved['error']);
@@ -1387,7 +1387,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => '   '));
+        $saved = $this->store(['name' => '   ']);
 
         $this->assertFalse($saved['ok']);
         $this->assertSame('Name is required.', $saved['error']);
@@ -1397,10 +1397,10 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array(
+        $saved = $this->store([
             'name'       => 'From JSON',
             'definition' => json_encode($this->definition()),
-        ));
+        ]);
 
         $this->assertTrue($saved['ok'], $saved['error']);
         $this->assertCount(2, CustomReports::load($saved['id'])['definition']['widgets']);
@@ -1410,7 +1410,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Broken', 'definition' => '{not json'));
+        $saved = $this->store(['name' => 'Broken', 'definition' => '{not json']);
 
         $this->assertFalse($saved['ok']);
         $this->assertStringContainsString('JSON', $saved['error']);
@@ -1421,13 +1421,13 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Originally Mine'));
+        $saved = $this->store(['name' => 'Originally Mine']);
 
-        $edited = CustomReports::save(array(
+        $edited = CustomReports::save([
             'id'         => $saved['id'],
             'name'       => 'Edited By An Admin',
             'definition' => $this->definition(),
-        ), 'an-admin@example.test', self::PROPERTY);
+        ], 'an-admin@example.test', self::PROPERTY);
 
         $this->assertTrue($edited['ok'], $edited['error']);
         $this->assertSame($saved['id'], $edited['id'], 'an edit is not a new report');
@@ -1447,8 +1447,8 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $mine   = $this->store(array('name' => 'Mine'), self::AUTHOR);
-        $theirs = $this->store(array('name' => 'Theirs'), self::OTHER);
+        $mine   = $this->store(['name' => 'Mine'], self::AUTHOR);
+        $theirs = $this->store(['name' => 'Theirs'], self::OTHER);
 
         $ids = array_column(CustomReports::roster(self::AUTHOR), 'id');
 
@@ -1461,8 +1461,8 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $mine   = $this->store(array('name' => 'Mine For Admin'), self::AUTHOR);
-        $theirs = $this->store(array('name' => 'Theirs For Admin'), self::OTHER);
+        $mine   = $this->store(['name' => 'Mine For Admin'], self::AUTHOR);
+        $theirs = $this->store(['name' => 'Theirs For Admin'], self::OTHER);
 
         $ids = array_column(CustomReports::roster(self::AUTHOR, true), 'id');
 
@@ -1481,7 +1481,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Private By Default'));
+        $saved = $this->store(['name' => 'Private By Default']);
         $row   = CustomReports::load($saved['id']);
 
         $this->assertEmpty($row['is_shared'],
@@ -1492,7 +1492,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $shared = $this->store(array('name' => 'Shared With All', 'is_shared' => true), self::OTHER);
+        $shared = $this->store(['name' => 'Shared With All', 'is_shared' => true], self::OTHER);
 
         $ids = array_column(CustomReports::roster(self::AUTHOR), 'id');
 
@@ -1504,7 +1504,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $private = $this->store(array('name' => 'Still Private', 'is_shared' => false), self::OTHER);
+        $private = $this->store(['name' => 'Still Private', 'is_shared' => false], self::OTHER);
 
         $ids = array_column(CustomReports::roster(self::AUTHOR), 'id');
 
@@ -1519,7 +1519,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $legacy = $this->store(array('name' => 'Predates The Column'), self::OTHER);
+        $legacy = $this->store(['name' => 'Predates The Column'], self::OTHER);
 
         $db = \OWA\Core\CoreAPI::dbSingleton();
         $db->query(sprintf(
@@ -1540,13 +1540,13 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Shared Then Renamed', 'is_shared' => true));
+        $saved = $this->store(['name' => 'Shared Then Renamed', 'is_shared' => true]);
 
-        CustomReports::save(array(
+        CustomReports::save([
             'id'         => $saved['id'],
             'name'       => 'Renamed, Still Shared',
             'definition' => $this->definition(),
-        ), self::AUTHOR, self::PROPERTY);
+        ], self::AUTHOR, self::PROPERTY);
 
         $row = CustomReports::load($saved['id']);
 
@@ -1559,7 +1559,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $shared = $this->store(array('name' => 'Marked Shared', 'is_shared' => true), self::OTHER);
+        $shared = $this->store(['name' => 'Marked Shared', 'is_shared' => true], self::OTHER);
 
         $row = null;
 
@@ -1581,8 +1581,8 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $mine   = $this->store(array('name' => 'My Own'));
-        $shared = $this->store(array('name' => 'Theirs But Shared', 'is_shared' => true), self::OTHER);
+        $mine   = $this->store(['name' => 'My Own']);
+        $shared = $this->store(['name' => 'Theirs But Shared', 'is_shared' => true], self::OTHER);
 
         $ids = array_column(
             CustomReports::roster(self::AUTHOR, false, '', null, null, null, true), 'id');
@@ -1603,8 +1603,8 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $mine   = $this->store(array('name' => 'Admin Own'));
-        $theirs = $this->store(array('name' => 'Admin Sees Theirs'), self::OTHER);
+        $mine   = $this->store(['name' => 'Admin Own']);
+        $theirs = $this->store(['name' => 'Admin Sees Theirs'], self::OTHER);
 
         $all = array_column(
             CustomReports::roster(self::AUTHOR, true, '', null, null, null, false), 'id');
@@ -1626,7 +1626,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Starred By One'), self::OTHER);
+        $saved = $this->store(['name' => 'Starred By One'], self::OTHER);
 
         Favorites::toggle($saved['id'], self::AUTHOR);
 
@@ -1639,7 +1639,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Toggled'));
+        $saved = $this->store(['name' => 'Toggled']);
 
         $this->assertTrue(Favorites::toggle($saved['id'], self::AUTHOR));
         $this->assertTrue(Favorites::isFavorite($saved['id'], self::AUTHOR));
@@ -1654,8 +1654,8 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $plain   = $this->store(array('name' => 'AAA Sorts First Alphabetically'));
-        $starred = $this->store(array('name' => 'ZZZ Sorts Last Alphabetically'));
+        $plain   = $this->store(['name' => 'AAA Sorts First Alphabetically']);
+        $starred = $this->store(['name' => 'ZZZ Sorts Last Alphabetically']);
 
         Favorites::toggle($starred['id'], self::AUTHOR);
 
@@ -1675,7 +1675,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $starred = $this->store(array('name' => 'Carries Its Star'));
+        $starred = $this->store(['name' => 'Carries Its Star']);
         Favorites::toggle($starred['id'], self::AUTHOR);
 
         foreach (CustomReports::roster(self::AUTHOR) as $row) {
@@ -1692,8 +1692,8 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $starred = $this->store(array('name' => 'Kept'));
-        $plain   = $this->store(array('name' => 'Filtered Out'));
+        $starred = $this->store(['name' => 'Kept']);
+        $plain   = $this->store(['name' => 'Filtered Out']);
 
         Favorites::toggle($starred['id'], self::AUTHOR);
 
@@ -1712,8 +1712,8 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $this->store(array('name' => 'AAA Unstarred, First By Name'));
-        $starred = $this->store(array('name' => 'ZZZ Starred, Last By Name'));
+        $this->store(['name' => 'AAA Unstarred, First By Name']);
+        $starred = $this->store(['name' => 'ZZZ Starred, Last By Name']);
 
         // A reader with no other stars, who may see every report.
         Favorites::toggle($starred['id'], 'limit-reader@example.test');
@@ -1721,16 +1721,16 @@ final class CustomReportsTest extends TestCase
         $ids = array_column(
             CustomReports::roster('limit-reader@example.test', true, 'name', false, 1, null, false, true), 'id');
 
-        $this->assertSame(array($starred['id']), $ids);
+        $this->assertSame([$starred['id']], $ids);
     }
 
     public function testNoFavoritesListsNothing(): void
     {
         $this->requireDb();
 
-        $this->store(array('name' => 'Never Starred'));
+        $this->store(['name' => 'Never Starred']);
 
-        $this->assertSame(array(),
+        $this->assertSame([],
             CustomReports::roster('starred-nothing@example.test', true, '', null, null, null, false, true));
     }
 
@@ -1739,9 +1739,9 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $b     = $this->store(array('name' => 'Nav Favorite B'));
-        $a     = $this->store(array('name' => 'Nav Favorite A'));
-        $plain = $this->store(array('name' => 'Nav Not A Favorite'));
+        $b     = $this->store(['name' => 'Nav Favorite B']);
+        $a     = $this->store(['name' => 'Nav Favorite A']);
+        $plain = $this->store(['name' => 'Nav Not A Favorite']);
 
         Favorites::toggle($b['id'], self::AUTHOR);
         Favorites::toggle($a['id'], self::AUTHOR);
@@ -1760,13 +1760,13 @@ final class CustomReportsTest extends TestCase
     /** The Type column: a report, or the visualization's own kind. */
     public function testEachRowIsAReportOrItsVisualizationsKind(): void
     {
-        $kind = array(\OWA\Module\Base\Controller\CustomReports::class, 'kindOf');
+        $kind = [\OWA\Module\Base\Controller\CustomReports::class, 'kindOf'];
 
-        $this->assertSame('report', $kind(array('report_type' => null)));
-        $this->assertSame('report', $kind(array('report_type' => 'report')));
-        $this->assertSame('funnel', $kind(array('report_type' => 'visualization', 'visualization_type' => 'funnel')));
+        $this->assertSame('report', $kind(['report_type' => null]));
+        $this->assertSame('report', $kind(['report_type' => 'report']));
+        $this->assertSame('funnel', $kind(['report_type' => 'visualization', 'visualization_type' => 'funnel']));
         // A kind this install no longer has reads as the first one it does.
-        $this->assertSame('funnel', $kind(array('report_type' => 'visualization', 'visualization_type' => 'gone')));
+        $this->assertSame('funnel', $kind(['report_type' => 'visualization', 'visualization_type' => 'gone']));
     }
 
     /** + New offers a report first, then each visualization, each opening its builder. */
@@ -1781,7 +1781,7 @@ final class CustomReportsTest extends TestCase
 
             $this->assertArrayHasKey( $type, CustomReports::WIDGET_TYPES );
             $this->assertNotContains( $type, CustomReports::FULL_WIDTH_TYPES );
-            $this->assertContains( $span, array( 4, 6, 8, 12 ), "$type is added at $span" );
+            $this->assertContains( $span, [ 4, 6, 8, 12 ], "$type is added at $span" );
         }
     }
 
@@ -1801,16 +1801,16 @@ final class CustomReportsTest extends TestCase
             return $label === $name;
         }, ARRAY_FILTER_USE_BOTH );
 
-        $this->assertSame( array(), $named, 'metrics offered by their API name' );
+        $this->assertSame( [], $named, 'metrics offered by their API name' );
     }
 
     public function testNewOffersAReportThenEachVisualization(): void
     {
         $kinds = \OWA\Module\Base\Controller\CustomReports::newKinds();
 
-        $this->assertSame(array('report', 'funnel'), array_keys($kinds));
-        $this->assertSame(array('do' => 'base.customReportEdit'), $kinds['report']['params']);
-        $this->assertSame(array('do' => 'base.visualizationEdit', 'visualizationType' => 'funnel'),
+        $this->assertSame(['report', 'funnel'], array_keys($kinds));
+        $this->assertSame(['do' => 'base.customReportEdit'], $kinds['report']['params']);
+        $this->assertSame(['do' => 'base.visualizationEdit', 'visualizationType' => 'funnel'],
             $kinds['funnel']['params']);
         $this->assertSame('Funnel', $kinds['funnel']['label']);
         $this->assertNotSame('', $kinds['funnel']['hint']);
@@ -1825,7 +1825,7 @@ final class CustomReportsTest extends TestCase
         $this->requireDb();
 
         $shared = $this->store(
-            array('name' => 'Theirs, Shared, Starred', 'is_shared' => true), self::OTHER);
+            ['name' => 'Theirs, Shared, Starred', 'is_shared' => true], self::OTHER);
 
         Favorites::toggle($shared['id'], self::AUTHOR);
 
@@ -1840,7 +1840,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Deleted With Stars'));
+        $saved = $this->store(['name' => 'Deleted With Stars']);
         Favorites::toggle($saved['id'], self::AUTHOR);
         $this->assertTrue(Favorites::isFavorite($saved['id'], self::AUTHOR));
 
@@ -1855,7 +1855,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Named And Attributed'));
+        $saved = $this->store(['name' => 'Named And Attributed']);
 
         $row = null;
 
@@ -1877,19 +1877,19 @@ final class CustomReportsTest extends TestCase
      */
     public function testWhoMayEdit(string $user, bool $seesAll, bool $expected): void
     {
-        $report = array('id' => '1', 'user_id' => self::AUTHOR);
+        $report = ['id' => '1', 'user_id' => self::AUTHOR];
 
         $this->assertSame($expected, CustomReports::mayEdit($report, $user, $seesAll));
     }
 
     public static function editPermissionProvider(): array
     {
-        return array(
-            'the creator'        => array(self::AUTHOR, false, true),
-            'somebody else'      => array(self::OTHER,  false, false),
-            'an admin'           => array(self::OTHER,  true,  true),
-            'nobody at all'      => array('',           false, false),
-        );
+        return [
+            'the creator'        => [self::AUTHOR, false, true],
+            'somebody else'      => [self::OTHER,  false, false],
+            'an admin'           => [self::OTHER,  true,  true],
+            'nobody at all'      => ['',           false, false],
+        ];
     }
 
     public function testAMissingReportIsNotEditableByAnyone(): void
@@ -1918,21 +1918,21 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Renders'));
+        $saved = $this->store(['name' => 'Renders']);
 
-        $data = (array) (new \OWA\Module\Base\Controller\Report(array(
+        $data = (array) (new \OWA\Module\Base\Controller\Report([
             'reportId' => 'custom-' . $saved['id'],
             'period'   => 'last_thirty_days',
-        )))->doAction();
+        ]))->doAction();
 
         $this->assertNotEmpty($data['subview'] ?? '', 'the report did not render');
 
-        foreach (array('sites', 'currentPropertyId', 'currentSiteId', 'period', 'dom_id') as $key) {
+        foreach (['sites', 'currentPropertyId', 'currentSiteId', 'period', 'dom_id'] as $key) {
             $this->assertArrayHasKey($key, $data,
                 "a custom report must come with $key like every other report");
         }
 
-        foreach (array('propertyId', 'period', 'startDate', 'endDate') as $key) {
+        foreach (['propertyId', 'period', 'startDate', 'endDate'] as $key) {
             $this->assertArrayHasKey($key, $data['params'],
                 "params.$key is what carries the selection into the report's own links");
         }
@@ -1943,13 +1943,13 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Shareable'));
+        $saved = $this->store(['name' => 'Shareable']);
 
         $render = function () use ($saved) {
-            return (array) (new \OWA\Module\Base\Controller\Report(array(
+            return (array) (new \OWA\Module\Base\Controller\Report([
                 'reportId' => 'custom-' . $saved['id'],
                 'period'   => 'last_thirty_days',
-            )))->doAction();
+            ]))->doAction();
         };
 
         $first  = $render();
@@ -1971,7 +1971,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Goes Stale'));
+        $saved = $this->store(['name' => 'Goes Stale']);
 
         // Corrupt the stored row directly, which is the situation being modelled.
         $entity = \OWA\Core\CoreAPI::entityFactory('base.custom_report');
@@ -1983,10 +1983,10 @@ final class CustomReportsTest extends TestCase
         $entity->set('definition', json_encode($definition));
         $entity->update();
 
-        $data = (array) (new \OWA\Module\Base\Controller\Report(array(
+        $data = (array) (new \OWA\Module\Base\Controller\Report([
             'reportId' => 'custom-' . $saved['id'],
             'period'   => 'last_thirty_days',
-        )))->doAction();
+        ]))->doAction();
 
         $this->assertEmpty($data['subview'] ?? '',
             'a report that no longer validates must not render');
@@ -2000,7 +2000,7 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $saved = $this->store(array('name' => 'Goes Stale'));
+        $saved = $this->store(['name' => 'Goes Stale']);
 
         $entity = \OWA\Core\CoreAPI::entityFactory('base.custom_report');
         $entity->load($saved['id']);
@@ -2012,10 +2012,10 @@ final class CustomReportsTest extends TestCase
         $entity->update();
 
         ob_start();
-        $returned = (new \OWA\Module\Base\Controller\Report(array(
+        $returned = (new \OWA\Module\Base\Controller\Report([
             'reportId' => 'custom-' . $saved['id'],
             'period'   => 'last_thirty_days',
-        )))->doAction();
+        ]))->doAction();
         $page = ob_get_clean() . (is_string($returned) ? $returned : '');
 
         $this->assertStringContainsString("This saved report cannot be drawn", $page);
@@ -2027,9 +2027,9 @@ final class CustomReportsTest extends TestCase
         $user->setRole('admin');
         $user->setAuthStatus(true);
 
-        $list = (array) (new \OWA\Module\Base\Controller\CustomReports(array('propertyId' => self::PROPERTY)))->doAction();
-        $row = array_values(array_filter((array) ($list['custom_reports'] ?? array()),
-            fn ($r) => (string) $r['id'] === (string) $saved['id']))[0] ?? array();
+        $list = (array) (new \OWA\Module\Base\Controller\CustomReports(['propertyId' => self::PROPERTY]))->doAction();
+        $row = array_values(array_filter((array) ($list['custom_reports'] ?? []),
+            fn ($r) => (string) $r['id'] === (string) $saved['id']))[0] ?? [];
 
         $this->assertStringContainsString('aDimensionThatNoLongerExists', (string) ($row['invalid'] ?? ''));
     }
@@ -2038,10 +2038,10 @@ final class CustomReportsTest extends TestCase
     {
         $this->requireDb();
 
-        $data = (array) (new \OWA\Module\Base\Controller\Report(array(
+        $data = (array) (new \OWA\Module\Base\Controller\Report([
             'reportId' => 'custom-9100000000000000998',
             'period'   => 'last_thirty_days',
-        )))->doAction();
+        ]))->doAction();
 
         $this->assertEmpty($data['subview'] ?? '');
     }
@@ -2073,7 +2073,7 @@ final class CustomReportsTest extends TestCase
         $this->asRole('viewer');
 
         $refused = (array) (new \OWA\Module\Base\Controller\CustomReportEdit(
-            array('do' => 'base.customReportEdit')))->doAction();
+            ['do' => 'base.customReportEdit']))->doAction();
 
         $this->assertArrayNotHasKey('subview', $refused,
             'a role without edit_reports reached the builder');
@@ -2083,7 +2083,7 @@ final class CustomReportsTest extends TestCase
         $this->asRole('admin');
 
         $allowed = (array) (new \OWA\Module\Base\Controller\CustomReportEdit(
-            array('do' => 'base.customReportEdit')))->doAction();
+            ['do' => 'base.customReportEdit']))->doAction();
 
         $this->assertSame('base.customReportEdit', $allowed['subview'] ?? null);
     }
@@ -2109,23 +2109,23 @@ final class CustomReportsTest extends TestCase
      */
     public function testEachScreenAsksForTheRightCapability(string $class, string $expected): void
     {
-        $controller = new $class(array());
+        $controller = new $class([]);
 
         $this->assertSame($expected, $controller->getRequiredCapability());
     }
 
     public static function declaredCapabilityProvider(): array
     {
-        return array(
-            'the roster is for any signed-in user' => array(
-                '\OWA\Module\Base\Controller\CustomReports', 'view_site_list'),
-            'building is for authors' => array(
-                '\OWA\Module\Base\Controller\CustomReportEdit', 'edit_reports'),
-            'saving is for authors' => array(
-                '\OWA\Module\Base\Controller\CustomReportSave', 'edit_reports'),
-            'deleting is for authors' => array(
-                '\OWA\Module\Base\Controller\CustomReportDelete', 'edit_reports'),
-        );
+        return [
+            'the roster is for any signed-in user' => [
+                '\OWA\Module\Base\Controller\CustomReports', 'view_site_list'],
+            'building is for authors' => [
+                '\OWA\Module\Base\Controller\CustomReportEdit', 'edit_reports'],
+            'saving is for authors' => [
+                '\OWA\Module\Base\Controller\CustomReportSave', 'edit_reports'],
+            'deleting is for authors' => [
+                '\OWA\Module\Base\Controller\CustomReportDelete', 'edit_reports'],
+        ];
     }
 
     /**
@@ -2140,12 +2140,12 @@ final class CustomReportsTest extends TestCase
      */
     public function testViewingACustomReportAddsNoCapabilityOfItsOwn(): void
     {
-        $dispatcher = new \OWA\Module\Base\Controller\Report(array());
+        $dispatcher = new \OWA\Module\Base\Controller\Report([]);
 
         $this->assertEmpty($dispatcher->getRequiredCapability(),
             'the report dispatcher must delegate authorisation, not add to it');
 
-        $configured = new \OWA\Core\ConfiguredReport(array());
+        $configured = new \OWA\Core\ConfiguredReport([]);
 
         $this->assertSame('view_reports', $configured->getRequiredCapability(),
             'a custom report is authorised as a report, not as an edit');
@@ -2158,12 +2158,12 @@ final class CustomReportsTest extends TestCase
 
         $this->asRole('everyone', false);
 
-        foreach (array(
+        foreach ([
             '\OWA\Module\Base\Controller\CustomReports'    => 'base.customReports',
             '\OWA\Module\Base\Controller\CustomReportEdit' => 'base.customReportEdit',
-        ) as $class => $action) {
+        ] as $class => $action) {
 
-            $refused = (array) (new $class(array('do' => $action)))->doAction();
+            $refused = (array) (new $class(['do' => $action]))->doAction();
 
             $this->assertArrayNotHasKey('subview', $refused,
                 "$action was reachable unauthenticated");

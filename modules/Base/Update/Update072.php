@@ -29,7 +29,7 @@ class Update072 extends \OWA\Core\Update {
     public $schema_version = 72;
 
     /** In the entity's order, which is the order ADD COLUMN appends them in. */
-    const COLUMNS = array( 'page_depth', 'previous_page_path', 'next_page_path' );
+    const COLUMNS = [ 'page_depth', 'previous_page_path', 'next_page_path' ];
 
     /**
      * One rebuild per cube for all three; see CubeColumn::addCubeColumns().
@@ -48,5 +48,3 @@ class Update072 extends \OWA\Core\Update {
         return $this->dropCubeColumns( self::COLUMNS );
     }
 }
-
-?>

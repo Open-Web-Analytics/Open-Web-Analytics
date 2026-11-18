@@ -58,7 +58,7 @@ class GoalMarking {
      *
      * @var array<string, list<Goal>>
      */
-    private static $goals = array();
+    private static $goals = [];
 
     /**
      * Judge every event in the set, and add a goal event for each definition met.
@@ -77,11 +77,11 @@ class GoalMarking {
         }
 
         // name => the goal event, and name => the row of the event that met it
-        $goalEvents = array();
-        $triggers   = array();
+        $goalEvents = [];
+        $triggers   = [];
 
         // name => true, for the names whose definition counts once per session
-        $perSession = array();
+        $perSession = [];
 
         foreach ( $events as $event ) {
 
@@ -207,7 +207,7 @@ class GoalMarking {
             $currency = $currency !== '' ? $currency : 'USD';
 
             // The definition holds hundredths (decimalToCents()); the row, the currency's minor units.
-            return array( 'value' => Currency::toMinorUnits( $cents / 100, $currency ), 'currency' => $currency );
+            return [ 'value' => Currency::toMinorUnits( $cents / 100, $currency ), 'currency' => $currency ];
         }
 
         $currency = Currency::normalize( $row['currency'] ?? '' );
@@ -215,7 +215,7 @@ class GoalMarking {
         if ( ( $row['event_type'] ?? '' ) === 'purchase'
              && is_numeric( $row['revenue'] ?? null ) && $currency !== '' ) {
 
-            return array( 'value' => (int) $row['revenue'], 'currency' => $currency );
+            return [ 'value' => (int) $row['revenue'], 'currency' => $currency ];
         }
 
         return null;
@@ -258,10 +258,10 @@ class GoalMarking {
      */
     protected static function alreadyInSession( array $triggers, array $names ) {
 
-        $found = array();
+        $found = [];
 
         // By session: a set is one beacon, so this is one query in practice.
-        $sessions = array();
+        $sessions = [];
 
         foreach ( $names as $name ) {
 
@@ -286,7 +286,7 @@ class GoalMarking {
               . ' AND yyyymmdd BETWEEN ? AND ? AND is_goal_event = 1 AND event_type IN (%s)',
                 $raw, implode( ', ', array_fill( 0, count( $session['names'] ), '?' ) ) ),
                 array_merge(
-                    array( $row['session_id'], $row['visitor_id'], (string) $row['site_id'], $from, $to ),
+                    [ $row['session_id'], $row['visitor_id'], (string) $row['site_id'], $from, $to ],
                     $session['names'] ) );
 
             foreach ( $stored as $r ) {
@@ -319,7 +319,7 @@ class GoalMarking {
 
         $from = (int) date( 'Ymd', max( $start, $now - 86400 ) );
 
-        return array( min( $from, $to ), $to );
+        return [ min( $from, $to ), $to ];
     }
 
     /**
@@ -343,7 +343,7 @@ class GoalMarking {
             return self::$goals[ $site_id ];
         }
 
-        self::$goals[ $site_id ] = array();
+        self::$goals[ $site_id ] = [];
 
         if ( $site_id === '' ) {
 
@@ -391,10 +391,10 @@ class GoalMarking {
                 continue;
             }
 
-            self::$goals[ $site_id ][] = array(
+            self::$goals[ $site_id ][] = [
                 'definition' => $definition,
                 'conditions' => $conditions,
-            );
+            ];
         }
 
         return self::$goals[ $site_id ];
@@ -411,8 +411,6 @@ class GoalMarking {
      */
     public static function forget() {
 
-        self::$goals = array();
+        self::$goals = [];
     }
 }
-
-?>

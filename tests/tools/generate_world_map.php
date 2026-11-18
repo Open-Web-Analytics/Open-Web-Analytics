@@ -30,7 +30,7 @@ const WIDTH = 1000;
  * there under the country each is recognised as part of, so that is the code
  * that has to shade them.
  */
-const UNCODED = array( 'N. Cyprus' => 'CY', 'Somaliland' => 'SO' );
+const UNCODED = [ 'N. Cyprus' => 'CY', 'Somaliland' => 'SO' ];
 
 /** Equal Earth (Šavrič, Patterson, Jenny 2018), in projection units. */
 function equal_earth( $lon, $lat ) {
@@ -46,7 +46,7 @@ function equal_earth( $lon, $lat ) {
     $x = 2 * sqrt( 3 ) * $lambda * cos( $theta ) / ( 3 * ( 9 * $a4 * $t6 * $t2 + 7 * $a3 * $t6 + 3 * $a2 * $t2 + $a1 ) );
     $y = $theta * ( $a1 + $a2 * $t2 + $t6 * ( $a3 + $a4 * $t2 ) );
 
-    return array( $x, $y );
+    return [ $x, $y ];
 }
 
 list( $max_x ) = equal_earth( 180, 0 );
@@ -62,7 +62,7 @@ $point = function ( $lon, $lat ) use ( $scale, $max_x, $max_y ) {
 
     list( $x, $y ) = equal_earth( $lon, $lat );
 
-    return array( round( ( $x + $max_x ) * $scale, 1 ), round( ( $max_y - $y ) * $scale, 1 ) );
+    return [ round( ( $x + $max_x ) * $scale, 1 ), round( ( $max_y - $y ) * $scale, 1 ) ];
 };
 
 /** One ring as path commands, dropping points that round onto the last. */
@@ -89,7 +89,7 @@ $ring = function ( array $coords ) use ( $point ) {
 
 $geo = json_decode( (string) file_get_contents( $argv[1] ), true );
 
-$groups = array();
+$groups = [];
 
 foreach ( $geo['features'] as $feature ) {
 
@@ -114,7 +114,7 @@ foreach ( $geo['features'] as $feature ) {
     }
 
     $geometry = $feature['geometry'];
-    $polygons = $geometry['type'] === 'Polygon' ? array( $geometry['coordinates'] ) : $geometry['coordinates'];
+    $polygons = $geometry['type'] === 'Polygon' ? [ $geometry['coordinates'] ] : $geometry['coordinates'];
 
     $d = '';
 

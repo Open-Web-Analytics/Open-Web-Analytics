@@ -27,10 +27,10 @@ $owa_v      = (array) $view->visualization;
 $owa_type   = (string) ( $view->visualizationType ?: 'funnel' );
 $owa_id     = (string) ( $owa_v['id'] ?? '' );
 $owa_errors = (array) $view->validation_errors;
-$owa_steps  = (array) $view->steps ?: array( (array) $view->blankStep );
+$owa_steps  = (array) $view->steps ?: [ (array) $view->blankStep ];
 
 // The errors each step row shows; the rest are shown under the steps.
-$owa_shownErrors = array( 'name' => true, 'constraints' => true );
+$owa_shownErrors = [ 'name' => true, 'constraints' => true ];
 ?>
 
 <?php
@@ -40,7 +40,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
  */
 ?>
 <form method="post" name="owa_visualization" class="owa_editor owa_funnelEditor" id="owa_funnelForm"
-      action="<?php echo $view->makeLink( array( 'do' => 'base.visualizationSave' ) );?>"
+      action="<?php echo $view->makeLink( [ 'do' => 'base.visualizationSave' ] );?>"
       data-not-carried-label="<?php $view->out( \OWA\Core\CoreAPI::t( '%s -- not carried by %s' ) );?>"
       data-not-carried-help="<?php $view->out( \OWA\Core\CoreAPI::t( 'A %s event does not carry this property.' ) );?>">
 
@@ -81,9 +81,9 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
 
         <div class="owa_editorActions">
             <a class="owa_button" id="owa_funnelCancel" href="<?php echo $owa_id
-                ? $view->makeLink( array( 'do' => 'base.report',
-                    'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $owa_id ), true )
-                : $view->makeLink( array( 'do' => 'base.customReports' ), true );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></a>
+                ? $view->makeLink( [ 'do' => 'base.report',
+                    'reportId' => \OWA\Module\Base\Controller\Report::CUSTOM_PREFIX . $owa_id ], true )
+                : $view->makeLink( [ 'do' => 'base.customReports' ], true );?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></a>
             <input class="owa_button is-primary" type="submit" id="owa_visualizationSubmit"
                    name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Save funnel' ) ); ?>">
         </div>
@@ -104,7 +104,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
             <?php
                 $owa_step       = (array) $owa_step;
                 $owa_stepNo     = (int) $owa_stepIndex + 1;
-                $owa_stepErrors = array();
+                $owa_stepErrors = [];
 
                 // The step's own messages: stepEvent<N>, and stepCondition<N>_<C> for each condition.
                 foreach ( $owa_errors as $owa_field => $owa_message ) {
@@ -129,12 +129,12 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
 
             <h2 id="owa_funnelFiltersLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filters' ) ); ?></h2>
             <?php
-                $owa_fp = array(
+                $owa_fp = [
                     'pills' => 'owa_funnelFilters', 'add' => 'owa_funnelAddFilter', 'form' => 'owa_funnelFilterForm',
                     'dimension' => 'owa_funnelFilterDimension', 'operator' => 'owa_funnelFilterOperator',
                     'value' => 'owa_funnelFilterValue', 'addFilter' => 'owa_funnelFilterAdd',
                     'cancel' => 'owa_funnelFilterCancel', 'label' => 'owa_funnelFiltersLabel',
-                );
+                ];
                 include( 'filter_pills.php' );
             ?>
             <p class="owa_builderHelp"><?php $view->out( \OWA\Core\CoreAPI::t( 'A filter applies to every step.' ) ); ?></p>
@@ -153,7 +153,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
     <?php // One blank step, for Add a step to copy. ?>
     <template id="owa_funnelStepTemplate">
         <?php
-            $owa_step = (array) $view->blankStep; $owa_stepIndex = 0; $owa_stepNo = 0; $owa_stepErrors = array();
+            $owa_step = (array) $view->blankStep; $owa_stepIndex = 0; $owa_stepNo = 0; $owa_stepErrors = [];
             include( 'visualization_edit_step.php' );
         ?>
     </template>
@@ -165,7 +165,7 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
 
 <?php if ( $owa_id ):?>
 <div class="owa_editorFoot">
-    <form method="post" action="<?php echo $view->makeLink( array( 'do' => 'base.customReportDelete' ) );?>">
+    <form method="post" action="<?php echo $view->makeLink( [ 'do' => 'base.customReportDelete' ] );?>">
         <?php echo $view->createNonceFormField( 'base.customReportDelete' );?>
         <input type="hidden" name="customReportId" value="<?php $view->out( $owa_id );?>">
         <?php // A roster with no Property has no navigation, so the Property goes along. ?>
@@ -181,13 +181,13 @@ $owa_shownErrors = array( 'name' => true, 'constraints' => true );
 <?php endif;?>
 
 <?php // The screen's data, for owa.visualizationEdit.js. ?>
-<script type="application/json" data-ui="funnel-editor:config"><?php echo $view->scriptJson( array(
+<script type="application/json" data-ui="funnel-editor:config"><?php echo $view->scriptJson( [
     'maxSteps'   => (int) ( $view->maxSteps ?: 10 ),
     'dimensions' => array_values( (array) $view->dimensionChoices ),
-    'previewUrl' => $view->makeLink( array(
+    'previewUrl' => $view->makeLink( [
         'do'          => 'base.visualizationPreview',
         'period'      => 'last_thirty_days',
         'funnelScope' => 'session',
-    ), true ),
-) ); ?></script>
+    ], true ),
+] ); ?></script>
 <p id="owa_funnelMoved" class="owa_srOnly" aria-live="polite"></p>

@@ -15,7 +15,7 @@ final class ObserverSendMailTest extends TestCase
     use CapturesLog;
 
     /** @var array<string,mixed> */
-    private array $mail = array();
+    private array $mail = [];
 
     protected function setUp(): void
     {

@@ -46,7 +46,7 @@ class MyProfileTest extends TestCase
         $this->assertContains('edit_own_email', $capabilities['admin'],
             'an admin can change their own address');
 
-        foreach (array('analyst', 'viewer', 'everyone') as $role) {
+        foreach (['analyst', 'viewer', 'everyone'] as $role) {
 
             $this->assertNotContains('edit_own_email', $capabilities[$role],
                 sprintf('%s must not change their own address without being granted it', $role));
@@ -79,7 +79,7 @@ class MyProfileTest extends TestCase
     {
         $capabilities = $this->capabilities();
 
-        foreach (array('admin', 'analyst', 'viewer') as $role) {
+        foreach (['admin', 'analyst', 'viewer'] as $role) {
 
             $this->assertContains('view_site_list', $capabilities[$role],
                 sprintf('%s must be able to open their own account screen', $role));
@@ -89,17 +89,17 @@ class MyProfileTest extends TestCase
     /** @dataProvider controllerCapabilityProvider */
     public function testTheControllersRequireThatCapability(string $class, string $expected): void
     {
-        $controller = new $class(array());
+        $controller = new $class([]);
 
         $this->assertSame($expected, $controller->getRequiredCapability());
     }
 
     public static function controllerCapabilityProvider(): array
     {
-        return array(
-            'the form' => array(\OWA\Module\Base\Controller\MyProfile::class, 'view_site_list'),
-            'the save' => array(\OWA\Module\Base\Controller\MyProfileSave::class, 'view_site_list'),
-        );
+        return [
+            'the form' => [\OWA\Module\Base\Controller\MyProfile::class, 'view_site_list'],
+            'the save' => [\OWA\Module\Base\Controller\MyProfileSave::class, 'view_site_list'],
+        ];
     }
 
     /**
@@ -110,7 +110,7 @@ class MyProfileTest extends TestCase
      */
     public function testTheSaveRequiresANonce(): void
     {
-        $save = new \OWA\Module\Base\Controller\MyProfileSave(array());
+        $save = new \OWA\Module\Base\Controller\MyProfileSave([]);
 
         $this->assertTrue($save->is_nonce_required);
     }
@@ -123,7 +123,7 @@ class MyProfileTest extends TestCase
     {
         $actions = (array) \OWA\Core\CoreAPI::serviceSingleton()->getMap('actions');
 
-        foreach (array('base.myProfile', 'base.myProfileSave') as $action) {
+        foreach (['base.myProfile', 'base.myProfileSave'] as $action) {
 
             $this->assertArrayHasKey($action, $actions,
                 sprintf('%s must be registered, or the screen is unreachable', $action));

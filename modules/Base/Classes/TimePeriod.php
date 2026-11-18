@@ -72,7 +72,7 @@ class TimePeriod {
      * period, so an old bookmark opens on the default period rather than an
      * error page.
      */
-    const RETIRED_PERIODS = array( 'same_day_last_week', 'same_week_last_year', 'same_month_last_year' );
+    const RETIRED_PERIODS = [ 'same_day_last_week', 'same_week_last_year', 'same_month_last_year' ];
 
     /** The period used when the default_reporting_period setting names one that is not offered. */
     const FALLBACK_PERIOD = 'last_seven_days';
@@ -83,12 +83,12 @@ class TimePeriod {
      * comparison with its own compareStartDate and compareEndDate, the way
      * `period=date_range` is.
      */
-    const COMPARE_PERIODS = array(
+    const COMPARE_PERIODS = [
         'previous_period'     => 'Previous period',
         'previous_period_dow' => 'Previous period (same weekdays)',
         'previous_year'       => 'Previous year',
         'previous_year_dow'   => 'Previous year (same weekdays)',
-    );
+    ];
 
     /**
      * @param  mixed $period
@@ -116,7 +116,7 @@ class TimePeriod {
      */
     public static function getValidComparePeriods() {
 
-        return array_merge( array_keys( self::COMPARE_PERIODS ), array( 'date_range' ) );
+        return array_merge( array_keys( self::COMPARE_PERIODS ), [ 'date_range' ] );
     }
 
     /**
@@ -164,10 +164,10 @@ class TimePeriod {
                     $months = ( (int) $e->format( 'Y' ) * 12 + (int) $e->format( 'n' ) )
                         - ( (int) $s->format( 'Y' ) * 12 + (int) $s->format( 'n' ) ) + 1;
 
-                    return array(
+                    return [
                         $s->modify( "-$months months" )->format( 'Ymd' ),
                         $e->modify( 'first day of this month' )->modify( "-$months months" )->format( 'Ymt' ),
-                    );
+                    ];
                 }
 
                 $back = $days;
@@ -188,16 +188,16 @@ class TimePeriod {
                     $last = (int) ( new \DateTimeImmutable( sprintf( '%04d-%02d-01', $y, $m ), $utc ) )->format( 't' );
                     return sprintf( '%04d%02d%02d', $y, $m, min( (int) $d->format( 'j' ), $last ) );
                 };
-                return array( $year( $s ), $year( $e ) );
+                return [ $year( $s ), $year( $e ) ];
 
             default:
                 return null;
         }
 
-        return array(
+        return [
             $s->modify( "-$back days" )->format( 'Ymd' ),
             $e->modify( "-$back days" )->format( 'Ymd' ),
-        );
+        ];
     }
 
     /**
@@ -210,7 +210,7 @@ class TimePeriod {
      */
     public function getPresets() {
 
-        $out = array();
+        $out = [];
 
         foreach ( $this->getPeriodLabels() as $key => $p ) {
 
@@ -218,14 +218,14 @@ class TimePeriod {
             $tp->now = $this->now;
             $tp->set( $key );
 
-            $out[] = array(
+            $out[] = [
                 'key'       => $key,
                 'label'     => $p['label'],
                 'startDate' => $tp->getStartDate()->getYyyymmdd(),
                 'endDate'   => $tp->getEndDate()->getYyyymmdd(),
                 // What a comparison is worked out over (getCompareFromMap()).
                 'axisEndDate' => $tp->getAxisEndDate(),
-            );
+            ];
         }
 
         return $out;
@@ -248,7 +248,7 @@ class TimePeriod {
      */
     private static function normalizeMap( $map ) {
 
-        $keys = array(
+        $keys = [
             'period'    => '',
             'startDate' => '',
             'endDate'   => '',
@@ -257,7 +257,7 @@ class TimePeriod {
             // null, which that signature accepts, and not ''.
             'startTime' => null,
             'endTime'   => null
-        );
+        ];
 
         return array_merge( $keys, array_intersect_key( (array) $map, $keys ) );
     }
@@ -317,7 +317,7 @@ class TimePeriod {
         // Both bounds are compared as yyyymmdd, where string order and
         // chronological order agree -- but only for eight digits. Anything else
         // would make the comparison below meaningless rather than false.
-        foreach ( array( 'start date' => $start, 'end date' => $end ) as $label => $value ) {
+        foreach ( [ 'start date' => $start, 'end date' => $end ] as $label => $value ) {
 
             if ( ! preg_match( '/^\d{8}$/', $value ) ) {
 
@@ -362,7 +362,7 @@ class TimePeriod {
                 : sprintf( '"%s" is not a comparison.', htmlspecialchars( $compare, ENT_QUOTES ) );
         }
 
-        $error = self::getRangeError( array( 'period' => 'date_range', 'startDate' => $start, 'endDate' => $end ) );
+        $error = self::getRangeError( [ 'period' => 'date_range', 'startDate' => $start, 'endDate' => $end ] );
 
         return $error === '' ? '' : 'Compared to: ' . $error;
     }
@@ -392,7 +392,7 @@ class TimePeriod {
 
         if ( $compare === '' || $compare === 'date_range' ) {
 
-            return array( 'compare' => 'date_range', 'startDate' => $start, 'endDate' => trim( (string) $map['compareEndDate'] ) );
+            return [ 'compare' => 'date_range', 'startDate' => $start, 'endDate' => trim( (string) $map['compareEndDate'] ) ];
         }
 
         /*
@@ -402,7 +402,7 @@ class TimePeriod {
          */
         $r = self::compareRange( $compare, $this->startDate->getYyyymmdd(), $this->getAxisEndDate() );
 
-        return $r ? array( 'compare' => $compare, 'startDate' => $r[0], 'endDate' => $r[1] ) : null;
+        return $r ? [ 'compare' => $compare, 'startDate' => $r[0], 'endDate' => $r[1] ] : null;
     }
 
     /**
@@ -498,7 +498,7 @@ class TimePeriod {
      * @param  array<string, mixed>|false|null $map startDate and endDate, or startTime and endTime
      * @return void
      */
-    public function set($value = '', $map = array()) {
+    public function set($value = '', $map = []) {
 
         $this->period = $value;
         $this->_setDates($map);
@@ -551,22 +551,22 @@ class TimePeriod {
      */
     public function getPeriodLabels() {
 
-        return array(
+        return [
 
-                    'today'            => array('label' => \OWA\Core\CoreAPI::t( 'Today' ), 'covers' => 'Today'),
-                    'yesterday'        => array('label' => \OWA\Core\CoreAPI::t( 'Yesterday' ), 'covers' => 'Yesterday'),
-                    'this_week'        => array('label' => \OWA\Core\CoreAPI::t( 'This week (Sun – Sat)' ), 'covers' => 'Sunday to Saturday of the current week'),
-                    'last_seven_days'  => array('label' => \OWA\Core\CoreAPI::t( 'Last 7 days' ), 'covers' => 'Today and the six days before it'),
-                    'last_week'        => array('label' => \OWA\Core\CoreAPI::t( 'Last week (Sun – Sat)' ), 'covers' => 'Sunday to Saturday of the previous week'),
-                    'last_28_days'     => array('label' => \OWA\Core\CoreAPI::t( 'Last 28 days' ), 'covers' => 'Today and the 27 days before it'),
-                    'last_thirty_days' => array('label' => \OWA\Core\CoreAPI::t( 'Last 30 days' ), 'covers' => 'Today and the 29 days before it'),
-                    'this_month'       => array('label' => \OWA\Core\CoreAPI::t( 'This month' ), 'covers' => 'The current calendar month'),
-                    'last_month'       => array('label' => \OWA\Core\CoreAPI::t( 'Last month' ), 'covers' => 'The previous calendar month'),
-                    'last_90_days'     => array('label' => \OWA\Core\CoreAPI::t( 'Last 90 days' ), 'covers' => 'Today and the 89 days before it'),
-                    'quarter_to_date'  => array('label' => \OWA\Core\CoreAPI::t( 'This quarter' ), 'covers' => 'The current calendar quarter'),
-                    'this_year'        => array('label' => \OWA\Core\CoreAPI::t( 'This year' ), 'covers' => 'The current calendar year'),
-                    'last_year'        => array('label' => \OWA\Core\CoreAPI::t( 'Last calendar year' ), 'covers' => 'The previous calendar year'),
-        );
+                    'today'            => ['label' => \OWA\Core\CoreAPI::t( 'Today' ), 'covers' => 'Today'],
+                    'yesterday'        => ['label' => \OWA\Core\CoreAPI::t( 'Yesterday' ), 'covers' => 'Yesterday'],
+                    'this_week'        => ['label' => \OWA\Core\CoreAPI::t( 'This week (Sun – Sat)' ), 'covers' => 'Sunday to Saturday of the current week'],
+                    'last_seven_days'  => ['label' => \OWA\Core\CoreAPI::t( 'Last 7 days' ), 'covers' => 'Today and the six days before it'],
+                    'last_week'        => ['label' => \OWA\Core\CoreAPI::t( 'Last week (Sun – Sat)' ), 'covers' => 'Sunday to Saturday of the previous week'],
+                    'last_28_days'     => ['label' => \OWA\Core\CoreAPI::t( 'Last 28 days' ), 'covers' => 'Today and the 27 days before it'],
+                    'last_thirty_days' => ['label' => \OWA\Core\CoreAPI::t( 'Last 30 days' ), 'covers' => 'Today and the 29 days before it'],
+                    'this_month'       => ['label' => \OWA\Core\CoreAPI::t( 'This month' ), 'covers' => 'The current calendar month'],
+                    'last_month'       => ['label' => \OWA\Core\CoreAPI::t( 'Last month' ), 'covers' => 'The previous calendar month'],
+                    'last_90_days'     => ['label' => \OWA\Core\CoreAPI::t( 'Last 90 days' ), 'covers' => 'Today and the 89 days before it'],
+                    'quarter_to_date'  => ['label' => \OWA\Core\CoreAPI::t( 'This quarter' ), 'covers' => 'The current calendar quarter'],
+                    'this_year'        => ['label' => \OWA\Core\CoreAPI::t( 'This year' ), 'covers' => 'The current calendar year'],
+                    'last_year'        => ['label' => \OWA\Core\CoreAPI::t( 'Last calendar year' ), 'covers' => 'The previous calendar year'],
+        ];
 
     }
 
@@ -574,7 +574,7 @@ class TimePeriod {
      * @param  array<string, mixed>|false|null $map as set() takes it
      * @return void
      */
-    public function _setDates($map = array()) {
+    public function _setDates($map = []) {
 
         // set() reaches here without going through setFromMap, so normalize again.
         $map = self::normalizeMap( $map );
@@ -739,7 +739,7 @@ class TimePeriod {
      */
     public function getPeriodProperties() {
 
-        $period_params = array();
+        $period_params = [];
         $period_params['period'] = $this->get();
         $period_params['startDate'] = $this->startDate->getYyyymmdd();
         $period_params['endDate'] = $this->endDate->getYyyymmdd();
@@ -753,7 +753,7 @@ class TimePeriod {
      */
     public function getAllInfo() {
 
-        $info = array();
+        $info = [];
         $info['period'] = $this->get();
         $info['startDate'] = $this->startDate->getYyyymmdd();
         $info['endDate'] = $this->endDate->getYyyymmdd();
@@ -873,7 +873,7 @@ class TimePeriod {
      * @return DateDifference
      */
     public function getDateDifference($StartDateString=NULL, $EndDateString=NULL) {
-        $ReturnArray = array();
+        $ReturnArray = [];
         
         $SDSplit = sscanf($StartDateString,'%4d%2d%2d');
         $StartDate = mktime(0,0,0,$SDSplit[1],$SDSplit[2],$SDSplit[0]);
@@ -933,5 +933,3 @@ class TimePeriod {
         return $ReturnArray;
     }
 }
-
-?>

@@ -36,18 +36,18 @@ class ModuleActivateCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::serverRoles(). The same administration the console's screens offer. */
     public static function serverRoles() {
 
-        return array( \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE );
+        return [ \OWA\Core\ServerRole::FULL, \OWA\Core\ServerRole::WORKER, \OWA\Core\ServerRole::CONSOLE ];
     }
 
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Installs and activates a module.',
-            'arguments'   => array(
+            'arguments'   => [
                 'module=<name>' => 'Required. The module\'s name.',
-            ),
-        );
+            ],
+        ];
     }
     
     public function __construct($params) {
@@ -90,5 +90,3 @@ class ModuleActivateCli extends \OWA\Core\Controller\Cli {
     }
     
 }
-
-?>

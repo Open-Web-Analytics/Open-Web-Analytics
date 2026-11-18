@@ -36,14 +36,14 @@ namespace OWA\Tests;
 final class SiteIdentityHarness
 {
     /** Domains chosen to cover a plain host, a subdomain, a scheme prefix and a port. */
-    public const DOMAINS = array(
+    public const DOMAINS = [
         'example.com',
         'www.example.com',
         'shop.example.co.uk',
         'http://example.com',
         'example.com:8080',
         'EXAMPLE.com',
-    );
+    ];
 
     /**
      * The identity a domain produces through the production code path.
@@ -60,10 +60,10 @@ final class SiteIdentityHarness
 
         $siteId = $site->generateSiteId( $domain );
 
-        return array(
+        return [
             'site_id' => (string) $siteId,
             'id'      => (string) $site->generateId( $siteId ),
-        );
+        ];
     }
 
     /**
@@ -84,7 +84,7 @@ final class SiteIdentityHarness
     /** @return array<string,mixed> */
     public static function snapshot(): array
     {
-        $derivations = array();
+        $derivations = [];
 
         foreach ( self::DOMAINS as $domain ) {
 
@@ -96,17 +96,17 @@ final class SiteIdentityHarness
          * this half of the fixture is unaffected by the domain derivation
          * changing. These are the values an existing install depends on.
          */
-        $stableIds = array();
+        $stableIds = [];
 
         foreach ( self::STABLE_SITE_IDS as $siteId ) {
 
             $stableIds[ $siteId ] = self::idForSiteId( $siteId );
         }
 
-        return array(
+        return [
             'domainToSiteId' => $derivations,
             'siteIdToId'     => $stableIds,
-        );
+        ];
     }
 
     /**
@@ -116,7 +116,7 @@ final class SiteIdentityHarness
      * are shapes a non-derived identifier might take, so the mapping is pinned
      * for both the past and the future.
      */
-    public const STABLE_SITE_IDS = array(
+    public const STABLE_SITE_IDS = [
         /* The shape every existing install holds: md5 of the domain. */
         '5ababd603b22780302dd8d83498e5172',
         /* The shape new sites will take -- prefixed so a non-derived id is
@@ -136,7 +136,7 @@ final class SiteIdentityHarness
            empty id rather than a hash, so nothing would flag a site created
            without one. */
         '',
-    );
+    ];
 
     public static function fixturePath(): string
     {

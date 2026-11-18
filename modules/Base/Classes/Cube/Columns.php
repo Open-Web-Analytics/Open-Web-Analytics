@@ -25,7 +25,7 @@ class Columns {
      * The window emits only the ones a definition references, so removing the
      * last definition that uses one removes it from the sort as well.
      */
-    const SESSION = array(
+    const SESSION = [
         'page_location'       => 'lp_location',
         'page_path'           => 'lp_path',
         'page_query'          => 'lp_query',
@@ -43,7 +43,7 @@ class Columns {
         'prior_touch_ad'           => 'pt_ad',
         'prior_touch_referer_host' => 'pt_referer_host',
         'prior_touch_ts'           => 'pt_ts',
-    );
+    ];
 
     /**
      * What an attributed column decides between: the session's own evidence and
@@ -53,14 +53,14 @@ class Columns {
      * which values make a touch non-direct, and which clock the window runs on,
      * are the definition of the model.
      */
-    const ATTRIBUTION = array(
-        'own'   => array( 'session.tagged_source', 'session.tagged_medium', 'session.tagged_campaign',
-            'session.tagged_ad', 'session.referer_host' ),
-        'prior' => array( 'session.prior_touch_source', 'session.prior_touch_medium',
-            'session.prior_touch_campaign', 'session.prior_touch_ad', 'session.prior_touch_referer_host' ),
+    const ATTRIBUTION = [
+        'own'   => [ 'session.tagged_source', 'session.tagged_medium', 'session.tagged_campaign',
+            'session.tagged_ad', 'session.referer_host' ],
+        'prior' => [ 'session.prior_touch_source', 'session.prior_touch_medium',
+            'session.prior_touch_campaign', 'session.prior_touch_ad', 'session.prior_touch_referer_host' ],
         'prior_ts'   => 'session.prior_touch_ts',
         'session_ts' => 'session.ts',
-    );
+    ];
 
     /**
      * Tests a definition may name rather than spell.
@@ -77,12 +77,12 @@ class Columns {
      * says what the test means. Equivalently: stamp the acq_* columns when
      * acq_ts IS NOT NULL, sentinel otherwise.
      */
-    const TESTS = array(
+    const TESTS = [
         'acquisition.missing' => 'v.acq_ts IS NULL',
-    );
+    ];
 
     /** @var array<string, true> logical session name => true, for the ones referenced */
-    private $session_used = array();
+    private $session_used = [];
 
     /** @var array<mixed> the definitions: column => its definition, as cube_columns.php gives them */
     private $definitions;
@@ -125,7 +125,7 @@ class Columns {
               . 'without saying how a build fills it.', implode( ', ', $missing ) ) );
         }
 
-        $steps = array();
+        $steps = [];
 
         foreach ( $expected as $column ) {
 
@@ -142,7 +142,7 @@ class Columns {
      */
     public function sessionSources() {
 
-        $used = array();
+        $used = [];
 
         foreach ( array_keys( $this->session_used ) as $name ) {
 
@@ -188,7 +188,7 @@ class Columns {
             case 'campaign':
                 return new CampaignStep( $column,
                     $this->resolve( $definition['tag'] ),
-                    array_map( array( $this, 'resolve' ), (array) $definition['tags'] ),
+                    array_map( [ $this, 'resolve' ], (array) $definition['tags'] ),
                     // The same medium as the column beside it, for the placeholder.
                     new MediumStep( $column,
                         $this->resolve( $definition['medium']['tag'] ),
@@ -203,8 +203,8 @@ class Columns {
                 return new AttributedStep( $column,
                     $this->step( $column, (array) $definition['own'] ),
                     $this->step( $column, (array) $definition['prior'] ),
-                    array_map( array( $this, 'resolve' ), self::ATTRIBUTION['own'] ),
-                    array_map( array( $this, 'resolve' ), self::ATTRIBUTION['prior'] ),
+                    array_map( [ $this, 'resolve' ], self::ATTRIBUTION['own'] ),
+                    array_map( [ $this, 'resolve' ], self::ATTRIBUTION['prior'] ),
                     $this->resolve( self::ATTRIBUTION['prior_ts'] ),
                     $this->resolve( self::ATTRIBUTION['session_ts'] ) );
 
@@ -236,7 +236,7 @@ class Columns {
                 return new IsEngagedSessionStep( $column );
 
             case 'literal':
-                return new LiteralStep( $column, array( $this, 'literalValue' ) );
+                return new LiteralStep( $column, [ $this, 'literalValue' ] );
 
             case 'compute':
                 return $this->computeStep( $column, $definition );
@@ -370,7 +370,7 @@ class Columns {
 
         $parts = explode( '.', (string) $source, 2 );
 
-        if ( count( $parts ) !== 2 || ! in_array( $parts[0], array( 'session', 'visitor', 'profile' ), true ) ) {
+        if ( count( $parts ) !== 2 || ! in_array( $parts[0], [ 'session', 'visitor', 'profile' ], true ) ) {
 
             throw new \RuntimeException( sprintf(
                 '"%s" is not a cube source. Name one as session.<value>, visitor.<column> or profile.<column>.',
@@ -385,5 +385,3 @@ class Columns {
         return $parts;
     }
 }
-
-?>

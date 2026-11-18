@@ -30,13 +30,13 @@ final class ResultRowMetaDataTest extends TestCase
     private function manager(array $dimensions, array $metrics)
     {
         $rsm = $this->getMockBuilder(ResultSetManager::class)
-            ->onlyMethods(array('lookupDimension', 'getMetric', 'formatValue', 'getLabel'))
+            ->onlyMethods(['lookupDimension', 'getMetric', 'formatValue', 'getLabel'])
             ->getMock();
 
         $rsm->dimensions = $dimensions;
         $rsm->metrics    = $metrics;
 
-        $rsm->method('lookupDimension')->willReturn(array('data_type' => 'timestamp'));
+        $rsm->method('lookupDimension')->willReturn(['data_type' => 'timestamp']);
 
         $rsm->method('getMetric')->willReturn(new class {
             public function getDataType() { return 'currency'; }
@@ -57,9 +57,9 @@ final class ResultRowMetaDataTest extends TestCase
 
     public function testARequestedDimensionAndMetricAreDescribedCorrectly(): void
     {
-        $row = $this->manager(array('date'), array('revenuePerTransaction'))
+        $row = $this->manager(['date'], ['revenuePerTransaction'])
             ->applyMetaDataToSingleResultRow(
-                array('date' => '20260915', 'revenuePerTransaction' => 12.5));
+                ['date' => '20260915', 'revenuePerTransaction' => 12.5]);
 
         $this->assertSame('dimension', $row['date']['result_type']);
         $this->assertSame('timestamp', $row['date']['data_type']);
@@ -75,11 +75,11 @@ final class ResultRowMetaDataTest extends TestCase
      */
     public function testAnUnrequestedKeyDoesNotInheritThePreviousColumnsMetadata(): void
     {
-        $row = $this->manager(array('date'), array('revenuePerTransaction'))
-            ->applyMetaDataToSingleResultRow(array(
+        $row = $this->manager(['date'], ['revenuePerTransaction'])
+            ->applyMetaDataToSingleResultRow([
                 'date'               => '20260915',
                 'transactionRevenue' => 1234,
-            ));
+            ]);
 
         $this->assertNull($row['transactionRevenue']['result_type'],
             'a key that is neither a requested dimension nor a requested metric '
@@ -98,7 +98,7 @@ final class ResultRowMetaDataTest extends TestCase
      */
     public function testAnUnrequestedKeyFirstInTheRowRaisesNoWarning(): void
     {
-        $seen = array();
+        $seen = [];
 
         set_error_handler(function ($no, $message) use (&$seen) {
             $seen[] = $message;
@@ -106,13 +106,13 @@ final class ResultRowMetaDataTest extends TestCase
         }, E_WARNING | E_NOTICE);
 
         try {
-            $row = $this->manager(array(), array())
-                ->applyMetaDataToSingleResultRow(array('transactionRevenue' => 1234));
+            $row = $this->manager([], [])
+                ->applyMetaDataToSingleResultRow(['transactionRevenue' => 1234]);
         } finally {
             restore_error_handler();
         }
 
-        $this->assertSame(array(), $seen,
+        $this->assertSame([], $seen,
             'reading an unset $type / $data_type is what reached the error log');
 
         $this->assertNull($row['transactionRevenue']['result_type']);

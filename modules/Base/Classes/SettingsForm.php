@@ -78,14 +78,14 @@ class SettingsForm {
 
         if ( ! $page ) {
 
-            return array();
+            return [];
         }
 
         $registered = (array) \OWA\Core\CoreAPI::configSingleton()->registeredFieldSets();
 
-        $sets = array();
+        $sets = [];
 
-        foreach ( (array) ( $page['fieldsets'] ?? array() ) as $id ) {
+        foreach ( (array) ( $page['fieldsets'] ?? [] ) as $id ) {
 
             if ( isset( $registered[ $id ] ) ) {
 
@@ -95,7 +95,7 @@ class SettingsForm {
 
         // And every fieldset in a group the page names, which is how a module's
         // fieldset reaches a page another module owns.
-        foreach ( (array) ( $page['fieldset_groups'] ?? array() ) as $group ) {
+        foreach ( (array) ( $page['fieldset_groups'] ?? [] ) as $group ) {
 
             foreach ( self::groupFieldSets( $group ) as $set ) {
 
@@ -120,7 +120,7 @@ class SettingsForm {
      */
     public static function groupFieldSets( $group ) {
 
-        $out = array();
+        $out = [];
 
         foreach ( (array) \OWA\Core\CoreAPI::configSingleton()->registeredFieldSets() as $set ) {
 
@@ -150,7 +150,7 @@ class SettingsForm {
 
         $registered = (array) \OWA\Core\CoreAPI::configSingleton()->registeredFieldSets();
 
-        return isset( $registered[ $id ] ) ? (array) $registered[ $id ] : array();
+        return isset( $registered[ $id ] ) ? (array) $registered[ $id ] : [];
     }
 
     /**
@@ -166,7 +166,7 @@ class SettingsForm {
 
         $fields = '';
 
-        foreach ( (array) ( $set['settings'] ?? array() ) as $key ) {
+        foreach ( (array) ( $set['settings'] ?? [] ) as $key ) {
 
             $fields .= self::field( $module, (string) $key, $ns );
         }
@@ -306,7 +306,7 @@ class SettingsForm {
 
         $fields = '';
 
-        foreach ( (array) ( $set['settings'] ?? array() ) as $key ) {
+        foreach ( (array) ( $set['settings'] ?? [] ) as $key ) {
 
             $fields .= self::scopedField( $module, (string) $key, $scopeType, $scopeId, $ns, $posted );
         }
@@ -407,7 +407,7 @@ class SettingsForm {
 
             $value = $state['own'] ? $state['value'] : '';
 
-            if ( is_array( $posted ) && array_key_exists( $name, (array) ( $posted['config'] ?? array() ) ) ) {
+            if ( is_array( $posted ) && array_key_exists( $name, (array) ( $posted['config'] ?? [] ) ) ) {
 
                 $value = $posted['config'][ $name ];
             }
@@ -429,7 +429,7 @@ class SettingsForm {
 
                 $value = $state['inherited'];
 
-            } elseif ( array_key_exists( $name, (array) ( $posted['config'] ?? array() ) ) ) {
+            } elseif ( array_key_exists( $name, (array) ( $posted['config'] ?? [] ) ) ) {
 
                 $value = $posted['config'][ $name ];
             }
@@ -542,14 +542,14 @@ class SettingsForm {
      * @param  Field $args  the declaration
      * @return bool
      */
-    protected static function hasNoValue( $value, array $args = array() ) {
+    protected static function hasNoValue( $value, array $args = [] ) {
 
         if ( $value === false ) {
 
             return ( $args['type'] ?? '' ) !== 'boolean';
         }
 
-        return $value === null || $value === array()
+        return $value === null || $value === []
             || ( is_string( $value ) && trim( $value ) === '' );
     }
 
@@ -598,7 +598,7 @@ class SettingsForm {
      */
     public static function inheritance( $module, $key, $scopeType, $scopeId ) {
 
-        $out = array( 'own' => false, 'value' => null, 'inherited' => null, 'from' => 'install' );
+        $out = [ 'own' => false, 'value' => null, 'inherited' => null, 'from' => 'install' ];
 
         if ( $scopeId !== null && $scopeId !== '' ) {
 
@@ -655,7 +655,7 @@ class SettingsForm {
         $override = (array) $override;
         $ok     = true;
 
-        foreach ( (array) ( $set['settings'] ?? array() ) as $key ) {
+        foreach ( (array) ( $set['settings'] ?? [] ) as $key ) {
 
             $key  = (string) $key;
             $args = $c->registeredField( $module, $key );
@@ -731,9 +731,9 @@ class SettingsForm {
         $module   = (string) ( $set['module'] ?? '' );
         $config   = (array) $config;
         $override = (array) $override;
-        $out      = array();
+        $out      = [];
 
-        foreach ( (array) ( $set['settings'] ?? array() ) as $key ) {
+        foreach ( (array) ( $set['settings'] ?? [] ) as $key ) {
 
             $key  = (string) $key;
             $name = $module . '.' . $key;
@@ -981,7 +981,7 @@ class SettingsForm {
      */
     protected static function boolOptions() {
 
-        return array( '0' => 'Off', '1' => 'On' );
+        return [ '0' => 'Off', '1' => 'On' ];
     }
 
     /**
@@ -996,11 +996,11 @@ class SettingsForm {
      */
     protected static function options( array $args ) {
 
-        $options = (array) ( $args['options'] ?? array() );
+        $options = (array) ( $args['options'] ?? [] );
 
         if ( ! $options ) {
 
-            return array();
+            return [];
         }
 
         if ( array_keys( $options ) === range( 0, count( $options ) - 1 ) ) {
@@ -1026,7 +1026,7 @@ class SettingsForm {
 
         ksort( $timezones );
 
-        $grouped = array();
+        $grouped = [];
 
         foreach ( $timezones as $country => $zones ) {
 

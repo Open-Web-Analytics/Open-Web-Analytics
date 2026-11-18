@@ -14,11 +14,11 @@ final class TimePeriodCompareTest extends TestCase
     public static function fixtureCases(): array
     {
         $json  = json_decode( (string) file_get_contents( __DIR__ . '/fixtures/compare-ranges.json' ), true );
-        $cases = array();
+        $cases = [];
 
         foreach ( $json['cases'] as $c ) {
 
-            $cases[ "{$c['key']} {$c['start']}-{$c['end']}" ] = array( $c['key'], $c['start'], $c['end'], $c['want'] );
+            $cases[ "{$c['key']} {$c['start']}-{$c['end']}" ] = [ $c['key'], $c['start'], $c['end'], $c['want'] ];
         }
 
         return $cases;
@@ -40,7 +40,7 @@ final class TimePeriodCompareTest extends TestCase
     {
         foreach ( array_keys( TimePeriod::COMPARE_PERIODS ) as $key ) {
 
-            foreach ( array( array( '20261013', '20261109' ), array( '20260302', '20260331' ), array( '20261109', '20261109' ) ) as [ $s, $e ] ) {
+            foreach ( [ [ '20261013', '20261109' ], [ '20260302', '20260331' ], [ '20261109', '20261109' ] ] as [ $s, $e ] ) {
 
                 [ $cs, $ce ] = TimePeriod::compareRange( $key, $s, $e );
 
@@ -58,21 +58,21 @@ final class TimePeriodCompareTest extends TestCase
      */
     public function testWholeMonthsStepBackWholeMonths(): void
     {
-        $cases = array(
-            array( '20261101', '20261130', '20261001', '20261031' ),
-            array( '20260301', '20260331', '20260201', '20260228' ),
-            array( '20261001', '20261231', '20260701', '20260930' ),
-            array( '20260101', '20261231', '20250101', '20251231' ),
-            array( '20260101', '20260131', '20251201', '20251231' ),
-        );
+        $cases = [
+            [ '20261101', '20261130', '20261001', '20261031' ],
+            [ '20260301', '20260331', '20260201', '20260228' ],
+            [ '20261001', '20261231', '20260701', '20260930' ],
+            [ '20260101', '20261231', '20250101', '20251231' ],
+            [ '20260101', '20260131', '20251201', '20251231' ],
+        ];
 
         foreach ( $cases as [ $s, $e, $cs, $ce ] ) {
 
-            $this->assertSame( array( $cs, $ce ), TimePeriod::compareRange( 'previous_period', $s, $e ), "$s-$e" );
+            $this->assertSame( [ $cs, $ce ], TimePeriod::compareRange( 'previous_period', $s, $e ), "$s-$e" );
         }
 
         // Not ending on a month's last day: the days before.
-        $this->assertSame( array( '20261017', '20261031' ), TimePeriod::compareRange( 'previous_period', '20261101', '20261115' ) );
+        $this->assertSame( [ '20261017', '20261031' ], TimePeriod::compareRange( 'previous_period', '20261101', '20261115' ) );
     }
 
     /**
@@ -82,16 +82,16 @@ final class TimePeriodCompareTest extends TestCase
      */
     public function testAThisPeriodIsComparedToTheWholePeriodBefore(): void
     {
-        $cases = array(
-            array( 'this_week',       '2026-11-15', '20261108', '20261114' ),   // a Sunday
-            array( 'this_week',       '2026-11-18', '20261108', '20261114' ),   // a Wednesday
-            array( 'this_month',      '2026-11-01', '20261001', '20261031' ),
-            array( 'this_month',      '2026-11-15', '20261001', '20261031' ),
-            array( 'quarter_to_date', '2026-11-15', '20260701', '20260930' ),
-            array( 'this_year',       '2026-11-15', '20250101', '20251231' ),
-            array( 'today',           '2026-11-15', '20261114', '20261114' ),
-            array( 'last_seven_days', '2026-11-15', '20261102', '20261108' ),
-        );
+        $cases = [
+            [ 'this_week',       '2026-11-15', '20261108', '20261114' ],   // a Sunday
+            [ 'this_week',       '2026-11-18', '20261108', '20261114' ],   // a Wednesday
+            [ 'this_month',      '2026-11-01', '20261001', '20261031' ],
+            [ 'this_month',      '2026-11-15', '20261001', '20261031' ],
+            [ 'quarter_to_date', '2026-11-15', '20260701', '20260930' ],
+            [ 'this_year',       '2026-11-15', '20250101', '20251231' ],
+            [ 'today',           '2026-11-15', '20261114', '20261114' ],
+            [ 'last_seven_days', '2026-11-15', '20261102', '20261108' ],
+        ];
 
         foreach ( $cases as [ $period, $today, $cs, $ce ] ) {
 
@@ -100,8 +100,8 @@ final class TimePeriodCompareTest extends TestCase
             $tp->set( $period );
 
             $this->assertSame(
-                array( 'compare' => 'previous_period', 'startDate' => $cs, 'endDate' => $ce ),
-                $tp->getCompareFromMap( array( 'compare' => 'previous_period' ) ),
+                [ 'compare' => 'previous_period', 'startDate' => $cs, 'endDate' => $ce ],
+                $tp->getCompareFromMap( [ 'compare' => 'previous_period' ] ),
                 "$period on $today" );
         }
 
@@ -111,14 +111,14 @@ final class TimePeriodCompareTest extends TestCase
 
         $week = array_values( array_filter( $tp->getPresets(), fn ( $p ) => $p['key'] === 'this_week' ) )[0];
 
-        $this->assertSame( array( '20261115', '20261115', '20261121' ), array( $week['startDate'], $week['endDate'], $week['axisEndDate'] ) );
+        $this->assertSame( [ '20261115', '20261115', '20261121' ], [ $week['startDate'], $week['endDate'], $week['axisEndDate'] ] );
     }
 
     public function testMatchDayOfWeekKeepsTheWeekday(): void
     {
-        foreach ( array( 'previous_period_dow', 'previous_year_dow' ) as $key ) {
+        foreach ( [ 'previous_period_dow', 'previous_year_dow' ] as $key ) {
 
-            foreach ( array( array( '20261011', '20261109' ), array( '20260101', '20260103' ), array( '20261109', '20261109' ) ) as [ $s, $e ] ) {
+            foreach ( [ [ '20261011', '20261109' ], [ '20260101', '20260103' ], [ '20261109', '20261109' ] ] as [ $s, $e ] ) {
 
                 [ $cs ] = TimePeriod::compareRange( $key, $s, $e );
 
@@ -135,17 +135,17 @@ final class TimePeriodCompareTest extends TestCase
 
     public static function compareParams(): array
     {
-        return array(
-            'none'                   => array( array(), '' ),
-            'relative'               => array( array( 'compare' => 'previous_year' ), '' ),
-            'custom'                 => array( array( 'compare' => 'date_range', 'compareStartDate' => '20250101', 'compareEndDate' => '20250131' ), '' ),
-            'dates without compare'  => array( array( 'compareStartDate' => '20250101', 'compareEndDate' => '20250131' ), '' ),
-            'unknown comparison'     => array( array( 'compare' => 'same_month_last_year' ), 'is not a comparison' ),
-            'custom without dates'   => array( array( 'compare' => 'date_range' ), 'Compared to: A date range needs a start date and an end date.' ),
-            'one compare date'       => array( array( 'compareStartDate' => '20250101' ), 'Compared to: A date range needs an end date' ),
-            'backwards'              => array( array( 'compare' => 'date_range', 'compareStartDate' => '20250131', 'compareEndDate' => '20250101' ), 'is after the end date' ),
-            'not a date'             => array( array( 'compare' => 'date_range', 'compareStartDate' => '2025-01-01', 'compareEndDate' => '20250131' ), 'is not a date' ),
-        );
+        return [
+            'none'                   => [ [], '' ],
+            'relative'               => [ [ 'compare' => 'previous_year' ], '' ],
+            'custom'                 => [ [ 'compare' => 'date_range', 'compareStartDate' => '20250101', 'compareEndDate' => '20250131' ], '' ],
+            'dates without compare'  => [ [ 'compareStartDate' => '20250101', 'compareEndDate' => '20250131' ], '' ],
+            'unknown comparison'     => [ [ 'compare' => 'same_month_last_year' ], 'is not a comparison' ],
+            'custom without dates'   => [ [ 'compare' => 'date_range' ], 'Compared to: A date range needs a start date and an end date.' ],
+            'one compare date'       => [ [ 'compareStartDate' => '20250101' ], 'Compared to: A date range needs an end date' ],
+            'backwards'              => [ [ 'compare' => 'date_range', 'compareStartDate' => '20250131', 'compareEndDate' => '20250101' ], 'is after the end date' ],
+            'not a date'             => [ [ 'compare' => 'date_range', 'compareStartDate' => '2025-01-01', 'compareEndDate' => '20250131' ], 'is not a date' ],
+        ];
     }
 
     /**
@@ -168,18 +168,18 @@ final class TimePeriodCompareTest extends TestCase
     public function testTheCompareIsResolvedAgainstThePeriod(): void
     {
         $p = new TimePeriod();
-        $p->set( 'date_range', array( 'startDate' => '20261013', 'endDate' => '20261109' ) );
+        $p->set( 'date_range', [ 'startDate' => '20261013', 'endDate' => '20261109' ] );
 
-        $this->assertNull( $p->getCompareFromMap( array() ) );
-        $this->assertNull( $p->getCompareFromMap( array( 'compare' => 'nonsense' ) ) );
-
-        $this->assertSame(
-            array( 'compare' => 'previous_period_dow', 'startDate' => '20260915', 'endDate' => '20261012' ),
-            $p->getCompareFromMap( array( 'compare' => 'previous_period_dow' ) ) );
+        $this->assertNull( $p->getCompareFromMap( [] ) );
+        $this->assertNull( $p->getCompareFromMap( [ 'compare' => 'nonsense' ] ) );
 
         $this->assertSame(
-            array( 'compare' => 'date_range', 'startDate' => '20250101', 'endDate' => '20250131' ),
-            $p->getCompareFromMap( array( 'compareStartDate' => '20250101', 'compareEndDate' => '20250131' ) ) );
+            [ 'compare' => 'previous_period_dow', 'startDate' => '20260915', 'endDate' => '20261012' ],
+            $p->getCompareFromMap( [ 'compare' => 'previous_period_dow' ] ) );
+
+        $this->assertSame(
+            [ 'compare' => 'date_range', 'startDate' => '20250101', 'endDate' => '20250131' ],
+            $p->getCompareFromMap( [ 'compareStartDate' => '20250101', 'compareEndDate' => '20250131' ] ) );
     }
 
     public function testRetiredPeriodsAreNotOfferedOrAccepted(): void
@@ -202,7 +202,7 @@ final class TimePeriodCompareTest extends TestCase
 
         try {
 
-            foreach ( array( 'same_month_last_year', 'nonsense', 'date_range' ) as $bad ) {
+            foreach ( [ 'same_month_last_year', 'nonsense', 'date_range' ] as $bad ) {
 
                 \OWA\Core\CoreAPI::setSetting( 'base', 'default_reporting_period', $bad );
 
@@ -233,25 +233,25 @@ final class TimePeriodCompareTest extends TestCase
 
         $byKey = array_column( $presets, null, 'key' );
 
-        $want = array(
-            'today'            => array( '20261109', '20261109' ),
-            'yesterday'        => array( '20261108', '20261108' ),
-            'this_week'        => array( '20261108', '20261109' ),
-            'last_seven_days'  => array( '20261103', '20261109' ),
-            'last_week'        => array( '20261101', '20261107' ),
-            'last_28_days'     => array( '20261013', '20261109' ),
-            'last_thirty_days' => array( '20261011', '20261109' ),
-            'this_month'       => array( '20261101', '20261109' ),
-            'last_month'       => array( '20261001', '20261031' ),
-            'last_90_days'     => array( '20260812', '20261109' ),
-            'quarter_to_date'  => array( '20261001', '20261109' ),
-            'this_year'        => array( '20260101', '20261109' ),
-            'last_year'        => array( '20250101', '20251231' ),
-        );
+        $want = [
+            'today'            => [ '20261109', '20261109' ],
+            'yesterday'        => [ '20261108', '20261108' ],
+            'this_week'        => [ '20261108', '20261109' ],
+            'last_seven_days'  => [ '20261103', '20261109' ],
+            'last_week'        => [ '20261101', '20261107' ],
+            'last_28_days'     => [ '20261013', '20261109' ],
+            'last_thirty_days' => [ '20261011', '20261109' ],
+            'this_month'       => [ '20261101', '20261109' ],
+            'last_month'       => [ '20261001', '20261031' ],
+            'last_90_days'     => [ '20260812', '20261109' ],
+            'quarter_to_date'  => [ '20261001', '20261109' ],
+            'this_year'        => [ '20260101', '20261109' ],
+            'last_year'        => [ '20250101', '20251231' ],
+        ];
 
         foreach ( $want as $key => [ $s, $e ] ) {
 
-            $this->assertSame( array( $s, $e ), array( $byKey[ $key ]['startDate'], $byKey[ $key ]['endDate'] ), $key );
+            $this->assertSame( [ $s, $e ], [ $byKey[ $key ]['startDate'], $byKey[ $key ]['endDate'] ], $key );
         }
     }
 
@@ -260,20 +260,20 @@ final class TimePeriodCompareTest extends TestCase
         $p = new TimePeriod();
         $p->set( 'last_28_days' );
 
-        $c = \OWA\Core\ReportController::periodPickerConfig( $p, array( 'compare' => 'previous_year' ) );
+        $c = \OWA\Core\ReportController::periodPickerConfig( $p, [ 'compare' => 'previous_year' ] );
 
         $this->assertSame( array_keys( $p->getPeriodLabels() ), array_column( $c['presets'], 'key' ) );
         $this->assertSame( array_keys( TimePeriod::COMPARE_PERIODS ), array_column( $c['compares'], 'key' ) );
         $this->assertSame( 'last_28_days', $c['period'] );
         $this->assertSame( 'previous_year', $c['compare'] );
         $this->assertSame( TimePeriod::compareRange( 'previous_year', $c['startDate'], $c['endDate'] ),
-            array( $c['compareStartDate'], $c['compareEndDate'] ) );
+            [ $c['compareStartDate'], $c['compareEndDate'] ] );
         $this->assertSame( $c['presets'][0]['endDate'], $c['today'] );
     }
 
     public function testComparisonIsCarriedOnReportLinks(): void
     {
-        foreach ( array( 'compare', 'compareStartDate', 'compareEndDate' ) as $key ) {
+        foreach ( [ 'compare', 'compareStartDate', 'compareEndDate' ] as $key ) {
 
             $this->assertContains( $key, \OWA\Core\View::LINK_STATE_KEYS );
         }

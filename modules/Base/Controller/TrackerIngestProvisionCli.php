@@ -19,10 +19,10 @@ class TrackerIngestProvisionCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Creates the tracker-ingest queue and its dead-letter queue, or confirms they exist.',
-            'arguments'   => array(),
-        );
+            'arguments'   => [],
+        ];
     }
 
     public function __construct( $params ) {
@@ -53,5 +53,3 @@ class TrackerIngestProvisionCli extends \OWA\Core\Controller\Cli {
             get_class( $queue ) ) );
     }
 }
-
-?>

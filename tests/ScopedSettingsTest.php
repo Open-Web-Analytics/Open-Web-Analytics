@@ -120,10 +120,10 @@ final class ScopedSettingsTest extends TestCase
          * false, and the assertion below would pass on it.
          */
         $key  = 'tracker_url_fragments';
-        $held = array(
+        $held = [
             'property' => \OWA\Core\CoreAPI::getScopedSettingRow( 'property', $this->propertyId, 'base', $key ),
             'profile'  => \OWA\Core\CoreAPI::getScopedSettingRow( 'profile', $this->siteId, 'base', $key ),
-        );
+        ];
 
         try {
 
@@ -137,7 +137,7 @@ final class ScopedSettingsTest extends TestCase
 
         } finally {
 
-            foreach ( array( 'profile' => $this->siteId, 'property' => $this->propertyId ) as $type => $id ) {
+            foreach ( [ 'profile' => $this->siteId, 'property' => $this->propertyId ] as $type => $id ) {
 
                 \OWA\Core\CoreAPI::clearScopedSetting( $type, $id, 'base', $key );
 
@@ -191,7 +191,7 @@ final class ScopedSettingsTest extends TestCase
         $chain = \OWA\Core\CoreAPI::settingScopeChain( 'profile', 'OWA-no-such-profile' );
 
         $this->assertSame(
-            array( array( 'type' => 'profile', 'id' => 'OWA-no-such-profile' ) ), $chain,
+            [ [ 'type' => 'profile', 'id' => 'OWA-no-such-profile' ] ], $chain,
             'A Profile with no Property produced a chain naming one anyway.' );
     }
 
@@ -208,10 +208,10 @@ final class ScopedSettingsTest extends TestCase
     {
         $this->skipUnlessParented();
 
-        $goals = array(
-            1 => array( 'goal_name' => 'Signup',   'goal_type' => 'url_destination' ),
-            2 => array( 'goal_name' => 'Purchase', 'goal_type' => 'url_destination' ),
-        );
+        $goals = [
+            1 => [ 'goal_name' => 'Signup',   'goal_type' => 'url_destination' ],
+            2 => [ 'goal_name' => 'Purchase', 'goal_type' => 'url_destination' ],
+        ];
 
         \OWA\Core\CoreAPI::setScopedSetting( 'profile', $this->siteId, 'base', $this->key, $goals );
 

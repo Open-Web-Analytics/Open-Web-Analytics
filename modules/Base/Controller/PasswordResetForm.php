@@ -52,8 +52,3 @@ class PasswordResetForm extends \OWA\Core\Controller {
         ];
     }
 }
-
-
-
-
-?>

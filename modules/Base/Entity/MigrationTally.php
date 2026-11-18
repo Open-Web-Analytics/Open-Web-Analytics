@@ -54,8 +54,6 @@ class MigrationTally extends \OWA\Core\Entity {
      */
     public static function idFor( $source, $site_id, $yyyymmdd, $kind, $name ) {
 
-        return \OWA\Core\Lib::wideStringGuid( implode( '|', array( $source, $site_id, (int) $yyyymmdd, $kind, $name ) ) );
+        return \OWA\Core\Lib::wideStringGuid( implode( '|', [ $source, $site_id, (int) $yyyymmdd, $kind, $name ] ) );
     }
 }
-
-?>

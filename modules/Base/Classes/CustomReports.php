@@ -113,9 +113,9 @@ class CustomReports {
      * Only the funnel exists today, which is why the type is asked for at all
      * -- a single hardcoded kind would not need naming.
      */
-    const VISUALIZATION_TYPES = array(
+    const VISUALIZATION_TYPES = [
         'funnel' => 'Funnel',
-    );
+    ];
 
     /**
      * One line about each visualization, shown where the kind is chosen.
@@ -126,27 +126,27 @@ class CustomReports {
      * choice it says what the choice IS, and with two it will be what separates
      * them. Kept beside VISUALIZATION_TYPES so the two cannot drift.
      */
-    const VISUALIZATION_TYPE_HINTS = array(
+    const VISUALIZATION_TYPE_HINTS = [
         'funnel' => 'How many people reached each step of a path, in order, and where they left.',
-    );
+    ];
 
     /** A picture of each kind, in the Font Awesome 5 set the chrome loads. */
-    const VISUALIZATION_TYPE_ICONS = array(
+    const VISUALIZATION_TYPE_ICONS = [
         'funnel' => 'fas fa-filter',
-    );
+    ];
 
     /*
      * `pie` draws ranked share bars now (OWA.shareChart). The key stays, since
      * saved reports and shipped definitions name it.
      */
-    const WIDGET_TYPES = array(
+    const WIDGET_TYPES = [
         'grid'          => 'Table',
         'grid-card'     => 'Table card',
         'pie'           => 'Share chart',
         'trend'         => 'Trend chart',
         'trend-card'    => 'Trend card',
         'metric-boxes'  => 'Info boxes',
-    );
+    ];
 
     /**
      * One line about each type, shown where the type is chosen.
@@ -156,14 +156,14 @@ class CustomReports {
      * "Table card" says nothing about which to reach for. Kept beside
      * WIDGET_TYPES rather than in the template so the two cannot drift.
      */
-    const WIDGET_TYPE_HINTS = array(
+    const WIDGET_TYPE_HINTS = [
         'grid'          => 'A full-width table. Several metrics and dimensions, and the reader can regroup and filter it.',
         'grid-card'     => 'A narrow table of one metric by one dimension. No controls; its rows can link to the report that details them.',
         'pie'           => 'Each value of one dimension as its share of one metric, ranked, with the rest as Other.',
         'trend'         => 'One metric over time as a chart, with a box per metric under it. Always by date; a dimension added to it draws a line per value.',
         'trend-card'    => 'A half-width trend chart: its totals sit above the chart, it cannot be broken out by a dimension, and it names its own metrics.',
         'metric-boxes'  => 'Totals for the period, one box per metric.',
-    );
+    ];
 
     /**
      * A picture of each type, for the screen where one is chosen.
@@ -173,14 +173,14 @@ class CustomReports {
      * faster than either the name or the sentence does, which matters most on
      * the two that are nearly the same word: a full table and a card.
      */
-    const WIDGET_TYPE_ICONS = array(
+    const WIDGET_TYPE_ICONS = [
         'grid'          => 'fas fa-table',
         'grid-card'     => 'fas fa-list-alt',
         'pie'           => 'fas fa-chart-bar',
         'trend'         => 'fas fa-chart-area',
         'trend-card'    => 'fas fa-chart-line',
         'metric-boxes'  => 'fas fa-th-large',
-    );
+    ];
 
     /**
      * Types whose first dimension is not the author's to choose, and what it is.
@@ -198,13 +198,13 @@ class CustomReports {
      * no grouping, but a hand-written one that has some is not wrong and is not
      * refused.
      */
-    const FIXED_DIMENSIONS = array(
+    const FIXED_DIMENSIONS = [
         'trend'      => 'date',
         'trend-card' => 'date',
-    );
+    ];
 
     /** How many dimensions a widget of this type may group by, in total. */
-    const FIXED_DIMENSION_EXTRA = array(
+    const FIXED_DIMENSION_EXTRA = [
         // One breakdown beyond the date: its values are the lines.
         'trend' => 1,
 
@@ -215,7 +215,7 @@ class CustomReports {
          * be a trend that had been made too small to read.
          */
         'trend-card' => 0,
-    );
+    ];
 
     /**
      * The two table widgets, and why there are two of them.
@@ -232,7 +232,7 @@ class CustomReports {
      * The size and the controls have to be decided together, so the type
      * decides both: a grid cannot be narrowed and a card cannot be widened.
      */
-    const FULL_WIDTH_TYPES = array( 'grid' );
+    const FULL_WIDTH_TYPES = [ 'grid' ];
 
     /**
      * The width the editor adds a new widget of each type at, out of
@@ -242,24 +242,24 @@ class CustomReports {
      * Only for a NEW widget. A widget with no colspan stored renders at
      * ReportGrid::defaultColspan(), which shipped definitions rely on.
      */
-    const NEW_WIDGET_COLSPANS = array(
+    const NEW_WIDGET_COLSPANS = [
         'grid-card'  => 6,
         'pie'        => 6,
         'trend-card' => 6,
-    );
+    ];
 
     /** The widths the editor offers, out of ReportGrid::COLUMNS, and their names. */
-    const WIDTHS = array( 4 => 'Third', 6 => 'Half', 8 => 'Two thirds', 12 => 'Full' );
+    const WIDTHS = [ 4 => 'Third', 6 => 'Half', 8 => 'Two thirds', 12 => 'Full' ];
 
     /** The heights the editor offers, in rows, and their names. */
-    const HEIGHTS = array( 1 => 'Short', 2 => 'Tall' );
+    const HEIGHTS = [ 1 => 'Short', 2 => 'Tall' ];
 
     /**
      * Types that show totals rather than a breakdown, so the editor asks for no
      * dimensions. Unlike FIXED_DIMENSIONS this is only about the form: a
      * hand-written metric-boxes widget with dimensions is not refused.
      */
-    const UNGROUPED_TYPES = array( 'metric-boxes' );
+    const UNGROUPED_TYPES = [ 'metric-boxes' ];
 
     /**
      * Widget types that take exactly one metric and exactly one dimension.
@@ -278,7 +278,7 @@ class CustomReports {
      * Every other type either draws all the metrics it is given (info boxes, a
      * trend's boxes) or ranks by whatever it has, so a set works for them.
      */
-    const SINGLE_FIELD_TYPES = array( 'grid-card', 'pie' );
+    const SINGLE_FIELD_TYPES = [ 'grid-card', 'pie' ];
 
     /**
      * Widget types that draw exactly one metric AND may not inherit a set.
@@ -290,7 +290,7 @@ class CustomReports {
      * chartMetric -- while a card or a pie has nowhere to put a second metric
      * and no way to choose between them.
      */
-    const SINGLE_METRIC_TYPES = array( 'grid-card', 'pie' );
+    const SINGLE_METRIC_TYPES = [ 'grid-card', 'pie' ];
 
     /**
      * Types that must name their own metrics, because a set is not an answer.
@@ -310,7 +310,7 @@ class CustomReports {
      * stronger way: a card and a pie draw EXACTLY one metric, which no set can
      * supply. Named together so the reason is in one place.
      */
-    const OWN_METRIC_TYPES = array( 'grid-card', 'pie', 'trend-card' );
+    const OWN_METRIC_TYPES = [ 'grid-card', 'pie', 'trend-card' ];
 
     /**
      * Types that draw one metric as a chart and must be told which.
@@ -320,7 +320,7 @@ class CustomReports {
      * JavaScript, which is the copy that does not get updated when a type is
      * added -- and the symptom is a chart with no line rather than an error.
      */
-    const CHART_TYPES = array( 'trend', 'trend-card', 'pie' );
+    const CHART_TYPES = [ 'trend', 'trend-card', 'pie' ];
 
     /**
      * The link template a widget's rows may carry, in full.
@@ -383,7 +383,7 @@ class CustomReports {
      */
     public static function timeDimensions() {
 
-        $names = array();
+        $names = [];
 
         foreach ( DimensionRegistry::forProperty( null )->all() as $name => $dimension ) {
 
@@ -444,12 +444,12 @@ class CustomReports {
      * column is what keeps a reader's choice from being SQL, the same rule the
      * reporting stack applies to every dimension and metric name.
      */
-    const ROSTER_SORTS = array(
+    const ROSTER_SORTS = [
         'name'    => 'name',
         'type'    => 'report_type',
         'author'  => 'user_id',
         'updated' => 'last_updated_timestamp',
-    );
+    ];
 
     /** Ordered by when it changed, newest first: the useful default for a list. */
     const ROSTER_DEFAULT_SORT = 'updated';
@@ -480,7 +480,7 @@ class CustomReports {
             return $error;
         }
 
-        $widgets = isset( $definition['widgets'] ) ? (array) $definition['widgets'] : array();
+        $widgets = isset( $definition['widgets'] ) ? (array) $definition['widgets'] : [];
 
         if ( ! $widgets ) {
 
@@ -564,14 +564,14 @@ class CustomReports {
      */
     private static function validateQuery( array $widget, $where, $has_report_metrics, $property_id ) {
 
-        $query = isset( $widget['query'] ) ? (array) $widget['query'] : array();
+        $query = isset( $widget['query'] ) ? (array) $widget['query'] : [];
 
         $type = isset( $widget['type'] ) ? (string) $widget['type'] : '';
 
-        foreach ( array(
-            array( 'metrics',    'metric' ),
-            array( 'dimensions', 'dimension' ),
-        ) as $pair ) {
+        foreach ( [
+            [ 'metrics',    'metric' ],
+            [ 'dimensions', 'dimension' ],
+        ] as $pair ) {
 
             list( $key, $kind ) = $pair;
 
@@ -896,7 +896,7 @@ class CustomReports {
      */
     public static function linkTargetsByDimension() {
 
-        $targets = array();
+        $targets = [];
 
         foreach ( \OWA\Core\CoreAPI::getReportRegistry() as $id => $registration ) {
 
@@ -934,11 +934,11 @@ class CustomReports {
                 continue;
             }
 
-            $targets[ $dimension ][] = array(
+            $targets[ $dimension ][] = [
                 'id'    => (string) $id,
                 'label' => self::reportLabel( $definition, $id ),
                 'param' => $params[0],
-            );
+            ];
         }
 
         foreach ( $targets as $dimension => $list ) {
@@ -978,7 +978,7 @@ class CustomReports {
      */
     public static function moreTargetsByDimension() {
 
-        $targets = array();
+        $targets = [];
 
         foreach ( \OWA\Core\CoreAPI::getReportRegistry() as $id => $registration ) {
 
@@ -1010,7 +1010,7 @@ class CustomReports {
 
             foreach ( self::definitionDimensions( $definition ) as $dimension ) {
 
-                $targets[ $dimension ][] = array( 'id' => (string) $id, 'label' => $label );
+                $targets[ $dimension ][] = [ 'id' => (string) $id, 'label' => $label ];
             }
         }
 
@@ -1039,11 +1039,11 @@ class CustomReports {
      */
     private static function definitionDimensions( array $definition ) {
 
-        $dimensions = array();
+        $dimensions = [];
 
-        foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+        foreach ( (array) ( $definition['widgets'] ?? [] ) as $widget ) {
 
-            $query = (array) ( ( (array) $widget )['query'] ?? array() );
+            $query = (array) ( ( (array) $widget )['query'] ?? [] );
 
             $dimensions = array_merge( $dimensions,
                 self::asNames( $query['dimensions'] ?? '' ) );
@@ -1089,14 +1089,14 @@ class CustomReports {
         }
 
         $error = self::validateNames(
-            array( 'metrics' => $charted ), 'metrics', 'metric', $where, null );
+            [ 'metrics' => $charted ], 'metrics', 'metric', $where, null );
 
         if ( $error !== '' ) {
 
             return $error;
         }
 
-        $query = (array) ( $widget['query'] ?? array() );
+        $query = (array) ( $widget['query'] ?? [] );
         $own   = self::asNames( $query['metrics'] ?? '' );
 
         if ( ! $own ) {
@@ -1153,7 +1153,7 @@ class CustomReports {
                 $where, $reportId );
         }
 
-        $unknown = array_diff( array_keys( $widget['more'] ), array( 'reportId', 'label' ) );
+        $unknown = array_diff( array_keys( $widget['more'] ), [ 'reportId', 'label' ] );
 
         if ( $unknown ) {
 
@@ -1198,7 +1198,7 @@ class CustomReports {
                 $where, $reportId, implode( ', ', array_unique( $needs ) ) );
         }
 
-        $mine  = self::asNames( ( (array) ( $widget['query'] ?? array() ) )['dimensions'] ?? '' );
+        $mine  = self::asNames( ( (array) ( $widget['query'] ?? [] ) )['dimensions'] ?? '' );
         $shown = self::definitionDimensions( $decoded );
 
         if ( ! array_intersect( $mine, $shown ) ) {
@@ -1227,7 +1227,7 @@ class CustomReports {
      */
     private static function constrainedDimension( array $definition, $param ) {
 
-        $dimensions = array();
+        $dimensions = [];
 
         $collect = static function ( $constraints ) use ( &$dimensions, $param ) {
 
@@ -1249,7 +1249,7 @@ class CustomReports {
 
         $collect( $definition['settings']['constraints'] ?? null );
 
-        foreach ( (array) ( $definition['widgets'] ?? array() ) as $widget ) {
+        foreach ( (array) ( $definition['widgets'] ?? [] ) as $widget ) {
 
             $collect( ( (array) $widget )['constraints'] ?? null );
         }
@@ -1313,9 +1313,9 @@ class CustomReports {
         }
 
         $link       = $widget['link'];
-        $dimensions = self::asNames( ( (array) ( $widget['query'] ?? array() ) )['dimensions'] ?? '' );
+        $dimensions = self::asNames( ( (array) ( $widget['query'] ?? [] ) )['dimensions'] ?? '' );
 
-        foreach ( array( 'linkColumn', 'valueColumns' ) as $key ) {
+        foreach ( [ 'linkColumn', 'valueColumns' ] as $key ) {
 
             $column = (string) ( $link[ $key ] ?? '' );
 
@@ -1333,7 +1333,7 @@ class CustomReports {
             }
         }
 
-        $template = (array) ( $link['template'] ?? array() );
+        $template = (array) ( $link['template'] ?? [] );
 
         if ( ( $template['do'] ?? '' ) !== self::LINK_ACTION ) {
 
@@ -1353,7 +1353,7 @@ class CustomReports {
          * other key would be a parameter this report chose to put in a URL, and
          * nothing the builder can produce needs one.
          */
-        $extra = array_diff( array_keys( $template ), array( 'do', 'reportId' ) );
+        $extra = array_diff( array_keys( $template ), [ 'do', 'reportId' ] );
 
         if ( count( $extra ) !== 1 ) {
 
@@ -1460,7 +1460,7 @@ class CustomReports {
      * How a filter's condition reads, by its operator: as its pill words it
      * (OWA.dataGrid.EMPTY_TESTS and OPERATOR_PHRASES in owa.resultSetExplorer.js).
      */
-    const CONSTRAINT_WORDS = array(
+    const CONSTRAINT_WORDS = [
         '!=(not set)' => 'has a value',
         '==(not set)' => 'is not set',
         '=='          => 'is',
@@ -1468,7 +1468,7 @@ class CustomReports {
         '=@'          => 'contains',
         '>'           => 'greater than',
         '<'           => 'less than',
-    );
+    ];
 
     /**
      * A constraints string in words, a clause each: "Page Path contains /blog/".
@@ -1483,7 +1483,7 @@ class CustomReports {
         $labels = array_column(
             \OWA\Module\Base\Controller\CustomReportEdit::dimensionChoices( $property_id ), 'label', 'name' );
 
-        $out = array();
+        $out = [];
 
         foreach ( self::asNames( $constraints ) as $clause ) {
 
@@ -1813,8 +1813,8 @@ class CustomReports {
         $db = \OWA\Core\CoreAPI::dbSingleton();
 
         $sql    = 'SELECT * FROM ' . \OWA\Core\CoreAPI::entityFactory( 'base.custom_report' )->getTableName();
-        $params = array();
-        $where  = array();
+        $params = [];
+        $where  = [];
 
         /*
          * A report is of one Property, and is listed on that Property alone.
@@ -1824,7 +1824,7 @@ class CustomReports {
 
             if ( (string) $property_id === '' ) {
 
-                return array();
+                return [];
             }
 
             $where[]  = 'property_id = ?';
@@ -1841,7 +1841,7 @@ class CustomReports {
 
             if ( ! $starred ) {
 
-                return array();
+                return [];
             }
 
             $where[] = 'id IN (' . implode( ', ', array_fill( 0, count( $starred ), '?' ) ) . ')';
@@ -1927,7 +1927,7 @@ class CustomReports {
 
         if ( ! $rows ) {
 
-            return array();
+            return [];
         }
 
         /*
@@ -1943,7 +1943,7 @@ class CustomReports {
          * keep the order the database returned -- which is the sort the reader
          * actually asked for.
          */
-        $out = array();
+        $out = [];
 
         foreach ( $rows as $row ) {
 
@@ -1963,7 +1963,7 @@ class CustomReports {
             return ( $b['is_favorite'] ? 1 : 0 ) <=> ( $a['is_favorite'] ? 1 : 0 );
         } );
 
-        return array_map( array( __CLASS__, 'hydrate' ), $out );
+        return array_map( [ __CLASS__, 'hydrate' ], $out );
     }
 
     /**
@@ -1985,7 +1985,7 @@ class CustomReports {
          */
         $decoded = json_decode( html_entity_decode( $raw, ENT_QUOTES ), true );
 
-        $row['definition'] = is_array( $decoded ) ? $decoded : array();
+        $row['definition'] = is_array( $decoded ) ? $decoded : [];
 
         return $row;
     }
@@ -2026,7 +2026,7 @@ class CustomReports {
             return self::failure( \OWA\Core\CoreAPI::t( 'Name is required.' ) );
         }
 
-        $definition = $fields['definition'] ?? array();
+        $definition = $fields['definition'] ?? [];
 
         if ( is_string( $definition ) ) {
 
@@ -2104,7 +2104,7 @@ class CustomReports {
             $entity->update();
         }
 
-        return array( 'ok' => true, 'id' => $id, 'error' => '' );
+        return [ 'ok' => true, 'id' => $id, 'error' => '' ];
     }
 
     /**
@@ -2275,6 +2275,6 @@ class CustomReports {
      */
     private static function failure( $message ) {
 
-        return array( 'ok' => false, 'id' => '', 'error' => $message );
+        return [ 'ok' => false, 'id' => '', 'error' => $message ];
     }
 }

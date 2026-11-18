@@ -73,7 +73,7 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         $visitor_id = new \OWA\Module\Base\Classes\DbColumn( 'visitor_id', OWA_DTD_BIGINT );
         $visitor_id->setNotNull();
         $this->setProperty( $visitor_id );
-        $this->addUniqueIndex( self::VISITOR_INDEX, array( 'visitor_id' ) );
+        $this->addUniqueIndex( self::VISITOR_INDEX, [ 'visitor_id' ] );
 
         // Recorded, not keyed. Whether one visitor id can be seen by two sites
         // on one installation is open (3.1); keying on it would answer that
@@ -185,5 +185,3 @@ class VisitorAcquisition extends \OWA\Core\Entity {
         return $column;
     }
 }
-
-?>

@@ -24,21 +24,21 @@ class StringsExtractCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Writes the English string catalogue, conf/strings/en.php, from the CoreAPI::t() and CoreAPI::tn() calls in the code and the OWA.l() and OWA.ln() calls in the reporting JavaScript. Also writes conf/strings/script-keys.php, the keys the JavaScript uses, and reports calls whose text is not a literal.',
-            'arguments'   => array(
+            'arguments'   => [
                 'check=1' => 'Report whether the catalogue and the key list are current, and write nothing.',
-            ),
-        );
+            ],
+        ];
     }
 
     public function action() {
 
         $map   = \OWA\Core\Strings::extract( \OWA\Core\Strings::sourceRoots(), $problems, $script_keys );
-        $files = array(
-            \OWA\Core\Strings::path( \OWA\Core\Strings::SOURCE_LOCALE ) => array( \OWA\Core\Strings::catalogueSource( $map ), count( $map ), 'strings' ),
-            \OWA\Core\Strings::scriptKeysPath()                         => array( \OWA\Core\Strings::scriptKeysSource( $script_keys ), count( $script_keys ), 'keys' ),
-        );
+        $files = [
+            \OWA\Core\Strings::path( \OWA\Core\Strings::SOURCE_LOCALE ) => [ \OWA\Core\Strings::catalogueSource( $map ), count( $map ), 'strings' ],
+            \OWA\Core\Strings::scriptKeysPath()                         => [ \OWA\Core\Strings::scriptKeysSource( $script_keys ), count( $script_keys ), 'keys' ],
+        ];
 
         foreach ( $problems as $where => $why ) {
 

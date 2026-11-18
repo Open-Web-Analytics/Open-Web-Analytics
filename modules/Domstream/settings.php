@@ -19,30 +19,30 @@
  * is_active and schema_version are NOT here. Core\Module::settingsRegistry()
  * adds those to every module, from mechanicalSettings().
  */
-return array(
+return [
 
     'module' => 'domstream',
 
-    'settings' => array(
-        'record' => array(
+    'settings' => [
+        'record' => [
             // Off, like every feature the tracker does not start by itself
             // (modules/Base/src/tracker/defaults.json): a Profile turns it on.
             'default'  => \OWA\Module\Base\Classes\TrackerDefaults::starts( 'trackDomStream' ),
             'storable' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            'scopes'   => [ 'install', 'property', 'profile' ],
             'type'     => 'boolean',
             'label'    => \OWA\Core\CoreAPI::t( 'Record Page Interactions' ),
             'description' => \OWA\Core\CoreAPI::t( 'Records pointer movement, clicks and key presses (never the keys) so a visit can be played back.' ),
-        ),
-        'sample_rate' => array(
+        ],
+        'sample_rate' => [
             'default'  => 100,
             'storable' => true,
-            'scopes'   => array( 'install', 'property', 'profile' ),
+            'scopes'   => [ 'install', 'property', 'profile' ],
             'type'     => 'integer',
             'min'      => 0,
             'max'      => 100,
             'label'    => \OWA\Core\CoreAPI::t( 'Recording Sample Rate (%)' ),
             'description' => \OWA\Core\CoreAPI::t( 'The share of page loads recorded, from 0 to 100.' ),
-        ),
-    ),
-);
+        ],
+    ],
+];

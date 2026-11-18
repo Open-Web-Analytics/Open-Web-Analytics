@@ -65,7 +65,7 @@ final class AccessibleMarkupTest extends TestCase
         libxml_clear_errors();
 
         $xp = new DOMXPath($doc);
-        $out = array();
+        $out = [];
 
         foreach ($xp->query('//input[not(@type="hidden") and not(@type="submit")] | //select | //textarea') as $el) {
 
@@ -128,7 +128,7 @@ final class AccessibleMarkupTest extends TestCase
 
     public function testTheSignedOutPagesRenderTheLanguage(): void
     {
-        $html = $this->render('wrapper_public.php', array('body' => '<p>body</p>'));
+        $html = $this->render('wrapper_public.php', ['body' => '<p>body</p>']);
 
         $this->assertMatchesRegularExpression('/<html lang="' . preg_quote(\OWA\Core\Strings::htmlLang(), '/') . '">/', $html);
     }
@@ -144,7 +144,7 @@ final class AccessibleMarkupTest extends TestCase
         $this->assertSame(1, substr_count($report, '<h1 class="owa_reportTitle">'));
         $this->assertStringContainsString('<h1 class="owa_reportTitle">', $this->template('genericAdminPage.php'));
 
-        foreach (array('report.php', 'options_hierarchy.php') as $file) {
+        foreach (['report.php', 'options_hierarchy.php'] as $file) {
 
             $src = $this->template($file);
             $open = strpos($src, '<main id="owa_main">');
@@ -193,14 +193,14 @@ final class AccessibleMarkupTest extends TestCase
     /** @return array<string, array{0: string, 1: array<string, mixed>, 2: array<string, string>}> */
     public static function forms(): array
     {
-        $profile = array(
+        $profile = [
             'user_id' => 'someone@example.test', 'real_name' => 'Someone',
             'email_address' => 'someone@example.test', 'role' => 'viewer',
             'my_profile_error' => '', 'my_profile_saved' => false,
             'siteId' => 'owa-e2e', 'min_password_length' => 6,
-        );
+        ];
 
-        $goal = array(
+        $goal = [
             'headline' => 'New Goal Event Definition', 'propertyId' => '7000000000000001',
             'goalEventDefinition' => [], 'goalEventDefinitionId' => '',
             'conditionProperties' => [ [ 'name' => 'page_path', 'label' => 'Page path',
@@ -211,41 +211,41 @@ final class AccessibleMarkupTest extends TestCase
             'triggerEvents' => [ 'page_view', 'click' ],
             'customTriggerEvents' => [ 'newsletter_signup' ], 'customTriggerEvent' => '',
             'funnelSteps' => [], 'conditions' => [], 'validation_errors' => [],
-        );
+        ];
 
-        $site = array(
+        $site = [
             'headline' => 'Profile', 'action' => 'base.sitesAdd', 'edit' => false,
             'site' => [], 'config' => [], 'validation_errors' => [], 'properties' => [],
-        );
+        ];
 
-        return array(
-            'my_profile' => array('my_profile.php', $profile + array('may_edit_email' => true), array(
+        return [
+            'my_profile' => ['my_profile.php', $profile + ['may_edit_email' => true], [
                 'real_name' => 'Name', 'email_address' => 'Email address',
                 'current_password' => 'Current password', 'new_password' => 'New password',
-                'new_password2' => 'Repeat new password')),
-            'my_profile, email not editable' => array('my_profile.php', $profile + array('may_edit_email' => false), array(
+                'new_password2' => 'Repeat new password']],
+            'my_profile, email not editable' => ['my_profile.php', $profile + ['may_edit_email' => false], [
                 'real_name' => 'Name', 'current_password' => 'Current password',
-                'new_password' => 'New password', 'new_password2' => 'Repeat new password')),
-            'organization_profile' => array('organization_profile.php', array('organization' => array('name' => 'Org')), array(
-                'name' => 'Name')),
-            'sites_addoredit, add' => array('sites_addoredit.php', $site, array(
+                'new_password' => 'New password', 'new_password2' => 'Repeat new password']],
+            'organization_profile' => ['organization_profile.php', ['organization' => ['name' => 'Org']], [
+                'name' => 'Name']],
+            'sites_addoredit, add' => ['sites_addoredit.php', $site, [
                 'propertyId' => 'Property:', 'name' => 'New Property Name:',
                 'streamType' => 'This Profile observes:', 'domain' => 'Domain:',
-                'appId' => 'App ID:', 'description' => 'Description:')),
-            'sites_addoredit, edit' => array('sites_addoredit.php', array_merge($site, array(
+                'appId' => 'App ID:', 'description' => 'Description:']],
+            'sites_addoredit, edit' => ['sites_addoredit.php', array_merge($site, [
                 'edit' => true, 'action' => 'base.sitesEdit', 'propertyName' => 'A Property',
-                'site' => array('site_id' => 'x1', 'name' => 'Main', 'domain' => 'example.test'))), array(
-                'name' => 'Profile Name:', 'description' => 'Description:')),
-            'users_addoredit, add' => array('users_addoredit.php', array(
+                'site' => ['site_id' => 'x1', 'name' => 'Main', 'domain' => 'example.test']]), [
+                'name' => 'Profile Name:', 'description' => 'Description:']],
+            'users_addoredit, add' => ['users_addoredit.php', [
                 'headline' => 'Add user', 'action' => 'base.usersAdd', 'edit' => false,
                 'isAdmin' => false, 'roles' => ['admin', 'viewer'], 'user' => [],
-            ), array(
+            ], [
                 'user_id' => 'User Name', 'real_name' => 'Real Name',
-                'role' => 'Role', 'email_address' => 'E-mail Address')),
-            'goal_event_definition_edit, add' => array('goal_event_definition_edit.php', $goal, array(
+                'role' => 'Role', 'email_address' => 'E-mail Address']],
+            'goal_event_definition_edit, add' => ['goal_event_definition_edit.php', $goal, [
                 'name' => 'Name', 'value' => 'Value optional',
-                'countMode' => 'How often', 'isActive' => 'Status')),
-        );
+                'countMode' => 'How often', 'isActive' => 'Status']],
+        ];
     }
 
     /**
@@ -263,18 +263,18 @@ final class AccessibleMarkupTest extends TestCase
             $this->assertSame($name, $names[$control], "$template: $control");
         }
 
-        $this->assertSame(array(), array_keys(array_filter($names, function ($n) { return $n === ''; })),
+        $this->assertSame([], array_keys(array_filter($names, function ($n) { return $n === ''; })),
             "$template has controls with no name");
     }
 
     /** The three password boxes share one title, so the title names their group. */
     public function testThePasswordBoxesAreAGroupUnderTheirTitle(): void
     {
-        $html = $this->render('my_profile.php', array(
+        $html = $this->render('my_profile.php', [
             'user_id' => 'u', 'real_name' => '', 'email_address' => '', 'role' => 'viewer',
             'may_edit_email' => true, 'my_profile_error' => '', 'my_profile_saved' => false,
             'siteId' => '', 'min_password_length' => 6,
-        ));
+        ]);
 
         $this->assertMatchesRegularExpression(
             '#<div class="owa_passwordFields" role="group" aria-labelledby="owa_myProfilePasswordTitle"#', $html);
@@ -293,16 +293,16 @@ final class AccessibleMarkupTest extends TestCase
         $was = $registry->getValue($config);
 
         try {
-            $config->registerField('zz_a11y_test', 'zone', array(
+            $config->registerField('zz_a11y_test', 'zone', [
                 'type' => 'timezone', 'default' => 'America/Los_Angeles', 'storable' => true,
-                'label' => 'Timezone', 'scopes' => array('install', 'property')));
+                'label' => 'Timezone', 'scopes' => ['install', 'property']]);
 
             $html = \OWA\Module\Base\Classes\SettingsForm::scopedField('zz_a11y_test', 'zone', 'property', '', 'owa_');
 
-            $this->assertSame(array(
+            $this->assertSame([
                 'owa_config[zz_a11y_test.zone]' => 'Timezone',
                 'owa_override[zz_a11y_test.zone]' => 'Override Timezone',
-            ), $this->controlNames($html));
+            ], $this->controlNames($html));
 
             $doc = new DOMDocument();
             libxml_use_internal_errors(true);

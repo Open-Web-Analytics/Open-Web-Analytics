@@ -17,7 +17,7 @@ final class DocblocksAndUnreadReturnsTest extends TestCase
 
         $api = \OWA\Core\CoreAPI::singleton();
         $was = $api->params;
-        $deprecations = array();
+        $deprecations = [];
 
         set_error_handler(function ($no, $msg) use (&$deprecations) {
             $deprecations[] = $msg;
@@ -26,13 +26,13 @@ final class DocblocksAndUnreadReturnsTest extends TestCase
         }, E_DEPRECATED);
 
         try {
-            \OWA\Core\CoreAPI::singleton(array('probe' => 'zz'));
+            \OWA\Core\CoreAPI::singleton(['probe' => 'zz']);
         } finally {
             restore_error_handler();
         }
 
-        $this->assertSame(array('probe' => 'zz'), $api->params);
-        $this->assertSame(array(), $deprecations);
+        $this->assertSame(['probe' => 'zz'], $api->params);
+        $this->assertSame([], $deprecations);
 
         $api->params = $was;
     }
@@ -77,6 +77,6 @@ final class DocblocksAndUnreadReturnsTest extends TestCase
 
         $this->assertStringNotContainsString('$options not read', $doc);
         $this->assertSame('a&lt;b', \OWA\Module\Base\Classes\Sanitize::cleanInput('a<b'));
-        $this->assertSame('a<b', \OWA\Module\Base\Classes\Sanitize::cleanInput('a<b', array('escape_html' => false)));
+        $this->assertSame('a<b', \OWA\Module\Base\Classes\Sanitize::cleanInput('a<b', ['escape_html' => false]));
     }
 }

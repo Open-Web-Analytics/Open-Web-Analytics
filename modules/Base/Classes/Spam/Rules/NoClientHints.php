@@ -26,13 +26,13 @@ class NoClientHints extends \OWA\Module\Base\Classes\Spam\Rule {
     const POINTS = 2.5;
 
     /** The parser's families for the browsers above. */
-    const FAMILIES = array(
+    const FAMILIES = [
         'Chrome', 'Chrome Mobile', 'Chrome Mobile WebView',
         'Edge', 'Edge Mobile',
         'Opera', 'Opera Mobile',
         'Brave',
         'Samsung Internet',
-    );
+    ];
 
     public function test( $event, array $headers ) {
 
@@ -67,5 +67,3 @@ class NoClientHints extends \OWA\Module\Base\Classes\Spam\Rule {
         return $chromium !== null && $chromium >= 89;
     }
 }
-
-?>

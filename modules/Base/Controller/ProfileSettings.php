@@ -36,7 +36,7 @@ class ProfileSettings extends \OWA\Core\AdminController {
          */
         $site_id = $this->resolveCurrentSiteId( $this->getParam( 'siteId' ) );
 
-        $site_properties = array();
+        $site_properties = [];
 
         /*
          * Still empty for a user with no sites at all, which is the one case
@@ -53,9 +53,7 @@ class ProfileSettings extends \OWA\Core\AdminController {
 
         $this->set( 'site', $site_properties );
         $this->set( 'siteId', $site_id );
-        $this->settingsChrome( array(), $site_id );
+        $this->settingsChrome( [], $site_id );
         $this->setSubview( 'base.profileSettings', self::SCREEN );
     }
 }
-
-?>

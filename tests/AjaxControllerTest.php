@@ -26,9 +26,9 @@ final class AjaxControllerTest extends RestControllerTestCase
     }
 
     /** A minimal endpoint: requires $capability and a name, answers 201. */
-    private function endpoint(array $params = array(), string $capability = 'view_site_list')
+    private function endpoint(array $params = [], string $capability = 'view_site_list')
     {
-        $params += array('do' => self::ACTION, 'name' => 'Example');
+        $params += ['do' => self::ACTION, 'name' => 'Example'];
 
         return new class($params, $capability) extends \OWA\Core\Controller\Ajax {
 
@@ -43,14 +43,14 @@ final class AjaxControllerTest extends RestControllerTestCase
             function validate()
             {
                 $this->addValidation('name', $this->getParam('name'), 'required',
-                    array('errorMsg' => 'Give it a name.'));
+                    ['errorMsg' => 'Give it a name.']);
             }
 
             function action()
             {
                 $this->ran = true;
 
-                return $this->answer(201, null, array('name' => $this->getParam('name')));
+                return $this->answer(201, null, ['name' => $this->getParam('name')]);
             }
         };
     }
@@ -66,19 +66,19 @@ final class AjaxControllerTest extends RestControllerTestCase
     public function testAnswersInJson(): void
     {
         $this->signedInSession();
-        $c = $this->endpoint(array('nonce' => self::nonceFor(self::ACTION)));
+        $c = $this->endpoint(['nonce' => self::nonceFor(self::ACTION)]);
 
         $r = $this->ajax($c);
 
         $this->assertTrue($c->ran);
         $this->assertSame(201, $r['status']);
-        $this->assertSame(array('data' => array('name' => 'Example'), 'error' => null), $r['json']);
+        $this->assertSame(['data' => ['name' => 'Example'], 'error' => null], $r['json']);
     }
 
     public function testOnlyAPost(): void
     {
         $this->signedInSession();
-        $c = $this->endpoint(array('nonce' => self::nonceFor(self::ACTION)));
+        $c = $this->endpoint(['nonce' => self::nonceFor(self::ACTION)]);
 
         $r = $this->ajax($c, 'GET');
 
@@ -90,7 +90,7 @@ final class AjaxControllerTest extends RestControllerTestCase
 
     public function testSignedOutIs401NotARedirect(): void
     {
-        $c = $this->endpoint(array('nonce' => 'whatever'));
+        $c = $this->endpoint(['nonce' => 'whatever']);
 
         $r = $this->ajax($c);
 
@@ -105,7 +105,7 @@ final class AjaxControllerTest extends RestControllerTestCase
     {
         $this->authenticateAs('admin');
         $this->signedInBy($method);
-        $c = $this->endpoint(array('nonce' => self::nonceFor(self::ACTION)));
+        $c = $this->endpoint(['nonce' => self::nonceFor(self::ACTION)]);
 
         $r = $this->ajax($c);
 
@@ -115,11 +115,11 @@ final class AjaxControllerTest extends RestControllerTestCase
 
     public static function otherMethods(): array
     {
-        return array(
-            'application password' => array('app_password'),
-            'login form'           => array('login_form'),
-            'overlay token'        => array('overlay_token'),
-        );
+        return [
+            'application password' => ['app_password'],
+            'login form'           => ['login_form'],
+            'overlay token'        => ['overlay_token'],
+        ];
     }
 
     /**
@@ -133,7 +133,7 @@ final class AjaxControllerTest extends RestControllerTestCase
 
         $this->resetCurrentUser();
         $this->signedInBy(null);
-        $c = $this->endpoint(array('nonce' => 'x'));
+        $c = $this->endpoint(['nonce' => 'x']);
         $r = $this->ajax($c);
 
         $this->assertSame(401, $r['status']);
@@ -152,7 +152,7 @@ final class AjaxControllerTest extends RestControllerTestCase
             $this->resetCurrentUser();
             $this->signedInBy(null);
 
-            $status = \OWA\Core\Auth::get_instance()->authenticateUser(array('cookies'));
+            $status = \OWA\Core\Auth::get_instance()->authenticateUser(['cookies']);
 
             $this->assertFalse($status['auth_status']);
             $this->assertNotSame('login_form', \OWA\Core\Auth::get_instance()->getAuthMethod());
@@ -165,7 +165,7 @@ final class AjaxControllerTest extends RestControllerTestCase
     public function testABadNonceIs403(): void
     {
         $this->signedInSession();
-        $c = $this->endpoint(array('nonce' => 'stale0000'));
+        $c = $this->endpoint(['nonce' => 'stale0000']);
 
         $r = $this->ajax($c);
 
@@ -177,7 +177,7 @@ final class AjaxControllerTest extends RestControllerTestCase
     public function testNotCapableIs403(): void
     {
         $this->signedInSession('viewer');
-        $c = $this->endpoint(array('nonce' => self::nonceFor(self::ACTION)), 'edit_users');
+        $c = $this->endpoint(['nonce' => self::nonceFor(self::ACTION)], 'edit_users');
 
         $r = $this->ajax($c);
 
@@ -205,7 +205,7 @@ final class AjaxControllerTest extends RestControllerTestCase
     public function testInvalidInputIs422WithTheMessage(): void
     {
         $this->signedInSession();
-        $c = $this->endpoint(array('nonce' => self::nonceFor(self::ACTION), 'name' => ''));
+        $c = $this->endpoint(['nonce' => self::nonceFor(self::ACTION), 'name' => '']);
 
         $r = $this->ajax($c);
 
@@ -235,7 +235,7 @@ final class AjaxControllerTest extends RestControllerTestCase
 
         try {
             $this->assertInstanceOf(\OWA\Core\AdminController::class, $c);
-            $this->assertSame(array('cookies'), $c->acceptedAuthMethods());
+            $this->assertSame(['cookies'], $c->acceptedAuthMethods());
             $this->assertTrue((bool) $c->is_nonce_required);
         } finally {
             \OWA\Core\CoreAPI::setSetting('base', 'request_type', $mode);

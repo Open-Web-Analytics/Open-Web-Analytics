@@ -4,12 +4,12 @@
  * The realtime screen's frame. OWA.realtime (owa.realtime.js) fills every
  * card from v1/realtime; nothing here reads data itself.
  */
-$owa_realtimeApi = $view->makeApiLink( array(
+$owa_realtimeApi = $view->makeApiLink( [
     'do'         => 'realtime',
     'module'     => 'base',
     'version'    => 'v1',
     'propertyId' => $view->get( 'realtime_property_id' ),
-) );
+] );
 ?>
 <div id="owa_realtime" class="owa_realtime">
 
@@ -111,8 +111,8 @@ $owa_realtimeApi = $view->makeApiLink( array(
 </div>
 
 <?php // For owa.realtime.js, which starts the report from it. ?>
-<script type="application/json" data-ui="realtime:config"><?php echo $view->scriptJson( array(
+<script type="application/json" data-ui="realtime:config"><?php echo $view->scriptJson( [
     'apiUrl'   => $owa_realtimeApi,
     'mapUrl'   => $view->makeImageLink( 'base/i/world-110m.svg' ),
     'timezone' => (string) $view->get( 'realtime_timezone' ),
-) ); ?></script>
+] ); ?></script>

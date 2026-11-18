@@ -16,21 +16,21 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
     public function validate() {
 
         // A definition belongs to a Property; without one it would count nowhere.
-        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required', array(
+        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'required', [
             'stopOnError' => true,
             'errorMsg'    => $this->getMsg( 3218 ),
-        ) );
+        ] );
 
-        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists', array(
+        $this->addValidation( 'propertyId', $this->getParam( 'propertyId' ), 'entityExists', [
             'entity'   => 'base.property',
             'column'   => 'id',
             'errorMsg' => $this->getMsg( 3218 ),
-        ) );
+        ] );
 
         $name = $this->name();
 
         $this->addValidation( 'name', $name, 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ] );
 
         if ( $name !== '' ) {
 
@@ -301,8 +301,8 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         $row = (array) \OWA\Core\CoreAPI::dbSingleton()->get_row( sprintf(
             'SELECT id FROM %s WHERE property_id = ? AND name = ? AND id <> ? LIMIT 1',
             $entity->getTableName() ),
-            array( (string) $this->getParam( 'propertyId' ), $name,
-                (string) ( $this->getParam( 'goalEventDefinitionId' ) ?: '0' ) ) );
+            [ (string) $this->getParam( 'propertyId' ), $name,
+                (string) ( $this->getParam( 'goalEventDefinitionId' ) ?: '0' ) ] );
 
         return ! empty( $row['id'] );
     }
@@ -380,7 +380,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         $propertyId = $this->resolveCurrentPropertyId( $this->getParam( 'propertyId' ), $this->getParam( 'siteId' ) );
 
         /* Re-render the form with what was typed, rather than losing it. */
-        $this->set( 'goalEventDefinition', array(
+        $this->set( 'goalEventDefinition', [
             'id'              => $this->getParam( 'goalEventDefinitionId' ),
             'name'            => $this->name(),
             'condition_match' => $this->getParam( 'conditionMatch' ),
@@ -388,7 +388,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
             'value'           => \OWA\Module\Base\Entity\GoalEventDefinition::decimalToCents(
                                      $this->getParam( 'value' ) ) ?: 0,
             'is_active'       => $this->getParam( 'isActive' ) ? 1 : 0,
-        ) );
+        ] );
 
         /*
          * The conditions as SUBMITTED, so a refused form comes back carrying
@@ -399,15 +399,15 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         $properties = (array) $this->getParam( 'conditionProperty' );
         $operators  = (array) $this->getParam( 'conditionOperator' );
 
-        $conditions = array();
+        $conditions = [];
 
         foreach ( (array) $this->getParam( 'conditionValue' ) as $i => $value ) {
 
-            $conditions[] = array(
+            $conditions[] = [
                 'condition_property' => $properties[ $i ] ?? '',
                 'condition_operator' => $operators[ $i ] ?? '',
                 'condition_value'    => $value,
-            );
+            ];
         }
 
         $this->set( 'conditions', $conditions );
@@ -446,14 +446,14 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
          * conditions name in the database. A refused NEW definition has none, so
          * nothing on the redrawn form is treated as saved.
          */
-        $saved = array();
+        $saved = [];
 
         if ( $this->getParam( 'goalEventDefinitionId' ) ) {
 
             $stored = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition' );
             $stored->load( $this->getParam( 'goalEventDefinitionId' ) );
 
-            foreach ( $stored->get( 'id' ) ? $stored->loadConditions() : array() as $condition ) {
+            foreach ( $stored->get( 'id' ) ? $stored->loadConditions() : [] as $condition ) {
 
                 $saved[] = (string) $condition->get( 'condition_property' );
             }
@@ -461,7 +461,7 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
 
         $this->set( 'savedProperties', $saved );
         $this->set( 'error_code', 3002 );
-        $this->settingsChrome( array( 'propertyId' => $propertyId ), '', $propertyId );
+        $this->settingsChrome( [ 'propertyId' => $propertyId ], '', $propertyId );
         $this->setSubview( 'base.goalEventDefinitionEdit',
             GoalEventDefinitionEdit::screen( $this->getParam( 'goalEventDefinitionId' ) ) );
     }

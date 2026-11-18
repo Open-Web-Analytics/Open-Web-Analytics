@@ -50,8 +50,3 @@ class NotifyNewSession extends \OWA\Core\Controller {
         $this->setView( 'base.notifyNewSession' );
     }
 }
-
-
-
-
-?>

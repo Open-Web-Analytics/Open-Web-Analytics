@@ -41,7 +41,3 @@ class LoginForm extends \OWA\Core\Controller {
         $this->setView('base.loginForm');
     }
 }
-
-
-
-?>

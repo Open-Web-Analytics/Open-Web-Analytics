@@ -25,7 +25,7 @@ $owa_max        = (int) $view->get('max_widgets');
 <div class="notice error" role="alert"><?php $view->out( $owa_error ); ?></div>
 <?php endif; ?>
 
-<form id="customReportForm" class="owa_editor" action="<?php echo $view->makeLink( array( 'do' => 'base.customReportSave' ) ); ?>" method="post">
+<form id="customReportForm" class="owa_editor" action="<?php echo $view->makeLink( [ 'do' => 'base.customReportSave' ] ); ?>" method="post">
 
     <?php echo $view->createNonceFormField( 'base.customReportSave' ); ?>
 
@@ -86,8 +86,8 @@ $owa_max        = (int) $view->get('max_widgets');
 
         <div class="owa_editorActions">
             <a class="owa_button" id="customReportCancel" href="<?php echo $owa_id
-                ? $view->makeLink( array( 'do' => 'base.report', 'reportId' => 'custom-' . $owa_id ), true )
-                : $view->makeLink( array( 'do' => 'base.customReports' ), true ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></a>
+                ? $view->makeLink( [ 'do' => 'base.report', 'reportId' => 'custom-' . $owa_id ], true )
+                : $view->makeLink( [ 'do' => 'base.customReports' ], true ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Cancel' ) ); ?></a>
             <?php
                 /*
                  * Disabled in the MARKUP as well as by draw(), so a new report
@@ -137,10 +137,10 @@ $owa_max        = (int) $view->get('max_widgets');
     <?php if ( $owa_id ): ?>
     <div class="owa_editorFoot">
         <?php // 5th arg = $add_nonce: base.customReportDelete is setNonceRequired(). ?>
-        <a class="owa_builderDelete" href="<?php echo $view->makeLink( array(
+        <a class="owa_builderDelete" href="<?php echo $view->makeLink( [
             'do'             => 'base.customReportDelete',
             'customReportId' => $owa_id,
-        ), false, '', false, true ); ?>"
+        ], false, '', false, true ); ?>"
            data-owa-confirm
            data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this report?' ) ); ?>"
            data-owa-confirm-body="<?php $view->out( \OWA\Core\CoreAPI::t( 'This is final. Unlike a Profile, a custom report is not archived.' ) ); ?>"
@@ -270,12 +270,12 @@ $owa_max        = (int) $view->get('max_widgets');
         <div class="owa_builderField" id="dlgFiltersField">
             <span class="owa_builderLabel" id="dlgFiltersLabel"><?php $view->out( \OWA\Core\CoreAPI::t( 'Filters' ) ); ?></span>
             <?php
-                $owa_fp = array(
+                $owa_fp = [
                     'pills' => 'dlgFilters', 'add' => 'dlgAddFilter', 'form' => 'dlgFilterForm',
                     'dimension' => 'dlgFilterDimension', 'operator' => 'dlgFilterOperator',
                     'value' => 'dlgFilterValue', 'addFilter' => 'dlgFilterAdd', 'cancel' => 'dlgFilterCancel',
                     'label' => 'dlgFiltersLabel',
-                );
+                ];
                 include( 'filter_pills.php' );
             ?>
         </div>
@@ -328,7 +328,7 @@ $owa_max        = (int) $view->get('max_widgets');
      * validate the definition on save.
      */
 ?>
-<script type="application/json" data-ui="custom-report-editor:config"><?php echo $view->scriptJson( array(
+<script type="application/json" data-ui="custom-report-editor:config"><?php echo $view->scriptJson( [
     'metrics'             => (array) $view->get('metric_choices'),
     'dimensions'          => (array) $view->get('dimension_choices'),
     'types'               => (object) $owa_types,
@@ -353,4 +353,4 @@ $owa_max        = (int) $view->get('max_widgets');
     'ungroupedTypes'      => \OWA\Module\Base\Classes\CustomReports::UNGROUPED_TYPES,
     'columns'             => (int) $view->get('grid_columns') ?: 12,
     'definition'          => (object) $owa_definition,
-) ); ?></script>
+] ); ?></script>

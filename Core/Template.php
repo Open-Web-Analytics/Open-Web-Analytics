@@ -75,7 +75,7 @@ class Template extends TemplateEngine {
      *                                    when $caller_params names one; else base
      * @param CallerParams $caller_params
      */
-    public function __construct( $module = null, $caller_params = array() ) {
+    public function __construct( $module = null, $caller_params = [] ) {
 
         $this->caller_params = $caller_params;
 
@@ -260,7 +260,7 @@ class Template extends TemplateEngine {
 
         $ref = isset( $link['ref'] ) ? $link['ref'] : '';
 
-        return is_array( $ref ) ? $ref : array( 'do' => $ref );
+        return is_array( $ref ) ? $ref : [ 'do' => $ref ];
     }
 
     /**
@@ -341,9 +341,9 @@ class Template extends TemplateEngine {
      * @param  bool       $namespace not read
      * @return string|false false when json_encode() fails
      */
-    public function makeParamString($params = array(), $add_state = false, $format = 'query', $namespace = true) {
+    public function makeParamString($params = [], $add_state = false, $format = 'query', $namespace = true) {
 
-        $all_params = array();
+        $all_params = [];
 
         // merge in state params
         if ($add_state) {
@@ -403,7 +403,7 @@ class Template extends TemplateEngine {
      */
     public function getAllStateParams() {
 
-        $all_params = array();
+        $all_params = [];
 
         if (!empty($this->caller_params['link_state'])) {
             $all_params = array_merge($all_params, $this->caller_params['link_state']);
@@ -437,9 +437,9 @@ class Template extends TemplateEngine {
      * @param bool   $add_nonce
      * @return string
      */
-    public function makeLink($params = array(), $add_state = false, $url = '', $xml = false, $add_nonce = false) {
+    public function makeLink($params = [], $add_state = false, $url = '', $xml = false, $add_nonce = false) {
 
-        $all_params = array();
+        $all_params = [];
 
         if ( $add_state === false && ! empty( $this->caller_params['keep_state'] ) ) {
 
@@ -516,7 +516,7 @@ class Template extends TemplateEngine {
      */
     public function escapeForXml($string) {
 
-        $string = str_replace(array('&', '"', "'", '<', '>' ), array('&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'), $string);
+        $string = str_replace(['&', '"', "'", '<', '>' ], ['&amp;' , '&quot;', '&apos;' , '&lt;' , '&gt;'], $string);
         // removes non-ascii chars
         $string = \OWA\Core\Lib::escapeNonAsciiChars($string);
         return $string;
@@ -529,7 +529,7 @@ class Template extends TemplateEngine {
      * @param  bool              $xml
      * @return string
      */
-    public function makeAbsoluteLink($params = array(), $add_state = false, $url = '', $xml = false) {
+    public function makeAbsoluteLink($params = [], $add_state = false, $url = '', $xml = false) {
 
         if (empty($url)):
             $url = $this->config['main_absolute_url'];
@@ -593,7 +593,7 @@ class Template extends TemplateEngine {
         // What the link will carry for each scoped key: its own value, else
         // the state makeLink() adds below.
         $state = $this->getAllStateParams();
-        $scope = array();
+        $scope = [];
 
         foreach ( \OWA\Core\OverlayToken::SCOPE as $key ) {
 
@@ -629,7 +629,7 @@ class Template extends TemplateEngine {
      * @param string            $method    GET, POST, DELETE, ...
      * @return string
      */
-    public function makeApiLink($params = array(), $add_state = false, $method = 'GET') {
+    public function makeApiLink($params = [], $add_state = false, $method = 'GET') {
 
         $url = $this->config['rest_api_url'];
 
@@ -771,7 +771,7 @@ class Template extends TemplateEngine {
 
         $reserved_words = \OWA\Core\CoreAPI::getSetting('base', 'reserved_words');
 
-        $properties = array();
+        $properties = [];
 
         foreach ( (array) $array as $k => $v ) {
 
@@ -818,7 +818,7 @@ class Template extends TemplateEngine {
      * @param  string            $template  not read
      * @return string HTML; '' for one page
      */
-    public function makePaginationFromResultSet($pagination, $map = array(), $add_state = true, $template = '') {
+    public function makePaginationFromResultSet($pagination, $map = [], $add_state = true, $template = '') {
 
         $pages = '';
         //print_r($pagination);
@@ -832,7 +832,7 @@ class Template extends TemplateEngine {
 
                 if ($pagination->page != $i) {
 
-                    $new_map = array();
+                    $new_map = [];
 
                     if (is_array($map)) {
                         $new_map = array_merge($map, $new_map);
@@ -916,11 +916,11 @@ class Template extends TemplateEngine {
      * @param bool   $inSettings whether this screen is a settings screen
      * @return list<RailSection>
      */
-    public function navRail( $nav, $propertyId, $params = array(), $accessSiteId = '', $inSettings = false ) {
+    public function navRail( $nav, $propertyId, $params = [], $accessSiteId = '', $inSettings = false ) {
 
         $user  = $this->getCurrentUser();
-        $state = $propertyId !== '' && $propertyId !== null ? array( 'propertyId' => $propertyId ) : array();
-        $rail  = array();
+        $state = $propertyId !== '' && $propertyId !== null ? [ 'propertyId' => $propertyId ] : [];
+        $rail  = [];
 
         foreach ( (array) $nav as $key => $section ) {
 
@@ -930,17 +930,17 @@ class Template extends TemplateEngine {
             }
 
             $own   = $this->navLinkParams( $section );
-            $items = array();
+            $items = [];
 
             if ( ! empty( $section['subgroup'] ) || ! empty( $section['keeps_column'] ) ) {
 
-                $items[] = array(
+                $items[] = [
                     'label'   => (string) ( $section['overview_label'] ?? \OWA\Core\CoreAPI::t( 'Overview' ) ),
                     'href'    => $this->makeLink( array_merge( $state, $own ), true ),
                     'current' => ! $inSettings && $this->navLinkIsCurrent( $section, $params ),
-                );
+                ];
 
-                foreach ( (array) ( $section['subgroup'] ?? array() ) as $link ) {
+                foreach ( (array) ( $section['subgroup'] ?? [] ) as $link ) {
 
                     if ( $this->navLinkParams( $link ) == $own
                          || ! $user->isCapable( $link['priviledge'] ?? '', $accessSiteId ) ) {
@@ -948,13 +948,13 @@ class Template extends TemplateEngine {
                         continue;
                     }
 
-                    $items[] = array(
+                    $items[] = [
                         'label'   => strip_tags( (string) $link['anchortext'] ),
                         'href'    => $this->makeLink( array_merge( $state, $this->navLinkParams( $link ) ), true ),
                         'current' => ! $inSettings && $this->navLinkIsCurrent( $link, $params ),
                         'heading' => (string) ( $link['heading'] ?? '' ),
                         'icon'    => trim( (string) ( $link['icon_class'] ?? '' ) ),
-                    );
+                    ];
                 }
             }
 
@@ -966,7 +966,7 @@ class Template extends TemplateEngine {
                 $current = $current || $item['current'];
             }
 
-            $rail[] = array(
+            $rail[] = [
                 'id'      => (string) $key,
                 'label'   => strip_tags( (string) $section['anchortext'] ),
                 'icon'    => trim( (string) ( $section['icon_class'] ?? '' ) ) ?: \OWA\Core\Module::DEFAULT_NAV_ICON,
@@ -974,7 +974,7 @@ class Template extends TemplateEngine {
                 'current' => $current,
                 'items'   => $items,
                 'foot'    => false,
-            );
+            ];
         }
 
         /*
@@ -984,19 +984,19 @@ class Template extends TemplateEngine {
          */
         if ( $user->isCapable( 'view_site_list' ) ) {
 
-            $rail[] = array(
+            $rail[] = [
                 'id'      => 'settings',
                 'label'   => \OWA\Core\CoreAPI::t( 'Settings' ),
                 'icon'    => 'fas fa-cog',
                 // With the Property and the period, so the settings screens are
                 // of the one being looked at and the way back keeps the period.
-                'href'    => $this->makeLink( array(
-                    'do' => $user->isCapable( 'edit_settings' ) ? 'base.optionsGeneral' : 'base.myProfile' ),
+                'href'    => $this->makeLink( [
+                    'do' => $user->isCapable( 'edit_settings' ) ? 'base.optionsGeneral' : 'base.myProfile' ],
                     \OWA\Core\Controller::reportState() ),
                 'current' => (bool) $inSettings,
-                'items'   => array(),
+                'items'   => [],
                 'foot'    => true,
-            );
+            ];
         }
 
         return $rail;
@@ -1011,7 +1011,7 @@ class Template extends TemplateEngine {
      */
     private function navIsCurrentFor( $section, $params ) {
 
-        foreach ( (array) ( $section['current_for'] ?? array() ) as $wanted ) {
+        foreach ( (array) ( $section['current_for'] ?? [] ) as $wanted ) {
 
             $matches = (bool) $wanted;
 
@@ -1053,7 +1053,7 @@ class Template extends TemplateEngine {
 
             if ( $section['current'] && $section['items'] ) {
 
-                $groups = array();
+                $groups = [];
 
                 foreach ( $section['items'] as $item ) {
 
@@ -1062,17 +1062,17 @@ class Template extends TemplateEngine {
 
                     if ( $last < 0 || $groups[ $last ]['heading'] !== $heading ) {
 
-                        $groups[] = array( 'heading' => $heading, 'items' => array() );
+                        $groups[] = [ 'heading' => $heading, 'items' => [] ];
                         $last++;
                     }
 
                     $groups[ $last ]['items'][] = $item;
                 }
 
-                return array(
+                return [
                     'title'  => $section['label'],
                     'groups' => $groups,
-                );
+                ];
             }
         }
 
@@ -1098,17 +1098,17 @@ class Template extends TemplateEngine {
      * @param array<string, mixed> $params the request's params
      * @return list<array{heading: string, items: list<SettingsItem>}>
      */
-    public function settingsColumn( $hierarchyNav, $params = array() ) {
+    public function settingsColumn( $hierarchyNav, $params = [] ) {
 
-        $headings = array(
+        $headings = [
             'My Preferences' => \OWA\Core\CoreAPI::t( 'My preferences' ),
             'Instance'       => \OWA\Core\CoreAPI::t( 'Server configuration' ),
             'Organization'   => \OWA\Core\CoreAPI::t( 'Organization' ),
             'Property'       => \OWA\Core\CoreAPI::t( 'Property' ),
-        );
+        ];
 
         $user    = $this->getCurrentUser();
-        $groups  = array();
+        $groups  = [];
 
         foreach ( (array) $hierarchyNav as $key => $entries ) {
 
@@ -1117,7 +1117,7 @@ class Template extends TemplateEngine {
                 continue;
             }
 
-            $items = array();
+            $items = [];
 
             foreach ( (array) $entries as $entry ) {
 
@@ -1126,17 +1126,17 @@ class Template extends TemplateEngine {
                     continue;
                 }
 
-                $items[] = array(
+                $items[] = [
                     'label'   => (string) $entry['label'],
-                    'href'    => $this->makeLink( array_merge( array( 'do' => $entry['do'] ), (array) ( $entry['params'] ?? array() ) ),
+                    'href'    => $this->makeLink( array_merge( [ 'do' => $entry['do'] ], (array) ( $entry['params'] ?? [] ) ),
                         \OWA\Core\Controller::reportState() ),
                     'current' => self::settingsEntryIsCurrent( $entry, $params ),
-                );
+                ];
             }
 
             if ( $items ) {
 
-                $groups[] = array( 'heading' => $headings[ $key ] ?? (string) $key, 'items' => $items );
+                $groups[] = [ 'heading' => $headings[ $key ] ?? (string) $key, 'items' => $items ];
             }
         }
 
@@ -1171,11 +1171,11 @@ class Template extends TemplateEngine {
      * @param array<string, mixed> $params
      * @return list<SettingsItem>
      */
-    public function profileTabs( $hierarchyNav, $params = array() ) {
+    public function profileTabs( $hierarchyNav, $params = [] ) {
 
-        $entries = (array) ( $hierarchyNav['Observation Profile'] ?? array() );
+        $entries = (array) ( $hierarchyNav['Observation Profile'] ?? [] );
         $user    = $this->getCurrentUser();
-        $tabs    = array();
+        $tabs    = [];
         $onOne   = false;
 
         foreach ( $entries as $entry ) {
@@ -1189,21 +1189,21 @@ class Template extends TemplateEngine {
             $onOne   = $onOne || $current;
 
             // A module's registered tab names no Profile; it is this one's.
-            $linkParams = (array) ( $entry['params'] ?? array() );
+            $linkParams = (array) ( $entry['params'] ?? [] );
 
             if ( ! isset( $linkParams['siteId'] ) && ! empty( $params['siteId'] ) ) {
 
                 $linkParams['siteId'] = $params['siteId'];
             }
 
-            $tabs[] = array(
+            $tabs[] = [
                 'label'   => (string) $entry['label'],
-                'href'    => $this->makeLink( array_merge( array( 'do' => $entry['do'] ), $linkParams ) ),
+                'href'    => $this->makeLink( array_merge( [ 'do' => $entry['do'] ], $linkParams ) ),
                 'current' => $current,
-            );
+            ];
         }
 
-        return $onOne ? $tabs : array();
+        return $onOne ? $tabs : [];
     }
 
     /**
@@ -1221,12 +1221,12 @@ class Template extends TemplateEngine {
 
         $do = (string) ( $params['do'] ?? '' );
 
-        if ( $do !== $entry['do'] && ! in_array( $do, (array) ( $entry['current_for'] ?? array() ), true ) ) {
+        if ( $do !== $entry['do'] && ! in_array( $do, (array) ( $entry['current_for'] ?? [] ), true ) ) {
 
             return false;
         }
 
-        $wanted = (array) ( $entry['params'] ?? array() );
+        $wanted = (array) ( $entry['params'] ?? [] );
         unset( $wanted['edit'] );
 
         foreach ( $wanted as $key => $value ) {
@@ -1296,7 +1296,7 @@ class Template extends TemplateEngine {
             $output = $this->escape($output);
 
             if ( $decode_special_entities ) {
-                $output = strtr($output, array('&amp;'  => '&'));
+                $output = strtr($output, ['&amp;'  => '&']);
             }
 
         }
@@ -1396,6 +1396,3 @@ class Template extends TemplateEngine {
 
 
 }
-
-
-?>

@@ -50,7 +50,7 @@ class Context {
     public $closed_before;
 
     /** @var list<Row> rows the candidate pass returned */
-    public $candidates = array();
+    public $candidates = [];
 
     /**
      * How far back a direct session may take the visitor's last non-direct
@@ -128,5 +128,3 @@ class Context {
         return sprintf( "NULLIF(TRIM(%s), '')", $column );
     }
 }
-
-?>

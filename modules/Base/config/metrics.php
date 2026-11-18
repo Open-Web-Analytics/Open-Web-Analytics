@@ -15,21 +15,21 @@
  * a metric here names the cube, no query can select it however many dimensions
  * it carries.
  */
-return array(
+return [
 
     'entity' => 'base.event',
 
-    'metrics' => array(
+    'metrics' => [
 
         // ---- every row --------------------------------------------------
-        'eventCount' => array(
+        'eventCount' => [
             'label'       => 'Events',
             'description' => 'The total number of events.',
             'group'       => 'Site Usage',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
-        ),
+        ],
 
         /*
          * ---- counting SOME rows ----------------------------------------
@@ -40,15 +40,15 @@ return array(
          * are X", which is what an event table makes cheap and what 1.x could
          * not express -- its `actions` counted one fact table.
          */
-        'pageViews' => array(
+        'pageViews' => [
             'label'       => 'Page Views',
             'description' => 'The total number of pages viewed.',
             'group'       => 'Site Usage',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'page_view' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'page_view' ],
+        ],
 
         /*
          * Exits: the last event of a session, counted on the page it happened
@@ -70,22 +70,22 @@ return array(
          * not the last event of any kind, since a click after it happened on
          * the same page, and not by arrival, since a late beacon would move it.
          */
-        'exits' => array(
+        'exits' => [
             'label'       => 'Exits',
             'description' => 'The number of sessions that ended on a page view. Grouped by page, the number that ended on each.',
             'group'       => 'Site Usage',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
-            'condition'   => array( 'column' => 'is_exit', 'value' => 1 ),
-        ),
+            'condition'   => [ 'column' => 'is_exit', 'value' => 1 ],
+        ],
 
         /*
          * Of the times a page was viewed, the share that were a session's last.
          * Grouped by page it is each page's exit rate; ungrouped, exits over all
          * page views.
          */
-        'exitRate' => array(
+        'exitRate' => [
             'label'       => 'Exit Rate',
             'description' => 'The share of page views that were the last in their session.',
             'group'       => 'Site Usage',
@@ -94,33 +94,33 @@ return array(
             'numerator'   => 'exits',
             'denominator' => 'pageViews',
             'precision'   => 4,
-        ),
+        ],
 
         /* The session's first page view, the mirror of exits (Cube\IsEntranceStep). */
-        'entrances' => array(
+        'entrances' => [
             'label'       => 'Entrances',
             'description' => 'The number of sessions that began on a page view. Grouped by page, the number that began on each.',
             'group'       => 'Site Usage',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
-            'condition'   => array( 'column' => 'is_entrance', 'value' => 1 ),
-        ),
+            'condition'   => [ 'column' => 'is_entrance', 'value' => 1 ],
+        ],
 
         /*
          * GOAL EVENTS: the rows Classes\GoalMarking adds, one for each goal event
          * definition an event meets (once per session, for a definition that
          * says so). An event meeting two definitions adds two.
          */
-        'goalEvents' => array(
+        'goalEvents' => [
             'label'       => 'Goal Events',
             'description' => 'The number of goal events. An event that meets several goal event definitions adds one for each.',
             'group'       => 'Goals',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
-            'condition'   => array( 'column' => 'is_goal_event', 'value' => 1 ),
-        ),
+            'condition'   => [ 'column' => 'is_goal_event', 'value' => 1 ],
+        ],
 
         /*
          * What the goal events were worth: each carries its definition's value,
@@ -128,46 +128,46 @@ return array(
          * currency beside it (EventRaw `value`). A goal event worth nothing
          * carries NULL and adds nothing.
          */
-        'goalValue' => array(
+        'goalValue' => [
             'label'       => 'Goal Value',
             'description' => 'The total value of the goal events: each goal event definition\'s value, or the revenue of the purchase that met it.',
             'group'       => 'Goals',
             'metric_type' => 'sum',
             'data_type'   => 'currency',
             'column'      => 'value',
-            'condition'   => array( 'column' => 'is_goal_event', 'value' => 1 ),
-        ),
+            'condition'   => [ 'column' => 'is_goal_event', 'value' => 1 ],
+        ],
 
         /*
          * FORMS. The tracker raises one form_start per form per page view,
          * including just before a submit that had no change event, so every
          * submit has a start.
          */
-        'formStarts' => array(
+        'formStarts' => [
             'label'       => 'Form Starts',
             'description' => 'The number of times a visitor began filling in a form.',
             'group'       => 'Site Usage',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'form_start' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'form_start' ],
+        ],
 
-        'formSubmits' => array(
+        'formSubmits' => [
             'label'       => 'Form Submits',
             'description' => 'The number of times a form was submitted.',
             'group'       => 'Site Usage',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'form_submit' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'form_submit' ],
+        ],
 
         /*
          * Submits are NOT deduplicated -- a form sent twice from one page view
          * is two submits against one start -- so this can pass 100%.
          */
-        'formSubmitRate' => array(
+        'formSubmitRate' => [
             'label'       => 'Form Submit Rate',
             'description' => 'Form submits as a share of form starts.',
             'group'       => 'Site Usage',
@@ -176,7 +176,7 @@ return array(
             'numerator'   => 'formSubmits',
             'denominator' => 'formStarts',
             'precision'   => 4,
-        ),
+        ],
 
         /*
          * ---- commerce ----------------------------------------------------
@@ -189,45 +189,45 @@ return array(
          * Summing minor units of different currencies is meaningless, which is
          * why currency is a dimension: a multi-currency store groups by it.
          */
-        'transactions' => array(
+        'transactions' => [
             'label'       => 'Transactions',
             'description' => 'The number of completed purchases.',
             'group'       => 'Ecommerce',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'purchase' ],
+        ],
 
-        'taxRevenue' => array(
+        'taxRevenue' => [
             'label'       => 'Tax',
             'description' => 'Total tax collected on completed purchases.',
             'group'       => 'Ecommerce',
             'metric_type' => 'sum',
             'data_type'   => 'currency',
             'column'      => 'tax',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'purchase' ],
+        ],
 
-        'shippingRevenue' => array(
+        'shippingRevenue' => [
             'label'       => 'Shipping',
             'description' => 'Total shipping charged on completed purchases.',
             'group'       => 'Ecommerce',
             'metric_type' => 'sum',
             'data_type'   => 'currency',
             'column'      => 'shipping',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'purchase' ],
+        ],
 
-        'transactionRevenue' => array(
+        'transactionRevenue' => [
             'label'       => 'Revenue',
             'description' => 'Total revenue from completed purchases.',
             'group'       => 'Ecommerce',
             'metric_type' => 'sum',
             'data_type'   => 'currency',
             'column'      => 'revenue',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'purchase' ],
+        ],
 
         // ---- counting distinct things -----------------------------------
         /*
@@ -249,48 +249,48 @@ return array(
          * Pairing is only necessary where a session id is a bare start timestamp
          * with no randomness in it. Ours is not.
          */
-        'sessions' => array(
+        'sessions' => [
             'label'       => 'Sessions',
             'description' => 'The number of sessions.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
             'column'      => 'session_id',
-        ),
+        ],
 
-        'totalUsers' => array(
+        'totalUsers' => [
             'label'       => 'Total Users',
             'description' => 'The number of distinct users.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
             'column'      => 'visitor_id',
-        ),
+        ],
 
-        'newUsers' => array(
+        'newUsers' => [
             'label'       => 'New Users',
             'description' => 'Users whose first session this is.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
             'column'      => 'visitor_id',
-            'condition'   => array( 'column' => 'prior_sessions', 'value' => 0 ),
-        ),
+            'condition'   => [ 'column' => 'prior_sessions', 'value' => 0 ],
+        ],
 
         /*
          * Users who scrolled. A page view sends a scroll event only after the
          * visitor has scrolled past the first threshold, so any scroll event
          * counts; group by scrollDepth for how far they got.
          */
-        'scrolledUsers' => array(
+        'scrolledUsers' => [
             'label'       => 'Scrolled Users',
             'description' => 'The number of distinct users who scrolled a page.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
             'column'      => 'visitor_id',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'scroll' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'scroll' ],
+        ],
 
         /*
          * newVisitors has no `returningVisitors` twin, deliberately.
@@ -317,7 +317,7 @@ return array(
          * visit is not a number" is a different answer from "pages per visit is
          * zero", and the formatter renders the first as absent.
          */
-        'pageViewsPerSession' => array(
+        'pageViewsPerSession' => [
             'label'       => 'Pages Per Session',
             'description' => 'The average number of pages viewed per session.',
             'group'       => 'Site Usage',
@@ -326,7 +326,7 @@ return array(
             'numerator'   => 'pageViews',
             'denominator' => 'sessions',
             'precision'   => 2,
-        ),
+        ],
 
         /*
          * ---- refunds -------------------------------------------------------
@@ -335,27 +335,27 @@ return array(
          * positive number. transactionRevenue stays what was sold; netRevenue
          * is that less what was refunded.
          */
-        'refunds' => array(
+        'refunds' => [
             'label'       => 'Refunds',
             'description' => 'The number of refunds.',
             'group'       => 'Ecommerce',
             'metric_type' => 'count',
             'data_type'   => 'integer',
             'column'      => 'id',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'refund' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'refund' ],
+        ],
 
-        'refundAmount' => array(
+        'refundAmount' => [
             'label'       => 'Refund Amount',
             'description' => 'The amount refunded, excluding tax and shipping.',
             'group'       => 'Ecommerce',
             'metric_type' => 'sum',
             'data_type'   => 'currency',
             'column'      => 'revenue',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'refund' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'refund' ],
+        ],
 
-        'netRevenue' => array(
+        'netRevenue' => [
             'label'       => 'Net Revenue',
             'description' => 'Revenue less refunds, excluding tax and shipping.',
             'group'       => 'Ecommerce',
@@ -363,9 +363,9 @@ return array(
             'data_type'   => 'currency',
             'minuend'     => 'transactionRevenue',
             'subtrahend'  => 'refundAmount',
-        ),
+        ],
 
-        'revenuePerTransaction' => array(
+        'revenuePerTransaction' => [
             'label'       => 'Average Order Value',
             'description' => 'Revenue divided by the number of purchases.',
             'group'       => 'Ecommerce',
@@ -374,9 +374,9 @@ return array(
             'numerator'   => 'transactionRevenue',
             'denominator' => 'transactions',
             'precision'   => 0,
-        ),
+        ],
 
-        'revenuePerSession' => array(
+        'revenuePerSession' => [
             'label'       => 'Revenue Per Session',
             'description' => 'Revenue divided by the number of sessions.',
             'group'       => 'Ecommerce',
@@ -385,22 +385,22 @@ return array(
             'numerator'   => 'transactionRevenue',
             'denominator' => 'sessions',
             'precision'   => 0,
-        ),
+        ],
 
         /*
          * Sessions with at least one purchase. A session that bought twice is
          * one purchasing session and two transactions, and the conversion rate
          * is about sessions.
          */
-        'purchasingSessions' => array(
+        'purchasingSessions' => [
             'label'       => 'Purchasing Sessions',
             'description' => 'The number of sessions that included a purchase.',
             'group'       => 'Ecommerce',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
             'column'      => 'session_id',
-            'condition'   => array( 'column' => 'event_type', 'value' => 'purchase' ),
-        ),
+            'condition'   => [ 'column' => 'event_type', 'value' => 'purchase' ],
+        ],
 
         /*
          * PURCHASING SESSIONS over sessions. It was transactions over sessions,
@@ -408,7 +408,7 @@ return array(
          * purchases in one of two sessions read 100% where the share is 50%, and
          * a store with repeat buyers could pass 100%.
          */
-        'ecommerceConversionRate' => array(
+        'ecommerceConversionRate' => [
             'label'       => 'Ecommerce Conversion Rate',
             'description' => 'The share of sessions that completed a purchase.',
             'group'       => 'Ecommerce',
@@ -417,7 +417,7 @@ return array(
             'numerator'   => 'purchasingSessions',
             'denominator' => 'sessions',
             'precision'   => 4,
-        ),
+        ],
 
         /*
          * Goal events per session, off the flag the event row already carries.
@@ -426,7 +426,7 @@ return array(
          * nearest thing goalConversionRateAll and needed the goal configuration
          * to compute it.
          */
-        'goalEventsPerSession' => array(
+        'goalEventsPerSession' => [
             'label'       => 'Goal Events Per Session',
             'description' => 'The average number of goal events per session.',
             'group'       => 'Goals',
@@ -435,7 +435,7 @@ return array(
             'numerator'   => 'goalEvents',
             'denominator' => 'sessions',
             'precision'   => 2,
-        ),
+        ],
 
         /*
          * ---- the per-USER ratios -----------------------------------------
@@ -448,7 +448,7 @@ return array(
          * happens in a visit" -- which is why both exist and why naming the
          * denominator in the metric is not pedantry.
          */
-        'eventCountPerUser' => array(
+        'eventCountPerUser' => [
             'label'       => 'Events Per User',
             'description' => 'The average number of events per user.',
             'group'       => 'Site Usage',
@@ -457,9 +457,9 @@ return array(
             'numerator'   => 'eventCount',
             'denominator' => 'totalUsers',
             'precision'   => 2,
-        ),
+        ],
 
-        'pageViewsPerUser' => array(
+        'pageViewsPerUser' => [
             'label'       => 'Page Views Per User',
             'description' => 'The average number of pages viewed per user.',
             'group'       => 'Site Usage',
@@ -468,9 +468,9 @@ return array(
             'numerator'   => 'pageViews',
             'denominator' => 'totalUsers',
             'precision'   => 2,
-        ),
+        ],
 
-        'averageEngagementTimePerUser' => array(
+        'averageEngagementTimePerUser' => [
             'label'       => 'Average Engagement Time Per User',
             'description' => 'Average time accrued per user, in milliseconds.',
             'group'       => 'Site Usage',
@@ -479,9 +479,9 @@ return array(
             'numerator'   => 'totalEngagementTime',
             'denominator' => 'totalUsers',
             'precision'   => 0,
-        ),
+        ],
 
-        'revenuePerUser' => array(
+        'revenuePerUser' => [
             'label'       => 'Revenue Per User',
             'description' => 'Revenue divided by the number of users.',
             'group'       => 'Ecommerce',
@@ -490,9 +490,9 @@ return array(
             'numerator'   => 'transactionRevenue',
             'denominator' => 'totalUsers',
             'precision'   => 0,
-        ),
+        ],
 
-        'goalEventsPerUser' => array(
+        'goalEventsPerUser' => [
             'label'       => 'Goal Events Per User',
             'description' => 'The average number of goal events per user.',
             'group'       => 'Goals',
@@ -501,9 +501,9 @@ return array(
             'numerator'   => 'goalEvents',
             'denominator' => 'totalUsers',
             'precision'   => 2,
-        ),
+        ],
 
-        'sessionsPerUser' => array(
+        'sessionsPerUser' => [
             'label'       => 'Sessions Per User',
             'description' => 'The average number of sessions per user.',
             'group'       => 'Site Usage',
@@ -512,9 +512,9 @@ return array(
             'numerator'   => 'sessions',
             'denominator' => 'totalUsers',
             'precision'   => 2,
-        ),
+        ],
 
-        'eventsPerSession' => array(
+        'eventsPerSession' => [
             'label'       => 'Events Per Session',
             'description' => 'The average number of events recorded per session.',
             'group'       => 'Site Usage',
@@ -523,7 +523,7 @@ return array(
             'numerator'   => 'eventCount',
             'denominator' => 'sessions',
             'precision'   => 2,
-        ),
+        ],
 
         /*
          * A NAME SAYS WHICH IT IS. This is a total and the one below is an
@@ -532,14 +532,14 @@ return array(
          * an AVG whose name promised a duration, so every report showing it
          * was showing an average nobody had been told about.
          */
-        'totalEngagementTime' => array(
+        'totalEngagementTime' => [
             'label'       => 'Total Engagement Time',
             'description' => 'Time accrued on pages, in milliseconds, including time on the last page of a session.',
             'group'       => 'Site Usage',
             'metric_type' => 'sum',
             'data_type'   => 'milliseconds',
             'column'      => 'engagement_msec',
-        ),
+        ],
 
         /*
          * REPLACES 1.x's visitDuration, and measures something it could not.
@@ -563,7 +563,7 @@ return array(
          * the same defect as 1.x's visitDuration, which was an AVG under a name
          * that promised a duration.
          */
-        'averageEngagementTimePerSession' => array(
+        'averageEngagementTimePerSession' => [
             'label'       => 'Average Engagement Time Per Session',
             'description' => 'Average time accrued per session, in milliseconds.',
             'group'       => 'Site Usage',
@@ -572,14 +572,14 @@ return array(
             'numerator'   => 'totalEngagementTime',
             'denominator' => 'sessions',
             'precision'   => 0,
-        ),
+        ],
 
         /*
          * Engagement time per page view. Grouped by pagePath it is the time
          * spent on each page: every event carries its page, so a page's
          * engagement is the sum over the rows that name it.
          */
-        'averageEngagementTimePerPageView' => array(
+        'averageEngagementTimePerPageView' => [
             'label'       => 'Average Engagement Time Per Page View',
             'description' => 'Average time accrued per page view, in milliseconds.',
             'group'       => 'Site Usage',
@@ -588,7 +588,7 @@ return array(
             'numerator'   => 'totalEngagementTime',
             'denominator' => 'pageViews',
             'precision'   => 0,
-        ),
+        ],
 
         /*
          * ---- engaged sessions ---------------------------------------------
@@ -600,31 +600,31 @@ return array(
          * A distinct count under a one-column condition, because the flag is on
          * every row of the session.
          */
-        'engagedSessions' => array(
+        'engagedSessions' => [
             'label'       => 'Engaged Sessions',
             'description' => 'Sessions with ten seconds or more of engagement time, two or more page views, or a goal event.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
             'column'      => 'session_id',
-            'condition'   => array( 'column' => 'is_engaged_session', 'value' => 1 ),
-        ),
+            'condition'   => [ 'column' => 'is_engaged_session', 'value' => 1 ],
+        ],
 
         /*
          * The complement, as a count, so bounceRate is a ratio of two counts.
          * A bounce is a session that was not engaged.
          */
-        'bouncedSessions' => array(
+        'bouncedSessions' => [
             'label'       => 'Bounced Sessions',
             'description' => 'Sessions that were not engaged.',
             'group'       => 'Site Usage',
             'metric_type' => 'distinct_count',
             'data_type'   => 'integer',
             'column'      => 'session_id',
-            'condition'   => array( 'column' => 'is_engaged_session', 'value' => 0 ),
-        ),
+            'condition'   => [ 'column' => 'is_engaged_session', 'value' => 0 ],
+        ],
 
-        'engagementRate' => array(
+        'engagementRate' => [
             'label'       => 'Engagement Rate',
             'description' => 'The share of sessions that were engaged.',
             'group'       => 'Site Usage',
@@ -633,9 +633,9 @@ return array(
             'numerator'   => 'engagedSessions',
             'denominator' => 'sessions',
             'precision'   => 4,
-        ),
+        ],
 
-        'bounceRate' => array(
+        'bounceRate' => [
             'label'       => 'Bounce Rate',
             'description' => 'The share of sessions that were not engaged.',
             'group'       => 'Site Usage',
@@ -644,9 +644,9 @@ return array(
             'numerator'   => 'bouncedSessions',
             'denominator' => 'sessions',
             'precision'   => 4,
-        ),
+        ],
 
-        'engagedSessionsPerUser' => array(
+        'engagedSessionsPerUser' => [
             'label'       => 'Engaged Sessions Per User',
             'description' => 'The average number of engaged sessions per user.',
             'group'       => 'Site Usage',
@@ -655,6 +655,6 @@ return array(
             'numerator'   => 'engagedSessions',
             'denominator' => 'totalUsers',
             'precision'   => 2,
-        ),
-    ),
-);
+        ],
+    ],
+];

@@ -71,7 +71,7 @@ class Score {
     public static function of( $event, $level ) {
 
         $headers = self::headers( $event );
-        $fired   = array();
+        $fired   = [];
 
         foreach ( RuleSets::rules( $level ) as $rule ) {
 
@@ -96,11 +96,11 @@ class Score {
 
         $fired = self::ordered( $fired );
 
-        return array(
+        return [
             'score' => round( array_sum( $fired ), 1 ),
             'fired' => $fired,
             'rules' => self::format( $fired ),
-        );
+        ];
     }
 
     /**
@@ -112,9 +112,9 @@ class Score {
      */
     public static function headers( $event ) {
 
-        $out = array();
+        $out = [];
 
-        foreach ( array(
+        foreach ( [
             'user-agent'     => 'HTTP_USER_AGENT',
             'sec-fetch-mode' => 'request_sec_fetch_mode',
             'sec-fetch-site' => 'request_sec_fetch_site',
@@ -125,7 +125,7 @@ class Score {
             'accept-encoding'    => 'request_accept_encoding',
             'accept-language'    => 'request_accept_language',
             'referer'            => 'request_referer',
-        ) as $header => $property ) {
+        ] as $header => $property ) {
 
             $value = $event->get( $property );
 
@@ -233,5 +233,3 @@ class Score {
             : (int) \OWA\Module\Base\Classes\TrackingEventHelpers::deriveYyyymmdd( null, $event );
     }
 }
-
-?>

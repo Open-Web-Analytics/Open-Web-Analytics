@@ -59,8 +59,8 @@ require_once __DIR__ . '/cube_status_badge.php';
             <?php endif; ?>
         </td>
         <td>
-            <a href="<?php echo $view->makeLink( array(
-                'do' => 'base.cubeStatusDetail', 'propertyId' => $owa_cube['property_id'] ) ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Details' ) ); ?></a>
+            <a href="<?php echo $view->makeLink( [
+                'do' => 'base.cubeStatusDetail', 'propertyId' => $owa_cube['property_id'] ] ); ?>"><?php $view->out( \OWA\Core\CoreAPI::t( 'Details' ) ); ?></a>
         </td>
     </tr>
     <?php endforeach; ?>

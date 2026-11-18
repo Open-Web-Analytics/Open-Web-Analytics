@@ -19,7 +19,7 @@ require_once __DIR__ . '/bootstrap_owa.php';
 final class TrackerSnippetTest extends TestCase
 {
     /** The classic tag, through the real path, so the Profile's commands are in it. */
-    private function render(array $options = array()): string
+    private function render(array $options = []): string
     {
         return \OWA\Core\CoreAPI::getJsTrackerTag( 'snippet-site', $options );
     }
@@ -70,7 +70,7 @@ final class TrackerSnippetTest extends TestCase
 
     public function testNoLinkTagsAreEmittedWhenTheOutputIsPlainJavascript(): void
     {
-        $js = $this->render( array( 'no_script_wrapper' => true ) );
+        $js = $this->render( [ 'no_script_wrapper' => true ] );
 
         // With no_script_wrapper the caller has already opened a <script> block
         // and is pasting this inside it. A <link> tag there is not an ignored
@@ -194,10 +194,10 @@ final class TrackerSnippetTest extends TestCase
      */
     private function withUrls(?string $tracking, ?string $assets, callable $test): void
     {
-        $saved = array(
+        $saved = [
             'tracking_url' => \OWA\Core\CoreAPI::getSetting( 'base', 'tracking_url' ),
             'assets_url'   => \OWA\Core\CoreAPI::getSetting( 'base', 'assets_url' ),
-        );
+        ];
 
         \OWA\Core\CoreAPI::setSetting( 'base', 'tracking_url', $tracking ?? '' );
         \OWA\Core\CoreAPI::setSetting( 'base', 'assets_url', $assets ?? '' );

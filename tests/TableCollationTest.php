@@ -55,7 +55,7 @@ final class TableCollationTest extends TestCase
         $db = new class extends \OWA\Core\Db\Mysql {
             public array $sql = [];
             public function __construct() {}
-            function query($sql, array $params = array()) { $this->sql[] = $sql; return true; }
+            function query($sql, array $params = []) { $this->sql[] = $sql; return true; }
         };
 
         $this->assertTrue($db->createDatabase('owa_scratch'));

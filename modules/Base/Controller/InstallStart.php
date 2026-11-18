@@ -29,7 +29,3 @@ class InstallStart extends \OWA\Core\Controller\Install {
             'template' => 'install_start.php', 'vars' => [ 'headline' => \OWA\Core\CoreAPI::t( 'Get Started...' ) ] ] );
     }
 }
-
-
-
-?>

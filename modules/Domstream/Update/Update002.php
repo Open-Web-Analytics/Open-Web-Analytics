@@ -24,7 +24,7 @@ class Update002 extends \OWA\Core\Update {
 
     public $schema_version = 2;
 
-    const ENTITIES = array( 'domstream.domstream_chunk', 'domstream.domstream_payload' );
+    const ENTITIES = [ 'domstream.domstream_chunk', 'domstream.domstream_payload' ];
 
     /**
      * @param  bool $force
@@ -74,5 +74,3 @@ class Update002 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

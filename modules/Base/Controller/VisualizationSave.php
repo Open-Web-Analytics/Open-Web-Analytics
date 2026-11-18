@@ -53,11 +53,11 @@ class VisualizationSave extends \OWA\Core\AdminController {
     public function validate() {
 
         $this->addValidation( 'name', trim( (string) $this->getParam( 'name' ) ), 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Name is required.' ) ] );
 
         // A new one is stored on a Property, as a report is (CustomReports::save()).
         $this->addValidation( 'propertyId', (string) $this->getParam( 'propertyId' ), 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'No Property was named to save this to.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'No Property was named to save this to.' ) ] );
 
         /*
          * The step rules, from Classes\FunnelStep, which the preview applies
@@ -157,25 +157,25 @@ class VisualizationSave extends \OWA\Core\AdminController {
             return isset( $list[ $key ] ) && is_scalar( $list[ $key ] ) ? (string) $list[ $key ] : '';
         };
 
-        $rows = array();
+        $rows = [];
 
         foreach ( $indexes as $i ) {
 
-            $conditions = array();
+            $conditions = [];
 
-            foreach ( (array) ( $values[ $i ] ?? array() ) as $c => $value ) {
+            foreach ( (array) ( $values[ $i ] ?? [] ) as $c => $value ) {
 
-                $conditions[] = array(
-                    'property' => $scalar( (array) ( $properties[ $i ] ?? array() ), $c ),
-                    'operator' => $scalar( (array) ( $operators[ $i ] ?? array() ), $c ),
+                $conditions[] = [
+                    'property' => $scalar( (array) ( $properties[ $i ] ?? [] ), $c ),
+                    'operator' => $scalar( (array) ( $operators[ $i ] ?? [] ), $c ),
                     'value'    => is_scalar( $value ) ? (string) $value : '',
-                );
+                ];
             }
 
             $picked = array_key_exists( $i, $events ) ? $scalar( $events, $i ) : \OWA\Module\Base\Classes\FunnelStep::DEFAULT_EVENT;
             $custom = $picked === \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM;
 
-            $rows[] = array(
+            $rows[] = [
                 'name'                     => $scalar( $names, $i ),
                 'kind'                     => $scalar( $kinds, $i ),
                 'path'                     => $scalar( $paths, $i ),
@@ -184,7 +184,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
                 'custom'                   => $custom,
                 'match'                    => $scalar( $matches, $i ),
                 'conditions'               => $conditions,
-            );
+            ];
         }
 
         return $rows;
@@ -203,7 +203,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
      */
     public static function stepsFromForm( array $rows ) {
 
-        $steps = array();
+        $steps = [];
 
         foreach ( $rows as $row ) {
 
@@ -279,7 +279,7 @@ class VisualizationSave extends \OWA\Core\AdminController {
 
         $steps = self::stepsFromForm( $this->rowsFromRequest() );
 
-        $definition = array( 'steps' => $steps );
+        $definition = [ 'steps' => $steps ];
 
         $constraints = trim( (string) $this->getParam( 'constraints' ) );
 
@@ -376,18 +376,18 @@ class VisualizationSave extends \OWA\Core\AdminController {
          * event as picked: this is the refusal path, so it carries back what
          * somebody typed rather than what will be stored.
          */
-        $steps = array();
+        $steps = [];
 
         foreach ( $this->rowsFromRequest() as $row ) {
 
-            $steps[] = array(
+            $steps[] = [
                 'name'         => $row['name'],
                 'kind'         => \OWA\Module\Base\Classes\FunnelStep::KIND_EVENT,
                 'event'        => $row['custom'] ? \OWA\Module\Base\Entity\GoalEventDefinition::TRIGGER_CUSTOM : $row['event'],
                 'custom_event' => $row['custom'] ? $row['event'] : '',
                 'match'        => \OWA\Module\Base\Classes\FunnelStep::matchOf( $row ),
                 'conditions'   => $row['conditions'],
-            );
+            ];
         }
 
         $this->set( 'submittedSteps', json_encode( $steps ) );

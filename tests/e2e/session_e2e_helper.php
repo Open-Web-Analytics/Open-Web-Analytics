@@ -346,8 +346,8 @@ function intakeFiles(): array
     $dir   = rtrim((string) \OWA\Core\CoreAPI::getSetting('base', 'async_log_dir'), '/') . '/';
     $files = [];
 
-    foreach (array($dir, $dir . 'dead-letter/') as $q) {
-        $files = array_merge($files, array($q . 'events.txt'),
+    foreach ([$dir, $dir . 'dead-letter/'] as $q) {
+        $files = array_merge($files, [$q . 'events.txt'],
             (array) glob($q . 'unprocessed/*.txt'), (array) glob($q . 'processing/*.txt'), (array) glob($q . 'delayed/*.txt'));
     }
 

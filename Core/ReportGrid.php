@@ -67,7 +67,7 @@ class ReportGrid {
      * and a card that had to declare its own width could be authored at full
      * width, which is the layout it exists to avoid.
      */
-    const DEFAULT_COLSPANS = array(
+    const DEFAULT_COLSPANS = [
         'grid-card' => 3,
 
         /*
@@ -78,7 +78,7 @@ class ReportGrid {
          * the type exists for.
          */
         'trend-card' => 6,
-    );
+    ];
 
     /**
      * The width a widget of this type gets when it names none.
@@ -163,7 +163,7 @@ class ReportGrid {
      */
     public static function classesFor( $widget ) {
 
-        $classes = array( 'owa_reportGridItem' );
+        $classes = [ 'owa_reportGridItem' ];
 
         /*
          * The widget's TYPE, as a class.
@@ -214,7 +214,7 @@ class ReportGrid {
      */
     public static function spanClasses() {
 
-        $classes = array();
+        $classes = [];
 
         for ( $i = 1; $i <= self::COLUMNS; $i++ ) {
 

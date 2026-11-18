@@ -29,10 +29,10 @@ class ResetSecretsCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Replaces OWA_NONCE_KEY, OWA_NONCE_SALT, OWA_AUTH_KEY and OWA_AUTH_SALT in owa-config.php with new random values. Every application password stops working, as do signed-in sessions.',
-            'arguments'   => array(),
-        );
+            'arguments'   => [],
+        ];
     }
     /**
      *  constructor.
@@ -56,94 +56,94 @@ class ResetSecretsCli extends \OWA\Core\Controller\Cli {
         
         // make this check a validator
         if ( file_exists( $config_file ) ) {
-	        
-	        // clear out a prior tmp file
-	        if ( file_exists( $temp_file ) ) {
-		        
-		        unlink( $temp_file );
-	        }
-	        
-	        // load current config into memory
-	        $current_config = file( $config_file );
-	        
-	        // create new config file
-	        $new_config = fopen( $temp_file, 'w');
+            
+            // clear out a prior tmp file
+            if ( file_exists( $temp_file ) ) {
+                
+                unlink( $temp_file );
+            }
+            
+            // load current config into memory
+            $current_config = file( $config_file );
+            
+            // create new config file
+            $new_config = fopen( $temp_file, 'w');
 
-	        if ( $current_config === false || ! $new_config ) {
+            if ( $current_config === false || ! $new_config ) {
 
-	            return $this->fail( sprintf( 'Could not read %s or write %s. Nothing was changed.', $config_file, $temp_file ) );
-	        }
-	        
-	      
-	        $mod = false;
-	        
-	        $secrets = [
-		        'OWA_NONCE_KEY',
-		        'OWA_NONCE_SALT',
-		        'OWA_AUTH_KEY',
-		        'OWA_AUTH_SALT'
-	        ];
-	        
-	        // loop throug hthe current config line by line
-	        foreach ( $current_config as $line_num => $line ) {
-	        	
-	        	$test = substr( $line, 8, 12 );
-	        	
-	        	// replaced flag
-				$replaced = false;
-	        	
-	        	// loop through secrets
-	        	foreach ( $secrets as $secret ) {
-		        	
-		        	if ( $test === substr( $secret, 0, 12 ) ) {
-			        	// write new line
-			        	fwrite( $new_config, sprintf( "define('%s', '%s' ); \n", $secret, \OWA\Core\CoreAPI::secureRandomString(64) ) );	
-	                    
-	                    $replaced = true;
-	                    $mod = true;
-	                    //skip the restof the loop as we already found the match
-	                    continue;
-	                    
-		        	}
-		        	
-	        	}
-	        	
-	        	if ( ! $replaced )	{
-		        	
-		        	fwrite( $new_config, $line);
-		        	
-	        	}        	
-	        }
-	        
-	        fclose( $new_config );
-	        // make sure the new file is read/exec able
-			chmod( $temp_file, 0750 );
-			
-			// if there was a mod makde to the config then make it the new config file.
-			if ( $mod ) {
-				
-			  if ( ! rename( $temp_file, $config_file ) ) {
+                return $this->fail( sprintf( 'Could not read %s or write %s. Nothing was changed.', $config_file, $temp_file ) );
+            }
+            
+          
+            $mod = false;
+            
+            $secrets = [
+                'OWA_NONCE_KEY',
+                'OWA_NONCE_SALT',
+                'OWA_AUTH_KEY',
+                'OWA_AUTH_SALT'
+            ];
+            
+            // loop throug hthe current config line by line
+            foreach ( $current_config as $line_num => $line ) {
+                
+                $test = substr( $line, 8, 12 );
+                
+                // replaced flag
+                $replaced = false;
+                
+                // loop through secrets
+                foreach ( $secrets as $secret ) {
+                    
+                    if ( $test === substr( $secret, 0, 12 ) ) {
+                        // write new line
+                        fwrite( $new_config, sprintf( "define('%s', '%s' ); \n", $secret, \OWA\Core\CoreAPI::secureRandomString(64) ) );	
+                        
+                        $replaced = true;
+                        $mod = true;
+                        //skip the restof the loop as we already found the match
+                        continue;
+                        
+                    }
+                    
+                }
+                
+                if ( ! $replaced )	{
+                    
+                    fwrite( $new_config, $line);
+                    
+                }        	
+            }
+            
+            fclose( $new_config );
+            // make sure the new file is read/exec able
+            chmod( $temp_file, 0750 );
+            
+            // if there was a mod makde to the config then make it the new config file.
+            if ( $mod ) {
+                
+              if ( ! rename( $temp_file, $config_file ) ) {
 
-			      return $this->fail( sprintf( 'Could not replace %s. Nothing was changed.', $config_file ) );
-			  }
+                  return $this->fail( sprintf( 'Could not replace %s. Nothing was changed.', $config_file ) );
+              }
 
-			  \OWA\Core\CoreAPI::notice( "Secrets updated successfully." );
-			
-			} else {
-				// else blow away any tmp file created.
-				unlink( $temp_file );
-			
-			}
-	        
-	    } else {
-		    
-		    return $this->fail( sprintf( '%s does not exist. Nothing was changed.', $config_file ) );
-	    }
+              \OWA\Core\CoreAPI::notice( "Secrets updated successfully." );
+            
+            } else {
+                // else blow away any tmp file created.
+                unlink( $temp_file );
+            
+            }
+            
+        } else {
+            
+            return $this->fail( sprintf( '%s does not exist. Nothing was changed.', $config_file ) );
+        }
     }
 
     public function errorAction() {
-	    
-        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? array() );
+        
+        \OWA\Core\Controller\Cli::reportInvalidArguments( $this->data['validation_errors'] ?? [] );
     }
 
 }

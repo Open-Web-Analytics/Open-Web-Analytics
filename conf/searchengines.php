@@ -1,7 +1,7 @@
 <?php
 
 return [
-	        
+            
     ['domain' => 'google', 'query_param' =>'q'],
     ['domain' => 'yahoo', 'query_param' => 'p'],
     ['domain' => 'msn', 'query_param' => 'q'],
@@ -51,6 +51,3 @@ return [
     
     
 ];
-
-
-?>

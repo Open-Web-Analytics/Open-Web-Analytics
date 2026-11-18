@@ -32,7 +32,7 @@ final class MessageCatalogueTest extends TestCase
     {
         $source = (string) file_get_contents(self::PATH);
 
-        $counts = array();
+        $counts = [];
 
         // Top-level entries only: `    NNNN => [`, at the indentation the file
         // uses for its own keys.
@@ -56,7 +56,7 @@ final class MessageCatalogueTest extends TestCase
      */
     private function catalogue(): array
     {
-        $_owa_messages = array();
+        $_owa_messages = [];
 
         require self::PATH;
 
@@ -79,7 +79,7 @@ final class MessageCatalogueTest extends TestCase
      */
     public function testNoStatusCodeIsDeclaredTwice(): void
     {
-        $duplicates = array();
+        $duplicates = [];
 
         foreach ($this->declaredCounts() as $code => $count) {
 
@@ -88,7 +88,7 @@ final class MessageCatalogueTest extends TestCase
             }
         }
 
-        $this->assertSame(array(), $duplicates,
+        $this->assertSame([], $duplicates,
             "These status codes are declared more than once in conf/messages.php.\n"
             . "PHP keeps the LAST one silently, so every earlier message is\n"
             . "unreachable and anything setting the code shows the wrong text:\n  "
@@ -117,7 +117,7 @@ final class MessageCatalogueTest extends TestCase
     {
         $messages = $this->catalogue();
 
-        $bad = array();
+        $bad = [];
 
         foreach ($messages as $code => $message) {
 
@@ -126,7 +126,7 @@ final class MessageCatalogueTest extends TestCase
             }
         }
 
-        $this->assertSame(array(), $bad,
+        $this->assertSame([], $bad,
             'these codes have no message text: ' . implode(', ', $bad));
     }
 
@@ -140,7 +140,7 @@ final class MessageCatalogueTest extends TestCase
     public function testEveryCodeAControllerSetsIsDefined(): void
     {
         $messages = $this->catalogue();
-        $missing  = array();
+        $missing  = [];
 
         foreach (glob(__DIR__ . '/../modules/*/Controller/*.php') as $file) {
 
@@ -160,7 +160,7 @@ final class MessageCatalogueTest extends TestCase
             }
         }
 
-        $this->assertSame(array(), $missing,
+        $this->assertSame([], $missing,
             "These controllers set a status code the catalogue does not define, so the\n"
             . "screen reports an error and then shows no message:\n  "
             . implode("\n  ", $missing));
@@ -184,7 +184,7 @@ final class MessageCatalogueTest extends TestCase
     {
         $messages = $this->catalogue();
 
-        foreach (array('SitesAdd', 'SitesEditSettings', 'UsersEdit') as $name) {
+        foreach (['SitesAdd', 'SitesEditSettings', 'UsersEdit'] as $name) {
 
             $source = (string) file_get_contents(
                 __DIR__ . '/../modules/Base/Controller/' . $name . '.php');
@@ -217,7 +217,7 @@ final class MessageCatalogueTest extends TestCase
     {
         $messages = $this->catalogue();
 
-        foreach (array(2510 => 'created', 2511 => 'saved', 2512 => 'deleted') as $code => $word) {
+        foreach ([2510 => 'created', 2511 => 'saved', 2512 => 'deleted'] as $code => $word) {
 
             $this->assertArrayHasKey($code, $messages, "status code $code is not defined");
 

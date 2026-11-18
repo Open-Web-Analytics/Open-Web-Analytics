@@ -27,7 +27,7 @@ class Update077 extends \OWA\Core\Update {
 
     public $schema_version = 77;
 
-    const COLUMNS = array( 'value' );
+    const COLUMNS = [ 'value' ];
 
     /**
      * @param  bool $force
@@ -73,5 +73,3 @@ class Update077 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

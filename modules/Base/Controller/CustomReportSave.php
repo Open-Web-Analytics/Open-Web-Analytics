@@ -108,12 +108,12 @@ class CustomReportSave extends \OWA\Core\AdminController {
         // Stored on, and validated against the dimensions of, the Property the
         // builder was on, which the form posts: a custom dimension of its is a
         // choice there. An existing report's is its own (loadOf() above).
-        $result = \OWA\Module\Base\Classes\CustomReports::save( array(
+        $result = \OWA\Module\Base\Classes\CustomReports::save( [
             'id'         => $id,
             'name'       => $this->getParam( 'customReportName' ),
             'definition' => $this->getParam( 'customReportDefinition' ),
             'is_shared'  => (bool) $this->getParam( 'isShared' ),
-        ), $user_id, $propertyId );
+        ], $user_id, $propertyId );
 
         if ( ! $result['ok'] ) {
 

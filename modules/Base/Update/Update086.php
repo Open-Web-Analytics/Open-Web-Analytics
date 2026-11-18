@@ -41,11 +41,11 @@ class Update086 extends \OWA\Core\Update {
     public $schema_version = 86;
 
     /** The modules whose every row this deletes. */
-    const MODULES = array( 'fileCache', 'memcachedCache' );
+    const MODULES = [ 'fileCache', 'memcachedCache' ];
 
     /** The base settings this deletes. */
-    const RETIRED = array( 'cache_objects', 'cacheType', 'cache_dir', 'memcachedServers',
-        'memcachedPersistantConnections', 'default_cache_expiration_period' );
+    const RETIRED = [ 'cache_objects', 'cacheType', 'cache_dir', 'memcachedServers',
+        'memcachedPersistantConnections', 'default_cache_expiration_period' ];
 
     /** What up() deleted: { rows: id => row }. */
     const BEFORE = 'cache_settings_before_086';
@@ -64,10 +64,10 @@ class Update086 extends \OWA\Core\Update {
             return implode( ', ', array_fill( 0, count( $values ), '?' ) );
         };
 
-        return array(
+        return [
             sprintf( "module IN ( %s ) OR ( module = 'base' AND name IN ( %s ) )", $in( self::MODULES ), $in( self::RETIRED ) ),
             array_merge( self::MODULES, self::RETIRED ),
-        );
+        ];
     }
 
     /**
@@ -89,7 +89,7 @@ class Update086 extends \OWA\Core\Update {
         }
 
         $record = $this->record();
-        $record['rows'] = isset( $record['rows'] ) && is_array( $record['rows'] ) ? $record['rows'] : array();
+        $record['rows'] = isset( $record['rows'] ) && is_array( $record['rows'] ) ? $record['rows'] : [];
 
         foreach ( $rows as $row ) {
 
@@ -146,7 +146,7 @@ class Update086 extends \OWA\Core\Update {
 
         $settings = $this->settings();
 
-        foreach ( (array) ( $record['rows'] ?? array() ) as $row ) {
+        foreach ( (array) ( $record['rows'] ?? [] ) as $row ) {
 
             if ( ! $this->restoreRow( (array) $row ) ) {
 
@@ -158,7 +158,7 @@ class Update086 extends \OWA\Core\Update {
             if ( $settings && $row['scope_type'] === 'install' ) {
 
                 $settings->db_settings[ $row['module'] ][ $row['name'] ] =
-                    @unserialize( (string) $row['value'], array( 'allowed_classes' => false ) );
+                    @unserialize( (string) $row['value'], [ 'allowed_classes' => false ] );
             }
         }
 
@@ -172,5 +172,3 @@ class Update086 extends \OWA\Core\Update {
         return true;
     }
 }
-
-?>

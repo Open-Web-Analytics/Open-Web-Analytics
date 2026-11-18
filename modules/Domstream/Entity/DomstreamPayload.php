@@ -29,5 +29,3 @@ class DomstreamPayload extends \OWA\Core\Entity {
         $this->setProperty( new \OWA\Module\Base\Classes\DbColumn( 'payload', OWA_DTD_BLOB ) );
     }
 }
-
-?>

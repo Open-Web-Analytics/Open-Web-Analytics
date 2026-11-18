@@ -139,7 +139,7 @@ class GeoEncodingRepair {
      */
     private static function codepoints( $value ) {
 
-        $codepoints = array();
+        $codepoints = [];
         $length     = strlen( $value );
         $i          = 0;
 

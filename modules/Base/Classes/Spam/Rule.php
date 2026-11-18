@@ -82,5 +82,3 @@ abstract class Rule {
         return new Client( (string) ( $headers['user-agent'] ?? '' ) );
     }
 }
-
-?>

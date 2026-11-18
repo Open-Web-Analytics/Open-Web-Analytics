@@ -15,7 +15,7 @@ use OWA\Module\Base\Handler\EventRawHandlers;
 return function () {
 
     $constants = ( new ReflectionClass( EventRawHandlers::class ) )->getConstants();
-    $rows      = array();
+    $rows      = [];
 
     foreach ( $constants as $name => $prefix ) {
 

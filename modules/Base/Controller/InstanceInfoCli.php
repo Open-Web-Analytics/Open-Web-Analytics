@@ -46,13 +46,13 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
     /** See \OWA\Core\Controller\Cli::usage(). */
     public static function usage() {
 
-        return array(
+        return [
             'description' => 'Prints one read-only report on the whole installation: versions, scheduler, retention, partitions and the other things that fail without an error. Exits 0 whatever it finds unless strict=1.',
-            'arguments'   => array(
+            'arguments'   => [
                 'strict=1'   => 'Exit non-zero when anything is in a FAIL state, for monitoring.',
                 'no-color=1' => 'Plain output with no colour. Also off when NO_COLOR is set.',
-            ),
-        );
+            ],
+        ];
     }
 
     /** Status ranks, worst last -- the summary reports the worst seen. */
@@ -70,7 +70,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
     private $colour = false;
 
     /** @var array<string,int> */
-    private $tally = array( self::OK => 0, self::WARN => 0, self::FAIL => 0 );
+    private $tally = [ self::OK => 0, self::WARN => 0, self::FAIL => 0 ];
 
     public function __construct( $params ) {
 
@@ -88,7 +88,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         $this->colour = $this->useColour();
 
-        $lines = array();
+        $lines = [];
 
         // A server without a database (a collector) reports what it has.
         $database = \OWA\Core\ServerRole::current()->hasDatabase();
@@ -135,7 +135,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         $url  = \OWA\Core\CoreAPI::getSetting( 'base', 'public_url' ) ?: '(no public url set)';
         $role = \OWA\Core\ServerRole::current();
 
-        $rows = array(
+        $rows = [
             $this->fact( 'Version',   \OWA\Core\Env::version() ),
             $this->fact( 'Location',  \OWA\Core\Env::root() . '/' ),
             $this->fact( 'Server role', sprintf( '%s (serves %s)', $role->name(), implode( ', ', $role->requestTypes() ) ) ),
@@ -144,10 +144,10 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             $this->fact( 'PHP',       phpversion() . ' (' . PHP_OS . ')' ),
             $this->fact( 'Timezone',  $this->timezone() ),
             $this->fact( 'Reported',  date( 'Y-m-d H:i:s' ) ),
-        );
+        ];
 
         return array_merge(
-            array( '', $this->bold( 'Open Web Analytics -- instance info' ), '' ),
+            [ '', $this->bold( 'Open Web Analytics -- instance info' ), '' ],
             $rows );
     }
 
@@ -158,7 +158,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function environment() {
 
-        $rows = array();
+        $rows = [];
 
         foreach ( \OWA\Module\Base\Classes\EnvironmentCheck::all(
                       \OWA\Core\CoreAPI::getSetting( 'base', 'config_file' ) ) as $check ) {
@@ -201,7 +201,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function modules() {
 
-        $rows = array();
+        $rows = [];
 
         $active  = (array) \OWA\Core\CoreAPI::getActiveModules();
         $present = (array) \OWA\Core\CoreAPI::getPresentModules();
@@ -209,7 +209,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         $rows[] = $this->fact( 'Active',
             $active ? implode( ', ', $active ) : 'none' );
 
-        $inactive = array();
+        $inactive = [];
 
         foreach ( $present as $dir ) {
 
@@ -248,7 +248,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function schema() {
 
-        $rows = array();
+        $rows = [];
 
         $pending = (bool) \OWA\Core\CoreAPI::isUpdateRequired();
 
@@ -328,7 +328,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function scheduler() {
 
-        $rows = array();
+        $rows = [];
 
         $role = \OWA\Core\ServerRole::current();
 
@@ -385,13 +385,13 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function factTables() {
 
-        $rows   = array();
+        $rows   = [];
         $counts = $this->partitionCounts();
 
         if ( $counts === null ) {
 
-            return array( $this->row( self::WARN, 'Partitioning', 'could not be read',
-                'Partition metadata was not readable. This needs MySQL 5.7 or later.' ) );
+            return [ $this->row( self::WARN, 'Partitioning', 'could not be read',
+                'Partition metadata was not readable. This needs MySQL 5.7 or later.' ) ];
         }
 
         $partitioned = count( array_filter( $counts ) );
@@ -434,7 +434,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function freshness() {
 
-        $rows = array();
+        $rows = [];
 
         $dir  = \OWA\Core\CoreAPI::getSetting( 'base', 'ua_regexes_dir' ) ?: \OWA\Core\Env::dataDir() . 'ua-parser/';
         $file = $dir . 'regexes.php';
@@ -487,10 +487,10 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         } catch ( \Throwable $t ) {
 
-            return array( $this->row( self::WARN, 'Tracker ingest', 'unavailable', $t->getMessage() ) );
+            return [ $this->row( self::WARN, 'Tracker ingest', 'unavailable', $t->getMessage() ) ];
         }
 
-        $rows   = array();
+        $rows   = [];
         $rows[] = $this->fact( 'Queue type', \OWA\Module\Base\Classes\TrackerIngest::backend() );
         $rows[] = $this->fact( 'Queueing', \OWA\Module\Base\Classes\TrackerIngest::isQueued() ? 'on' : 'off (direct; failed writes retried)' );
 
@@ -549,10 +549,10 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         if ( ! method_exists( $c, 'declarationProblems' ) ) {
 
-            return array();
+            return [];
         }
 
-        $rows = array();
+        $rows = [];
 
         $declared = (array) $c->declaredModules();
         $fields   = (array) $c->registeredFields();
@@ -614,14 +614,14 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function contents() {
 
-        $rows = array();
+        $rows = [];
 
-        foreach ( array(
+        foreach ( [
             'Organizations' => 'base.organization',
             'Properties'    => 'base.property',
             'Sites'         => 'base.site',
             'Users'         => 'base.user',
-        ) as $label => $entity ) {
+        ] as $label => $entity ) {
 
             $n = null;
 
@@ -665,10 +665,10 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         // v2's partitioned tables: the raw store and one cube per Property.
         $tables = array_merge(
-            array( \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ),
+            [ \OWA\Core\CoreAPI::entityFactory( 'base.event_raw' )->getTableName() ],
             array_values( \OWA\Module\Base\Classes\Cube\Cubes::existing() ) );
 
-        $counts = array();
+        $counts = [];
 
         foreach ( $tables as $table ) {
 
@@ -738,7 +738,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         } catch ( \Throwable $e ) {
 
-            return array();
+            return [];
         }
     }
 
@@ -749,7 +749,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function jobState() {
 
-        $out = array();
+        $out = [];
 
         try {
 
@@ -764,7 +764,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         } catch ( \Throwable $ex ) {
 
-            return array();
+            return [];
         }
 
         return $out;
@@ -868,10 +868,10 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
 
         if ( ! $rows ) {
 
-            return array();
+            return [];
         }
 
-        return array_merge( array( '', $this->bold( strtoupper( $title ) ) ), $rows );
+        return array_merge( [ '', $this->bold( strtoupper( $title ) ) ], $rows );
     }
 
     /**
@@ -895,13 +895,13 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             $verdict = $this->paint( 'Everything checks out', self::OK );
         }
 
-        return array(
+        return [
             '',
             str_repeat( '-', 64 ),
             sprintf( '  %s   (%d ok, %d warning%s, %d failure%s)',
                 $verdict, $this->tally[ self::OK ], $warn, $warn === 1 ? '' : 's', $bad, $bad === 1 ? '' : 's' ),
             '',
-        );
+        ];
     }
 
     /**
@@ -934,7 +934,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
      */
     private function mark( $status ) {
 
-        $glyphs = array( self::OK => '+', self::WARN => '!', self::FAIL => 'x' );
+        $glyphs = [ self::OK => '+', self::WARN => '!', self::FAIL => 'x' ];
 
         return $this->paint( $glyphs[ $status ], $status );
     }
@@ -974,7 +974,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             return $text;
         }
 
-        $codes = array( self::OK => '0;32', self::WARN => '0;33', self::FAIL => '0;31' );
+        $codes = [ self::OK => '0;32', self::WARN => '0;33', self::FAIL => '0;31' ];
 
         return "\033[" . $codes[ $status ] . 'm' . $text . "\033[0m";
     }

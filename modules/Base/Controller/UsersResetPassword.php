@@ -86,8 +86,3 @@ class UsersResetPassword extends \OWA\Core\Controller {
     }
     
 }
-
-
-
-
-?>

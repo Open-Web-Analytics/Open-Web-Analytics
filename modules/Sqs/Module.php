@@ -79,19 +79,19 @@ class Module extends \OWA\Core\Module {
      */
     public function registerAdminPanels() {
 
-        $this->registerSettingsPage( array(
+        $this->registerSettingsPage( [
             'do'        => 'sqs.optionsSqs',
             'title'     => \OWA\Core\CoreAPI::t( 'AWS SQS' ),
             'section'   => 'Instance',
             'order'     => 20,
-            'fieldsets' => array( 'sqs.connection' ),
-        ) );
+            'fieldsets' => [ 'sqs.connection' ],
+        ] );
 
-        $this->registerSettingsFieldSet( array(
+        $this->registerSettingsFieldSet( [
             'id'       => 'sqs.connection',
             'legend'   => \OWA\Core\CoreAPI::t( 'Connection' ),
-            'settings' => array( 'region' ),
-        ) );
+            'settings' => [ 'region' ],
+        ] );
     }
 
     public function _registerEventHandlers() {
@@ -126,5 +126,3 @@ class Module extends \OWA\Core\Module {
             : 'SQS: the tracker-ingest queues could not be provisioned: ' . $result['error'] );
     }
 }
-
-?>

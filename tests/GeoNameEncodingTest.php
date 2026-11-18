@@ -60,8 +60,8 @@ final class GeoNameEncodingTest extends TestCase
         $src = file_get_contents(
             dirname( __DIR__ ) . '/modules/MaxmindGeoip/Classes/Maxmind.php' );
 
-        foreach ( array( 'city', 'continent', 'continent_code',
-                         'state', 'state_code', 'country' ) as $field ) {
+        foreach ( [ 'city', 'continent', 'continent_code',
+                         'state', 'state_code', 'country' ] as $field ) {
 
             $this->assertMatchesRegularExpression(
                 "/\\\$location_map\['" . preg_quote( $field, '/' )

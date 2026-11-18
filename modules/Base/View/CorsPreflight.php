@@ -48,5 +48,3 @@ class CorsPreflight extends \OWA\Core\View\RestApi {
         $this->setResponseData( '' );
     }
 }
-
-?>

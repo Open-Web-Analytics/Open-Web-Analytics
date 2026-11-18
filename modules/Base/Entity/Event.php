@@ -94,7 +94,7 @@ class Event extends EventRaw {
 
         // NOR PRIOR_TOUCH_*. Evidence for attributed_* below, which is the
         // cube's reading of it (PLAN 2.29).
-        foreach ( array( 'source', 'medium', 'campaign', 'ad', 'referer_host', 'ts' ) as $part ) {
+        foreach ( [ 'source', 'medium', 'campaign', 'ad', 'referer_host', 'ts' ] as $part ) {
 
             unset( $this->properties[ 'prior_touch_' . $part ] );
         }
@@ -476,5 +476,3 @@ class Event extends EventRaw {
         return $column;
     }
 }
-
-?>

@@ -33,8 +33,8 @@ class PropertyProfiles extends \OWA\Core\AdminController {
 
         $this->set( 'property', $property->_getProperties() );
         $this->set( 'propertyId', $property_id );
-        $this->set( 'profiles', $property_id !== '' ? self::rowsFor( $property_id ) : array() );
-        $this->settingsChrome( array(), '', $property_id );
+        $this->set( 'profiles', $property_id !== '' ? self::rowsFor( $property_id ) : [] );
+        $this->settingsChrome( [], '', $property_id );
         $this->setSubview( 'base.propertyProfiles', [
             'template' => 'property_profiles.php', 'vars' => [ 'property', 'propertyId', 'profiles' ] ] );
     }
@@ -56,7 +56,7 @@ class PropertyProfiles extends \OWA\Core\AdminController {
         // ASC explicitly: orderBy() with no direction is DESC.
         $db->orderBy( 'name', OWA_SQL_ASCENDING );
 
-        $rows = array();
+        $rows = [];
 
         foreach ( (array) $db->getAllRows() as $row ) {
 
@@ -70,5 +70,3 @@ class PropertyProfiles extends \OWA\Core\AdminController {
         return $rows;
     }
 }
-
-?>

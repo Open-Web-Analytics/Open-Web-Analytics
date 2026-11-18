@@ -19,13 +19,13 @@ final class CurrentPublicUrlTest extends TestCase
     private $server;
 
     /** @var array settings before the test */
-    private $settings = array();
+    private $settings = [];
 
     protected function setUp(): void
     {
         $this->server = $_SERVER;
 
-        foreach (array('public_url', 'request_type') as $name) {
+        foreach (['public_url', 'request_type'] as $name) {
             $this->settings[$name] = \OWA\Core\CoreAPI::getSetting('base', $name);
         }
     }
@@ -85,7 +85,7 @@ final class CurrentPublicUrlTest extends TestCase
         $this->request('https://example.com/owa/', 'localhost:3508', '/index.php', '/index.php?do=base.reportingHome');
         \OWA\Core\CoreAPI::setSetting('base', 'request_type', 'ui');
 
-        $screen = new class(array('do' => 'base.reportingHome')) extends \OWA\Core\Controller {
+        $screen = new class(['do' => 'base.reportingHome']) extends \OWA\Core\Controller {
             function action() {}
         };
         $screen->notAuthenticatedAction();

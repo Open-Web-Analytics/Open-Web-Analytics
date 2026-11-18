@@ -68,5 +68,3 @@ class InstallConfigEntry extends \OWA\Core\View {
         $this->setJs("owa", "base/dist/owa.reporting-combined-min.js");
     }
 }
-
-?>

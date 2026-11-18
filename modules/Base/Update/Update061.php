@@ -64,7 +64,7 @@ class Update061 extends \OWA\Core\Update {
 
         foreach ( $this->funnelPlans() as $plan ) {
 
-            $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), array( $plan['id'] ) );
+            $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), [ $plan['id'] ] );
         }
 
         if ( ! $this->hasBackupColumn( $table ) ) {
@@ -103,7 +103,7 @@ class Update061 extends \OWA\Core\Update {
         $rows = (array) $db->get_results( sprintf(
             'SELECT id, name, definition FROM %s WHERE v1_definition IS NULL'
             . ' AND ( report_type IS NULL OR report_type = ? OR report_type = ? )',
-            $table ), array( '', \OWA\Module\Base\Entity\CustomReport::TYPE_REPORT ) );
+            $table ), [ '', \OWA\Module\Base\Entity\CustomReport::TYPE_REPORT ] );
 
         foreach ( $rows as $row ) {
 
@@ -138,7 +138,7 @@ class Update061 extends \OWA\Core\Update {
             }
 
             $ok = $db->query( sprintf( 'UPDATE %s SET definition = ?, v1_definition = ? WHERE id = ?', $table ),
-                array( json_encode( $result['definition'] ), $raw, $row['id'] ) );
+                [ json_encode( $result['definition'] ), $raw, $row['id'] ] );
 
             if ( $ok === false ) {
 
@@ -171,7 +171,7 @@ class Update061 extends \OWA\Core\Update {
 
         foreach ( $plans as $plan ) {
 
-            if ( $db->get_row( sprintf( 'SELECT id FROM %s WHERE id = ?', $table ), array( $plan['id'] ) ) ) {
+            if ( $db->get_row( sprintf( 'SELECT id FROM %s WHERE id = ?', $table ), [ $plan['id'] ] ) ) {
 
                 continue;
             }
@@ -184,17 +184,17 @@ class Update061 extends \OWA\Core\Update {
              */
             $ok = $db->query( sprintf( 'INSERT INTO %s (id, name, user_id, report_type, visualization_type, is_shared,'
                 . ' definition, creation_timestamp, last_updated_timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', $table ),
-                array(
+                [
                     $plan['id'],
                     $plan['name'],
                     $owner,
                     \OWA\Module\Base\Entity\CustomReport::TYPE_VISUALIZATION,
                     'funnel',
                     1,
-                    json_encode( array( 'steps' => $plan['steps'] ) ),
+                    json_encode( [ 'steps' => $plan['steps'] ] ),
                     time(),
                     time(),
-                ) );
+                ] );
 
             if ( $ok === false ) {
 
@@ -224,7 +224,7 @@ class Update061 extends \OWA\Core\Update {
             "SELECT scope_id, value FROM %s WHERE name = 'goals' AND scope_type = 'profile'",
             $setting->getTableName() ) );
 
-        $plans = array();
+        $plans = [];
 
         foreach ( $rows as $row ) {
 
@@ -247,16 +247,16 @@ class Update061 extends \OWA\Core\Update {
      */
     public static function planFunnels( array $row ) {
 
-        $goals = @unserialize( (string) ( $row['value'] ?? '' ), array( 'allowed_classes' => false ) );
+        $goals = @unserialize( (string) ( $row['value'] ?? '' ), [ 'allowed_classes' => false ] );
 
         if ( ! is_array( $goals ) ) {
 
-            return array();
+            return [];
         }
 
         $site_id  = (string) $row['scope_id'];
         $property = \OWA\Module\Base\Classes\Migration\GoalMigrator::propertyFor( $site_id );
-        $plans    = array();
+        $plans    = [];
 
         foreach ( $goals as $number => $goal ) {
 
@@ -265,9 +265,9 @@ class Update061 extends \OWA\Core\Update {
                 continue;
             }
 
-            $details = isset( $goal['details'] ) && is_array( $goal['details'] ) ? $goal['details'] : array();
+            $details = isset( $goal['details'] ) && is_array( $goal['details'] ) ? $goal['details'] : [];
             $funnel  = isset( $details['funnel_steps'] ) && is_array( $details['funnel_steps'] )
-                ? $details['funnel_steps'] : array();
+                ? $details['funnel_steps'] : [];
 
             $funnel = array_values( array_filter( $funnel, function ( $s ) {
 
@@ -285,16 +285,16 @@ class Update061 extends \OWA\Core\Update {
             } );
 
             $goal_number = (int) ( ( $goal['goal_number'] ?? '' ) ?: $number );
-            $steps       = array();
-            $notes       = array();
+            $steps       = [];
+            $notes       = [];
 
             foreach ( $funnel as $step ) {
 
-                $steps[] = array(
+                $steps[] = [
                     'name'        => trim( (string) ( $step['name'] ?? '' ) ),
                     'path'        => trim( (string) ( $step['path'] ?? $step['url'] ) ),
                     'step_number' => count( $steps ) + 1,
-                );
+                ];
 
                 if ( ! empty( $step['is_required'] ) ) {
 
@@ -314,11 +314,11 @@ class Update061 extends \OWA\Core\Update {
             } else {
 
                 // The step's key as funnels stored it then; Update076 renames it.
-                $steps[] = array(
+                $steps[] = [
                     'name'          => (string) $goal['goal_name'],
                     'goal_event_id' => $goal_event_id,
                     'step_number'   => count( $steps ) + 1,
-                );
+                ];
             }
 
             if ( count( $steps ) > self::MAX_STEPS && $goal_event_id === null ) {
@@ -338,13 +338,13 @@ class Update061 extends \OWA\Core\Update {
                 $steps[] = $last;
             }
 
-            $plans[] = array(
+            $plans[] = [
                 'id'    => self::funnelId( $site_id, $goal_number ),
                 'name'  => sprintf( '%s funnel (%s, from 1.x)', $goal['goal_name'], self::siteName( $site_id ) ),
                 'goal'  => (string) $goal['goal_name'],
                 'steps' => $steps,
                 'notes' => $notes,
-            );
+            ];
         }
 
         return $plans;
@@ -387,5 +387,3 @@ class Update061 extends \OWA\Core\Update {
         return (string) ( $row['user_id'] ?? '' );
     }
 }
-
-?>

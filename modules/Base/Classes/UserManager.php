@@ -171,5 +171,3 @@ class UserManager extends \OWA\Core\Base {
         \OWA\Module\Base\Entity\Site::forgetAssignedUsers();
     }
 }
-
-?>

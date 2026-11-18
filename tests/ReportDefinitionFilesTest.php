@@ -25,10 +25,10 @@ final class ReportDefinitionFilesTest extends TestCase
     /** Every definition file, by the id it is registered under. */
     public static function definitionProvider(): array
     {
-        $cases = array();
+        $cases = [];
 
         foreach ( Harness::definitionIds() as $id ) {
-            $cases[ $id ] = array( $id );
+            $cases[ $id ] = [ $id ];
         }
 
         return $cases;
@@ -68,34 +68,34 @@ final class ReportDefinitionFilesTest extends TestCase
 
     public static function badDefinitionProvider(): array
     {
-        return array(
-            'not an object'   => array( 'pages', 'must be an object' ),
-            'no title'        => array( array( 'metrics' => 'sessions' ), 'needs a "title"' ),
-            'empty title'     => array( array( 'title' => '' ), 'needs a "title"' ),
-            'names a renderer' => array(
-                array( 'title' => 'Pages', 'subview' => 'base.reportWidgets' ), 'unknown key' ),
+        return [
+            'not an object'   => [ 'pages', 'must be an object' ],
+            'no title'        => [ [ 'metrics' => 'sessions' ], 'needs a "title"' ],
+            'empty title'     => [ [ 'title' => '' ], 'needs a "title"' ],
+            'names a renderer' => [
+                [ 'title' => 'Pages', 'subview' => 'base.reportWidgets' ], 'unknown key' ],
 
             // The failure this is really for: a key that looks right, does
             // nothing, and says nothing.
-            'misspelled key'  => array(
-                array( 'title' => 'Pages', 'setings' => array() ), 'unknown key' ),
+            'misspelled key'  => [
+                [ 'title' => 'Pages', 'setings' => [] ], 'unknown key' ],
 
-            'settings scalar' => array(
-                array( 'title' => 'Pages', 'settings' => 'metrics' ), 'must be an object' ),
+            'settings scalar' => [
+                [ 'title' => 'Pages', 'settings' => 'metrics' ], 'must be an object' ],
 
-            'description not a string' => array(
-                array( 'title' => 'Pages', 'description' => array( 'Page views' ) ), '"description" must be a string' ),
-        );
+            'description not a string' => [
+                [ 'title' => 'Pages', 'description' => [ 'Page views' ] ], '"description" must be a string' ],
+        ];
     }
 
     /** A definition that is fine must not be refused by the guard above. */
     public function testAGoodDefinitionIsAccepted(): void
     {
-        $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError( array(
+        $this->assertSame( '', \OWA\Core\ConfiguredReport::getDefinitionError( [
             'title'       => 'Web Pages',
             'titleSuffix' => '',
             'description' => 'Page views by page.',
-            'settings'    => array( 'metrics' => 'pageViews' ),
-        ) ) );
+            'settings'    => [ 'metrics' => 'pageViews' ],
+        ] ) );
     }
 }

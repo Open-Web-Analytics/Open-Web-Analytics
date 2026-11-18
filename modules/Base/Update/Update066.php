@@ -44,26 +44,26 @@ class Update066 extends \OWA\Core\Update {
      * Spelled out rather than read from the entity: an update is permanent and
      * a shape is not (see Update063).
      */
-    const RAW = array(
+    const RAW = [
         'prior_touch_source'       => 'VARCHAR(255) NULL',
         'prior_touch_medium'       => 'VARCHAR(64) NULL',
         'prior_touch_campaign'     => 'VARCHAR(255) NULL',
         'prior_touch_ad'           => 'VARCHAR(255) NULL',
         'prior_touch_referer_host' => 'VARCHAR(255) NULL',
         'prior_touch_ts'           => 'BIGINT NULL',
-    );
+    ];
 
-    const VISITOR = array(
+    const VISITOR = [
         'last_touch_source'       => 'VARCHAR(255) NULL',
         'last_touch_medium'       => 'VARCHAR(64) NULL',
         'last_touch_campaign'     => 'VARCHAR(255) NULL',
         'last_touch_ad'           => 'VARCHAR(255) NULL',
         'last_touch_referer_host' => 'VARCHAR(255) NULL',
         'last_touch_ts'           => 'BIGINT NULL',
-    );
+    ];
 
-    const CUBE = array( 'attributed_source', 'attributed_medium', 'attributed_campaign', 'attributed_channel',
-        'attributed_ad' );
+    const CUBE = [ 'attributed_source', 'attributed_medium', 'attributed_campaign', 'attributed_channel',
+        'attributed_ad' ];
 
     /**
      * @param  bool $force
@@ -71,12 +71,12 @@ class Update066 extends \OWA\Core\Update {
      */
     public function up( $force = false ) {
 
-        foreach ( array( 'base.event_raw' => self::RAW, 'base.visitor_acquisition' => self::VISITOR ) as $name => $columns ) {
+        foreach ( [ 'base.event_raw' => self::RAW, 'base.visitor_acquisition' => self::VISITOR ] as $name => $columns ) {
 
             $table   = \OWA\Core\CoreAPI::entityFactory( $name )->getTableName();
             $missing = array_diff_key( $columns, array_flip( $this->present( $table, array_keys( $columns ) ) ) );
 
-            if ( $missing && ! $this->alter( $table, $missing, array() ) ) {
+            if ( $missing && ! $this->alter( $table, $missing, [] ) ) {
 
                 $this->e->notice( sprintf( 'Adding the touch columns to %s failed', $table ) );
 
@@ -88,7 +88,7 @@ class Update066 extends \OWA\Core\Update {
 
         foreach ( \OWA\Module\Base\Classes\Cube\Cubes::allTables() as $table ) {
 
-            $add = array();
+            $add = [];
 
             foreach ( array_diff( self::CUBE, $this->present( $table, self::CUBE ) ) as $column ) {
 
@@ -135,7 +135,7 @@ class Update066 extends \OWA\Core\Update {
 
             $present = $this->present( $table, self::CUBE );
 
-            if ( $present && ! \OWA\Core\CoreAPI::dbSingleton()->alterColumnsRebuilding( $table, array(), $present ) ) {
+            if ( $present && ! \OWA\Core\CoreAPI::dbSingleton()->alterColumnsRebuilding( $table, [], $present ) ) {
 
                 foreach ( array_reverse( $present ) as $column ) {
 
@@ -152,12 +152,12 @@ class Update066 extends \OWA\Core\Update {
             return false;
         }
 
-        foreach ( array( 'base.visitor_acquisition' => self::VISITOR, 'base.event_raw' => self::RAW ) as $name => $columns ) {
+        foreach ( [ 'base.visitor_acquisition' => self::VISITOR, 'base.event_raw' => self::RAW ] as $name => $columns ) {
 
             $table   = \OWA\Core\CoreAPI::entityFactory( $name )->getTableName();
             $present = $this->present( $table, array_keys( $columns ) );
 
-            if ( $present && ! $this->alter( $table, array(), $present ) ) {
+            if ( $present && ! $this->alter( $table, [], $present ) ) {
 
                 $this->e->notice( sprintf( 'Dropping the touch columns from %s failed', $table ) );
 
@@ -177,7 +177,7 @@ class Update066 extends \OWA\Core\Update {
      */
     private function present( $table, array $columns ) {
 
-        $have = array();
+        $have = [];
 
         foreach ( (array) \OWA\Core\CoreAPI::dbSingleton()->get_results( sprintf( 'SHOW COLUMNS FROM %s', $table ) ) as $row ) {
 
@@ -197,7 +197,7 @@ class Update066 extends \OWA\Core\Update {
      */
     private function alter( $table, array $add, array $drop ) {
 
-        $clauses = array();
+        $clauses = [];
 
         foreach ( $add as $column => $definition ) {
 
@@ -213,5 +213,3 @@ class Update066 extends \OWA\Core\Update {
             sprintf( 'ALTER TABLE %s %s', $table, implode( ', ', $clauses ) ) ) !== false;
     }
 }
-
-?>

@@ -9,8 +9,8 @@
  */
 ?>
 <form method="post" name="owa_retention" data-owa-retention-form="install"
-      data-owa-retention-preview="<?php $view->out( $view->makeApiLink( array(
-          'do' => 'retentionPreview', 'module' => 'base', 'version' => 'v1' ) ) ); ?>">
+      data-owa-retention-preview="<?php $view->out( $view->makeApiLink( [
+          'do' => 'retentionPreview', 'module' => 'base', 'version' => 'v1' ] ) ); ?>">
 <?php
 foreach ( $view->settings_fieldsets as $set ) {
 

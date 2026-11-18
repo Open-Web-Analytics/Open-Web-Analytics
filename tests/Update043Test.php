@@ -144,7 +144,7 @@ final class Update043Test extends TestCase
 
         $this->assertNotEmpty( $row );
 
-        $stored = unserialize( (string) $row['settings'], array( 'allowed_classes' => false ) );
+        $stored = unserialize( (string) $row['settings'], [ 'allowed_classes' => false ] );
 
         $this->assertIsArray( $stored );
         $this->assertSame( $expected, $stored['base']['schema_version'] ?? null,

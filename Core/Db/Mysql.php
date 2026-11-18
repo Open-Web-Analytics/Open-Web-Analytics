@@ -178,7 +178,7 @@ class Mysql extends \OWA\Core\Db {
      * @access     public
      *
      */
-    public function query( $sql, array $params = array() ) {
+    public function query( $sql, array $params = [] ) {
   
           if ( $this->connection_status == false) {
 
@@ -202,7 +202,7 @@ class Mysql extends \OWA\Core\Db {
 
         $this->num_queries++;
 
-        $this->result = array();
+        $this->result = [];
 
         $this->new_result = '';
 
@@ -287,7 +287,7 @@ class Mysql extends \OWA\Core\Db {
      * @param  Bindings $params
      * @return \Generator<int, Row, mixed, void>
      */
-    public function get_result_iterator( $sql, array $params = array() ) {
+    public function get_result_iterator( $sql, array $params = [] ) {
 
         if ( $sql ) {
 
@@ -318,7 +318,7 @@ class Mysql extends \OWA\Core\Db {
      * @return     list<Row>|null
      * @access  public
      */
-    public function get_results( $sql, array $params = array() ) {
+    public function get_results( $sql, array $params = [] ) {
 
         if ( $sql ) {
 
@@ -360,7 +360,7 @@ class Mysql extends \OWA\Core\Db {
      * @param Bindings $params
      * @return Row|null
      */
-    public function get_row($sql, array $params = array()) {
+    public function get_row($sql, array $params = []) {
 
         $result = $this->query($sql, $params);
 
@@ -452,7 +452,7 @@ class Mysql extends \OWA\Core\Db {
      */
     protected static function isConstraintErrno( $errno ) {
 
-        return in_array( (int) $errno, array( 1062, 1451, 1452 ), true );
+        return in_array( (int) $errno, [ 1062, 1451, 1452 ], true );
     }
 
     /**
@@ -504,7 +504,7 @@ class Mysql extends \OWA\Core\Db {
         }
 
         $types  = '';
-        $values = array();
+        $values = [];
 
         foreach ( $params as $value ) {
 
@@ -585,5 +585,3 @@ class Mysql extends \OWA\Core\Db {
         return mysqli_affected_rows( $this->connection );
     }
 }
-
-?>

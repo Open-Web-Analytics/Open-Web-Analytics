@@ -35,5 +35,3 @@ class LiteralStep extends Step {
         return (string) call_user_func( $this->value, $context );
     }
 }
-
-?>

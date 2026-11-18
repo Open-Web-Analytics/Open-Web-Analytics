@@ -71,7 +71,7 @@ final class SessionCredentialTest extends TestCase
     {
         return new class($user) extends Auth {
 
-            public $cookies = array();
+            public $cookies = [];
 
             private $stub;
 
@@ -147,16 +147,16 @@ final class SessionCredentialTest extends TestCase
     /** @return array<string,array{mixed}> */
     public static function notCredentials(): array
     {
-        return array(
+        return [
             // what sign-in set before: an HMAC with no expiry
-            'the old form'     => array(hash_hmac('sha256', self::USER, 'key')),
-            'no hmac'          => array((string) (time() + 3600)),
-            'a short hmac'     => array((time() + 3600) . '.' . str_repeat('a', 63)),
-            'a negative expiry' => array('-1.' . str_repeat('a', 64)),
-            'empty'            => array(''),
-            'an array'         => array(array('a' => 'b')),
-            'null'             => array(null),
-        );
+            'the old form'     => [hash_hmac('sha256', self::USER, 'key')],
+            'no hmac'          => [(string) (time() + 3600)],
+            'a short hmac'     => [(time() + 3600) . '.' . str_repeat('a', 63)],
+            'a negative expiry' => ['-1.' . str_repeat('a', 64)],
+            'empty'            => [''],
+            'an array'         => [['a' => 'b']],
+            'null'             => [null],
+        ];
     }
 
     /**
@@ -233,7 +233,7 @@ final class SessionCredentialTest extends TestCase
         $auth = $this->auth($this->user());
 
         $this->assertFalse($auth->authByInput(self::USER, 'not the password'));
-        $this->assertSame(array(), $auth->cookies);
+        $this->assertSame([], $auth->cookies);
     }
 
     /** 1.x stored md5( lower( password ) . length ); the whole hash must match, not a fragment of it. */
@@ -278,7 +278,7 @@ final class SessionCredentialTest extends TestCase
 
         $this->assertTrue($auth->authByCookies(self::USER,
             self::credentialFor($user, time() + Auth::SESSION_REFRESH_BELOW + 3600)));
-        $this->assertSame(array(), $auth->cookies);
+        $this->assertSame([], $auth->cookies);
     }
 
     public function testACookieWithLessThanADayLeftIsReissued(): void
@@ -289,7 +289,7 @@ final class SessionCredentialTest extends TestCase
         $this->assertTrue($auth->authByCookies(self::USER,
             self::credentialFor($user, time() + Auth::SESSION_REFRESH_BELOW - 3600)));
 
-        $this->assertSame(array('p'), array_keys($auth->cookies), 'p only: u is kept');
+        $this->assertSame(['p'], array_keys($auth->cookies), 'p only: u is kept');
 
         $p = $auth->cookies['p'];
         $this->assertEqualsWithDelta(time() + Auth::SESSION_LIFETIME, $p['expires'], 5);
@@ -314,18 +314,18 @@ final class SessionCredentialTest extends TestCase
         $auth = $this->auth($user);
 
         $this->assertFalse($auth->authByCookies(self::USER, self::credentialFor($user, time() - 1)));
-        $this->assertSame(array(), $auth->cookies);
+        $this->assertSame([], $auth->cookies);
     }
 
     /** @return array<string,array{array<string,mixed>,bool}> */
     public static function requests(): array
     {
-        return array(
-            'http'                     => array(array(), false),
-            'https'                    => array(array('HTTPS' => 'on'), true),
-            'https at a proxy'         => array(array('HTTP_X_FORWARDED_PROTO' => 'https'), true),
-            'http at a proxy'          => array(array('HTTP_X_FORWARDED_PROTO' => 'http'), false),
-        );
+        return [
+            'http'                     => [[], false],
+            'https'                    => [['HTTPS' => 'on'], true],
+            'https at a proxy'         => [['HTTP_X_FORWARDED_PROTO' => 'https'], true],
+            'http at a proxy'          => [['HTTP_X_FORWARDED_PROTO' => 'http'], false],
+        ];
     }
 
     /**

@@ -35,29 +35,29 @@ namespace OWA\Module\Base\Classes\Migration;
 class WideIds {
 
     /** table => how its id is derived, and the columns elsewhere holding it */
-    const TABLES = array(
-        'base.site' => array(
-            'columns'   => array( 'site_id' ),
+    const TABLES = [
+        'base.site' => [
+            'columns'   => [ 'site_id' ],
             'separator' => '',
-            'followers' => array( 'base.site_user' => 'site_id' ),
-        ),
-        'base.setting' => array(
-            'columns'   => array( 'scope_type', 'scope_id', 'module', 'name' ),
+            'followers' => [ 'base.site_user' => 'site_id' ],
+        ],
+        'base.setting' => [
+            'columns'   => [ 'scope_type', 'scope_id', 'module', 'name' ],
             'separator' => '|',
-            'followers' => array(),
-        ),
-        'base.notification_state' => array(
-            'columns'   => array( 'notification_id', 'user_id' ),
+            'followers' => [],
+        ],
+        'base.notification_state' => [
+            'columns'   => [ 'notification_id', 'user_id' ],
             'separator' => '',
-            'followers' => array(),
-        ),
-    );
+            'followers' => [],
+        ],
+    ];
 
     /** @var string[] what each table had done to it */
-    public $report = array();
+    public $report = [];
 
     /** @var array<string, string> entity name => table name, where a test re-keys copies */
-    public $tables = array();
+    public $tables = [];
 
     /**
      * Re-key every 32-bit row. Whether the installation derives 32-bit ids
@@ -67,7 +67,7 @@ class WideIds {
      */
     public function widen() {
 
-        $this->report = array();
+        $this->report = [];
 
         foreach ( self::TABLES as $entity_name => $shape ) {
 
@@ -90,7 +90,7 @@ class WideIds {
      */
     public function narrow() {
 
-        $this->report = array();
+        $this->report = [];
 
         foreach ( self::TABLES as $entity_name => $shape ) {
 
@@ -168,7 +168,7 @@ class WideIds {
         foreach ( $rows as $row ) {
 
             $row   = (array) $row;
-            $parts = array();
+            $parts = [];
 
             foreach ( $shape['columns'] as $column ) {
 
@@ -196,22 +196,22 @@ class WideIds {
                 continue;
             }
 
-            $taken = (bool) $db->get_row( sprintf( 'SELECT id FROM %s WHERE id = ?', $table ), array( $to ) );
+            $taken = (bool) $db->get_row( sprintf( 'SELECT id FROM %s WHERE id = ?', $table ), [ $to ] );
 
             foreach ( $shape['followers'] as $follower => $column ) {
 
                 $follower_table = $this->tableFor( $follower );
 
                 if ( $db->query( sprintf( 'UPDATE %s SET `%s` = ? WHERE `%s` = ?', $follower_table, $column, $column ),
-                        array( $to, $from ) ) === false ) {
+                        [ $to, $from ] ) === false ) {
 
                     return $this->failed( $table, $from );
                 }
             }
 
             $ok = $taken
-                ? $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), array( $from ) )
-                : $db->query( sprintf( 'UPDATE %s SET id = ? WHERE id = ?', $table ), array( $to, $from ) );
+                ? $db->query( sprintf( 'DELETE FROM %s WHERE id = ?', $table ), [ $from ] )
+                : $db->query( sprintf( 'UPDATE %s SET id = ? WHERE id = ?', $table ), [ $to, $from ] );
 
             if ( $ok === false ) {
 
@@ -244,5 +244,3 @@ class WideIds {
         return false;
     }
 }
-
-?>

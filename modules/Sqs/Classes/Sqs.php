@@ -42,11 +42,11 @@ final class Sqs {
      * (TrackerIngest::send()): a second to connect, three for the answer, and
      * one retry.
      */
-    const LOGGER_HTTP    = array( 'connect_timeout' => 1, 'timeout' => 3 );
+    const LOGGER_HTTP    = [ 'connect_timeout' => 1, 'timeout' => 3 ];
     const LOGGER_RETRIES = 1;
 
     /** Everywhere else -- the drain, replay, provisioning -- nothing is waiting on the answer. */
-    const CLI_HTTP    = array( 'connect_timeout' => 5, 'timeout' => 30 );
+    const CLI_HTTP    = [ 'connect_timeout' => 5, 'timeout' => 30 ];
     const CLI_RETRIES = 3;
 
     /**
@@ -71,11 +71,11 @@ final class Sqs {
             return basename( (string) parse_url( $url, PHP_URL_PATH ) );
         }
 
-        $id = implode( '|', array(
+        $id = implode( '|', [
             (string) \OWA\Core\CoreAPI::getSetting( 'base', 'db_host' ),
             (string) \OWA\Core\CoreAPI::getSetting( 'base', 'db_name' ),
             (string) \OWA\Core\CoreAPI::getSetting( 'base', 'ns' ),
-        ) );
+        ] );
 
         return self::PREFIX . substr( hash( 'sha256', $id ), 0, 12 );
     }
@@ -243,7 +243,7 @@ final class Sqs {
 
         if ( defined( 'OWA_SQS_KEY' ) && defined( 'OWA_SQS_SECRET' ) && OWA_SQS_KEY && OWA_SQS_SECRET ) {
 
-            $credentials = array( 'key' => (string) OWA_SQS_KEY, 'secret' => (string) OWA_SQS_SECRET );
+            $credentials = [ 'key' => (string) OWA_SQS_KEY, 'secret' => (string) OWA_SQS_SECRET ];
 
             if ( defined( 'OWA_SQS_TOKEN' ) && OWA_SQS_TOKEN ) {
 
@@ -266,12 +266,12 @@ final class Sqs {
     public static function clientArgs( $region ) {
 
         $logger = self::isLogger();
-        $args   = array(
+        $args   = [
             'region'  => (string) $region,
             'version' => self::API_VERSION,
             'http'    => $logger ? self::LOGGER_HTTP : self::CLI_HTTP,
             'retries' => $logger ? self::LOGGER_RETRIES : self::CLI_RETRIES,
-        );
+        ];
 
         $credentials = self::configCredentials();
 
@@ -291,7 +291,7 @@ final class Sqs {
      */
     public static function client() {
 
-        static $clients = array();
+        static $clients = [];
 
         $region = self::region();
 
@@ -306,7 +306,7 @@ final class Sqs {
         if ( self::$handler ) {
 
             $args['handler']       = self::$handler;
-            $args['credentials'] ??= array( 'key' => 'test', 'secret' => 'test' );
+            $args['credentials'] ??= [ 'key' => 'test', 'secret' => 'test' ];
 
             return new \Aws\Sqs\SqsClient( $args );
         }
@@ -322,11 +322,11 @@ final class Sqs {
      */
     public static function provision() {
 
-        $result = array( 'ok' => false, 'error' => null, 'main' => null, 'dlq' => null, 'at' => time() );
+        $result = [ 'ok' => false, 'error' => null, 'main' => null, 'dlq' => null, 'at' => time() ];
 
         try {
 
-            $queue = new SqsQueue( array( 'max_receives' => \OWA\Module\Base\Classes\TrackerIngest::MAX_RECEIVES ) );
+            $queue = new SqsQueue( [ 'max_receives' => \OWA\Module\Base\Classes\TrackerIngest::MAX_RECEIVES ] );
 
             $result['ok']    = $queue->provision();
             $result['error'] = $queue->lastError();
@@ -351,5 +351,3 @@ final class Sqs {
         return $result;
     }
 }
-
-?>

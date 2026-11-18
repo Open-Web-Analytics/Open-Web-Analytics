@@ -20,8 +20,8 @@ function owa_wiki_all_modules() {
     }
 
     $s       = \OWA\Core\CoreAPI::serviceSingleton();
-    $modules = array();
-    $active  = array();
+    $modules = [];
+    $active  = [];
 
     foreach ( $s->modules as $name => $module ) {
 
@@ -50,5 +50,5 @@ function owa_wiki_all_modules() {
 /** A markdown table cell: no pipes, no line breaks. */
 function owa_wiki_cell( $v ) {
 
-    return str_replace( array( '|', "\n" ), array( '\\|', ' ' ), (string) $v );
+    return str_replace( [ '|', "\n" ], [ '\\|', ' ' ], (string) $v );
 }

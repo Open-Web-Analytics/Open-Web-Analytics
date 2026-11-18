@@ -44,7 +44,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
 
             $this->addValidation( 'email_address', $this->getParam( 'email_address' ),
                 'emailAddress',
-                array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a valid email address.' ) ) );
+                [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Enter a valid email address.' ) ] );
         }
 
         if ( ! $this->changingPassword() ) {
@@ -54,15 +54,15 @@ class MyProfileSave extends \OWA\Core\AdminController {
 
         $this->addValidation( 'current_password', $this->getParam( 'current_password' ),
             'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'Current password is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'Current password is required.' ) ] );
 
         $this->addValidation( 'new_password', $this->getParam( 'new_password' ), 'required',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'New password is required.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'New password is required.' ) ] );
 
         $this->addValidation( 'password_match',
-            array( $this->getParam( 'new_password' ), $this->getParam( 'new_password2' ) ),
+            [ $this->getParam( 'new_password' ), $this->getParam( 'new_password2' ) ],
             'stringMatch',
-            array( 'errorMsg' => \OWA\Core\CoreAPI::t( 'The new passwords do not match.' ) ) );
+            [ 'errorMsg' => \OWA\Core\CoreAPI::t( 'The new passwords do not match.' ) ] );
 
         /*
          * stringLength, not required -- that is the validator that reads the
@@ -71,12 +71,12 @@ class MyProfileSave extends \OWA\Core\AdminController {
          * base.usersChangePassword, where that happened.
          */
         $this->addValidation( 'password_length', $this->getParam( 'new_password' ),
-            'stringLength', array(
+            'stringLength', [
                 'operator' => '>=',
                 'length'   => self::MIN_PASSWORD_LENGTH,
                 'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The new password must be at least %d characters.' ),
                     self::MIN_PASSWORD_LENGTH ),
-            ) );
+            ] );
     }
 
     /**
@@ -86,7 +86,7 @@ class MyProfileSave extends \OWA\Core\AdminController {
      */
     private function changingPassword() {
 
-        foreach ( array( 'current_password', 'new_password', 'new_password2' ) as $field ) {
+        foreach ( [ 'current_password', 'new_password', 'new_password2' ] as $field ) {
 
             if ( (string) $this->getParam( $field ) !== '' ) {
 
@@ -228,10 +228,10 @@ class MyProfileSave extends \OWA\Core\AdminController {
          */
         $manager = new \OWA\Module\Base\Classes\UserManager();
 
-        $updated = $manager->updateUserPassword( array(
+        $updated = $manager->updateUserPassword( [
             'user_id'  => $user_id,
             'password' => $this->getParam( 'new_password' ),
-        ) );
+        ] );
 
         if ( ! $updated ) {
 

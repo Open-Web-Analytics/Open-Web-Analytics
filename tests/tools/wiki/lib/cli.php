@@ -18,8 +18,8 @@ require_once __DIR__ . '/modules.php';
 function owa_wiki_cli_commands() {
 
     $s        = \OWA\Core\CoreAPI::serviceSingleton();
-    $actions  = array();
-    $commands = array();
+    $actions  = [];
+    $commands = [];
 
     foreach ( owa_wiki_all_modules() as $module ) {
         $actions += (array) $module->cli_commands;
@@ -33,16 +33,16 @@ function owa_wiki_cli_commands() {
             throw new RuntimeException( "cmd=$command names action $action, which resolves to no class." );
         }
 
-        $usage = method_exists( $class, 'usage' ) ? $class::usage() : array();
+        $usage = method_exists( $class, 'usage' ) ? $class::usage() : [];
 
-        $commands[ $command ] = array(
+        $commands[ $command ] = [
             'module'      => strstr( $action, '.', true ),
             'class'       => $class,
             'capability'  => owa_wiki_cli_capability( $class ),
             'roles'       => method_exists( $class, 'serverRoles' ) ? (array) $class::serverRoles() : \OWA\Core\Controller\Cli::serverRoles(),
             'description' => (string) ( $usage['description'] ?? '' ),
-            'arguments'   => (array) ( $usage['arguments'] ?? array() ),
-        );
+            'arguments'   => (array) ( $usage['arguments'] ?? [] ),
+        ];
     }
 
     ksort( $commands );

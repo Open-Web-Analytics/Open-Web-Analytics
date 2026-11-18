@@ -23,7 +23,7 @@ use OWA\Module\Base\Classes\Ingest;
 final class IngestHookPointsTest extends TestCase
 {
     /** Where each point must appear, so a rename cannot orphan it. */
-    private const SITES = array(
+    private const SITES = [
         Ingest::REQUEST_PRE   => 'log.php',
         Ingest::REQUEST_POST  => 'log.php',
         Ingest::EDGE_PRE      => 'Core/CoreAPI.php',
@@ -31,7 +31,7 @@ final class IngestHookPointsTest extends TestCase
         Ingest::PROPERTY_PRE  => 'modules/Base/Controller/ProcessEvent.php',
         Ingest::PROPERTY_POST => 'modules/Base/Controller/ProcessEvent.php',
         Ingest::TRACKING_EVENTS_PRE_SAVE => 'modules/Base/Handler/EventRawHandlers.php',
-    );
+    ];
 
     public function testEveryStageHasItsPoints(): void
     {
@@ -40,9 +40,9 @@ final class IngestHookPointsTest extends TestCase
         $this->assertCount( 7, $points,
             'request, edge and property have a pre and a post; store has one' );
 
-        foreach ( array( 'request', 'edge', 'property' ) as $stage ) {
+        foreach ( [ 'request', 'edge', 'property' ] as $stage ) {
 
-            foreach ( array( 'pre', 'post' ) as $half ) {
+            foreach ( [ 'pre', 'post' ] as $half ) {
 
                 $this->assertContains( 'ingest.' . $stage . '.' . $half, $points,
                     $stage . ' is missing its ' . $half . ' point' );
@@ -62,7 +62,7 @@ final class IngestHookPointsTest extends TestCase
      */
     public function testEveryPointIsWiredWhereItBelongs(): void
     {
-        $unwired = array();
+        $unwired = [];
 
         foreach ( self::SITES as $point => $file ) {
 
@@ -70,7 +70,7 @@ final class IngestHookPointsTest extends TestCase
 
             // The constant's NAME, not its value: the call sites use
             // Ingest::TRACKING_EVENTS_PRE_SAVE so they stay greppable.
-            $constant = strtoupper( str_replace( array( 'ingest.', '.' ), array( '', '_' ), $point ) );
+            $constant = strtoupper( str_replace( [ 'ingest.', '.' ], [ '', '_' ], $point ) );
 
             if ( strpos( $source, 'Ingest::' . $constant ) === false ) {
 
@@ -78,7 +78,7 @@ final class IngestHookPointsTest extends TestCase
             }
         }
 
-        $this->assertSame( array(), $unwired, implode( "\n", $unwired ) );
+        $this->assertSame( [], $unwired, implode( "\n", $unwired ) );
     }
 
     /**
@@ -104,7 +104,7 @@ final class IngestHookPointsTest extends TestCase
     /** A point with no listeners returns its value untouched. */
     public function testAPointWithNoListenersIsTransparent(): void
     {
-        $value = array( 'untouched' => true );
+        $value = [ 'untouched' => true ];
 
         foreach ( Ingest::points() as $point ) {
 
@@ -130,9 +130,9 @@ final class IngestHookPointsTest extends TestCase
     {
         \OWA\Core\CoreAPI::registerFilter( 'ingest.test.probe.context', 'owa_test_ingest_appends' );
 
-        $row = Ingest::at( 'ingest.test.probe.context', array( 'a' => 1 ), 'the-context' );
+        $row = Ingest::at( 'ingest.test.probe.context', [ 'a' => 1 ], 'the-context' );
 
-        $this->assertSame( array( 'a' => 1, 'saw_context' => 'the-context' ), $row,
+        $this->assertSame( [ 'a' => 1, 'saw_context' => 'the-context' ], $row,
             'the listener must receive the context and be able to change the value' );
     }
 

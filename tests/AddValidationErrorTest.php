@@ -12,7 +12,7 @@ final class AddValidationErrorTest extends TestCase
 {
     public function testTheFieldFailsWithTheMessage(): void
     {
-        $controller = new class( array() ) extends \OWA\Core\Controller {
+        $controller = new class( [] ) extends \OWA\Core\Controller {
 
             public function validate() {
 
