@@ -247,7 +247,7 @@ $owa_operators = [
 <div class="owa_dangerZone">
     <div class="owa_dangerZoneTitle"><?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this goal event definition' ) );?></div>
     <div class="owa_dangerZoneBody">
-        <?php $view->out( \OWA\Core\CoreAPI::t( 'It stops counting and is removed from reports. The events it has already counted are kept.' ) );?>
+        <?php $view->out( \OWA\Core\CoreAPI::t( 'It stops marking events as goals. Events it has already marked stay goals in reports.' ) );?>
     </div>
     <form method="post">
         <?php echo $view->createNonceFormField('base.goalEventDefinitionDelete');?>
@@ -258,7 +258,7 @@ $owa_operators = [
                name="submit_btn" value="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete Goal Event Definition' ) );?>"
                data-owa-confirm
                data-owa-confirm-title="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete this goal event definition?' ) );?>"
-               data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” stops counting and leaves reports. Events already counted are kept.' ), $owa_ke['name'] ?? '' ) );?>"
+               data-owa-confirm-body="<?php $view->out( sprintf( \OWA\Core\CoreAPI::t( '“%s” stops marking events as goals. Events it has already marked stay goals in reports.' ), $owa_ke['name'] ?? '' ) );?>"
                data-owa-confirm-proceed="<?php $view->out( \OWA\Core\CoreAPI::t( 'Delete goal event definition' ) );?>">
     </form>
 </div>
