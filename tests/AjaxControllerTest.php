@@ -186,6 +186,22 @@ final class AjaxControllerTest extends RestControllerTestCase
         $this->assertNotEmpty($r['json']['error']);
     }
 
+    /** The refusal the pipeline gives is the message alone. */
+    public function testNotCapableIsTheMessageAlone(): void
+    {
+        $data = $this->endpoint()->authenticatedButNotCapableAction();
+
+        $this->assertSame('Your account does not have access to this page.', $data['ajax_error']);
+    }
+
+    /** A caller's additional message follows it. */
+    public function testNotCapableCarriesTheAdditionalMessage(): void
+    {
+        $data = $this->endpoint()->authenticatedButNotCapableAction('Profile: zz-probe');
+
+        $this->assertSame('Your account does not have access to this page. Profile: zz-probe', $data['ajax_error']);
+    }
+
     public function testInvalidInputIs422WithTheMessage(): void
     {
         $this->signedInSession();
