@@ -257,4 +257,45 @@ final class SiteListContractTest extends TestCase
             "'name' is the Profile's own stored name. Composing a label into it would change "
             . 'what a published field contains, which is not an addition.' );
     }
+
+    /**
+     * The view emits the published fields and property_name, and no column the
+     * entity declares private. It built each row from _getProperties(), every
+     * column, so archived_date, stream_type and app_id reached the payload.
+     */
+    public function testTheViewEmitsNoPrivateColumn(): void
+    {
+        $site = \OWA\Core\CoreAPI::entityFactory( 'base.site' );
+        $site->set( 'site_id', 'contract-probe' );
+        $site->set( 'stream_type', 'app' );
+        $site->set( 'app_id', 'com.example.app' );
+
+        $view = new \OWA\Module\Base\View\SitesRest();
+        $row  = ( new \ReflectionMethod( $view, 'addPropertyNames' ) )
+            ->invoke( $view, [ 'contract-probe' => $site ] )['contract-probe'];
+
+        $fields   = array_keys( $row );
+        $expected = array_merge( self::PAYLOAD_FIELDS, [ 'property_name' ] );
+        sort( $fields );
+        sort( $expected );
+
+        $this->assertSame( $expected, $fields );
+    }
+
+    /**
+     * Adding a site answers with the site, over REST and on the command line;
+     * granting a user a site answers with both. Each is built from the
+     * entity's public properties.
+     */
+    public function testTheAddAndGrantRoutesEmitPublicPropertiesOnly(): void
+    {
+        $root = dirname( __DIR__ ) . '/modules/Base/Controller/';
+
+        $add = (string) file_get_contents( $root . 'SitesAdd.php' );
+        $this->assertStringContainsString( "\$this->set( 'site', \$site ? \$site->getPublicProperties() : [] );", $add );
+
+        $grant = (string) file_get_contents( $root . 'SiteAddAllowedUserRest.php' );
+        $this->assertStringContainsString( "'site'          => \$s->getPublicProperties(),", $grant );
+        $this->assertStringContainsString( "'allowed_user'  => \$u->getPublicProperties()", $grant );
+    }
 }
