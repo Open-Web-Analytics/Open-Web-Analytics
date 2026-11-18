@@ -2171,11 +2171,9 @@ namespace OWA\Module\Base\Classes;
      /**
       * The scopes a setting may be stored at, or null when nothing declared it.
       *
-      * null is not "no scopes" -- it means UNKNOWN, and the caller must treat
-      * it as unconstrained. Base has not adopted a declaration file yet, so
-      * every one of its scoped settings is unregistered, and a rule that read
-      * null as "install only" would refuse the writes the Observation Settings
-      * screen has always made.
+      * null is not "no scopes": nothing declared the setting, so nothing knows
+      * its scopes. mayWriteAtScope() refuses it at every scope, as
+      * persistSetting() refuses it install-wide.
       *
       * @param  string $module
       * @param  string $key
@@ -2200,11 +2198,10 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * Whether this setting may be written at this scope.
-      *
-      * True for anything unregistered, which is the adoption path: a
-      * third-party module, or base before it declares, keeps working exactly
-      * as it did. Only a setting that HAS declared its scopes is held to them.
+      * Whether this setting may be written at this scope: a declared one, at a
+      * scope it declared. An undeclared setting is refused at every scope, as
+      * persistSetting() refuses it install-wide: nothing declared a reader for
+      * it, so a stored value could only be a name somebody made up.
       *
       * @param  string $module
       * @param  string $key
@@ -2217,7 +2214,7 @@ namespace OWA\Module\Base\Classes;
 
          if ( $scopes === null ) {
 
-             return true;
+             return false;
          }
 
          return in_array( (string) $scopeType, $scopes, true );
@@ -3173,10 +3170,10 @@ namespace OWA\Module\Base\Classes;
         // a string, so always false, so the body never ran and no caller could
         // ever add a capability to the site-access list.
         if ( $role !== 'everyone' && $isSiteAccessRequired ) {
-            $sar = $this->get('base', 'capabilitiesThatRequireSiteAccess');
-            $sar[] = $capability;
+            $sar = (array) $this->get('base', 'capabilitiesThatRequireSiteAccess');
+            $sar = array_merge( $sar, (array) $capability );
             // unique the array
-            $sar = array_unique( $sar );
+            $sar = array_values( array_unique( $sar ) );
             $this->set('base', 'capabilitiesThatRequireSiteAccess', $sar);
         }
     }

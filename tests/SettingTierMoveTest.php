@@ -24,6 +24,10 @@ final class SettingTierMoveTest extends TestCase
     {
         $this->key = 'tier_probe_' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
+        // Declared, as only a declared setting may be stored at a scope.
+        \OWA\Core\CoreAPI::configSingleton()->registerField( 'base', $this->key,
+            [ 'storable' => true, 'scopes' => [ 'install', 'organization', 'property', 'profile' ] ] );
+
         if ( ! owa_test_db_available() ) {
             return;
         }

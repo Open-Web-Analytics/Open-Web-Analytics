@@ -67,6 +67,14 @@ final class PersistSettingAnswerTest extends TestCase
         $this->assertFalse($this->settings()->persistSetting('base', 'zz_no_such_setting', 'x'));
     }
 
+    /** CoreAPI::persistSetting() gives the same answer. */
+    public function testTheCoreApiPassesTheAnswerOn(): void
+    {
+        $this->assertTrue(\OWA\Core\CoreAPI::persistSetting('base', 'attribution_lookback_days', 30));
+        $this->assertFalse(\OWA\Core\CoreAPI::persistSetting('base', 'attribution_lookback_days', 1000));
+        $this->assertFalse(\OWA\Core\CoreAPI::persistSetting('base', 'zz_no_such_setting', 'x'));
+    }
+
     /** The form's saved list, as base.install_settings_saved hears it. */
     public function testTheFormAnnouncesOnlyWhatWasTaken(): void
     {

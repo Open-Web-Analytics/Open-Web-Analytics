@@ -53,6 +53,10 @@ final class SettingsStoreConsolidationTest extends TestCase
 
     private function write( $type, $id, $name, $value ): void
     {
+        // Declared, as only a declared setting may be stored at a scope.
+        \OWA\Core\CoreAPI::configSingleton()->registerField( self::MODULE, $name,
+            [ 'storable' => true, 'scopes' => [ 'install', 'organization', 'property', 'profile' ] ] );
+
         \OWA\Core\CoreAPI::setScopedSetting( $type, $id, self::MODULE, $name, $value );
 
         $this->written[] = [ 'type' => $type, 'id' => $id, 'name' => $name ];

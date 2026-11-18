@@ -162,6 +162,10 @@ final class ArchiveNotDeleteTest extends TestCase
 
         $probe = 'archive_probe_' . substr( md5( uniqid( '', true ) ), 0, 8 );
 
+        // Declared, as only a declared setting may be stored at a scope.
+        \OWA\Core\CoreAPI::configSingleton()->registerField( 'base', $probe,
+            [ 'storable' => true, 'scopes' => [ 'install', 'profile' ] ] );
+
         \OWA\Core\CoreAPI::setScopedSetting(
             'profile', $this->siteId, 'base', $probe, 'still here' );
 
