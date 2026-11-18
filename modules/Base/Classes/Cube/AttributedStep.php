@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Cube;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * attributed_source, attributed_medium, attributed_campaign: the last
  * non-direct touch within the Property's lookback (PLAN 2.29).

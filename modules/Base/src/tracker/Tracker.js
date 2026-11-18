@@ -309,10 +309,9 @@ class OWATracker  {
 	         * The depths, as percentages, a page view's scroll is reported at: the
 	         * deepest one reached, rounded down to a threshold.
 	         *
-	         * QUARTILES BY DEFAULT, ending at 90 rather than 100, so the report can
-	         * say how far down people get and not only whether they reached the
-	         * end. 90, not 100, because a sticky footer, a rounding pixel or a
-	         * trailing element keeps many pages from ever reading exactly 100.
+	         * The default is 25, 50, 75 and 90. The last is 90, not 100, because a
+	         * sticky footer, a rounding pixel or a trailing element keeps many
+	         * pages from ever reading exactly 100.
 	         *
 	         * They are buckets, not events: a page view sends one scroll event, at
 	         * the deepest threshold it reached.
@@ -334,16 +333,9 @@ class OWATracker  {
 	         * Query parameters that carry a site-search term, tried in order.
 	         * Set it with setSearchQueryParams(), which checks it is an array.
 	         *
-	         * DEFAULTS NOW, and there were none. The reasoning was that no
-	         * convention exists so a default would guess wrong -- and the cost of
-	         * it was the whole feature: view_search_results could not fire on any
-	         * install, because trackSiteSearch() had no caller either. An event
-	         * nothing could raise, a property nothing could set, and a reserved
-	         * name protecting neither.
-	         *
-	         * The guess is cheap and the miss is not. A page with ?q= that is not
-	         * a search is one spurious event; no defaults is no site-search
-	         * reporting anywhere, on any install. A site using ?kw= adds it.
+	         * A page that has one of these parameters but is not a search results
+	         * page is counted as a search; a site whose search uses another
+	         * parameter, such as ?kw=, sets its own list.
 	         *
 	         * @option
 	         */
@@ -367,19 +359,12 @@ class OWATracker  {
 	         * `v` (the visitor) and `s` (the session). 0 ends the cookie when
 	         * the browser closes. A store not named keeps its shipped lifetime.
 	         *
-	         * Options rather than methods of their own: setOption() already
-	         * carries cookie_domain, campaignKeys, logger_endpoint, api_endpoint
-	         * and baseUrl, and CommandQueue dispatches with .apply(), so
-	         *
 	         *   owa_cmds.push(['setOption', 'stateStoreExpirations', {v: 90}]);
-	         *   owa_cmds.push(['setOption', 'cookiePersistence', false]);
-	         *
-	         * already reach here with no new public surface to deprecate later.
 	         *
 	         * Empty and true ship, so an install that says nothing keeps the
-	         * lifetimes the stores are registered with. The values are READ WHERE
-	         * THEY ARE USED -- see StateManager.getExpirationDays() -- and never
-	         * copied into the store registry, because registerStore() replaces
+	         * lifetimes the stores are registered with. The values are read where
+	         * they are used (StateManager.getExpirationDays()) and never copied
+	         * into the store registry, because registerStore() replaces
 	         * storeMeta[name] wholesale and this constructor re-registers the
 	         * global 'v' and 'c' stores unconditionally. A second tracker on the
 	         * page would otherwise reset the first one's configured lifetime with
@@ -1066,19 +1051,13 @@ class OWATracker  {
     /**
      * The title reported for this page, in place of the document's title.
      *
-     * Stored page-scoped rather than as a global event property on this
-     * tracker. A page title is a fact about the PAGE, so a site that calls this
-     * once should have every tracker on the page report it -- a private copy on
-     * one tracker cannot do that. Measured before this moved: two trackers on
-     * one page, one reporting the title the site set and the other reporting
-     * nothing at all.
-     *
-     * PAGE-SCOPED, and an SPA route change is a new page. With
-     * trackRouteChanges() on, the title is dropped at the moment a route is
-     * left, after that route's engagement is sent, and the next route reports
-     * document.title until it sets one. So a route sets its title once the URL
-     * has changed; one set before the pushState belongs to the route being
-     * left and goes with it.
+     * Page-scoped and shared: every tracker on the page reports it, not only
+     * the one it was set on. An SPA route change is a new page. With
+     * trackRouteChanges() on, the title is dropped when a route is left,
+     * after that route's engagement is sent, and the next route reports
+     * document.title until it sets one. So a route sets its title once the
+     * URL has changed; one set before the pushState belongs to the route
+     * being left and goes with it.
      *
      * @command
      * @param {string} title
@@ -1094,10 +1073,8 @@ class OWATracker  {
      *
      * @deprecated Use setContentGroup( value ).
      *
-     * A page's type and its content group are one dimension in 2.0, which the
-     * Page Types report groups by. This sent page_type, which no 2.0 reader
-     * takes, so a snippet that called it reported nothing; it now sets the
-     * content group. A page that calls both reports the one called last.
+     * It sets the content group, the dimension the Page Types report groups
+     * by. A page that calls both reports the one called last.
      *
      * @command
      * @param {string} type
@@ -1112,20 +1089,11 @@ class OWATracker  {
      *
      * @deprecated Use setUserProperty('user_name', value).
      *
-     * IT USED TO WRITE THE VISITOR COOKIE -- OWA.setState('v', 'user_name') --
-     * on the reasoning that an identified user outlives the page and the session.
-     * That was wrong twice over. A display name is TEMPORAL: it can change, and a
-     * different person can sign in on the same browser, so a cookie holding it
-     * outlives the value's own meaning -- the exact failure v1's persisted custom
-     * variables had. And it made the value visitor-scoped TRANSPORT feeding an
-     * event-scoped destination, while trackingProperties declared it `session`, a
-     * scope v2 does not offer for custom values at all (PLAN.html §2.26.1).
-     *
-     * setUserProperty() is page-lifetime and in memory: nothing is written to
-     * a cookie, and the `vps_` prefix routes it
-     * to the visitor store at INGEST, where it is recorded with when it was set
-     * (§2.26.5). So what persists is a server record that can say "this was true
-     * from here on" rather than a cookie that cannot.
+     * Not written to a cookie: a display name can change, and a different
+     * person can sign in on the same browser. It is held in memory for the
+     * page, reported by every tracker on the page, and sent as vps_user_name,
+     * which the server records against the visitor with when it was set. A
+     * route change does not clear it.
      *
      * @command
      * @param {string} value
@@ -1160,22 +1128,16 @@ class OWATracker  {
     /**
      * The site's own id for a logged-in person.
      *
-     * NOT setUserName, which is a display NAME and a custom user property --
-     * page-lifetime, and recorded server side with when it was set. user_id is the
-     * one field that outlives a cookie, which is what makes it the only honest
-     * basis for joining a person's devices -- the alternative is a probabilistic
-     * join producing numbers nobody can check, and v2 does not do that. It is also
-     * why log_visitor_pii gates this one and not the display name: an install must
-     * be able to stop storing the identifier.
+     * Kept in the visitor cookie, so it survives the page and the session.
+     * It is the one value that identifies the same person on another device
+     * or after their cookies are cleared. With the install's log_visitor_pii
+     * setting off, the server removes it as a beacon arrives, as it does the
+     * display name and email address.
      *
-     * FORWARD-ONLY. Events collected before someone identified themselves stay
-     * anonymous forever. Relabelling a visitor's earlier events would mean
-     * rewriting rows in partitions the routine pass does not touch, and a fact
-     * row that can change after it is written is the property this whole design
-     * gives up.
+     * Forward-only: events sent before the person identified themselves stay
+     * anonymous, and are not relabelled afterwards.
      *
-     * Visitor-scoped so it survives the page, and cleared by passing nothing --
-     * which is what a logout should call.
+     * Called with nothing, it clears the id; a logout should call it that way.
      *
      * @command
      * @param {string} [value]  the id; nothing clears it
@@ -1197,8 +1159,8 @@ class OWATracker  {
      * Set the content group of the page's events: an author-assigned grouping
      * such as a section, template or topic.
      *
-     * PAGE-SCOPED, because that is what it describes: a value set on one page
-     * must not leak onto the next, and an SPA route change is a new page. A
+     * The group belongs to one page: a value set on one page does not carry
+     * onto the next, and an SPA route change is a new page. A
      * site that wants one group for a whole section sets it on each page of
      * that section, which is also what makes it correct when someone lands
      * mid-section.
@@ -1235,13 +1197,13 @@ class OWATracker  {
     /**
      * Record what the page's consent state is at this moment.
      *
-     * RECORDED PER EVENT, not once per session, because it can change
+     * It is recorded per event, not once per session, because it can change
      * mid-session -- a visitor accepts a banner on the third page -- and a row
      * collected before that is not retrospectively consented. A row with no
      * consent recorded is also not the same as one with consent denied, which
      * is why absent stays absent rather than defaulting to either.
      *
-     * OWA RECORDS, IT DOES NOT ENFORCE. Whether to send at all is the site's
+     * OWA records the state and does not enforce it. Whether to send at all is the site's
      * decision and its consent platform's; what this does is make the decision
      * visible in the data afterwards, so a question about a period can be
      * answered rather than assumed.
@@ -2710,24 +2672,19 @@ class OWATracker  {
     /**
      * Track route changes in a single-page application as page views.
      *
-     * The gap this closes is large and easy to miss: an SPA tracked by OWA
-     * today records ONE page view per session, because the only page view is
-     * the one the snippet fires on load and nothing notices the route change
-     * afterwards. Every subsequent screen is invisible.
+     * A route change is a pushState, replaceState, popstate or hashchange
+     * that changes the page's URL; pushState and replaceState are patched,
+     * popstate and hashchange listened for. The page view is sent once the
+     * URL has been still for ROUTE_SETTLE_MSEC, with the URL and title then,
+     * so a redirect that pushes twice is one page view.
      *
-     * pushState and replaceState are patched rather than polled, and popstate
-     * and hashchange are listened for, because those four are the complete set
-     * of ways a route changes without a document load. Patching is how every
-     * analytics tracker does this -- there is no event for pushState.
+     * Opt-in, because a route change is a claim about what the site means by
+     * a page, and a site that sends its own page view per route would count
+     * each one twice.
      *
-     * OPT-IN, because a route change is a claim about what the site means by a
-     * page and only the site can make it.
-     *
-     * In-page anchors are no longer the reason. getCurrentUrl() leaves the
-     * fragment out, so a hash change that is only an anchor produces the same
-     * URL and is not a route change -- the guard below sees to that. A site
-     * that routes on the hash turns trackUrlFragments on, which makes those
-     * URLs differ again and the page views appear.
+     * A hash change that is only an in-page anchor leaves the URL unchanged,
+     * since getCurrentUrl() leaves the fragment out, and is not a route
+     * change. A site that routes on the hash turns on trackUrlFragments.
      *
      * @command
      */
@@ -3241,9 +3198,9 @@ class OWATracker  {
      * Stored in the same shape trackPurchase() takes -- item_id, item_name,
      * item_category, price, quantity -- so every purchase's items read alike.
      *
-     * REFUSED WITHOUT A TRANSACTION. It used to open one called 'none set', so an
-     * item added out of order became a purchase of its own with no order id,
-     * total or currency.
+     * Refused, returning false, when no transaction is open: call
+     * addTransaction() first. order_id is not checked against the open
+     * transaction.
      *
      * @command
      * @param {string} order_id
@@ -3291,7 +3248,7 @@ class OWATracker  {
      *       items: [ { item_id: 'SKU-1', item_name: 'Blue mug', price: 19.99, quantity: 2 } ]
      *   } ] );
      *
-     * Amounts in MAJOR units, as a price is written; the server converts by the
+     * Amounts are in major units, as a price is written; the server converts by the
      * currency's decimal places. A transaction_id is required: it is what keeps
      * a reloaded receipt page from recording the purchase twice.
      *
@@ -3909,12 +3866,11 @@ class OWATracker  {
      * A custom value describing this event.
      *
      * Rides every event this tracker sends for the life of the page, and lands
-     * in `params` on the raw row. The server never has to guess the scope: the
-     * `eps_` prefix says it.
+     * in `params` on the raw row. Its prefix, `eps_` (`epn_` for a number),
+     * gives the server its scope.
      *
-     * Page-lifetime and in memory -- nothing is written to a cookie, so a value
-     * set here cannot outlive its own meaning
-     * the way v1's persisted custom variables could.
+     * Held in memory for the page: nothing is written to a cookie, so a value
+     * is set again on each page it applies to.
      *
      * @command
      * @param {string} name   letters, digits and underscores, starting with a letter, at most 40
@@ -3945,15 +3901,13 @@ class OWATracker  {
     /**
      * A custom value describing the visitor.
      *
-     * Also page-lifetime on the client, and deliberately so: held in memory for
-     * the page, stamped on each event, and persisted server side against the
-     * user. Set one, navigate, and the next page's beacons carry nothing until it
-     * is set again.
+     * Held in memory for the page and stamped on each event this tracker
+     * sends; nothing is written to a cookie. Set one, navigate, and the next
+     * page's beacons carry nothing until it is set again.
      *
-     * The `vps_` prefix routes it to the visitor store at
-     * ingest, where it is written last-value-wins with the event's timestamp,
-     * so what persists is a server record rather than a cookie that can outlive
-     * the value it holds.
+     * The `vps_` prefix (`vpn_` for a number) routes it to the visitor store
+     * at ingest, where it is written last-value-wins with the event's
+     * timestamp.
      *
      * @command
      * @param {string} name   as setEventProperty()
@@ -3982,26 +3936,18 @@ class OWATracker  {
     }
 
     /**
-     * Set a custom variable
+     * Set a custom variable.
      *
      * @deprecated Use setEventProperty() or setUserProperty().
      *
-     * THREE SCOPES BECOME TWO, and the slot number goes.
+     * The scope picks the setter:
      *
      *   page, session, anything else  ->  setEventProperty()
      *   visitor                       ->  setUserProperty()
      *
-     * SESSION SCOPE MAPS TO EVENT, which is the one that looks like a loss and
-     * is not. A session-scoped value carried by the CLIENT is exactly what the
-     * v2 design refuses: it is something the server can derive from the
-     * session's own events, and something the client can get wrong -- v1's own
-     * session store had a variable outliving the session that set it, because
-     * nothing cleared it at a session boundary. So site authors get event and
-     * user scope, and session scope is derived.
-     *
-     * The slot is ignored. It was v1 storage -- five numbered columns on a fact
-     * table -- and never information; two calls with the same name now mean the
-     * same property rather than colliding on a slot.
+     * There is no session scope for a custom value: a session's values are
+     * derived on the server from its events. The slot is ignored, so two
+     * calls with the same name set the same property.
      *
      * @command
      * @param {number} slot   ignored; kept so existing calls still parse
@@ -4632,20 +4578,16 @@ class OWATracker  {
     /**
      * Logs a custom event from an event type and a plain properties object.
      *
-     * This is the queue-friendly path for custom events: the async owa_cmds
-     * command queue is fire-and-forget and cannot carry an Event instance built
-     * by makeEvent(), so it could not previously log a custom event. This builds
-     * the Event internally (like trackAction does) so a custom event can be
-     * logged with owa_cmds.push( ['trackCustomEvent', 'type', { ..props.. } ] ).
-     * For advanced use that needs the Event object directly, makeEvent() +
-     * trackEvent( event ) is still available.
+     * The command queue cannot carry an Event object, so this builds one from
+     * the name and properties. On the tracker object, makeEvent() and
+     * trackEvent( event ) send an Event built by hand.
      *
      *   owa_cmds.push(['trackCustomEvent', 'video_play', { eps_title: 'Intro', epn_seconds: 42 }]);
      *
      * The name starts with a letter, uses only letters, digits and underscores,
      * is at most 40 characters, and is not one of OWA's own event names or
-     * prefixed `owa_`. Properties use the `eps_` (text) and `epn_` (number)
-     * prefixes.
+     * prefixed `owa_`; any other name is refused and nothing is sent.
+     * Properties use the `eps_` (text) and `epn_` (number) prefixes.
      *
      * @command
      * @param {string} event_type   the event's name
@@ -4973,20 +4915,11 @@ class OWATracker  {
      *
      * @deprecated Use trackCustomEvent( name, { eps_*: ... } ).
      *
-     * THE ACTION'S NAME IS NOW THE EVENT'S NAME. This sent event_type
-     * 'custom_event' with the name as a property, which is v1's shape: one event
-     * type for everything a site tracks, told apart by a field. v2 retires it --
-     * an event name is a name, and the group, label and value are parameters
-     * describing it, which is the reason eventName is a dimension.
-     *
-     * So this maps onto trackCustomEvent(): the name becomes the event, and the
-     * other three become custom event properties in `params`. A site that was
-     * calling it keeps working and its data lands under its own action names
-     * instead of pooled under one.
-     *
-     * An action name that is not a legal event name, or that collides with a
-     * reserved one, is refused by trackCustomEvent() rather than silently
-     * reshaped.
+     * Sent with trackCustomEvent(): the action name is the event name, and the
+     * group, label and value are the custom event properties
+     * eps_action_group, eps_action_label and epn_numeric_value, in `params`.
+     * An action name that is not a legal event name, or is a reserved one, is
+     * refused rather than reshaped.
      *
      * @command
      * @param {string} action_group
@@ -5073,12 +5006,12 @@ class OWATracker  {
      * of the same thing. Tracked per form element, so two forms on one page
      * each get their own start.
      *
-     * `change`, NOT FOCUS. A text field raises `change` when the visitor leaves
+     * A start is a `change`, not a focus. A text field raises `change` when the visitor leaves
      * it with a new value; a select, checkbox or radio when its value changes.
      * Focus alone, tabbing through, or typing without leaving the field is not a
      * start -- clicking into a form and walking away is not having begun it.
      *
-     * A SUBMIT WITH NO START RAISES ONE FIRST, so every form_submit has a
+     * A submit with no start raises one first, so every form_submit has a
      * form_start and the funnel cannot show more submits than starts. That
      * happens when nothing changed (a one-button form) or the value was set by
      * script. It carries no first-field properties: no field was interacted with.
@@ -5315,25 +5248,20 @@ class OWATracker  {
     /**
      * Which query parameters carry a site-search term.
      *
-     * AN ARRAY, AND IT REPLACES THE DEFAULTS rather than adding to them. A site
-     * that uses ?kw= gets kw and nothing else, so its ?q= -- which may mean
-     * something entirely different -- stops being read as a search. Merging would
-     * make the shipped list impossible to get rid of.
+     * An array, and it replaces the defaults rather than adding to them: a
+     * site that uses ?kw= gets kw and nothing else, so its ?q=, which may
+     * mean something else, is not read as a search. An empty array switches
+     * site-search tracking off.
      *
-     * An empty array switches site-search tracking off.
+     * Anything that is not an array is refused and the previous value stands;
+     * setDebug(true) logs the refusal. setOption('siteSearchParams', ...)
+     * does not check, and a string given there is searched for one character
+     * at a time.
      *
-     * A NAMED SETTER, like setTrackUrlFragments, because
-     * this is site-facing and setOption() takes any key with no checking. It
-     * REFUSES anything that is not an array, which is the reason it is worth
-     * having: trackSiteSearch() walks the value by index, and a string has a length
-     * and indexes to characters, so setOption('siteSearchParams', 'query') searched
-     * for q, u, e, r and y -- found nothing, reported nothing, said nothing. The
-     * refusal is logged and the previous value stands.
-     *
-     * CALL IT BEFORE trackPageView(), which is where the search is read from the
-     * URL. The standard snippet configures then tracks, so that is the normal
-     * order; a site that calls this afterwards has already had the defaults applied
-     * to its first page view.
+     * Queue it in the tag. trackSiteSearch, a default feature, reads the URL
+     * once the commands queued before the tracker loaded have run, and route
+     * changes search with the parameters it started with, so a later call
+     * changes neither.
      *
      * @param {string[]} params  parameter names, tried in order
      *
@@ -5367,10 +5295,11 @@ class OWATracker  {
     /**
      * Raise view_search_results when the page is a site-search results page.
      *
-     * 1.x has the search-term DIMENSIONS and never emits an event, so the
-     * dimensions have nothing to describe. The query parameters are a setting
-     * because there is no convention -- q, s, search, query and keywords are
-     * all common, and a site knows which one it uses.
+     * It is one when its query string has a non-blank value for one of the
+     * parameters, tried in order: params when given, else the siteSearchParams
+     * option. The first such value is the event's search_term. With
+     * trackRouteChanges() on, each route change is searched again with the
+     * same parameters.
      *
      * @param {Array} params  query parameter names, defaults to the option
      *
@@ -5433,22 +5362,19 @@ class OWATracker  {
     /**
      * Report an uncaught script error as an `exception` event.
      *
-     * NO STACK TRACE ON THE WIRE. A stack from a minified bundle is noise to
-     * anyone reading a report, and it is the field most likely to carry a URL
-     * with a token in it. Message, file and line answer "is my site broken"
-     * without that risk.
+     * The event carries the message, file and line, not the stack trace: a
+     * stack from a minified bundle is noise in a report, and it is the field
+     * most likely to carry a URL with a token in it.
      *
-     * ONCE PER PAGE VIEW for each message, source and line. An error raised in
-     * a loop or a repeating callback raises the same message every time it
-     * runs; measured, one page view sent 100 identical events.
+     * Each message, source and line is sent once per page view, so an error
+     * raised in a loop or a repeating callback is one event.
      *
-     * NOT THE RESIZEOBSERVER LOOP NOTICE. Chrome reports "ResizeObserver loop
-     * completed with undelivered notifications" (formerly "ResizeObserver loop
-     * limit exceeded") through window.onerror when an observer's callback
-     * changes layout in the frame it ran in. Nothing has failed: the
-     * notifications are delivered in the next frame. It arrives with line 0
-     * and no error object, and a crawler that resizes its window to the full
-     * page height raises it dozens of times per page.
+     * Chrome's ResizeObserver loop notice, any message starting
+     * "ResizeObserver loop", is not sent. It reaches window.onerror when an
+     * observer's callback changes layout in the frame it ran in; nothing has
+     * failed, and the notifications are delivered in the next frame.
+     *
+     * A window.onerror handler the page set before this runs is still called.
      *
      * @command
      */
@@ -5618,10 +5544,8 @@ class OWATracker  {
      * event per page view, at the deepest scrollThresholds mark reached, and only
      * after the visitor has scrolled.
      *
-     * ITS OWN LISTENER. Scroll depth once shared a single `window.onscroll`
-     * slot with another feature and fired only where that feature was active,
-     * for its sampled fraction of visitors -- a first-class event gated on an
-     * unrelated feature's sample rate.
+     * Its listener is its own: it does not depend on any other feature or its
+     * sample rate.
      *
      * Idempotent, like trackClicks(): the snippet pushes each command once, but a
      * site can push one twice and two listeners would check every frame twice.

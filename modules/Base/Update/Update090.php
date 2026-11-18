@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Update;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Delete every stored base.domain_aliases row, at every scope. The setting is
  * gone: a page on another host is stored as it arrived, and a site on several

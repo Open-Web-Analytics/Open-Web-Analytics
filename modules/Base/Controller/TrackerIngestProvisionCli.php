@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Controller;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Create the tracker-ingest queue and its dead-letter queue, or find them
  * there (PLAN 2.30.3): directories for the file queue, queues for a module's

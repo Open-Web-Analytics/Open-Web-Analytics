@@ -1,10 +1,5 @@
 <?php
 namespace OWA\Core\Exception;
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
 /**
  * The requested action is not a well-formed action name.
  *

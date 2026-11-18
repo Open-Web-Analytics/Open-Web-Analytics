@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Update;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * owa_user.session_epoch: signed into every session cookie, and moved by a
  * sign-out or a password change to end all of a user's sessions (see

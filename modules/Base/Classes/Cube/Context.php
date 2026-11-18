@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Cube;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * What a cube step is given when it runs: the partition, the clocks, and the
  * aliases it may write SQL against.

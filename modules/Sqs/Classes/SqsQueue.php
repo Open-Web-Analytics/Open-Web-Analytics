@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Sqs\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The tracking intake on AWS SQS (PLAN 2.30.4a), mirroring the file queue
  * (Base\Classes\FileEventQueue): a main queue with a dead-letter queue, a

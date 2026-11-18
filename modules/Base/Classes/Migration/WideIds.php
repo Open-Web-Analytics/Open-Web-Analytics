@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Migration;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * 32-bit ids in the tables v2 keeps, re-keyed to 64-bit (PLAN.html 2.21).
  *

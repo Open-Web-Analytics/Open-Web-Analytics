@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Core;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * One way every navigation list in the UI is finished: filtered, then gated.
  *

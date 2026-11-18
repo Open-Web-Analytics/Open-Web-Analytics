@@ -2,12 +2,6 @@
 
 namespace OWA\Core;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * What this server does: OWA_SERVER_ROLE in owa-config.php, the server_role
  * setting. A role is the set of request types (RequestType) it serves, and

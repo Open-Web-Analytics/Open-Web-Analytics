@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Core\Db;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * PDO transport, shared by every PDO-based driver.
  *

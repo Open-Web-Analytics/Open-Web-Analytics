@@ -2,13 +2,6 @@
 namespace OWA\Core;
 
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Copyright Peter Adams. All rights reserved.
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-
 /**
  * Utility Functions
  * 

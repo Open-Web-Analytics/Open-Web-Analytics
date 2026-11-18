@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Entity;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * owa_migration_progress: how far the v1 migration has got, per source table
  * and site.

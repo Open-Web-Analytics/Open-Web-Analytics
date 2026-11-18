@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Is the installation doing what it should (PLAN 2.30.5): the scheduler,
  * its recurring jobs, the one-off job queue, the tracker-ingest intake, the

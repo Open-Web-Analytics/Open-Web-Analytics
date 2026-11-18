@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Update;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * Profile and Property domains as host[:port]: the scheme and trailing slashes
  * 1.x stored are removed from owa_site.domain and owa_property.domain.

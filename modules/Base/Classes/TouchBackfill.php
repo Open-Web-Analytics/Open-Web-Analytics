@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The last-touch evidence for history recorded before ingest wrote it
  * (Update066, PLAN 2.29): raw's prior_touch_* and the visitor store's

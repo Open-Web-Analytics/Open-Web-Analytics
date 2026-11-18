@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Cube;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * next_page_path: the page viewed after this one in its session, or (exit) on
  * the session's last page view once the session has closed.

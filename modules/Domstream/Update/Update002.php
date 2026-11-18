@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Domstream\Update;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * The v2 recording tables: owa_domstream_chunk and owa_domstream_payload.
  *

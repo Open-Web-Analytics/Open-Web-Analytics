@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Entity;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * owa_event -- v2's denormalised event table. The one queries hit.
  *

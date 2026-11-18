@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Sqs\Classes;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * What the SQS intake needs to know about this install (PLAN 2.30.4a): its
  * region, its credentials, and its queues' names.

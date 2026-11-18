@@ -1,12 +1,6 @@
 <?php
 namespace OWA\Module\Base\Classes\Cube;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * channel, and acq_channel: what kind of traffic a session is, read from the
  * row's own source, medium and campaign.

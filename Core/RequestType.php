@@ -2,12 +2,6 @@
 
 namespace OWA\Core;
 
-//
-// Open Web Analytics - An Open Source Web Analytics Framework
-//
-// Licensed under GPL v2.0 http://www.gnu.org/copyleft/gpl.html
-//
-
 /**
  * What kind of request this process is answering, as the entry point that
  * booted it declares (the request_type setting):
