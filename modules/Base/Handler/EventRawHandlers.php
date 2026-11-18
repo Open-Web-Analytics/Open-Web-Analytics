@@ -1044,12 +1044,13 @@ class EventRawHandlers extends \OWA\Core\Observer {
      * Insert-if-absent into the visitor store, for a visitor's first session.
      *
      * ANY EVENT OF THAT SESSION MAY WRITE IT, not only the one that raised
-     * first_visit. A session cannot change its attribution part-way -- new tags
-     * start a new session -- so every event of it resolves the same
-     * acquisition, and whichever lands first writes the row while the rest are
-     * no-ops. Losing one beacon therefore does not cost the acquisition, and
-     * the failure mode stays `absent then present` rather than `wrong then
-     * corrected`.
+     * first_visit: whichever lands first with something to stamp writes the
+     * row, and the rest are no-ops. The events do not all carry the same
+     * evidence. The tags are read from the landing beacon only
+     * (TrackingEventHelpers::taggedValue()), and a session ends only on idle or
+     * a new visitor, not on new tags; the referrer rides every event, and on a
+     * later page view it is the page before it. So a later event that lands
+     * before its landing writes no tags, and its referrer where it has one.
      *
      * A VISITOR WITH NO KNOWN ACQUISITION GETS NO ROW. A placeholder would be
      * found present when the real first_visit arrived late on a queue drain and

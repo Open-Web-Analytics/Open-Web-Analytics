@@ -9,18 +9,11 @@
  * .constraintValueField), because the pill styling is written against those
  * classes and naming a condition is the same act in both places.
  *
- * ONE row, no add button. The schema holds a single property/operator/value
- * triple, which is what v2 specifies (PLAN.html §7.14: an event type and a
- * condition). Whether several conditions can combine is a v2 question, and
- * rendering an add button that cannot be saved would answer it in the UI first.
+ * Any number of rows (data-owa-repeatable), each a property/operator/value
+ * condition stored as a goal_event_definition_condition, combined by the
+ * all/any choice (condition_match).
  */
 $owa_ke = (array) $view->goalEventDefinition;
-
-$owa_operators = [
-    \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_EXACT  => 'Exactly Matching',
-    \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_BEGINS => 'Begins With',
-    \OWA\Module\Base\Entity\GoalEventDefinition::MATCH_REGEX  => 'Matches Regex',
-];
 ?>
 <h1 class="panel_headline"><?php echo $view->headline;?></h1>
 <div id="panel">

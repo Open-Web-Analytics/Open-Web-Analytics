@@ -1431,8 +1431,7 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Renames column
-     * idempotent
+     * Renames column. Fails when $old does not exist.
      *
      * @param  string $table_name
      * @param  string $old
@@ -1447,8 +1446,7 @@ class Db extends \OWA\Core\Base {
 
 
     /**
-     * Adds new column to table
-     * idempotent
+     * Adds new column to table. Fails when the column already exists.
      *
      * @param  string $table_name
      * @param  string $column_name

@@ -312,11 +312,10 @@ class GoalEventDefinitionSave extends \OWA\Core\AdminController {
         /*
          * The old conditions go through the ENTITY, one at a time by id.
          *
-         * goal_event_definition_condition is cachable and the cache is persisted
-         * to disk, so a raw DELETE by goal_event_definition_id removes the rows and
-         * leaves every one of them still answering from cache under its own id
-         * key -- a save that appears to work and then keeps counting the
-         * conditions it replaced.
+         * goal_event_definition_condition is cachable, and the cache holds rows
+         * for the rest of the request under their id keys. A raw DELETE by
+         * goal_event_definition_id removes the rows and leaves each one still
+         * answering from that cache until the request ends.
          */
         $entity = \OWA\Core\CoreAPI::entityFactory( 'base.goal_event_definition_condition' );
 

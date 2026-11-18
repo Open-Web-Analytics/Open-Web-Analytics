@@ -1060,9 +1060,7 @@ class Entity {
     }
     
     /**
-     * DROP Table
-     *
-     * Drops a table. will throw error is table does not exist
+     * DROP TABLE IF EXISTS: a table that is not there is not an error.
      *
      * @return bool
      */
