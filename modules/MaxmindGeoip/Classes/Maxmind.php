@@ -67,6 +67,17 @@ class Maxmind extends \OWA\Core\Location {
     }
 
     /**
+     * The database file this installation reads: the configured edition's,
+     * in dataDir().
+     *
+     * @return string
+     */
+    public static function dbFile() {
+
+        return self::dataDir() . self::edition() . '.mmdb';
+    }
+
+    /**
      * @return bool
      */
     public function isDbReady() {

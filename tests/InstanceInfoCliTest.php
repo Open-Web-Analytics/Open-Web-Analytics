@@ -307,4 +307,86 @@ final class InstanceInfoCliTest extends TestCase
         $this->assertDoesNotMatchRegularExpression($writes, $source,
             'instance-info must only ever read');
     }
+
+    /** A private method of the command, on an instance whose constructor never ran. */
+    private function invokePrivate(string $method)
+    {
+        $cli = (new ReflectionClass(\OWA\Module\Base\Controller\InstanceInfoCli::class))
+            ->newInstanceWithoutConstructor();
+
+        return (new ReflectionMethod($cli, $method))->invoke($cli);
+    }
+
+    /**
+     * The GeoIP line looks for the configured edition's file. An install on the
+     * Country edition has no GeoLite2-City.mmdb and is not "not downloaded".
+     */
+    public function testTheGeoipLineReadsTheConfiguredEdition(): void
+    {
+        $file   = \OWA\Module\MaxmindGeoip\Classes\Maxmind::dataDir() . 'GeoLite2-Country.mmdb';
+        $dir    = dirname($file);
+        $config = \OWA\Core\CoreAPI::configSingleton();
+
+        if (file_exists($file)) {
+            $this->markTestSkipped("$file already exists; this test would replace it");
+        }
+
+        $madeDir  = !is_dir($dir) && @mkdir($dir, 0775, true);
+        $active   = $config->get('maxmind_geoip', 'is_active');
+        $edition  = $config->get('maxmind_geoip', 'db_edition');
+
+        if (!is_dir($dir) || @file_put_contents($file, 'owatest') === false) {
+            $this->markTestSkipped("$dir is not writable");
+        }
+
+        try {
+            touch($file, (int) strtotime('2001-02-03 12:00:00'));
+            $config->set('maxmind_geoip', 'is_active', true);
+            $config->set('maxmind_geoip', 'db_edition', 'GeoLite2-Country');
+
+            $line = (string) $this->invokePrivate('geoipStatus');
+
+            $this->assertStringNotContainsString('not downloaded', $line);
+            $this->assertStringContainsString('updated 2001-02-03', $line,
+                'the line describes the Country file, the one this install reads');
+
+        } finally {
+            $config->set('maxmind_geoip', 'is_active', $active);
+            $config->set('maxmind_geoip', 'db_edition', $edition);
+            @unlink($file);
+
+            if ($madeDir) {
+                @rmdir($dir);
+            }
+        }
+    }
+
+    /**
+     * Unreadable partition metadata names the server versions the installer
+     * requires (DatabaseRequirement) when the server is older, and no version
+     * when it is not.
+     */
+    public function testUnreadablePartitionsNameTheInstallersRequirement(): void
+    {
+        try {
+            \OWA\Module\Base\Classes\DatabaseRequirement::assume('5.7.44');
+
+            $old = (string) $this->invokePrivate('partitionsUnreadableReason');
+
+            \OWA\Module\Base\Classes\DatabaseRequirement::assume('8.0.36');
+
+            $current = (string) $this->invokePrivate('partitionsUnreadableReason');
+
+        } finally {
+            \OWA\Module\Base\Classes\DatabaseRequirement::assume(null);
+        }
+
+        $this->assertStringContainsString(\OWA\Module\Base\Classes\DatabaseRequirement::MYSQL_MIN, $old);
+        $this->assertStringContainsString('MariaDB 10.11', $old);
+        $this->assertStringNotContainsString('MySQL 5.7 or later', $old);
+
+        $this->assertStringNotContainsString('or later', $current,
+            'a supported server is not told to upgrade');
+        $this->assertStringContainsString('information_schema.PARTITIONS', $current);
+    }
 }

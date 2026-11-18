@@ -3253,7 +3253,7 @@ class Db extends \OWA\Core\Base {
      * since a partition can only be dropped as a unit. Better to return the best
      * plan available and report that it does not fit.
      */
-    const PARTITION_MAX_YEARS_PER_BLOCK = 5;  // default; OWA_PARTITION_MAX_YEARS_PER_BLOCK
+    const PARTITION_MAX_YEARS_PER_BLOCK = 5;
 
     /**
      * Work out the tail layout the current settings imply, and how to get there

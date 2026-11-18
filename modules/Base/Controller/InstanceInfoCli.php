@@ -376,7 +376,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
         if ( $counts === null ) {
 
             return [ $this->row( self::WARN, 'Partitioning', 'could not be read',
-                'Partition metadata was not readable. This needs MySQL 5.7 or later.' ) ];
+                $this->partitionsUnreadableReason() ) ];
         }
 
         $partitioned = count( array_filter( $counts ) );
@@ -629,6 +629,28 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
     // ----------------------------------------------------------------- helpers
 
     /**
+     * Why partition metadata could not be read: the database server's version
+     * when the installer would refuse it (DatabaseRequirement), else that the
+     * query failed.
+     *
+     * @return string
+     */
+    private function partitionsUnreadableReason() {
+
+        try {
+
+            $problem = \OWA\Module\Base\Classes\DatabaseRequirement::problem();
+
+        } catch ( \Throwable $e ) {
+
+            $problem = null;
+        }
+
+        return $problem ?: 'information_schema.PARTITIONS could not be queried. The database error is in '
+          . 'OWA\'s error log.';
+    }
+
+    /**
      * Partition count per fact table, or null when the metadata is unreadable.
      *
      * Through the dialect's listPartitions() rather than a query written here:
@@ -684,7 +706,7 @@ class InstanceInfoCli extends \OWA\Core\Controller\Cli {
             return null;
         }
 
-        $file = \OWA\Module\MaxmindGeoip\Classes\Maxmind::dataDir() . 'GeoLite2-City.mmdb';
+        $file = \OWA\Module\MaxmindGeoip\Classes\Maxmind::dbFile();
 
         if ( ! file_exists( $file ) ) {
 
