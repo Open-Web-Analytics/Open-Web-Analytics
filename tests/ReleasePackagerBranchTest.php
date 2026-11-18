@@ -9,7 +9,8 @@ use PHPUnit\Framework\TestCase;
  * holds 2.0, a 1.x release run from the 1.x branch would have packaged 2.0
  * under a 1.x version number.
  */
-final class ReleasePackagerBranchTest extends TestCase {
+final class ReleasePackagerBranchTest extends TestCase
+{
 
     public function testTheCheckoutIsTheBranchTheWorkflowRunsOn(): void {
 
