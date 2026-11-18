@@ -17,25 +17,21 @@ final class TemplateScriptDataTest extends TestCase
     /**
      * The templates that still carry inline JavaScript, and how many blocks.
      *
-     * The tracker tags and the overlay launcher are R6's; the rest are the
-     * report screens not yet moved. report.php's one block creates
-     * OWA.items[dom_id] while the page parses, which a report's subview may
-     * read from its own inline script. A block of data
+     * The tracker tags are R6's. head.php assigns OWA.config before the page
+     * body exists. nav_shell.php's runs before the first paint, so a hidden
+     * column does not show and then go. report.php's creates OWA.items[dom_id]
+     * while the page parses, which a report's subview may read from its own
+     * inline script. sites_invocation.php's is a tag shown as text, not run.
+     * A block of data
      * (type="application/json") or a script loaded by src is not code here.
      */
     private const INLINE_CODE_LEFT = [
-        'Base/templates/custom_reports.php'         => 1,
         'Base/templates/head.php'                   => 1,
         'Base/templates/js_bundle_tag.php'          => 1,
         'Base/templates/js_log_tag.php'             => 2,
-        'Base/templates/msgs.php'                   => 1,
         'Base/templates/nav_shell.php'              => 1,
-        'Base/templates/property_access.php'        => 1,
         'Base/templates/report.php'                 => 1,
-        'Base/templates/report_realtime.php'        => 1,
         'Base/templates/sites_invocation.php'       => 1,
-        'Base/templates/visualization_funnel.php'   => 1,
-        'Domstream/templates/report_domstreams.php' => 1,
     ];
 
     private static $propertyId = '';
@@ -344,5 +340,86 @@ final class TemplateScriptDataTest extends TestCase
         $this->assertSame( $m[1], $controls[0]['report'] );
         $this->assertTrue( $controls[0]['siteFilter'] );
         $this->assertSame( 'last_thirty_days', $controls[0]['periodPicker']['period'] ?? null );
+    }
+
+    /** The funnel template with one step, which draws the steps grid's element. */
+    private function funnelWithSteps(): string
+    {
+        $t = new \OWA\Core\Template( 'base' );
+
+        foreach ( [ 'funnel' => [ [ 'name' => 'Basket', 'visitors' => 3, 'step_number' => 1, 'visitor_percentage' => '100%' ] ], 'completion_rate' => '100%', 'visualization_id' => '7', 'funnel_scope' => 'visitor' ] as $k => $v ) {
+            $t->set( $k, $v );
+        }
+
+        $t->set_template( 'visualization_funnel.php' );
+
+        return (string) $t->fetch();
+    }
+
+    /** The funnel's steps table, segment filter and scope switch, as the view hands them over, round trip. */
+    public function testTheFunnelIsHandedItsStepsAndFilter(): void
+    {
+        $table  = [ 'resultsRows' => [ [ 'step' => [ 'value' => 'Basket' ] ] ] ];
+        $filter = [ 'dimensions' => [ [ 'name' => 'medium' ] ], 'metrics' => [], 'constraints' => 'medium==</script>' ];
+
+        $t = new \OWA\Core\Template( 'base' );
+
+        foreach ( [ 'funnel' => [], 'visualization_id' => '7', 'funnel_scope' => 'visitor', 'funnel_table' => $table, 'funnel_filter' => $filter ] as $k => $v ) {
+            $t->set( $k, $v );
+        }
+
+        $this->assertTrue( $t->set_template( 'visualization_funnel.php' ) );
+
+        $html   = (string) $t->fetch();
+        $config = $this->config( $html, 'rows-report:config' );
+
+        $this->assertSame( 'funnel-steps-grid', $config['grid'] );
+        $this->assertStringContainsString( 'id="funnel-steps-grid"', $this->funnelWithSteps(), 'the grid draws into an element the funnel does not have' );
+        $this->assertSame( 'funnelSteps', $config['item'] );
+        $this->assertSame( $table, $config['table'] );
+        $this->assertSame( [ 'ids' => 'funnel', 'item' => 'funnelConstraints', 'firstPage' => false ] + $filter, $config['filter'] );
+        $this->assertSame( [ 'funnel-scope-visitor', 'funnel-scope-session' ], array_column( $config['reloadOn'], 'input' ) );
+
+        foreach ( $config['reloadOn'] as $on ) {
+            $this->assertStringContainsString( 'id="' . $on['input'] . '"', $html );
+        }
+        $this->assertStringNotContainsString( 'medium==</script>', $html );
+    }
+
+    public function testTheRecordingsAreHandedTheirSegmentChoices(): void
+    {
+        $this->requireDb();
+
+        $data = (array) ( new \OWA\Module\Domstream\Controller\ReportDomstreams(
+            [ 'siteId' => self::$siteId, 'period' => 'last_thirty_days', 'constraints' => 'medium==email' ] ) )->doAction();
+        $view = \OWA\Core\CoreAPI::viewFactory( $data['view'], $data );
+        $view->setData( $data );
+
+        $config = $this->config( (string) $view->assembleView( $data ), 'rows-report:config' );
+
+        $this->assertSame( 'domstreams', $config['item'] );
+        $this->assertSame( 'domstreamConstraints', $config['filter']['item'] );
+        $this->assertTrue( $config['filter']['firstPage'] );
+        $this->assertSame( [ 'play' => 'overlayLink' ], $config['gridOptions']['columnFormatters'] );
+
+        $this->assertSame( (array) $data['domstreams_filter_dimensions'], $config['filter']['dimensions'] );
+        $this->assertSame( (array) $data['domstreams_filter_metrics'], $config['filter']['metrics'] );
+        $this->assertSame( (string) $data['domstreams_constraints'], $config['filter']['constraints'] );
+        $this->assertSame( (array) $data['domstreams'], $config['table'] );
+    }
+
+    public function testTheRealtimeReportIsHandedItsApiAndMap(): void
+    {
+        $this->requireDb();
+
+        $html   = $this->screen( '\\OWA\\Module\\Base\\Controller\\ReportRealtime', [ 'propertyId' => self::$propertyId ] );
+        $config = $this->config( $html, 'realtime:config' );
+
+        parse_str( (string) parse_url( $config['apiUrl'], PHP_URL_QUERY ), $query );
+        $this->assertSame( 'realtime', $query['do'] ?? null );
+        $this->assertSame( self::$propertyId, $query['propertyId'] ?? null );
+        $this->assertSame( \OWA\Core\CoreAPI::createRestApiNonce( 'v1', 'base', 'realtime', 'GET' ), $query['nonce'] ?? null );
+        $this->assertStringEndsWith( 'base/i/world-110m.svg', $config['mapUrl'] );
+        $this->assertIsString( $config['timezone'] );
     }
 }

@@ -8,21 +8,13 @@
      * left on the page it becomes furniture that says "saved" long after the
      * next thing was done. Errors are NOT faded below: those describe something
      * still wrong, and the reader decides when they are finished with them.
+     * owa.transientStatus.js fades it.
      */
 ?>
 <div class="status owa_transientStatus" role="status">
     <?php if (isset($view->status_msg['headline'])) : ?><b><?php $view->out( $view->status_msg['headline'] ); ?>!</b><?php endif; ?>
     <?php if (isset($view->status_msg['message'])) : $view->out( $view->status_msg['message'] ); endif; ?>
 </div>
-<script>
-jQuery( function () {
-    // Long enough to read a sentence, then a fade rather than a disappearance
-    // -- something vanishing on its own reads as a glitch.
-    setTimeout( function () {
-        jQuery( '.owa_transientStatus' ).fadeOut( 600 );
-    }, 6000 );
-} );
-</script>
 <?php endif;?>
 
 <?php if ( isset($view->error_msg) && !isset($view->validation_errors)):?>

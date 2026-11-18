@@ -60,12 +60,12 @@ class VisualizationFunnel extends \OWA\Core\View {
         // A step the funnel cannot count: no event, or a property it cannot test. Refused
         // rather than drawn with that step ignored -- see stepPredicate().
         $this->body->set('funnel_step_error',    $this->get('funnel_step_error') );
-        // Written into a <script>.
-        $this->body->set('funnel_table_json', \OWA\Core\Template::scriptJson( $this->get('funnel_table') ) );
-        $this->body->set('funnel_filter_json', \OWA\Core\Template::scriptJson( array(
+        // Handed to owa.rowsReport.js by the template.
+        $this->body->set('funnel_table', $this->get('funnel_table') );
+        $this->body->set('funnel_filter', array(
             'dimensions'  => $this->get('funnel_filter_dimensions'),
             'metrics'     => $this->get('funnel_filter_metrics'),
             'constraints' => $this->get('funnel_constraints'),
-        ) ) );
+        ) );
     }
 }
