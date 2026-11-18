@@ -227,28 +227,4 @@ foreach ( $owa_kinds ?: \OWA\Module\Base\Controller\CustomReports::newKinds() as
     </ul>
 </div>
 
-<script>
-jQuery( function () {
-
-    var dialog = jQuery( '#customReportNewDialog' );
-
-    if ( ! dialog.length ) {
-        return;
-    }
-
-    dialog = OWA.dialog( dialog, {
-        title: <?php echo $view->scriptJson( \OWA\Core\CoreAPI::t( 'What do you want to make?' ) ); ?>,
-        width: 640,
-        className: 'owa_typeDialogFrame',
-        closeButton: true
-    } );
-
-    jQuery( document ).on( 'click', '.owa_newCustomReport', function ( e ) {
-
-        e.preventDefault();
-
-        dialog.open( this );
-    } );
-} );
-</script>
 <?php endif; ?>

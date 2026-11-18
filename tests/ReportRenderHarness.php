@@ -4,8 +4,9 @@ namespace OWA\Tests;
 
 /**
  * Reads what a rendered report EMITS: the API queries its widgets issue, the
- * explorers they build, and the commands they run on the results. Those are the
- * report; everything else is markup around them.
+ * explorers they build, and the commands they run on the results -- read from
+ * the widget descriptions report_widgets.php hands owa.reportWidgets.js. Those
+ * are the report; everything else is markup around them.
  *
  * Parsers only. It used to also record every report into a golden fixture, to
  * prove the controller-to-JSON conversion preserved what each controller
@@ -31,12 +32,57 @@ final class ReportRenderHarness
     private const VOLATILE = array( 'nonce' );
 
     /**
-     * Every API query the rendered report will issue, in document order.
+     * The widget descriptions the report hands owa.reportWidgets.js, in
+     * document order: one per widget, each naming the global its explorer is
+     * published as, the element it renders into, its URL, options and queued
+     * commands, and a broken-out trend's grid as `breakdown`.
      *
-     * A LIST, not a map keyed by variable name. The tabbed templates declare
-     * `var dimurl` once per tab, so keying by name silently kept only the last
-     * one: a three-tab report emits six queries and this recorded two. The
-     * fixture looked complete and was missing two thirds of the report.
+     * @return list<array<string, mixed>>
+     */
+    public static function widgetsIn( string $html ): array
+    {
+        preg_match_all( '~<script type="application/json" data-ui="report-widget:config">(.*?)</script>~s', $html, $m );
+
+        $out = array();
+
+        foreach ( $m[1] as $json ) {
+
+            $out[] = (array) json_decode( $json, true );
+        }
+
+        return $out;
+    }
+
+    /**
+     * Each widget's explorer and, after it, a broken-out trend's grid: the
+     * explorers the page builds, in the order it builds them.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function explorerDescriptions( string $html ): array
+    {
+        $out = array();
+
+        foreach ( self::widgetsIn( $html ) as $widget ) {
+
+            $out[] = $widget;
+
+            if ( ! empty( $widget['breakdown'] ) ) {
+
+                $out[] = $widget['breakdown'];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Every API query the rendered report will issue, in document order, by
+     * the global its URL is published as (`<name>url`).
+     *
+     * A LIST, not a map keyed by name. A tabbed report has a set of widgets per
+     * tab, and keying by name once silently kept only the last of a repeated
+     * one: a three-tab report emits six queries and this recorded two.
      *
      * @return array<int, array>
      */
@@ -44,16 +90,9 @@ final class ReportRenderHarness
     {
         $out = array();
 
-        if ( ! preg_match_all( "/var\s+(\w+)\s*=\s*'([^']*api[^']*)'/", $html, $m ) ) {
+        foreach ( self::explorerDescriptions( $html ) as $explorer ) {
 
-            return $out;
-        }
-
-        foreach ( $m[1] as $i => $name ) {
-
-            $url = html_entity_decode( $m[2][ $i ], ENT_QUOTES );
-
-            parse_str( (string) parse_url( $url, PHP_URL_QUERY ), $query );
+            parse_str( (string) parse_url( (string) $explorer['url'], PHP_URL_QUERY ), $query );
 
             foreach ( self::VOLATILE as $key ) {
 
@@ -64,24 +103,10 @@ final class ReportRenderHarness
 
             ksort( $query );
 
-            $out[] = array( 'var' => $name, 'query' => $query );
+            $out[] = array( 'var' => $explorer['name'] . 'url', 'query' => $query );
         }
 
         return $out;
-    }
-
-    /**
-     * Whether the code at an offset sits behind a `//` on its own line.
-     *
-     * Only line comments: a block comment around a push would be unusual.
-     */
-    private static function isCommentedOut( string $html, int $offset ): bool
-    {
-        $lineStart = (int) strrpos( substr( $html, 0, $offset ), "\n" );
-
-        $before = substr( $html, $lineStart, $offset - $lineStart );
-
-        return strpos( $before, '//' ) !== false;
     }
 
     /**
@@ -92,26 +117,25 @@ final class ReportRenderHarness
      * container emits an identical command list and an identical query, and the
      * report simply renders nothing.
      *
-     * A list for the same reason the queries are: the tabbed templates rebind
-     * `var dim` once per tab.
-     *
      * @return array<int, array>
      */
     public static function explorersIn( string $html ): array
     {
-        preg_match_all(
-            "/(?:var\s+)?(\w+)\s*=\s*new\s+OWA\.resultSetExplorer\(\s*'([^']*)'/",
-            $html, $m );
-
         $out = array();
 
-        foreach ( $m[1] as $i => $receiver ) {
+        foreach ( self::explorerDescriptions( $html ) as $explorer ) {
 
-            $out[] = array( 'var' => $receiver, 'container' => $m[2][ $i ] );
+            $out[] = array( 'var' => $explorer['name'], 'container' => $explorer['container'] );
         }
 
         return $out;
     }
+
+    /**
+     * Where a command's target element is among its arguments: the commands
+     * that draw into an element they are given.
+     */
+    private const TARGET_ARGUMENT = array( 'makeAreaChart' => 2, 'makeMetricBoxes' => 1 );
 
     /**
      * The render commands queued against the result sets, in order, with what
@@ -130,56 +154,18 @@ final class ReportRenderHarness
      */
     public static function commandsIn( string $html ): array
     {
-        if ( ! preg_match_all( '/(\w+)\.asyncQueue\.push\(\s*\[(.*?)\]\s*\)\s*;/s',
-                               $html, $m, PREG_OFFSET_CAPTURE ) ) {
-
-            return array();
-        }
-
         $out = array();
 
-        foreach ( $m[1] as $i => $receiverMatch ) {
+        foreach ( self::explorerDescriptions( $html ) as $explorer ) {
 
-            /*
-             * Skip anything commented out.
-             *
-             * report_traffic.php (since deleted, when traffic became
-             * configuration) had a makeMetricBoxes call left behind under
-             * `//`, and this recorded it as a live command -- so the fixture
-             * asserted behaviour that never runs, and the conversion would
-             * have been held to reproducing it. The template is gone; the
-             * guard stays, because the next recording can be misled the
-             * same way.
-             */
-            if ( self::isCommentedOut( $html, $receiverMatch[1] ) ) {
+            foreach ( (array) ( $explorer['queue'] ?? array() ) as $command ) {
 
-                continue;
+                $name   = (string) $command[0];
+                $at     = self::TARGET_ARGUMENT[ $name ] ?? null;
+                $target = $at !== null && is_string( $command[ $at ] ?? null ) ? $command[ $at ] : '';
+
+                $out[] = $explorer['name'] . '.' . $name . ( $target !== '' ? ' -> ' . $target : '' );
             }
-
-            $receiver = $receiverMatch[0];
-
-            $args = $m[2][ $i ][0];
-
-            // First quoted string is the command name.
-            preg_match( "/^\s*'([a-zA-Z]+)'/", $args, $name );
-
-            /*
-             * The element it renders into is a TRAILING argument, when there is
-             * one at all -- refreshGrid takes none, and makeAreaChart is called
-             * both ways.
-             *
-             * It has to be the last top-level argument, not merely the last
-             * quoted string anywhere in the call. `['makeAreaChart',
-             * [{x:'date',y:'pageViews'}]]` has no target, and reading the last
-             * quoted string recorded 'pageViews' -- an axis metric written down
-             * as a container. A conversion that changed the charted metric
-             * would then have shown up as a container change.
-             */
-            $target = preg_match( "/,\s*'([a-zA-Z0-9_.#-]*)'\s*$/", $args, $trailing )
-                ? $trailing[1]
-                : '';
-
-            $out[] = $receiver . '.' . ( $name[1] ?? '?' ) . ( $target !== '' ? ' -> ' . $target : '' );
         }
 
         return $out;

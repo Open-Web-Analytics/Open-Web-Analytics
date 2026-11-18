@@ -77,91 +77,30 @@ $owa_rows              = isset( $owa_table['resultsRows'] ) ? $owa_table['result
 </div>
 <?php endif;?>
 
-<script>
-(function () {
-
-    // A filter added, changed or removed reloads the report, because the
-    // segment is resolved server-side -- it selects the visits, and the
-    // recordings made during them are then listed.
-    function goTo( params ) {
-
-        var url = new URL( window.location.href );
-
-        for ( var k in params ) {
-            if ( params.hasOwnProperty( k ) ) {
-                url.searchParams.set( k, params[ k ] );
-            }
-        }
-
-        // A new filter means a new first page. Keeping the old page number
-        // would land the reader on page 4 of a two-page list.
-        url.searchParams.delete( 'page' );
-
-        window.location.href = url.toString();
-    }
-
-    var recordings = <?php echo $view->scriptJson( $owa_table ); ?>;
-
-    if ( recordings && recordings.resultsRows && recordings.resultsRows.length ) {
-
-        OWA.items.domstreams = new OWA.resultSetExplorer( 'domstreams-grid' );
-        OWA.items.domstreams.options.grid.showExplorerControls = false;
-
-        // The Play cell carries the player's parameters as its value; this is
-        // what turns them into a link.
-        OWA.items.domstreams.options.grid.columnFormatters = { play: 'overlayLink' };
-
-        OWA.items.domstreams.setResultSet( recordings );
-        OWA.items.domstreams.refreshGrid();
-    }
-
-    var filter = {
-        dimensions: <?php echo $view->scriptJson( $owa_filter_dimensions ); ?>,
-        metrics: <?php echo $view->scriptJson( $owa_filter_metrics ); ?>,
-        constraints: <?php echo $view->scriptJson( (string) $view->get('domstreams_constraints') ); ?>
-    };
-
-    var applied = '';
-
-    OWA.items.domstreamConstraints = new OWA.filterPills( {
-        pills: 'domstreamFilters', add: 'domstreamAddFilter', form: 'domstreamFilterForm',
-        dimension: 'domstreamFilterDimension', operator: 'domstreamFilterOperator',
-        value: 'domstreamFilterValue', addFilter: 'domstreamFilterAdd', cancel: 'domstreamFilterCancel'
-    }, OWA.filterPills.choices( filter.dimensions, filter.metrics ), function () {
-
-        var constraints = OWA.items.domstreamConstraints.get();
-
-        if ( constraints !== applied ) {
-            goTo( { 'owa_constraints': constraints } );
-        }
-    } );
-
-    OWA.items.domstreamConstraints.set( filter.constraints );
-    applied = OWA.items.domstreamConstraints.get();
-
+<?php
     /*
-     * The player opens in a window sized to the viewport the recording was made
-     * in, because the replay positions events against that geometry -- an
-     * ordinary tab would render the page at the reader's size and the pointer
-     * would land in the wrong places.
+     * The recordings and the segment filter, for owa.rowsReport.js (Base).
      *
-     * Delegated, so it keeps working when the grid redraws its rows.
+     * The segment selects the visits, and the recordings made during them are
+     * then listed; a new filter goes back to the first page. The Play cell
+     * carries the player's parameters as its value, and the overlayLink
+     * formatter turns them into a link. The player opens in a window sized to
+     * the viewport the recording was made in, because the replay positions
+     * events against that geometry.
      */
-    jQuery( '#domstreams-grid' ).on( 'click', 'a.owa_overlayLink', function ( e ) {
-
-        e.preventDefault();
-
-        var link   = jQuery( this );
-        var height = link.data( 'height' );
-        var width  = link.data( 'width' );
-
-        window.open(
-            link.attr( 'href' ),
-            'OWA Recording',
-            'menubar=yes,location=yes,resizable=no,scrollbars=yes,status=yes'
-                + ',height=' + height + ',width=' + width
-        );
-    } );
-
-}());
-</script>
+?>
+<script type="application/json" data-ui="rows-report:config"><?php echo $view->scriptJson( array(
+    'grid'        => 'domstreams-grid',
+    'item'        => 'domstreams',
+    'table'       => $owa_table,
+    'gridOptions' => array( 'columnFormatters' => array( 'play' => 'overlayLink' ) ),
+    'filter'      => array(
+        'ids'         => 'domstream',
+        'item'        => 'domstreamConstraints',
+        'firstPage'   => true,
+        'dimensions'  => $owa_filter_dimensions,
+        'metrics'     => $owa_filter_metrics,
+        'constraints' => (string) $view->get('domstreams_constraints'),
+    ),
+    'sizedWindow' => array( 'link' => 'a.owa_overlayLink', 'name' => 'OWA Recording' ),
+) ); ?></script>

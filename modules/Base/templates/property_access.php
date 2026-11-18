@@ -77,14 +77,4 @@
 .owa-always { color: #767676; font-size: 0.9em; margin-left: 0.5em; }
 </style>
 
-<script>
-jQuery(document).ready(function() {
-    jQuery('#owa-user-filter').on('keyup', function() {
-        var needle = jQuery(this).val().toLowerCase();
-        jQuery('.owa-allowed-users tr.owa-user-row').each(function() {
-            jQuery(this).toggle( jQuery(this).text().toLowerCase().indexOf( needle ) !== -1 );
-        });
-    });
-});
-</script>
 </div>

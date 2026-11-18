@@ -7,10 +7,9 @@ use PHPUnit\Framework\TestCase;
 /**
  * Template::makeJson() emits a JS object literal into a <script> block.
  *
- * Both callers do exactly that -- report.php assigns it to
- * OWA.items[...].properties and report_widgets.php passes it to
- * addLinkToColumn() -- and report.php's input is $view->params, which is
- * URL-controlled.
+ * report.php assigns it to OWA.items[...].properties, and its input is
+ * $view->params, which is URL-controlled. report_widgets.php reads it back
+ * into a widget's description for addLinkToColumn().
  *
  * It used to be assembled by string concatenation and escaped with
  * Sanitize::escapeForDisplay(), which is htmlentities(): an HTML escape applied

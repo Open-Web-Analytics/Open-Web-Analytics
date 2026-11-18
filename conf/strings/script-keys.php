@@ -201,6 +201,7 @@ return array(
     'Update the filter you are changing, or cancel it.',
     'Value',
     'Visitor %s',
+    'What do you want to make?',
     'What this change would do could not be worked out just now.',
     'Widget',
     'Widget %s',

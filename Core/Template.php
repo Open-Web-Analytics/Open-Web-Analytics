@@ -731,10 +731,10 @@ class Template extends TemplateEngine {
     /**
      * A JS object literal, for embedding in a <script> block.
      *
-     * Both callers do exactly that -- report.php assigns the result to
-     * OWA.items[...].properties, and report_widgets.php passes it to
-     * addLinkToColumn() -- and report.php's input is $view->params, which is
-     * URL-controlled.
+     * report.php assigns the result to OWA.items[...].properties, and its
+     * input is $view->params, which is URL-controlled. report_widgets.php reads
+     * it back into a widget's description, as the values a grid's column link
+     * is given (owa.reportWidgets.js passes them to addLinkToColumn()).
      *
      * It used to be assembled by string concatenation and escaped with
      * Sanitize::escapeForDisplay(), which is htmlentities(): an HTML escape
