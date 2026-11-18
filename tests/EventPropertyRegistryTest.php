@@ -83,22 +83,6 @@ final class EventPropertyRegistryTest extends TestCase
         }
     }
 
-    /*
-     * testAnEmptyEventListIsNotReadAsUniversal WAS HERE, and the `events: []`
-     * marker it guarded is gone with it.
-     *
-     * The five cube-pass readings declared an empty list to say "no event
-     * carries this" while staying registered, because serverOwnedProperties()
-     * needed the entry to refuse a request that set `source` directly. The
-     * allowlist made that unnecessary -- an unregistered name is not admitted,
-     * so deleting the entry refuses it for a stronger reason than declaring it
-     * did -- and then the readings were deleted outright, because nothing at
-     * ingest computes them.
-     *
-     * So the registry means one thing again: absent is every event, a list is
-     * those events, and there is no third case.
-     */
-
     /** An event-specific property belongs to its event and not to others. */
     public static function eventSpecificProvider(): array
     {

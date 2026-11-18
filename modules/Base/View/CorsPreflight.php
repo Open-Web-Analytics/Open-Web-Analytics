@@ -3,15 +3,8 @@ namespace OWA\Module\Base\View;
 
 /**
  * CORS Preflight Request Controller
- * 
- * Responds to an OPTIONS preflight request made by browsers for non-simple HTTP CORS requests. 
  *
- */
-
-
-/**
- * cors preflight response.
- * 
+ * Responds to an OPTIONS preflight request made by browsers for non-simple HTTP CORS requests.
  */
 class CorsPreflight extends \OWA\Core\View\RestApi {
 

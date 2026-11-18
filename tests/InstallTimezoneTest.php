@@ -452,14 +452,6 @@ final class InstallTimezoneTest extends TestCase
     }
 
     /**
-     * UTC is selectable.
-     *
-     * conf/country2Timezones.php is keyed by COUNTRY, and UTC is not a country,
-     * so it was absent from both pickers -- 285 zones and no way to choose the
-     * one that does not move. For a self-hosted product whose operator may run
-     * servers in several regions, that is the omission most likely to matter.
-     */
-    /**
      * A wizard whose timezone field is governed by a constant.
      *
      * Rendered rather than scanned. The other tests in this file read the
@@ -595,6 +587,14 @@ final class InstallTimezoneTest extends TestCase
         $this->assertGreaterThan( 200, substr_count( $html, '<option' ) );
     }
 
+    /**
+     * UTC is selectable.
+     *
+     * conf/country2Timezones.php is keyed by COUNTRY, and UTC is not a country,
+     * so it was absent from both pickers -- 285 zones and no way to choose the
+     * one that does not move. For a self-hosted product whose operator may run
+     * servers in several regions, that is the omission most likely to matter.
+     */
     public function testUtcIsOfferedByThePicker(): void
     {
         // require, not require_once: a second require_once answers true.

@@ -160,16 +160,6 @@ describe('one OWA cookie cleared but not the other', () => {
         expect(stored.sid).not.toBe(SESSION_SID);
     });
 
-    /*
-     * Two cases about session-scoped custom variables stood here. They followed
-     * the session rather than the visitor, which was the point being pinned --
-     * and the capability is gone: v2 offers authors event and user scope only,
-     * and derives session scope server-side from the session's own events.
-     *
-     * What they were really exercising -- one cookie recovered, the other not --
-     * is covered by the cases above and below on visitor_id, session_id and the
-     * two is_new flags, which is the mechanism rather than a payload riding it.
-     */
     test('both cookies gone: a new visitor and a new session, as on a first visit', () => {
         seed({});
 

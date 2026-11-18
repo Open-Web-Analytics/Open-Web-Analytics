@@ -31,9 +31,6 @@ final class EventRawIngestionTest extends IngestionTestCase
     }
 
     /**
-     * Fire a page view and hand back its raw rows, keyed by event_type.
-     */
-    /**
      * Fire a first-session page view for a given visitor and return whether the
      * acquisition write reported success.
      *
@@ -53,6 +50,9 @@ final class EventRawIngestionTest extends IngestionTestCase
         return $check->wasPersisted();
     }
 
+    /**
+     * Fire a page view and hand back its raw rows, keyed by event_type.
+     */
     private function firePageView(array $override = []): array
     {
         $visitor = $this->uniqueGuid();

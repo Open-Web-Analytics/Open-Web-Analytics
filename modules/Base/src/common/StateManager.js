@@ -277,39 +277,6 @@ class StateManager {
 		}
 	}
 
-	/**
-	 * Fold a legacy store into the one that now owns its values, and drop it.
-	 *
-	 * 'b' held session-scoped custom variables in a cookie of its own, beside
-	 * the session store. Reading it as a fallback was enough to stop a visitor
-	 * losing what they had, but not enough to be correct: because nothing ever
-	 * cleared it at a session boundary, a variable left there by a session that
-	 * had ended was still found by that read and put back on the wire. The store
-	 * moved; the leak moved with it.
-	 *
-	 * THIS DEPENDS ON NOTHING, so it runs at tracker init rather than waiting
-	 * for the session to be settled. It is a storage migration, not a session
-	 * decision: values move cookie to cookie without passing through memory, so
-	 * they keep their provenance -- persisted by a previous page load, and still
-	 * persisted afterwards. Whatever the session decision turns out to be then
-	 * applies to them exactly as it would have had they never moved.
-	 *
-	 * Merging into MEMORY instead would be the subtle version of the bug this
-	 * whole design exists to prevent: memory is what marks a value as set by
-	 * THIS page load, so a legacy value merged there would survive a new session
-	 * that should have discarded it.
-	 *
-	 * Running at init also means it happens on a page that never tracks a
-	 * pageview, so the extra cookie stops riding on requests at the first
-	 * opportunity. That is what makes this a migration rather than an indefinite
-	 * compatibility shim: it empties itself the first time each visitor is seen.
-	 */
-	/**
-	 * Declare a storage migration.
-	 *
-	 * The callback receives the state manager and runs once per page, after the
-	 * cookie domain is established and before anything downstream reads.
-	 */
 	/*
 	 * The shape a persisted store is written in.
 	 *
@@ -374,6 +341,12 @@ class StateManager {
 		return this.versionOf( state ) <= StateManager.STORE_VERSION;
 	}
 
+	/**
+	 * Declare a storage migration.
+	 *
+	 * The callback receives the state manager and runs once per page, after the
+	 * cookie domain is established and before anything downstream reads.
+	 */
 	registerMigration( name, callback ) {
 
 		this.migrations.push( { 'name': name, 'callback': callback } );
@@ -428,6 +401,33 @@ class StateManager {
 		return false;
 	}
 
+	/**
+	 * Fold a legacy store into the one that now owns its values, and drop it.
+	 *
+	 * 'b' held session-scoped custom variables in a cookie of its own, beside
+	 * the session store. Reading it as a fallback was enough to stop a visitor
+	 * losing what they had, but not enough to be correct: because nothing ever
+	 * cleared it at a session boundary, a variable left there by a session that
+	 * had ended was still found by that read and put back on the wire. The store
+	 * moved; the leak moved with it.
+	 *
+	 * THIS DEPENDS ON NOTHING, so it runs at tracker init rather than waiting
+	 * for the session to be settled. It is a storage migration, not a session
+	 * decision: values move cookie to cookie without passing through memory, so
+	 * they keep their provenance -- persisted by a previous page load, and still
+	 * persisted afterwards. Whatever the session decision turns out to be then
+	 * applies to them exactly as it would have had they never moved.
+	 *
+	 * Merging into MEMORY instead would be the subtle version of the bug this
+	 * whole design exists to prevent: memory is what marks a value as set by
+	 * THIS page load, so a legacy value merged there would survive a new session
+	 * that should have discarded it.
+	 *
+	 * Running at init also means it happens on a page that never tracks a
+	 * pageview, so the extra cookie stops riding on requests at the first
+	 * opportunity. That is what makes this a migration rather than an indefinite
+	 * compatibility shim: it empties itself the first time each visitor is seen.
+	 */
 	collapseLegacyStores() {
 
 		for ( var name in this.storeMeta ) {

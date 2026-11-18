@@ -31,16 +31,6 @@ class InstallBase extends \OWA\Core\Controller\Install {
             'errorMsg' => sprintf( \OWA\Core\CoreAPI::t( 'The password must be at least %d characters.' ), \OWA\Module\Base\Entity\User::MIN_PASSWORD_LENGTH ),
         ]);
 
-        /*
-         * A pasted URL is no longer refused.
-         *
-         * The form used to ask for the scheme in a select of its own, so a
-         * domain that also carried one produced "https://https://example.com"
-         * -- hence a validation that rejected anything starting with "http".
-         * The select is gone and the scheme is stripped instead
-         * (SiteManager::domainOnly(), in InstallManager::createDefaultSite());
-         * refusing the most natural thing to paste bought nothing.
-         */
     }
 
     public function action() {

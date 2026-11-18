@@ -210,19 +210,6 @@ test.describe('every registered REST route answers over HTTP @selfhost-only', ()
     });
 
     /**
-     * CORS lives in its own describe with a freshly provisioned fixture.
-     *
-     * The route loop above sends real requests that POST and DELETE against
-     * users and sites, so by the time these run the fixture credential has been
-     * through eight mutating calls. Re-provisioning here makes these cases
-     * independent of what the loop did rather than dependent on running last --
-     * and because they ARE last, re-provisioning cannot disturb anything above.
-     *
-     * It must not be a separate spec file: provision() calls cleanup() first, so
-     * a second file calling it destroys this one's fixture mid-run. That is what
-     * broke seven of the authenticated cases above when these lived elsewhere.
-     */
-    /**
      * CORS: the API answers cross-origin, and only for configured sites.
      *
      * These reuse the describe's own fixture rather than provisioning their

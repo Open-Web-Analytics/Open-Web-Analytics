@@ -277,7 +277,6 @@ final class ReportNavigationLinkTest extends TestCase
         }
     }
 
-    /** Every nav link in the Reports group, subgroup entries included. */
     /** Any registered site: the nav only renders for one. */
     private function anySiteId(): string
     {
@@ -292,6 +291,9 @@ final class ReportNavigationLinkTest extends TestCase
         return (string) ( (array) $row )['site_id'];
     }
 
+    /**
+     * Every nav link in the Reports group, subgroup entries included.
+     */
     private function flattenNav(): array
     {
         $flat = [];
@@ -401,13 +403,6 @@ final class ReportNavigationLinkTest extends TestCase
      * the list that has to remain reachable, so this is where it is recorded.
      */
     private const ECOMMERCE_REPORTS = [
-        /*
-         * products, product-skus, product-categories, visits-to-purchase and
-         * days-to-purchase were here. All five are gone: the first three need
-         * line items, which v2's one-revenue-figure-per-purchase row does not
-         * carry, and the last two need daysToTransaction / visitsToTransaction,
-         * computed dimensions v2 has not built.
-         */
         'avg-order-value',
         'revenue',
         'ecommerce-conversion-rate',

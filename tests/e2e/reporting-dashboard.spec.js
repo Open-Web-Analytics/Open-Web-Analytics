@@ -2,10 +2,6 @@ const { test, expect } = require('@playwright/test');
 const { FIXTURE, login, openDashboard, openReport } = require('./fixtures');
 
 /**
- * The seeded custom report of metric boxes with no chart above them, found by
- * name on the roster: its id is minted at seed time.
- */
-/**
  * A visits table's Visit Start cells, asserting it is the first column after
  * the row number.
  */
@@ -16,6 +12,10 @@ async function startColumn(grid) {
     return grid.locator(`tr.owa_gridRow td:nth-child(${head.indexOf('Visit Start') + 1})`);
 }
 
+/**
+ * The seeded custom report of metric boxes with no chart above them, found by
+ * name on the roster: its id is minted at seed time.
+ */
 async function boxesReport(page) {
 
     await page.goto(`?owa_do=base.customReports&owa_siteId=${FIXTURE.siteId}`, { waitUntil: 'networkidle' });

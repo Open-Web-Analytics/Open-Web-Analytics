@@ -79,17 +79,6 @@ class CustomReports {
     const MAX_DIMENSIONS = 4;
 
     /**
-     * The widget types the builder offers.
-     *
-     * A SUBSET of what the renderer can draw, and deliberately so. The others
-     * exist to serve one shipped report each -- report-links needs a list of
-     * report ids, heatmap-link needs a document, the badge widgets need a
-     * particular dimension in a particular column -- so offering them would be
-     * offering configurations that mostly cannot be made to work.
-     *
-     * Keys are what a definition says; values are what a person is shown.
-     */
-    /**
      * The visualizations, and the controller each resolves to.
      *
      * A map rather than a switch so a second one needs no dispatcher change.
@@ -118,7 +107,17 @@ class CustomReports {
         'funnel' => 'fas fa-filter',
     ];
 
-    /*
+    /**
+     * The widget types the builder offers.
+     *
+     * A SUBSET of what the renderer can draw, and deliberately so. The others
+     * exist to serve one shipped report each -- report-links needs a list of
+     * report ids, heatmap-link needs a document, the badge widgets need a
+     * particular dimension in a particular column -- so offering them would be
+     * offering configurations that mostly cannot be made to work.
+     *
+     * Keys are what a definition says; values are what a person is shown.
+     *
      * `pie` draws ranked share bars now (OWA.shareChart). The key stays, since
      * saved reports and shipped definitions name it.
      */

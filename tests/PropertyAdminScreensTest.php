@@ -360,19 +360,6 @@ final class PropertyAdminScreensTest extends TestCase
             'A Profile is listed without its tracking id.' );
     }
     /**
-     * The settings nav is for install-wide configuration only.
-     *
-     * Everything else hangs off the hierarchy and is reached from the site
-     * control. A "Goal Settings" entry in a global menu could not say WHICH
-     * site's goals it meant, and "User Management" put the people who belong to
-     * an Organization somewhere that never mentioned one.
-     *
-     * Timezone is the one that must NOT move down: yyyymmdd and nine other date
-     * parts are baked into every fact row at collection in the configured zone,
-     * so it is not retroactive, and two Profiles disagreeing would put rows of
-     * different meanings in one table with nothing recording which.
-     */
-    /**
      * A settings screen is named ONCE, where it is registered.
      *
      * The nav label and the page heading used to be declared separately -- an
@@ -450,6 +437,19 @@ final class PropertyAdminScreensTest extends TestCase
           . implode( "\n", $duplicate ) );
     }
 
+    /**
+     * The settings nav is for install-wide configuration only.
+     *
+     * Everything else hangs off the hierarchy and is reached from the site
+     * control. A "Goal Settings" entry in a global menu could not say WHICH
+     * site's goals it meant, and "User Management" put the people who belong to
+     * an Organization somewhere that never mentioned one.
+     *
+     * Timezone is the one that must NOT move down: yyyymmdd and nine other date
+     * parts are baked into every fact row at collection in the configured zone,
+     * so it is not retroactive, and two Profiles disagreeing would put rows of
+     * different meanings in one table with nothing recording which.
+     */
     public function testTheSettingsNavHoldsOnlyInstallWideOptions(): void
     {
         $panels = (array) \OWA\Core\CoreAPI::singleton()->getAdminPanels();

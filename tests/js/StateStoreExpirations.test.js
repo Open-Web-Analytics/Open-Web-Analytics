@@ -93,13 +93,6 @@ describe('the configured lifetime is what the registry answers with', () => {
         expect(OWA.state.getExpirationDays('v')).toBe(90);
     });
 
-    /*
-     * The campaign-store case was here. There is no 'c' store any more: it held
-     * the client's attribution stack, which the server never read, and it went
-     * with the attribution models. The cases around this still cover that
-     * naming one store does not disturb another.
-     */
-
     /**
      * The session store is per site -- it is registered as 's_<siteId>'. The
      * snippet names it 's', because the server writing the snippet does not know

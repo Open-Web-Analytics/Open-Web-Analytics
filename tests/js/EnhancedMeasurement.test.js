@@ -358,12 +358,6 @@ describe('downloads and outbound links', () => {
     });
 });
 
-/*
- * THE ELEMENT-PATH SUITE IS GONE with getElementPath(). It built a CSS selector
- * that no report, widget or overlay read, and that a template edit renumbers
- * wholesale -- see Update053.
- */
-
 describe('forms', () => {
 
     test('form_start fires once per form, form_submit on send', () => {

@@ -591,13 +591,6 @@ final class CubeRotateTest extends TestCase
     }
 
     /**
-     * The partition taking writes is carved even though it holds rows.
-     *
-     * If today is inside a monthly partition the daily part has fallen behind, and
-     * every cube rebuild until that month ends rewrites a month. Carving costs
-     * that rewrite once; not carving costs it on every run.
-     */
-    /**
      * The merge turns a decision into one ALTER per month, not one per day.
      *
      * The arithmetic is tested above; this covers the loop that acts on it,
@@ -667,6 +660,13 @@ final class CubeRotateTest extends TestCase
         $this->assertSame([], RotateAtDate::$db->carved);
     }
 
+    /**
+     * The partition taking writes is carved even though it holds rows.
+     *
+     * If today is inside a monthly partition the daily part has fallen behind, and
+     * every cube rebuild until that month ends rewrites a month. Carving costs
+     * that rewrite once; not carving costs it on every run.
+     */
     public function testItCarvesTheMonthlyPartitionThatIsTakingWrites(): void
     {
         RotateAtDate::$now       = '20261110';

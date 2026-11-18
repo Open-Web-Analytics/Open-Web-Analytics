@@ -946,8 +946,6 @@ class Module extends \OWA\Core\Module {
                 'order'          => 5]
         );
 
-        /*
-        */
     }
 
 
@@ -1122,11 +1120,6 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationSubGroup('Content', $this->reportRef( 'content' ), \OWA\Core\CoreAPI::t( 'Content' ), 5, 'view_reports', 'Reports','fa fa-newspaper');
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'pages' ), \OWA\Core\CoreAPI::t( 'Pages' ), 1);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'page-types' ), \OWA\Core\CoreAPI::t( 'Page Types' ), 2);
-        /*
-         * The Feeds link was here. Feed requests are not a v2 event -- the type
-         * is refused at the door -- and nothing has written one since 2021. A
-         * nav entry to a report with no data source is worse than no entry.
-         */
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'entry-pages' ), \OWA\Core\CoreAPI::t( 'Entry Pages' ), 3);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'exit-pages' ), \OWA\Core\CoreAPI::t( 'Exit Pages' ), 4);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'clicks' ), \OWA\Core\CoreAPI::t( 'Clicks' ), 5);
@@ -1134,20 +1127,6 @@ class Module extends \OWA\Core\Module {
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'site-search' ), \OWA\Core\CoreAPI::t( 'Site Search' ), 7);
         $this->addNavigationLinkInSubGroup( 'Content', $this->reportRef( 'forms' ), \OWA\Core\CoreAPI::t( 'Forms' ), 8);
 
-
-        /*
-         * ACTION TRACKING was here, and the data still flows -- track.action
-         * maps onto custom_event and its properties land in owa_event_raw's
-         * `params`. What cannot ship is the REPORTS: they group by actionGroup,
-         * actionName and actionLabel, which are params paths, and the cube
-         * reaches a params path through a REGISTERED custom dimension
-         * (Cube\JsonStep) that adds a column per Property. That is an
-         * installation's choice, so it cannot be a shipped dimension, and a
-         * shipped report cannot depend on one.
-         *
-         * An install that wants these registers action_group and friends as
-         * custom dimensions and builds its own report over them.
-         */
 
         //Visitors
         $this->addNavigationSubGroup( 'Visitors', $this->reportRef( 'visitors' ), \OWA\Core\CoreAPI::t( 'Visitors' ), 4, 'view_reports', 'Reports','fa fa-user-friends');
@@ -1191,41 +1170,6 @@ class Module extends \OWA\Core\Module {
      *
      */
     public function _registerEventHandlers() {
-
-        /*
-         * THE v1 INGEST CHAIN WAS HERE, and this is 2.25 step 4.
-         *
-         * It was: base.page_request -> requestHandlers writes owa_request and
-         * raises base.page_request_logged -> sessionHandlers writes owa_session
-         * and raises base.new_session -> ten dimension handlers and the
-         * document, conversion, commerce and visitor-update handlers populate
-         * the star schema. Clicks, actions and feed requests ran their own
-         * copies of the same shape.
-         *
-         * NOTHING READ ITS OUTPUT. The v1 metric and dimension vocabularies are
-         * gone, so owa_request, owa_session, the dimension tables and the fact
-         * tables were write-only -- and it is not free to keep: the queue is a
-         * RETRY queue, reached when a handler returns EVENT_FAILED, and this
-         * install had accumulated 50 failures in two hours from a chain filling
-         * tables nobody queries.
-         *
-         * base.new_session, the one signal anything outside v1 wanted, is
-         * raised by Handler\EventRawHandlers::announce() now -- from the
-         * ingest that materialises the marker, one hop instead of three, and
-         * beside base.new_visitor and base.new_page_view. Both were raised
-         * twice while the two chains overlapped, which is what
-         * IngestAnnouncementsTest caught.
-         *
-         * WHAT GOES WITH IT, and is not replaced:
-         *   - v1's GOALS. conversionHandlers evaluated them into owa_session's
-         *     goal_N columns. v2 adds a goal event, a row of its own, at ingest
-         *     instead (Classes\GoalMarking).
-         *   - v1's tables stop being WRITTEN. They are not dropped: the
-         *     migrator reads them, and their history is the only copy of what
-         *     was collected before v2 ingest existed.
-         *
-         * git history has every handler if one is ever wanted.
-         */
 
         /*
          * Notification handler.

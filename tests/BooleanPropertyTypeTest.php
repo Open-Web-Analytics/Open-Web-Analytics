@@ -29,12 +29,6 @@ final class BooleanPropertyTypeTest extends TestCase
 {
     /** The three flags whose callback can fall off the end returning null. */
     /*
-     * is_entry_page and is_repeat_visitor were here. Both were v1 derivations
-     * reading flags the tracker no longer sends -- and removing the flags
-     * without them would have left each computing a wrong value rather than
-     * none, which is the defect this whole file is about.
-     */
-    /*
      * is_browser and is_robot were here and are gone. Both were computed on
      * every beacon and read only by v1 handlers -- neither reached a raw column
      * or a cube pass -- so they went with the rest of the dead derivations.

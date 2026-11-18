@@ -416,16 +416,6 @@ final class SettingsPersistenceTest extends TestCase
     }
 
     /**
-     * Writing '' is not a removal, and there has to be something that is.
-     *
-     * persistSetting('') stores an empty string -- a row that overrides the
-     * code default with emptiness, forever. SettingsShutdownSaveTest used it as
-     * a cleanup and left `base.owa_settings_shutdown_probe` behind in the
-     * config of every install it ever ran against, this box included, since
-     * long before settings became rows. Nobody noticed because an empty string
-     * reads like an absent one until you look at the table.
-     */
-    /**
      * And the setting these three USED to demonstrate cannot be persisted.
      *
      * They were written around base.report_wrapper, which is convenient -- a
@@ -450,6 +440,16 @@ final class SettingsPersistenceTest extends TestCase
         }
     }
 
+    /**
+     * Writing '' is not a removal, and there has to be something that is.
+     *
+     * persistSetting('') stores an empty string -- a row that overrides the
+     * code default with emptiness, forever. SettingsShutdownSaveTest used it as
+     * a cleanup and left `base.owa_settings_shutdown_probe` behind in the
+     * config of every install it ever ran against, this box included, since
+     * long before settings became rows. Nobody noticed because an empty string
+     * reads like an absent one until you look at the table.
+     */
     public function testWritingAnEmptyStringStoresItRatherThanRemovingTheKey(): void
     {
         $c = $this->settings();

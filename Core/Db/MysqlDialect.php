@@ -579,16 +579,6 @@ trait MysqlDialect
     }
 
     /**
-     * Spare open-file slots on this server, or null if it cannot be read.
-     *
-     * Each partition is a file, and InnoDB caps how many tablespaces it keeps
-     * open at once. That cap is shared with every table already present, so the
-     * headroom for partitions is what is left after them -- not the cap itself.
-     *
-     * @return int|null
-     */
-
-    /**
      * Row count and date range within one partition.
      *
      * Reads the partition itself rather than information_schema, because
@@ -631,12 +621,6 @@ trait MysqlDialect
         ];
     }
 
-    /**
-     * The columns of a table's primary key, in key order.
-     *
-     * @param string $table_name
-     * @return string[]
-     */
     /**
      * A table's column names, optionally only those with a prefix.
      *
@@ -767,6 +751,12 @@ trait MysqlDialect
         return $counters;
     }
 
+    /**
+     * The columns of a table's primary key, in key order.
+     *
+     * @param string $table_name
+     * @return string[]
+     */
     public function getPrimaryKeyColumns( $table_name ) {
 
         if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $table_name ) ) {
@@ -788,16 +778,6 @@ trait MysqlDialect
         return $cols;
     }
 
-    /**
-     * Is there already an index covering exactly these columns?
-     *
-     * Matched on the column list rather than the index name, so an index MySQL
-     * named itself -- site_id, site_id_2 -- is recognised as covering site_id.
-     *
-     * @param string $table_name
-     * @param string $column_name  one column, or a comma-separated list
-     * @return bool
-     */
     /**
      * Whether a table is already there.
      *
@@ -830,6 +810,11 @@ trait MysqlDialect
     }
 
     /**
+     * Is there already an index covering exactly these columns?
+     *
+     * Matched on the column list rather than the index name, so an index MySQL
+     * named itself -- site_id, site_id_2 -- is recognised as covering site_id.
+     *
      * @param  string $table_name
      * @param  string $column_name  one column, or several comma-separated
      * @return bool

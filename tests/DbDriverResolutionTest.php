@@ -80,11 +80,6 @@ final class DbDriverResolutionTest extends TestCase {
     }
 
     /**
-     * The invariant, stated without reference to which token is which: every
-     * driver this can select for a bundled type must resolve to a class that
-     * exists. This is the assertion the previous fallback failed.
-     */
-    /**
      * 'pdo' is a configuration spelling, and it has to name a real driver.
      *
      * It used to reach the class owa_db_pdo, which exists nowhere -- it was an
@@ -107,6 +102,11 @@ final class DbDriverResolutionTest extends TestCase {
         );
     }
 
+    /**
+     * The invariant, stated without reference to which token is which: every
+     * driver this can select for a bundled type must resolve to a class that
+     * exists. This is the assertion the previous fallback failed.
+     */
     public function testEveryResolvableDriverNamesALoadableClass() {
 
         foreach ( [ 'mysql', 'mysqli' ] as $configured ) {

@@ -1466,31 +1466,6 @@ function teardown(): array
 }
 
 /**
- * Fire up to $n synthetic pageviews for the fixture site through the real
- * ingestion pipeline, spread across a few pages, two visitors, and -- crucially
- * -- SEVERAL DAYS, so the report has real shape: multiple rows in the pages
- * grid AND a non-flat timeseries (the sparkline KPI boxes and the Flot area /
- * trend charts need >1 day of data or they collapse to a single point).
- *
- * TIME-TRAVEL: OWA stamps every event with the request clock, not a value the
- * caller sets on the event. `ts` is owa_trackingEventHelpers::edgeTimestampMicro
- * seconds() -- the requestContainer singleton's receipt time, in MICROSECONDS,
- * taken once per process -- and yyyymmdd is derived from ts at log time. So to
- * backdate an event we must move the singleton's clock before logEvent().
- *
- * THROUGH setTimestamp(), which moves both of the container's clock fields. This
- * assigned ->timestamp directly, which is the seconds field; v2 reads the
- * microsecond one. Measured: every event below landed on TODAY, so the four-day
- * spread this docblock describes collapsed to a single point -- exactly the flat
- * timeseries the spread exists to avoid -- and nothing errored.
- *
- * The plan below fires exactly E2E_PAGEVIEWS (8) pageviews: 4 pages x 2 views
- * each (keeps the pages-grid contract -- 4 rows, count "2" per page), arranged
- * as 4 single-day visits by 2 returning visitors across 4 days spanning the
- * last_thirty_days window. $n caps how many of the plan actually fire (used by
- * the idempotent partial-reseed path); on a fresh DB $n == 8 fires the lot.
- */
-/**
  * Seed commerce transactions + line items for the fixture site.
  *
  * Idempotent by order_id: re-running the seeder does not duplicate rows, which
@@ -1581,6 +1556,31 @@ function seedTransactions(): int
     return $seeded;
 }
 
+/**
+ * Fire up to $n synthetic pageviews for the fixture site through the real
+ * ingestion pipeline, spread across a few pages, two visitors, and -- crucially
+ * -- SEVERAL DAYS, so the report has real shape: multiple rows in the pages
+ * grid AND a non-flat timeseries (the sparkline KPI boxes and the Flot area /
+ * trend charts need >1 day of data or they collapse to a single point).
+ *
+ * TIME-TRAVEL: OWA stamps every event with the request clock, not a value the
+ * caller sets on the event. `ts` is owa_trackingEventHelpers::edgeTimestampMicro
+ * seconds() -- the requestContainer singleton's receipt time, in MICROSECONDS,
+ * taken once per process -- and yyyymmdd is derived from ts at log time. So to
+ * backdate an event we must move the singleton's clock before logEvent().
+ *
+ * THROUGH setTimestamp(), which moves both of the container's clock fields. This
+ * assigned ->timestamp directly, which is the seconds field; v2 reads the
+ * microsecond one. Measured: every event below landed on TODAY, so the four-day
+ * spread this docblock describes collapsed to a single point -- exactly the flat
+ * timeseries the spread exists to avoid -- and nothing errored.
+ *
+ * The plan below fires exactly E2E_PAGEVIEWS (8) pageviews: 4 pages x 2 views
+ * each (keeps the pages-grid contract -- 4 rows, count "2" per page), arranged
+ * as 4 single-day visits by 2 returning visitors across 4 days spanning the
+ * last_thirty_days window. $n caps how many of the plan actually fire (used by
+ * the idempotent partial-reseed path); on a fresh DB $n == 8 fires the lot.
+ */
 function seedPageviews(int $n): int
 {
     $site_id = E2E_SITE_ID;
@@ -2076,6 +2076,12 @@ function sessionByReferer(string $site_id, string $referer_url): ?array
     return sessionFromRaw($site_id, "referer_host = '" . $db->prepare($host) . "'");
 }
 
+/** Stored rows of the fixture's action events. */
+function countActionRows(): int
+{
+    return array_sum(array_map('countRawRows', array_unique(array_column(E2E_ACTIONS, 'name'))));
+}
+
 /**
  * Raw rows for the fixture site, optionally of one event type.
  *
@@ -2084,12 +2090,6 @@ function sessionByReferer(string $site_id, string $referer_url): ?array
  * is `click` and a tracked action is `custom_event` -- so this is the same
  * question asked where the answer now lives.
  */
-/** Stored rows of the fixture's action events. */
-function countActionRows(): int
-{
-    return array_sum(array_map('countRawRows', array_unique(array_column(E2E_ACTIONS, 'name'))));
-}
-
 function countRawRows(?string $event_type = null): int
 {
     $db = \OWA\Core\CoreAPI::dbSingleton();

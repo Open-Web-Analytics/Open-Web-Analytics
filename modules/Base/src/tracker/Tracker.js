@@ -114,33 +114,7 @@ class OWATracker  {
 		    session_id:              { scope: 'session', permanent: false },
 		    psts:                    { scope: 'session', permanent: false },
 		    sts:                     { scope: 'session', permanent: false },
-		    /*
-		     * session_referer AND landing_url WERE HERE, and being in this map is
-		     * what put them on every beacon of a session.
-		     *
-		     * Both were re-sent from session state so the server could attribute
-		     * the session from any event. It never needed either: the tags are
-		     * parsed from page_location on the session-starting beacon, which is
-		     * the same URL landing_url held, and the session's referrer is the
-		     * referer_host of its first row, which the pass already reads through
-		     * the window it opens for the landing page. Session source is fixed by
-		     * the session's first event, so no cookie needs to hold a URL.
-		     *
-		     * So this removes a URL and a referrer from the cookie and from every
-		     * beacon of every session, for a read the pass performs anyway.
-		     */
 		    nps:                     { scope: 'session', permanent: false },
-		    /*
-		     * attribs WAS HERE, and being in this map is what put it on the
-		     * beacon. It is the campaign attribution history, and the only
-		     * thing that ever read it server-side was SessionHandlers --
-		     * `latest_attributions` on the v1 session row -- which is not
-		     * registered on v2. It reached no raw column and no cube pass.
-		     *
-		     * The whole client-side attribution stack went with it: the two
-		     * models, the 'c' cookie, maxPriorCampaigns and
-		     * trafficAttributionMode. The server resolves tags from page_location on the session-starting beacon.
-		     */
 		    // The site may set a different one, so it is not permanent.
 
 		    // Rewritten every page load.
@@ -325,11 +299,6 @@ class OWATracker  {
 	     * only know the logical one.
 	     */
 	    OWA.registerStateStore('v', 364, '', 'json', { owner: this, logical: 'v' });
-	    /*
-	     * The 'c' campaign store is GONE. It held the attribution stack the
-	     * client used to compute, which the server never read -- see
-	     * setTrafficAttribution().
-	     */
 
 	    // The session store does not load its cookie on first touch, and does
 	    // not write one until the session has been accepted for delivery.
@@ -492,21 +461,6 @@ class OWATracker  {
 	         * @option
 	         */
 	        honorPrivacySignals: true,
-	        /*
-	         * campaignKeys WAS HERE, with six setters beside it.
-	         *
-	         * THE v2 TRACKER KNOWS NOTHING ABOUT ATTRIBUTION. It sends
-	         * landing_url and session_referer; the server parses the tags out of
-	         * the landing URL and decides source, medium and campaign. So the
-	         * key list belongs where the parse is, and is now the `campaignKeys`
-	         * setting -- scoped to a Property, so a site whose links use utm_*
-	         * can say so without changing its links.
-	         *
-	         * Keeping the setters here was worse than not having them: the
-	         * server built its own ns-prefixed list and never consulted these,
-	         * so a site calling setCampaignSourceKey('utm_source') renamed a key
-	         * nothing read and its campaigns silently stopped being attributed.
-	         */
 	        /**
 	         * The URL beacons are sent to. setLoggerEndpoint() sets it; empty
 	         * means the install's own log.php.
@@ -1746,24 +1700,6 @@ class OWATracker  {
     }
 
     /**
-     * Hands a request URL to the browser for delivery.
-     *
-     * Prefers navigator.sendBeacon: it is the only transport that survives page
-     * unload, which is the dominant way a first page view is lost -- the visitor
-     * clicks through (including an in-page anchor) while the pixel is still in
-     * flight and the browser cancels it. Called with no body it issues a POST
-     * with the query string intact, so log.php keeps reading $_GET unchanged.
-     *
-     * sendBeacon returns false when the browser refuses to queue the payload
-     * (size caps, disabled by policy); in that case, and on older browsers, fall
-     * back to the historical 1x1 pixel.
-     *
-     * The return value drives whether session identity may be persisted:
-     * accepted -> commit; refused/errored -> abandon; neither (the page was torn
-     * down mid-flight) -> nothing is committed, and the next page correctly
-     * starts a new session.
-     */
-    /**
      * A request carrying this page's session identity was accepted for
      * delivery, so the session is worth writing down.
      *
@@ -1896,6 +1832,24 @@ class OWATracker  {
         }
     }
 
+    /**
+     * Hands a request URL to the browser for delivery.
+     *
+     * Prefers navigator.sendBeacon: it is the only transport that survives page
+     * unload, which is the dominant way a first page view is lost -- the visitor
+     * clicks through (including an in-page anchor) while the pixel is still in
+     * flight and the browser cancels it. Called with no body it issues a POST
+     * with the query string intact, so log.php keeps reading $_GET unchanged.
+     *
+     * sendBeacon returns false when the browser refuses to queue the payload
+     * (size caps, disabled by policy); in that case, and on older browsers, fall
+     * back to the historical 1x1 pixel.
+     *
+     * The return value drives whether session identity may be persisted:
+     * accepted -> commit; refused/errored -> abandon; neither (the page was torn
+     * down mid-flight) -> nothing is committed, and the next page correctly
+     * starts a new session.
+     */
     sendRequest( url, event_type ) {
 
         var that = this;
@@ -2152,15 +2106,6 @@ class OWATracker  {
 
         return properties;
     }
-
-    /*
-     * getElementPath() IS GONE. It built a CSS selector by walking up to eight
-     * ancestors with :nth-of-type() indexes. Nothing on the server ever read the
-     * column it fed -- no report, widget or overlay -- and a template edit
-     * renumbers every path at once, so it was neither aggregable nor stable across
-     * a deploy. ElementAnchor's path starts from the nearest id instead, and
-     * travels as a hash the heatmap matches.
-     */
 
     /**
      * Whether a URL leaves this site.
@@ -4824,6 +4769,35 @@ class OWATracker  {
     }
 
     /**
+     * The beacon FORMAT generation this tracker speaks.
+     *
+     * Bumped when the shape of a beacon changes in a way a server has to bridge
+     * -- a renamed token, a changed unit, a re-encoded value -- and not for
+     * ordinary releases. One integer for the whole message, rather than a flag
+     * per field.
+     *
+     * IT IS NOT CONSULTED TO DECIDE WHETHER A BEACON IS ACCEPTABLE. Whether one
+     * beacon can become a row is the server's identity guard, which knows
+     * nothing of versions. This exists so that "has generation N died out yet"
+     * is a query against stored rows instead of a guess about how long a
+     * customer's cache policy lets an old tracker live -- and OWA does not
+     * control that policy.
+     *
+     * ALIGNED TO THE OWA MAJOR, so a beacon format version and the tracker
+     * generation that emitted it are the same number. 2 is this wire. 1 is the
+     * v1 line, which predates the field, sends nothing and lands as NULL.
+     *
+     * Each version's emitted set is recorded standalone in
+     * tests/fixtures/beacon_contracts.json -- a version does not inherit from
+     * another, because the point of keeping an old one is to know what
+     * actually arrived.
+     */
+    static get BEACON_FORMAT_VERSION() {
+
+        return 2;
+    }
+
+    /**
      * The event's position in its session, counted on the DEVICE.
      *
      * WHY A COUNTER AND NOT A TIME. The server stamps `ts` at edge receipt --
@@ -4857,35 +4831,6 @@ class OWATracker  {
      * arbitrarily, and the pair is still ordered correctly against every other
      * event of the session. A lock would cost more than the collision does.
      */
-    /**
-     * The beacon FORMAT generation this tracker speaks.
-     *
-     * Bumped when the shape of a beacon changes in a way a server has to bridge
-     * -- a renamed token, a changed unit, a re-encoded value -- and not for
-     * ordinary releases. One integer for the whole message, rather than a flag
-     * per field.
-     *
-     * IT IS NOT CONSULTED TO DECIDE WHETHER A BEACON IS ACCEPTABLE. Whether one
-     * beacon can become a row is the server's identity guard, which knows
-     * nothing of versions. This exists so that "has generation N died out yet"
-     * is a query against stored rows instead of a guess about how long a
-     * customer's cache policy lets an old tracker live -- and OWA does not
-     * control that policy.
-     *
-     * ALIGNED TO THE OWA MAJOR, so a beacon format version and the tracker
-     * generation that emitted it are the same number. 2 is this wire. 1 is the
-     * v1 line, which predates the field, sends nothing and lands as NULL.
-     *
-     * Each version's emitted set is recorded standalone in
-     * tests/fixtures/beacon_contracts.json -- a version does not inherit from
-     * another, because the point of keeping an old one is to know what
-     * actually arrived.
-     */
-    static get BEACON_FORMAT_VERSION() {
-
-        return 2;
-    }
-
     stampEventSequence( event ) {
 
         var store = this.storeName( 's' );
@@ -4903,10 +4848,6 @@ class OWATracker  {
         event.set( 'event_seq', seq );
     }
 
-    /**
-     * Sends an OWA event to the server for processing using GET
-     * inserts 1x1 pixel IMG tag into DOM
-     */
     /**
      * Logs a custom event from an event type and a plain properties object.
      *

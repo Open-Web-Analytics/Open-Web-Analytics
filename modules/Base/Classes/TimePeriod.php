@@ -423,7 +423,6 @@ class TimePeriod {
 
     }
 
-    // checks to see if the period value passsed is valid.
     /**
      * Every period a request may name.
      *
@@ -814,32 +813,22 @@ class TimePeriod {
         return $this->diff_days;
     }
 
-    // Function used to take two date strings, and returns an associative array
-    // with different formats for the difference between the dates.
-    // based on function by: tchapin at gmail dot com
-    // --------------------
-    // Variables:
-    // StartDateString (String - MM/DD/YYYY)
-    // EndDateString (String - MM/DD/YYYY)
-    // --------------------
-    // Example: $DateDiffAry = GetDateDifference('01/09/2008', '02/11/2009');
-    // print_r($DateDiffAry);
-    // --------------------
-    // Returns Something Like:
-    /*
-    Array
-    (
-        [YearsSince] => 1.0931506849315
-        [MonthsSince] => 13.117808219178
-        [DaysSince] => 399
-        [HoursSince] => 9576
-        [MinutesSince] => 574560
-        [SecondsSince] => 34473600
-        [NiceString] => 1 year, 1 month, and 2 days
-        [NiceString2] => Years: 1, Months: 1, Days: 2
-    )
-    */
     /**
+     * The difference between two dates in several units, and as text.
+     *
+     * Based on a function by tchapin at gmail dot com.
+     *
+     * getDateDifference('20080109', '20090211') returns:
+     *
+     *     [YearsSince] => 1.0931506849315
+     *     [MonthsSince] => 13.117808219178
+     *     [DaysSince] => 399
+     *     [HoursSince] => 9576
+     *     [MinutesSince] => 574560
+     *     [SecondsSince] => 34473600
+     *     [NiceString] => 1 year, 1 month, and 2 days
+     *     [NiceString2] => Years: 1, Months: 1, Days: 2
+     *
      * @param  int|string|null $StartDateString yyyymmdd
      * @param  int|string|null $EndDateString   yyyymmdd
      * @return DateDifference

@@ -616,13 +616,6 @@ class Lib {
     }
 
     /**
-     * Create guid from string
-     *
-     * @param     string $string
-     * @return     int|string|null
-     * @access     private
-     */
-    /**
      * A 63-bit id derived from the content, for the wide-hash scheme.
      *
      * WHY NOT THE OBVIOUS hexdec( substr( sha1( $s ), 0, 16 ) )
@@ -704,6 +697,8 @@ class Lib {
     }
 
     /**
+     * Create guid from string
+     *
      * @param string|null $string
      * @param bool $allow_falsy Hash '0' rather than treating it as no value.
      *        The guard below is a truthiness test, so the legitimate string '0'
@@ -1120,10 +1115,6 @@ class Lib {
         return $domain;
     }
 
-    // better empty check when you need to accept these as valid, non-empty values:
-    // - 0 (0 as an integer)
-    //- 0.0 (0 as a float)
-    //- "0" (0 as a string)
     /**
      * Where a call came from: the first frame outside the given files, as a
      * path under the install and a line. For a notice that should name the
@@ -1152,6 +1143,8 @@ class Lib {
     }
 
     /**
+     * empty(), except that 0, 0.0 and "0" count as values.
+     *
      * @param  mixed $value any type
      * @return true|null true when empty() and not numeric
      */

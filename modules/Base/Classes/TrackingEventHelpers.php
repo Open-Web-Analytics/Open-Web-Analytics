@@ -9,14 +9,6 @@ namespace OWA\Module\Base\Classes;
 class TrackingEventHelpers {
 
     /**
-     * The label a v1 column carries when there is no value.
-     *
-     * Declared as default_value on 26 tracking properties. It is applied when a
-     * value is STORED, not when an event is built -- see setTrackerProperties()
-     * and Entity::setProperties(). The reporting layer produces it for a NULL
-     * dimension at render time as well.
-     */
-    /**
      * Declared types whose values are trimmed before they reach the event.
      *
      * The text-ish ones. '' is here because a property may omit data_type, and
@@ -32,6 +24,14 @@ class TrackingEventHelpers {
     const DESKTOP_OS = [ 'windows', 'mac os x', 'macos', 'linux', 'ubuntu',
                               'chrome os', 'fedora', 'debian', 'freebsd' ];
 
+    /**
+     * The label a v1 column carries when there is no value.
+     *
+     * Declared as default_value on 26 tracking properties. It is applied when a
+     * value is STORED, not when an event is built -- see setTrackerProperties()
+     * and Entity::setProperties(). The reporting layer produces it for a NULL
+     * dimension at render time as well.
+     */
     const ABSENT_VALUE_LABEL = '(not set)';
 
 
@@ -114,24 +114,6 @@ class TrackingEventHelpers {
     /** @var array<string, EventAttributes>|null config/tracking_events.php, memoised by eventConfig(). */
     private static $event_config = null;
 
-    /**
-     * The property definitions, read from modules/Base/config/tracking_properties.json.
-     *
-     * The file is the single enumeration of what a tracking event may carry:
-     * every property a handler expects by name, which of the three scopes owns
-     * it, and how the pipeline should treat it. Anything not named there is a
-     * custom property and is passed through without a contract.
-     *
-     * ORDER IS PART OF THE CONTRACT. setTrackerProperties() applies properties
-     * in the order they appear here, and a callback may read what earlier ones
-     * wrote -- the date parts read timestamp, the geo callbacks read
-     * ip_address, source and medium read session_referer. Reordering entries
-     * does not fail; the dependant silently derives from a value that has not
-     * been computed yet. TrackingPropertyOrderTest holds this.
-     *
-     * @param string $scope one of request, client, server
-     * @return array
-     */
     /** The three answers to "how does this property's value get set". */
     const SET_BY = [ 'client', 'request', 'event' ];
 
@@ -1573,12 +1555,6 @@ class TrackingEventHelpers {
         return substr( \OWA\Core\CoreAPI::getServerParam( 'HTTP_ACCEPT_LANGUAGE' ), 0, 5 );
     }
 
-    /*
-     * Registered as a FILTER, so the dispatcher hands it ( $value, $event )
-     * even though the old signature named neither. $event is named now
-     * because anonymisation is a per-Profile decision; $value stays ignored,
-     * as this callback always recomputes the address from the request.
-     */
     /**
      * The visitor's address from what a request carried: the first public
      * address of a proxy chain ("client, proxy, ..."), or the address itself
@@ -1644,6 +1620,10 @@ class TrackingEventHelpers {
     }
 
     /**
+     * Registered as a filter, so the dispatcher hands it ( $value, $event ).
+     * $event is read because anonymisation is a per-Profile decision; $value is
+     * ignored, as the address is always recomputed from the request.
+     *
      * @param  mixed      $value
      * @param  Event|null $event
      * @return string
@@ -1664,22 +1644,6 @@ class TrackingEventHelpers {
 
         return $chosen_ip;
     }
-
-    /*
-     * timestampDefault() and microtimeDefault() stood here, and are removed with
-     * the last property either could be attached to.
-     *
-     * Both answered a spelling of ONE instant that `ts` already carries: the edge
-     * receipt, in microseconds, environmental so a request cannot set it and a
-     * queue drain cannot restamp it. timestampDefault() returned the same instant
-     * in seconds and reached no column; microtimeDefault() returned PHP's
-     * space-separated microtime() string and reached nothing at all.
-     *
-     * They were unregistered when their properties left the registry, and
-     * `timestamp` has now left it too -- it is device-local state in the tracker,
-     * read by isNewSession() and fsts and never sent. So there is no definition
-     * left for either to be named by. See edgeTimestampMicroseconds() below.
-     */
 
     /**
      * Edge receipt in microseconds, for owa_event_raw.ts.
@@ -1708,44 +1672,6 @@ class TrackingEventHelpers {
      * dimension tables. v2 stores the values themselves and derives no keys.
      *
      * The event carries content. Nothing derived rides along on it.
-     */
-
-    /*
-     * THE DAY-COUNT DERIVATIONS WERE HERE, and are removed with their
-     * properties: deriveDaysSinceFirstSession(), deriveDaysSincePriorSession(),
-     * and the three helpers only they used -- dateFromTimestamp(),
-     * daysBetweenDates() and sessionDateOf().
-     *
-     * THEY WERE NOT v1 HOLDOVERS. The client used to compute both counts and the
-     * server accepted the integers on faith; 2026-08-22 moved the arithmetic
-     * here, so the client sends three raw ANCHORS -- fsts, psts, sts -- and the
-     * server derives the offsets and can re-derive them. That was a deliberate
-     * increase in trust and it worked.
-     *
-     * What they never got was a DESTINATION. Neither property declared a column
-     * or a param, and no dimension or metric read either, so both were computed
-     * on every event and discarded. The anchors, meanwhile, are stored:
-     * visitor_fsts, prior_session_start_ts and session_start_ts.
-     *
-     * So the offsets go and the anchors stay -- ship the anchor, derive the
-     * offset downstream. On
-     * the cube that is arithmetic between two columns of one row at query time:
-     * no join, no dimension table, and a corrected calculation re-applies to
-     * history instead of being frozen into a row.
-     *
-     * Anything reviving a daysSince* dimension should derive it there, from
-     * yyyymmdd and the anchor, not restore a write-path callback.
-     */
-
-    /*
-     * setRepeatVisitorFlag() was here, and resolveEntryPage() below it.
-     *
-     * Both derived a v1 column from a flag the tracker no longer sends --
-     * is_repeat_visitor from is_new_visitor, is_entry_page from
-     * is_new_session. Removed with their inputs rather than left computing:
-     * `! $event->get('is_new_visitor')` on an absent flag is `! false`, so
-     * every session would have been marked a repeat visit, and every page a
-     * non-entry. Wrong data is worse than a missing column.
      */
 
 
@@ -2369,27 +2295,6 @@ class TrackingEventHelpers {
     private static $campaignKeys = [];
 
     /**
-     * What the landing URL claimed for one campaign property.
-     *
-     * The tracker used to parse the landing URL against campaignKeys and send
-     * six tagged_* parameters on every beacon of the session. It now carries
-     * the URL itself and the parse happens here, which is what makes the answer
-     * re-derivable: a fix to this parser, or a site changing `ns`, applies on
-     * reprocess instead of being frozen in whatever a browser decided months
-     * ago.
-     *
-     * AN EVENT'S OWN tagged_* STILL WINS. Trackers are cached in browsers and
-     * installs upgrade at their own pace, so beacons from the old tracker keep
-     * arriving long after the new one ships; treating what it sent as
-     * authoritative is what makes this change invisible to them. The parse is
-     * the fallback, which is also the right precedence on its own terms -- a
-     * value that was actually transmitted beats one re-derived from evidence.
-     *
-     * @param object $event
-     * @param string $name  a value of CAMPAIGN_KEYS
-     * @return string|null
-     */
-    /**
      * One campaign tag off the URL THE SESSION LANDED ON.
      *
      * PARSED FROM page_location, not from a landing_url the tracker re-sent. On
@@ -2991,19 +2896,6 @@ class TrackingEventHelpers {
 
         return $parts['host'];
     }
-
-    /*
-     * deriveIsOutbound() IS GONE -- the CLIENT decides outbound now.
-     *
-     * It compared target_url's host with page_location's, which only works for a
-     * sender shaped like a browser: a non-web client has neither property and still
-     * knows whether what it raised left the property. It also read the inputs of two
-     * other derived properties, and this pass walks the registry in key order, so
-     * its correctness rested on where the entry happened to sit.
-     *
-     * See OWATracker.isOutboundUrl(). is_outbound is set_by client now, so
-     * admitRequestParams() admits it like any other thing the tracker sends.
-     */
 
     /**
      * Whether a click to $target_host left the site, by the tracker's rule

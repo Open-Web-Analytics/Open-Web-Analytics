@@ -30,10 +30,10 @@ final class WireSurfaceEnumeratedTest extends TestCase
      */
     private const NOT_TRACKING_PROPERTIES = [];
 
-    /** @return array every name the tracker emits, across all event types */
     /** The wire this branch's tracker emits; OWATracker.BEACON_FORMAT_VERSION. */
     private const CURRENT_BEACON_FORMAT_VERSION = '2';
 
+    /** @return array every name the tracker emits, across all event types */
     private function emitted(): array
     {
         $contracts = json_decode(

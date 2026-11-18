@@ -673,13 +673,6 @@ final class ReportDefinitionFormatTest extends TestCase
     }
 
     /**
-     * Every report a definition links to must exist.
-     *
-     * The check hand-written HTML never had. No definition declares
-     * report-links yet -- this is what makes the bespoke conversions safe to
-     * do, and it fails the moment one names a report that is not registered.
-     */
-    /**
      * A link must carry the parameters its TARGET is constrained on.
      *
      * The link-resolution test above proves the target exists. This proves the
@@ -772,6 +765,13 @@ final class ReportDefinitionFormatTest extends TestCase
             . implode( ', ', $broken ) );
     }
 
+    /**
+     * Every report a definition links to must exist.
+     *
+     * The check hand-written HTML never had. No definition declares
+     * report-links yet -- this is what makes the bespoke conversions safe to
+     * do, and it fails the moment one names a report that is not registered.
+     */
     public function testEveryDeclaredReportLinkResolves(): void
     {
         if ( ! owa_test_db_available() ) {

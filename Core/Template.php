@@ -215,12 +215,6 @@ class Template extends TemplateEngine {
 
     
     /**
-     * Makes navigation links by checking whether or not the view
-     * that is rendering the template is not the view being refered to in the link.
-     *
-     * @param array navigation array
-     */
-    /**
      * The link parameters a navigation entry points at.
      *
      * A `ref` was always a bare action name, which stopped being enough when
@@ -286,11 +280,6 @@ class Template extends TemplateEngine {
         return sprintf( '%s/%s', $this->config['wiki_url'], $page );
     }
 
-    /**
-     * Returns Namespace value to template
-     *
-     * @return string
-     */
     /**
      * The config-file constant governing a setting, or '' if none is.
      *

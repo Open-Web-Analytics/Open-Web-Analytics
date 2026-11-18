@@ -56,11 +56,11 @@ class CoreAPI {
      */
     public $params;
 
-    // @depricated
-    // @todo remove
     /**
      * @param  array<string, mixed> $params
      * @return \OWA\Core\CoreAPI
+     * @deprecated
+     * @todo remove
      */
     public static function singleton($params = []) {
 
@@ -2818,11 +2818,11 @@ class CoreAPI {
         return $service->request->state->get($store, $name);
     }
 
-    // depricated
     /**
      * @param  string $store
      * @param  string $name
      * @return mixed
+     * @deprecated
      */
     public static function getStateParam($store, $name = '') {
 

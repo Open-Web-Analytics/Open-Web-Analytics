@@ -261,11 +261,6 @@ class Update extends \OWA\Core\Base {
     }
 
     /**
-     * Abstract Method for update
-     *
-     * @return boolean
-     */
-    /**
      * Add a column, treating "it is already there" as success.
      *
      * addColumn() answers FALSE both for "could not" and for "already exists",

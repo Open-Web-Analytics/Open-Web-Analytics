@@ -750,19 +750,6 @@ test.describe('admin: password change (emailed-passkey flow)', () => {
 });
 
 /**
- * The admin endpoint's default action.
- *
- * index.php supplies a route when the request does not name one:
- *
- *     $do = CoreAPI::getRequestParam('do');
- *     if ( ! $do ) { $params['do'] = $owa->getSetting('base', 'start_page'); }
- *
- * Arriving at index.php with no params is the normal way into the admin UI, so
- * this fallback has to keep working. It is also the reason the REST endpoint's
- * missing-route handling is deliberately NOT symmetric -- asserted at the bottom
- * so the asymmetry is pinned rather than incidental.
- */
-/**
  * THE FAN-OUT'S ROWS ARE CLICKABLE ACROSS THEIR WHOLE WIDTH.
  *
  * The row is a flex box: the name on the left, a secondary link on the right.
@@ -924,6 +911,19 @@ test.describe('admin: the site control fan-out', () => {
     });
 });
 
+/**
+ * The admin endpoint's default action.
+ *
+ * index.php supplies a route when the request does not name one:
+ *
+ *     $do = CoreAPI::getRequestParam('do');
+ *     if ( ! $do ) { $params['do'] = $owa->getSetting('base', 'start_page'); }
+ *
+ * Arriving at index.php with no params is the normal way into the admin UI, so
+ * this fallback has to keep working. It is also the reason the REST endpoint's
+ * missing-route handling is deliberately NOT symmetric -- asserted at the bottom
+ * so the asymmetry is pinned rather than incidental.
+ */
 test.describe('admin: start_page default action', () => {
 
     test('a bare request renders the start_page report, not an error', async ({ page }) => {

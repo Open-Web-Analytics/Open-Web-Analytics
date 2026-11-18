@@ -431,12 +431,6 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Prepare string
-     *
-     * @param string $string
-     * @return string
-     */
-    /**
      * Record a value for binding and return the placeholder that stands for it.
      *
      * Replaces interpolating an escaped value into the SQL text. The value never
@@ -1774,18 +1768,6 @@ class Db extends \OWA\Core\Base {
     }
 
     /**
-     * Where a month is cut, by day of month.
-     *
-     * Named for how many parts a month is divided into, never for a duration:
-     * months vary from 28 to 31 days, so any name carrying a day count would be
-     * wrong in some month. A third of January is 11 days and a third of
-     * February is 8; both are still a third of their month.
-     *
-     * Cutting only on days of the month is also what keeps every boundary
-     * aligned to a month start, which is what lets a granularity change rewrite
-     * one month at a time instead of the whole table.
-     */
-    /**
      * Partitions per table beyond which an operation asks to be confirmed.
      *
      * Each partition is a file, and they are shared with every other table
@@ -1849,6 +1831,15 @@ class Db extends \OWA\Core\Base {
 
     /**
      * Day-of-month cut points per granularity, coarsest first.
+     *
+     * Named for how many parts a month is divided into, never for a duration:
+     * months vary from 28 to 31 days, so any name carrying a day count would be
+     * wrong in some month. A third of January is 11 days and a third of
+     * February is 8; both are still a third of their month.
+     *
+     * Cutting only on days of the month is also what keeps every boundary
+     * aligned to a month start, which is what lets a granularity change rewrite
+     * one month at a time instead of the whole table.
      *
      * `daily` is listed last and is the only entry whose cuts a month can fail
      * to carry -- cutsForMonth() clamps the 29th through 31st away in a short

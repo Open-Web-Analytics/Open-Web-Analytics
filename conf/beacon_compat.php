@@ -215,69 +215,12 @@ return [
         [ 'role' => 'legacy', 'from' => 'user_name',     'to' => 'vps_user_name' ],
         [ 'role' => 'legacy', 'from' => 'email_address', 'to' => 'vps_user_email' ],
 
-        /*
-         * dsfs -> days_since_first_session and dsps -> days_since_prior_session
-         * were here, and are REMOVED because their DESTINATION is gone, not
-         * because the generation that sent them has died out.
-         *
-         * Both properties left the registry: the server derived each day count
-         * from an anchor it already stores and then had nowhere to put it, so the
-         * offsets go and visitor_fsts / prior_session_start_ts / session_start_ts
-         * stay. A rename whose target no property declares cannot do anything
-         * except put a value on the event for nobody to read.
-         *
-         * An old tracker still sending dsfs or dsps now has those keys dropped at
-         * the endpoint like any other unregistered name. Nothing is lost that was
-         * being kept: the counts were discarded on arrival either way.
-         */
-
-        /*
-         * `sid` -> feed_subscription_id was here, and it is REMOVED rather
-         * than kept.
-         *
-         * It bridged a feed subscription id, and feeds are retired -- nothing
-         * has written a feed request since 2021, and V2Event::NOT_EVENTS
-         * refuses the type outright. So the bridge could only ever fire for a
-         * value no live path produces.
-         *
-         * It was also a collision waiting to happen: `sid` is the tracker's
-         * store key for the SESSION id. The two do not meet today because the
-         * session goes on the wire as session_id, but any beacon carrying a
-         * literal `sid` would have had its session id resolved into a feed
-         * column. A bridge that can only misfire is worse than no bridge.
-         *
-         * feed_subscription_id has since left the property registry too, with the
-         * other seven spellings v2 does not use: the registry holds what v2 CALLS
-         * things, and a retired feature's field is not one of them. The v1 feed
-         * handler still exists and is still unregistered on v2 -- removing it is
-         * its own decision, not a side effect of tidying the compat layer.
-         */
     ],
 
     /*
      * ---- APPLIED ELSEWHERE, INDEXED HERE ----------------------------------
      */
     'indexed' => [
-
-        /*
-         * THE FLAG FALLBACK IS GONE, and it is worth saying why rather than
-         * just deleting the entries.
-         *
-         * is_new_session (page-scoped) stood in for is_new_session_start
-         * (request-scoped) on trackers cached from before the two were split.
-         * It could not be sequestered here, because page-scoped to
-         * request-scoped is lossy: every event of the landing page carries the
-         * page-scoped flag, so a rename would raise one session_start marker
-         * per event of it.
-         *
-         * The pair no longer exists. v1's session listener was the reason for
-         * the split -- it decided create-vs-update on the flag -- and v2
-         * materialises a session_start EVENT from the request-scoped one alone.
-         * So the tracker sends one flag, the twin is removed, and the bridge
-         * has nothing left to bridge. A tracker cached from before this sends
-         * neither and gets no marker, which was already the outcome.
-         *
-         */
 
         /*
          * Value ENCODINGS, where a value counting from zero was sent as a
@@ -290,15 +233,5 @@ return [
         [ 'kind' => 'coercion', 'from' => '"0"', 'to' => '0',
                'in' => 'modules/Base/Handler/EventRawHandlers.php', 'needle' => "num_prior_sessions' ) === '0'" ],
 
-        /*
-         * The two callback_passthrough entries for dsps and dsfs were here.
-         *
-         * Each named a derivation that returned whatever an older tracker had
-         * sent under the short key when it could not compute the count itself.
-         * Both derivations are deleted with their properties, so there is no
-         * callback left to index -- and the inventory test reads this list
-         * against the code in BOTH directions, which is what makes leaving a
-         * stale entry here a failure rather than a comment.
-         */
     ],
 ];

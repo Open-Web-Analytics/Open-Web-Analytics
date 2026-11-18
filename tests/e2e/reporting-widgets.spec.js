@@ -25,15 +25,6 @@ const { FIXTURE, login, openConfiguredReport, configuredReportIds } = require('.
 test.describe('every configured report renders in a browser', () => {
 
     /**
-     * One test, not fifty-three.
-     *
-     * A test per report would give a nicer failure name, but it would also log
-     * in fifty-three times and pay a fresh browser context for each. Sweeping
-     * in one context and COLLECTING the failures gets the same information --
-     * the assertion names every offending report rather than dying on the
-     * first -- for one login.
-     */
-    /**
      * A grid does not offer a picker for a column nobody can see.
      *
      * transactions is grouped by timestamp AND transactionId with timestamp in
@@ -69,6 +60,15 @@ test.describe('every configured report renders in a browser', () => {
         expect(bars[0].add).toBe(1);
     });
 
+    /**
+     * One test, not fifty-three.
+     *
+     * A test per report would give a nicer failure name, but it would also log
+     * in fifty-three times and pay a fresh browser context for each. Sweeping
+     * in one context and COLLECTING the failures gets the same information --
+     * the assertion names every offending report rather than dying on the
+     * first -- for one login.
+     */
     test('no configured report raises a browser console error', async ({ page }) => {
         test.setTimeout(300_000);
 
@@ -149,14 +149,6 @@ test.describe('every configured report renders in a browser', () => {
     });
 
     /**
-     * The widget types that only Traffic uses.
-     *
-     * `pie` and `metric-boxes` were added when traffic became configuration
-     * and are the newest code in the renderer. Traffic is also the only report
-     * whose widgets each constrain to different rows, so it exercises the
-     * per-widget constraint path end to end.
-     */
-    /**
      * The goals report measures goal events: the rows ingest adds, named by
      * the goal event definition and flagged is_goal_event, for events that met
      * an active definition. The seeded definition is declared before the seeded
@@ -229,6 +221,14 @@ test.describe('every configured report renders in a browser', () => {
         });
     });
 
+    /**
+     * The widget types that only Traffic uses.
+     *
+     * `pie` and `metric-boxes` were added when traffic became configuration
+     * and are the newest code in the renderer. Traffic is also the only report
+     * whose widgets each constrain to different rows, so it exercises the
+     * per-widget constraint path end to end.
+     */
     test.describe('the traffic report draws its widgets', () => {
 
         test.beforeEach(async ({ page }) => {

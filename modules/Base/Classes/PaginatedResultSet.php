@@ -478,8 +478,6 @@ class PaginatedResultSet {
         }
     }
 
-    // @todo move this to a proper xml view
-    //json formatting has been moved to owa_jsonView
     /**
      * @return array<int, ResultRow>
      */

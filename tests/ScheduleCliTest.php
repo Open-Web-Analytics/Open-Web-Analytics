@@ -492,10 +492,6 @@ final class ScheduleCliTest extends CliControllerTestCase
     }
 
     /**
-     * The same command twice under different names: two jobs, two state rows,
-     * two locks — so one instance running never blocks the other.
-     */
-    /**
      * The configuration key is the JOB NAME, never the command name.
      *
      * The shipped job now demonstrates this itself -- rotate-partitions runs
@@ -533,6 +529,10 @@ final class ScheduleCliTest extends CliControllerTestCase
         $this->assertSame(['reached' => 'the right job'], $jobs['nightly-job-prune']['params']);
     }
 
+    /**
+     * The same command twice under different names: two jobs, two state rows,
+     * two locks — so one instance running never blocks the other.
+     */
     public function testTheSameCommandCanBeScheduledTwice()
     {
         $jobs = $this->jobsWith([

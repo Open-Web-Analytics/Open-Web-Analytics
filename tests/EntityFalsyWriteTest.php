@@ -107,7 +107,6 @@ final class EntityFalsyWriteTest extends TestCase
         $this->assertSame('0', $s->get('tagged_medium'), "'0' was dropped as if it were empty");
     }
 
-    /** A numeric column must not accept a non-numeric falsy value either. */
     /**
      * clear() is how a caller says "this is now blank".
      *
@@ -157,6 +156,9 @@ final class EntityFalsyWriteTest extends TestCase
         $this->assertArrayNotHasKey('no_such_column_here', $s->dirty);
     }
 
+    /**
+     * A numeric column must not accept a non-numeric falsy value either.
+     */
     public function testANumericColumnStillIgnoresEmptyAndNull(): void
     {
         $s = $this->row();

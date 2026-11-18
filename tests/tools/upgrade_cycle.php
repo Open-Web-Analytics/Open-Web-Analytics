@@ -521,22 +521,6 @@ function owa_update_for( $v ) {
 }
 
 /**
- * What the schema IS, in the terms that matter.
- *
- * Deliberately NOT a SHOW CREATE TABLE diff. Two things legitimately differ
- * between a table that was CREATEd complete and one an ALTER filled in, and
- * neither means anything:
- *
- *   - COLUMN ORDER. ALTER ... ADD puts the column last; CREATE TABLE puts it in
- *     declaration order. Same schema, different ordinal positions.
- *   - INDEX NAMES. createTable() writes `INDEX (col)`, which MySQL names after
- *     the column; addIndex() names it idx_col so a re-run is recognisable. An
- *     index's identity here is the columns it covers, not what it is called.
- *
- * Everything else is compared: which columns exist, their types, their
- * nullability, and which column sets are indexed.
- */
-/**
  * Does this update do SCHEMA work, as opposed to data work?
  *
  * Read off the source, because intent is not observable from the schema on a
@@ -576,6 +560,22 @@ function owa_update_declares_schema_work( $v ) {
     return false;
 }
 
+/**
+ * What the schema IS, in the terms that matter.
+ *
+ * Deliberately NOT a SHOW CREATE TABLE diff. Two things legitimately differ
+ * between a table that was CREATEd complete and one an ALTER filled in, and
+ * neither means anything:
+ *
+ *   - COLUMN ORDER. ALTER ... ADD puts the column last; CREATE TABLE puts it in
+ *     declaration order. Same schema, different ordinal positions.
+ *   - INDEX NAMES. createTable() writes `INDEX (col)`, which MySQL names after
+ *     the column; addIndex() names it idx_col so a re-run is recognisable. An
+ *     index's identity here is the columns it covers, not what it is called.
+ *
+ * Everything else is compared: which columns exist, their types, their
+ * nullability, and which column sets are indexed.
+ */
 function owa_schema_fingerprint( $db, $dbName ) {
 
     $columns = [];

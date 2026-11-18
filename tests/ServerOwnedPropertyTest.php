@@ -135,11 +135,6 @@ final class ServerOwnedPropertyTest extends TestCase
 
         $this->assertNotEmpty( $serverOwned );
 
-        /*
-         * `timestamp` was here and is not a property any more: it was the
-         * second-resolution twin of `ts`, from the same clock reading, and only
-         * one of the two ever reached a column.
-         */
         foreach ( [ 'browser_type', 'country', 'ip_address', 'ts' ] as $name ) {
 
             $this->assertArrayHasKey( $name, $serverOwned );
@@ -167,10 +162,6 @@ final class ServerOwnedPropertyTest extends TestCase
             ] ),
             'the client decides outbound, so the gate has to let it through' );
 
-        /*
-         * full_host is gone with the v1 handlers that read it -- the reverse-DNS
-         * name reached no raw column and no cube pass. host, which does, stays.
-         */
         foreach ( [ 'country', 'city', 'state', 'host' ] as $name ) {
 
             $this->assertArrayHasKey(

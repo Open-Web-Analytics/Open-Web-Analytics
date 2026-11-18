@@ -1769,7 +1769,6 @@ final class CustomReportsTest extends TestCase
         $this->assertSame('funnel', $kind(['report_type' => 'visualization', 'visualization_type' => 'gone']));
     }
 
-    /** + New offers a report first, then each visualization, each opening its builder. */
     /**
      * A new widget is added at a width the editor offers -- a third, a half,
      * two thirds or the full row -- and only a type that may be narrowed has
@@ -1804,6 +1803,9 @@ final class CustomReportsTest extends TestCase
         $this->assertSame( [], $named, 'metrics offered by their API name' );
     }
 
+    /**
+     * + New offers a report first, then each visualization, each opening its builder.
+     */
     public function testNewOffersAReportThenEachVisualization(): void
     {
         $kinds = \OWA\Module\Base\Controller\CustomReports::newKinds();

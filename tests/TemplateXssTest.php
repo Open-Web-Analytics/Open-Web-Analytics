@@ -85,8 +85,6 @@ final class TemplateXssTest extends TestCase
         $this->assertEscaped($html, 'new_session_email.php');
     }
 
-    /* visitors-roster's template is gone with the report. */
-
     /**
      * Unit-level guard for the scheme whitelist itself: only http/https/mailto/
      * ftp/tel (plus relative + scheme-relative) survive; everything else -> '#'.

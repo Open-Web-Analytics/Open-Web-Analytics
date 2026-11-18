@@ -253,10 +253,6 @@ final class NotificationManagerTest extends TestCase
     }
 
     /**
-     * The same underlying thing can legitimately be addressed to several
-     * people, so dedupe asks "does THIS user have it", not "does anyone".
-     */
-    /**
      * A brand new install must not be greeted with a wall of history.
      *
      * The endpoint returns a page of releases, and an install that has never
@@ -321,6 +317,10 @@ final class NotificationManagerTest extends TestCase
         ], $source ) );
     }
 
+    /**
+     * The same underlying thing can legitimately be addressed to several
+     * people, so dedupe asks "does THIS user have it", not "does anyone".
+     */
     public function testTheSameThingCanBeAddressedToDifferentPeople(): void
     {
         $this->requireDb();

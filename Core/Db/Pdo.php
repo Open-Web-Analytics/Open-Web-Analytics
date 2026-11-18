@@ -44,9 +44,7 @@ namespace OWA\Core\Db;
  * reporting hit hardest since that is where the dynamic construction lives. So
  * prepare() strips the outer pair that quote() adds. PdoDriverTest pins this;
  * it is the single easiest thing to get wrong here.
- */
-
-/**
+ *
  * A row: column => value, every value a string or NULL.
  *
  * @phpstan-type Row array<string, string|null>

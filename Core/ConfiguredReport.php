@@ -980,23 +980,6 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     }
 
     /**
-     * Fold each widget's own constraint into its query.
-     *
-     * ADDED to the report's rather than replacing it: a widget that narrows to
-     * one medium still wants every other row the report was already limited
-     * to, and a widget author should not have to restate the report's
-     * constraint to add one of their own.
-     *
-     * Joining here rather than in the template keeps the two kinds of value
-     * encoded in one place -- see buildConstraints() -- and means the template
-     * receives a widget whose query is already complete.
-     *
-     * @param array $widgets
-     * @param string $reportConstraints the already-built report-wide string
-     * @param array $values
-     * @return array the widgets, with `constraints` folded into `query`
-     */
-    /**
      * The sets this report offers, from what it declared and what the site has.
      *
      * A list NAMES the site's sets and keeps the order it was written in, so a
@@ -1043,7 +1026,16 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     }
 
     /**
-     * Each widget's query given the report's constraints and its own.
+     * Fold each widget's own constraint into its query.
+     *
+     * ADDED to the report's rather than replacing it: a widget that narrows to
+     * one medium still wants every other row the report was already limited
+     * to, and a widget author should not have to restate the report's
+     * constraint to add one of their own.
+     *
+     * Joining here rather than in the template keeps the two kinds of value
+     * encoded in one place -- see buildConstraints() -- and means the template
+     * receives a widget whose query is already complete.
      *
      * @param  array<mixed>          $widgets
      * @param  string                $reportConstraints the report's, interpolated

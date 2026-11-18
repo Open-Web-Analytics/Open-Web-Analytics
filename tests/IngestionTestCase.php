@@ -144,20 +144,6 @@ abstract class IngestionTestCase extends TestCase
         $this->cleanup[] = [$entity, $pk, $col];
     }
 
-    /*
-     * setServerTime() stood here and is removed: no test called it, and its
-     * docblock described a mechanism that no longer exists.
-     *
-     * It assigned requestContainer->timestamp, and said the `timestampDefault`
-     * filter would carry that onto the event. That filter is gone, and v2's event
-     * clock is `ts` -- edge receipt in MICROSECONDS, read from the container's
-     * separate timestamp_usec field. So the method moved a clock the stored row
-     * does not read, and a test using it to order events would have ordered
-     * nothing while appearing to.
-     *
-     * Use RequestContainer::setTimestamp(), which moves both fields together.
-     */
-
     /**
      * Drive the SERVER-SIDE user-agent the ingestion pipeline sees.
      *

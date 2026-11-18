@@ -1367,17 +1367,6 @@ class ResultSetManager extends \OWA\Core\Base {
         }
     }
 
-    /*
-     * setSort() WAS HERE and did nothing: its one statement was commented out,
-     * so every call silently produced an unsorted result. Nothing in the
-     * application called it -- ReportsRest goes through
-     * setSorts( sortStringToArray( ... ) ), which is the working path -- so the
-     * only thing it did was read like the obvious way to sort and then not
-     * sort, which cost one test in this suite its meaning before it was
-     * noticed. Deleted rather than implemented, because the plural is already
-     * the one everything uses.
-     */
-
     /**
      * @param  array<Sort>|null $array as sortStringToArray() makes them
      * @return void

@@ -234,18 +234,6 @@ OWA.util =  {
     },
     
     /**
-     * Escape a value for interpolation into HTML.
-     *
-     * A grid formatter's return value becomes the cell's HTML, so any
-     * value concatenated into one is markup unless it passes through here
-     * first. Two formatters in owa.resultSetExplorer.js each carried their
-     * own copy of these five replaces; this is that, shared, and now also
-     * used by the formatters that were building markup without it.
-     *
-     * Covers both positions a value lands in: text content, and inside a
-     * double-quoted attribute.
-     */
-    /**
      * A number in the install's locale (OWA.locale()): digits grouped, and
      * options as Intl.NumberFormat takes them.
      *
@@ -297,6 +285,18 @@ OWA.util =  {
         return OWA.util.formatNumber( fraction, { style: 'percent', minimumFractionDigits: d, maximumFractionDigits: d } );
     },
 
+    /**
+     * Escape a value for interpolation into HTML.
+     *
+     * A grid formatter's return value becomes the cell's HTML, so any
+     * value concatenated into one is markup unless it passes through here
+     * first. Two formatters in owa.resultSetExplorer.js each carried their
+     * own copy of these five replaces; this is that, shared, and now also
+     * used by the formatters that were building markup without it.
+     *
+     * Covers both positions a value lands in: text content, and inside a
+     * double-quoted attribute.
+     */
     escapeHtml : function( value ) {
 
         if ( value === null || value === undefined ) {

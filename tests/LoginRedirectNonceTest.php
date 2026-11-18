@@ -35,11 +35,6 @@ final class LoginRedirectNonceTest extends TestCase
         require_once __DIR__ . '/bootstrap_owa.php';
     }
 
-    /**
-     * get_current_url() builds 'go' from the request, which does not exist under
-     * CLI -- without this the redirect is empty for every case and the assertions
-     * below would pass for the wrong reason.
-     */
     /** @var mixed request_type before the test, put back after it */
     private $savedRequestType;
 
@@ -48,6 +43,11 @@ final class LoginRedirectNonceTest extends TestCase
         \OWA\Core\CoreAPI::setSetting('base', 'request_type', $this->savedRequestType);
     }
 
+    /**
+     * get_current_url() builds 'go' from the request, which does not exist under
+     * CLI -- without this the redirect is empty for every case and the assertions
+     * below would pass for the wrong reason.
+     */
     protected function setUp(): void
     {
         $_SERVER['HTTP_HOST']   = 'owa.example.test';

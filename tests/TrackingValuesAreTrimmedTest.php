@@ -66,19 +66,7 @@ final class TrackingValuesAreTrimmedTest extends TestCase
             'spaces'          => [ 'page_title', '  Spaced Title  ', 'Spaced Title' ],
             'trailing break'  => [ 'page_title', "Title\n",          'Title' ],
             'tabs'            => [ 'page_title', "\tTitle\t",        'Title' ],
-            /*
-             * cv1_value was here. The cv{n} slots are not part of the current
-             * vocabulary -- the tracker emits no cv key -- so an example drawn
-             * from them tests the compat layer, not this one.
-             */
             'content group'   => [ 'content_group', '  Docs  ',      'Docs' ],
-            /*
-             * user_name was here, and it is no longer a declared property: it is a
-             * custom USER property now (PLAN.html §2.26.1), so it arrives as
-             * up_user_name and is trimmed by the tracker before it is sent. An
-             * example drawn from it would test the custom path, not this one --
-             * the same reason cv1_value came out above.
-             */
             'consent state'   => [ 'consent_state', '  granted  ', 'granted' ],
             'a url'           => [ 'target_url', '  https://x.test/a  ', 'https://x.test/a' ],
         ];

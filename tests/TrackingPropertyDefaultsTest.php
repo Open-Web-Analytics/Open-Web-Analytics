@@ -93,12 +93,6 @@ final class TrackingPropertyDefaultsTest extends TestCase
             . implode(', ', $bad));
     }
 
-    /*
-     * testIsNewVisitorDeclaresAUsableDefault was here. The property is gone:
-     * v2 materialises a first_visit EVENT from the request-scoped
-     * is_new_visitor_created, and nothing wants a session-scoped restatement.
-     */
-
     public function testAFalsyDefaultIsApplied(): void
     {
         $event = $this->event();

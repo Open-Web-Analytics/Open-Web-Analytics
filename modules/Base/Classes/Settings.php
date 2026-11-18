@@ -2601,30 +2601,6 @@ namespace OWA\Module\Base\Classes;
      }
 
      /**
-      * Remove config-file-only settings from a settings array loaded out of the
-      * database.
-      *
-      * A stored copy of one of these is UNREACHABLE, and its value is
-      * irrelevant to that fact:
-      *
-      *   - load() merges the DB array OVER the config-file array, so a stored
-      *     value beats owa-config.php, and
-      *   - the options form refuses to rewrite these keys.
-      *
-      * So there is no supported way to correct one. Two installs were found
-      * carrying async_log_dir values naming a previous server's directories
-      * that do not exist on the current host, silently overriding a correct
-      * config file.
-      *
-      * Pure and static so the behaviour can be tested without a database.
-      * Only the modules named in configFileOnlySettings() are touched -- every
-      * other module's settings pass through untouched, which is what keeps a
-      * module's own schema_version / is_active safe.
-      *
-      * @param  array $db_settings settings as read from the data store
-      * @return array the same array minus any config-file-only keys
-      */
-     /**
       * Drop database values for settings a config-file constant supplied.
       *
       * Instance method, not static, because the ledger is per-boot: it records

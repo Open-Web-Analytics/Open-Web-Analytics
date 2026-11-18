@@ -205,14 +205,6 @@ final class LandingUrlCampaignParseTest extends IngestionTestCase
             'a whitespace-only value is the same claim');
     }
 
-    /*
-     * testWithoutALandingUrlTheRefererStillDecides WAS HERE. With no tags, the
-     * referer decides source and medium -- bing.com and organic-search -- and
-     * that is no longer decided at ingest. MediumStep and SourceStep classify
-     * the referer host in the cube pass, and CubeBuildTest asserts
-     * organic-search, referral and direct on built rows.
-     */
-
     /**
      * A Property can name the parameters its links actually use.
      *

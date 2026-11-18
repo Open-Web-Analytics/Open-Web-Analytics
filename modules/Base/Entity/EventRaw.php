@@ -286,13 +286,6 @@ class EventRaw extends \OWA\Core\Entity {
         $is_outbound->setDefaultValue( 0 );
         $this->setProperty( $is_outbound );
 
-        /*
-         * element_path is GONE -- see Update053. It was a CSS selector built by
-         * walking up to eight ancestors with :nth-of-type() indexes, which no
-         * report, widget or overlay ever read, and which a template edit
-         * renumbers wholesale. element_anchor, above, is a path from the
-         * nearest id, kept as a hash.
-         */
         $this->setProperty( $this->column( 'element_tag', OWA_DTD_VARCHAR64 ) );
         $this->setProperty( $this->column( 'element_id', OWA_DTD_VARCHAR255 ) );
 
@@ -470,18 +463,6 @@ class EventRaw extends \OWA\Core\Entity {
     }
 
     /**
-     * A column, nullable unless told otherwise.
-     *
-     * Absence is NULL in v2, so nullable is the default here and the exceptions
-     * are the ones worth seeing: identity, time, the partition key and a
-     * boolean that must group as two values rather than three.
-     *
-     * @param string $name
-     * @param string $type     an OWA_DTD_* value
-     * @param bool   $nullable
-     * @return \OWA\Module\Base\Classes\DbColumn
-     */
-    /**
      * Written with the moment it reached raw.
      *
      * Here rather than in each writer, so no path that writes raw through the
@@ -501,6 +482,12 @@ class EventRaw extends \OWA\Core\Entity {
     }
 
     /**
+     * A column, nullable unless told otherwise.
+     *
+     * Absence is NULL in v2, so nullable is the default here and the exceptions
+     * are the ones worth seeing: identity, time, the partition key and a
+     * boolean that must group as two values rather than three.
+     *
      * @param  string $name
      * @param  string $type
      * @param  bool   $nullable

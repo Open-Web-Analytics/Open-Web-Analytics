@@ -427,9 +427,6 @@ OWA.areaChart.prototype = {
     },
     
     /**
-     * Main method for displaying an area chart
-     */
-    /**
      * A legend entry's label, as HTML: flot inserts what this returns as
      * markup, and the label is a tracked value.
      */
@@ -438,6 +435,9 @@ OWA.areaChart.prototype = {
         return OWA.util.escapeHtml( label );
     },
 
+    /**
+     * Main method for displaying an area chart
+     */
     generate : function( resultSet, series, dom_id ) {
         OWA.debug('generating area chart for ' + dom_id);
         // set dom_id just in case.
@@ -1807,6 +1807,14 @@ OWA.areaChart.prototype = {
         return null;
     },
 
+    /** The x type a dimension is drawn as over the period (zeroFilled()), or ''. */
+    axisType : function ( resultSet, x_name ) {
+
+        var period = this.zeroFilled( resultSet, x_name );
+
+        return period ? period.x_type : '';
+    },
+
     /**
      * Every interval of the period, in order, as x values -- or null when the
      * period cannot be read or is not what the chart is drawn over.
@@ -1816,14 +1824,6 @@ OWA.areaChart.prototype = {
      * Left out, flot joined the intervals either side of it, a line drawn
      * straight over the absence; left empty, a ratio's line broke there.
      */
-    /** The x type a dimension is drawn as over the period (zeroFilled()), or ''. */
-    axisType : function ( resultSet, x_name ) {
-
-        var period = this.zeroFilled( resultSet, x_name );
-
-        return period ? period.x_type : '';
-    },
-
     periodXs : function ( resultSet, x_name, x_type, wholeAxis ) {
 
         var period = this.zeroFilled( resultSet, x_name, wholeAxis );
@@ -1895,18 +1895,6 @@ OWA.areaChart.prototype = {
     },
 
     /**
-     * The day/month control, top right of the chart.
-     *
-     * A trend is a shape over time, and which time -- days or months -- is a
-     * question about how you want to read it rather than about what the report
-     * is. So it is a reader's control, not something baked into the definition:
-     * the stored query says `date`, and this rewrites it on the way out.
-     *
-     * Drawn only when the chart knows who to ask for new data. The explorer
-     * owns fetching; a select that could not refetch would be a control that
-     * does nothing, which is worse than no control.
-     */
-    /**
      * What the chart draws, over it: the metric, by the grid's dimensions
      * when it draws the grid's rows, over time.
      */
@@ -1937,6 +1925,18 @@ OWA.areaChart.prototype = {
         $title.text( this.options.showTitle ? this.chartTitle() : '' );
     },
 
+    /**
+     * The day/month control, top right of the chart.
+     *
+     * A trend is a shape over time, and which time -- days or months -- is a
+     * question about how you want to read it rather than about what the report
+     * is. So it is a reader's control, not something baked into the definition:
+     * the stored query says `date`, and this rewrites it on the way out.
+     *
+     * Drawn only when the chart knows who to ask for new data. The explorer
+     * owns fetching; a select that could not refetch would be a control that
+     * does nothing, which is worse than no control.
+     */
     drawGranularityControl : function ( dom_id ) {
 
         var that = this;

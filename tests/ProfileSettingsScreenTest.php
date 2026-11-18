@@ -215,14 +215,6 @@ final class ProfileSettingsScreenTest extends TestCase
     }
 
     /**
-     * The wiring: the screen saves through the switch. On stores the value even
-     * when it equals the inherited one; off removes it.
-     *
-     * A field has a switch only when something above it holds a value, and
-     * campaignKeys is empty by default and the one setting on this screen a
-     * Property may hold. So the Property is given a value first.
-     */
-    /**
      * A save goes back to Observation Settings, not to the Profile's Details.
      *
      * A Profile id nothing has, so the save it runs -- every override switched
@@ -242,6 +234,14 @@ final class ProfileSettingsScreenTest extends TestCase
         $this->assertSame( 'owa-no-such-profile-redirect', $data['siteId'] ?? null );
     }
 
+    /**
+     * The wiring: the screen saves through the switch. On stores the value even
+     * when it equals the inherited one; off removes it.
+     *
+     * A field has a switch only when something above it holds a value, and
+     * campaignKeys is empty by default and the one setting on this screen a
+     * Property may hold. So the Property is given a value first.
+     */
     public function testTheOverrideSwitchDecidesWhatIsStored(): void
     {
         $this->requireDb();

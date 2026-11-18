@@ -152,9 +152,6 @@ final class CorsOriginMatchTest extends TestCase
         $this->assertNull($this->match('https://c.example.com', $domains));
     }
 
-    /**
-     * No sites configured means nothing is allowed.
-     */
     /** A domain stored with a port allows that port only; the scheme's default port counts when the origin names none. */
     public function testAStoredPortIsTheOnlyPortAllowed(): void
     {
@@ -166,6 +163,9 @@ final class CorsOriginMatchTest extends TestCase
         $this->assertSame('https://example.com:8443', $this->match('https://example.com:8443', ['https://example.com:8443/']));
     }
 
+    /**
+     * No sites configured means nothing is allowed.
+     */
     public function testNoSitesMatchesNothing(): void
     {
         $this->assertNull($this->match('https://example.com', []));

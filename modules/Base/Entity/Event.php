@@ -48,6 +48,13 @@ class Event extends EventRaw {
     private $property_id = '';
 
     /**
+     * The SQL alias every cube is read under, whatever Property it belongs to.
+     * See the constructor: column references are built before a Property is
+     * known, so the alias cannot depend on one.
+     */
+    const ALIAS = 'event';
+
+    /**
      * Whether this instance has a table at all.
      *
      * Separate from $property_id because the pre-split cube has a table and no
@@ -57,14 +64,6 @@ class Event extends EventRaw {
      *
      * @var bool
      */
-    /**
-     * The SQL alias every cube is read under, whatever Property it belongs to.
-     * See the constructor: column references are built before a Property is
-     * known, so the alias cannot depend on one.
-     */
-    const ALIAS = 'event';
-
-    /** @var bool */
     private $bound = false;
 
     public function __construct() {

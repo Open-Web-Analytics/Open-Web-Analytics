@@ -1307,7 +1307,6 @@ OWA.dataGrid.range = function ( rs ) {
     };
 };
 
-/** A row's share of the total, "16.5%", or '' when there is none to give. */
 /**
  * A compared cell's change, on a line of its own under the value: up or down
  * and by how much, with the comparison's own value and dates as its title.
@@ -1319,6 +1318,9 @@ OWA.dataGrid.changeEl = function ( cell, compare ) {
     return jQuery( '<span class="owa_gridChange"></span>' ).addClass( d.cls ).attr( 'title', d.title ).text( d.text );
 };
 
+/**
+ * A row's share of the total, "16.5%", or '' when there is none to give.
+ */
 OWA.dataGrid.share = function ( value, total ) {
 
     var v = parseFloat( value );

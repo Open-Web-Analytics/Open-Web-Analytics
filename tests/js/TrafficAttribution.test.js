@@ -60,21 +60,6 @@ afterEach(() => {
  * What is still tested here is what still happens: the URL parse, and the
  * session referrer, which does ride the beacon.
  */
-/*
- * THE TAG PARSE IS NOT THE TRACKER'S ANY MORE, so its four cases are gone --
- * extraction off the URL, the ad/ad_type backfill, and the remapped public key.
- *
- * The tracker sends landing_url and the server parses the tags out of it in
- * TrackingEventHelpers::parseLandingTags(), with the parameter names coming
- * from the per-Property `campaignKeys` setting. The remapping case is the one
- * worth following: it asserted that setCampaignSourceKey('utm_source') was
- * honoured, and it WAS honoured here while doing nothing end to end, because
- * the server built its own ns-prefixed list and never read the tracker's. A
- * site using utm_* got no attribution and this test said it was fine.
- *
- * It is a real capability now, tested where it takes effect:
- * LandingUrlCampaignParseTest.
- */
 
 
 

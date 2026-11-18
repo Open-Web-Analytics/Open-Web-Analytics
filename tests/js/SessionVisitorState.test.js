@@ -255,16 +255,6 @@ describe('setSessionId', () => {
     });
 });
 
-/*
- * "is_new_visitor has session lifetime" was here.
- *
- * The flag is gone. It said this SESSION was the visitor's first -- a
- * session-scoped restatement of a per-request fact -- and existed so v1 could
- * derive is_repeat_visitor. v2 materialises a first_visit EVENT from the
- * request-scoped is_new_visitor_created, and the one thing that still wanted
- * the session-scoped answer, writing the visitor's acquisition from any event
- * of the first session, reads prior_sessions == 0 instead.
- */
 describe('the two session-start flags have different lifetimes', () => {
 
     /*
