@@ -17,6 +17,9 @@ final class WikiDocsCliJobsTest extends CliControllerTestCase
     {
         require_once self::WIKI . '/lib/cli.php';
         require_once self::WIKI . '/lib/jobs.php';
+        // owa_wiki_resolve(), called below. A section file used to pull this in
+        // for a constant; loading it here does not depend on that.
+        require_once self::WIKI . '/generate.php';
     }
 
     protected function tearDown(): void
