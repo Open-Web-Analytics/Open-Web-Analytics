@@ -309,10 +309,9 @@ class OWATracker  {
 	         * The depths, as percentages, a page view's scroll is reported at: the
 	         * deepest one reached, rounded down to a threshold.
 	         *
-	         * QUARTILES BY DEFAULT, ending at 90 rather than 100, so the report can
-	         * say how far down people get and not only whether they reached the
-	         * end. 90, not 100, because a sticky footer, a rounding pixel or a
-	         * trailing element keeps many pages from ever reading exactly 100.
+	         * The default is 25, 50, 75 and 90. The last is 90, not 100, because a
+	         * sticky footer, a rounding pixel or a trailing element keeps many
+	         * pages from ever reading exactly 100.
 	         *
 	         * They are buckets, not events: a page view sends one scroll event, at
 	         * the deepest threshold it reached.
@@ -360,19 +359,12 @@ class OWATracker  {
 	         * `v` (the visitor) and `s` (the session). 0 ends the cookie when
 	         * the browser closes. A store not named keeps its shipped lifetime.
 	         *
-	         * Options rather than methods of their own: setOption() already
-	         * carries cookie_domain, campaignKeys, logger_endpoint, api_endpoint
-	         * and baseUrl, and CommandQueue dispatches with .apply(), so
-	         *
 	         *   owa_cmds.push(['setOption', 'stateStoreExpirations', {v: 90}]);
-	         *   owa_cmds.push(['setOption', 'cookiePersistence', false]);
-	         *
-	         * already reach here with no new public surface to deprecate later.
 	         *
 	         * Empty and true ship, so an install that says nothing keeps the
-	         * lifetimes the stores are registered with. The values are READ WHERE
-	         * THEY ARE USED -- see StateManager.getExpirationDays() -- and never
-	         * copied into the store registry, because registerStore() replaces
+	         * lifetimes the stores are registered with. The values are read where
+	         * they are used (StateManager.getExpirationDays()) and never copied
+	         * into the store registry, because registerStore() replaces
 	         * storeMeta[name] wholesale and this constructor re-registers the
 	         * global 'v' and 'c' stores unconditionally. A second tracker on the
 	         * page would otherwise reset the first one's configured lifetime with
@@ -1167,8 +1159,8 @@ class OWATracker  {
      * Set the content group of the page's events: an author-assigned grouping
      * such as a section, template or topic.
      *
-     * PAGE-SCOPED, because that is what it describes: a value set on one page
-     * must not leak onto the next, and an SPA route change is a new page. A
+     * The group belongs to one page: a value set on one page does not carry
+     * onto the next, and an SPA route change is a new page. A
      * site that wants one group for a whole section sets it on each page of
      * that section, which is also what makes it correct when someone lands
      * mid-section.
@@ -1205,13 +1197,13 @@ class OWATracker  {
     /**
      * Record what the page's consent state is at this moment.
      *
-     * RECORDED PER EVENT, not once per session, because it can change
+     * It is recorded per event, not once per session, because it can change
      * mid-session -- a visitor accepts a banner on the third page -- and a row
      * collected before that is not retrospectively consented. A row with no
      * consent recorded is also not the same as one with consent denied, which
      * is why absent stays absent rather than defaulting to either.
      *
-     * OWA RECORDS, IT DOES NOT ENFORCE. Whether to send at all is the site's
+     * OWA records the state and does not enforce it. Whether to send at all is the site's
      * decision and its consent platform's; what this does is make the decision
      * visible in the data afterwards, so a question about a period can be
      * answered rather than assumed.
@@ -3256,7 +3248,7 @@ class OWATracker  {
      *       items: [ { item_id: 'SKU-1', item_name: 'Blue mug', price: 19.99, quantity: 2 } ]
      *   } ] );
      *
-     * Amounts in MAJOR units, as a price is written; the server converts by the
+     * Amounts are in major units, as a price is written; the server converts by the
      * currency's decimal places. A transaction_id is required: it is what keeps
      * a reloaded receipt page from recording the purchase twice.
      *
@@ -5014,12 +5006,12 @@ class OWATracker  {
      * of the same thing. Tracked per form element, so two forms on one page
      * each get their own start.
      *
-     * `change`, NOT FOCUS. A text field raises `change` when the visitor leaves
+     * A start is a `change`, not a focus. A text field raises `change` when the visitor leaves
      * it with a new value; a select, checkbox or radio when its value changes.
      * Focus alone, tabbing through, or typing without leaving the field is not a
      * start -- clicking into a form and walking away is not having begun it.
      *
-     * A SUBMIT WITH NO START RAISES ONE FIRST, so every form_submit has a
+     * A submit with no start raises one first, so every form_submit has a
      * form_start and the funnel cannot show more submits than starts. That
      * happens when nothing changed (a one-button form) or the value was set by
      * script. It carries no first-field properties: no field was interacted with.
