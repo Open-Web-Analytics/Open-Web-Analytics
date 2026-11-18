@@ -120,7 +120,7 @@ class UpdateUaRegexesCli extends \OWA\Core\Controller\Cli {
                 'Dry run: %s would be written. Nothing was changed.', $file ) );
         }
 
-        if ( ! is_dir( $dir ) && ! @mkdir( $dir, 0755, true ) && ! is_dir( $dir ) ) {
+        if ( ! \OWA\Core\Lib::makeSharedDir( $dir ) ) {
 
             // Reachable despite the preflight: something else could have
             // changed underneath, and a race is not a reason to write a

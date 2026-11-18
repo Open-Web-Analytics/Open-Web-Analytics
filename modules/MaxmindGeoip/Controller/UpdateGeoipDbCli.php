@@ -248,10 +248,7 @@ class UpdateGeoipDbCli extends \OWA\Core\Controller\Cli {
         // Recorded once a download has been spent, and cleared once it is
         // installed: what remains marks one that did not install. The
         // directory may not exist yet; whyNotWritable() allowed creating it.
-        if ( ! is_dir( $dir ) ) {
-
-            @mkdir( $dir, 0755, true );
-        }
+        \OWA\Core\Lib::makeSharedDir( $dir );
 
         @touch( $attempted );
 
