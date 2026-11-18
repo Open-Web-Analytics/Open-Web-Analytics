@@ -181,69 +181,22 @@ foreach ( $owa_steps as $owa_s ) {
 </div>
 <?php endif;?>
 
-<script>
-(function () {
-
-    // The filter and the scope switch both reload the report, because both
-    // are server-rendered state on the URL. Built from the CURRENT location so
-    // every other parameter -- period, site, segment -- rides along.
-    function goTo( params ) {
-
-        var url = new URL( window.location.href );
-
-        for ( var k in params ) {
-            if ( params.hasOwnProperty( k ) ) {
-                url.searchParams.set( k, params[ k ] );
-            }
-        }
-
-        window.location.href = url.toString();
-    }
-
-    // The steps table: the standard grid, given data instead of a URL.
-    var funnelTable = <?php echo $view->get('funnel_table_json') ?: 'null'; ?>;
-
-    if ( funnelTable && funnelTable.resultsRows && funnelTable.resultsRows.length ) {
-
-        OWA.items.funnelSteps = new OWA.resultSetExplorer( 'funnel-steps-grid' );
-        OWA.items.funnelSteps.options.grid.showExplorerControls = false;
-        OWA.items.funnelSteps.setResultSet( funnelTable );
-        OWA.items.funnelSteps.refreshGrid();
-    }
-
-    // The segment filter. A filter added, changed or removed reloads the
-    // report, because the segment is resolved server-side -- it selects the
-    // people, and the funnel is then counted over all of their pages.
-    var funnelFilter = <?php echo $view->get('funnel_filter_json') ?: 'null'; ?>;
-
-    if ( funnelFilter ) {
-
-        var applied = '';
-
-        OWA.items.funnelConstraints = new OWA.filterPills( {
-            pills: 'funnelFilters', add: 'funnelAddFilter', form: 'funnelFilterForm',
-            dimension: 'funnelFilterDimension', operator: 'funnelFilterOperator',
-            value: 'funnelFilterValue', addFilter: 'funnelFilterAdd', cancel: 'funnelFilterCancel'
-        }, OWA.filterPills.choices( funnelFilter.dimensions, funnelFilter.metrics ), function () {
-
-            var constraints = OWA.items.funnelConstraints.get();
-
-            if ( constraints !== applied ) {
-                goTo( { 'owa_constraints': constraints } );
-            }
-        } );
-
-        OWA.items.funnelConstraints.set( funnelFilter.constraints || '' );
-        applied = OWA.items.funnelConstraints.get();
-    }
-
-    jQuery( '#funnel-scope-visitor' ).change( function () {
-        goTo( { 'owa_funnelScope': 'visitor' } );
-    } );
-
-    jQuery( '#funnel-scope-session' ).change( function () {
-        goTo( { 'owa_funnelScope': 'session' } );
-    } );
-
-}());
-</script>
+<?php
+    /*
+     * The steps table's rows, the segment filter and the scope switch, for
+     * owa.rowsReport.js. A filter added, changed or removed reloads the
+     * report, because the segment is resolved server-side -- it selects the
+     * people, and the funnel is then counted over all of their pages.
+     */
+?>
+<script type="application/json" data-ui="rows-report:config"><?php echo $view->scriptJson( array(
+    'grid'     => 'funnel-steps-grid',
+    'item'     => 'funnelSteps',
+    'table'    => $view->get( 'funnel_table' ),
+    'filter'   => array( 'ids' => 'funnel', 'item' => 'funnelConstraints', 'firstPage' => false )
+        + (array) $view->get( 'funnel_filter' ),
+    'reloadOn' => array(
+        array( 'input' => 'funnel-scope-visitor', 'params' => array( 'owa_funnelScope' => 'visitor' ) ),
+        array( 'input' => 'funnel-scope-session', 'params' => array( 'owa_funnelScope' => 'session' ) ),
+    ),
+) ); ?></script>

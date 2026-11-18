@@ -218,14 +218,20 @@ OWA.items['<?php $view->out( $view->dom_id );?>'].properties = <?php echo $view-
         </TR>
     </table>
 </div>
-<script>
-<?php if ( ! $view->get( 'hideTimeControls' ) ):?>
-OWA.items['<?php $view->out( $view->dom_id );?>'].displayTimePeriodPicker('#owa_timePeriodControl', <?php
-    // scriptJson, not makeJson(): makeJson flattens nested arrays, and the presets are a list.
-    echo $view->scriptJson( $view->get( 'period_picker' ) ?: new \stdClass() );?>);
-OWA.items['<?php $view->out( $view->dom_id );?>'].showAsOf('#owa_reportAsOf');
-<?php endif;?>
-<?php if ( ! $view->get( 'hideSitesFilter' ) ):?>
-OWA.items['<?php $view->out( $view->dom_id );?>'].showSiteFilter();
-<?php endif;?>
-</script>
+<?php
+    /*
+     * The period picker, the "as of" line and the site filter, for
+     * owa.reportWidgets.js, which starts them after the widgets. The picker's
+     * config is absent when the time controls are hidden.
+     */
+    $owa_controls = array(
+        'report'     => (string) $view->dom_id,
+        'siteFilter' => ! $view->get( 'hideSitesFilter' ),
+    );
+
+    if ( ! $view->get( 'hideTimeControls' ) ) {
+
+        $owa_controls['periodPicker'] = $view->get( 'period_picker' ) ?: new \stdClass();
+    }
+?>
+<script type="application/json" data-ui="report:controls"><?php echo $view->scriptJson( $owa_controls ); ?></script>

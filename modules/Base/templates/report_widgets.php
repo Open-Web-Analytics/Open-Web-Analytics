@@ -8,6 +8,13 @@
  * and anything remembering per-widget state bind to, so a conversion that
  * renamed them would move every one of them at once, and only a browser would
  * notice.
+ *
+ * No script runs here. Each widget hands its description to the reporting
+ * bundle in a <script type="application/json" data-ui="report-widget:config">,
+ * a metric set its links and tab in data-ui="report-widgets:set", and a report
+ * drawn per set the report whose tabs are built in data-ui="report-widgets:tabs".
+ * owa.reportWidgets.js builds them in document order and publishes each
+ * explorer under its variable's name, as the inline scripts did.
  */
 $owa_widgets = (array) $view->widgets;
 
@@ -152,8 +159,8 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
      */
     $owa_prefix    = $owa_setKey === '' ? '' : $owa_setKey . '_';
     /*
-     * The id is written into the page's script as a variable name, and the
-     * container as a string and an element id. Both come from the report's
+     * The id becomes a global's name (owa.reportWidgets.js publishes the
+     * widget's explorer under it), and the container an element id. Both come from the report's
      * definition -- a saved custom report's, written by whoever may edit
      * reports and shown to everyone it is shared with -- so they are cut to
      * what a name may hold rather than trusted.
@@ -161,7 +168,6 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
     $owa_id        = preg_replace( '/[^A-Za-z0-9_]/', '_', $owa_prefix . (string) ( $owa_w['id'] ?? 'widget' ) );
     $owa_id        = preg_match( '/^[0-9]/', $owa_id ) ? 'w' . $owa_id : $owa_id;
     $owa_container = preg_replace( '/[^A-Za-z0-9_-]/', '_', $owa_prefix . (string) ( $owa_w['container'] ?? ( $owa_w['id'] ?? 'widget' ) ) );
-    $owa_url       = $owa_id . 'url';
     // A widget's own query wins, so a widget CAN ask for different metrics --
     // none does today, and the report-wide value is what a metric set replaces.
     /*
@@ -454,79 +460,83 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         <div id="<?php $view->out( $owa_id ); ?>-breakdown" class="owa_trendBreakdown"></div>
 <?php endif; ?>
 
-        <script>
-        var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
-
-        var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
-        <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-        <?php echo $owa_id; ?>.options.sparkline.metric = 'sessions';
-<?php if ( $owa_showTitle || $owa_isTrendCard ): ?>
-        <?php // The widget's own heading, or the card's figure, already says what the chart is. ?>
-        <?php echo $owa_id; ?>.options.areaChart.showTitle = false;
-<?php endif; ?>
-<?php if ( $owa_isTrendCard ): ?>
-        <?php // A card's chart is the shape behind its figures: a line, not a filled area. ?>
-        <?php echo $owa_id; ?>.options.areaChart.fill = false;
-<?php endif; ?>
 <?php
+    /*
+     * The widget, as owa.reportWidgets.js builds it: an explorer published as
+     * `$owa_id` with its URL as `$owa_id`url, the options it is given and the
+     * commands it runs on its rows. In a multi-set report the tab loads it.
+     */
+    $owa_desc = array(
+        'name'      => $owa_id,
+        'container' => $owa_container,
+        'url'       => $view->makeApiLink( $owa_query, true ),
+        'options'   => array( 'sparkline' => array( 'metric' => 'sessions' ) ),
+        'queue'     => array(),
+        'load'      => ! $owa_multiSet,
+    );
+
+    if ( $owa_showTitle || $owa_isTrendCard ) {
+
+        // The widget's own heading, or the card's figure, already says what the chart is.
+        $owa_desc['options']['areaChart']['showTitle'] = false;
+    }
+
+    if ( $owa_isTrendCard ) {
+
+        // A card's chart is the shape behind its figures: a line, not a filled area.
+        $owa_desc['options']['areaChart']['fill'] = false;
+    }
+
+    if ( $owa_chartMetric !== '' ) {
+
+        $owa_desc['queue'][] = array( 'makeAreaChart', $owa_chartSeries, $owa_container );
+    }
+
+    if ( $owa_showMetricBoxes ) {
+
+        /*
+         * A CARD'S BOXES SHARE THE ROW; they are not pinned to a width.
+         *
+         * A full-width trend fixes each box at 150px because its row is
+         * wide enough that a fixed size reads as deliberate. A card has
+         * half a row, and the number of metrics is the AUTHOR'S -- so a
+         * fixed width decides for them how many fit, and four became two
+         * rows of two.
+         *
+         * Flexing from a lower floor instead: four fit a half-width row,
+         * five wrap. That is a bound rather than a cap -- it is the point
+         * at which a box stops being readable, not a limit on what may be
+         * asked for.
+         */
+        if ( $owa_isTrendCard ) {
+
+            $owa_desc['options']['metricBoxes']['minWidth'] = '100px';
+
+        } else {
+
+            $owa_desc['options']['metricBoxes']['width'] = '150px';
+        }
+
+        $owa_desc['queue'][] = array( 'makeMetricBoxes', $owa_id . '-metrics' );
+    }
+
+    if ( $owa_breakdownQuery ) {
+
+        /*
+         * The grid of the values the chart is broken out by, published as
+         * `$owa_id`Breakdown, and the wiring that makes the two one control
+         * surface: OWA.linkTrendToBreakdownGrid, called once both exist. See
+         * it for what each control means.
+         */
+        $owa_desc['breakdown'] = array(
+            'name'      => $owa_id . 'Breakdown',
+            'container' => $owa_id . '-breakdown',
+            'url'       => $view->makeApiLink( $owa_breakdownQuery, true ),
+            'queue'     => array( array( 'refreshGrid' ) ),
+        );
+    }
 ?>
-<?php if ( $owa_chartMetric !== '' ): ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeAreaChart', <?php echo $view->scriptJson( $owa_chartSeries ); ?>, '<?php $view->out( $owa_container, false ); ?>']);
-<?php endif; ?>
-<?php if ( $owa_showMetricBoxes ): ?>
-<?php if ( $owa_isTrendCard ): ?>
-        <?php
-            /*
-             * A CARD'S BOXES SHARE THE ROW; they are not pinned to a width.
-             *
-             * A full-width trend fixes each box at 150px because its row is
-             * wide enough that a fixed size reads as deliberate. A card has
-             * half a row, and the number of metrics is the AUTHOR'S -- so a
-             * fixed width decides for them how many fit, and four became two
-             * rows of two.
-             *
-             * Flexing from a lower floor instead: four fit a half-width row,
-             * five wrap. That is a bound rather than a cap -- it is the point
-             * at which a box stops being readable, not a limit on what may be
-             * asked for.
-             */
-        ?>
-        <?php echo $owa_id; ?>.options.metricBoxes.minWidth = '100px';
-<?php else: ?>
-        <?php echo $owa_id; ?>.options.metricBoxes.width = '150px';
-<?php endif; ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes' , '<?php $view->out( $owa_id, false ); ?>-metrics']);
-<?php endif; ?>
-
-<?php if ( $owa_breakdownQuery ): ?>
-        <?php
-            /*
-             * The grid of the values the chart is broken out by, and the wiring
-             * that makes the two one control surface.
-             *
-             * Declared after the trend so the trend variable exists when it is
-             * handed over. The link is one call rather than a block of event
-             * handlers here, because which control drives what is a decision
-             * about the two objects and not about this report -- see
-             * OWA.linkTrendToBreakdownGrid for what each control means.
-             */
-        ?>
-        var <?php echo $owa_id; ?>Breakdownurl = '<?php echo $view->makeApiLink( $owa_breakdownQuery, true ); ?>';
-
-        var <?php echo $owa_id; ?>Breakdown = new OWA.resultSetExplorer('<?php $view->out( $owa_id, false ); ?>-breakdown');
-        <?php echo $owa_id; ?>Breakdown.setDataLoadUrl(<?php echo $owa_id; ?>Breakdownurl);
-        <?php echo $owa_id; ?>Breakdown.asyncQueue.push(['refreshGrid']);
-
-        OWA.linkTrendToBreakdownGrid(<?php echo $owa_id; ?>, <?php echo $owa_id; ?>Breakdown);
-<?php endif; ?>
-
-<?php if ( ! $owa_multiSet ): ?>
-        <?php echo $owa_id; ?>.load();
-<?php if ( $owa_breakdownQuery ): ?>
-        <?php echo $owa_id; ?>Breakdown.load();
-<?php endif; ?>
-<?php endif; ?>
-        </script>
+        <script type="application/json" data-ui="report-widget:config"><?php echo $view->scriptJson( $owa_desc ); ?></script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
 <?php
     if ( $owa_plotTrend === '' && ( $owa_w['type'] ?? '' ) === 'trend' && $owa_breakdown === ''
@@ -560,25 +570,28 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 ?>
         <div id="<?php $view->out( $owa_container ); ?>"></div>
 
-        <script>
-        var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, true ); ?>';
+<?php
+    $owa_desc = array(
+        'name'      => $owa_id,
+        'container' => $owa_container,
+        'url'       => $view->makeApiLink( $owa_query, true ),
+        'options'   => array(),
+        /*
+         * The label sits inside the box; see $owa_ownsTitle above. Only a
+         * single-metric widget lends its title to the box.
+         */
+        'queue'     => array( array( 'makeMetricBoxes', '', $owa_ownsTitle ? (string) ( $owa_w['title'] ?? '' ) : '' ) ),
+        'load'      => ! $owa_multiSet,
+    );
 
-        var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
-        <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-<?php if ( ! empty( $owa_w['boxWidth'] ) ): ?>
-        <?php echo $owa_id; ?>.options.metricBoxes.width = <?php echo $view->scriptJson( (string) $owa_w['boxWidth'] ); ?>;
-<?php endif; ?>
-        <?php
-            // The label sits inside the box; see $owa_ownsTitle above. Encoded
-            // rather than quoted -- it is prose and may carry an apostrophe.
-        ?>
-        <?php // Only a single-metric widget lends its title to the box; see $owa_ownsTitle. ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeMetricBoxes', '', <?php echo $view->scriptJson( $owa_ownsTitle ? (string) ( $owa_w['title'] ?? '' ) : '' ); ?>]);
+    if ( ! empty( $owa_w['boxWidth'] ) ) {
 
-<?php if ( ! $owa_multiSet ): ?>
-        <?php echo $owa_id; ?>.load();
-<?php endif; ?>
-        </script>
+        $owa_desc['options']['metricBoxes']['width'] = (string) $owa_w['boxWidth'];
+    }
+
+    $owa_desc['options'] = (object) $owa_desc['options'];
+?>
+        <script type="application/json" data-ui="report-widget:config"><?php echo $view->scriptJson( $owa_desc ); ?></script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
 
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'pie' ): ?>
@@ -600,26 +613,31 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 ?>
         <div id="<?php $view->out( $owa_container ); ?>" class="owa_widgetBody owa_shareBody"></div>
 
-        <script>
-        var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, $owa_shareState ); ?>';
+<?php
+    $owa_desc = array(
+        'name'      => $owa_id,
+        'container' => $owa_container,
+        'url'       => $view->makeApiLink( $owa_query, $owa_shareState ),
+        'options'   => array( 'shareChart' => array(
+            'metric'    => (string) $owa_chartMetric,
+            'dimension' => (string) ( $owa_query['dimensions'] ?? '' ),
+        ) ),
+        'queue'     => array( array( 'makeShareChart' ) ),
+        'load'      => ! $owa_multiSet,
+    );
 
-        var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
-        <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-        <?php echo $owa_id; ?>.options.shareChart.metric = <?php echo $view->scriptJson( (string) $owa_chartMetric ); ?>;
-        <?php echo $owa_id; ?>.options.shareChart.dimension = <?php echo $view->scriptJson( (string) ( $owa_query['dimensions'] ?? '' ) ); ?>;
-<?php if ( ! empty( $owa_w['valueLabels'] ) ): ?>
-        <?php // Raw value -> label, so a boolean dimension can read New/Repeat rather than No/Yes. ?>
-        <?php echo $owa_id; ?>.options.shareChart.valueLabels = <?php echo $view->scriptJson( (object) $owa_w['valueLabels'] ); ?>;
-<?php endif; ?>
-<?php if ( ! empty( $owa_w['ownConstraints'] ) ): ?>
-        <?php echo $owa_id; ?>.options.shareChart.ownConstraints = <?php echo $view->scriptJson( (string) $owa_w['ownConstraints'] ); ?>;
-<?php endif; ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['makeShareChart']);
+    if ( ! empty( $owa_w['valueLabels'] ) ) {
 
-<?php if ( ! $owa_multiSet ): ?>
-        <?php echo $owa_id; ?>.load();
-<?php endif; ?>
-        </script>
+        // Raw value -> label, so a boolean dimension can read New/Repeat rather than No/Yes.
+        $owa_desc['options']['shareChart']['valueLabels'] = (object) $owa_w['valueLabels'];
+    }
+
+    if ( ! empty( $owa_w['ownConstraints'] ) ) {
+
+        $owa_desc['options']['shareChart']['ownConstraints'] = (string) $owa_w['ownConstraints'];
+    }
+?>
+        <script type="application/json" data-ui="report-widget:config"><?php echo $view->scriptJson( $owa_desc ); ?></script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
 
 <?php elseif ( ( $owa_w['type'] ?? '' ) === 'report-links' ): ?>
@@ -757,70 +775,80 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
         : true;
 ?>
 
-        <script>
-        var <?php echo $owa_url; ?> = '<?php echo $view->makeApiLink( $owa_query, $owa_gridState ); ?>';
-
-        var <?php echo $owa_id; ?> = new OWA.resultSetExplorer('<?php $view->out( $owa_container, false ); ?>');
-        <?php echo $owa_id; ?>.setDataLoadUrl(<?php echo $owa_url; ?>);
-<?php if ( ( $owa_w['type'] ?? '' ) === 'grid-card' ): ?>
-        <?php
-            /*
-             * A CARD, not an explorer.
-             *
-             * A grid-card is one metric against one dimension at a quarter of
-             * the row's width. The bar above a grid is a dimension picker and a
-             * filter -- both of which add columns, and there is no room for a
-             * second column here. Offering them would be offering the reader a
-             * way to make the widget stop fitting.
-             *
-             * Explore is what the full-width grid is for, which is why a grid
-             * cannot be narrowed and a card cannot be widened: the two ARE the
-             * layouts their controls need.
-             */
-        ?>
-        <?php echo $owa_id; ?>.options.grid.showExplorerControls = false;
-        <?php echo $owa_id; ?>.options.grid.compact = true;
-<?php endif; ?>
-<?php if ( ! empty( $owa_w['link'] ) ): ?>
-        var <?php echo $owa_id; ?>link = '<?php echo $view->makeLink( $owa_w['link']['template'], true ); ?>';
-        <?php echo $owa_id; ?>.addLinkToColumn(<?php echo $view->scriptJson( (string) $owa_w['link']['linkColumn'] ); ?>, <?php echo $owa_id; ?>link, <?php echo $view->makeJson( (array) $owa_w['link']['valueColumns'] ); ?>, <?php
-            // A list, so not makeJson(), which always writes an object.
-            echo $view->scriptJson( array_values( array_map( 'strval', (array) ( $owa_w['link']['except'] ?? array() ) ) ) ); ?>);
-<?php endif; ?>
-<?php if ( ! empty( $owa_w['excludeColumns'] ) ): ?>
-        <?php
-            /*
-             * Encoded, not interpolated.
-             *
-             * This was the one value in this template echoed raw into the
-             * page, and the definitions carried their own JavaScript quoting
-             * to suit it -- "'pageUrl'", quotes included. That made a report
-             * definition able to emit arbitrary script, in the one file format
-             * that is meant to become user-authorable. A list of column names
-             * says the same thing and cannot say anything else.
-             */
-        ?>
-        <?php echo $owa_id; ?>.options.grid.excludeColumns = <?php echo $view->scriptJson( array_values( (array) $owa_w['excludeColumns'] ) ); ?>;
-<?php endif; ?>
-<?php if ( ! empty( $owa_w['formatters'] ) ): ?>
-        <?php
-            /*
-             * A column formatter is NAMED, not supplied. jqGrid resolves the
-             * name against jQuery.fn.fmatter, the same way the built-in
-             * `useServerFormatter` and `urlFormatter` defaults are resolved.
-             *
-             * The value this replaces was a JavaScript function, echoed raw
-             * from a controller. Encoded here, and the name is checked against
-             * ConfiguredReport::KNOWN_FORMATTERS before it gets this far, so a
-             * definition can select a formatter but cannot become one.
-             */
-        ?>
-        <?php echo $owa_id; ?>.options.grid.columnFormatters = <?php echo $view->scriptJson( (object) $owa_w['formatters'] ); ?>;
-<?php endif; ?>
-<?php if ( ! empty( $owa_w['ownConstraints'] ) ): ?>
-        <?php echo $owa_id; ?>.options.grid.ownConstraints = <?php echo $view->scriptJson( (string) $owa_w['ownConstraints'] ); ?>;
-<?php endif; ?>
 <?php
+    $owa_desc = array(
+        'name'      => $owa_id,
+        'container' => $owa_container,
+        'url'       => $view->makeApiLink( $owa_query, $owa_gridState ),
+        'options'   => array(),
+        'queue'     => array( array( 'refreshGrid' ) ),
+        'load'      => ! $owa_multiSet,
+    );
+
+    if ( ( $owa_w['type'] ?? '' ) === 'grid-card' ) {
+
+        /*
+         * A CARD, not an explorer.
+         *
+         * A grid-card is one metric against one dimension at a quarter of
+         * the row's width. The bar above a grid is a dimension picker and a
+         * filter -- both of which add columns, and there is no room for a
+         * second column here. Offering them would be offering the reader a
+         * way to make the widget stop fitting.
+         *
+         * Explore is what the full-width grid is for, which is why a grid
+         * cannot be narrowed and a card cannot be widened: the two ARE the
+         * layouts their controls need.
+         */
+        $owa_desc['options']['grid']['showExplorerControls'] = false;
+        $owa_desc['options']['grid']['compact']              = true;
+    }
+
+    if ( ! empty( $owa_w['link'] ) ) {
+
+        /*
+         * explorer.addLinkToColumn( column, url, values, except ), the URL
+         * published as `$owa_id`link. The values are makeJson()'s object --
+         * strings, entities decoded, reserved names mapped -- read back so
+         * they travel inside this description; `except` is a list.
+         */
+        $owa_desc['columnLink'] = array(
+            'column' => (string) $owa_w['link']['linkColumn'],
+            'url'    => $view->makeLink( $owa_w['link']['template'], true ),
+            'values' => json_decode( $view->makeJson( (array) $owa_w['link']['valueColumns'] ) ),
+            'except' => array_values( array_map( 'strval', (array) ( $owa_w['link']['except'] ?? array() ) ) ),
+        );
+    }
+
+    if ( ! empty( $owa_w['excludeColumns'] ) ) {
+
+        /*
+         * A list of column names. The definitions once carried their own
+         * JavaScript quoting -- "'pageUrl'", quotes included -- because this
+         * was echoed raw into the page, which let a report definition emit
+         * arbitrary script.
+         */
+        $owa_desc['options']['grid']['excludeColumns'] = array_values( (array) $owa_w['excludeColumns'] );
+    }
+
+    if ( ! empty( $owa_w['formatters'] ) ) {
+
+        /*
+         * A column formatter is NAMED, not supplied. jqGrid resolves the
+         * name against jQuery.fn.fmatter, the same way the built-in
+         * `useServerFormatter` and `urlFormatter` defaults are resolved.
+         * The name is checked against ConfiguredReport::KNOWN_FORMATTERS
+         * before it gets this far, so a definition can select a formatter
+         * but cannot become one.
+         */
+        $owa_desc['options']['grid']['columnFormatters'] = (object) $owa_w['formatters'];
+    }
+
+    if ( ! empty( $owa_w['ownConstraints'] ) ) {
+
+        $owa_desc['options']['grid']['ownConstraints'] = (string) $owa_w['ownConstraints'];
+    }
+
     /*
      * The row actions, each as a link built here -- so it carries the report's
      * Property and period like every other link on the page -- with a
@@ -850,16 +878,15 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
             'newWindow' => ! empty( $owa_ra['newWindow'] ),
         );
     }
-?>
-<?php if ( $owa_rowActions ): ?>
-        <?php echo $owa_id; ?>.options.grid.rowActions = <?php echo $view->scriptJson( $owa_rowActions ); ?>;
-<?php endif; ?>
-        <?php echo $owa_id; ?>.asyncQueue.push(['refreshGrid']);
 
-<?php if ( ! $owa_multiSet ): ?>
-        <?php echo $owa_id; ?>.load();
-<?php endif; ?>
-        </script>
+    if ( $owa_rowActions ) {
+
+        $owa_desc['options']['grid']['rowActions'] = $owa_rowActions;
+    }
+
+    $owa_desc['options'] = (object) $owa_desc['options'];
+?>
+        <script type="application/json" data-ui="report-widget:config"><?php echo $view->scriptJson( $owa_desc ); ?></script>
 <?php $owa_rses[ (string) ( $owa_w['id'] ?? 'widget' ) ] = $owa_id; ?>
 <?php if ( $owa_plotGrid === '' && ( $owa_w['type'] ?? '' ) === 'grid' ) { $owa_plotGrid = $owa_id; } ?>
 
@@ -879,28 +906,36 @@ $owa_multiSet = ! $view->metrics && ! $owa_authored
 <?php endforeach; ?>
 
 </div>
-<?php if ( $owa_plotTrend !== '' && $owa_plotGrid !== '' ): ?>
-<script>
-    OWA.linkTrendToGrid(<?php echo $owa_plotTrend; ?>, <?php echo $owa_plotGrid; ?>);
-</script>
-<?php endif; ?>
-<?php if ( $owa_multiSet ): ?>
-<script>
-    // This set, and the widgets whose results belong to it. The tab loads them
-    // when it becomes the one being looked at.
-    var owaSet_<?php echo $owa_setVar; ?> = new OWA.report.tab('<?php $view->out( $owa_panelId, false ); ?>');
-    owaSet_<?php echo $owa_setVar; ?>.setLabel('<?php $view->out( $owa_set['label'] ?? $owa_setKey ); ?>');
-<?php foreach ( $owa_rses as $owa_rseName => $owa_rseVar ): ?>
-    owaSet_<?php echo $owa_setVar; ?>.addRse('<?php $view->out( $owa_rseName, false ); ?>', <?php echo $owa_rseVar; ?>);
-<?php endforeach; ?>
-    OWA.items['<?php $view->out( $view->dom_id ); ?>'].addTab( owaSet_<?php echo $owa_setVar; ?> );
-</script>
+<?php
+    /*
+     * After the set's widgets: the trend that draws the grid's top rows, and in
+     * a multi-set report the set's tab, published as owaSet_<set>, with the
+     * result sets it loads when it becomes the one being looked at. The result
+     * sets are pairs, in order: a widget id may be numeric.
+     */
+    $owa_setDesc = array( 'report' => (string) $view->dom_id );
+
+    if ( $owa_plotTrend !== '' && $owa_plotGrid !== '' ) {
+
+        $owa_setDesc['link'] = array( $owa_plotTrend, $owa_plotGrid );
+    }
+
+    if ( $owa_multiSet ) {
+
+        $owa_setDesc['tab'] = array(
+            'name'  => 'owaSet_' . $owa_setVar,
+            'panel' => $owa_panelId,
+            'label' => (string) ( $owa_set['label'] ?? $owa_setKey ),
+            'rses'  => array_map( null, array_map( 'strval', array_keys( $owa_rses ) ), array_values( $owa_rses ) ),
+        );
+    }
+?>
+<?php if ( isset( $owa_setDesc['link'] ) || isset( $owa_setDesc['tab'] ) ): ?>
+<script type="application/json" data-ui="report-widgets:set"><?php echo $view->scriptJson( $owa_setDesc ); ?></script>
 <?php endif; ?>
 <?php endforeach; ?>
 
 <?php if ( $owa_multiSet ): ?>
 </div>
-<script>
-    OWA.items['<?php $view->out( $view->dom_id ); ?>'].createTabs();
-</script>
+<script type="application/json" data-ui="report-widgets:tabs"><?php echo $view->scriptJson( array( 'report' => (string) $view->dom_id ) ); ?></script>
 <?php endif; ?>

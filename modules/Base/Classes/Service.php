@@ -56,13 +56,7 @@ class Service extends \OWA\Core\Base {
     public $install_required = false;
     /** @var list<string> */
     public $modules_needing_updates = array();
-    /**
-     * name => module, each a \OWA\Core\Module. Not declared as one: typed so,
-     * CoreAPI::getNavigation() reads view and nav_name off group => subgroup
-     * arrays that never have them, which PHPStan reports.
-     *
-     * @var array<string, mixed>
-     */
+    /** @var array<string, \OWA\Core\Module> name => module */
     public $modules = array();
     /** @var array<string, string> entity name => module.entity */
     public $entities = array();

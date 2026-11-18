@@ -31,10 +31,12 @@ namespace OWA\Core;
  *
  * NavLink: one report nav link, as getLinkStruct() builds it. NavItem: a nav
  * subgroup, a NavLink with its links under `subgroup`; only `subgroup` when a
- * link was added before the subgroup was.
+ * link was added before the subgroup was. ViewNavLink: a NavLink in one view's
+ * named nav (addViewNavigationLink()).
  *
  * @phpstan-type NavLink array{ref: string|array<string, string>, anchortext: string, order: int|null, priviledge: string, icon_class: string}
  * @phpstan-type NavItem array{ref?: string|array<string, string>, anchortext?: string, order?: int|null, priviledge?: string, icon_class?: string, subgroup?: list<NavLink>}
+ * @phpstan-type ViewNavLink array{ref: string|array<string, string>, anchortext: string, order: int|null, priviledge: string, icon_class: string, view: string, nav_name: string}
  * @phpstan-type ActivationDeclaration array{activated_by: list<mixed>, intake_queue_type: string}
  * @phpstan-type JobRegistration array{name: string, command: string, schedule: string, params: array<mixed>, description: string, module: string, source: string}
  */
@@ -114,6 +116,14 @@ abstract class Module {
      * @var array<string, array<string, NavItem>>|null
      */
     public $nav_links;
+
+    /**
+     * Links this module adds to views' named navs, for
+     * CoreAPI::getNavigation(); see addViewNavigationLink().
+     *
+     * @var list<ViewNavLink>
+     */
+    public $view_nav_links = array();
 
     /**
      * Whether registerReports() has run for this module this request.
@@ -321,6 +331,35 @@ abstract class Module {
     public function getNavigationLinks() {
 
         return $this->nav_links;
+    }
+
+    /**
+     * A link in one view's named nav: CoreAPI::getNavigation( $view, $nav_name )
+     * answers it. Called from registerNavigation(), as the report nav links are.
+     *
+     * @param string $view     the view whose nav it is in
+     * @param string $nav_name that view's nav
+     * @param string|array<string, string> $ref an action name, or link params (reportRef())
+     * @param string $anchortext
+     * @param int|null $order lowest first; omitted, after those that give one
+     * @param string $priviledge
+     * @return void
+     */
+    public function addViewNavigationLink( $view, $nav_name, $ref, $anchortext, $order = null, $priviledge = 'view_reports' ) {
+
+        $link = $this->getLinkStruct( $ref, $anchortext, $order, $priviledge );
+        $link['view']     = $view;
+        $link['nav_name'] = $nav_name;
+
+        $this->view_nav_links[] = $link;
+    }
+
+    /**
+     * @return list<ViewNavLink> addViewNavigationLink()'s, in the order added
+     */
+    public function getViewNavigationLinks() {
+
+        return $this->view_nav_links;
     }
 
     /**
@@ -538,8 +577,11 @@ abstract class Module {
      * stays out of the UI now -- rather than by being absent from template
      * markup and present in a denylist that fails open.
      *
-     * A missing file is not an error: that module declares nothing and keeps
-     * the pre-registration behaviour. Adoption is one module at a time.
+     * A module ships one only if it has settings of its own (or activation
+     * constants). Its is_active and schema_version are OWA's bookkeeping and
+     * need no file: Settings::isRegistered() declares them for any module on
+     * disk. A module with stored settings beyond those two and no file is
+     * still loaded wholesale at boot, with a notice (Settings::undeclaredModules()).
      *
      * The file may also name the constants that activate the module, and the
      * intake queue type it provides (ModuleActivation):

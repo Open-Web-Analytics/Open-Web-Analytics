@@ -1758,9 +1758,14 @@ namespace OWA\Module\Base\Classes;
 
          $entity = \OWA\Core\CoreAPI::entityFactory( 'base.setting' );
 
+         // A module whose only rows are its mechanical keys has nothing to
+         // declare: those load at boot for every module (eagerPredicate()).
+         $mechanical = self::mechanicalSettingNames();
+
          $rows = (array) $db->get_results( sprintf(
-             "SELECT DISTINCT module FROM %s WHERE scope_type = 'install'",
-             $entity->getTableName() ) );
+             "SELECT DISTINCT module FROM %s WHERE scope_type = 'install' AND name NOT IN ( %s )",
+             $entity->getTableName(),
+             \OWA\Core\Db::placeholders( count( $mechanical ) ) ), $mechanical );
 
          $undeclared = array();
 
@@ -2336,7 +2341,9 @@ namespace OWA\Module\Base\Classes;
       */
      public function registeredField( $module, $key ) {
 
-         return $this->registry[ $module . '|' . $key ] ?? array();
+         return $this->registry[ $module . '|' . $key ]
+             ?? $this->mechanicalField( $module, $key )
+             ?? array();
      }
 
      /**
@@ -2349,15 +2356,52 @@ namespace OWA\Module\Base\Classes;
       * array as "not registered" made those unconstrained, so persistSetting()
       * would have accepted a stored db_class_dir. Caught by the contract test
       * the moment the baked-in paths were removed.
-      */
-     /**
+      *
+      * A module's mechanical keys count as declared whether or not it ships a
+      * settings.php: see mechanicalField().
+      *
       * @param  string $module
       * @param  string $key
       * @return bool
       */
      public function isRegistered( $module, $key ) {
 
-         return isset( $this->registry[ $module . '|' . $key ] );
+         return isset( $this->registry[ $module . '|' . $key ] )
+             || $this->mechanicalField( $module, $key ) !== null;
+     }
+
+     /**
+      * A mechanical key (Module::mechanicalSettings(): is_active,
+      * schema_version) of a module whose code is on disk, declared for it.
+      *
+      * These are OWA's own bookkeeping, written only by install, activate and
+      * update, so a module author never declares them. A module that ships a
+      * settings.php has them registered by Module::settingsRegistry(); this
+      * covers one that does not, which has no settings of its own and no other
+      * reason to ship the file. The module is identified by name: a name maps
+      * to exactly one directory (Lib::moduleDirName()), so the directory is
+      * checked rather than guessed back from. Nothing here sets a value: a
+      * module is active only once something activates it.
+      *
+      * @param  string $module
+      * @param  string $key
+      * @return Field|null null for any other key, or a module not on disk
+      */
+     private function mechanicalField( $module, $key ) {
+
+         $mechanical = \OWA\Core\Module::mechanicalSettings();
+
+         if ( ! isset( $mechanical[ $key ] ) || (string) $module === '' ) {
+
+             return null;
+         }
+
+         if ( ! is_dir( \OWA\Core\Env::modulesDir() . \OWA\Core\Lib::moduleDirName( (string) $module ) ) ) {
+
+             return null;
+         }
+
+         return $mechanical[ $key ];
      }
 
      /**

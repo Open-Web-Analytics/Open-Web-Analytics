@@ -388,4 +388,40 @@ OWA.realtime.prototype = {
     }
 };
 
+/**
+ * The realtime report starts from the data report_realtime.php hands over:
+ *
+ *   <script type="application/json" data-ui="realtime:config">{ "apiUrl", "mapUrl", "timezone" }</script>
+ */
+export const REALTIME_SELECTOR = '[data-ui="realtime:config"]';
+
+/**
+ * Start the report under #owa_realtime, when its data is on the page.
+ *
+ * @return {Object|null} the OWA.realtime started
+ */
+export function startRealtime() {
+
+    var holder = document.querySelector( REALTIME_SELECTOR );
+
+    if ( ! holder ) {
+        return null;
+    }
+
+    var realtime = new OWA.realtime( document.getElementById( 'owa_realtime' ), JSON.parse( holder.textContent || '{}' ) );
+
+    realtime.start();
+
+    return realtime;
+}
+
+if ( typeof document !== 'undefined' ) {
+
+    if ( document.readyState === 'loading' ) {
+        document.addEventListener( 'DOMContentLoaded', startRealtime );
+    } else {
+        startRealtime();
+    }
+}
+
 export { OWA };

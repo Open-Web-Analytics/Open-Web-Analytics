@@ -110,12 +110,9 @@ $owa_realtimeApi = $view->makeApiLink( array(
     </div>
 </div>
 
-<script>
-jQuery( function () {
-    new OWA.realtime( document.getElementById( 'owa_realtime' ), {
-        apiUrl:   <?php echo $view->scriptJson( $owa_realtimeApi ); ?>,
-        mapUrl:   <?php echo $view->scriptJson( $view->makeImageLink( 'base/i/world-110m.svg' ) ); ?>,
-        timezone: <?php echo $view->scriptJson( (string) $view->get( 'realtime_timezone' ) ); ?>
-    } ).start();
-} );
-</script>
+<?php // For owa.realtime.js, which starts the report from it. ?>
+<script type="application/json" data-ui="realtime:config"><?php echo $view->scriptJson( array(
+    'apiUrl'   => $owa_realtimeApi,
+    'mapUrl'   => $view->makeImageLink( 'base/i/world-110m.svg' ),
+    'timezone' => (string) $view->get( 'realtime_timezone' ),
+) ); ?></script>

@@ -633,7 +633,9 @@ final class ReportDefinitionFormatTest extends TestCase
             'a description should render beside its link' );
 
         // It renders from its own declaration: no query, nothing to load.
-        $this->assertStringNotContainsString( 'report-linksurl', $html );
+        require_once __DIR__ . '/ReportRenderHarness.php';
+
+        $this->assertSame( array(), \OWA\Tests\ReportRenderHarness::widgetsIn( $html ) );
     }
 
     /**
@@ -1192,7 +1194,8 @@ final class ReportDefinitionFormatTest extends TestCase
             $this->assertSame( $x, $query['dimensions'], $period );
             $this->assertSame( $x, $query['sort'], $period );
 
-            $this->assertMatchesRegularExpression( '/\'makeAreaChart\', \[\{"x":"' . $x . '"/', $html,
+            $this->assertSame( array( 'makeAreaChart', array( array( 'x' => $x, 'y' => 'sessions' ) ), 'card-chart' ),
+                $this->widgetNamed( $html, 'card' )['queue'][0] ?? null,
                 "the $period chart is not drawn over $x" );
         }
     }
@@ -1340,10 +1343,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $html = $this->renderedWith($definition, array());
 
-        $this->assertMatchesRegularExpression('/dim\.options\.grid\.rowActions = (\[.*?\]);/', $html);
-        preg_match('/dim\.options\.grid\.rowActions = (\[.*?\]);\n/', $html, $m);
-
-        $actions = array_column((array) json_decode($m[1], true), null, 'id');
+        $actions = array_column((array) ($this->widgetNamed($html, 'dim')['options']['grid']['rowActions'] ?? array()), null, 'id');
 
         $this->assertSame('pagePath', $actions['pathHeatmap']['first']);
         $this->assertSame('Heatmap', $actions['pathHeatmap']['label']);
@@ -1610,6 +1610,27 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->fail( "no query named '$var' was emitted" );
     }
 
+    /**
+     * The description a rendered report hands owa.reportWidgets.js for the
+     * widget published as $name.
+     *
+     * @return array<string, mixed>
+     */
+    private function widgetNamed( string $html, string $name ): array
+    {
+        require_once __DIR__ . '/ReportRenderHarness.php';
+
+        foreach ( \OWA\Tests\ReportRenderHarness::widgetsIn( $html ) as $widget ) {
+
+            if ( ( $widget['name'] ?? null ) === $name ) {
+
+                return $widget;
+            }
+        }
+
+        $this->fail( "no widget named '$name' was handed over" );
+    }
+
     private function constraintReport( array $widgetExtra, $reportConstraints = null ): array
     {
         $definition = array(
@@ -1782,8 +1803,8 @@ final class ReportDefinitionFormatTest extends TestCase
         // Three arguments, not four: makeMetricBoxes' second parameter used to be
         // a jqote template id, which it forwarded to a kpiBox option that
         // generate() never read. The label now sits in the slot it vacated.
-        $this->assertStringContainsString(
-            '\'makeMetricBoxes\', \'\', "Visits From Search Engines"', $html,
+        $this->assertSame( array( array( 'makeMetricBoxes', '', 'Visits From Search Engines' ) ),
+            $this->widgetNamed( $html, 'fromsearch' )['queue'],
             'the title must reach the box as its label' );
 
         $this->assertStringNotContainsString(
@@ -1809,7 +1830,8 @@ final class ReportDefinitionFormatTest extends TestCase
             ),
         ), array() );
 
-        $this->assertStringContainsString( '\'makeMetricBoxes\', \'\', ""', $html,
+        $this->assertSame( array( array( 'makeMetricBoxes', '', '' ) ),
+            $this->widgetNamed( $html, 'totals' )['queue'],
             'no box may be labelled with the title' );
 
         $this->assertStringContainsString(
@@ -1837,9 +1859,10 @@ final class ReportDefinitionFormatTest extends TestCase
             ),
         ), array() );
 
-        $this->assertStringContainsString( 'medium.options.shareChart.dimension = "medium";', $html );
-        $this->assertStringContainsString( 'medium.options.shareChart.metric = "sessions";', $html );
-        $this->assertStringContainsString( "'makeShareChart'", $html );
+        $pie = $this->widgetNamed( $html, 'medium' );
+
+        $this->assertSame( array( 'metric' => 'sessions', 'dimension' => 'medium' ), $pie['options']['shareChart'] );
+        $this->assertSame( array( array( 'makeShareChart' ) ), $pie['queue'] );
         $this->assertStringContainsString( 'owa_shareBody', $html );
         $this->assertStringNotContainsString( 'makePieChart', $html );
 
@@ -2106,7 +2129,7 @@ final class ReportDefinitionFormatTest extends TestCase
 
         $with = $this->renderedWith( $definition + array( 'widgets' => array( $trend ) ), array() );
 
-        $this->assertStringContainsString( "'makeMetricBoxes' , 'trend-metrics'", $with,
+        $this->assertContains( array( 'makeMetricBoxes', 'trend-metrics' ), $this->widgetNamed( $with, 'trend' )['queue'],
             'the boxes are drawn by default' );
         $this->assertStringContainsString( 'id="trend-metrics"', $with );
 
@@ -2114,14 +2137,14 @@ final class ReportDefinitionFormatTest extends TestCase
             $definition + array( 'widgets' => array( $trend + array( 'showMetricBoxes' => false ) ) ),
             array() );
 
-        $this->assertStringNotContainsString( 'makeMetricBoxes', $without,
+        $this->assertNotContains( 'makeMetricBoxes', array_column( $this->widgetNamed( $without, 'trend' )['queue'], 0 ),
             'showMetricBoxes false must suppress the command' );
 
         $this->assertStringNotContainsString( 'id="trend-metrics"', $without,
             'and the element it would have drawn into, which is otherwise left empty' );
 
         // The chart itself is untouched by the switch.
-        $this->assertStringContainsString( 'makeAreaChart', $without );
+        $this->assertContains( 'makeAreaChart', array_column( $this->widgetNamed( $without, 'trend' )['queue'], 0 ) );
     }
 
     private function reportLinksHtml( array $extra = array() ): string
@@ -2373,9 +2396,11 @@ final class ReportDefinitionFormatTest extends TestCase
             ),
         ), array() );
 
-        $this->assertStringContainsString(
-            'dim.options.grid.ownConstraints = "medium==\u003C\/script\u003E";', $html,
-            'the widget\'s own, not the report\'s, encoded so it cannot close the script' );
+        $this->assertSame( 'medium==</script>', $this->widgetNamed( $html, 'dim' )['options']['grid']['ownConstraints'] ?? null,
+            'the widget\'s own, not the report\'s' );
+
+        $this->assertStringContainsString( '"ownConstraints":"medium==\u003C\/script\u003E"', $html,
+            'encoded, so it cannot close the element it is handed over in' );
     }
 
     /**
@@ -2447,8 +2472,10 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertStringNotContainsString( 'alert(1);//];', $html,
             'a column name must not be able to close the array and run' );
 
-        $this->assertStringContainsString( 'excludeColumns = ["pageUrl\\u0027];alert(1);\\/\\/"]', $html,
+        $this->assertStringContainsString( '"excludeColumns":["pageUrl\\u0027];alert(1);\\/\\/"]', $html,
             'it must arrive as an encoded string inside the list' );
+
+        $this->assertSame( array( "pageUrl'];alert(1);//" ), $this->widgetNamed( $html, 'dim' )['options']['grid']['excludeColumns'] ?? null );
     }
 
     /** A string is refused, since a string is what used to be interpolated. */

@@ -104,6 +104,16 @@ import './owa.customReportEdit.js';
 import './owa.visualizationEdit.js';
 // The header's notification bell and its account and help menus (header.php).
 import './owa.header.js';
+// A report's widgets and its controls (report_widgets.php, report.php), started from the data the templates hand over.
+import './owa.reportWidgets.js';
+// A report of rows the server computed, in the standard grid (the funnel, and a module's report built the same way).
+import './owa.rowsReport.js';
+// The custom reports list's New dialog (custom_reports.php).
+import './owa.customReports.js';
+// A success message fades on its own (msgs.php).
+import './owa.transientStatus.js';
+// The filter box over a Property's users (property_access.php).
+import './owa.propertyAccess.js';
 
 // window.jQuery / window.$ are published by vendor-jquery-global.js (first import);
 // window.OWA (the ~166 template references) is published by owa.format.js itself.
