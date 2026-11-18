@@ -594,9 +594,13 @@ class CustomReports {
 
             if ( count( $extra ) > self::FIXED_DIMENSION_EXTRA[ $type ] ) {
 
-                return sprintf(
-                    \OWA\Core\CoreAPI::t( '%s is a %s: one metric over %s and at most one more dimension. This one names %d more.' ),
-                    $where, $label, $fixed, count( $extra ) );
+                return self::FIXED_DIMENSION_EXTRA[ $type ] === 0
+                    ? sprintf(
+                        \OWA\Core\CoreAPI::t( '%s is a %s: one metric over %s and no other dimension. This one names %d more.' ),
+                        $where, $label, $fixed, count( $extra ) )
+                    : sprintf(
+                        \OWA\Core\CoreAPI::t( '%s is a %s: one metric over %s and at most one more dimension. This one names %d more.' ),
+                        $where, $label, $fixed, count( $extra ) );
             }
 
             /*

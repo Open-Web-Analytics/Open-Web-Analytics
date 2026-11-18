@@ -72,6 +72,13 @@ class ConfiguredReport extends \OWA\Core\ReportController {
     const KNOWN_FORMATTERS = [ 'attributionList' ];
 
     /**
+     * The widget types report_widgets.php draws. An unknown type draws an
+     * empty frame, so it is refused. CustomReports::WIDGET_TYPES is the
+     * subset the builder offers.
+     */
+    const WIDGET_TYPES = [ 'trend', 'trend-card', 'metric-boxes', 'pie', 'report-links', 'heatmap-link', 'grid', 'grid-card' ];
+
+    /**
      * The renderer every configured report uses.
      *
      * Fixed here rather than named by each definition: a report definition is meant
@@ -142,6 +149,12 @@ class ConfiguredReport extends \OWA\Core\ReportController {
             if ( ! is_array( $widget ) || empty( $widget['type'] ) ) {
 
                 return sprintf( 'widget %s needs a "type"', $i );
+            }
+
+            if ( ! in_array( $widget['type'], self::WIDGET_TYPES, true ) ) {
+
+                return sprintf( 'widget %s: "%s" is not a widget type; the types are %s', $i,
+                    is_string( $widget['type'] ) ? $widget['type'] : gettype( $widget['type'] ), implode( ', ', self::WIDGET_TYPES ) );
             }
 
             if ( isset( $widget['more'] ) && empty( $widget['more']['reportId'] ) ) {

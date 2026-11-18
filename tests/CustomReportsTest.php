@@ -1141,8 +1141,10 @@ final class CustomReportsTest extends TestCase
             'query' => ['metrics' => 'sessions', 'dimensions' => 'date,sessionMedium'],
         ];
 
-        $this->assertStringContainsString('Trend card',
-            CustomReports::validate($definition));
+        $error = CustomReports::validate($definition);
+
+        $this->assertStringContainsString('Trend card', $error);
+        $this->assertStringContainsString('no other dimension', $error);
 
         // ...and the same query IS accepted on a full-width trend, so the
         // refusal is about the type rather than about the dimension.

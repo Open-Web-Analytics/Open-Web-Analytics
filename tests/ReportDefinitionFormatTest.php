@@ -650,6 +650,19 @@ final class ReportDefinitionFormatTest extends TestCase
         $this->assertStringContainsString( $because, $error );
     }
 
+    /** Each type a definition may name is one the template draws, and the builder offers no other. */
+    public function testTheWidgetTypesAreTheOnesTheTemplateDraws(): void
+    {
+        $template = (string) file_get_contents(\OWA\Core\Env::root() . '/modules/Base/templates/report_widgets.php');
+
+        foreach (\OWA\Core\ConfiguredReport::WIDGET_TYPES as $type) {
+            $this->assertStringContainsString("'$type'", $template, "$type is not drawn");
+        }
+
+        $this->assertSame([], array_diff(array_keys(\OWA\Module\Base\Classes\CustomReports::WIDGET_TYPES),
+            \OWA\Core\ConfiguredReport::WIDGET_TYPES));
+    }
+
     public static function badLinkProvider(): array
     {
         return [
@@ -669,6 +682,10 @@ final class ReportDefinitionFormatTest extends TestCase
 
             'widget with no type' => [
                 [ 'links' => [] ], 'needs a "type"' ],
+
+            // An unknown type draws an empty frame.
+            'widget of an unknown type' => [
+                [ 'type' => 'sparkline' ], '"sparkline" is not a widget type' ],
         ];
     }
 

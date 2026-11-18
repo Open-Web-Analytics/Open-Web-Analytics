@@ -337,6 +337,30 @@ final class TimePeriodTest extends TestCase
             'this map describes a usable request and must not be refused' );
     }
 
+    /** The reasons are shown to the user, so they are translated. */
+    public function testTheRangeReasonsAreTranslated()
+    {
+        \OWA\Core\Strings::useTranslations( [
+            'A date range needs a start date and an end date.' => 'Ein Zeitraum braucht Anfang und Ende.',
+            'The start date (%1$s) is after the end date (%2$s).' => 'Anfang (%1$s) nach Ende (%2$s).',
+            'Compared to: %s' => 'Verglichen mit: %s',
+            '"%s" is not a comparison.' => '"%s" ist kein Vergleich.',
+        ] );
+
+        try {
+            $tp = \OWA\Module\Base\Classes\TimePeriod::class;
+
+            $this->assertSame( 'Ein Zeitraum braucht Anfang und Ende.', $tp::getRangeError( [ 'period' => 'date_range' ] ) );
+            $this->assertSame( 'Anfang (20260810) nach Ende (20260801).',
+                $tp::getRangeError( [ 'startDate' => '20260810', 'endDate' => '20260801' ] ) );
+            $this->assertSame( 'Verglichen mit: Ein Zeitraum braucht Anfang und Ende.',
+                $tp::getCompareError( [ 'compare' => 'date_range' ] ) );
+            $this->assertSame( '"x" ist kein Vergleich.', $tp::getCompareError( [ 'compare' => 'x' ] ) );
+        } finally {
+            \OWA\Core\Strings::useTranslations( null );
+        }
+    }
+
     /**
      * The defect stated directly: an end date alone produced a window whose
      * start was AFTER its end, and nothing objected.
